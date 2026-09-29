@@ -20,19 +20,7 @@ export async function ClubhouseStatsRoute({ player, window }: { player?: string;
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
-  if (!team) {
-    return (
-      <main className="ch-st">
-        <div className="ch-st-card">
-          <EmptyState
-            icon={Users}
-            title="You aren't on a team yet."
-            body={session.coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'}
-          />
-        </div>
-      </main>
-    );
-  }
+  if (!team) return <StatsNoTeam coach={!!session.coach} />;
   const win = parseWindow(window);
 
   if (team.role === 'player') {
@@ -47,11 +35,27 @@ export async function ClubhouseStatsRoute({ player, window }: { player?: string;
   return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win })} />;
 }
 
-function NotOnTeam({ coach }: { coach: boolean }) {
+export function StatsNoTeam({ coach }: { coach: boolean }) {
   return (
     <main className="ch-st">
       <div className="ch-st-card">
         <EmptyState
+          code="CH-4309"
+          icon={Users}
+          title="You aren't on a team yet."
+          body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'}
+        />
+      </div>
+    </main>
+  );
+}
+
+export function NotOnTeam({ coach }: { coach: boolean }) {
+  return (
+    <main className="ch-st">
+      <div className="ch-st-card">
+        <EmptyState
+          code={coach ? 'CH-5306' : 'CH-5307'}
           icon={UserX}
           title={coach ? 'That player isn’t on your team.' : 'Your stats aren’t available.'}
           body={coach ? 'They may have been removed, or the link is from another team.' : 'You aren’t on an active team roster right now.'}

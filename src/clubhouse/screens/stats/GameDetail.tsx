@@ -57,7 +57,7 @@ function Sec({
           <div key={l}>
             <dt>{l}</dt>
             <dd className={`ch-num${t ? ` ch-${t}` : ''}`}>{v}</dd>
-            {n && <span>{n}</span>}
+            {n && <dd className="ch-gm__sub">{n}</dd>}
           </div>
         ))}
       </dl>

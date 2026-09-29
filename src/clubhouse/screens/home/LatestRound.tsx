@@ -10,6 +10,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { firstName } from './model';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { EmptyState } from '../../ui/States';
+import { ScrollRegion } from '../../ui/ScrollRegion';
 import { chSwap } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
@@ -112,11 +113,10 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
               </div>
 
               {r.holes ? (
-                // On a phone the card scrolls sideways, so it takes focus for arrow-key scrolling (CH-2806).
-                <div className="ch-h-card ch-well-soft" role="region" aria-label={`${r.playerName}'s scorecard`} tabIndex={0}>
+                <ScrollRegion label={`${r.playerName}'s scorecard`} className="ch-h-card ch-well-soft">
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
-                </div>
+                </ScrollRegion>
               ) : (
                 <div className="ch-h-card ch-h-card--none ch-well-soft" data-ch-code={data.holesError ? 'CH-2203' : 'CH-2303'}>
                   {data.holesError

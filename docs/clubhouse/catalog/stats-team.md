@@ -39,6 +39,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4306 | No putts logged | "No putts logged in this window." + "Putting fills in from rounds posted with putt distances." | `TeamPutting` | stats-team.test › CH-4306 |
 | CH-4307 | No season bests yet | "No season bests yet." + "Low round, most birdies and the rest appear once rounds are posted." | `SeasonBests` | stats-team.test › CH-4307 |
 | CH-4308 | A player has too few rounds for strokes gained | "Early read" in Total, dashes in the leg cells; never 0.0 | `LegGrid` | stats-team.test › CH-4308 |
+| CH-4309 | A coach or player with no team | "You aren't on a team yet." + what fills in once they are | `StatsNoTeam` (route) | stats-player.test › CH-4309 |
 
 ## 44xx Loading
 

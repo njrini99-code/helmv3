@@ -158,6 +158,7 @@ export async function loadPlayerProfile(input: {
   const teamAvg = input.viewer === 'coach' ? mean(teamWin.map((r) => r.total_score as number)) : null;
   const t = input.viewer === 'coach';
 
+  // CH-5208: without D1 benchmarks the D1 column reads "—"; nothing is compared with a benchmark it doesn't have.
   const d1Gir = d1.get('gir_pct') ?? null;
   const comparisons: ChComparison[] = [
     { label: 'Scoring avg', you: win.avg, team: teamAvg, d1: null, unit: '', digits: 1, lowerIsBetter: true },

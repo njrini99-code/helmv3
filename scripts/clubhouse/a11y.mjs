@@ -42,6 +42,10 @@ export const CH_A11Y_PAGES = [
   ['stats-player', '/clubhouse-preview/player'],
   ['stats-player', '/clubhouse-preview/player?state=early'],
   ['stats-player', '/clubhouse-preview/player?state=self'],
+  ['stats-player', '/clubhouse-preview/player?state=failed'],
+  ['stats-player', '/clubhouse-preview/player', { wide: '#tab-game', phone: '#tab-game' }],
+  ['stats-player', '/clubhouse-preview/player', { wide: '#tab-rounds', phone: '#tab-rounds' }],
+  ['stats-player', '/clubhouse-preview/player', { wide: '#tab-dev', phone: '#tab-dev' }],
   ['calendar', '/clubhouse-preview/calendar'],
   ['calendar', '/clubhouse-preview/calendar?view=month'],
   ['calendar', '/clubhouse-preview/calendar?view=agenda'],
@@ -85,7 +89,7 @@ async function main() {
       if (opener) await tab.click(opener);
       await tab.waitForTimeout(400);
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
-      const label = `${page.padEnd(12)} ${width}px ${path}`;
+      const label = `${page.padEnd(12)} ${width}px ${path}${opener ? ` (opened ${opener})` : ''}`;
       let res;
       try {
         res = await new AxeBuilder({ page: tab }).include('.ch-root').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();

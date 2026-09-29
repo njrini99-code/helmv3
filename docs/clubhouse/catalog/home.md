@@ -65,4 +65,4 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 | CH-2803 | The leaderboard and both nines of the scorecard are tables: every value sits in a cell under a column header | `role="table|row|cell|columnheader|rowheader"` | home.test › CH-2803 |
 | CH-2804 | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") | `aria-live="polite"`, `FormLine label` | home.test › CH-2701 |
 | CH-2805 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
-| CH-2806 | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it | `role="region"`, `tabIndex=0` on `.ch-h-card` | a11y scan |
+| CH-2806 | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it | `ScrollRegion` (named, focusable) | a11y scan |

@@ -107,28 +107,43 @@ export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; sco
   );
 }
 
-/** Strokes gained by leg: diverging bars from a dashed zero (the baseline). */
-export function LegBars({ rows, max }: { rows: Array<{ label: string; value: number | null }>; max?: number }) {
-  const m = max ?? Math.max(0.5, ...rows.map((r) => Math.abs(r.value ?? 0))) * 1.1;
+/**
+ * Strokes gained by leg, walked from tee to hole (design system:
+ * StrokesGainedRoute). Each leg is a stop on a dotted line; its bar rises
+ * for a gain (green) or hangs for a loss (amber). A leg with no data is a
+ * stop with a dash.
+ */
+export function LegRoute({ rows, max }: { rows: Array<{ label: string; value: number | null }>; max?: number }) {
+  const W = 360;
+  const H = 220;
+  const mid = H / 2;
+  const P = 38;
+  const step = (W - P * 2) / Math.max(1, rows.length - 1);
+  const m = max ?? Math.max(1, ...rows.map((r) => Math.abs(r.value ?? 0)));
+  const hh = mid - 46;
+  const summary = rows.map((r) => `${r.label} ${r.value == null ? 'no data' : formatSigned(r.value)}`).join(', ');
   return (
-    <div className="ch-legbar">
-      {rows.map((r) => (
-        <div key={r.label} className="ch-legbar__r">
-          <span className="ch-legbar__l">{r.label}</span>
-          <span className="ch-legbar__track" aria-hidden="true">
-            {r.value != null && (
-              <span
-                className={`ch-legbar__fill ${r.value >= 0 ? 'is-gain' : 'is-loss'}`}
-                style={{ width: `${(Math.abs(r.value) / m) * 50}%` }}
-              />
-            )}
-          </span>
-          <span className={`ch-legbar__v ch-num ${r.value == null ? '' : r.value >= 0 ? 'ch-gain' : 'ch-loss'}`}>
-            {r.value == null ? NO_DATA : formatSigned(r.value)}
-          </span>
-        </div>
-      ))}
-    </div>
+    <svg viewBox={`0 0 ${W} ${H}`} className="ch-route" role="img" aria-label={`Strokes gained per round by leg: ${summary}`}>
+      <line x1={P - 24} x2={W - P + 24} y1={mid} y2={mid} stroke="var(--ch-ink-900)" strokeWidth="2" strokeDasharray="0.5 7" strokeLinecap="round" />
+      {rows.map((r, i) => {
+        const x = P + i * step;
+        const v = r.value;
+        const h = v == null ? 0 : (Math.min(Math.abs(v), m) / m) * hh;
+        const pos = v == null || v >= 0;
+        return (
+          <g key={r.label}>
+            {v != null && <rect x={x - 10} y={pos ? mid - h : mid} width="20" height={h} rx="4" className={pos ? 'is-pos' : 'is-neg'} />}
+            <circle cx={x} cy={mid} r="6.5" fill="var(--ch-chart-paper)" stroke="var(--ch-ink-900)" strokeWidth="2" />
+            <text x={x} y={pos ? mid - h - 9 : mid + h + 19} textAnchor="middle" className={`ch-route__v ${v == null ? '' : pos ? 'is-pos' : 'is-neg'}`}>
+              {v == null ? NO_DATA : formatSigned(v)}
+            </text>
+            <text x={x} y={pos ? mid + 24 : mid - 16} textAnchor="middle" className="ch-route__k">
+              {r.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 

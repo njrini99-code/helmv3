@@ -72,11 +72,12 @@ and `getDetailedStats` access gate the current app uses.
 - [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
 
 ## accessibility
+Verified by `stats-player.test.tsx` (CH-58xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/stats-player.md`.
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
-- [ ] Landmarks, headings in order, table roles, and labels on icon buttons
-- [ ] Charts have a text equivalent (aria-label or a view-as-table path)
-- [ ] Status changes are announced (aria-live) and errors use role=alert
-- [ ] Text contrast meets WCAG AA on every surface
+- [x] Landmarks, headings in order, table roles, and labels on icon buttons
+- [x] Charts have a text equivalent (aria-label or a view-as-table path)
+- [x] Status changes are announced (aria-live) and errors use role=alert
+- [x] Text contrast meets WCAG AA on every surface
 
 ## performance
 - [ ] No request waterfall on the server, with independent reads in parallel

@@ -16,6 +16,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { ScrollRegion } from '../../ui/ScrollRegion';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -24,7 +25,8 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
-import { FieldTable, FigureCards, LegBars, ScoreBoardTrend, YardagePage } from './charts';
+import { usePageCrumbs } from '../../shell/crumbs';
+import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, YardagePage } from './charts';
 import { GameDetail } from './GameDetail';
 import { WindowSwitch } from './WindowSwitch';
 
@@ -48,6 +50,8 @@ export function StatsPlayer({ data, coachId }: { data: ChPlayerProfile; coachId:
   const [focusOpen, setFocusOpen] = useState(false);
   const [pending, start] = useTransition();
   const coach = data.viewer === 'coach';
+  // As in the handoff: a coach looking at a player reads "Stats › Jonah Okafor".
+  usePageCrumbs(coach ? ['Stats', data.name] : null);
   const w = data.win;
   const early = w.rounds < 3;
   const first = data.firstName;
@@ -68,37 +72,6 @@ export function StatsPlayer({ data, coachId }: { data: ChPlayerProfile; coachId:
     ['SG / round', w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), 'Per round', w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss'],
     ['Rounds', String(data.season.rounds), 'This season'],
   ];
-  const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
-  const fig = (label: string, short: string) => {
-    const c = cmp(label);
-    const ref = coach ? c?.team : c?.d1;
-    return {
-      label: short,
-      value: c?.you == null ? NO_DATA : c.you.toFixed(c.digits),
-      unit: c?.unit,
-      delta: c?.you != null && ref != null ? c.you - ref : null,
-      deltaDigits: c?.digits ?? 0,
-      lowerIsBetter: c?.lowerIsBetter,
-      context: ref == null ? `${w.rounds} rounds` : `vs. ${coach ? 'team' : 'D1'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
-    };
-  };
-  const best = data.rounds.length ? Math.min(...data.rounds.map((r) => r.score)) : null;
-  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: r.score, toPar: r.toPar }));
-  const legs = [
-    { label: 'Off the tee', value: w.sgLegs.tee },
-    { label: 'Approach', value: w.sgLegs.approach },
-    { label: 'Around green', value: w.sgLegs.around },
-    { label: 'Putting', value: w.sgLegs.putting },
-  ];
-  const known = legs.filter((l) => l.value != null) as Array<{ label: string; value: number }>;
-  const strongest = [...known].sort((a, b) => b.value - a.value)[0];
-  const weakest = [...known].sort((a, b) => a.value - b.value)[0];
-  const legNote = !known.length
-    ? 'Strokes gained by leg appears after three rounds with shot data.'
-    : weakest && weakest.value < 0 && known.filter((l) => l.value < 0).length === 1
-      ? `${weakest.label} is the only leg losing strokes, about ${Math.abs(weakest.value).toFixed(1)} a round.`
-      : `Strongest leg is ${strongest!.label.toLowerCase()}${weakest && weakest.value < 0 ? `; ${weakest.label.toLowerCase()} gives back the most` : ''}.`;
-
   const tabs: Array<[Tab, string, number?]> = [
     ['overview', 'Overview'],
     ['game', 'Game detail'],
@@ -107,7 +80,7 @@ export function StatsPlayer({ data, coachId }: { data: ChPlayerProfile; coachId:
   ];
 
   return (
-    <main className="ch-st" aria-busy={pending}>
+    <main className="ch-st" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
       {coach && (
         <div className="ch-st-back">
           <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.window)}>
@@ -162,7 +135,7 @@ export function StatsPlayer({ data, coachId }: { data: ChPlayerProfile; coachId:
             <div key={l}>
               <dt>{l}</dt>
               <dd className={`ch-num${cls ? ` ${cls}` : ''}`}>{v}</dd>
-              <span>{s}</span>
+              <dd className="ch-pf-hero__sub">{s}</dd>
             </div>
           ))}
         </dl>
@@ -197,49 +170,27 @@ export function StatsPlayer({ data, coachId }: { data: ChPlayerProfile; coachId:
       </div>
 
       {early && (
-        <div className="ch-pf-early" role="note">
+        <div className="ch-pf-early" role="note" data-ch-code="CH-5305">
           <Icon icon={Info} size={15} />
           Early read. {first} has {w.rounds} countable {w.rounds === 1 ? 'round' : 'rounds'} in this window, so averages and trends will move a lot. Strokes gained shows once there are three.
         </div>
       )}
       {data.roundsError && (
-        <InlineNotice title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={() => router.refresh()} />
+        <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={() => router.refresh()} />
       )}
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="ch-st-panel">
         {tab === 'overview' && (
-          <SectionBoundary surface="stats.player.overview" label="The overview">
-            <FigureCards
-              items={[
-                fig('Fairways hit', 'Fairways hit'),
-                fig('Greens in regulation', 'Greens in regulation'),
-                fig('Putts per round', 'Putts per round'),
-                fig('Scrambling', 'Scrambling'),
-                { label: 'Best round', value: best == null ? NO_DATA : String(best), context: `${w.rounds} rounds in window` },
-              ]}
-            />
-            <div className="ch-st-grid2">
-              <YardagePage
-                title="Scoring"
-                meta={`Last ${trendRounds.length} 18-hole ${trendRounds.length === 1 ? 'round' : 'rounds'}`}
-                note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
-              >
-                <ScoreBoardTrend rounds={trendRounds} />
-              </YardagePage>
-              <YardagePage title="Strokes gained by leg" meta="Per round" note={legNote}>
-                <LegBars rows={legs} />
-              </YardagePage>
-            </div>
-            <YardagePage title={coach ? `${first} vs. team` : 'You vs. D1'} meta={coach ? 'Same window, active players' : 'D1 averages where the benchmark exists'}>
-              <FieldTable rows={data.comparisons} showTeam={coach} />
-            </YardagePage>
+          <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
+            <Overview data={data} coach={coach} />
           </SectionBoundary>
         )}
 
         {tab === 'game' && (
-          <SectionBoundary surface="stats.player.game" label="Game detail">
+          <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
             {data.statsError ? (
               <InlineNotice
+                code="CH-5202"
                 title="Shot-level detail didn't load."
                 body="Scores and rounds above are correct. Try again; the error has been reported."
                 onRetry={() => router.refresh()}
@@ -248,129 +199,218 @@ export function StatsPlayer({ data, coachId }: { data: ChPlayerProfile; coachId:
               <GameDetail s={data.stats} d1={data.d1} first={first} rounds={w.rounds} />
             ) : (
               <div className="ch-st-card">
-                <EmptyState title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
+                <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
               </div>
             )}
           </SectionBoundary>
         )}
 
         {tab === 'rounds' && (
-          <SectionBoundary surface="stats.player.rounds" label="The rounds table">
-            <section className="ch-st-card">
-              <div className="ch-st-card__head">
-                <div>
-                  <h2>Rounds</h2>
-                  <span>Countable 18-hole rounds &middot; newest first</span>
-                </div>
-              </div>
-              {data.rounds.length === 0 ? (
-                <EmptyState compact title="No rounds in this window." body="Try This season to see every round posted since August." />
-              ) : (
-                <div className="ch-tbl" role="table" aria-label="Rounds">
-                  <div className="ch-tr ch-tr--h" role="row">
-                    <span role="columnheader">Course</span>
-                    <span role="columnheader">Date</span>
-                    <span role="columnheader" className="r">Score</span>
-                    <span role="columnheader" className="r">To par</span>
-                    <span role="columnheader" className="r">GIR</span>
-                    <span role="columnheader" className="r">Putts</span>
-                    <span role="columnheader" className="r">SG</span>
-                  </div>
-                  {data.rounds.map((r) => (
-                    <div key={r.id} className="ch-tr" role="row">
-                      <span role="cell" className="ch-tr__course">{r.course}</span>
-                      <span role="cell" className="ch-n2">{r.date}</span>
-                      <span role="cell" className="r ch-num ch-n">{r.score}</span>
-                      <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                      <span role="cell" className="r ch-num ch-n2">{r.gir ?? NO_DATA}</span>
-                      <span role="cell" className="r ch-num ch-n2">{r.putts ?? NO_DATA}</span>
-                      <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+          <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
+            <RoundsTable rounds={data.rounds} />
           </SectionBoundary>
         )}
 
         {tab === 'dev' && (
-          <SectionBoundary surface="stats.player.development" label="Development">
-            {data.devError && <InlineNotice title="Some development items didn't load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
-            <div className="ch-st-grid2">
-              <section className="ch-st-card">
-                <div className="ch-st-card__head">
-                  <div>
-                    <h2>Focus areas</h2>
-                    <span>
-                      {data.focusAreas.filter((f) => f.status === 'active').length} active
-                      {data.focusAreas.some((f) => f.status === 'proposed') && ` · ${data.focusAreas.filter((f) => f.status === 'proposed').length} waiting on ${coach ? first : 'you'}`}
-                    </span>
-                  </div>
-                  {coach && coachId && (
-                    <Button size="sm" leftIcon={Plus} onClick={() => setFocusOpen(true)}>
-                      Add
-                    </Button>
-                  )}
-                </div>
-                {data.focusAreas.length === 0 ? (
-                  <EmptyState compact title="No focus areas yet." body={coach ? 'Add one from a weak leg in Game detail.' : 'Your coach adds focus areas; they show here.'} />
-                ) : (
-                  data.focusAreas.map((f) => {
-                    const progress = progressOf(f.baseline, f.current, f.target);
-                    return (
-                      <div key={f.id} className="ch-pf-focus">
-                        <div>
-                          <b>{f.title}</b>
-                          <span>
-                            {f.status === 'proposed'
-                              ? 'Proposed, waiting to be accepted'
-                              : f.target != null
-                                ? `${f.current ?? f.baseline ?? NO_DATA} → target ${f.target}`
-                                : 'No target set'}
-                          </span>
-                        </div>
-                        <div className="ch-pf-bar" aria-hidden="true">
-                          {progress != null && <span style={{ width: `${progress}%` }} />}
-                        </div>
-                        <span className="ch-num ch-n2">{progress == null ? NO_DATA : `${progress}%`}</span>
-                      </div>
-                    );
-                  })
-                )}
-              </section>
-              <section className="ch-st-card">
-                <div className="ch-st-card__head">
-                  <div>
-                    <h2>Goals</h2>
-                    <span>{data.goals.length} this season</span>
-                  </div>
-                </div>
-                {data.goals.length === 0 ? (
-                  <EmptyState compact title="No goals set." body={coach ? `${first} sets goals from the player app.` : 'Set goals from your development page.'} />
-                ) : (
-                  data.goals.map((g) => {
-                    const done = g.state === 'achieved' || g.state === 'completed';
-                    return (
-                      <div key={g.id} className="ch-pf-goal">
-                        <span className={'ch-pf-goal__c' + (done ? ' is-done' : '')} aria-label={done ? 'Achieved' : 'In progress'}>
-                          {done && <Icon icon={Check} size={12} />}
-                        </span>
-                        <div>
-                          <b>{g.title}</b>
-                          <span>{g.current != null ? `Now ${g.current}${g.target != null ? ` · target ${g.target}` : ''}` : (g.state ?? 'Active')}</span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </section>
-            </div>
+          <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
+            <Development data={data} coach={coach} first={first} onAdd={coach && coachId ? () => setFocusOpen(true) : null} />
           </SectionBoundary>
         )}
       </div>
 
       {coach && coachId && <FocusAreaSheet open={focusOpen} onClose={() => setFocusOpen(false)} playerId={data.id} coachId={coachId} first={first} />}
     </main>
+  );
+}
+
+/*
+ * Each tab's content is its own component, so its SectionBoundary contains
+ * everything the tab computes: a crash stays inside the tab.
+ */
+
+function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
+  const w = data.win;
+  const first = data.firstName;
+  const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
+  const fig = (label: string, short: string) => {
+    const c = cmp(label);
+    const ref = coach ? c?.team : c?.d1;
+    return {
+      label: short,
+      value: c?.you == null ? NO_DATA : c.you.toFixed(c.digits),
+      unit: c?.unit,
+      delta: c?.you != null && ref != null ? c.you - ref : null,
+      deltaDigits: c?.digits ?? 0,
+      lowerIsBetter: c?.lowerIsBetter,
+      context: ref == null ? `${w.rounds} rounds` : `vs. ${coach ? 'team' : 'D1'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
+    };
+  };
+  const best = data.rounds.length ? Math.min(...data.rounds.map((r) => r.score)) : null;
+  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: r.score, toPar: r.toPar }));
+  const legs = [
+    { label: 'Off the tee', value: w.sgLegs.tee },
+    { label: 'Approach', value: w.sgLegs.approach },
+    { label: 'Around green', value: w.sgLegs.around },
+    { label: 'Putting', value: w.sgLegs.putting },
+  ];
+  const known = legs.filter((l) => l.value != null) as Array<{ label: string; value: number }>;
+  const strongest = [...known].sort((a, b) => b.value - a.value)[0];
+  const weakest = [...known].sort((a, b) => a.value - b.value)[0];
+  const legNote = !known.length
+    ? 'Strokes gained by leg appears after three rounds with shot data.'
+    : weakest && weakest.value < 0 && known.filter((l) => l.value < 0).length === 1
+      ? `${weakest.label} is the only leg losing strokes, about ${Math.abs(weakest.value).toFixed(1)} a round.`
+      : `Strongest leg is ${strongest!.label.toLowerCase()}${weakest && weakest.value < 0 ? `; ${weakest.label.toLowerCase()} gives back the most` : ''}.`;
+
+  return (
+    <>
+      <FigureCards
+        items={[
+          fig('Fairways hit', 'Fairways hit'),
+          fig('Greens in regulation', 'Greens in regulation'),
+          fig('Putts per round', 'Putts per round'),
+          fig('Scrambling', 'Scrambling'),
+          { label: 'Best round', value: best == null ? NO_DATA : String(best), context: `${w.rounds} rounds in window` },
+        ]}
+      />
+      <div className="ch-st-grid2">
+        <YardagePage
+          title="Scoring"
+          meta={`Last ${trendRounds.length} 18-hole ${trendRounds.length === 1 ? 'round' : 'rounds'}`}
+          note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
+        >
+          <ScoreBoardTrend rounds={trendRounds} />
+        </YardagePage>
+        <YardagePage title="Strokes gained by leg" meta="Per round" note={legNote}>
+          <LegRoute rows={legs} max={1.4} />
+        </YardagePage>
+      </div>
+      <YardagePage title={coach ? `${first} vs. team` : 'You vs. D1'} meta={coach ? 'Same window, active players' : 'D1 averages where the benchmark exists'}>
+        <FieldTable rows={data.comparisons} showTeam={coach} />
+      </YardagePage>
+
+    </>
+  );
+}
+
+function RoundsTable({ rounds }: { rounds: ChPlayerProfile['rounds'] }) {
+  return (
+    <section className="ch-st-card">
+      <div className="ch-st-card__head">
+        <div>
+          <h2>Rounds</h2>
+          <span>Countable 18-hole rounds &middot; newest first</span>
+        </div>
+      </div>
+      {rounds.length === 0 ? (
+        <EmptyState code="CH-5302" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
+      ) : (
+        <ScrollRegion label="Rounds, scrolls sideways" className="ch-tbl">
+          <div role="table" aria-label="Rounds">
+            <div className="ch-tr ch-tr--h" role="row">
+              <span role="columnheader">Course</span>
+              <span role="columnheader">Date</span>
+              <span role="columnheader" className="r">Score</span>
+              <span role="columnheader" className="r">To par</span>
+              <span role="columnheader" className="r">GIR</span>
+              <span role="columnheader" className="r">Putts</span>
+              <span role="columnheader" className="r">SG</span>
+            </div>
+            {rounds.map((r) => (
+              <div key={r.id} className="ch-tr" role="row">
+                <span role="cell" className="ch-tr__course">{r.course}</span>
+                <span role="cell" className="ch-n2">{r.date}</span>
+                <span role="cell" className="r ch-num ch-n">{r.score}</span>
+                <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
+                <span role="cell" className="r ch-num ch-n2">{r.gir ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2">{r.putts ?? NO_DATA}</span>
+                <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
+              </div>
+            ))}
+          </div>
+        </ScrollRegion>
+      )}
+    </section>
+  );
+}
+
+function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coach: boolean; first: string; onAdd: (() => void) | null }) {
+  const router = useRouter();
+  return (
+    <>
+      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn't load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
+      <div className="ch-st-grid2">
+        <section className="ch-st-card">
+          <div className="ch-st-card__head">
+            <div>
+              <h2>Focus areas</h2>
+              <span>
+                {data.focusAreas.filter((f) => f.status === 'active').length} active
+                {data.focusAreas.some((f) => f.status === 'proposed') && ` · ${data.focusAreas.filter((f) => f.status === 'proposed').length} waiting on ${coach ? first : 'you'}`}
+              </span>
+            </div>
+            {onAdd && (
+              <Button size="sm" leftIcon={Plus} onClick={onAdd}>
+                Add
+              </Button>
+            )}
+          </div>
+          {data.focusAreas.length === 0 ? (
+            <EmptyState code="CH-5303" compact title="No focus areas yet." body={coach ? 'Add one from a weak leg in Game detail.' : 'Your coach adds focus areas; they show here.'} />
+          ) : (
+            data.focusAreas.map((f) => {
+              const progress = progressOf(f.baseline, f.current, f.target);
+              return (
+                <div key={f.id} className="ch-pf-focus">
+                  <div>
+                    <b>{f.title}</b>
+                    <span>
+                      {f.status === 'proposed'
+                        ? 'Proposed, waiting to be accepted'
+                        : f.target != null
+                          ? `${f.current ?? f.baseline ?? NO_DATA} → target ${f.target}`
+                          : 'No target set'}
+                    </span>
+                  </div>
+                  <div className="ch-pf-bar" aria-hidden="true">
+                    {progress != null && <span style={{ width: `${progress}%` }} />}
+                  </div>
+                  <span className="ch-num ch-n2">{progress == null ? NO_DATA : `${progress}%`}</span>
+                </div>
+              );
+            })
+          )}
+        </section>
+        <section className="ch-st-card">
+          <div className="ch-st-card__head">
+            <div>
+              <h2>Goals</h2>
+              <span>{data.goals.length} this season</span>
+            </div>
+          </div>
+          {data.goals.length === 0 ? (
+            <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} sets goals from the player app.` : 'Set goals from your development page.'} />
+          ) : (
+            data.goals.map((g) => {
+              const done = g.state === 'achieved' || g.state === 'completed';
+              return (
+                <div key={g.id} className="ch-pf-goal">
+                  <span className={'ch-pf-goal__c' + (done ? ' is-done' : '')} aria-hidden="true">
+                    {done && <Icon icon={Check} size={12} />}
+                  </span>
+                  <span className="ch-sr-only">{done ? 'Achieved:' : 'In progress:'}</span>
+                  <div>
+                    <b>{g.title}</b>
+                    <span>{g.current != null ? `Now ${g.current}${g.target != null ? ` · target ${g.target}` : ''}` : (g.state ?? 'Active')}</span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </section>
+      </div>
+
+    </>
   );
 }
 
@@ -410,7 +450,12 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
         target_value: null,
         status: 'proposed',
       }),
-    { done: `Focus area proposed to ${first}. It starts when ${first} accepts.`, failed: `Couldn't add the focus area for ${first}`, hint: 'Your text is still here. Try again in a moment.' },
+    {
+      done: `Focus area proposed to ${first}. It starts when ${first} accepts.`,
+      failed: `Couldn't add the focus area for ${first}`,
+      hint: 'Your text is still here. Try again in a moment.',
+      code: 'CH-5001',
+    },
   );
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -442,7 +487,7 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
             Cancel
           </Button>
           <Button variant="primary" disabled={save.pending} feel={null} onClick={() => void submit()}>
-            {save.pending ? 'Adding' : 'Propose focus area'}
+            {save.pending ? <span data-ch-code="CH-5401">Adding</span> : 'Propose focus area'}
           </Button>
         </>
       }
@@ -452,8 +497,10 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
           <span className="ch-field__label">Area</span>
           <Segmented<Area> size="sm" label="Area" value={area} onChange={setArea} options={AREAS} />
         </div>
-        <label className="ch-field" htmlFor="fa-title">
-          <span className="ch-field__label">What to work on</span>
+        <div className="ch-field">
+          <label className="ch-field__label" htmlFor="fa-title">
+            What to work on
+          </label>
           <input
             id="fa-title"
             className="ch-input"
@@ -465,10 +512,10 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
             onChange={(e) => setTitle(e.target.value)}
             onBlur={() => setTouched(true)}
           />
-          <span id="fa-title-help" className={'ch-field__help' + (touched && invalid ? ' is-error' : '')}>
+          <span id="fa-title-help" className={'ch-field__help' + (touched && invalid ? ' is-error' : '')} data-ch-code={touched && invalid ? 'CH-5101' : undefined}>
             {touched && invalid ? 'Give it a short name, at least three characters.' : 'A short name the player will recognise.'}
           </span>
-        </label>
+        </div>
         <label className="ch-field" htmlFor="fa-note">
           <span className="ch-field__label">Note for {first} (optional)</span>
           <textarea id="fa-note" className="ch-textarea" rows={3} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />

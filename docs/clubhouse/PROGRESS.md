@@ -97,6 +97,7 @@ screen.
 - Roster: invite-by-email has no server action. The invite sheet offers the join code, a copy button and the native share sheet for the join link.
 - Roster: "Schedule 1:1" and "View insights" wait for Calendar and CoachHelm. They are hidden until then.
 
+- Stats (player), 2026-09-29 fidelity: the strokes gained by leg chart is the design system's StrokesGainedRoute (it had been bars), the Rounds count is the design system's tab pill, and a coach reads "Stats › name" in the top bar. The scoring chart's "Season best" marker and "Par 72" meta wait for season-best and course-par data per window.
 - Stats: the prototype's PredictionCard, "vs tour" figures and D1 benchmarks for fairways and putts per round have no source. They are omitted, and D1 shows only where `golf_pga_standards` has the metric.
 - Calendar: "Print week" and "Duplicate" are not built. "Checked" in Sources is the time the server read the data.
 

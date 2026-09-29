@@ -5,6 +5,7 @@ import { ChevronRight, Settings } from 'lucide-react';
 import { Icon } from '../ui/Icon';
 import type { ChNavItem } from './nav';
 import { Bell } from './Bell';
+import { useCrumbTrail } from './crumbs';
 
 /**
  * Sticky glass bar over the canvas: breadcrumbs, the notifications bell (the
@@ -13,11 +14,14 @@ import { Bell } from './Bell';
  * (tracker: data gaps).
  */
 export function TopBar({ item, pathname }: { item: ChNavItem | undefined; pathname: string }) {
-  const crumbs = pathname.startsWith('/golf/dashboard/settings')
-    ? ['Settings']
-    : !item || item.id === 'home'
-      ? ['Home']
-      : ([item.section, item.label].filter(Boolean) as string[]);
+  const pageTrail = useCrumbTrail();
+  const crumbs =
+    pageTrail ??
+    (pathname.startsWith('/golf/dashboard/settings')
+      ? ['Settings']
+      : !item || item.id === 'home'
+        ? ['Home']
+        : ([item.section, item.label].filter(Boolean) as string[]));
   return (
     <header className="ch-topbar">
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">
