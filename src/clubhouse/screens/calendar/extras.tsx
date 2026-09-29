@@ -15,7 +15,7 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { useAction } from '../../lib/use-action';
+import { isOffline, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { addDays, dayLabel, dayNum, dowOf, monthName, rangeLabel, type ChCalEvent } from './model';
@@ -41,6 +41,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
   const remove = useAction('calendar.deleteBusy', () => deleteCoachBlockedTime(e.id), {
     done: `Removed · ${e.title}`,
     failed: `Couldn't remove ${e.title}`,
+    code: 'CH-6005',
   });
   return (
     <div className="ch-in">
@@ -86,6 +87,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
         </Button>
       </div>
       <Modal
+        code="CH-6502"
         open={confirm}
         onClose={() => setConfirm(false)}
         icon={Trash2}
@@ -148,7 +150,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         allDay,
         recurrenceRule: repeat === 'weekly' ? serializeRecurrenceRule({ frequency: 'weekly', weekdays: [new Date(`${date}T12:00:00Z`).getUTCDay()], until }) : undefined,
       }),
-    () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn't add your busy time", hint: 'Your entry is still here. Try again.' }),
+    () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn't add your busy time", hint: 'Your entry is still here. Try again.', code: 'CH-6006' }),
   );
   return (
     <Modal
@@ -184,14 +186,22 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         <label className="ch-field">
           <span className="ch-field__label">What</span>
           <input className="ch-input" placeholder="Recruiting call" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} aria-invalid={touched && !title.trim()} />
-          {touched && !title.trim() && <span className="ch-field__help is-error">Name the block so you know what it was.</span>}
+          {touched && !title.trim() && (
+            <span className="ch-field__help is-error" data-ch-code="CH-6103">
+              Name the block so you know what it was.
+            </span>
+          )}
         </label>
         <div className="ch-ed__row">
           <input className="ch-input" type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
           <input className="ch-input" type="time" aria-label="Start time" step={900} disabled={allDay} value={toHHMM(win[0])} onChange={(e) => e.target.value && setWin([fromHHMM(e.target.value), Math.max(fromHHMM(e.target.value) + 0.25, win[1])])} />
           <input className="ch-input" type="time" aria-label="End time" step={900} disabled={allDay} value={toHHMM(win[1])} onChange={(e) => e.target.value && setWin([win[0], fromHHMM(e.target.value)])} />
         </div>
-        {touched && !allDay && win[1] <= win[0] && <span className="ch-field__help is-error">End has to be after the start.</span>}
+        {touched && !allDay && win[1] <= win[0] && (
+          <span className="ch-field__help is-error" data-ch-code="CH-6104">
+            End has to be after the start.
+          </span>
+        )}
         <div className="ch-ed__opts" style={{ marginTop: 0 }}>
           <label className="ch-switch">
             <input type="checkbox" checked={allDay} onChange={(e) => (haptic('select'), setAllDay(e.target.checked))} />
@@ -257,6 +267,12 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
   }, [eventId, attempt, preview]);
 
   const detach = async (f: EventFile) => {
+    // Same rule as every save (CH-1903): offline, nothing is sent and nothing changes.
+    if (isOffline()) {
+      haptic('error');
+      toast({ tone: 'error', title: `Couldn't remove ${f.title}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+      return;
+    }
     const prev = files;
     setFiles((s) => (s ?? []).filter((x) => x.id !== f.id));
     try {
@@ -270,7 +286,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
           run: () =>
             void attachDocumentToEvent(eventId, f.id, f.note ?? undefined).then((x) => {
               if (x.success) setAttempt((a) => a + 1);
-              else toast({ tone: 'error', title: `Couldn't put ${f.title} back`, body: 'Attach it again from Documents.' });
+              else toast({ tone: 'error', title: `Couldn't put ${f.title} back`, body: 'Attach it again from Documents.', code: 'CH-6009' });
             }),
         },
       });
@@ -278,7 +294,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       setFiles(prev);
       chReport(err, { surface: 'calendar.files', action: 'calendar.detachFile' });
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't remove ${f.title}`, body: 'It’s still attached. Try again in a moment.' });
+      toast({ tone: 'error', title: `Couldn't remove ${f.title}`, body: 'It’s still attached. Try again in a moment.', code: 'CH-6008' });
     }
   };
 
@@ -296,11 +312,15 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
         )}
       </div>
       {failed ? (
-        <InlineNotice title="Files didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6207" title="Files didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !files ? (
-        <Skeleton height={36} />
+        <div aria-busy="true" data-ch-code="CH-6403">
+          <Skeleton height={36} />
+        </div>
       ) : !files.length ? (
-        <p className="ch-in__quiet">No files yet. Attach pairings, local rules or a travel sheet from Documents.</p>
+        <p className="ch-in__quiet" data-ch-code="CH-6303">
+          No files yet. Attach pairings, local rules or a travel sheet from Documents.
+        </p>
       ) : (
         <div>
           {files.map((f) => (
@@ -344,6 +364,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
 function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttached }: { open: boolean; teamId: string; eventId: string; attached: Set<string>; preview?: boolean; onClose: () => void; onAttached: () => void }) {
   const [docs, setDocs] = useState<Array<{ id: string; title: string; size: number | null; category: string | null }> | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [q, setQ] = useState('');
   const [pick, setPick] = useState<string | null>(null);
   useEffect(() => {
@@ -377,11 +398,12 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
     return () => {
       live = false;
     };
-  }, [open, teamId, preview]);
+  }, [open, teamId, preview, attempt]);
   const list = useMemo(() => (docs ?? []).filter((d) => d.title.toLowerCase().includes(q.trim().toLowerCase())), [docs, q]);
   const attach = useAction('calendar.attachFile', (id: string) => attachDocumentToEvent(eventId, id), (id) => ({
     done: `Attached · ${docs?.find((d) => d.id === id)?.title ?? 'file'}`,
     failed: "Couldn't attach the file",
+    code: 'CH-6007',
   }));
   return (
     <Modal
@@ -413,14 +435,16 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       <div style={{ display: 'grid', gap: 12 }}>
         <SearchField value={q} onChange={setQ} placeholder="Find a document" label="Find a document" />
         {failed ? (
-          <InlineNotice title="Documents didn't load." body="Close this and try again; the error has been reported." />
+          <InlineNotice code="CH-6208" title="Documents didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
         ) : !docs ? (
-          <div style={{ display: 'grid', gap: 8 }} aria-busy="true">
+          <div style={{ display: 'grid', gap: 8 }} aria-busy="true" data-ch-code="CH-6404">
             <Skeleton height={44} />
             <Skeleton height={44} />
           </div>
         ) : !docs.length ? (
-          <p className="ch-in__quiet">Your team has no documents yet. Upload one in Documents, then attach it here.</p>
+          <p className="ch-in__quiet" data-ch-code="CH-6304">
+            Your team has no documents yet. Upload one in Documents, then attach it here.
+          </p>
         ) : (
           <div className="ch-cal-pick" role="listbox" aria-label="Documents">
             {list.map((d) => {

@@ -157,6 +157,14 @@ function FindTime({
   );
 }
 
+type EditorValues = { title: string; type: ChCalType; date: string; win: [number, number]; allDay: boolean; repeat: Repeat; loc: string; notes: string; invited: string[] };
+
+/** The editor's values as one comparable string, so edits can be told from a look. */
+function snapshot(v: EditorValues): string {
+  // A fixed field order, so the same values always make the same string.
+  return JSON.stringify([v.title.trim(), v.type, v.date, v.win, v.allDay, v.repeat, v.loc.trim(), v.notes.trim(), [...v.invited].sort()]);
+}
+
 export function EventEditor({
   seed,
   onClose,
@@ -188,30 +196,37 @@ export function EventEditor({
   const [invited, setInvited] = useState<string[]>([]);
   const [scope, setScope] = useState<Scope>('this');
   const [touched, setTouched] = useState(false);
+  // What the editor opened with, to tell edits from a look (CH-6503).
+  const [baseline, setBaseline] = useState('');
+  const [discarding, setDiscarding] = useState(false);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
 
   useEffect(() => {
     if (!seed) return;
     const e = seed.event;
-    if (e) {
-      setTitle(e.title);
-      setType(e.type === 'class' ? 'practice' : e.type);
-      setDate(e.date);
-      setWin(seed.proposal ?? [e.start ?? 8, e.end ?? 17]);
-      setAllDay(e.allDay);
-      setLoc(e.location ?? '');
-      setNotes(e.notes ?? '');
-      setInvited(e.people);
-    } else {
-      setTitle('');
-      setType('practice');
-      setDate(seed.date ?? today);
-      setWin([15.5, 17.5]);
-      setAllDay(false);
-      setLoc('');
-      setNotes('');
-      setInvited(people.map((p) => p.id));
-    }
+    const init = e
+      ? {
+          title: e.title,
+          type: (e.type === 'class' ? 'practice' : e.type) as ChCalType,
+          date: e.date,
+          win: (seed.proposal ?? [e.start ?? 8, e.end ?? 17]) as [number, number],
+          allDay: e.allDay,
+          loc: e.location ?? '',
+          notes: e.notes ?? '',
+          invited: e.people,
+        }
+      : { title: '', type: 'practice' as ChCalType, date: seed.date ?? today, win: [15.5, 17.5] as [number, number], allDay: false, loc: '', notes: '', invited: people.map((p) => p.id) };
+    setTitle(init.title);
+    setType(init.type);
+    setDate(init.date);
+    setWin(init.win);
+    setAllDay(init.allDay);
+    setLoc(init.loc);
+    setNotes(init.notes);
+    setInvited(init.invited);
+    // A drag-to-move proposal is already a change worth keeping.
+    setBaseline(seed.proposal ? '' : snapshot({ ...init, repeat: 'none' }));
+    setDiscarding(false);
     setRepeat('none');
     setUntil(addDays(seed.date ?? today, 56));
     setScope('this');
@@ -293,6 +308,7 @@ export function EventEditor({
       done: !base ? `Published · ${title.trim()}${invited.length ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
       failed: !base ? `Couldn't publish ${title.trim() || 'the event'}` : `Couldn't save ${title.trim() || 'the event'}`,
       hint: 'Your changes are still in the editor. Try again in a moment.',
+      code: 'CH-6001',
     }),
   );
 
@@ -309,26 +325,36 @@ export function EventEditor({
   };
 
   const allOn = invited.length === people.length;
+  const dirty = open && snapshot({ title, type, date, win, allDay, repeat, loc, notes, invited }) !== baseline;
+  // Closing with edits asks first; closing untouched just closes.
+  const requestClose = () => {
+    if (dirty && !save.pending) {
+      haptic('warning');
+      setDiscarding(true);
+    } else onClose();
+  };
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      width={1040}
-      icon={base ? Pencil : CalendarPlus}
-      title={base ? 'Edit event' : 'New event'}
-      description={base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.'}
-      footer={
-        <>
-          <span className="ch-in__quiet" style={{ marginRight: 'auto' }}>
-            {invited.length ? 'Attendees will be notified' : 'No one invited yet'}
-          </span>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" disabled={save.pending} onClick={() => void submit()}>
-            {save.pending ? (base ? 'Saving…' : 'Publishing…') : primary}
-          </Button>
-        </>
+    <>
+      <Modal
+        open={open}
+        onClose={requestClose}
+        width={1040}
+        icon={base ? Pencil : CalendarPlus}
+        title={base ? 'Edit event' : 'New event'}
+        description={base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.'}
+        footer={
+          <>
+            <span className="ch-in__quiet" style={{ marginRight: 'auto' }}>
+              {invited.length ? 'Attendees will be notified' : 'No one invited yet'}
+            </span>
+            <Button variant="ghost" onClick={requestClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" disabled={save.pending} onClick={() => void submit()}>
+              {save.pending ? (base ? 'Saving…' : 'Publishing…') : primary}
+            </Button>
+    
+    </>
       }
     >
       <form
@@ -347,10 +373,15 @@ export function EventEditor({
               aria-label="Event title"
               value={title}
               aria-invalid={touched && invalidTitle}
+              aria-describedby={touched && invalidTitle ? 'ch-ed-title-err' : undefined}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
             />
-            {touched && invalidTitle && <p className="ch-field__help is-error">Give the event a title.</p>}
+            {touched && invalidTitle && (
+              <p id="ch-ed-title-err" className="ch-field__help is-error" data-ch-code="CH-6101">
+                Give the event a title.
+              </p>
+            )}
           </div>
           <div className="ch-ed__types">
             <span className="ch-ed__lbl">Type</span>
@@ -378,7 +409,9 @@ export function EventEditor({
               <input className="ch-input" type="time" aria-label="End time" step={900} disabled={allDay} value={toHHMM(win[1])} aria-invalid={touched && invalidTime} onChange={(e) => e.target.value && setWin([win[0], snap(fromHHMM(e.target.value))])} />
             </div>
             {!allDay && (
-              <p className={'ch-field__help' + (touched && invalidTime ? ' is-error' : '')}>{invalidTime ? 'End has to be after the start.' : `${minutes} min`}</p>
+              <p className={'ch-field__help' + (touched && invalidTime ? ' is-error' : '')} data-ch-code={touched && invalidTime ? 'CH-6102' : undefined}>
+                {invalidTime ? 'End has to be after the start.' : `${minutes} min`}
+              </p>
             )}
             <div className="ch-ed__opts">
               <label className="ch-switch">
@@ -512,6 +545,32 @@ export function EventEditor({
         <button type="submit" hidden />
       </form>
     </Modal>
+    <Modal
+      code="CH-6503"
+      open={open && discarding}
+      onClose={() => setDiscarding(false)}
+      width={420}
+      icon={CircleX}
+      title={base ? 'Discard your changes?' : 'Discard this event?'}
+      description={base ? 'Your edits to this event are lost. The event stays as it was.' : 'Nothing has been published yet. What you entered is lost.'}
+      footer={
+        <>
+          <Button variant="ghost" onClick={() => setDiscarding(false)}>
+            Keep editing
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setDiscarding(false);
+              onClose();
+            }}
+          >
+            Discard
+          </Button>
+        </>
+      }
+    />
+    </>
   );
 }
 
@@ -525,10 +584,11 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       if (event.seriesId && scope !== 'this') return deleteRecurringEvent(event.id, event.startIso, scope);
       return deleteGolfEvent(event.id);
     },
-    () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn't cancel ${event?.title ?? 'the event'}` }),
+    () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn't cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
   );
   return (
     <Modal
+      code="CH-6501"
       open={event != null}
       onClose={onClose}
       icon={CircleX}
@@ -603,6 +663,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
   const create = useAction('calendar.createFeed', (type: 'team' | 'personal') => createCalendarFeed(type), (type) => ({
     done: type === 'team' ? 'Team schedule link ready' : 'Your schedule link ready',
     failed: "Couldn't create the calendar link",
+    code: 'CH-6003',
   }));
 
   const copy = async (f: Feed) => {
@@ -613,7 +674,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     } catch (err) {
       chReport(err, { surface: 'calendar.subscribe', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard. Select the link and copy it.' });
+      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard. Select the link and copy it.', code: 'CH-6004' });
     }
   };
 
@@ -624,9 +685,9 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
   return (
     <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don't come back." footer={<Button onClick={onClose}>Done</Button>}>
       {failed ? (
-        <InlineNotice title="Your calendar links didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6206" title="Your calendar links didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
-        <div style={{ display: 'grid', gap: 12 }} aria-busy="true">
+        <div style={{ display: 'grid', gap: 12 }} aria-busy="true" data-ch-code="CH-6402">
           <Skeleton height={44} />
           <Skeleton height={44} />
         </div>

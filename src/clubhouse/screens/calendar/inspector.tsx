@@ -145,7 +145,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
         <span className="ch-num">{fmtHour(now.hour)}</span>
       </div>
       <h2 className="ch-in__title">
-        {today.length === 0 ? 'Nothing on the team calendar today' : `${today.length} team ${today.length === 1 ? 'event' : 'events'} today`}
+        {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${today.length === 1 ? 'event' : 'events'} today`}
       </h2>
       {next && (
         <button
@@ -173,9 +173,13 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <b>{role === 'coach' ? 'Needs attention' : 'Needs your reply'}</b>
           <span>Next 7 days</span>
         </div>
-        {ctx.rsvpError && <p className="ch-in__quiet">Replies didn&apos;t load, so pending replies aren&apos;t counted. Refresh to try again.</p>}
+        {ctx.rsvpError && (
+          <InlineNotice code="CH-6204" title="Replies didn't load." body="Pending replies aren't counted until they do." onRetry={ctx.refresh} />
+        )}
         {weekOverlaps.length + pendingRows.length === 0 && !ctx.rsvpError ? (
-          <p className="ch-in__quiet">{role === 'coach' ? 'No overlaps and no replies waiting.' : 'You’re all caught up.'}</p>
+          <p className="ch-in__quiet" data-ch-code="CH-6306">
+            {role === 'coach' ? 'No overlaps and no replies waiting.' : 'You’re all caught up.'}
+          </p>
         ) : (
           <div>
             {role === 'coach' &&
@@ -289,6 +293,7 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
       done: status === 'accepted' ? `You’re going to ${e.title}` : status === 'tentative' ? `Marked maybe for ${e.title}` : `Coach knows you can’t make ${e.title}`,
       failed: `Couldn't send your reply for ${e.title}`,
       hint: 'Replies lock at the deadline or once the event starts.',
+      code: 'CH-6010',
     }),
   );
   const pick = async (v: ChRsvp) => {
@@ -339,7 +344,9 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
     return (
       <div className="ch-in">
         <Back label="Today" onClick={() => ctx.go(null)} />
-        <p className="ch-in__quiet">This event isn&apos;t in the loaded range anymore. It may have moved or been cancelled.</p>
+        <p className="ch-in__quiet" data-ch-code="CH-6305">
+          This event isn&apos;t in the loaded range anymore. It may have moved or been cancelled.
+        </p>
       </div>
     );
   }
@@ -355,7 +362,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
     } catch (err) {
       chReport(err, { surface: 'calendar.detail', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard.' });
+      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard.', code: 'CH-6012' });
     }
   };
 
@@ -414,7 +421,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
             <span>{e.people.length} invited</span>
           </div>
           {ctx.rsvpError ? (
-            <p className="ch-in__quiet">Replies didn&apos;t load. Refresh to see who&apos;s going.</p>
+            <InlineNotice code="CH-6205" title="Replies didn't load." body="Try again to see who's going." onRetry={ctx.refresh} />
           ) : (
             <>
               <Responses e={e} />
@@ -550,7 +557,12 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
       setSaved((s) => ({ ...s, ...Object.fromEntries(results.filter((r) => r.ok).map((r) => [r.p, r.m])) }));
       return failed.length ? { success: false, error: failed.length === results.length ? failed[0]?.error : `${failed.length} of ${results.length} marks didn’t save` } : { success: true };
     },
-    { done: `${changed.length} attendance ${changed.length === 1 ? 'mark' : 'marks'} saved`, failed: "Couldn't save attendance", hint: 'The marks that saved are kept. Try again for the rest.' },
+    {
+      done: `${changed.length} attendance ${changed.length === 1 ? 'mark' : 'marks'} saved`,
+      failed: "Couldn't save attendance",
+      hint: 'The marks that saved are kept. Try again for the rest.',
+      code: 'CH-6011',
+    },
   );
 
   if (!e) return null;
@@ -566,9 +578,9 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
         </div>
       </div>
       {loadError ? (
-        <InlineNotice title="Attendance didn't load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6209" title="Attendance didn't load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !saved ? (
-        <div className="ch-in__facts" aria-busy="true">
+        <div className="ch-in__facts" aria-busy="true" data-ch-code="CH-6405">
           {e.people.slice(0, 5).map((p) => (
             <Skeleton key={p} height={30} />
           ))}

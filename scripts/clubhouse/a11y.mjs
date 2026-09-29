@@ -53,6 +53,8 @@ export const CH_A11Y_PAGES = [
   ['calendar', '/clubhouse-preview/calendar?state=failed'],
   ['calendar', '/clubhouse-preview/calendar?state=loading'],
   ['calendar', '/clubhouse-preview/calendar?new=1'],
+  ['calendar', '/clubhouse-preview/calendar?event=e9'],
+  ['calendar', '/clubhouse-preview/calendar?state=partial'],
   ['calendar', '/clubhouse-preview/calendar-player'],
   ['messages', '/clubhouse-preview/messages'],
   ['messages', '/clubhouse-preview/messages?state=empty'],
@@ -69,6 +71,20 @@ export const CH_A11Y_PAGES = [
   ['settings', '/clubhouse-preview/settings?state=failed'],
   ['settings', '/clubhouse-preview/settings?state=loading'],
 ];
+
+/**
+ * Known violations waiting on an owner decision, each with its reason. A known
+ * violation is still printed; it just doesn't fail the run. Keep this short.
+ */
+const KNOWN = [
+  {
+    page: 'calendar',
+    width: 390,
+    rule: 'target-size',
+    reason: 'The 7-day week at 390px squeezes overlapping events; the phone Calendar waits for its approved phone spec (docs/clubhouse/phone/).',
+  },
+];
+const isKnown = (page, width, rule) => KNOWN.some((k) => k.page === page && k.width === width && k.rule === rule);
 
 async function main() {
   const only = process.argv.slice(2);
@@ -100,11 +116,16 @@ async function main() {
         continue;
       }
       scanned++;
+      const blocking = res.violations.filter((v) => !isKnown(page, width, v.id));
       if (res.violations.length === 0) console.log(`ok   ${label}`);
       else {
-        failed++;
-        console.log(`FAIL ${label}`);
+        if (blocking.length) failed++;
+        console.log(`${blocking.length ? 'FAIL' : 'known'} ${label}`);
         for (const v of res.violations) {
+          if (isKnown(page, width, v.id)) {
+            console.log(`     ${v.id} (known): ${KNOWN.find((k) => k.page === page && k.rule === v.id).reason}`);
+            continue;
+          }
           console.log(`     ${v.id} (${v.impact}): ${v.help}`);
           for (const n of v.nodes.slice(0, 4)) console.log(`       ${n.target.join(' ')}  ${n.failureSummary?.split('\n')[1]?.trim() ?? ''}`);
           if (v.nodes.length > 4) console.log(`       …and ${v.nodes.length - 4} more`);

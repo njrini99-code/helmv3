@@ -43,7 +43,7 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [x] Crash containment: the view and the panel are each wrapped in a `SectionBoundary` with a surface tag
 - [x] Route error: the Clubhouse error view
 - [x] Not found and no access: no team has its own state; a deep link to an event outside the range says it may have moved
-- [ ] Offline or slow network: the action says so instead of spinning forever
+- [x] Offline or slow network: the action says so instead of spinning forever
 - [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event
 - [x] Forms: the editor validates title and time before submit, keeps every field on failure and disables while pending
 - [x] Destructive actions: cancelling asks first (with series scope), and it's a soft cancel that keeps replies and attendance
@@ -76,11 +76,12 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
 
 ## accessibility
+Verified by `calendar.test.tsx` (CH-68xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/calendar.md`.
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
-- [ ] Landmarks, headings in order, table roles, and labels on icon buttons
+- [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [ ] Charts have a text equivalent (aria-label or a view-as-table path)
-- [ ] Status changes are announced (aria-live) and errors use role=alert
-- [ ] Text contrast meets WCAG AA on every surface
+- [x] Status changes are announced (aria-live) and errors use role=alert
+- [x] Text contrast meets WCAG AA on every surface
 
 ## performance
 - [ ] No request waterfall on the server, with independent reads in parallel

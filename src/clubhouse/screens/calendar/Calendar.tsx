@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Rss, TriangleAlert, Users } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Rss, TriangleAlert, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
@@ -9,6 +9,7 @@ import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
+import { EmptyState } from '../../ui/States';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
@@ -386,17 +387,26 @@ export function Calendar({ data, initialEvent, initialNew = false, frozen = fals
           {view !== 'month' && (
             <span>
               <i className="ch-dot-class" />
-              Class
+              Class · busy
             </span>
           )}
         </div>
       </div>
 
+      {data.settingsError && (
+        <InlineNotice
+          code="CH-6212"
+          title="Your team's timezone didn't load."
+          body={`Times are shown in ${data.zoneLabel} until it does. Try again; the error has been reported.`}
+          onRetry={refresh}
+        />
+      )}
       {data.busyError && (
-        <InlineNotice title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
+        <InlineNotice code="CH-6202" title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
       )}
       {data.classesError && (
         <InlineNotice
+          code="CH-6203"
           title={coach ? "Class schedules didn't load." : "Your classes didn't load."}
           body={coach ? 'Team events are complete, but class overlaps may be missing. Try again; the error has been reported.' : 'Team events are complete. Try again; the error has been reported.'}
           onRetry={refresh}
@@ -405,12 +415,12 @@ export function Calendar({ data, initialEvent, initialNew = false, frozen = fals
 
       {data.eventsError ? (
         <div className="ch-cal-surface" style={{ padding: 20 }}>
-          <InlineNotice title="The calendar didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} />
+          <InlineNotice code="CH-6201" title="The calendar didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} />
         </div>
       ) : (
         <div className="ch-cal-body">
           <div style={{ minWidth: 0 }}>
-            <SectionBoundary surface={`calendar.${view}`} label="The calendar">
+            <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
               {(view === 'week' || view === 'day') && (
                 <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} />
               )}
@@ -433,14 +443,19 @@ export function Calendar({ data, initialEvent, initialNew = false, frozen = fals
                 (events.some((e) => e.date >= now.date) || events.length ? (
                   <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} />
                 ) : (
-                  <div className="ch-cal-surface" style={{ padding: 28 }}>
-                    <p className="ch-in__quiet">{sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}</p>
+                  <div className="ch-cal-surface">
+                    <EmptyState
+                      code="CH-6301"
+                      icon={CalendarDays}
+                      title={sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}
+                      body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'}
+                    />
                   </div>
                 ))}
             </SectionBoundary>
           </div>
           <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite">
-            <SectionBoundary surface="calendar.panel" label="The detail panel">
+            <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
               {!insp && <Summary ctx={ctx} />}
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'attendance' && <Attendance key={insp.id} ctx={ctx} id={insp.id} date={insp.date} />}

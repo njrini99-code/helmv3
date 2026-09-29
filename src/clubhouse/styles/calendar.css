@@ -123,8 +123,9 @@
 .ch-cal-jump__d:hover {
   background: var(--ch-bg-hover);
 }
+/* Days outside the month are still pickable, so they read as tertiary, not disabled. */
 .ch-cal-jump__d.is-out {
-  color: var(--ch-text-disabled);
+  color: var(--ch-text-tertiary);
 }
 .ch-cal-jump__d.is-range {
   background: rgb(21 90 57 / 0.06);
@@ -666,7 +667,7 @@
   color: var(--ch-text-primary);
 }
 .ch-mo__cell.is-out .ch-mo__n {
-  color: var(--ch-text-disabled);
+  color: var(--ch-text-tertiary);
 }
 .ch-mo__cell.is-today .ch-mo__n {
   background: var(--ch-green-600);
