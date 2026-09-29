@@ -31,6 +31,7 @@ import {
 } from '@/lib/coachhelm/signal-grouping';
 import { synthesizeTeamSignals } from '@/lib/coachhelm/v3/insights/team-synthesis';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { rosterScopedRows } from '@/lib/coachhelm/roster-scope';
 import {
   recentWindowStart,
   recentlyActivePlayerIds,
@@ -197,7 +198,11 @@ async function getSignalGroupsImpl(
       return { success: false, groups: [], scannedAt: null, error: 'Failed to fetch patterns' };
     }
 
-    const insightSignals: GroupedSignal[] = (insightRows ?? []).map((row) => {
+    // Audit row 5: insights are team-scoped, so a player who has left the
+    // active roster kept their rows in the action queue (17 today). Only
+    // current roster members' signals are actionable here.
+    const insightSignals: GroupedSignal[] = rosterScopedRows(insightRows ?? [], teamPlayerIds)
+      .map((row) => {
       return {
         id: row.id,
         kind: 'insight',
