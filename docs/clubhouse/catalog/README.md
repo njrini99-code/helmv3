@@ -45,8 +45,22 @@ So `CH-8001` is Settings, error toast, number one.
 | When | What the person did or what happened, in plain words |
 | They see | The exact words (or the visible behaviour) |
 | How | The mechanism: component, hook, duration, haptic |
-| Test | Where it is forced in CI (`src/clubhouse/__tests__/…`) or `preview` when checked in the preview only |
+| Test | Where it is forced in CI (`src/clubhouse/__tests__/…`), `a11y scan` for the axe run, or `preview` when checked in the preview only |
 
-Pages: [shell](shell.md) · [settings](settings.md). Home, Roster, Stats,
-Calendar and Messages are added one page at a time, each reviewed by the
-owner before the next.
+The shell's rows (1xxx) hold for every page: offline, slow saves, full-page
+errors, navigation motion and haptics, skip link. A page lists only what is
+its own.
+
+## Checks
+
+- `npm run clubhouse:check` (CI): every number used in `src/clubhouse` is
+  catalogued once in its page's block; every row of kinds 0–5 is used in code
+  and named by a test; retired numbers stay unused.
+- `npm run test:file -- src/clubhouse/__tests__` (CI): each test is named by
+  the number it forces.
+- `npm run clubhouse:a11y` (local, needs the dev server on 3100): axe-core,
+  WCAG 2.2 AA, every preview screen and state at 1280px and 390px.
+
+Pages: [shell](shell.md) · [home](home.md) · [roster](roster.md) ·
+[stats-team](stats-team.md) · [stats-player](stats-player.md) ·
+[calendar](calendar.md) · [messages](messages.md) · [settings](settings.md).

@@ -36,7 +36,7 @@ export function Sidebar({
   const sections: Array<ChNavItem["section"]> = [undefined, "Team", "Program"];
 
   return (
-    <aside className="ch-sidebar" aria-label="Main">
+    <aside className="ch-sidebar" aria-label="Sidebar">
       <div className="ch-brand">
         <img
           src="/helm-main-logo-transparent-white-trim.png"
@@ -52,7 +52,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="ch-nav">
+      <nav className="ch-nav" aria-label="Main">
         {sections.map((section) => {
           const items = nav.filter((i) => i.section === section);
           if (!items.length) return null;

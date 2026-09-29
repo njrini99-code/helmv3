@@ -47,6 +47,7 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
   // A failed timezone read falls back to the product default, same as dashboard-data.
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
 
+  // CH-1207: the next-event card hides; CH-1208: the Roster badge hides. Both are logged.
   if (eventRes.error) {
     chLogServer('shell', 'nextEvent', eventRes.error, 'calendar');
   }
@@ -62,6 +63,7 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
     if (error) chLogServer('shell', 'nextEventAttendance', error, 'calendar');
     else if (data.length > 0) ready = { accepted: data.filter((a) => rsvpOf(a.status) === 'accepted').length, invited: data.length };
   }
+  // CH-1304: nothing upcoming, so the sidebar shows no card.
   return {
     nextEvent: e ? { ...describeEvent(e, timezone), ready } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),

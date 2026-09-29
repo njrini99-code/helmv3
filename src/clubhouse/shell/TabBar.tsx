@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { AnimatePresence, m } from 'framer-motion';
 import { Ellipsis, Settings, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
@@ -28,12 +28,36 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
   const rest = nav.filter((i) => !i.tab);
   const moreActive = !!current && !current.tab;
 
+  const moreBtn = useRef<HTMLButtonElement>(null);
+  const sheet = useRef<HTMLDivElement>(null);
+
   useEffect(() => setMoreOpen(false), [pathname]);
+  // The sheet is modal: focus moves into it, Tab stays inside, Esc closes it,
+  // and focus returns to More when it closes (CH-1802).
   useEffect(() => {
     if (!moreOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMoreOpen(false);
+    const trigger = moreBtn.current;
+    // The sheet mounts in the same commit, so it can take focus right away.
+    sheet.current?.querySelector<HTMLElement>('a, button')?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return setMoreOpen(false);
+      if (e.key !== 'Tab' || !sheet.current) return;
+      const els = Array.from(sheet.current.querySelectorAll<HTMLElement>('a, button'));
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      trigger?.focus({ preventScroll: true });
+    };
   }, [moreOpen]);
 
   return (
@@ -59,6 +83,7 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
           );
         })}
         <button
+          ref={moreBtn}
           type="button"
           className="ch-tab"
           aria-current={moreActive ? 'page' : undefined}
@@ -89,8 +114,10 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
               onClick={() => setMoreOpen(false)}
             />
             <m.div
+              ref={sheet}
               key="sheet"
               id="ch-more"
+              data-ch-code="CH-1802"
               role="dialog"
               aria-modal="true"
               aria-label="More"

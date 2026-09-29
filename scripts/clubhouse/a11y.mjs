@@ -1,0 +1,114 @@
+#!/usr/bin/env node
+/**
+ * Accessibility scan of every Clubhouse preview screen and state with axe-core
+ * (WCAG 2.1 and 2.2 AA, contrast included). Needs the dev server:
+ *
+ *   npm run dev -- -p 3100        (in another terminal)
+ *   npm run clubhouse:a11y        (CH_BASE=http://localhost:3100 by default)
+ *   npm run clubhouse:a11y -- home settings   (only these screens)
+ *
+ * Exits 1 when any page has a violation. The catalog's accessibility rows
+ * (kind 8) cite this scan.
+ */
+import { chromium } from 'playwright';
+import AxeBuilder from '@axe-core/playwright';
+
+const BASE = process.env.CH_BASE ?? 'http://localhost:3100';
+
+/**
+ * Every preview screen and the states that change what is on the page. An
+ * optional third entry opens something first: `{ wide, phone }` selectors
+ * clicked at 1280px and at 390px.
+ */
+export const CH_A11Y_PAGES = [
+  ['shell', '/clubhouse-preview/settings', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: '.ch-tabbar button[aria-controls="ch-more"]' }],
+  ['shell', '/clubhouse-preview/settings?bell=empty', { wide: '.ch-topbar button[aria-label^="Notifications"]' }],
+  ['home', '/clubhouse-preview/home'],
+  ['home', '/clubhouse-preview/home?state=empty'],
+  ['home', '/clubhouse-preview/home?state=failed'],
+  ['home', '/clubhouse-preview/home?state=loading'],
+  ['home', '/clubhouse-preview/home?state=error'],
+  ['roster', '/clubhouse-preview/roster'],
+  ['roster', '/clubhouse-preview/roster?state=empty'],
+  ['roster', '/clubhouse-preview/roster?state=failed'],
+  ['roster', '/clubhouse-preview/roster?state=loading'],
+  ['stats-team', '/clubhouse-preview/stats'],
+  ['stats-team', '/clubhouse-preview/stats?state=empty'],
+  ['stats-team', '/clubhouse-preview/stats?state=loading'],
+  ['stats-player', '/clubhouse-preview/player'],
+  ['stats-player', '/clubhouse-preview/player?state=early'],
+  ['stats-player', '/clubhouse-preview/player?state=self'],
+  ['calendar', '/clubhouse-preview/calendar'],
+  ['calendar', '/clubhouse-preview/calendar?view=month'],
+  ['calendar', '/clubhouse-preview/calendar?view=agenda'],
+  ['calendar', '/clubhouse-preview/calendar?state=empty'],
+  ['calendar', '/clubhouse-preview/calendar?state=failed'],
+  ['calendar', '/clubhouse-preview/calendar?state=loading'],
+  ['calendar', '/clubhouse-preview/calendar?new=1'],
+  ['calendar', '/clubhouse-preview/calendar-player'],
+  ['messages', '/clubhouse-preview/messages'],
+  ['messages', '/clubhouse-preview/messages?state=empty'],
+  ['messages', '/clubhouse-preview/messages?state=failed'],
+  ['messages', '/clubhouse-preview/messages?state=thread-failed'],
+  ['messages', '/clubhouse-preview/messages?state=loading'],
+  ['messages', '/clubhouse-preview/messages-player'],
+  ['settings', '/clubhouse-preview/settings'],
+  ['settings', '/clubhouse-preview/settings?section=notifications'],
+  ['settings', '/clubhouse-preview/settings?section=team'],
+  ['settings', '/clubhouse-preview/settings?section=coachhelm'],
+  ['settings', '/clubhouse-preview/settings?section=preferences'],
+  ['settings', '/clubhouse-preview/settings?state=player&section=golf'],
+  ['settings', '/clubhouse-preview/settings?state=failed'],
+  ['settings', '/clubhouse-preview/settings?state=loading'],
+];
+
+async function main() {
+  const only = process.argv.slice(2);
+  const pages = only.length ? CH_A11Y_PAGES.filter(([p]) => only.includes(p)) : CH_A11Y_PAGES;
+  const browser = await chromium.launch();
+  let failed = 0;
+  let scanned = 0;
+  for (const width of [1280, 390]) {
+    const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 800 }, reducedMotion: 'reduce' });
+    for (const [page, path, open] of pages) {
+      const tab = await ctx.newPage();
+      await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
+      const opener = open?.[width < 600 ? 'phone' : 'wide'];
+      if (open && !opener) {
+        await tab.close();
+        continue;
+      }
+      if (opener) await tab.click(opener);
+      await tab.waitForTimeout(400);
+      // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
+      const label = `${page.padEnd(12)} ${width}px ${path}`;
+      let res;
+      try {
+        res = await new AxeBuilder({ page: tab }).include('.ch-root').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+      } catch (e) {
+        failed++;
+        console.log(`FAIL ${label}\n     did not render a Clubhouse page: ${String(e.message).split('\n')[0]}`);
+        await tab.close();
+        continue;
+      }
+      scanned++;
+      if (res.violations.length === 0) console.log(`ok   ${label}`);
+      else {
+        failed++;
+        console.log(`FAIL ${label}`);
+        for (const v of res.violations) {
+          console.log(`     ${v.id} (${v.impact}): ${v.help}`);
+          for (const n of v.nodes.slice(0, 4)) console.log(`       ${n.target.join(' ')}  ${n.failureSummary?.split('\n')[1]?.trim() ?? ''}`);
+          if (v.nodes.length > 4) console.log(`       …and ${v.nodes.length - 4} more`);
+        }
+      }
+      await tab.close();
+    }
+    await ctx.close();
+  }
+  await browser.close();
+  console.log(failed ? `\nclubhouse:a11y: ${failed} page(s) with violations` : `\nclubhouse:a11y clean: ${scanned} page(s)`);
+  process.exit(failed ? 1 : 0);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) main();

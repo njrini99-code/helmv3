@@ -54,6 +54,10 @@ export function ClubhouseFrame({
         {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
         <div className={`ch-root ${clubhouseFontVariables}`} data-ui="clubhouse" data-motion={showAnimations ? undefined : 'off'}>
           <ToastProvider>
+            {/* The first Tab on any page: jump past the navigation to the page itself. */}
+            <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+              Skip to content
+            </a>
             <div className="ch-app">
               <Sidebar userData={userData} shell={shell} pathname={pathname} />
               <div className="ch-canvas" id="ch-canvas">

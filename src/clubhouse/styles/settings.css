@@ -82,6 +82,9 @@
   background: rgb(21 90 57 / 0.07);
   color: var(--ch-green-700);
 }
+.ch-set-rail__i.is-on span span {
+  color: var(--ch-text-secondary);
+}
 .ch-set-rail__i.is-on b {
   font-weight: 600;
   color: var(--ch-green-800);
@@ -407,7 +410,7 @@
 }
 .ch-set-na {
   font: 400 12px/1 var(--ch-font-sans);
-  color: var(--ch-ink-400);
+  color: var(--ch-text-tertiary);
 }
 .ch-set-bulk {
   display: flex;

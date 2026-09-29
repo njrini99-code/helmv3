@@ -25,6 +25,8 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
   return (
     <m.div
       key={routeKey}
+      id="ch-content"
+      tabIndex={-1}
       className="ch-route"
       initial={first.current || reduced ? false : CH_ROUTE.initial}
       animate={CH_ROUTE.animate}

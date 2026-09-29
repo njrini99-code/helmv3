@@ -615,5 +615,5 @@
   display: flex;
   justify-content: space-between;
   font: 400 11.5px/1 var(--ch-font-sans);
-  color: var(--ch-ink-400);
+  color: var(--ch-text-tertiary);
 }
