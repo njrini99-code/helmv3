@@ -17,6 +17,11 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  isGradedPrediction,
+  landedInInterval,
+} from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
+import { INVALID_HORIZON_CATEGORY } from '@/lib/coachhelm/v2/learning/outcome-validator';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 // ============================================================================
@@ -413,7 +418,10 @@ async function getPredictionPerformanceImpl(
     // Aggregate error distribution
     const errorCounts: Record<string, number> = {};
     let totalErrors = 0;
-    for (const p of performance) {
+    // Latest snapshot only: error_distribution holds COUNTS over a rolling
+    // 30-day window, and adjacent snapshots share ~29 days, so summing them
+    // multi-counted every prediction (31,347 "made" for 1,148 real ones).
+    for (const p of [latest]) {
       const dist = (p.error_distribution as Record<string, number>) || {};
       for (const [cat, count] of Object.entries(dist)) {
         errorCounts[cat] = (errorCounts[cat] || 0) + count;
@@ -1126,7 +1134,7 @@ async function calculatePredictionPerformanceFromPredictions(
     const { data: predictions, error } = await fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_predictions')
-        .select('created_at, validated_at, was_accurate, confidence, predicted_value, actual_value, error_category')
+        .select('created_at, validated_at, was_accurate, confidence, predicted_value, predicted_low, predicted_high, actual_value, error_category')
         .in('player_id', playerIds)
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString())
@@ -1165,28 +1173,32 @@ async function calculatePredictionPerformanceFromPredictions(
     let underconfident = 0;
 
     for (const pred of predictions) {
+      // A retired invalid-horizon prediction could never validate; it is not
+      // a prediction made, let alone a miss.
+      if (pred.error_category === INVALID_HORIZON_CATEGORY) continue;
       const date = pred.created_at?.split('T')[0] || 'unknown';
       const existing = byDate.get(date) || { total: 0, validated: 0, accuracySum: 0 };
       existing.total++;
       totalPredictions++;
 
-      if (pred.validated_at) {
+      // Same rule as the rollup writer: graded = a real actual on a live row.
+      // A validated_at with no actual (415 legacy rows) is not a miss.
+      if (isGradedPrediction(pred)) {
         existing.validated++;
         validatedPredictions++;
-        const accuracy = pred.was_accurate ? 1 : 0;
+        const accurate = landedInInterval(pred) ?? pred.was_accurate === true;
+        const accuracy = accurate ? 1 : 0;
         existing.accuracySum += accuracy;
         totalAccuracy += accuracy;
-        if (pred.actual_value !== null && pred.actual_value !== undefined) {
-          totalError += Math.abs((pred.predicted_value || 0) - pred.actual_value);
-          errorSampleCount++;
-        }
+        totalError += Math.abs((pred.predicted_value || 0) - Number(pred.actual_value));
+        errorSampleCount++;
 
         // Confidence calibration
         const confidence = pred.confidence || 0.5;
         const bucket = Math.min(4, Math.max(0, Math.floor(confidence * 5)));
         const bucketData = confidenceBuckets.get(bucket) || { count: 0, accurateCount: 0 };
         bucketData.count++;
-        if (pred.was_accurate) bucketData.accurateCount++;
+        if (accurate) bucketData.accurateCount++;
         confidenceBuckets.set(bucket, bucketData);
 
         // Error categories

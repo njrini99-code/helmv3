@@ -32,6 +32,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isWindowedMetric } from './window-metric-ids';
+import { isCountableRound } from '@/lib/golf/round-countable';
 
 // Re-export so existing importers (goal-progress) keep their import path; the
 // pure source lives in window-metric-ids.ts (client-safe, no Supabase).
@@ -69,11 +70,19 @@ const SELECT_FIELDS =
 interface RoundRow {
   id: string;
   round_date: string | null;
+  holes_played: number | null;
+  total_score: number | null;
+  front_nine: number | null;
+  back_nine: number | null;
+  total_putts: number | null;
 }
 
 /**
- * Load every completed round (with its per-round stats) a player has played on
- * or after `sinceIso`, newest-irrelevant order. ONE round query + ONE stats
+ * Load every completed, COUNTABLE round (with its per-round stats) a player has
+ * played on or after `sinceIso` and, when `untilIso` is given, before that
+ * day, newest-irrelevant order. Countable = src/lib/golf/round-countable.ts:
+ * the 37-stroke Sep 17 round carried SG +34.51 and would otherwise have moved
+ * every windowed SG goal it fell inside. ONE round query + ONE stats
  * query regardless of how many goals share the player, so the caller computes
  * each goal's window in-memory by date-filtering this set. Returns [] on any
  * error or when the player has no qualifying rounds (caller then falls back to
@@ -84,20 +93,31 @@ export async function loadPlayerWindowRounds(
   supabase: SupabaseClient<any, any, any>,
   playerId: string,
   sinceIso: string,
+  untilIso?: string,
 ): Promise<WindowRound[]> {
   // round_date is a DATE; compare on the date portion of the goal start.
   const sinceDate = sinceIso.slice(0, 10);
 
-  const { data: rounds, error: rErr } = (await fromUntyped(supabase, 'golf_rounds')
-    .select('id, round_date')
+  let query = fromUntyped(supabase, 'golf_rounds')
+    .select('id, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
     .eq('player_id', playerId)
     .eq('is_test', false)
     .eq('status', 'completed')
-    .gte('round_date', sinceDate)) as { data: RoundRow[] | null; error: unknown };
+    .gte('round_date', sinceDate);
+  if (untilIso) query = query.lt('round_date', untilIso.slice(0, 10));
+  const { data: rounds, error: rErr } = (await query) as { data: RoundRow[] | null; error: unknown };
   if (rErr || !rounds || rounds.length === 0) return [];
 
   const dateByRound = new Map<string, string>();
-  for (const r of rounds) if (r.round_date) dateByRound.set(r.id, r.round_date);
+  const roundById = new Map<string, RoundRow>();
+  for (const r of rounds) {
+    if (!r.round_date) continue;
+    // Length / fully-recorded / stroke-floor checks here; the SG ceiling needs
+    // the stats row and is applied below.
+    if (!isCountableRound(r)) continue;
+    dateByRound.set(r.id, r.round_date);
+    roundById.set(r.id, r);
+  }
   const roundIds = [...dateByRound.keys()];
   if (roundIds.length === 0) return [];
 
@@ -110,6 +130,13 @@ export async function loadPlayerWindowRounds(
   if (sErr || !stats) return [];
 
   return stats
+    .filter((st) => {
+      const r = roundById.get(st.round_id);
+      return (
+        r != null &&
+        isCountableRound({ ...r, strokes_gained_total: st.strokes_gained_total })
+      );
+    })
     .map(({ round_id, ...rest }) => ({
       round_date: dateByRound.get(round_id) ?? '',
       ...rest,

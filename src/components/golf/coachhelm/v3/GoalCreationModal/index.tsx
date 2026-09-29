@@ -41,6 +41,11 @@ import {
   type MetricId,
 } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
+import { isWindowedMetric } from '@/lib/coachhelm/v3/goals/window-metric-ids';
+
+// Only stats whose progress is measured over the goal window (audit row 20):
+// createGoal refuses the rest, whose "progress" was the all-time standing.
+const GOAL_METRIC_IDS = METRIC_IDS.filter(isWindowedMetric);
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { Button } from '@/components/fairway/controls/button';
 import { Input } from '@/components/ui/input';
@@ -228,7 +233,7 @@ export function GoalCreationModal({
               onValueChange={(v) => {
                 if (v) setMetricId(v as MetricId);
               }}
-              options={METRIC_IDS.map((id) => ({
+              options={GOAL_METRIC_IDS.map((id) => ({
                 value: id,
                 label: METRIC_RENDER_CONFIG[id].display_label,
               }))}
