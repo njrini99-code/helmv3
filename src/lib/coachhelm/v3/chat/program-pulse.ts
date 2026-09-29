@@ -29,6 +29,7 @@ import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { RECENT_PLAYER_WINDOW_DAYS, recentWindowStart, recentlyActivePlayerIds } from '@/lib/coachhelm/recent-players';
 
 type Sb = SupabaseClient<Database>;
 
@@ -56,6 +57,10 @@ export interface ProgramPulse {
   latest_round_at: string | null;
   /** Roster members with no rounds at all — the honest coverage warning. */
   players_without_rounds: number;
+  /** Roster members with a countable round in the last `recent_window_days`
+   *  days: what the coverage line and the strokes-lost opener count. */
+  players_with_recent_rounds: number;
+  recent_window_days: number;
   active_roster: number;
   /** When this read ran. */
   as_of: string;
@@ -188,6 +193,8 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
       items: [],
       latest_round_at: null,
       players_without_rounds: 0,
+      players_with_recent_rounds: 0,
+      recent_window_days: RECENT_PLAYER_WINDOW_DAYS,
       active_roster: 0,
       as_of: asOf,
     };
@@ -274,6 +281,13 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   const latestRoundAt = rounds[0]?.round_date ?? null;
   const withRounds = new Set(completedRounds.map((r) => r.player_id));
   const withoutRounds = ctx.roster.filter((p) => !withRounds.has(p.id));
+  // Recent coverage (2026-09 audit row 49): countable rounds in the window.
+  // The read above is the newest 400 completed rounds, so a recent round is
+  // never cut by the limit. It carries no is_test filter (Program Pulse row).
+  const recentlyCovered = recentlyActivePlayerIds(
+    rounds,
+    recentWindowStart(new Date(now).toISOString().slice(0, 10)),
+  );
 
   if (withoutRounds.length > 0) {
     items.push({
@@ -450,6 +464,8 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     items,
     latest_round_at: latestRoundAt,
     players_without_rounds: withoutRounds.length,
+    players_with_recent_rounds: ctx.roster.filter((p) => recentlyCovered.has(p.id)).length,
+    recent_window_days: RECENT_PLAYER_WINDOW_DAYS,
     active_roster: ctx.roster.length,
     as_of: asOf,
   };
@@ -469,12 +485,17 @@ export function suggestionsFromPulse(pulse: ProgramPulse, teamName: string): str
     if (item.ask) out.push(item.ask);
     if (out.length >= 3) break;
   }
-  if (pulse.active_roster > 0 && pulse.players_without_rounds < pulse.active_roster) {
-    out.push(`Brief me on ${teamName}`);
-    out.push('Where is the team losing the most strokes?');
-  }
+  out.push(...generalOpeners(pulse, teamName));
   return [...new Set(out)].slice(0, 5);
 }
+
+/**
+ * "Where is the team losing the most strokes?" is a team comparison; with
+ * fewer current players than this it is one or two players' answer offered as
+ * the team's (2026-09 audit row 49).
+ */
+export const MIN_COVERED_FOR_STROKES_OPENER = 3;
+const STROKES_OPENER = 'Where is the team losing the most strokes?';
 
 /**
  * The openers that are NOT tied to a specific finding.
@@ -487,11 +508,15 @@ export function suggestionsFromPulse(pulse: ProgramPulse, teamName: string): str
  *
  * Gated on the same coverage rule as the mixed list: offering "Where is the
  * team losing the most strokes?" to a program with no recorded rounds
- * advertises an answer that does not exist.
+ * advertises an answer that does not exist, and below
+ * `MIN_COVERED_FOR_STROKES_OPENER` recently covered players it is not a team
+ * answer.
  */
 export function generalOpeners(pulse: ProgramPulse, teamName: string): string[] {
   if (pulse.active_roster === 0 || pulse.players_without_rounds >= pulse.active_roster) return [];
-  return [`Brief me on ${teamName}`, 'Where is the team losing the most strokes?'];
+  const out = [`Brief me on ${teamName}`];
+  if (pulse.players_with_recent_rounds >= MIN_COVERED_FOR_STROKES_OPENER) out.push(STROKES_OPENER);
+  return out;
 }
 
 /**
@@ -500,15 +525,23 @@ export function generalOpeners(pulse: ProgramPulse, teamName: string): string[] 
  * Stated as what IS recorded rather than what is missing. "2 players have no
  * rounds" reads as a fault list; "6 of 8 players have recorded rounds" is the
  * same fact as the denominator on every number above it, which is what the
- * coach is actually being asked to weigh.
+ * coach is actually being asked to weigh. Counted over the recent window
+ * (`recent_window_days`), not all time: a player whose last round was in
+ * April is not covering today's answers.
  */
 export function coverageLine(pulse: ProgramPulse): string | null {
   if (pulse.active_roster === 0) return null;
-  const withRounds = pulse.active_roster - pulse.players_without_rounds;
-  if (withRounds === pulse.active_roster) {
-    return `All ${pulse.active_roster} players have recorded rounds.`;
+  const days = pulse.recent_window_days;
+  const recent = pulse.players_with_recent_rounds;
+  if (recent === 0) {
+    const withRounds = pulse.active_roster - pulse.players_without_rounds;
+    if (withRounds === 0) return `No player has a recorded round yet.`;
+    return `No player has a round in the last ${days} days. ${withRounds} of ${pulse.active_roster} have older rounds; answers draw on those.`;
   }
-  return `${withRounds} of ${pulse.active_roster} players have recorded rounds. Answers cover those ${withRounds}.`;
+  if (recent === pulse.active_roster) {
+    return `All ${pulse.active_roster} players have a round in the last ${days} days.`;
+  }
+  return `${recent} of ${pulse.active_roster} players have a round in the last ${days} days. Answers cover those ${recent}.`;
 }
 
 /**
