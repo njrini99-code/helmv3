@@ -49,7 +49,7 @@ screen.
 | Stats (team) | /golf/dashboard/stats | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | Stats (player) | /golf/dashboard/stats?player= (coach), /golf/dashboard/stats (player) | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
-| Messages | /golf/dashboard/messages (coach and player) | done | done | doing | doing | doing | todo | todo | doing | doing | doing | todo |
+| Messages | /golf/dashboard/messages (coach and player) | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role) | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |

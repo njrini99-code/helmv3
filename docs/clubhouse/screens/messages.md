@@ -34,7 +34,7 @@ they return.
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
 - [x] Null, zero and "early read" render differently, and windows and samples are stated
 - [x] Times format in the team timezone on server and client alike, so labels never mismatch on hydration
-- [ ] Unit tests cover the loader's derivations (thread grouping, rail sections and time labels still need tests)
+- [x] Unit tests cover thread grouping, rail sections, zone-correct time labels and filters (`logic.test.ts`, "messages model")
 
 ## states
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands

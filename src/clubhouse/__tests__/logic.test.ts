@@ -205,3 +205,43 @@ describe('calendar model', async () => {
     expect(later.some(([s]) => s === 13)).toBe(true);
   });
 });
+
+describe('messages model', async () => {
+  const M = await import('../screens/messages/model');
+  const TZ = 'America/New_York';
+  const NOW = '2026-10-14T18:40:00Z';
+  const m = (id: string, senderId: string, at: string) => ({ id, senderId, text: id, at, mine: senderId === 'me', seen: false, failed: null, edited: false, deleted: false, hasAttachments: false });
+
+  it('labels rail times by distance from today, in the team zone', () => {
+    expect(M.railTime('2026-10-14T18:31:00Z', NOW, TZ)).toBe('2:31 PM');
+    expect(M.railTime('2026-10-13T20:10:00Z', NOW, TZ)).toBe('Yesterday');
+    expect(M.railTime('2026-10-11T21:02:00Z', NOW, TZ)).toBe('Sun');
+    expect(M.railTime('2026-10-01T12:00:00Z', NOW, TZ)).toBe('Oct 1');
+    // 11:30 PM Eastern on the 13th is already the 14th in UTC: still yesterday for the team.
+    expect(M.railTime('2026-10-14T03:30:00Z', NOW, TZ)).toBe('Yesterday');
+    expect(M.railTime(null, NOW, TZ)).toBe('');
+  });
+
+  it('sorts conversations into today, this week and earlier', () => {
+    expect(M.sectionOf('2026-10-14T13:00:00Z', NOW, TZ)).toBe('today');
+    expect(M.sectionOf('2026-10-09T13:00:00Z', NOW, TZ)).toBe('week');
+    expect(M.sectionOf('2026-10-02T13:00:00Z', NOW, TZ)).toBe('earlier');
+  });
+
+  it('groups a sender’s run within five minutes and puts day separators between days', () => {
+    const items = M.threadItems(
+      [m('a', 'dan', '2026-10-13T22:20:00Z'), m('b', 'dan', '2026-10-13T22:22:00Z'), m('c', 'dan', '2026-10-13T22:40:00Z'), m('d', 'me', '2026-10-14T17:52:00Z')],
+      NOW,
+      TZ,
+    );
+    expect(items.map((i) => (i.kind === 'day' ? i.label : `${i.m.id}${i.first ? 'F' : ''}${i.last ? 'L' : ''}`))).toEqual(['Yesterday', 'aF', 'bL', 'cFL', 'Today', 'dFL']);
+  });
+
+  it('filters by unread, groups and search across title and preview', () => {
+    const c = (id: string, extra: object) => ({ id, group: false, title: id, subtitle: '', memberIds: [], memberCount: 2, unread: 0, lastAt: null, lastSenderId: null, lastText: '', creatorId: null, ...extra });
+    const list = [c('Varsity team', { group: true, unread: 3 }), c('Jonah Okafor', { lastText: 'Can we push to 5?' }), c('Dan', {})];
+    expect(M.filterConvs(list, 'unread', '').map((x) => x.id)).toEqual(['Varsity team']);
+    expect(M.filterConvs(list, 'groups', '').map((x) => x.id)).toEqual(['Varsity team']);
+    expect(M.filterConvs(list, 'all', 'push').map((x) => x.id)).toEqual(['Jonah Okafor']);
+  });
+});
