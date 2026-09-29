@@ -40,4 +40,3 @@ export function EmptyState({
 export function Skeleton({ width, height = 12, radius = 6 }: { width?: number | string; height?: number; radius?: number }) {
   return <span className="ch-skel" style={{ width, height, borderRadius: radius }} aria-hidden="true" />;
 }
-

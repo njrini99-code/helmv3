@@ -124,7 +124,7 @@ function App() {
             </div>
             <div className="cal-tools">
               {away && <Button size="sm" leftIcon="calendar-check" onClick={goToday}>Today</Button>}
-              
+
               <div className="popwrap"><IconButton icon="ellipsis" label="More" variant="secondary" onClick={() => setMore(!more)} />
                 {more && <PopoverPanel items={[{ label: 'Add to calendar app', icon: 'rss', onSelect: () => { setMore(false); setSubs(true); } }, { label: 'My busy time', icon: 'lock', onSelect: () => { setMore(false); toast('Busy time opens here', 'lock'); } }, { label: 'Conflicts', icon: 'triangle-alert', onSelect: () => { setMore(false); setInsp({ kind: 'conflict', id: 'k1' }); } }, 'separator', { label: 'Print week', icon: 'printer' }]} />}
               </div>
