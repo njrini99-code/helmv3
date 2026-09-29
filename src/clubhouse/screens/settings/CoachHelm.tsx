@@ -12,7 +12,7 @@ import { Slider } from '../../ui/Slider';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
-import { isOffline } from '../../lib/use-action';
+import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { moveOrder, orderToPriorities, PRIORITY_LABEL, priorityOrder, type ChCoachHelmSettings, type ChSettingsData, type ChSettingsWrites, type PriorityKey } from './model';
 import { Card, ReadFailed, Row, SettingSwitch, useInstantSave } from './parts';
 
@@ -64,6 +64,7 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
     queue.current = queue.current.then(async () => {
       let ok = false;
       let error: string | undefined;
+      const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
       try {
         const r = await writes.savePhilosophy(idRef.current, patch);
         ok = !!(r.success || r.ok);
@@ -71,6 +72,8 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
         if (ok && r.data?.id) idRef.current = r.data.id;
       } catch (err) {
         chReport(err, { surface: 'settings.coachhelm', action: 'savePhilosophy' });
+      } finally {
+        window.clearTimeout(slow);
       }
       inflight.current -= 1;
       if (ok) {

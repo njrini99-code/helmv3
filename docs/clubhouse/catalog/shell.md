@@ -43,9 +43,9 @@ of the shell (sidebar, tab bar, top bar) is catalogued in the shell pass.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-1901 | The device goes offline | A banner under the top bar: "You're offline. You can keep reading; changes will wait until you reconnect." It leaves when the connection returns | `OfflineBanner`, `online`/`offline` events, warning haptic | shell.test › CH-1901 |
-| CH-1902 | A save takes longer than 5 seconds | "Still saving…" + "This is taking longer than usual. Keep this page open." (once per save) | `useAction`, `CH_SLOW_SAVE_AFTER` | shell.test › CH-1902 |
+| CH-1902 | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) | "Still saving…" + "This is taking longer than usual. Keep this page open." (once per save) | `useAction`, `useInstantSave`, the CoachHelm queue; `CH_SLOW_SAVE_AFTER` | shell.test › CH-1902 |
 | CH-1903 | Someone saves while offline | "Couldn't save your profile: you're offline" (the action named) + "Reconnect, then try again. Nothing was changed." Nothing is sent and switches don't flip | `useAction`, `useInstantSave`, CoachHelm queue | shell.test › CH-1903 |
-| CH-1951 | Someone clicks the same thing over and over (rage click) | Nothing on screen; recorded with a session replay | Sentry Replay (production), masked text and inputs | existing |
-| CH-1952 | A click that does nothing (dead click) | Nothing on screen; recorded with a replay | Sentry Replay | existing |
-| CH-1953 | A slow response to a click (slow click) | Nothing on screen; recorded with a replay | Sentry Replay | existing |
-| CH-1954 | The page is slow to respond or shifts after loading (INP, CLS, LCP) | Nothing on screen; measured per page | Sentry browser tracing (web vitals) | existing |
+| CH-1951 | Someone clicks the same thing over and over (rage click) | Nothing on screen | Sentry Replay in production. Partial: only 10% of sessions are recorded, plus every session that has an error, so most rage clicks are not seen. No Clubhouse-side detector yet | existing |
+| CH-1952 | A click that does nothing (dead click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |
+| CH-1953 | A slow response to a click (slow click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |
+| CH-1954 | The page is slow to respond or shifts after loading (INP, CLS, LCP) | Nothing on screen | Sentry browser tracing, 20% of sessions | existing |

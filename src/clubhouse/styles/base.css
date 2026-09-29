@@ -26,6 +26,14 @@
 .ch-root :focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
+  /* The app's global Tailwind focus ring (globals.css) is not Clubhouse's. */
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+}
+/* Text fields draw their own focus (green ring, underline, or the wrapper's
+   focus-within), so the ring above would double it. */
+.ch-root :is(.ch-input, .ch-textarea, .ch-ed__title, .ch-search input, .ch-select select, .ch-ms-comp__field textarea):focus-visible {
+  outline: none;
 }
 .ch-root h1,
 .ch-root h2,

@@ -11,7 +11,7 @@ import { Switch } from '../../ui/Switch';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chReport, chTrail } from '../../lib/track';
-import { isOffline } from '../../lib/use-action';
+import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { useToast } from '../../ui/Toast';
 import type { ChProblem, ChResult } from './model';
@@ -307,12 +307,15 @@ export function useInstantSave(surface: string) {
     op.apply();
     setPending((s) => new Set(s).add(op.key));
     chTrail(`settings ${surface} ${op.key}`);
+    const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
     let r: ChResult;
     try {
       r = await op.write();
     } catch (err) {
       chReport(err, { surface: `settings.${surface}`, action: op.key });
       r = { success: false };
+    } finally {
+      window.clearTimeout(slow);
     }
     setPending((s) => {
       const n = new Set(s);
