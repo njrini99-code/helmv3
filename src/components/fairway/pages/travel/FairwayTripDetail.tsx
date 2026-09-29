@@ -123,7 +123,7 @@ function SheetStep({
         />
       </span>
       <div className="min-w-0 pb-5 pt-3.5">
-        <p className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</p>
+        <p className="font-fw-sans text-caption font-medium text-text-tertiary">{label}</p>
         <div className="mt-0.5 font-fw-sans text-body text-text-primary">{children}</div>
       </div>
     </li>
@@ -192,7 +192,7 @@ function SheetLink({ href, children, external }: { href: string; children: React
 function SheetBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="border-t border-border-subtle pt-4">
-      <p className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</p>
+      <p className="font-fw-sans text-caption font-medium text-text-tertiary">{label}</p>
       <div className="mt-1 font-fw-sans text-body text-text-primary">{children}</div>
     </div>
   );

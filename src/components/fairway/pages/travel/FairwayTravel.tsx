@@ -517,7 +517,7 @@ export function FairwayTravel({
 
             {nextTrip || comingUp.length > 0 ? (
               <section aria-labelledby="coming-up-heading" className={cn('flex flex-col gap-2', comingUp.length === 0 && 'hidden lg:flex')}>
-                <h2 id="coming-up-heading" className="px-1 font-fw-sans text-eyebrow uppercase text-text-tertiary">
+                <h2 id="coming-up-heading" className="px-1 font-fw-sans text-caption font-medium text-text-tertiary">
                   Coming up
                 </h2>
                 {nextTrip ? (

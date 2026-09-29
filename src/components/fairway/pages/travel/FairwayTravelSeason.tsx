@@ -51,7 +51,7 @@ export function FairwayTravelSeason({ itineraries, now, selectedId, nextId, onSe
 
   return (
     <section aria-labelledby="season-heading" className="rounded-card border border-border-subtle bg-surface px-5 pb-3 pt-4">
-      <h2 id="season-heading" className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+      <h2 id="season-heading" className="font-fw-sans text-caption font-medium text-text-tertiary">
         Travel season
       </h2>
 
@@ -60,7 +60,7 @@ export function FairwayTravelSeason({ itineraries, now, selectedId, nextId, onSe
         {months.map((m) => (
           <div key={m.label + m.left} aria-hidden className="absolute inset-y-0" style={{ left: `${m.left}%` }}>
             <span className="absolute bottom-5 top-0 border-l border-border-subtle" />
-            <span className="absolute bottom-0 left-1 font-fw-sans text-eyebrow uppercase text-text-tertiary">{m.label}</span>
+            <span className="absolute bottom-0 left-1 font-fw-sans text-caption font-medium text-text-tertiary">{m.label}</span>
           </div>
         ))}
 
@@ -72,7 +72,7 @@ export function FairwayTravelSeason({ itineraries, now, selectedId, nextId, onSe
           <div aria-hidden className="absolute bottom-5 top-0" style={{ left: `${pct(today.getTime())}%` }}>
             <span className="absolute bottom-0 top-4 w-0.5 -translate-x-1/2 rounded-full bg-accent-fill" />
             {/* Label sits above the line, centred on the marker, clear of the trip dots. */}
-            <span className="absolute top-0 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-wash px-1.5 font-fw-sans text-eyebrow uppercase text-accent-ink">
+            <span className="absolute top-0 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-wash px-1.5 font-fw-sans text-caption font-medium text-accent-ink">
               Today
             </span>
           </div>

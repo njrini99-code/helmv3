@@ -63,7 +63,7 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
       <span className="flex w-full items-start gap-4">
         {/* Date block: the scan key for a list of trips. */}
         <span className="flex w-10 shrink-0 flex-col items-center pt-0.5 tabular-nums" aria-hidden>
-          <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{month}</span>
+          <span className="font-fw-sans text-caption font-medium text-text-tertiary">{month}</span>
           <span className="font-fw-display text-h3 text-text-primary">{day}</span>
         </span>
         <span className="block min-w-0 flex-1">

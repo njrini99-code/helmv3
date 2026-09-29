@@ -35,7 +35,7 @@ export interface FairwayNextTripProps {
 function PassField({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={cn('min-w-0', className)}>
-      <dt className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</dt>
+      <dt className="font-fw-sans text-caption font-medium text-text-tertiary">{label}</dt>
       <dd className="mt-0.5 truncate font-fw-display text-h3 text-text-primary tabular-nums">{children}</dd>
     </div>
   );
@@ -61,8 +61,8 @@ export function FairwayNextTrip({ itinerary, now, onOpen }: FairwayNextTripProps
     >
       {/* Carrier band */}
       <div className="flex items-center justify-between gap-3 bg-accent-fill px-5 py-2.5 text-text-on-accent-fill">
-        <p className="font-fw-sans text-eyebrow uppercase">{onTheRoad ? 'On the road' : 'Next trip'}</p>
-        <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow uppercase">
+        <p className="font-fw-sans text-caption font-medium">{onTheRoad ? 'On the road' : 'Next trip'}</p>
+        <p className="flex items-center gap-1.5 font-fw-sans text-caption font-medium">
           <Icon className="h-4 w-4" aria-hidden />
           {transportLabel(itinerary.transportation_type)}
         </p>
@@ -78,7 +78,7 @@ export function FairwayNextTrip({ itinerary, now, onOpen }: FairwayNextTripProps
           {/* FROM → TO */}
           <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
             <div className="min-w-0">
-              <p className="font-fw-sans text-eyebrow uppercase text-text-tertiary">From</p>
+              <p className="font-fw-sans text-caption font-medium text-text-tertiary">From</p>
               {from ? (
                 <a
                   href={mapsHref(from)}
@@ -100,7 +100,7 @@ export function FairwayNextTrip({ itinerary, now, onOpen }: FairwayNextTripProps
               <span className="h-px flex-1 border-t border-dashed border-border-strong" />
             </div>
             <div className="min-w-0 text-right">
-              <p className="font-fw-sans text-eyebrow uppercase text-text-tertiary">To</p>
+              <p className="font-fw-sans text-caption font-medium text-text-tertiary">To</p>
               <p className="mt-0.5 line-clamp-2 font-fw-display text-h3 text-text-primary" title={to}>
                 {toShort}
               </p>
@@ -121,7 +121,7 @@ export function FairwayNextTrip({ itinerary, now, onOpen }: FairwayNextTripProps
             {itinerary.hotel_name ? <PassField label="Stay">{itinerary.hotel_name}</PassField> : null}
             {itinerary.uniform_requirements ? (
               <div className="col-span-2 min-w-0">
-                <dt className="font-fw-sans text-eyebrow uppercase text-text-tertiary">Wear</dt>
+                <dt className="font-fw-sans text-caption font-medium text-text-tertiary">Wear</dt>
                 <dd className="mt-0.5 font-fw-sans text-body-sm text-text-primary">{itinerary.uniform_requirements}</dd>
               </div>
             ) : null}
@@ -144,7 +144,7 @@ export function FairwayNextTrip({ itinerary, now, onOpen }: FairwayNextTripProps
                   {stubBig}
                 </p>
                 {stubUnit ? (
-                  <p className="mt-1.5 font-fw-sans text-eyebrow uppercase text-text-tertiary">{stubUnit}</p>
+                  <p className="mt-1.5 font-fw-sans text-caption font-medium text-text-tertiary">{stubUnit}</p>
                 ) : null}
               </>
             ) : (
