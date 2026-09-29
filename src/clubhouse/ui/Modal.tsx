@@ -45,6 +45,8 @@ export function Modal({
   }, [open]);
 
   return (
+    // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={ref}
       className="ch-modal"

@@ -239,6 +239,16 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return out;
   }, [liveIds, reactions.rows, data.viewerUserId]);
 
+  // Stable across renders: the attachment tiles key their fetch on it, and signed URLs cost a round trip.
+  const loadAttachments = useCallback(async (messageId: string) => {
+    const res = await getGolfMessageAttachments(messageId);
+    if (res.error || !res.attachments) {
+      chReport(new Error(res.error || 'attachments read failed'), { surface: 'messages.attachments', severity: 'low' });
+      return null;
+    }
+    return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null }));
+  }, []);
+
   const api: ChMessagesApi = {
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     timeZone: data.timeZone,
@@ -329,14 +339,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       if (!emoji) return;
       void Promise.resolve(reactions.setReaction(messageId, emoji, active)).catch((err) => fail('react', err, "Couldn't save the reaction", 'Try again in a moment.'));
     },
-    attachments: async (messageId) => {
-      const res = await getGolfMessageAttachments(messageId);
-      if (res.error || !res.attachments) {
-        chReport(new Error(res.error || 'attachments read failed'), { surface: 'messages.attachments', severity: 'low' });
-        return null;
-      }
-      return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null }));
-    },
+    attachments: loadAttachments,
     members,
     membersError,
     leave: async () => {

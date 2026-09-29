@@ -745,3 +745,14 @@ conversation-membership boundary when roster-scoped profile reads cannot
 resolve them. This does not broaden customer profile RLS, return email
 addresses, or expose a general profile directory. A truly missing profile
 keeps a generic member label.
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, `/golf/dashboard/messages` is a server page that renders the Clubhouse Messages view
+(`src/clubhouse/routes/messages.tsx`) for coaches and players; otherwise it renders `FairwayMessages` as before.
+The Clubhouse view reuses `useGolfConversations`, `useGolfMessages`, `useMessageReactions` and
+`useMessageAttachments` unchanged, plus `createGolfConversation`, `createGolfTeamBroadcast` (coach groups),
+`getGolfConversationParticipantIdentities`, `getGolfMessageAttachments` and `leaveGolfGroup`. The server loads only
+the directory of who may be messaged (org coaches and active team players) and the team timezone. Players start
+direct threads only, as in the Fairway sheet. Reactions render as icons (stored values unchanged).
+Checklist and decisions: `docs/clubhouse/screens/messages.md`, `docs/clubhouse/PROGRESS.md` (D-13 to D-15).

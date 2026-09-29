@@ -9,8 +9,8 @@ Data: the conversation list and threads stay on the existing realtime hooks (`us
 the viewer may message (the program's coaches and the team's players, the audience
 `createGolfConversation` validates) and the team timezone for labels.
 
-Player permissions: players message their coaches and teammates and can start a group with them; coaches
-create named team groups (`createGolfTeamBroadcast`). RLS and the actions decide; the screen reports what
+Player permissions: players start direct threads with their coaches and teammates (as in the current app);
+coaches also create named team groups (`createGolfTeamBroadcast`). RLS and the actions decide; the screen reports what
 they return.
 
 ## spec

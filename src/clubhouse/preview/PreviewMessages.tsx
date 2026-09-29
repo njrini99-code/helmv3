@@ -84,6 +84,8 @@ const baseReactions: Record<string, ChReaction[]> = {
   ],
 };
 
+const previewAttachments = async () => [{ id: 'a1', name: 'Room list · Pinehurst.pdf', size: 48 * 1024, mime: 'application/pdf', url: null }];
+
 export function PreviewMessages({ state }: { state?: string }) {
   const toast = useToast();
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : baseConvs);
@@ -154,7 +156,7 @@ export function PreviewMessages({ state }: { state?: string }) {
         }
         return { ...r, [messageId]: list.filter((x) => x.count > 0) };
       }),
-    attachments: async () => [{ id: 'a1', name: 'Room list · Pinehurst.pdf', size: 48 * 1024, mime: 'application/pdf', url: null }],
+    attachments: previewAttachments,
     members: members.filter((m) => m.userId === 'me' || all.includes(m.userId)),
     membersError: false,
     leave: async () => true,

@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getAttendanceReport, markAttendance, type AttendanceMark } from '@/app/golf/actions/attendance';
 import { respondToEvent } from '@/app/golf/actions/golf';
+import { readRsvpLockCode, rsvpLockMessage } from '@/hooks/useRSVP';
 import { Avatar } from '../../ui/Avatar';
 import { Badge, type BadgeTone } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -266,12 +267,16 @@ function Responses({ e }: { e: ChCalEvent }) {
   );
 }
 
-function PlayerReply({ e, playerId, onDone }: { e: ChCalEvent; playerId: string; onDone: () => void }) {
+function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: string; now: ChNow; onDone: () => void }) {
   const current = e.rsvp[playerId] ?? 'pending';
   const [value, setValue] = useState<ChRsvp>(current);
   const reply = useAction(
     'calendar.rsvp',
-    async (status: 'accepted' | 'tentative' | 'declined') => respondToEvent(e.id, status),
+    async (status: 'accepted' | 'tentative' | 'declined') => {
+      const r = await respondToEvent(e.id, status);
+      // Lock reasons (deadline, started, cancelled) come back as codes; say which one.
+      return r.success ? r : { success: false, error: rsvpLockMessage(readRsvpLockCode(r), r.error).replace(' — ', '. ').replace(/^RSVPs/, 'Replies') };
+    },
     (status) => ({
       done: status === 'accepted' ? `You’re going to ${e.title}` : status === 'tentative' ? `Marked maybe for ${e.title}` : `Coach knows you can’t make ${e.title}`,
       failed: `Couldn't send your reply for ${e.title}`,
@@ -286,7 +291,19 @@ function PlayerReply({ e, playerId, onDone }: { e: ChCalEvent; playerId: string;
     if (res.success) onDone();
     else setValue(prev);
   };
+  const started = e.date < now.date || (e.date === now.date && (e.allDay || (e.start ?? 0) <= now.hour));
   if (e.cancelled) return null;
+  if (started) {
+    return (
+      <div className="ch-in__sec">
+        <div className="ch-in__sechead">
+          <b>Your reply</b>
+          <span>{current === 'pending' ? 'No reply sent' : RSVP_LABEL[current][0]}</span>
+        </div>
+        <p className="ch-in__quiet">Replies close once an event starts.</p>
+      </div>
+    );
+  }
   return (
     <div className="ch-in__sec">
       <div className="ch-in__sechead">
@@ -380,7 +397,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           {first(ctx.people.get(overlap.who)?.name)} is busy {fmtHour(overlap.from, false)}–{fmtHour(overlap.to)}.
         </Warn>
       )}
-      {!coach && ctx.viewerPlayerId && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} onDone={ctx.refresh} />}
+      {!coach && ctx.viewerPlayerId && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
       {coach && e.people.length > 0 && (
         <div className="ch-in__sec">
           <div className="ch-in__sechead">

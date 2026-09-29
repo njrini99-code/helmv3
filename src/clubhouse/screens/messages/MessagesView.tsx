@@ -243,15 +243,14 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
 
 /* Thread */
 
-function Attachments({ api, id, mine }: { api: ChMessagesApi; id: string; mine: boolean }) {
+function Attachments({ load, id, mine }: { load: ChMessagesApi['attachments']; id: string; mine: boolean }) {
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     setFailed(false);
-    api
-      .attachments(id)
+    load(id)
       .then((a) => live && (a ? setFiles(a) : setFailed(true)))
       .catch((err) => {
         chReport(err, { surface: 'messages.attachments', severity: 'low' });
@@ -260,7 +259,7 @@ function Attachments({ api, id, mine }: { api: ChMessagesApi; id: string; mine: 
     return () => {
       live = false;
     };
-  }, [api, id, attempt]);
+  }, [load, id, attempt]);
   if (failed) {
     return (
       <button type="button" className="ch-ms-bub ch-ms-bub--file" onClick={() => setAttempt((a) => a + 1)}>
@@ -343,7 +342,7 @@ function Bubble({
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack">
             {m.text && <div className="ch-ms-bub">{m.text}</div>}
-            {m.hasAttachments && <Attachments api={api} id={m.id} mine={m.mine} />}
+            {m.hasAttachments && <Attachments load={api.attachments} id={m.id} mine={m.mine} />}
           </div>
           {!m.failed && (
             <div className="ch-ms-msg__tools">
@@ -880,6 +879,7 @@ function NewMessage({ api, open, onClose }: { api: ChMessagesApi; open: boolean;
       }
     >
       <div className="ch-ms-new">
+        {api.viewer.role === 'coach' && (
         <Segmented<'direct' | 'group'>
           label="Message type"
           value={mode}
@@ -892,6 +892,7 @@ function NewMessage({ api, open, onClose }: { api: ChMessagesApi; open: boolean;
             { value: 'group', label: 'Group' },
           ]}
         />
+        )}
         {coachGroup && (
           <label className="ch-field">
             <span className="ch-field__label">Group name</span>

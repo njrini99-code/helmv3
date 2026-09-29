@@ -107,3 +107,9 @@ Team page
 The player roster owns the standard 16px phone gutter when used as a page. Phone teammates use
 compact rows with one 44px message action; embedded rosters retain their host gutters, and desktop
 cards keep their existing layout. The route skeleton follows the compact player anatomy.
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, coaches get the Clubhouse Roster (`src/clubhouse/screens/roster/`) at `/golf/dashboard/roster`, on
+the existing roster and join-request actions. The status pill is read-only pending owner question Q-1 (inactive
+membership revokes RLS access). Checklist: `docs/clubhouse/screens/roster.md`.

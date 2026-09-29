@@ -172,7 +172,10 @@ export async function loadCalendar(input: {
   const invited = new Map<string, string[]>();
   let rsvpError = false;
   for (const chunk of chunkIds(ids)) {
-    const { data, error } = await supabase.from('golf_event_attendance').select('event_id, player_id, status').in('event_id', chunk).limit(5000);
+    // 200 events x a full roster passes PostgREST's 1,000-row cap: page every chunk.
+    const { data, error } = await fetchAllRowsResult((from, to) =>
+      supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', chunk).order('id', { ascending: true }).range(from, to),
+    );
     if (error) {
       chLogServer('calendar', 'attendance', error, 'calendar');
       rsvpError = true;

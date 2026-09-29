@@ -34,7 +34,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 19 | 2 | 6 | 0 |
+| `POLICY` | 20 | 2 | 6 | 0 |
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
@@ -48,8 +48,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
-| `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 40 | 76 |
+| `INDEX` | 20 | 1 | 7 | 5 |
+| `UNKNOWN` | 156 | 12 | 40 | 78 |
 
 ## Files
 
@@ -58,6 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | - |
+| `.claude/rules/clubhouse.md` | current | - | - | - | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | - |
@@ -550,6 +551,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `.circleci/README.md` | current | - | - | - | - |
 | `.claude/workflows/README.md` | current | - | - | - | - |
+| `design/handoff/README.md` | current | - | - | - | - |
 | `docs/README.md` | current | - | - | yes | 1 |
 | `docs/db/drafts/README.md` | current | - | - | - | - |
 | `e2e/README.md` | current | - | - | yes | 2 |
@@ -576,6 +578,60 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | - |
 | `.github/branch-protection.md` | current | - | - | - | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
+| `design/handoff/_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/readme.md` | current | - | - | - | 1 |
+| `design/handoff/design-system/SKILL.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/buttons/Button.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/buttons/IconButton.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/cards-feature/EventCard.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/cards-feature/RoundCard.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/cards/InsightCard.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/cards/MetricCard.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/DriveDispersion.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/FieldTable.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/PredictionCard.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/PuttingGreen.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/ScoreBoard.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/ScoreTrend.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/StatPlate.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/StrokesGainedRoute.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/charts/YardagePage.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data-table/DataTable.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data/DeltaChip.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data/Numeric.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data/RoundStrip.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data/ScoreMark.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data/Sparkline.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data/StatStrip.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/data/StrokesGainedTornado.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/feedback/EmptyState.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/feedback/InlineNotice.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/feedback/Skeleton.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/feedback/ToastStack.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/forms/Checkbox.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/forms/FormField.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/forms/Input.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/forms/Radio.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/forms/Select.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/forms/Switch.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/forms/TextArea.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/icons/Icon.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/identity/Avatar.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/identity/Badge.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/identity/NamePlate.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/identity/PlayerIdentity.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/navigation/Eyebrow.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/navigation/FairwaySidebar.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/navigation/FairwayTopBar.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/navigation/ViewHeader.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/overlays/ModalShell.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/overlays/PopoverPanel.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/selection/FilterPill.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/selection/Segmented.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/selection/Tabs.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/surfaces/GlassSurface.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/surfaces/Inset.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/components/surfaces/Surface.prompt.md` | current | - | - | - | - |
+| `design/handoff/design-system/readme.md` | current | - | - | - | 1 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 20 |
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | - |
@@ -594,6 +650,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/legacy-backfill-runbook.md` | current | - | - | yes | - |
 | `docs/baseball/stats-architecture.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
+| `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/foundation.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/home.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/roster.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/stats-player.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/stats-team.md` | current | - | - | - | - |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |
