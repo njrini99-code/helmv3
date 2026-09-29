@@ -12933,6 +12933,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/causal-relationships.ts",
+          "anchor": "src/lib/coachhelm/v3/causality/correlation-gate"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-analytics.ts",
           "anchor": "src/lib/coachhelm/v3/insight-visibility"
         },
@@ -13015,6 +13020,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/insights/standing-injection.ts",
           "anchor": "src/lib/coachhelm/v3/standing/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/mining/causal-engine.ts",
+          "anchor": "src/lib/coachhelm/v3/causality/correlation-gate"
         },
         {
           "kind": "import_graph",
