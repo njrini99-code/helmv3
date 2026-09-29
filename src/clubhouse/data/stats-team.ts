@@ -128,6 +128,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   const sample = `${windowRounds.length} ${windowRounds.length === 1 ? 'round' : 'rounds'}`;
   const figures: ChFigure[] = [
     { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(scoring, prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
+    // CH-4209: without D1 benchmarks, greens read against the sample instead of "D1 averages".
     { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(gir, rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: d1Gir != null ? `D1 averages ${Math.round(d1Gir)}%` : sample },
     { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(puttsPer, perRound(prev, 'total_putts')), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
     { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(scramble, rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : sample },

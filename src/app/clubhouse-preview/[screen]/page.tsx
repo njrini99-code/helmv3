@@ -43,6 +43,7 @@ import {
  *
  *   /clubhouse-preview/home   ?state=empty | failed | loading | error
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
+ *   /clubhouse-preview/stats  ?state=empty | failed | partial | loading
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route
@@ -89,6 +90,10 @@ export default async function ClubhousePreview({
           <StatsSkeleton />
         ) : state === 'empty' ? (
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [] }} />
+        ) : state === 'failed' ? (
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />
+        ) : state === 'partial' ? (
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, cacheError: true, puttsError: true, figures: PREVIEW_TEAM_STATS.figures.map((f) => (f.label === 'Scoring average' ? f : { ...f, value: null, delta: null })) }} />
         ) : (
           <StatsTeam data={PREVIEW_TEAM_STATS} />
         ),

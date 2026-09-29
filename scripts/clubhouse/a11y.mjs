@@ -37,6 +37,8 @@ export const CH_A11Y_PAGES = [
   ['stats-team', '/clubhouse-preview/stats'],
   ['stats-team', '/clubhouse-preview/stats?state=empty'],
   ['stats-team', '/clubhouse-preview/stats?state=loading'],
+  ['stats-team', '/clubhouse-preview/stats?state=failed'],
+  ['stats-team', '/clubhouse-preview/stats?state=partial'],
   ['stats-player', '/clubhouse-preview/player'],
   ['stats-player', '/clubhouse-preview/player?state=early'],
   ['stats-player', '/clubhouse-preview/player?state=self'],

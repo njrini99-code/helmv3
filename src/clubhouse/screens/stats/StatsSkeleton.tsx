@@ -4,7 +4,7 @@ import '../../styles/stats.css';
 /** Route loading for Stats: title, window switch, five figure cards and the trend card, in place. */
 export function StatsSkeleton() {
   return (
-    <main className="ch-st" aria-busy="true" aria-label="Loading stats">
+    <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
       <header className="ch-st-head">
         <div className="ch-st-head__row">
           <div>

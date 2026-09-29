@@ -47,15 +47,14 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
     } catch (err) {
       chReport(err, { surface: 'stats.team.export', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't export team stats", body: 'Your browser blocked the download. Try a desktop browser.' });
+      toast({ tone: 'error', title: "Couldn't export team stats", body: 'Your browser blocked the download. Try a desktop browser.', code: 'CH-4001' });
     }
   };
 
-  const f = data.figures;
   const noRounds = !data.roundsError && data.roundCount === 0;
 
   return (
-    <main className="ch-st" aria-busy={pending}>
+    <main className="ch-st" aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
       <header className="ch-st-head">
         <div className="ch-st-head__row">
           <div>
@@ -66,7 +65,8 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
           </div>
           <div className="ch-st-head__act">
             <WindowSwitch value={data.window} onChange={go} />
-            {data.grid.length > 0 && (
+            {/* Never export a half-loaded window. */}
+            {!data.roundsError && data.grid.length > 0 && (
               <Button variant="ghost" leftIcon={Download} onClick={exportCsv}>
                 Export
               </Button>
@@ -76,12 +76,13 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
       </header>
 
       {data.roundsError && (
-        <InlineNotice title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
+        <InlineNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
       )}
 
       {noRounds ? (
         <div className="ch-st-card">
           <EmptyState
+            code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
             icon={Users}
             title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet.' : 'No 18-hole rounds in this window yet.'}
             body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
@@ -97,93 +98,126 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
       ) : (
         !data.roundsError && (
           <>
-            <SectionBoundary surface="stats.team.figures" label="Team figures">
-              {data.cacheError && <InlineNotice title="Some team figures didn't load." body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." onRetry={() => router.refresh()} />}
-              <FigureCards
-                items={f.map((x) => ({
-                  label: x.label,
-                  value: x.value == null ? NO_DATA : x.value.toFixed(x.digits),
-                  unit: x.unit,
-                  delta: x.delta,
-                  deltaDigits: x.digits,
-                  lowerIsBetter: x.lowerIsBetter,
-                  context: x.context,
-                }))}
-              />
+            <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
+              <TeamFigures figures={data.figures} cacheError={data.cacheError} onRetry={() => router.refresh()} />
             </SectionBoundary>
 
-            <SectionBoundary surface="stats.team.trend" label="The trend chart">
+            <SectionBoundary surface="stats.team.trend" label="The trend chart" code="CH-4205">
               <TeamTrend data={data} focus={focus} setFocus={setFocus} />
             </SectionBoundary>
 
-            <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg">
-              <section className="ch-sgm-row" aria-label="Strokes gained by leg, team">
-                {LEGS_LIST.map((l) => (
-                  <LegTrend
-                    key={l}
-                    leg={l}
-                    data={data.legWeeks[l]}
-                    selected={leg === l}
-                    onSelect={() => {
-                      haptic('select');
-                      setLeg(l);
-                    }}
-                  />
-                ))}
-              </section>
+            <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
+              <LegTrends legWeeks={data.legWeeks} leg={leg} setLeg={setLeg} />
               <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} playerHref={playerHref} />
             </SectionBoundary>
 
             <div className="ch-st-grid2">
-              <SectionBoundary surface="stats.team.putting" label="Team putting">
-                {data.puttsError ? (
-                  <InlineNotice title="Team putting didn't load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />
-                ) : data.putting ? (
-                  <YardagePage
-                    title="Team putting"
-                    meta={`Make rate by distance · ${data.putting.putts} putts`}
-                    note={puttingNote(data.putting.bands)}
-                  >
-                    <PuttingRings bands={data.putting.bands} />
-                  </YardagePage>
-                ) : (
-                  <div className="ch-st-card">
-                    <EmptyState compact title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />
-                  </div>
-                )}
+              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
+                <TeamPutting putting={data.putting} failed={data.puttsError} onRetry={() => router.refresh()} />
               </SectionBoundary>
-              <SectionBoundary surface="stats.team.bests" label="Season bests">
-                <section className="ch-st-card">
-                  <div className="ch-st-card__head">
-                    <div>
-                      <h2>Season bests</h2>
-                      <span>Countable rounds since August</span>
-                    </div>
-                  </div>
-                  {data.bests.length === 0 ? (
-                    <EmptyState compact title="No season bests yet." />
-                  ) : (
-                    data.bests.map((b) => (
-                      <div key={b.label} className="ch-best__r">
-                        <span className="ch-best__k">{b.label}</span>
-                        <Link href={playerHref(b.playerId)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
-                          <Avatar name={b.name} size={26} />
-                          <span>
-                            <b>{b.name}</b>
-                            <span className="ch-who__m">{b.meta}</span>
-                          </span>
-                        </Link>
-                        <span className={'ch-num ch-best__v' + (b.under ? ' is-under' : '')}>{b.value}</span>
-                      </div>
-                    ))
-                  )}
-                </section>
+              <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
+                <SeasonBests bests={data.bests} playerHref={playerHref} />
               </SectionBoundary>
             </div>
           </>
         )
       )}
     </main>
+  );
+}
+
+/*
+ * Each section below is its own component so that its SectionBoundary
+ * contains everything it computes: a crash in one never reaches the page.
+ */
+
+function TeamFigures({ figures, cacheError, onRetry }: { figures: ChTeamStats['figures']; cacheError: boolean; onRetry: () => void }) {
+  return (
+    <>
+      {cacheError && (
+        <InlineNotice
+          code="CH-4202"
+          title="Some team figures didn't load."
+          body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported."
+          onRetry={onRetry}
+        />
+      )}
+      <FigureCards
+        items={figures.map((x) => ({
+          label: x.label,
+          value: x.value == null ? NO_DATA : x.value.toFixed(x.digits),
+          unit: x.unit,
+          delta: x.delta,
+          deltaDigits: x.digits,
+          lowerIsBetter: x.lowerIsBetter,
+          context: x.context,
+        }))}
+      />
+    </>
+  );
+}
+
+function LegTrends({ legWeeks, leg, setLeg }: { legWeeks: ChTeamStats['legWeeks']; leg: ChLeg; setLeg: (l: ChLeg) => void }) {
+  return (
+    <section className="ch-sgm-row" aria-label="Strokes gained by leg, team">
+      {LEGS_LIST.map((l) => (
+        <LegTrend
+          key={l}
+          leg={l}
+          data={legWeeks[l]}
+          selected={leg === l}
+          onSelect={() => {
+            haptic('select');
+            setLeg(l);
+          }}
+        />
+      ))}
+    </section>
+  );
+}
+
+function TeamPutting({ putting, failed, onRetry }: { putting: ChTeamStats['putting']; failed: boolean; onRetry: () => void }) {
+  if (failed) return <InlineNotice code="CH-4203" title="Team putting didn't load." body="Try again; the error has been reported." onRetry={onRetry} />;
+  if (!putting)
+    return (
+      <div className="ch-st-card">
+        <EmptyState code="CH-4306" compact title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />
+      </div>
+    );
+  return (
+    <YardagePage title="Team putting" meta={`Make rate by distance · ${putting.putts} putts`} note={puttingNote(putting.bands)}>
+      <PuttingRings bands={putting.bands} />
+    </YardagePage>
+  );
+}
+
+function SeasonBests({ bests, playerHref }: { bests: ChTeamStats['bests']; playerHref: (id: string) => string }) {
+  return (
+    <section className="ch-st-card">
+      <div className="ch-st-card__head">
+        <div>
+          <h2>Season bests</h2>
+          <span>Countable rounds since August</span>
+        </div>
+      </div>
+      {bests.length === 0 ? (
+        <EmptyState code="CH-4307" compact title="No season bests yet." body="Low round, most birdies and the rest appear once rounds are posted." />
+      ) : (
+        bests.map((b) => (
+          <div key={b.label} className="ch-best__r">
+            <span className="ch-best__k">{b.label}</span>
+            <Link href={playerHref(b.playerId)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Avatar name={b.name} size={26} />
+              <span>
+                <b>{b.name}</b>
+                <span className="ch-who__m">{b.meta}</span>
+              </span>
+            </Link>
+            <span className={'ch-num ch-best__v' + (b.under ? ' is-under' : '')}>{b.value}</span>
+          </div>
+        ))
+      )}
+    </section>
   );
 }
 
@@ -287,7 +321,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamStats; focus: string
         </div>
       </div>
       {n === 0 || !all.length ? (
-        <EmptyState compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
+        <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
       ) : (
         <div className="ch-sgt__plot">
           <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
@@ -423,7 +457,7 @@ function LegGrid({
         </div>
       </div>
       {rows.length === 0 ? (
-        <EmptyState compact title="No player rounds in this window." />
+        <EmptyState code="CH-4305" compact title="No player rounds in this window." />
       ) : (
         <div className="ch-lg__tbl" role="table" aria-label="Strokes gained by leg per player">
           <div className="ch-lg__r ch-lg__r--h" role="row">
@@ -459,7 +493,11 @@ function LegGrid({
                   <span className={v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss'}>{v == null ? NO_DATA : formatSigned(v)}</span>
                 </span>
               ))}
-              <span role="cell" className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}>
+              <span
+                role="cell"
+                data-ch-code={g.total == null ? 'CH-4308' : undefined}
+                className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}
+              >
                 {g.total == null ? 'Early read' : formatSigned(g.total)}
               </span>
               <span role="cell" className={'r ch-num ch-lg__ch ' + (g.change == null ? '' : g.change >= 0 ? 'ch-gain' : 'ch-loss')}>

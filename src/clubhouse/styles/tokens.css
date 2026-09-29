@@ -57,6 +57,8 @@
   --ch-chart-paper: #fbf8ef;
   --ch-chart-gain: #155a39;
   --ch-chart-loss: #9a6512;
+  /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
+  --ch-chart-loss-on-tint: #744a06;
   --ch-chart-flag: #b03a2e;
   --ch-chart-fairway: #cbddcc;
   --ch-chart-fairway-alt: #bfd5c1;

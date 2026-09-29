@@ -81,6 +81,10 @@
 .ch-loss {
   color: var(--ch-chart-loss);
 }
+.ch-lg__cell .ch-loss,
+.ch-ft__you .ch-loss {
+  color: var(--ch-chart-loss-on-tint);
+}
 
 /* Figure cards */
 .ch-fg {

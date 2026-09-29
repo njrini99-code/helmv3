@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 21 | 1 | 7 | 5 |
-| `UNKNOWN` | 168 | 12 | 40 | 79 |
+| `UNKNOWN` | 169 | 12 | 40 | 79 |
 
 ## Files
 
@@ -654,6 +654,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/shell.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
@@ -668,10 +669,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/screens/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/home.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/messages.md` | current | - | - | - | - |
-| `docs/clubhouse/screens/roster.md` | current | - | - | - | 1 |
+| `docs/clubhouse/screens/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-player.md` | current | - | - | - | - |
-| `docs/clubhouse/screens/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/stats-team.md` | current | - | - | - | 1 |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |
