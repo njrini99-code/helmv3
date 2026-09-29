@@ -52,7 +52,6 @@ Coaching philosophy saves use one authoritative hook write path with downstream 
 - `src/app/golf/actions/alerts.ts`
 - `src/app/golf/actions/pattern-management.ts`
 - `src/app/golf/actions/insight-management.ts`
-- `src/app/golf/actions/insight-evidence.ts`
 - `src/app/golf/actions/intelligence-dashboard.ts`
 - `src/app/golf/actions/signal-groups.ts`
 - `src/app/golf/actions/coachhelm-analytics.ts`

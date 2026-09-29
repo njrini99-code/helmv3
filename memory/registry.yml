@@ -906,7 +906,6 @@ features:
         - src/app/golf/actions/alerts.ts
         - src/app/golf/actions/pattern-management.ts
         - src/app/golf/actions/insight-management.ts
-        - src/app/golf/actions/insight-evidence.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/coachhelm-analytics.ts
         - src/app/golf/actions/coaching-philosophy.ts

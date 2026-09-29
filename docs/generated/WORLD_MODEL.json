@@ -1113,11 +1113,6 @@
         "category": "actions"
       },
       {
-        "id": "actions:src/app/golf/actions/insight-evidence.ts",
-        "pattern": "src/app/golf/actions/insight-evidence.ts",
-        "category": "actions"
-      },
-      {
         "id": "actions:src/app/golf/actions/insight-management.ts",
         "pattern": "src/app/golf/actions/insight-management.ts",
         "category": "actions"
@@ -12164,18 +12159,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/coaching-philosophy.ts"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "actions:src/app/golf/actions/insight-evidence.ts",
-      "kind": "feature_action",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/actions/insight-evidence.ts"
         }
       ]
     },

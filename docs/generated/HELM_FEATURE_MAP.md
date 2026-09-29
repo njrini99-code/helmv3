@@ -146,7 +146,7 @@ is a second thing to keep true.
 **Coach Intelligence Triage** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/coach-intelligence-triage.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/alerts/**`, `src/app/golf/(dashboard)/dashboard/patterns/**`, `src/app/golf/(dashboard)/dashboard/insights/**`, `src/app/golf/(dashboard)/dashboard/intelligence/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**` … and 32 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/alerts/**`, `src/app/golf/(dashboard)/dashboard/patterns/**`, `src/app/golf/(dashboard)/dashboard/insights/**`, `src/app/golf/(dashboard)/dashboard/intelligence/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**` … and 31 more in the registry
 - **Telemetry:** `alerts_system` (coachhelm, med), `patterns_dashboard` (coachhelm, med), `intelligence_dashboard` (coachhelm, med), `coaching_intelligence_settings` (coachhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
