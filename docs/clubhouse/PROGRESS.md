@@ -38,6 +38,27 @@ copied from `CHECKLIST_TEMPLATE.md`. It has one section per gate, and
 unchecked box. That checklist is the definition of pro quality for the
 screen.
 
+## Where we left off (2026-09-29)
+
+All eight built pages (shell, Home, Roster, Stats team and player, Calendar,
+Messages, Settings) carry the full state catalog, with tests, a11y scans and
+the build green. PR #2102 is a draft, current with `main` and mergeable. CI
+runs in full only when it is marked ready for review (an owner call: about 55
+runner-minutes).
+
+Starting the next session:
+
+1. Work in `/Users/ricknini/worktrees/helmv3/clubhouse` on `agent/clubhouse`;
+   `git status` should be clean.
+2. New desktop designs: follow `README.md`. New mobile designs: follow
+   `MOBILE.md`. Build the foundation (tab bar, top bar, sheets) before any
+   page's phone version.
+3. Waiting on designs: CoachHelm, Rounds, Practice, Lineups, Events,
+   Scouting, the player app, the phone foundation (push prompt, pull to
+   refresh), and each page's mobile design.
+4. Open for the owner: Q-1's migration (written, not applied), marking #2102
+   ready for review, and the live pass on a Vercel preview (Q-4).
+
 ## Screens
 
 <!-- clubhouse:screens:start -->
@@ -85,7 +106,7 @@ screen.
 
 - Q-1 Roster status: decided 2026-09-29, add a separate availability field. The migration `supabase/migrations/20260929120000_golf_team_members_availability.sql` is written and not applied (review, then `npm run db:apply`, then `npm run db:types`). The Roster pill stays read-only until the column exists.
 - Q-2 Navigation: decided 2026-09-29, Practice and Events stay hidden until each has its own design.
-- Q-3 Phone specs (`docs/clubhouse/phone/*.md`): the owner is reviewing them. Nothing phone-specific is built until each file says `Status: approved`.
+- Q-3 Phone specs: decided 2026-09-29 (D-22). The owner's mobile designs in `design/handoff/mobile/` are the phone specs; the drafts in `docs/clubhouse/phone/` only matter for pages without one, and still need approval.
 - Q-4 Rollout: decided 2026-09-29, the flag stays off in production; the owner does a live pass on a Vercel preview with real coach and player accounts first.
 
 ## Data gaps (shown honestly, never invented)
