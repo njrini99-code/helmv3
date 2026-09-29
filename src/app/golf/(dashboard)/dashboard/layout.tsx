@@ -5,6 +5,7 @@ import { CoachHelmDrawer } from '@/components/golf/coachhelm/chat/CoachHelmDrawe
 import { suggestionsFromPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { SmoothScrollMount } from '@/components/golf/layout/SmoothScrollMount';
+import { isClubhouseFor } from '@/clubhouse/gate';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -59,6 +60,10 @@ export default async function DashboardLayout({
   // already called it this request, so this is a cache hit, not a query.
   const session = await getGolfSessionProfile();
   const isCoach = !!session?.coach;
+
+  // Clubhouse renders its own frame: no Lenis sweep, no Fairway CoachHelm
+  // launcher, no launcher clearance.
+  if (isClubhouseFor(isCoach ? 'coach' : null)) return <>{children}</>;
 
   return (
     <>

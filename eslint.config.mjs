@@ -62,6 +62,8 @@ export default tseslint.config(
       // `.gitignore` line — `scripts/*.js`, not `scripts/**/*.js`, which would
       // also swallow committed files in subdirectories.
       "scripts/*.js",
+      // Clubhouse design handoff: prototype JSX from Claude Design, reference only.
+      "design/**",
     ],
   },
   {
@@ -217,6 +219,30 @@ export default tseslint.config(
     ignores: ["src/components/golf/calendar/**"],
     rules: {
       "helm/no-low-contrast-text": "error",
+    },
+  },
+  {
+    // Clubhouse (src/clubhouse): a fresh UI tree. Fairway UI is off limits,
+    // motion goes through the hydration-safe useChReducedMotion(), and haptics
+    // go through src/clubhouse/lib/haptics.ts. scripts/clubhouse/check.mjs
+    // enforces the design doctrine on top of this.
+    files: ["src/clubhouse/**/*.{ts,tsx}"],
+    ignores: ["src/clubhouse/lib/haptics.ts", "src/clubhouse/lib/reduced-motion.ts"],
+    rules: {
+      // Points at the pre-Clubhouse Button; Clubhouse ships its own in src/clubhouse/ui.
+      "helm/no-raw-button": "off",
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            { name: "framer-motion", importNames: ["useReducedMotion"], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
+            { name: "@/lib/utils/capacitor", importNames: ["triggerHaptic", "triggerSelectionHaptic"], message: "Use haptic() from '@/clubhouse/lib/haptics'." },
+          ],
+          patterns: [
+            { group: ["@/components/fairway/*", "@/components/fairway", "@/lib/fairway/*", "@/lib/redesign/*"], message: "Clubhouse never reuses Fairway UI. Build it in src/clubhouse." },
+          ],
+        },
+      ],
     },
   },
   {

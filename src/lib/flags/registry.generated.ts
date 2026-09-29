@@ -268,6 +268,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "No planned removal — permanent ops tooling. This registry entry documents the existing toggle; it does not wire the call sites, which sit outside this PR's file-ownership boundary. Wiring is left to the Sentry session that owns those two files.",
   },
   {
+    feature_id: "golf_clubhouse_ui",
+    owner: "golf/clubhouse",
+    purpose: "Renders the Clubhouse coach shell and rebuilt screens (src/clubhouse) in place of the Fairway dashboard shell for coaches. Routes not yet rebuilt show a \"not rebuilt yet\" placeholder inside the Clubhouse shell.",
+    type: "release",
+    status: "active",
+    created_at: "2026-09-29",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: true,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "When every coach screen is rebuilt and the owner turns production on, delete the Fairway coach shell branch and this flag in the same change.",
+  },
+  {
     feature_id: "verification_ensemble",
     owner: "platform (Bridge)",
     purpose: "Runs a multi-pass adversarial/security/product review chain over an already-produced root-cause analysis before it reaches the repair queue; default off, no recurring cost.",

@@ -10,6 +10,8 @@ import {
   STALE_ACTION_RELOAD_KEY,
 } from '@/lib/error-logging';
 import { getRecovery, requestRecovery } from '@/lib/recovery/client';
+import { useInClubhouse } from '@/clubhouse/shell/context';
+import { RouteErrorView } from '@/clubhouse/ui/States';
 
 interface RouteErrorBoundaryProps {
   error: Error & { digest?: string };
@@ -126,6 +128,7 @@ export function RouteErrorBoundary({
 }: RouteErrorBoundaryProps) {
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const inClubhouse = useInClubhouse();
 
   const isChunk = isChunkLoadError(error);
   const isStaleAction = isStaleServerActionError(error);
@@ -266,6 +269,22 @@ export function RouteErrorBoundary({
   };
 
   const defaultMessage = getDefaultMessage();
+
+  // Inside the Clubhouse shell: same classification, logging and recovery
+  // above, Clubhouse's own view and voice below.
+  if (inClubhouse) {
+    return (
+      <RouteErrorView
+        kind={isChunk ? 'chunk' : isStaleAction ? 'stale-action' : isTransient ? 'transient' : isGenericLoad ? 'load' : 'unknown'}
+        isRetrying={isRetrying}
+        retryCount={retryCount}
+        onRetry={handleRetry}
+        homePath={showHomeButton ? homePath : undefined}
+        digest={error.digest}
+        devDetail={process.env.NODE_ENV === 'development' ? `${error.message}${error.stack ? `\n\n${error.stack}` : ''}` : undefined}
+      />
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-canvas flex items-center justify-center p-6 font-fw-sans">

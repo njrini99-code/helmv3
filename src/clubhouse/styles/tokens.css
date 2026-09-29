@@ -1,0 +1,153 @@
+/*
+ * Clubhouse tokens: the Fairway Clubhouse Edition spec, ported fresh.
+ * Source: design/handoff/design-system/tokens/*.css and design/handoff/depth.css.
+ *
+ * Everything is namespaced --ch-* and defined only under [data-ui="clubhouse"],
+ * so nothing here reaches the Fairway tree and nothing from Fairway's :root
+ * tokens is read in here. `npm run clubhouse:check` enforces both directions.
+ * Light theme only until the owner signs off a dark pass (tracker: D-2).
+ */
+[data-ui='clubhouse'] {
+  /* Ivory neutrals */
+  --ch-ivory-0: #ffffff;
+  --ch-ivory-25: #fdfcf8;
+  --ch-ivory-50: #f9f7f1;
+  --ch-ivory-100: #f4f2ea;
+  --ch-ivory-150: #eeebe2;
+  --ch-ivory-200: #e7e3d8;
+  --ch-ivory-300: #dcd6c8;
+  --ch-ivory-400: #c9c2b1;
+  /* Ink */
+  --ch-ink-950: #141412;
+  --ch-ink-900: #1c1b18;
+  --ch-ink-700: #3a3833;
+  --ch-ink-600: #55524b;
+  --ch-ink-500: #6b6860;
+  --ch-ink-400: #8f8b81;
+  --ch-ink-300: #b3afa5;
+  /* Augusta green */
+  --ch-green-50: #eef5f0;
+  --ch-green-100: #ddebe1;
+  --ch-green-200: #bcd6c4;
+  --ch-green-400: #4f8a64;
+  --ch-green-500: #1f6b45;
+  --ch-green-600: #155a39;
+  --ch-green-700: #0f4a2f;
+  --ch-green-800: #0b3a25;
+  --ch-green-900: #082b1c;
+  --ch-frame: #0a331f;
+  /* Champagne: hairline detail only */
+  --ch-champagne-300: #dccda6;
+  --ch-champagne-500: #b09560;
+  /* Status (text on tint) */
+  --ch-positive-600: #1c6b43;
+  --ch-positive-100: #e6f2ea;
+  --ch-warning-600: #94600e;
+  --ch-warning-100: #faf0dc;
+  --ch-danger-600: #b03a2e;
+  --ch-danger-100: #fbe9e6;
+  --ch-info-600: #2d5c77;
+  --ch-info-100: #e6eef3;
+  /* Scoring. Red means under par, and nothing else. */
+  --ch-score-under: #b03a2e;
+  --ch-score-under-bg: #fbe9e6;
+  --ch-score-over-bg: #efece4;
+  --ch-score-double: #1c1b18;
+  /* Charts (yardage book) */
+  --ch-chart-paper: #fbf8ef;
+  --ch-chart-gain: #155a39;
+  --ch-chart-loss: #9a6512;
+  --ch-chart-flag: #b03a2e;
+  --ch-chart-fairway: #cbddcc;
+  --ch-chart-fairway-alt: #bfd5c1;
+  --ch-chart-rough: #e4e6d6;
+
+  /* Semantic */
+  --ch-bg-page: var(--ch-ivory-100);
+  --ch-bg-surface: var(--ch-ivory-25);
+  --ch-bg-subtle: var(--ch-ivory-50);
+  --ch-bg-inset: var(--ch-ivory-150);
+  --ch-bg-hover: var(--ch-ivory-50);
+  --ch-bg-selected: var(--ch-green-50);
+  --ch-text-primary: var(--ch-ink-900);
+  --ch-text-secondary: var(--ch-ink-600);
+  --ch-text-tertiary: var(--ch-ink-500);
+  --ch-text-disabled: var(--ch-ink-300);
+  --ch-text-on-accent: #ffffff;
+  --ch-accent: var(--ch-green-600);
+  --ch-accent-hover: var(--ch-green-700);
+  --ch-accent-press: var(--ch-green-800);
+  --ch-border-hairline: rgb(28 25 18 / 0.07);
+  --ch-border-subtle: rgb(28 25 18 / 0.1);
+  --ch-border-control: rgb(28 25 18 / 0.14);
+  --ch-border-strong: rgb(28 25 18 / 0.24);
+  --ch-border-focus: var(--ch-ink-900);
+  --ch-focus-halo: rgb(28 25 18 / 0.1);
+
+  /* Type */
+  --ch-font-sans: var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --ch-font-mono: var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace;
+  --ch-type-display-l: 600 36px/1.08 var(--ch-font-sans);
+  --ch-type-display-s: 600 22px/1.2 var(--ch-font-sans);
+  --ch-type-title: 600 15px/1.35 var(--ch-font-sans);
+  --ch-type-body-l: 400 16px/1.55 var(--ch-font-sans);
+  --ch-type-body: 400 14px/1.5 var(--ch-font-sans);
+  --ch-type-body-s: 400 13px/1.45 var(--ch-font-sans);
+  --ch-type-label: 500 13.5px/1.3 var(--ch-font-sans);
+  --ch-type-label-s: 500 12.5px/1.3 var(--ch-font-sans);
+  --ch-type-caption: 400 12.5px/1.4 var(--ch-font-sans);
+  --ch-type-figure-l: 500 40px/1 var(--ch-font-sans);
+  --ch-type-mono: 500 11px/1 var(--ch-font-mono);
+
+  /* Space and layout */
+  --ch-gutter: 40px;
+  --ch-sidebar-w: 240px;
+  --ch-topbar-h: 56px;
+  --ch-tabbar-h: 58px;
+
+  /* Radius */
+  --ch-radius-xs: 5px;
+  --ch-radius-sm: 7px;
+  --ch-radius-md: 10px;
+  --ch-radius-lg: 14px;
+  --ch-radius-xl: 20px;
+
+  /* Elevation */
+  --ch-shadow-sm: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.04), 0 2px 4px -2px rgb(28 25 18 / 0.04);
+  --ch-shadow-md: 0 0 0 1px rgb(28 25 18 / 0.06), 0 2px 4px -1px rgb(28 25 18 / 0.04), 0 10px 24px -8px rgb(28 25 18 / 0.1);
+  --ch-shadow-lg: 0 0 0 1px rgb(28 25 18 / 0.06), 0 8px 16px -6px rgb(28 25 18 / 0.08), 0 28px 56px -16px rgb(28 25 18 / 0.2);
+  --ch-glass-bg: rgb(250 248 241 / 0.7);
+  --ch-glass-blur: 34px;
+
+  /* Depth vocabulary ("depth like the toggles") */
+  --ch-well-bg: linear-gradient(180deg, #dcd7ca 0%, #e6e2d7 55%, #ece8de 100%);
+  --ch-well-shadow: inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16),
+    inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 0 #fff,
+    0 0 0 1px rgb(255 255 255 / 0.35);
+  --ch-well-soft-bg: linear-gradient(180deg, #e9e5da 0%, #efece3 60%, #f2efe7 100%);
+  --ch-well-soft-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),
+    inset 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 0 rgb(255 255 255 / 0.9);
+  --ch-raised-bg: linear-gradient(180deg, #fffefb 0%, #f7f5ef 60%, #efece4 100%);
+  --ch-raised-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 1px rgb(28 25 18 / 0.14), 0 3px 6px -2px rgb(28 25 18 / 0.22),
+    0 8px 14px -8px rgb(28 25 18 / 0.28), inset 0 1px 0 #fff, inset 0 -1px 0 rgb(28 25 18 / 0.06);
+  --ch-sheet-bg: linear-gradient(180deg, #fffefb 0%, #fdfcf8 40%, #faf8f2 100%);
+  --ch-sheet-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.06), 0 6px 14px -6px rgb(28 25 18 / 0.12),
+    0 22px 40px -22px rgb(28 25 18 / 0.22), inset 0 1px 0 #fff;
+  --ch-green-raised-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 55%, #0f4a2f 100%);
+  --ch-green-raised-shadow: 0 0 0 1px rgb(8 43 28 / 0.6), 0 1px 1px rgb(8 43 28 / 0.3), 0 4px 8px -3px rgb(8 43 28 / 0.4),
+    inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);
+
+  /* Motion: four durations, one curve. No count-ups, no entrance staggers. */
+  --ch-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ch-ease-spring: cubic-bezier(0.3, 1.3, 0.6, 1);
+  --ch-dur-instant: 90ms;
+  --ch-dur-quick: 150ms;
+  --ch-dur-base: 220ms;
+  --ch-dur-slow: 360ms;
+  --ch-press-scale: 0.985;
+
+  /* Z */
+  --ch-z-sticky: 40;
+  --ch-z-overlay: 80;
+  --ch-z-toast: 100;
+}

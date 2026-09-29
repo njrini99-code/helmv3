@@ -25,6 +25,9 @@ import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/a
 import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { loadCoachHome } from '@/clubhouse/data/home';
+import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
 
 export const dynamic = 'force-dynamic';
 
@@ -185,6 +188,13 @@ export default async function GolfDashboardPage({
             // team for this request (dashboard-request-cache.ts), so this is a
             // cache hit instead of a second cookie-validation + staff read.
             teamId = (await resolveCoachActiveTeamIdForRequest(coach.organization_id, coach.id)) ?? undefined;
+        }
+
+        // Clubhouse Home: its own loader and screen, no Fairway payload.
+        if (isClubhouseFor('coach')) {
+            if (!teamId) return <CoachHomeNoTeam />;
+            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach' });
+            return <CoachHome data={home} />;
         }
 
         if (teamId) {

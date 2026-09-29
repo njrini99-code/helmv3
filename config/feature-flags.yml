@@ -637,3 +637,28 @@ flags:
       Either promote to a permanent `release` flag once the section has
       been reviewed, or remove the section and its wiring if the review
       asks for a different surface/placement instead.
+
+  # Clubhouse: the from-scratch GolfHelm coach UI (src/clubhouse/). Parallel
+  # to Fairway, never layered on it. Coach-only; players keep the Fairway
+  # shell. Tracker: docs/clubhouse/PROGRESS.md. Turning production on is an
+  # owner decision.
+  - feature_id: golf_clubhouse_ui
+    owner: golf/clubhouse
+    purpose: >-
+      Renders the Clubhouse coach shell and rebuilt screens (src/clubhouse)
+      in place of the Fairway dashboard shell for coaches. Routes not yet
+      rebuilt show a "not rebuilt yet" placeholder inside the Clubhouse
+      shell.
+    type: release
+    status: active
+    created_at: "2026-09-29"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      When every coach screen is rebuilt and the owner turns production on,
+      delete the Fairway coach shell branch and this flag in the same change.

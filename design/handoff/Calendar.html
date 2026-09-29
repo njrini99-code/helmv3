@@ -1,0 +1,165 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Calendar</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="depth.css">
+<link rel="stylesheet" href="cal.css">
+<link rel="stylesheet" href="sidebar.css">
+</head><body class="fairway"><div id="root"></div>
+<script src="cal-data.js"></script>
+<script type="text/babel" src="cal-views.jsx"></script>
+<script type="text/babel" src="cal-inspector.jsx"></script>
+<script type="text/babel" src="cal-editor.jsx"></script>
+<script type="text/babel">
+const { FairwaySidebar, FairwayTopBar, IconButton, Button, PlayerIdentity, Icon, ToastStack, Avatar, Segmented, PopoverPanel } = window.FairwayClubhouseEdition_9c4f4d;
+const C = window.CAL;
+const WEEKS = [5, 12, 19];
+function useLS(key, init) { const [v, setV] = React.useState(() => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : init; } catch (e) { return init; } }); return [v, (x) => { setV(x); localStorage.setItem(key, JSON.stringify(x)); }]; }
+
+function JumpPanel({ week, onPick, onClose }) {
+  const cells = [null, null, null, ...Array.from({ length: 31 }, (_, i) => i + 1)];
+  return (
+    <div className="jump fw-popover">
+      <div className="jump__head"><span>October 2026</span><IconButton icon="x" label="Close" size="sm" onClick={onClose} /></div>
+      <div className="jump__grid">
+        {C.DOW.map((d) => <span key={d}>{d[0]}</span>)}
+        {cells.map((n, i) => n ? <button key={i} className={(n === C.today ? 'is-today ' : '') + (n >= week && n < week + 7 ? 'is-wk' : '')} onClick={() => onPick(n)}>{n}</button> : <span key={i}></span>)}
+      </div>
+    </div>
+  );
+}
+
+function PeoplePicker({ sel, setSel }) {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState('');
+  const ref = React.useRef(null);
+  React.useEffect(() => { if (!open) return; const f = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; const k = (e) => e.key === 'Escape' && setOpen(false); document.addEventListener('mousedown', f); document.addEventListener('keydown', k); return () => { document.removeEventListener('mousedown', f); document.removeEventListener('keydown', k); }; }, [open]);
+  const chosen = C.people.filter((p) => sel.includes(p.id));
+  const stack = (chosen.length ? chosen : C.people).slice(0, 4);
+  const label = !chosen.length ? 'Everyone' : chosen.length === 1 ? chosen[0].name : chosen.length + ' players';
+  const detail = !chosen.length ? 'Team schedule · 6 players' : chosen.length === 1 ? 'Showing their events and classes' : chosen.map((p) => p.name.split(' ')[0]).join(', ');
+  const list = C.people.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+  const tog = (id) => setSel(sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]);
+  return (
+    <div className="pp" ref={ref}>
+      <button className={'pp__trigger' + (open ? ' is-open' : '') + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label="People">
+        <span className="pp__stack">{stack.map((p) => <Avatar key={p.id} name={p.name} size={26} />)}{(chosen.length ? chosen.length : 6) > 4 && <span className="pp__more">+{(chosen.length || 6) - 4}</span>}</span>
+        <span className="pp__txt"><b>{label}</b><span>{detail}</span></span>
+        <Icon name="chevrons-up-down" size={14} />
+      </button>
+      {chosen.length > 0 && <button className="pp__clear" onClick={() => setSel([])}>Clear</button>}
+      {open && <div className="pp__pop fw-popover" role="dialog" aria-label="Choose people">
+        <div className="pp__search"><Icon name="search" size={14} /><input autoFocus placeholder="Find a player" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <button className="pp__row" aria-pressed={!chosen.length} onClick={() => setSel([])}>
+          <span className="pp__allic"><Icon name="users" size={14} /></span>
+          <span className="pp__name"><b>Everyone</b><span>Whole team schedule</span></span>
+          {!chosen.length && <Icon name="check" size={15} />}
+        </button>
+        <div className="pp__label">Players · {chosen.length ? chosen.length + ' selected' : 'choose one or more'}</div>
+        <div className="pp__list">
+          {list.map((p) => { const on = sel.includes(p.id); return (
+            <button key={p.id} className="pp__row" aria-pressed={on} onClick={() => tog(p.id)}>
+              <Avatar name={p.name} size={28} />
+              <span className="pp__name"><b>{p.name}</b><span>{p.year}</span></span>
+              <span className={'pp__box' + (on ? ' is-on' : '')}>{on && <Icon name="check" size={12} />}</span>
+            </button>); })}
+          {!list.length && <div className="pp__empty">No one matches “{q}”</div>}
+        </div>
+        <div className="pp__foot"><span className="muted">{chosen.length > 1 ? 'Overlaps show where schedules collide' : 'Pick two or more to compare'}</span><Button size="sm" variant="primary" onClick={() => setOpen(false)}>Done</Button></div>
+      </div>}
+    </div>
+  );
+}
+
+function App() {
+  const [view, setView] = useLS('cal-view', 'week');
+  const [week, setWeek] = useLS('cal-week', 12);
+  const [day, setDay] = useLS('cal-day', C.today);
+  const [sel, setSel] = React.useState([]);
+  const [insp, setInsp] = React.useState(null);
+  const [editor, setEditor] = React.useState(null);
+  const [subs, setSubs] = React.useState(false);
+  const [more, setMore] = React.useState(false);
+  const [jump, setJump] = React.useState(false);
+  const [toasts, setToasts] = React.useState([]);
+  const toast = (title, icon) => { const id = Date.now() + Math.random(); setToasts((t) => [...t, { id, title, icon }]); setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4200); };
+  const filter = (e) => !sel.length || (e.type === 'class' ? sel.includes(e.owner) : (e.people || []).some((p) => sel.includes(p)));
+  const selId = insp && (insp.kind === 'event' || insp.kind === 'class' || insp.kind === 'attendance') ? insp.id : insp && insp.kind === 'conflict' ? C.conflicts[insp.id].event : null;
+  const open = (id) => { const e = C.events.find((x) => x.id === id); setInsp({ kind: e.type === 'class' ? 'class' : 'event', id }); };
+  const dates = view === 'day' ? [day] : Array.from({ length: 7 }, (_, i) => week + i).filter((d) => d <= 31);
+  const step = (dir) => { if (view === 'day') setDay(Math.min(31, Math.max(1, day + dir))); else if (view === 'week') { const i = WEEKS.indexOf(week) + dir; if (WEEKS[i]) setWeek(WEEKS[i]); } };
+  const goToday = () => { setWeek(12); setDay(C.today); };
+  React.useEffect(() => { const k = (e) => { if (e.target.closest('input,textarea') || editor) return; if (e.key === 'n') setEditor({}); if (e.key === 't') goToday(); if (e.key === 'ArrowLeft') step(-1); if (e.key === 'ArrowRight') step(1); if (e.key === 'Escape') setInsp(null); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); });
+  const title = view === 'day' ? [C.dow(day) + ', ' + day + ' October', ''] : view === 'week' ? ['Oct ' + week + ' – ' + Math.min(week + 6, 31), '2026'] : ['October', '2026'];
+  const away = view === 'day' ? day !== C.today : view === 'week' ? week !== 12 : false;
+  const counts = C.events.filter((e) => dates.includes(e.date) && e.type !== 'class' && filter(e)).length;
+  const items = [
+    { id: 'home', label: 'Home', icon: 'house' }, { id: 'coachhelm', label: 'CoachHelm', icon: 'sparkles' }, { id: 'calendar', label: 'Calendar', icon: 'calendar-days' }, { id: 'messages', label: 'Messages', icon: 'message-square', count: 3 },
+    { id: 'roster', label: 'Roster', icon: 'users', count: 6, section: 'Team' }, { id: 'stats', label: 'Stats', icon: 'chart-column', section: 'Team' }, { id: 'rounds', label: 'Rounds', icon: 'flag', section: 'Team' }, { id: 'practice', label: 'Practice', icon: 'target', section: 'Team' }, { id: 'lineups', label: 'Lineups', icon: 'list-ordered', section: 'Team' },
+    { id: 'events', label: 'Events', icon: 'trophy', section: 'Program' }, { id: 'scouting', label: 'Scouting', icon: 'binoculars', section: 'Program' },
+  ];
+  return (
+    <div className="h2-app">
+      <FairwaySidebar current="calendar" onNavigate={(id) => { if (id === 'home') location.href = 'Coach Home v3.html'; if (id === 'messages') location.href = 'Messages.html'; if (id === 'roster') location.href = 'Roster.html'; if (id === 'stats') location.href = 'Stats.html'; if (id === 'coachhelm') location.href = 'CoachHelm.html'; }} items={items}
+        header={<div className="h2-brand"><img src="assets/helm-logo-white.png" alt="" /><div className="h2-brand__txt"><span className="fw-sidebar__word">GolfHelm</span><span className="fw-sidebar__team">Varsity · Fall 2026<Icon name="chevrons-up-down" size={13} /></span></div></div>}
+        footer={<><div className="h2-next"><div className="h2-next__k"><span>Next event</span><span>In 2 days</span></div><div className="h2-next__t">Pinehurst qualifier</div><div className="h2-next__bar"><span></span></div><div className="h2-next__m">5 of 6 players ready</div></div><PlayerIdentity name="Maya Reyes" meta="Head coach · Varsity" size="sm" /></>} />
+      <div className="h2-canvas">
+        <FairwayTopBar crumbs={['Calendar']} onSearch={() => {}} searchPlaceholder="Search events, players, places" actions={<><IconButton icon="bell" label="Notifications" /><IconButton icon="settings" label="Settings" /></>} />
+        <div className="cal">
+          <div className="cal-mast">
+            <div style={{ position: 'relative' }}>
+              <button className="cal-title" onClick={() => setJump(!jump)} aria-label="Jump to date"><h1>{title[0]}</h1>{title[1] && <span>{title[1]}</span>}<Icon name="chevron-down" size={16} /></button>
+              <div className="cal-sub">{counts} team events{view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'} · Eastern time</div>
+              {jump && <JumpPanel week={week} onClose={() => setJump(false)} onPick={(n) => { setDay(n); setWeek(n < 12 ? 5 : n < 19 ? 12 : 19); setJump(false); }} />}
+            </div>
+            <div className="cal-tools">
+              {away && <Button size="sm" leftIcon="calendar-check" onClick={goToday}>Today</Button>}
+              
+              <div className="popwrap"><IconButton icon="ellipsis" label="More" variant="secondary" onClick={() => setMore(!more)} />
+                {more && <PopoverPanel items={[{ label: 'Add to calendar app', icon: 'rss', onSelect: () => { setMore(false); setSubs(true); } }, { label: 'My busy time', icon: 'lock', onSelect: () => { setMore(false); toast('Busy time opens here', 'lock'); } }, { label: 'Conflicts', icon: 'triangle-alert', onSelect: () => { setMore(false); setInsp({ kind: 'conflict', id: 'k1' }); } }, 'separator', { label: 'Print week', icon: 'printer' }]} />}
+              </div>
+              <Button variant="primary" leftIcon="plus" kbd="N" onClick={() => setEditor({})}>New event</Button>
+            </div>
+          </div>
+          <div className="cal-bar">
+            <div className="cal-viewctl">{(view === 'week' || view === 'day') && <div className="cal-step"><IconButton icon="chevron-left" label={view === 'week' ? 'Previous week' : 'Previous day'} size="sm" onClick={() => step(-1)} /><IconButton icon="chevron-right" label={view === 'week' ? 'Next week' : 'Next day'} size="sm" onClick={() => step(1)} /></div>}
+              <Segmented label="View" value={view} onChange={setView} options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }, { value: 'agenda', label: 'Agenda' }]} /></div>
+            <div className="cal-people">
+              <PeoplePicker sel={sel} setSel={setSel} />
+            </div>
+            <div className="cal-legend"><span><i className="dot-practice"></i>Practice</span><span><i className="dot-qualifier"></i>Competition</span><span><i className="dot-meeting"></i>Meeting</span>{view !== 'month' && <span><i className="dot-class"></i>Class · busy</span>}</div>
+          </div>
+          <div className="cal-body">
+            <div style={{ minWidth: 0 }}>
+              {(view === 'week' || view === 'day') && <TimeGrid dates={dates} filter={filter} selId={selId} onSelect={open} onDay={(d) => { setDay(d); setView('day'); }} />}
+              {view === 'month' && <MonthView filter={filter} selDate={day} onPick={(n) => { setDay(n); setWeek(n < 12 ? 5 : n < 19 ? 12 : 19); const first = C.events.find((e) => e.date === n && filter(e)); if (first) open(first.id); }} />}
+              {view === 'agenda' && <AgendaView filter={filter} selId={selId} onSelect={open} />}
+            </div>
+            <aside className="cal-insp dp-sheet" aria-label="Details">
+              {!insp && <CalSummary go={setInsp} />}
+              {insp && insp.kind === 'event' && <CalEventDetail key={insp.id} id={insp.id} go={setInsp} toast={toast} onEdit={(id) => setEditor({ id })} />}
+              {insp && insp.kind === 'class' && <CalClassDetail id={insp.id} go={setInsp} onFind={() => setEditor({})} />}
+              {insp && insp.kind === 'attendance' && <CalAttendance key={insp.id} id={insp.id} go={setInsp} toast={toast} />}
+              {insp && insp.kind === 'conflict' && <CalConflict key={insp.id} id={insp.id} go={setInsp} toast={toast} onEdit={(id, prop) => setEditor({ id, prop })} />}
+            </aside>
+          </div>
+        </div>
+      </div>
+      <EventEditor open={!!editor} editId={editor && editor.id} proposal={editor && editor.prop} onClose={() => setEditor(null)} onSave={(label, t) => { setEditor(null); toast((label === 'Publish event' ? 'Published · ' : label === 'Move event' ? 'Moved · ' : 'Saved · ') + t + ' · attendees notified', 'circle-check'); }} />
+      <SubscribeModal open={subs} onClose={() => setSubs(false)} toast={toast} />
+      <ToastStack toasts={toasts} onDismiss={(id) => setToasts((t) => t.filter((x) => x.id !== id))} />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

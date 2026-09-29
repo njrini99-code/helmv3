@@ -1,0 +1,85 @@
+/*
+ * Clubhouse base: the scope root, element resets inside it, and the depth
+ * classes. Every selector is either the scope root or a `.ch-` class, so
+ * this file cannot style anything outside the Clubhouse tree.
+ */
+.ch-root {
+  min-height: 100dvh;
+  background: var(--ch-frame);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  letter-spacing: -0.003em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-root *,
+.ch-root *::before,
+.ch-root *::after {
+  box-sizing: border-box;
+}
+.ch-root ::selection {
+  background: var(--ch-green-100);
+  color: var(--ch-ink-900);
+}
+.ch-root :focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-root h1,
+.ch-root h2,
+.ch-root h3,
+.ch-root p {
+  margin: 0;
+}
+
+.ch-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.ch-display {
+  font-weight: 600;
+  letter-spacing: -0.034em;
+  font-variation-settings: 'wdth' 88;
+}
+.ch-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Depth vocabulary */
+.ch-well {
+  background: var(--ch-well-bg);
+  box-shadow: var(--ch-well-shadow);
+  border-radius: 12px;
+}
+.ch-well-soft {
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  border-radius: 12px;
+}
+.ch-raised {
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-raised-shadow);
+  border-radius: 9px;
+}
+.ch-sheet {
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-sheet-shadow);
+  border-radius: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-root *,
+  .ch-root *::before,
+  .ch-root *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
