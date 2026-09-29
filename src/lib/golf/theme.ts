@@ -37,7 +37,7 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
  * `--fw-color-canvas` token, so the chrome follows whatever value the token
  * holds. These hex values are only the fallback for when the token can't be
  * read. They are the token converted OKLCH → sRGB: light
- * oklch(0.93 0.03 82) = #f2e6d2, dark oklch(0.165 0.004 150) = #0d0f0d.
+ * oklch(0.953 0.022 83) = #f7efdf, dark oklch(0.165 0.004 150) = #0d0f0d.
  * The native shell can't read CSS, so it carries the same pair in the
  * FwColorCanvas colour asset (ios/App/App/Assets.xcassets), capacitor.config.ts
  * and the splash images. src/test/static/canvas-color-sync.test.ts fails when
@@ -51,7 +51,7 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
  * chrome. Driving it from `applyTheme` means the meta always tracks the theme
  * the app actually resolved, however it was chosen.
  */
-const THEME_COLOR = { dark: '#0d0f0d', light: '#f2e6d2' } as const;
+const THEME_COLOR = { dark: '#0d0f0d', light: '#f7efdf' } as const;
 
 function isTheme(v: unknown): v is GolfTheme {
   return v === 'light' || v === 'dark' || v === 'system';

@@ -25,7 +25,7 @@ class GolfBridgeViewController: CAPBridgeViewController {
     private static let cacheClearedBuildKey = "HelmWebCacheClearedForBuild"
 
     /// The page canvas, `--fw-color-canvas` in src/styles/design-tokens.css
-    /// (light #F2E6D2, dark #0D0F0D). It is read from the FwColorCanvas colour
+    /// (light #F7EFDF, dark #0D0F0D). It is read from the FwColorCanvas colour
     /// asset, which LaunchScreen.storyboard also uses, so the launch screen,
     /// native view and webview are one colour in both appearances. The asset
     /// is named after the token; src/test/static/canvas-color-sync.test.ts

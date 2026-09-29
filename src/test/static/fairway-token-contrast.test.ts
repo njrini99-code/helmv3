@@ -1,16 +1,22 @@
 /**
  * Fairway token contrast floor (CON-09).
  *
- * Owner direction 2026-09-23: keep the warm cream / dark cream and the depth,
- * but raise contrast everywhere and make green the contrasting colour. This
- * test holds every ink token to WCAG 2.2 AA against every cream surface it can
- * land on, in light and dark, computed straight from
+ * This test holds every ink token to WCAG 2.2 AA against every cream surface it
+ * can land on, in light and dark, computed straight from
  * src/styles/design-tokens.css (OKLCH → sRGB, same maths as
  * canvas-color-sync.test.ts). A token retune that drops a pair below its floor
  * fails here, naming the pair, before it reaches a screen.
  *
  * Floors: 4.5:1 for text (1.4.3), 3:1 for control borders, icons and focus
  * indicators (1.4.11).
+ *
+ * TWO ASSERTIONS ARE THEME-SPECIFIC ON PURPOSE (owner, 2026-09-28). The
+ * 2026-09-24 contrast pass pinned a 1.15:1 card-to-page step and a green
+ * selected-segment wash in LIGHT; the deployed result read as black text on a
+ * tan page, so the classic cream palette is back. Its card lifts 1.09:1 (a
+ * hairline and a shadow do the rest) and its selected segment is the card
+ * surface, so those two light floors describe the classic values. The dark
+ * floors and every text/indicator AA floor are unchanged.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -165,12 +171,24 @@ describe.each(['light', 'dark'] as const)('Fairway token contrast (%s)', (theme)
 
   it('the card lifts off the page (surface vs canvas separation)', () => {
     const r = ratio(resolve('--fw-color-surface', theme).rgb, resolve('--fw-color-canvas', theme).rgb);
-    expect(r, `surface vs canvas = ${r.toFixed(2)}:1`).toBeGreaterThanOrEqual(1.15);
+    // Light: the classic cream pair is 1.09:1 (hairline + soft shadow carry the
+    // rest). The 1.15 the 2026-09-24 pass asked for needs the tan page that was
+    // reversed on 2026-09-28. Dark keeps 1.15.
+    expect(r, `surface vs canvas = ${r.toFixed(2)}:1`).toBeGreaterThanOrEqual(theme === 'light' ? 1.05 : 1.15);
   });
 
-  it('the selected-segment wash reads as a distinct green state on the track', () => {
+  it.runIf(theme === 'dark')('the selected-segment wash reads as a distinct green state on the track', () => {
     const track = resolve('--fw-color-surface-sunken', theme).rgb;
     const wash = resolve('--fw-color-accent-wash', theme).rgb;
-    expect(ratio(wash, track)).toBeGreaterThanOrEqual(theme === 'light' ? 1.1 : 1.3);
+    expect(ratio(wash, track)).toBeGreaterThanOrEqual(1.3);
+  });
+
+  it.runIf(theme === 'light')('the selected segment (the card surface) sits above the sunken track', () => {
+    // Light Segmented: the pill is `bg-surface` with a hairline on a
+    // `surface-sunken` track. Not a strong step by design; it must at least stay
+    // lighter than the track it slides on.
+    const track = resolve('--fw-color-surface-sunken', theme).rgb;
+    const pill = resolve('--fw-color-surface', theme).rgb;
+    expect(ratio(pill, track)).toBeGreaterThanOrEqual(1.02);
   });
 });

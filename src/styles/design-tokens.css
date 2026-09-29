@@ -87,36 +87,33 @@
    * resting state was safe only because 650 exists; the hover step had no such
    * partner until this token.
    *
-   * Value was byte-identical to accent-700's old :root value (accent-700 now
-   * aliases the darker accent-ink), so light buttons were unchanged. In dark it now stays a deep green: hover DARKENS the fill rather
+   * Value is byte-identical to accent-700's :root value, so LIGHT MODE IS
+   * UNCHANGED. In dark it now stays a deep green: hover DARKENS the fill rather
    * than lightening it, which on a dark ground reads correctly as "pressed" and
    * raises the cream label's contrast (4.69:1 → 5.9:1) instead of destroying it.
    * There is no room to brighten instead — 650 at 4.69:1 is already the
    * brightest green that carries cream text at AA. */
   --fw-color-accent-750: oklch(0.488 0.124 150);
+  /* GREEN INK, NOT A FILL. Flipped light in the dark block so `text-accent-700`
+   * stays legible on a dark surface. Never `bg-accent-700` — use 650/750. */
+  --fw-color-accent-700: oklch(0.488 0.124 150);
 
-  /* ---- GREEN IS THE CONTRASTING COLOUR (owner decision 2026-09-23) ----
-   * "More contrast, more green … it should be the contrasting colour." Four
-   * roles, each measured in src/test/static/fairway-token-contrast.test.ts:
-   *   accent-ink        green TEXT — headings/verdicts, key numbers, links,
-   *                     selected labels. Deep green on cream (≥6:1 on every
-   *                     cream surface), bright green on dark. accent-500/600
-   *                     are never text.
-   *   accent-fill       the ONE primary action (Button primary, FAB, the
-   *                     active bottom-nav pill) with `text-on-accent-fill`.
-   *                     Cream label on mid-green here; in dark it flips to a
-   *                     BRIGHT green fill with a near-black label.
-   *   accent-wash       the selected segment / tab fill, with accent-ink on it.
-   * `accent-700` (485 `text-accent-700` call sites) now aliases accent-ink so
-   * the whole legacy green-ink layer gets the stronger value in one place. */
-  --fw-color-accent-ink:  oklch(0.424 0.13 150);   /* #006023 — 6.3:1 on the canvas */
+  /* ---- Green ROLE tokens (the classes are `text-accent-ink`, `bg-accent-fill`
+   * + `text-text-on-accent-fill`, `bg-accent-wash`).
+   *
+   * Components written since the 2026-09 audit reach for these names instead of
+   * a raw accent step. In LIGHT each one is exactly the value the class it
+   * replaced always had (accent-700 / accent-650 / accent-750 / accent-100), so
+   * the light look is the classic cream-and-helm-green one and a deeper "ink"
+   * green is NOT layered on top (owner, 2026-09-28: the deeper green + darker
+   * greys + tan page read as black text on cream). The DARK block keeps the
+   * bright-green roles: they fixed a real bug, a light-mint fill under a cream
+   * label at ≈1.7:1. Measured in src/test/static/fairway-token-contrast.test.ts. */
+  --fw-color-accent-ink:  oklch(0.488 0.124 150);   /* = accent-700; 4.9-5.8:1 on the cream surfaces */
   --fw-color-accent-fill: oklch(0.540 0.132 149.7); /* = accent-650; cream label 4.69:1 */
   --fw-color-accent-fill-hover: oklch(0.488 0.124 150);
   --fw-color-text-on-accent-fill: oklch(0.994 0.006 95);
-  --fw-color-accent-wash: oklch(0.90 0.06 150);    /* selected segment; ink on it 5.9:1 */
-  /* GREEN INK, NOT A FILL. Aliases accent-ink (both themes). Never
-   * `bg-accent-700` — use 650/750 or accent-fill. */
-  --fw-color-accent-700: var(--fw-color-accent-ink);
+  --fw-color-accent-wash: oklch(0.939 0.045 150);   /* = accent-100; ink on it 5.0:1 */
   --fw-color-accent-800: oklch(0.415 0.103 150);
   --fw-color-accent-900: oklch(0.357 0.083 150);
 
@@ -134,17 +131,17 @@
   --fw-color-warm-950: oklch(0.147 0.005 49);   /* sidebar warm-black #0c0a09 (NOT #000) */
 
   /* ---- Semantic surfaces (warm, matte, OPAQUE at rest — not translucent) ---- */
-  /* 2026-09-24 contrast pass: the page deepens to a DARK CREAM (0.953 → 0.93)
-     and the card brightens (0.984 → 0.99), so the card/page step goes from
-     1.09:1 to 1.20:1 — the depth the owner likes, now visible without relying
-     on a shadow. Canvas copies outside CSS (iOS colour asset, storyboard,
-     capacitor config, theme-color, offline.html) are pinned by
+  /* The light cream page (#f7efdf) and its cards. A 2026-09-24 pass deepened the
+     page to a tan #f2e6d2 to widen the card/page step; the owner's read of the
+     deployed result (2026-09-28) was black text on a tan page, so the classic
+     values are back. Canvas copies outside CSS (iOS colour asset, storyboard,
+     capacitor config, theme-color, offline.html) are pinned to THIS value by
      src/test/static/canvas-color-sync.test.ts. */
-  --fw-color-canvas:         oklch(0.93 0.03 82);    /* #f2e6d2 dark cream page base */
-  --fw-color-surface:        oklch(0.99 0.012 88);   /* THE card: warm CREAM, not white — 1.20:1 off the canvas */
-  --fw-color-surface-tint:   oklch(0.968 0.028 84);  /* a TOASTED warm band — hero plinths */
-  --fw-color-surface-sunken: oklch(0.94 0.026 83);   /* wells, insets, input tracks — below the card, a hair above the page */
-  --fw-color-elevated:       oklch(0.995 0.012 88);  /* menus / popovers / modal body — the brightest cream so floating panels read lifted */
+  --fw-color-canvas:         oklch(0.953 0.022 83);  /* #f7efdf light warm champagne page base — cards lift off it by hairline + soft shadow */
+  --fw-color-surface:        oklch(0.984 0.016 86);  /* THE card: warm CREAM, not white. It lifts off the champagne page via its hairline + soft shadow — never by being a cold white sheet (we keep coming back to this: no white cards). */
+  --fw-color-surface-tint:   oklch(0.968 0.026 84);  /* a TOASTED warm band — hero plinths (warmer + a touch deeper than the card so the tier reads, not vanishes) */
+  --fw-color-surface-sunken: oklch(0.963 0.021 84);  /* wells, insets, input tracks */
+  --fw-color-elevated:       oklch(0.993 0.016 88);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
 
   /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
      it sits on — present in the DOM, absent to the eye, so a loading screen
@@ -161,30 +158,35 @@
           (layer it over the `bg-canvas` color so any overscroll stays warm). ---- */
   --fw-gradient-canvas:
     radial-gradient(132% 92% at 50% -15%,
-      oklch(0.958 0.020 85) 0%,
-      oklch(0.946 0.025 83) 44%,
+      oklch(0.982 0.014 86) 0%,
+      oklch(0.970 0.020 84) 44%,
       transparent 78%),
     linear-gradient(180deg,
-      oklch(0.948 0.024 84) 0%,   /* warm cream at the top */
-      oklch(0.930 0.030 82) 52%,  /* = canvas, the body of the page */
-      oklch(0.912 0.036 80) 100%); /* deeper sand at the foot */
+      oklch(0.973 0.018 85) 0%,   /* ≈ #F6EEDF — warm cream even at the top (no white) */
+      oklch(0.955 0.026 83) 52%,  /* ≈ #F1E7D6 — champagne linen, the body of the page */
+      oklch(0.934 0.034 81) 100%); /* ≈ #EBDFCD — soft champagne/sand at the foot (golden-undertone cream) */
 
   /* ---- Semantic text ---- */
   --fw-color-text-primary:   var(--fw-color-warm-900);
-  /* 2026-09-24 contrast pass (owner: "shits hard to read"): secondary
-     0.444 → 0.404 (≈7:1) and tertiary 0.535 → 0.485 (≥4.8:1 on the deepest
-     gradient stop, ≈5.2:1 on the canvas) so neither sits on the AA floor any
-     more. Floors are enforced by fairway-token-contrast.test.ts. */
-  --fw-color-text-secondary: oklch(0.404 0.014 65);  /* #4e4741 */
-  --fw-color-text-tertiary:  oklch(0.485 0.015 70);  /* #655e56 */
+  --fw-color-text-secondary: var(--fw-color-warm-600);
+  /* Small descriptive/value text using this token must clear WCAG 2.2 AA
+     normal-text 4.5:1 on EVERY warm surface, including the deepest stop of the
+     page gradient above (measured 4.64:1 there; ≥4.9:1 on the card). It was
+     0.535 before the 2026-09 pass, which is 4.24:1 at that gradient foot, so
+     it sits a hair darker than the classic value: 0.02 of lightness, not a
+     visible step. The AA floor is enforced by fairway-token-contrast.test.ts. */
+  --fw-color-text-tertiary:  oklch(0.515 0.015 70);
   --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
   /* ---- Borders / warm hairlines (NOT cool gray) ---- */
-  --fw-color-border-subtle: oklch(0.811 0.018 80);      /* a VISIBLE warm hairline (1.46:1 on the card) */
-  --fw-color-border-strong: oklch(0.74 0.018 78);       /* emphasis / table head / hover edge — stronger than subtle */
-  /* Control edges: inputs, slider tracks, chips, segmented tracks. WCAG 1.4.11
-     wants 3:1 for the boundary that identifies a control. */
+  --fw-color-border-subtle: oklch(0.862 0.013 82 / 0.95); /* a VISIBLE warm hairline — card edges read against the deeper canvas (was 0.90/0.8, invisible) */
+  --fw-color-border-strong: oklch(0.872 0.009 80);      /* emphasis / table head */
+  /* A 3:1 edge for the boundary of a control (WCAG 1.4.11). In LIGHT the soft
+     hairlines above are the control edge (owner, 2026-09-28: dark outlined
+     boxes on a tan page); this token is what DARK controls use, where the 7%
+     white hairline was invisible, and it stays defined and measured in light so
+     a surface that needs a hard edge has one. */
   --fw-color-border-control: oklch(0.600 0.02 75);
   /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
      indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
