@@ -266,3 +266,11 @@ describe('sumHoleStrokesGainedByCategory', () => {
     expect(result.totalShots).toBe(7);
   });
 });
+
+describe('sgBaselineLabelForScale (audit row 46)', () => {
+  it('maps the resolved sg_scale_for_player value to the curve it selects', async () => {
+    const { sgBaselineLabelForScale } = await import('../shot-strokes-gained');
+    expect(sgBaselineLabelForScale(1)).toBe('PGA Tour');
+    expect(sgBaselineLabelForScale(1.083)).toBe('LPGA Tour');
+  });
+});

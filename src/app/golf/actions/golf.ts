@@ -39,6 +39,7 @@ import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
+import { findShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
@@ -2306,6 +2307,20 @@ async function submitGolfRoundComprehensiveImpl(
       approachDetailsPayload
     );
     const shotsCount = shotsPayload.reduce((sum, group) => sum + group.shots.length, 0);
+
+    // Audit row 46: per-shot SG assumes each shot starts where the previous
+    // one ended. Flag (never refuse) a submitted ledger that does not chain,
+    // so a discontinuity shows up in telemetry instead of silently shifting
+    // strokes gained between shots. Info-level: this is data quality, not an
+    // outage.
+    const chainBreaks = findShotChainDiscontinuities(shotsPayload);
+    if (chainBreaks.length > 0) {
+      void logServerEvent(`Round submit: ${chainBreaks.length} shot-chain discontinuities`, {
+        action: 'submitGolfRoundComprehensive.shotChain',
+        featureArea: 'shot_tracking',
+        extra: { shotsCount, discontinuities: chainBreaks.slice(0, 20) },
+      });
+    }
 
     const attemptDirectSubmitFallback = async (
       _roundId: string,
