@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 20 | 3 | 6 | 5 |
+| `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -277,7 +277,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | - | - |
-| `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | 1 |
+| `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | - |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | - |
 | `docs/operations/RETENTION.md` | generated | - | yes | - | - |
 | `memory/README.md` | generated | - | - | yes | - |
