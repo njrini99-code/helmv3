@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PuttBiasGenerator, selectWeakestCut } from '../putt-bias';
+import { PuttBiasGenerator, selectWeakestCut, analyzeBreakCuts } from '../putt-bias';
 import type { PuttBiasAggregate, PuttRow } from '../putt-bias';
 
 const gen = new PuttBiasGenerator('49ffe06d-9b22-4f2f-8c69-f56badbbde6b');
@@ -90,5 +90,37 @@ describe('selectWeakestCut — band + slope control', () => {
     expect(cut!.band).toBe('7-10 ft');
     expect(cut!.slope).toBe('level');
     expect(cut!.gap_pp).toBeGreaterThanOrEqual(12);
+  });
+});
+
+
+describe('analyzeBreakCuts — family-wise correction (audit row 26)', () => {
+  /** n putts of one break at `ft` feet in `slope`, `made` of them holed. */
+  function side(brk: 'left_to_right' | 'right_to_left', n: number, made: number, ft: number, slope: string) {
+    return Array.from({ length: n }, (_, i) => ({ putt_break: brk, putt_slope: slope, dist_ft: ft, made: i < made }));
+  }
+
+  it('a cut significant alone (p≈0.03) is NOT reported once 4 cuts were tested', () => {
+    // 11-20 ft level: 3/20 vs 9/20 → 30pp gap, p ≈ 0.03 < 0.05 but > 0.05/4.
+    const rows = [
+      ...side('left_to_right', 20, 3, 15, 'level'),
+      ...side('right_to_left', 20, 9, 15, 'level'),
+      // three more testable, even cuts
+      ...side('left_to_right', 20, 5, 15, 'uphill'), ...side('right_to_left', 20, 5, 15, 'uphill'),
+      ...side('left_to_right', 20, 5, 15, 'downhill'), ...side('right_to_left', 20, 5, 15, 'downhill'),
+      ...side('left_to_right', 20, 10, 8, 'level'), ...side('right_to_left', 20, 10, 8, 'level'),
+    ];
+    const alone = analyzeBreakCuts(rows.slice(0, 40));
+    expect(alone.testable_cells).toBe(1);
+    expect(alone.cut).not.toBeNull();
+    const all = analyzeBreakCuts(rows);
+    expect(all.testable_cells).toBe(4);
+    expect(all.cut).toBeNull();
+  });
+
+  it('counts zero testable cells when no cut has 15 putts per side', () => {
+    const a = analyzeBreakCuts([...side('left_to_right', 14, 2, 15, 'level'), ...side('right_to_left', 40, 20, 15, 'level')]);
+    expect(a.testable_cells).toBe(0);
+    expect(a.ltr_pct).toBeNull();
   });
 });

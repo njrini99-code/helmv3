@@ -20,6 +20,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
+import { measuredStrokesImpact } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -56,8 +59,21 @@ interface ParTypeAggregate extends GeneratorAggregate {
   double_plus_rate: number;
   /** Holes of this par scored in the window (denominator of the rates). */
   holes_scored: number;
-  /** Holes of this par per typical round (4 par-3s / 10 par-4s / 4 par-5s) — the attempt rate for CF sizing. */
+  /**
+   * The player's OWN holes of this par per round (holes of this par scored /
+   * distinct rounds scored), the attempt rate the base sizes the
+   * counterfactual with. Falls back to the par-72 template (4 / 10 / 4) only
+   * when the player has no scored holes.
+   */
   holes_per_round: number;
+  /** First contributing round (lifetime window start); null when unknown. */
+  first_round_date?: string | null;
+  /**
+   * Measured strokes/round to the cohort target: (player per-par average −
+   * target) × holes of this par per round, capped at the per-par ceiling.
+   * 0 at or better than the target.
+   */
+  strokes_impact?: number;
   /** True lifetime span in days (first→last round); null when unknown. */
   spanDays: number | null;
   last_round_date: string | null;
@@ -104,10 +120,32 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     // rate cut only feeds the prose that names the DRIVER of that average.
     // LIFETIME holes so the decomposition + counts share the cache value's
     // denominator (regrade VAL-P1 — no more lifetime average over a 90d count).
-    const holes = (await loadCompletedHoles(this.playerId, LIFETIME_WINDOW_DAYS)).filter(
-      (h) => h.par === this.par,
-    );
+    const allHoles = await loadCompletedHoles(this.playerId, LIFETIME_WINDOW_DAYS);
+    const holes = allHoles.filter((h) => h.par === this.par);
     const n = holes.length;
+    const scoredRounds = new Set(allHoles.map((h) => h.round_id)).size;
+    const holesPerRound = scoredRounds > 0 && n > 0 ? n / scoredRounds : PAR_HOLES_PER_ROUND[this.par];
+
+    // Measured impact against the SAME target the counterfactual uses
+    // (plausible cohort level_avg → Tour), sized by the player's own holes of
+    // this par per round. Stored on the row even though par_scoring stays
+    // floor-exempt/descriptive: backfilledStrokesImpact keeps a floor-exempt
+    // row's composed value, so this is what ranks it (audit defect 1: 0 on
+    // 141 of 141 rows while 29 of 99 had an unsuppressed counterfactual).
+    const standing = await loadStandingForMetric(this.playerId, this.metricId).catch(() => null);
+    const cohort = await loadPlayerCohort(this.playerId);
+    const strokesImpact = standing
+      ? measuredStrokesImpact({
+          metric_id: this.metricId,
+          direction: 'lower_better',
+          player_value: value,
+          pga_value: standing.pga_value,
+          cohort_value: standing.level_avg,
+          cohort_gender: cohort.gender,
+          player_30d_scoring_avg: null,
+          player_attempts_per_round: holesPerRound,
+        })
+      : 0;
     let birdie = 0, par = 0, bogey = 0, dbl = 0;
     for (const h of holes) {
       if (h.score === null) continue;
@@ -129,7 +167,9 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
       bogey_rate: pct(bogey),
       double_plus_rate: pct(dbl),
       holes_scored: n,
-      holes_per_round: PAR_HOLES_PER_ROUND[this.par],
+      holes_per_round: holesPerRound,
+      first_round_date: (data as { first_round_date?: string | null }).first_round_date ?? null,
+      strokes_impact: strokesImpact,
       last_round_date: (data as { last_round_date?: string | null }).last_round_date ?? null,
       spanDays: lifetimeSpanDays(
         (data as { first_round_date?: string | null }).first_round_date ?? null,
@@ -232,9 +272,15 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
         comparison_value: agg.par,
         comparison_label: `Par ${agg.par}`,
         comparison_source: 'absolute_target',
-        sample_n: agg.holes_scored,
+        // ROUNDS, matching the prose and every "n rounds" reader (audit row
+        // 13: this was the hole count, 51 holes shown as "51 rounds"). The
+        // hole count lives in detail.holes_scored.
+        sample_n: agg.rounds_played,
+        // Lifetime value (golf_player_stats_cache), so the window is the
+        // player's whole history: first → last round, labelled 'lifetime' in
+        // detail.window_kind.
         window_days: agg.spanDays ?? 0,
-        window_start: '',
+        window_start: agg.first_round_date ?? '',
         // The newest contributing round. This was hardcoded '' while the same
         // `agg.last_round_date` was being rendered into the prose by
         // `staleDataSuffix` — the date was on the aggregate and in the
@@ -249,15 +295,11 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
         // blank. `window_days` above is already the true span via
         // lifetimeSpanDays().
         window_end: agg.last_round_date ?? '',
-        // Seed 0: "impact" is a gap-to-COHORT quantity, so the BaseGenerator
-        // backfills the real value from the counterfactual (capped) when there
-        // is genuine cohort-relative leverage. A gap-to-PAR diagnostic must NOT
-        // seed this — when the CF is suppressed (player at/better than cohort)
-        // the base keeps the seed, and a non-zero gap-to-par would float a
-        // non-weakness to the top of the feed (audit FID/par_scoring). 0 ranks
-        // low when suppressed (correct); the StandingBar carries severity.
-        strokes_impact: 0,
-        strokes_impact_method: 'rough_estimate',
+        // Gap-to-COHORT impact measured in aggregate() (never gap-to-PAR: a
+        // non-zero gap-to-par would float a non-weakness to the top of the
+        // feed, audit FID/par_scoring). 0 at/better than the target.
+        strokes_impact: agg.strokes_impact ?? 0,
+        strokes_impact_method: 'peer_delta',
         confidence: 0,
         confidence_factors: {
           sample_adequacy: Math.min(agg.rounds_played / 30, 1),
@@ -277,6 +319,9 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
           double_plus_rate: agg.double_plus_rate,
           holes_scored: agg.holes_scored,
           rounds_played: agg.rounds_played,
+          sample_unit: 'rounds',
+          holes_per_round: Math.round(agg.holes_per_round * 100) / 100,
+          window_kind: 'lifetime',
           lifetime_span_days: agg.spanDays,
         },
       },

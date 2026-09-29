@@ -1982,6 +1982,58 @@ structured `ShadowEvalReport`.
   matrix, including the established-roster ones where a violation would
   actually have something to happen to.
 
+## Measured `strokes_impact` and ranking (2026-09-28, deep audit defect 1)
+
+`evidence.strokes_impact` is what the feed ranks on (`scoreInsightFactors`,
+`ranking/score.ts`). It is a **measured per-round figure from the player's own
+data**, not a display projection:
+
+    strokes/round = attempts per round × rate gap to target × strokes per event
+
+`measuredStrokesImpact` / `rateGapStrokes` (`counterfactual/measured-impact.ts`)
+implement it. It is written even when the counterfactual line is suppressed
+under the 0.3-stroke display floor: the "Closing this gap" copy stays hidden,
+the row simply ranks on strokes instead of on the priority floor. A metric
+that declares an `attempt_metric` never falls back to the per-unit lookup
+constant here (those constants are tuning choices, not measurements).
+
+| Generator | attempts per round | gap | strokes per event | notes |
+| --- | --- | --- | --- | --- |
+| `putt_distance` | band attempts / cache `rounds_played` | counterfactual target (plausible cohort → gender anchor → Tour) − make % | 1 | `attempts_per_round` also feeds the base counterfactual (defect 7) |
+| `approach_miss` | band attempts / every round in the 90-day window with an approach | green-hit anchor − green-hit % | player's own mean expected strokes after a miss − after a hit (`getExpectedStrokes`), reference 0.61 when < 3 of either | 175+ yd excludes par-5 second shots; target is the green-hit anchor (no team/level green-hit cohort exists yet); inputs in `detail.strokes_impact_inputs` |
+| `par_scoring` | player's own holes of that par per round | per-par average − plausible cohort `level_avg` (else Tour) | 1 | capped at the per-par ceiling; 0 without a standing row |
+| `putt_bias` | weak-side putts in the winning cut / rounds | strong-side − weak-side make % (player vs self) | 1 | directional rows only; balanced rows are 0 |
+| `warmup_hole` | 1 opener per round | opener delta − Tour 0.1 | — | row exists only when the 95% interval on the delta excludes 0 |
+
+`par_scoring` and `warmup_hole` stay floor-exempt: the base keeps their
+composed value, so the generator's measured figure is what ranks them.
+
+Other contract changes in the same pass:
+
+- **`par_scoring.sample_n` is ROUNDS** (was the hole count, read as rounds by
+  every "n rounds" reader). Holes are in `detail.holes_scored`;
+  `detail.sample_unit = 'rounds'`, `detail.window_kind = 'lifetime'`,
+  `window_start` = first contributing round. A row's
+  `evidenceRevisionKey` (`sample_n|window_end`) changes once on the next run.
+- **Intervals.** `putt_distance` publishes `detail.make_ci_low/high` and
+  `approach_miss` `detail.green_hit_ci_low/high` (95% Wilson), both also in the
+  prose. `approach_miss` no longer emits below 8 attempts (was 5).
+- **`putt_bias`.** No row when no distance-and-slope cut has 15 putts per
+  side (the test never ran; a stale row retracts). Cut p-values are
+  Holm-adjusted over the cuts tested. A balanced row carries the pooled make %
+  and n per side (`your_value` = left-to-right, `comparison_value` =
+  right-to-left), never 0 vs 0.
+- **Confidence calibration is a documented no-op.** The calibration table holds
+  prediction types only, so the ranker uses the generator's raw support score
+  and never reads `golf_confidence_calibration`.
+- **Exposure.** Every ranked surface (coach feed, player feed, hub signal,
+  roster card, round takeaway) writes `rank_score`; one exposure per insight
+  per render. `rank_factors` (migration `20260928130000`, HOLD) is not written
+  until that column exists.
+- **`bubble_player` retired.** The v2 adapter (`toInsightInput`) no longer
+  persists it: the label came from headline keywords, not from the worst SG
+  category. Per-category SG lives in the `sg_*` standings.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.

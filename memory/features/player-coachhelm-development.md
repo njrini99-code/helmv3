@@ -157,6 +157,16 @@ Player opens round review
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.
 - V3 surfaces evolve quickly, so docs and registry paths need frequent updates when new components land.
+- **Measured strokes_impact (2026-09-28, deep audit defect 1)**: approach_miss,
+  par_scoring, putt_bias and warmup_hole used to write `strokes_impact` 0, so
+  77% of the ranked feed ordered on the priority floor. Each now writes a
+  measured per-round figure from the player's own data, and putt_distance sizes
+  its impact from the player's own putts per band (not a fixed typical-attempts
+  constant). Formulas, interval fields, the par_scoring `sample_n` = rounds
+  change, putt_bias's Holm correction and the calibration no-op are in
+  `docs/architecture/coachhelm-evidence-contract.md` ("Measured
+  `strokes_impact` and ranking"). Existing rows pick this up on their next
+  generator run.
 - **Repair-plan §14.12 audit, observed-outcome language (2026-09-23)**: found
   and fixed one live bug — `InsightCard.tsx`'s `OutcomeBadge` rendered
   "Saved {impact} strokes/rd" once a player/coach marked a focus area's

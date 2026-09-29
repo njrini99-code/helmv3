@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ApproachMissGenerator, type ParSplit } from '@/lib/coachhelm/v3/generators/approach-miss';
+import { ApproachMissGenerator, impactFor, type ParSplit } from '@/lib/coachhelm/v3/generators/approach-miss';
 import {
   bucketApproachDistance,
   loadApproachShots,
@@ -105,6 +105,17 @@ function makeAgg(over: Partial<{
       par5: { attempts: 0, greenHitPct: null },
       unknown: attempts,
     },
+    green_hit_ci: { low: greenHitPct - 20, high: greenHitPct + 18 },
+    strokes_impact: 0.42,
+    impact: {
+      rounds_in_window: 15,
+      attempts_counted: attempts,
+      attempts_per_round: attempts / 15,
+      green_hit_pct_counted: greenHitPct,
+      target_green_hit_pct: 80,
+      strokes_per_missed_green: 0.6,
+      strokes_per_missed_green_source: 'reference' as const,
+    },
   };
 }
 
@@ -175,7 +186,9 @@ describe('ApproachMissGenerator', () => {
     expect(g.name).toBe('ApproachMissGenerator');
     expect(g.insightType).toBe('approach_miss');
     expect(g.category).toBe('approach');
-    expect(g.minSampleN).toBe(5);
+    // Raised 5 → 8 (ATTEMPT_FLOOR, audit row 25): a green-hit % over 5-7
+    // approaches swings 12-20 points on one shot and is no longer printed.
+    expect(g.minSampleN).toBe(8);
   });
 
   it('leads with green-hit % and rides proximity-when-hit along when reliable', () => {
@@ -541,5 +554,60 @@ describe('ApproachMissGenerator — par composition of the 175+ band', () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '175_plus_ft');
     const c = g.composeContent(makeAgg({ bucket: '175_plus_ft', attempts: 40 }));
     expect(c.content).not.toMatch(/of these/);
+  });
+});
+
+
+describe('ApproachMissGenerator — measured strokes impact (audit defect 1) and interval (row 25)', () => {
+  // 10 rounds; 20 approaches from 125-175 over them; 8 greens (40%) vs the
+  // men's 65% anchor. Misses finish 20 yd in the rough; hits 30 ft away.
+  function band(par: number | null = 4): ApproachShot[] {
+    const out: ApproachShot[] = [];
+    for (let i = 0; i < 20; i++) {
+      const hit = i < 8;
+      out.push(shot(150, hit ? 30 : 20, hit ? 'feet' : 'yards', hit ? 'green' : 'rough', {
+        round_id: `r-${i % 10}`,
+        par,
+      }));
+    }
+    return out;
+  }
+
+  it('sizes impact as attempts/round × green-hit gap × the player\'s own missed-green cost', () => {
+    const imp = impactFor('125_175ft', band(), 10, 65, 'approach_proximity_125_175ft');
+    // 2 attempts/round × 25pp × (E(rough,20)=2.59 − E(green,30ft)=1.98 = 0.61)
+    expect(imp.attempts_per_round).toBe(2);
+    expect(imp.strokes_per_missed_green_source).toBe('player_finishes');
+    expect(imp.strokes_per_missed_green).toBeCloseTo(0.61, 2);
+    expect(imp.strokes_impact).toBeCloseTo(2 * 0.25 * 0.61, 2);
+  });
+
+  it('is 0 at or above the target (no fabricated leak)', () => {
+    expect(impactFor('125_175ft', band(), 10, 35, 'approach_proximity_125_175ft').strokes_impact).toBe(0);
+  });
+
+  it('leaves par-5 second shots out of the 175+ impact (lay-ups are not lost strokes)', () => {
+    const shots = band(5).map((s) => ({ ...s, distance_to_hole_before: 200 }));
+    const imp = impactFor('175_plus_ft', shots, 10, 50, 'approach_proximity_175_plus_ft');
+    expect(imp.attempts_counted).toBe(0);
+    expect(imp.strokes_impact).toBe(0);
+  });
+
+  it('divides by every round in the window, not only rounds that used the band', () => {
+    const imp = impactFor('125_175ft', band(), 20, 65, 'approach_proximity_125_175ft');
+    expect(imp.attempts_per_round).toBe(1);
+  });
+
+  it('writes the measured impact onto evidence and the interval into prose + detail', async () => {
+    mockLoadApproachShots.mockResolvedValue(band());
+    const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
+    const agg = await g.aggregate();
+    expect(agg).not.toBeNull();
+    const c = g.composeContent(agg!);
+    expect(c.evidence.strokes_impact).toBeGreaterThan(0.2);
+    expect(c.evidence.strokes_impact_method).toBe('sg_baseline');
+    expect(c.content).toMatch(/95% range \d+-\d+%/);
+    expect(c.evidence.detail?.green_hit_ci_low).toBeLessThan(40);
+    expect(c.evidence.detail?.green_hit_ci_high).toBeGreaterThan(40);
   });
 });
