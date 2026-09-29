@@ -93,6 +93,7 @@ screen.
 - Shell: the top-bar search (⌘K) needs its own spec. It is not rendered until then, so there is no dead control.
 - Shell: Practice and Events are in the design's navigation but have no route. They are hidden until the owner decides what they point to.
 - Roster: the design's Captain role, major, birthday, home course and "about" line have no columns. Real fields are shown instead: hometown, high school, class and jersey. A migration for captain, major and bio can be written once you decide which you want (birthdays are minors' PII).
+- Roster: owner, 2026-09-29: cards show no jersey number (the handoff has none; Captain waits for a column); the layout toggle and the panel order follow the handoff (the panel sits after the cards when there is no room beside them).
 - Roster: invite-by-email has no server action. The invite sheet offers the join code, a copy button and the native share sheet for the join link.
 - Roster: "Schedule 1:1" and "View insights" wait for Calendar and CoachHelm. They are hidden until then.
 

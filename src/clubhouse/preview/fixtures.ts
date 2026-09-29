@@ -28,7 +28,7 @@ export const PREVIEW_PLAYER: GolfUserData = {
 
 export const PREVIEW_SHELL: ChShellData = {
   nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Thu, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } },
-  pendingJoinRequests: 6,
+  pendingJoinRequests: 2,
 };
 
 const PARS = [4, 4, 3, 4, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];

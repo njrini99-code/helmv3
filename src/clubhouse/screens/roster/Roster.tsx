@@ -234,16 +234,29 @@ export function Roster({ data }: { data: ChRoster }) {
                   { value: 'all', label: 'All' },
                 ]}
               />
-              <Segmented<View>
-                size="sm"
-                label="Layout"
-                value={view}
-                onChange={changeView}
-                options={[
-                  { value: 'faces', label: <Icon icon={LayoutGrid} size={15} />, aria: 'Team view' },
-                  { value: 'list', label: <Icon icon={List} size={15} />, aria: 'List view' },
-                ]}
-              />
+              {/* Handoff: two icon toggles in a hairline outline, not a segmented well. */}
+              <div className="ch-rs-vt" role="group" aria-label="Layout">
+                {(
+                  [
+                    ['faces', LayoutGrid, 'Team view'],
+                    ['list', List, 'List view'],
+                  ] as const
+                ).map(([v, icon, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className="ch-rs-vt__b"
+                    aria-pressed={view === v}
+                    aria-label={label}
+                    onClick={() => {
+                      if (view !== v) haptic('select');
+                      changeView(v);
+                    }}
+                  >
+                    <Icon icon={icon} size={15} />
+                  </button>
+                ))}
+              </div>
               <Segmented<Sort>
                 size="sm"
                 label="Sort players"
@@ -291,7 +304,7 @@ export function Roster({ data }: { data: ChRoster }) {
                       onClick={() => select(p.id)}
                     >
                       <span className="ch-rs-face__top">
-                        {p.jersey ? <span className="ch-rs-face__jersey ch-num">#{p.jersey}</span> : <span />}
+                        <span />
                         <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
                         <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
                       </span>

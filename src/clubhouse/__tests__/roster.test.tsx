@@ -54,7 +54,7 @@ const fail = () => Promise.resolve({ success: false, error: 'nope' });
 const theo = PREVIEW_ROSTER.players[0]!;
 
 async function toList(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('radio', { name: 'List view' }));
+  await user.click(screen.getByRole('button', { name: 'List view' }));
 }
 async function openRemove(user: ReturnType<typeof userEvent.setup>) {
   await toList(user);
