@@ -34,6 +34,14 @@ import {
   type MetricRenderConfig,
 } from '@/lib/coachhelm/v3/standing/metric-config';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import {
+  GOAL_RULE_MESSAGES,
+  PRE_START_BASELINE_DAYS,
+  checkGoalMetric,
+  checkGoalTarget,
+  preStartBaseline,
+} from '@/lib/coachhelm/v3/goals/goal-rules';
+import { loadPlayerWindowRounds } from '@/lib/coachhelm/v3/goals/window-metric';
 import { describeError } from '@/lib/utils/describe-error';
 
 export interface CreateGoalInput {
@@ -43,6 +51,10 @@ export interface CreateGoalInput {
   ends_at: string; // ISO timestamp
   target_value: number | null;
   target_source: GoalTargetSource | null;
+  /**
+   * Ignored since audit row 20: the server measures the baseline itself from
+   * the player's pre-start rounds (see createGoalImpl). Kept for callers.
+   */
   baseline_value: number | null;
   shared_with_coach?: boolean;
   // Coach-only inputs:
@@ -73,6 +85,10 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
     if (!isMetricId(input.metric_id)) {
       return { ok: false, error: 'Unknown metric_id' };
     }
+    // Audit row 20: a goal on a metric we cannot measure over its window can
+    // only ever snapshot the all-time standing — a frozen progress series.
+    const metricRule = checkGoalMetric(input.metric_id);
+    if (metricRule) return { ok: false, error: GOAL_RULE_MESSAGES[metricRule] };
 
     // Resolve the span before touching the DB — an out-of-range window would
     // otherwise surface as a raw `golf_goals_window_range` constraint error.
@@ -122,10 +138,9 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       // with no golf_team_members clause. So `player_id` was unconstrained at
       // both layers at once.
       //
-      // That mattered beyond the row itself: `loadStandingForMetric` below runs
-      // on the SERVICE-ROLE client and reads golf_player_standing for whatever
-      // player_id it is handed, then the value is persisted as this goal's
-      // baseline — a row the coach can read back. A coach could therefore
+      // That mattered beyond the row itself: the baseline read below runs on
+      // the SERVICE-ROLE client and reads the rounds of whatever player_id it
+      // is handed, then the value is persisted as this goal's baseline — a row the coach can read back. A coach could therefore
       // exfiltrate another program's player's real per-metric standing, one
       // metric per goal, without ever touching that team.
       //
@@ -195,24 +210,33 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       warning = 'soft_cap_exceeded';
     }
 
-    // #1244: capture the baseline HERE rather than trusting every caller to.
-    // `acceptGoalSuggestion` (and the team fan-out) passed a hardcoded
-    // `baseline_value: null`, which left 9 of 19 live goals — including the
-    // only active one — unable to render a progress bar at all, because
-    // FairwayGoalCard correctly refuses to compute `(current - baseline) /
-    // (target - baseline)` without a baseline. The reading is available at this
-    // exact moment: it is the same standing value the progress evaluator will
-    // read on its very next pass. Resolve it once, centrally, so no create path
-    // can ship a baseline-less goal again.
+    // #1244: capture the baseline HERE rather than trusting every caller to
+    // (the accept and team fan-out paths pass null).
     //
-    // If there is genuinely no standing reading yet the baseline stays null and
-    // the card keeps its honest "Not started — baseline captured" empty state.
-    // We never substitute the target or zero.
-    let baselineValue = input.baseline_value;
-    if (baselineValue == null) {
-      const standing = await loadStandingForMetric(player_id, input.metric_id);
-      baselineValue = standing?.player_value ?? null;
-    }
+    // Audit row 20 (2026-09-28): the baseline is the SAME windowed aggregate
+    // progress is measured with, over this player's countable rounds in the
+    // PRE_START_BASELINE_DAYS before the goal starts — not the all-time
+    // standing, which is a different quantity (sg_putting goals stored -6.475
+    // against a pre-start average of -2.77) and not a caller-supplied number
+    // (19 of 21 goals shared a round-number baseline with another player). No
+    // rounds before the start → null, and the card reads "baseline pending".
+    const startedAt = goalWindow.window.started_at;
+    const preStart = await loadPlayerWindowRounds(
+      createAdminClient(),
+      player_id,
+      new Date(Date.parse(startedAt) - PRE_START_BASELINE_DAYS * 86_400_000).toISOString(),
+      startedAt,
+    );
+    const baselineValue = preStartBaseline(input.metric_id, preStart, startedAt);
+
+    // A target on the wrong side of the baseline is achieved by construction.
+    const direction = getMetricRenderConfig(input.metric_id)?.direction ?? 'higher_better';
+    const targetRule = checkGoalTarget({
+      baseline: baselineValue,
+      target: input.target_value,
+      direction,
+    });
+    if (targetRule) return { ok: false, error: GOAL_RULE_MESSAGES[targetRule] };
 
     const insertPayload = {
       player_id,

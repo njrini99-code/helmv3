@@ -138,6 +138,28 @@ export interface GoalProgressSummary {
 }
 
 /**
+ * The value a goal's progress is measured with this pass. Pure.
+ *
+ * A windowed metric is measured ONLY over countable rounds played since the
+ * goal started. With none yet, there is no observation: null, so the
+ * evaluator leaves the goal untouched. It used to fall back to the all-time
+ * standing and snapshot THAT every day, which is the frozen series behind 9
+ * of 12 active-player goals (audit row 20) and could mark a goal achieved or
+ * missed on a number that says nothing about the goal window. A non-windowed
+ * metric (legacy goals; new ones are refused at creation) keeps the standing.
+ */
+export function resolveGoalObservedValue(
+  goal: Pick<Goal, 'metric_id' | 'started_at'>,
+  standingValue: number | null,
+  windowRounds: readonly WindowRound[],
+): number | null {
+  if (!isWindowedMetric(goal.metric_id)) return standingValue;
+  const startDate = goal.started_at.slice(0, 10);
+  const inWindow = windowRounds.filter((r) => r.round_date >= startDate);
+  return aggregateWindowMetric(goal.metric_id, inWindow);
+}
+
+/**
  * Shared per-goal evaluation core. Runs the deterministic evaluator against the
  * player's latest standing for each goal and persists current_value + snapshots
  * + any terminal transition. Skips the write when nothing changed (`unchanged`)
@@ -171,17 +193,7 @@ async function evaluatePlayerGoals(
 
   for (const goal of goals) {
     const st = standing.get(goal.metric_id);
-    // Observed value: prefer the goal-WINDOW value (rounds since it started) for
-    // accurate in-progress tracking; fall back to the all-time standing when the
-    // metric isn't windowable or no rounds have been played in the window yet
-    // (then current ≈ baseline → the card honestly reads "not started").
-    let observed = st?.player_value ?? null;
-    if (isWindowedMetric(goal.metric_id)) {
-      const startDate = goal.started_at.slice(0, 10);
-      const inWindow = windowRounds.filter((r) => r.round_date >= startDate);
-      const windowed = aggregateWindowMetric(goal.metric_id, inWindow);
-      if (windowed !== null) observed = windowed;
-    }
+    const observed = resolveGoalObservedValue(goal, st?.player_value ?? null, windowRounds);
     const cfg = getMetricRenderConfig(goal.metric_id);
     const direction: MetricDirection =
       cfg?.direction === 'lower_better' ? 'lower_better' : 'higher_better';
