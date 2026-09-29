@@ -96,6 +96,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { notifyGoalAchieved, notifyGoalMissed } from '@/lib/coachhelm/v3/notifications/notify';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
@@ -221,13 +222,24 @@ async function evaluatePlayerGoals(
       patch.outcome_evaluated_at = result.outcome_evaluated_at;
     }
 
-    const { error } = await fromUntyped(supabase, 'golf_goals')
+    // Guard on state='active' so a cron run and a post-round run racing on
+    // the same goal cannot both apply (and both notify) a terminal outcome.
+    const { data: written, error } = await fromUntyped(supabase, 'golf_goals')
       .update(patch) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
-      .eq('id', goal.id);
+      .eq('id', goal.id)
+      .eq('state', 'active')
+      .select('id');
 
-    if (!error) {
+    if (!error && Array.isArray(written) && written.length > 0) {
       updated += 1;
       if (result.state === 'achieved') achieved += 1;
+      // Audit row 53: terminal goal outcomes reach the player (never throws).
+      const title = (goal as { title?: string | null }).title ?? 'Your goal';
+      if (result.state === 'achieved') {
+        await notifyGoalAchieved({ player_id: playerId, goal_id: goal.id, goal_title: title });
+      } else if (result.state === 'missed') {
+        await notifyGoalMissed({ player_id: playerId, goal_id: goal.id, goal_title: title });
+      }
     }
   }
 

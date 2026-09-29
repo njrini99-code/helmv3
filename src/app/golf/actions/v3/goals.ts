@@ -47,6 +47,7 @@ import {
 } from '@/lib/coachhelm/v3/goals/goal-rules';
 import { loadPlayerWindowRounds } from '@/lib/coachhelm/v3/goals/window-metric';
 import { describeError } from '@/lib/utils/describe-error';
+import { notifyCoachAssignedGoal } from '@/lib/coachhelm/v3/notifications/notify';
 
 export interface CreateGoalInput {
   metric_id: MetricId;
@@ -283,6 +284,11 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
         action: 'v3.goals.create',
       });
       return { ok: false, error: error?.message ?? 'Insert failed' };
+    }
+
+    // Audit row 53: a coach-assigned goal reaches the player (never throws).
+    if (creator_role === 'coach') {
+      await notifyCoachAssignedGoal({ player_id, goal_id: data.id, goal_title: input.title });
     }
 
     revalidatePath('/golf/dashboard/my-development');

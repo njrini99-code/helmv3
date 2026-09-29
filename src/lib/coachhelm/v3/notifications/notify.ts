@@ -110,6 +110,21 @@ export async function notifyGoalMissed(args: {
   });
 }
 
+export async function notifyGoalAchieved(args: {
+  player_id: string;
+  goal_id: string;
+  goal_title: string;
+}): Promise<void> {
+  await send({
+    player_id: args.player_id,
+    category: 'goal_achieved',
+    title: 'Goal reached',
+    body: `${args.goal_title}: you hit the target.`,
+    action_url: surfaceHref('tab-plan-player'),
+    data: { goalId: args.goal_id },
+  });
+}
+
 export async function notifyCompositeInsight(args: { player_id: string; insight_id: string }): Promise<void> {
   await send({
     player_id: args.player_id,

@@ -1,5 +1,6 @@
 'use server';
 
+import { notifyCoachCommented } from '@/lib/coachhelm/v3/notifications/notify';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
@@ -917,6 +918,17 @@ async function saveCoachFeedbackImpl(
     //    picks up the coach's feedback on next nav.
     revalidatePath('/golf/dashboard/rounds/[id]/review', 'page');
     revalidatePath('/golf/dashboard/rounds');
+
+    // Audit row 53: the player hears their coach left feedback (never throws;
+    // one per player per day via the dispatcher throttle).
+    const reviewRow = review as { player_id?: string | null; round_id?: string | null };
+    if (reviewRow.player_id && reviewRow.round_id) {
+      await notifyCoachCommented({
+        player_id: reviewRow.player_id,
+        round_id: reviewRow.round_id,
+        review_id: reviewId,
+      });
+    }
 
     return { success: true };
 

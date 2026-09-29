@@ -34,6 +34,14 @@ import {
 } from '@/lib/coachhelm/v3/standing/refresh';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  detectStandingShifts,
+  isWeeklyDigestDay,
+  loadMeanTeamPct,
+  playersWithWeeklyActivity,
+} from '@/lib/coachhelm/v3/standing/percentile-shift';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { notifyStandingPercentileChanged, notifyWeeklyDigest } from '@/lib/coachhelm/v3/notifications/notify';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -258,6 +266,26 @@ async function handle(): Promise<NextResponse> {
     );
   }
 
+  // Audit row 53: snapshot each chunk player's mean team percentile BEFORE the
+  // refresh overwrites it, so a real move can notify afterwards. Failure-
+  // isolated: a snapshot error just skips the notification.
+  let shiftPlayerIds: string[] = [];
+  let pctBefore: Map<string, number> | null = null;
+  try {
+    const { data: shiftMembers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .in('team_id', teamIds)
+      .eq('status', 'active')
+      .limit(1000);
+    shiftPlayerIds = [...new Set((shiftMembers ?? []).map((m) => m.player_id as string))];
+    pctBefore = await loadMeanTeamPct(supabase, shiftPlayerIds);
+  } catch (err) {
+    await logServerError(`standing-refresh pct snapshot: ${describeError(err)}`, {
+      action: 'cron.v3.standing-refresh.pct-snapshot',
+    });
+  }
+
   // Call the SECURITY DEFINER RPC. The function lives in
   // supabase/migrations/20260524210100_v3_refresh_player_standing_function.sql
   // and owns the per-metric upsert SQL.
@@ -373,6 +401,42 @@ async function handle(): Promise<NextResponse> {
       `standing-refresh prune exception: ${describeError(err)}`,
       { action: 'cron.v3.standing-refresh.prune' },
     );
+  }
+
+  if (pctBefore) {
+    try {
+      const pctAfter = await loadMeanTeamPct(supabase, shiftPlayerIds);
+      for (const shift of detectStandingShifts(pctBefore, pctAfter)) {
+        await notifyStandingPercentileChanged({ player_id: shift.player_id, direction: shift.direction });
+      }
+    } catch (err) {
+      await logServerError(`standing-refresh pct notify: ${describeError(err)}`, {
+        action: 'cron.v3.standing-refresh.pct-notify',
+      });
+    }
+  }
+
+  // Audit row 53: weekly digest — Mondays, players whose visible insights
+  // changed in the last 7 days. One per player per day via the throttle.
+  if (isWeeklyDigestDay(new Date()) && shiftPlayerIds.length > 0) {
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+      const { data: weekly, error: weeklyErr } = await applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select('player_id')
+          .in('player_id', shiftPlayerIds)
+          .gte('updated_at', weekAgo),
+      ).limit(1000);
+      if (weeklyErr) throw new Error(weeklyErr.message);
+      for (const playerId of playersWithWeeklyActivity((weekly ?? []) as Array<{ player_id: string | null }>)) {
+        await notifyWeeklyDigest({ player_id: playerId });
+      }
+    } catch (err) {
+      await logServerError(`standing-refresh weekly digest: ${describeError(err)}`, {
+        action: 'cron.v3.standing-refresh.weekly-digest',
+      });
+    }
   }
 
   // P1-07 track-progress: now that this chunk's standings are fresh, advance

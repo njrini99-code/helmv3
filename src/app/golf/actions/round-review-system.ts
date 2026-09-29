@@ -9,6 +9,7 @@
  * - Regenerating reviews with latest engine
  */
 
+import { notifyRoundReviewReady } from '@/lib/coachhelm/v3/notifications/notify';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
@@ -711,7 +712,7 @@ async function generateAndStoreRoundReviewImpl(
     return existing;
   }
 
-  const run = computeAndStoreRoundReview(roundId, playerId);
+  const run = computeAndStoreRoundReview(roundId, playerId, user.id);
   inFlightRoundReviews.set(roundId, run);
   try {
     return await run;
@@ -751,7 +752,9 @@ export async function generateAndStoreRoundReview(
  */
 async function computeAndStoreRoundReview(
   roundId: string,
-  playerId: string
+  playerId: string,
+  /** The signed-in user who triggered generation (row 53 notify gate). */
+  callerUserId: string,
 ): Promise<GenerateReviewResult> {
   const supabase = await createClient();
 
@@ -975,6 +978,18 @@ async function computeAndStoreRoundReview(
       return { success: false, error: 'Failed to save review', code: 'save_failed' };
     }
     const reviewId: string = upserted.id;
+
+    // Audit row 53: tell the player a NEW review is ready, but only when
+    // someone else (their coach) generated it; a player who just opened the
+    // review page is already looking at it. Never throws.
+    const { data: ownerRow } = await supabase
+      .from('golf_players')
+      .select('user_id')
+      .eq('id', ownerPlayerId)
+      .maybeSingle();
+    if (ownerRow && ownerRow.user_id && ownerRow.user_id !== callerUserId) {
+      await notifyRoundReviewReady({ player_id: ownerPlayerId, round_id: roundId });
+    }
 
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
