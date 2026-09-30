@@ -42,7 +42,9 @@ alter table public.golf_team_members
   drop constraint if exists golf_team_members_availability_note_length;
 alter table public.golf_team_members
   add constraint golf_team_members_availability_note_length
-  check (availability_note is null or char_length(availability_note) <= 280);
+  check (availability_note is null or char_length(availability_note) <= 280) not valid;
+-- NOT VALID skips the scan of existing rows, which all have a null note (the column is new above);
+-- every insert and update is still checked.
 
 comment on column public.golf_team_members.availability is
   'Display-only playing availability (available, injured, away). Independent of status, which controls team access.';

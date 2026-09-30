@@ -43,7 +43,7 @@
 -- VERIFY: select policyname, qual, with_check from pg_policies where tablename in
 --   ('golf_announcement_documents', 'golf_document_versions'); every coach test reads is_golf_team_coach.
 
-begin;
+-- The migration tool runs this file in one transaction.
 
 -- 1. golf_announcement_documents -------------------------------------------------------------------------------
 
@@ -120,4 +120,3 @@ create policy "Players can view document versions for visible docs" on public.go
     )
   );
 
-commit;
