@@ -2,6 +2,8 @@
  * A table-level fake of the Supabase server client for loader tests. Each
  * table answers with one `{ data, error, count }`, whatever the query chain;
  * a function answer sees the filters, for tables read more than one way.
+ * An RPC answers from `rpc:<name>` (the function answer sees `[['args', [args]]]`);
+ * one with no answer is "function not found" (PGRST202), as PostgREST says.
  *
  *   const tables = vi.hoisted(() => ({ current: {} as ChFakeTables }));
  *   vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
@@ -32,6 +34,13 @@ function query(table: string, tables: { current: ChFakeTables }) {
   return chain;
 }
 
+function rpc(name: string, args: unknown, tables: { current: ChFakeTables }) {
+  const a = tables.current[`rpc:${name}`];
+  if (!a) return Promise.resolve({ data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } });
+  const res = typeof a === 'function' ? a([['args', [args]]]) : a;
+  return Promise.resolve({ data: null, error: null, ...res });
+}
+
 export function fakeServer(tables: { current: ChFakeTables }) {
-  return { createClient: async () => ({ from: (table: string) => query(table, tables) }) };
+  return { createClient: async () => ({ from: (table: string) => query(table, tables), rpc: (name: string, args: unknown) => rpc(name, args, tables) }) };
 }

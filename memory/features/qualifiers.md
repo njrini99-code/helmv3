@@ -192,15 +192,20 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
 ## Known Risk Areas
 
 - Database gaps found by the Clubhouse security review (2026-09-29), older
-  than the Clubhouse screens and not fixed there; each needs a migration:
-  players can read `golf_qualifier_selections.coach_reasoning` directly once
-  a squad is confirmed (the screens strip it); `golf_qualifier_entries`'
-  coach insert policy doesn't require the player to be on the qualifier's
-  team (only the action checks); the entry-removal stranding trigger runs as
-  the caller and checks only in-progress rounds. Players can also read
-  teammates' `golf_holes` through RLS; showing only their own cards is a
-  screen choice.
-
+  than the Clubhouse screens. D-35 closes them in one held migration,
+  `20260929200000_golf_qualifier_db_hardening.sql` (owner applies; pgTAP
+  `supabase/tests/rls/golf_qualifier_db_hardening.sql`):
+  - `coach_reasoning` becomes coach-only. Signed-in users lose SELECT on that
+    column, and coaches read it through `golf_qualifier_selection_reasons()`.
+    Read it only through `src/lib/golf/qualifier-selection-reasons.ts`, never
+    by selecting the column or `*` with a user's client.
+  - The entries insert and update policies require an active member of the
+    qualifier's team.
+  - The remove-with-round guard runs as its owner and covers every unfinished
+    round.
+  - `anon` loses its grants on three qualifier tables.
+  Players can also read teammates' `golf_holes` through RLS; showing only
+  their own cards is a screen choice (D-36).
 - Leaderboard totals can drift if entry stats are updated outside round submission.
   The aggregate refresh must check both its source read and affected-row write;
   an error-free zero-row PostgREST update is still a failure that must be logged.

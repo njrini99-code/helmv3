@@ -225,6 +225,14 @@ describe('Qualifiers · the loader', () => {
     const asCoach = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
     expect(Object.keys(asCoach.holes).sort()).toEqual(['r1', 'r2']);
     expect(asCoach.selections![0]!.reasoning).toBe('Course history');
+    // Once D-35's migration is applied the column is refused and the coach-gated reader answers.
+    tables.current = {
+      ...tables.current,
+      golf_qualifier_selections: { data: [{ player_id: 'p2', selection_type: 'coach_pick' }] },
+      'rpc:golf_qualifier_selection_reasons': { data: [{ player_id: 'p2', coach_reasoning: 'Course history' }] },
+    };
+    const afterApply = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
+    expect(afterApply.selections![0]!.reasoning).toBe('Course history');
     expect(asCoach.board!.rows.map((r) => r.state)).toEqual([null, 'pick']);
   });
 

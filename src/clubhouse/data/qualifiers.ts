@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
 import {
@@ -322,19 +323,22 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
 
   const status = parseStatus(q.status);
   const selectionState = parseSelectionState(q.selection_state);
-  const [entries, rounds, coursesRes, selRes] = await Promise.all([
+  const [entries, rounds, coursesRes, selRes, reasonsRes] = await Promise.all([
     readEntries(supabase, [q.id], 'qualifiers'),
     readRounds(supabase, [q.id], 'qualifiers'),
     supabase.from('golf_qualifier_round_courses').select('round_number, course_name, tee_id').eq('qualifier_id', q.id).order('round_number', { ascending: true }),
-    selectionState !== 'selected'
-      ? Promise.resolve({ data: [], error: null })
-      : input.role === 'coach'
-        ? supabase.from('golf_qualifier_selections').select('player_id, selection_type, coach_reasoning').eq('qualifier_id', q.id)
-        : // Players never fetch the pick reasoning; it is the coach's note.
-          supabase.from('golf_qualifier_selections').select('player_id, selection_type').eq('qualifier_id', q.id),
+    selectionState === 'selected'
+      ? supabase.from('golf_qualifier_selections').select('player_id, selection_type').eq('qualifier_id', q.id)
+      : Promise.resolve({ data: [], error: null }),
+    // The pick reasoning is the coach's note (D-35): only a coach asks for it, through the coach-gated reader.
+    selectionState === 'selected' && input.role === 'coach'
+      ? readQualifierSelectionReasons(supabase, q.id)
+      : Promise.resolve({ reasons: new Map<string, string | null>(), error: null }),
   ]);
   if (coursesRes.error) chLogServer('qualifiers', 'roundCourses', coursesRes.error, 'qualifiers');
   if (selRes.error) chLogServer('qualifiers', 'selections', selRes.error, 'qualifiers');
+  // Without the reasons the squad still shows; only the coach's notes are missing.
+  if (reasonsRes.error) chLogServer('qualifiers', 'reasons', reasonsRes.error, 'qualifiers');
 
   // Tee pars for the assigned courses (D-33: par per round from the tee, else from the rounds).
   const courseRows = (coursesRes.data ?? []) as Array<{ round_number: number; course_name: string | null; tee_id: string | null }>;
@@ -356,11 +360,11 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   const nameOf = new Map(entrants.map((e) => [e.playerId, e.name]));
   const selections: Array<ChQSelection & { name: string }> | null =
     selectionState === 'selected' && !selRes.error
-      ? ((selRes.data ?? []) as Array<{ player_id: string; selection_type: string; coach_reasoning?: string | null }>).map((s) => ({
+      ? ((selRes.data ?? []) as Array<{ player_id: string; selection_type: string }>).map((s) => ({
           playerId: s.player_id,
           type: s.selection_type === 'coach_pick' ? 'coach_pick' : 'top_score',
           // The pick reasoning is the coach's (D-33); a player's payload never carries it.
-          reasoning: input.role === 'coach' ? (s.coach_reasoning ?? null) : null,
+          reasoning: input.role === 'coach' ? (reasonsRes.reasons.get(s.player_id) ?? null) : null,
           name: nameOf.get(s.player_id) ?? 'A player',
         }))
       : null;
