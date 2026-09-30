@@ -1,67 +1,74 @@
 import {
   BarChart3,
-  Binoculars,
   CalendarDays,
   Flag,
+  GraduationCap,
   House,
   Medal,
   MessageSquare,
   Sparkles,
   Users,
+  UsersRound,
   type LucideIcon,
 } from 'lucide-react';
+
+/** Sidebar sections, in order (v2 gh-nav.js). */
+export type ChNavSection = 'Team' | 'My game' | 'School';
+export const CH_NAV_SECTIONS: readonly (ChNavSection | undefined)[] = [undefined, 'Team', 'My game', 'School'];
 
 export interface ChNavItem {
   id: string;
   label: string;
   href: string;
   icon: LucideIcon;
-  section?: 'Team' | 'Program';
-  /** The phone tab's label when it differs from the sidebar's (CoachHelm is "Helm"). */
-  tabLabel?: string;
+  section?: ChNavSection;
   badge?: 'messages' | 'joinRequests';
 }
 
 /**
- * Coach navigation, in the handoff's order. Practice and Events are in the
- * design but have no route yet, so they are left out rather than pointing at
- * nothing (tracker: open questions). Lineups is hidden until it has its own
- * design; Qualifiers sits under Program, as in the Qualifiers design (D-33).
+ * Coach navigation, in the v2 design's order (D-66, design/handoff/gh-nav.js).
+ * Every entry is a designed screen; one not rebuilt yet (CoachHelm, Team Hub)
+ * opens the not-rebuilt notice. Rounds, Practice, Lineups, Events and
+ * Scouting are not in v2's sidebar and are left out.
  */
 export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
-  { id: 'coachhelm', label: 'CoachHelm', tabLabel: 'Helm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
+  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
-  { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'Team' },
-  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Program' },
-  { id: 'scouting', label: 'Scouting', href: '/golf/dashboard/recruiting', icon: Binoculars, section: 'Program' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Team' },
 ];
 
-/** Player navigation: the shared screens first, with a player's own permissions. */
+/**
+ * Player navigation (D-66): v2's Home, CoachHelm, Team Hub, Rounds (My game)
+ * and Classes (School), plus the player screens already built that v2 hasn't
+ * designed yet (Calendar, Messages, My stats, Qualifiers), kept until it does.
+ */
 export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
+  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
-  { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3 },
-  { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag },
-  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal },
+  { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
+  { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'My game' },
+  { id: 'classes', label: 'Classes', href: '/golf/dashboard/classes', icon: GraduationCap, section: 'School' },
 ];
 
 export type ChRole = 'coach' | 'player';
 
 /**
- * Phone tabs, in order (D-40). Coaches get the owner's phone design: Home,
- * Helm, Rounds and Stats, with Calendar, Messages and Roster under More;
- * Helm and Rounds show the not-rebuilt notice until those screens exist.
- * Players keep their set until a player tab design exists. Everything not
- * listed opens from the More sheet.
+ * Phone tabs, in order (D-66, v2 GH.tabs). Coach: Home, CoachHelm, Calendar,
+ * Stats. Player: Home, CoachHelm, Rounds, Team Hub. Everything else opens
+ * from the More sheet.
  */
 export const CH_PHONE_TABS: Record<ChRole, readonly string[]> = {
-  coach: ['home', 'coachhelm', 'rounds', 'stats'],
-  player: ['home', 'calendar', 'messages', 'stats'],
+  coach: ['home', 'coachhelm', 'calendar', 'stats'],
+  player: ['home', 'coachhelm', 'rounds', 'hub'],
 };
 
 /** The role's phone tabs, in order, and everything else (the More sheet), in sidebar order. */

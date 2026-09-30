@@ -20,8 +20,9 @@ The owner decided the foundation on 2026-09-29. The Messages phone work
 records it as D-40 onward on `agent/clubhouse-messages-mobile`. Roster
 references these answers and does not ask them again:
 
-- **Tab bar:** coaches get the design's five tabs (Home, Helm, Rounds, Stats,
-  More) in ivory glass. Roster lives under More, as drawn.
+- **Tab bar:** coaches get the v2 tabs (Home, CoachHelm, Calendar, Stats,
+  More; D-66, which replaced D-40's Home, Helm, Rounds, Stats) in ivory glass.
+  Roster lives under More, as drawn.
 - **More:** More stays today's sheet (CH-1802) until a More screen is
   designed.
 - **Red:** red is allowed for destructive actions, so Remove from team is a

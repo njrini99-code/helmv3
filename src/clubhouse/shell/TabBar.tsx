@@ -88,7 +88,7 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
                   </span>
                 )}
               </span>
-              <span className="ch-tab__label">{t.tabLabel ?? t.label}</span>
+              <span className="ch-tab__label">{t.label}</span>
               {count != null && <span className="ch-sr-only">, {count} new</span>}
             </Link>
           );

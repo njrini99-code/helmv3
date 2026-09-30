@@ -490,7 +490,7 @@
     "item": 8,
     "name": "THE_PHONE_TAB_BAR_LISTS_THE_ROLES",
     "chCode": "CH-1808",
-    "meaning": "The phone tab bar lists the role's tabs (coach: Home, Helm, Rounds, Stats, More; player: Home, Calendar, Messages, My stats, More; D-40), and when Messages is under More, More is named with its unread count (\"More, 3 unread messages\")",
+    "meaning": "The phone tab bar lists the role's tabs (coach: Home, CoachHelm, Calendar, Stats, More; player: Home, CoachHelm, Rounds, Team Hub, More; D-66), and when Messages is under More, More is named with its unread count (\"More, 3 unread messages\")",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

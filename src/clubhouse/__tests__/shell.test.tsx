@@ -305,6 +305,28 @@ describe('Shell · sidebar data', () => {
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
     expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
   });
+
+  it('D-66 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {
+    const shell: ChShellData = { nextEvent: null, pendingJoinRequests: null };
+    const read = () =>
+      [...document.querySelectorAll('.ch-nav__group')].map((g) => [
+        g.querySelector('.ch-nav__section')?.textContent ?? '',
+        [...g.querySelectorAll('a')].map((a) => a.textContent?.replace(/\d+$/, '').trim()),
+      ]);
+    const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
+    expect(read()).toEqual([
+      ['', ['Home', 'CoachHelm', 'Calendar', 'Team Hub', 'Messages']],
+      ['Team', ['Roster', 'Stats', 'Qualifiers']],
+    ]);
+    unmount();
+    const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
+    wrap(<Sidebar userData={player} shell={shell} pathname="/golf/dashboard" />);
+    expect(read()).toEqual([
+      ['', ['Home', 'CoachHelm', 'Calendar', 'Team Hub', 'Messages']],
+      ['My game', ['Rounds', 'My stats', 'Qualifiers']],
+      ['School', ['Classes']],
+    ]);
+  });
 });
 
 describe('Shell · navigation and accessibility', () => {
@@ -513,12 +535,15 @@ describe('Shell · phone chrome', () => {
     const { unmount } = wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
     const bar = code('CH-1808')!;
     const names = [...bar.querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label') ?? el.querySelector('.ch-tab__label')!.textContent);
-    expect(names).toEqual(['Home', 'Helm', 'Rounds', 'Stats', 'More, 3 unread messages']);
+    // D-66 (v2 GH.tabs): coach Home, CoachHelm, Calendar, Stats, More.
+    expect(names).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'More, 3 unread messages']);
     unmount();
-    wrap(<TabBar pathname="/golf/dashboard/messages" shell={shell} role="player" />);
+    badgeState.messages = 0;
+    // Player: Home, CoachHelm, Rounds, Team Hub, More.
+    wrap(<TabBar pathname="/golf/dashboard/team-hub" shell={shell} role="player" />);
     const labels = [...code('CH-1808')!.querySelectorAll('.ch-tab__label')].map((el) => el.textContent);
-    expect(labels).toEqual(['Home', 'Calendar', 'Messages', 'My stats', 'More']);
-    expect(screen.getByRole('link', { name: /Messages/ }).getAttribute('aria-current')).toBe('page');
+    expect(labels).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'More']);
+    expect(screen.getByRole('link', { name: /Team Hub/ }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
   });
 

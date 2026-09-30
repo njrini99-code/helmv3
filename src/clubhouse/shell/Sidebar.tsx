@@ -6,7 +6,7 @@ import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import { Avatar } from "../ui/Avatar";
 import { Icon } from "../ui/Icon";
 import type { ChShellData } from "../data/shell";
-import { activeNavItem, navFor, type ChNavItem } from "./nav";
+import { activeNavItem, CH_NAV_SECTIONS, navFor, type ChNavItem } from "./nav";
 import { NextEventCard } from "./NextEventCard";
 
 export function badgeCount(
@@ -33,7 +33,7 @@ export function Sidebar({
   const badges = useNotificationBadges();
   const nav = navFor(userData.role);
   const current = activeNavItem(pathname, userData.role)?.id;
-  const sections: Array<ChNavItem["section"]> = [undefined, "Team", "Program"];
+  const sections = CH_NAV_SECTIONS;
 
   return (
     <aside className="ch-sidebar" aria-label="Sidebar">

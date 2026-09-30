@@ -97,6 +97,10 @@ bar that never renders. The rendered bar:
   - active: icon and label in `--ch-green-700`, with no chip and no change of weight (D-40)
 - Badge (`.m-tabdot`): at least 15px wide, radius 8, `--ch-green-600`, white 600 9.5px, offset −4px
   from the top and −9px from the right. It is drawn only on More, as 3 (D-40).
+- **Superseded by D-66 (2026-09-29, the v2 design's `gh-nav.js`).** Coach tabs are Home, CoachHelm,
+  Calendar, Stats and More; player tabs are Home, CoachHelm, Rounds, Team Hub and More. The tab reads
+  "CoachHelm", not "Helm". Messages, Roster and Qualifiers (coach), and Calendar, Messages, My stats,
+  Qualifiers and Classes (player) open from More. The D-40 text below is history.
 - **Decided (D-40).** Coaches: Home, Helm, Rounds, Stats and More, as drawn. Helm and Rounds show
   the not-rebuilt notice until those screens exist, and Qualifiers will open from Rounds once it has a
   phone build. Messages, Roster and Calendar open from More, and the Messages unread badge rolls up
