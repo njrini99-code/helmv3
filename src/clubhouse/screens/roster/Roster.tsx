@@ -38,12 +38,21 @@ const VIEW_KEY = 'ch-roster-view';
 
 const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
 const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a - b);
+/** A spreadsheet reads a cell that starts with = + - @ (or a tab or a return) as a formula. Players type their own names, so the export writes them as text (30502). */
+const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 export function Roster({ data }: { data: ChRoster }) {
   const copy = useCopyText();
   const toast = useToast();
   const router = useRouter();
   const [players, setPlayers] = useState(data.players);
+  // A refresh (Try again, or the page a write revalidated) brings new data. It replaces what this screen kept from
+  // the first render, so a retry after a failed read shows the players, never "No players yet" (30303).
+  const [seen, setSeen] = useState(data.players);
+  if (data.players !== seen) {
+    setSeen(data.players);
+    setPlayers(data.players);
+  }
   const [q, setQ] = useState('');
   const [show, setShow] = useState<Show>('active');
   const [sort, setSort] = useState<Sort>('avg');
@@ -117,17 +126,37 @@ export function Roster({ data }: { data: ChRoster }) {
     setSel((s) => (s === id ? null : id));
   }, []);
 
-  const remove = useAction('roster.removePlayer', (p: ChRosterPlayer) => removePlayerFromTeam(p.id), (p) => ({
-    done: `${p.name} removed from ${data.teamName}`,
-    failed: `Couldn't remove ${p.name}`,
-    hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
-    code: 'CH-3001',
-  }));
+  // What a removal changes on this screen happens inside the action, so the toast's Retry finishes the job as well (31403).
+  const remove = useAction(
+    'roster.removePlayer',
+    async (p: ChRosterPlayer) => {
+      const res = await removePlayerFromTeam(p.id);
+      if (res.success) {
+        setPlayers((ps) => ps.filter((x) => x.id !== p.id));
+        setSel((s) => (s === p.id ? null : s));
+        // Their profile is gone: back to the list.
+        setOpenId((o) => (o === p.id ? null : o));
+        setRemoving(null);
+      }
+      return res;
+    },
+    (p) => ({
+      done: `${p.name} removed from ${data.teamName}`,
+      failed: `Couldn't remove ${p.name}`,
+      hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
+      code: 'CH-3001',
+    }),
+  );
+  /** A note that saved is the note the list holds, so the player reads back with it (31203). */
+  const noteSaved = useCallback(
+    (id: string, note: string | null) => setPlayers((ps) => ps.map((x) => (x.id === id ? { ...x, coachNote: note } : x))),
+    [],
+  );
 
   const exportCsv = () => {
     const head = ['Player', 'Class', 'Status', 'Rounds', 'Scoring avg', 'SG per round', 'Handicap'];
     const lines = rows.map((p) =>
-      [p.name, p.classYear ?? '', p.status, p.rounds, p.avg?.toFixed(1) ?? '', p.sgPerRound?.toFixed(2) ?? '', p.handicap ?? '']
+      [asText(p.name), p.classYear ?? '', p.status, p.rounds, p.avg?.toFixed(1) ?? '', p.sgPerRound?.toFixed(2) ?? '', p.handicap ?? '']
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(','),
     );
@@ -184,18 +213,9 @@ export function Roster({ data }: { data: ChRoster }) {
             <Button
               variant="danger"
               disabled={remove.pending}
-              feel={null}
-              onClick={async () => {
-                const p = removing;
-                if (!p) return;
-                const res = await remove.run(p);
-                if (res.success) {
-                  setPlayers((ps) => ps.filter((x) => x.id !== p.id));
-                  if (sel === p.id) setSel(null);
-                  // Their profile is gone: back to the list.
-                  if (openId === p.id) setOpenId(null);
-                  setRemoving(null);
-                }
+              feel="warning"
+              onClick={() => {
+                if (removing) void remove.run(removing);
               }}
             >
               {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
@@ -219,6 +239,7 @@ export function Roster({ data }: { data: ChRoster }) {
         onClose={() => setOpenId(null)}
         onInvite={() => setInvite(true)}
         onRemove={setRemoving}
+        onNoteSaved={noteSaved}
         onRetry={() => router.refresh()}
       >
         {dialogs}
@@ -390,7 +411,7 @@ export function Roster({ data }: { data: ChRoster }) {
               />
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} />
+              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} />
             </SectionBoundary>
           </div>
         </>

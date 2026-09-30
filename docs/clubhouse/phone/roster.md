@@ -6,8 +6,9 @@ The owner's iPhone design replaces the earlier draft (D-22). It has three
 boards: the roster list, the player profile and the join requests sheet. This
 file maps each element to the Roster code that already runs on desktop: the
 components in `src/clubhouse/screens/roster/`, the loader
-`src/clubhouse/data/roster.ts` (`ChRoster`), the route branch in
-`src/app/golf/(dashboard)/dashboard/roster/page.tsx`, and the catalog
+`src/clubhouse/data/roster.ts` (`ChRoster`), the route adapter
+`src/clubhouse/routes/roster.tsx` (called from
+`src/app/golf/(dashboard)/dashboard/roster/page.tsx`), and the catalog
 `docs/clubhouse/catalog/roster.md` (3xxx). Nothing here is built yet. The open
 owner questions Q-30 to Q-39 were answered on 2026-09-29 and are recorded as
 D-50 to D-59 in `PROGRESS.md`. The answers are listed at the end.

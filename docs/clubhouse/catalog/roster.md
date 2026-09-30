@@ -49,6 +49,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3303 | A status filter has nobody | "No inactive players." / "No active players." + Show everyone | `Roster` | roster.test › CH-3303 |
 | CH-3304 | The team has no join code | "Your team has no join code yet." + "Make one in Settings, then invite players here." + Open team settings | `InviteModal` | roster.test › CH-3304 |
 | CH-3305 | A player has no 18-hole rounds | Form reads "No 18-hole rounds this season" and "Form appears once rounds are posted." | `RosterPeek`, phone `RosterProfile` | roster.test › CH-3305 |
+| CH-3306 | A coach signed in with no active team | The page empty state (v2 medallion): "You aren't on a team yet" + "Your players appear here once your team is set up." No action. It used to be Home's state (CH-2307), whose text is about Home | `RosterNoTeam`, from `ClubhouseRosterRoute` | roster.test › CH-3306 |
 
 ## 34xx Loading
 

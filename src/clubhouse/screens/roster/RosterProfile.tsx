@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { CoachNote } from './RosterPeek';
+import { CoachNote, type NoteSaved } from './RosterPeek';
 import { formatHcp, rowNote } from './format';
 
 /**
@@ -23,10 +23,12 @@ export function RosterProfile({
   p,
   notesLocked,
   statsError,
+  onNoteSaved,
 }: {
   p: ChRosterPlayer;
   notesLocked: boolean;
   statsError: boolean;
+  onNoteSaved: NoteSaved;
 }) {
   const note = rowNote(p, statsError);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${p.id}`);
@@ -161,7 +163,7 @@ export function RosterProfile({
       )}
 
       <section className="ch-rsm-panel ch-rsm-note">
-        <CoachNote key={p.id} p={p} locked={notesLocked} />
+        <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />
       </section>
     </article>
   );

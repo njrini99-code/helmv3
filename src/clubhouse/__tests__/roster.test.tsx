@@ -1,6 +1,9 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Roster: every numbered state in docs/clubhouse/catalog/roster.md, found by its number. */
@@ -24,12 +27,19 @@ const actions = vi.hoisted(() => ({
 vi.mock('@/app/golf/actions/roster', () => ({ removePlayerFromTeam: actions.remove }));
 vi.mock('@/app/golf/actions/teams', () => ({ acceptJoinRequest: actions.accept, rejectJoinRequest: actions.reject, getTeamJoinRequests: actions.requests }));
 vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: actions.intent }));
+vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
+vi.mock('../routes/team', () => ({ resolveClubhouseTeam: vi.fn() }));
 
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadRoster, type ChRoster } from '../data/roster';
+import { ClubhouseRosterRoute } from '../routes/roster';
+import { resolveClubhouseTeam } from '../routes/team';
+import { chReport, chTrail } from '../lib/track';
 import { Roster } from '../screens/roster/Roster';
 import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
 import { NOTE_MAX } from '../screens/roster/RosterPeek';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
+import { isRebuilt, rebuiltHref } from '../shell/nav';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
@@ -40,16 +50,17 @@ async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
 }
+const tree = (data: ChRoster) => (
+  <LazyMotion features={domAnimation}>
+    <ToastProvider>
+      <div className="ch-root" data-ui="clubhouse">
+        <Roster data={data} />
+      </div>
+    </ToastProvider>
+  </LazyMotion>
+);
 function wrap(data: ChRoster) {
-  return render(
-    <LazyMotion features={domAnimation}>
-      <ToastProvider>
-        <div className="ch-root" data-ui="clubhouse">
-          <Roster data={data} />
-        </div>
-      </ToastProvider>
-    </LazyMotion>,
-  );
+  return render(tree(data));
 }
 const roster = (over: Partial<ChRoster> = {}): ChRoster => ({ ...PREVIEW_ROSTER, ...over });
 const fail = () => Promise.resolve({ success: false, error: 'nope' });
@@ -73,6 +84,10 @@ beforeEach(() => {
   logServer.mockClear();
   for (const f of Object.values(actions)) f.mockReset();
   actions.requests.mockResolvedValue({ success: true, data: [] });
+  vi.mocked(getGolfSessionProfile).mockReset();
+  vi.mocked(resolveClubhouseTeam).mockReset();
+  vi.mocked(chReport).mockClear();
+  vi.mocked(chTrail).mockClear();
   tables.current = {};
   localStorage.clear();
 });
@@ -90,7 +105,7 @@ describe('Roster · saves that fail', () => {
     expect(screen.getAllByText(theo.name).length).toBeGreaterThan(0);
   });
 
-  it('CH-3002 approving fails: the request comes back', async () => {
+  it('CH-3002 31301 approving fails: the request comes back', async () => {
     const user = userEvent.setup();
     actions.accept.mockImplementation(fail);
     wrap(roster());
@@ -100,7 +115,7 @@ describe('Roster · saves that fail', () => {
     expect(screen.getByText(req.name)).toBeTruthy();
   });
 
-  it('CH-3007 approve all: every failure is named, the count added is said, and Retry re-tries only those', async () => {
+  it('CH-3007 31401 approve all: every failure is named, the count added is said, and Retry re-tries only those', async () => {
     const user = userEvent.setup();
     const three = [...PREVIEW_ROSTER.requests, { id: 'r3', name: 'Sam Reyes', meta: 'Freshman', classYear: 'Freshman', gradYear: 2030, requested: 'today', handicap: null }];
     actions.accept.mockImplementation((id: string) => Promise.resolve(id === 'r1' ? { success: true } : { success: false, error: 'nope' }));
@@ -135,7 +150,7 @@ describe('Roster · saves that fail', () => {
     expect(nameList(['A', 'B', 'C'])).toBe('A, B and C');
   });
 
-  it('CH-3003 declining fails: the request comes back', async () => {
+  it('CH-3003 31301 declining fails: the request comes back', async () => {
     const user = userEvent.setup();
     actions.reject.mockImplementation(fail);
     wrap(roster());
@@ -145,7 +160,7 @@ describe('Roster · saves that fail', () => {
     expect(screen.getByText(req.name)).toBeTruthy();
   });
 
-  it('CH-3004 the coach note does not save: the text stays in the field', async () => {
+  it('CH-3004 31201 the coach note does not save: the text stays in the field', async () => {
     const user = userEvent.setup();
     actions.intent.mockImplementation(fail);
     wrap(roster());
@@ -312,6 +327,20 @@ describe('Roster · empty', () => {
     await openPeek(user);
     await expectCode('CH-3305', /Form appears once rounds are posted/);
   });
+
+  it("CH-3306 a coach with no team gets Roster's own page state, not Home's", async () => {
+    vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
+    vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
+    render(<>{await ClubhouseRosterRoute()}</>);
+    const el = code('CH-3306') as HTMLElement;
+    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(within(el).getByRole('heading', { level: 2, name: "You aren't on a team yet" })).toBeTruthy();
+    expect(el.textContent).toMatch(/Your players appear here once your team is set up/);
+    expect(el.textContent).not.toMatch(/Home/);
+    expect(code('CH-2307')).toBeNull();
+    // Not `.ch-rs`, which the stylesheet hides under 820px until the phone view takes over.
+    expect(el.closest('main')!.className).toBe('ch-rs-none');
+  });
 });
 
 describe('Roster · loading, haptics, accessibility', () => {
@@ -431,7 +460,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(hapticSpy).not.toHaveBeenCalledWith('press');
   });
 
-  it('CH-3701 active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
+  it('30101 CH-3701 the phone opens on the list: active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
     const user = userEvent.setup();
     phone(roster());
     expect(names('Active players')).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
@@ -453,7 +482,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(screen.getByRole('button', { name: /^Mia Thornton, Junior, inactive, Improving, average 73.8/ })).toBeTruthy();
   });
 
-  it('CH-1906 a player is a pushed screen: a history entry, "‹ Roster" and the back gesture both pop it', async () => {
+  it('31901 CH-1906 a player is a pushed screen: a history entry, "‹ Roster" and the back gesture both pop it', async () => {
     const user = userEvent.setup();
     phone(roster());
     await user.click(screen.getByRole('button', { name: /^Jonah Okafor/ }));
@@ -478,7 +507,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     await waitFor(() => expect(profileHeading('Eli Brandt')).toBeNull());
   });
 
-  it('a link with ?player= opens the profile once; an inactive player is labelled (D-58)', () => {
+  it('30102 a link with ?player= opens the profile once; an inactive player is labelled (D-58)', () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?player=mia');
     phone(roster());
     expect(profileHeading('Mia Thornton')).toBeTruthy();
@@ -542,5 +571,478 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     phone(roster({ statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null, trend: [], recent: [], rounds: 0, form: 'early', attention: null })) }));
     expect(screen.getAllByText(/Season stats didn't load/).length).toBeGreaterThan(0);
     expect(code('CH-3305')).toBeNull();
+  });
+
+  it('30102 a ?player= for someone who is not on this roster opens nothing, and the address is still cleaned', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=someone-else');
+    phone(roster());
+    expect(screen.getByRole('list', { name: 'Active players' })).toBeTruthy();
+    expect(document.querySelector('.ch-rsm-prof')).toBeNull();
+    expect((window.history.state as { chPhone?: number } | null)?.chPhone ?? 0).toBe(0);
+    expect(window.location.search).toBe('');
+  });
+
+  it('31203 a note saved in the profile reads back when the player is opened again', async () => {
+    const user = userEvent.setup();
+    actions.intent.mockResolvedValue({ ok: true });
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    phone(roster());
+    await user.type(screen.getByRole('textbox', { name: /Coach.s note/ }), 'Lag putting drills');
+    await user.tab();
+    expect(await screen.findByText('Note saved for Theo')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Back to Roster' }));
+    await waitFor(() => expect(profileHeading('Theo Marchetti')).toBeNull());
+    await user.click(screen.getByRole('button', { name: /^Theo Marchetti/ }));
+    expect((screen.getByRole('textbox', { name: /Coach.s note/ }) as HTMLTextAreaElement).value).toBe('Lag putting drills');
+  });
+});
+
+/** P003 behaviour contracts with no catalog row (config/clubhouse/bridge-contracts.json, D-69). */
+describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/CONTRACT.md)', () => {
+  const region = () => screen.getByRole('region', { name: 'Join requests' });
+  const requestNames = () => [...region().querySelectorAll('.ch-rs-req__who b')].map((b) => b.textContent);
+  const cardNames = () => [...document.querySelectorAll('.ch-rs-face__name')].map((n) => n.textContent);
+  const noteField = () => screen.getByRole('textbox', { name: /Coach’s note/ }) as HTMLTextAreaElement;
+  const member = (id: string, name: string) => ({ status: 'active', jersey_number: null, joined_at: null, player: { id, first_name: name, last_name: 'M' } });
+
+  it('30101 Roster opens on the active players by average, with the team line, Needs a look and the join requests', () => {
+    wrap(roster());
+    expect(screen.getByRole('heading', { level: 1, name: 'Your players.' })).toBeTruthy();
+    expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active. Team average 73.6 over the season.');
+    expect(cardNames()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
+    expect(screen.getByRole('button', { name: 'Active · 7' }).getAttribute('aria-pressed')).toBe('true');
+    const attn = within(screen.getByRole('region', { name: 'Needs a look' }));
+    for (const first of ['Jonah', 'Eli', 'Priya']) expect(attn.getByRole('button', { name: new RegExp(first) })).toBeTruthy();
+    expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']);
+    expect(screen.queryByRole('complementary')).toBeNull();
+  });
+
+  it('30102 desktop ignores ?player=: no panel opens and the address is left as it was', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    try {
+      wrap(roster());
+      expect(screen.queryByRole('complementary')).toBeNull();
+      expect(window.location.search).toBe('?player=theo');
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
+  it('30303 31402 Try again asks the server again, and what comes back replaces the first copy: an approved player appears, and a failed read never turns into "No players yet"', async () => {
+    const user = userEvent.setup();
+    const view = render(tree(roster({ playersError: true, players: [], requestsError: true, requests: [] })));
+    await user.click(within(code('CH-3201') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // The server's answer arrives as new props.
+    view.rerender(tree(roster()));
+    expect(code('CH-3201')).toBeNull();
+    expect(code('CH-3301')).toBeNull();
+    expect(cardNames()).toContain(theo.name);
+    expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']);
+    // Approve one: the write revalidates the page, and the new player is on the roster.
+    actions.accept.mockResolvedValue({ success: true });
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
+    await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
+    const grace = { ...theo, id: 'grace', name: 'Grace Liu', firstName: 'Grace', classYear: 'Freshman', gradYear: 2030, rounds: 0, avg: null, sgPerRound: null, trend: [], recent: [], form: 'early' as const, attention: null, coachNote: null, jersey: null };
+    view.rerender(tree(roster({ players: [...PREVIEW_ROSTER.players, grace], requests: [PREVIEW_ROSTER.requests[1]!] })));
+    expect(cardNames()).toContain('Grace Liu');
+    expect(requestNames()).toEqual(['Owen Park']);
+  });
+
+  it('30701 offline, a removal, an approval, a decline, Approve all and a note send nothing and change nothing on screen; Export still works', async () => {
+    const user = userEvent.setup();
+    const offline = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    const url = URL as unknown as { createObjectURL?: unknown; revokeObjectURL?: unknown };
+    const prev = [url.createObjectURL, url.revokeObjectURL];
+    url.createObjectURL = () => 'blob:x';
+    url.revokeObjectURL = () => {};
+    wrap(roster());
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
+    expect(await screen.findByText("Couldn't approve Grace Liu: you're offline")).toBeTruthy();
+    await user.click(within(region()).getAllByRole('button', { name: 'Decline' })[1]!);
+    expect(await screen.findByText("Couldn't decline Owen Park's request: you're offline")).toBeTruthy();
+    expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']);
+    await openPeek(user);
+    await user.type(noteField(), 'x');
+    await user.tab();
+    expect(await screen.findByText("Couldn't save your note about Theo: you're offline")).toBeTruthy();
+    expect(noteField().value).toBe('x');
+    await openRemove(user);
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    expect(await screen.findByText("Couldn't remove Theo Marchetti: you're offline")).toBeTruthy();
+    expect(screen.getByRole('button', { name: `Actions for ${theo.name}` })).toBeTruthy();
+    expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    // Approve all is refused the same way.
+    const { result } = renderHook(() => useJoinRequests('Varsity', PREVIEW_ROSTER.requests), {
+      wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
+    });
+    await act(() => result.current.approveAll());
+    expect(result.current.reqs).toHaveLength(2);
+    for (const write of [actions.accept, actions.reject, actions.remove, actions.intent]) expect(write).not.toHaveBeenCalled();
+    // Export is local: it needs no network.
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    expect(await screen.findByText(/Roster exported/)).toBeTruthy();
+    offline.mockRestore();
+    [url.createObjectURL, url.revokeObjectURL] = prev;
+  });
+
+  it('31301 while one decision is in flight every other Approve and Decline waits, so no click is refused in silence', async () => {
+    const user = userEvent.setup();
+    let answer: (v: unknown) => void = () => {};
+    actions.accept.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
+    wrap(roster());
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
+    for (const b of within(region()).getAllByRole('button')) expect((b as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => answer({ success: true }));
+    await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
+    for (const b of within(region()).getAllByRole('button')) expect((b as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('30502 the export writes a name that starts with = + - or @ as text, so a spreadsheet never reads it as a formula; numbers stay numbers', async () => {
+    const user = userEvent.setup();
+    let blob: Blob | undefined;
+    const url = URL as unknown as { createObjectURL?: unknown; revokeObjectURL?: unknown };
+    const prev = [url.createObjectURL, url.revokeObjectURL];
+    url.createObjectURL = (b: Blob) => {
+      blob = b;
+      return 'blob:x';
+    };
+    url.revokeObjectURL = () => {};
+    wrap(roster({ players: [{ ...theo, id: 'odd', name: '=HYPERLINK("http://x","Click")', firstName: 'Odd' }, ...PREVIEW_ROSTER.players] }));
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    const lines = (await blob!.text()).split('\n');
+    expect(lines.find((l) => l.includes('HYPERLINK'))!.startsWith('"\'=HYPERLINK(""http://x"",""Click"")"')).toBe(true);
+    expect(lines.find((l) => l.startsWith('"Theo Marchetti"'))).toContain('"-0.8"');
+    [url.createObjectURL, url.revokeObjectURL] = prev;
+  });
+
+  it('CH-3803 Esc inside an open dialog closes that dialog and leaves the player panel alone', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await openPeek(user);
+    await openRemove(user);
+    await user.keyboard('{Escape}');
+    // The panel leaves with a 260ms slide when it closes: give it time to go.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+    });
+    expect(screen.getByRole('complementary', { name: theo.name })).toBeTruthy();
+  });
+
+  it('CH-3703 Share falls back to copying the link when the share sheet fails, and stays quiet when it is dismissed', async () => {
+    const user = userEvent.setup();
+    const share = vi.fn().mockRejectedValueOnce(new Error('no share sheet')).mockRejectedValueOnce(Object.assign(new Error('dismissed'), { name: 'AbortError' }));
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    wrap(roster());
+    await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
+    await user.click(await screen.findByRole('button', { name: 'Share' }));
+    expect(await screen.findByText('Invite link copied')).toBeTruthy();
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('/golf/join/FINLEY-26'));
+    write.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(2));
+    expect(write).not.toHaveBeenCalled();
+    write.mockRestore();
+    delete (navigator as { share?: unknown }).share;
+  });
+
+  it('30801 only a coach reaches the roster: a player session gets nothing and no read is made; a coach gets the loader for their own team', async () => {
+    const read = vi.fn(() => ({ data: null }));
+    tables.current = { golf_teams: read, golf_team_members: read };
+    vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: null, player: { id: 'p1' } } as never);
+    expect(await ClubhouseRosterRoute()).toBeNull();
+    vi.mocked(getGolfSessionProfile).mockResolvedValue(null);
+    expect(await ClubhouseRosterRoute()).toBeNull();
+    expect(resolveClubhouseTeam).not.toHaveBeenCalled();
+    expect(read).not.toHaveBeenCalled();
+    // In the Clubhouse frame a player on this address gets the not-rebuilt notice (10802), never the page.
+    expect(isRebuilt('/golf/dashboard/roster', 'coach')).toBe(true);
+    expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(false);
+    expect(rebuiltHref('/golf/dashboard/roster', 'player')).toBeNull();
+    // A coach: the loader gets their active team and their own id.
+    vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
+    vi.mocked(resolveClubhouseTeam).mockResolvedValue({ role: 'coach', teamId: 't1', coachId: 'c1' });
+    tables.current = { golf_teams: { data: { name: 'Varsity', join_code: 'X', season: null } }, golf_team_members: { data: [] } };
+    const el = (await ClubhouseRosterRoute()) as React.ReactElement<{ data: ChRoster }>;
+    expect(el.type).toBe(Roster);
+    expect(el.props.data.teamName).toBe('Varsity');
+  });
+
+  it("30802 the loader reads this team's members and this coach's notes only, and never asks for pending or removed members", async () => {
+    const seen: Record<string, Array<[string, unknown[]]>> = {};
+    const answer = (table: string, data: unknown) => (filters: Array<[string, unknown[]]>) => {
+      seen[table] = filters;
+      return { data };
+    };
+    tables.current = {
+      golf_teams: { data: { name: 'Varsity', join_code: 'X', season: null } },
+      golf_team_members: answer('members', [member('p1', 'Theo')]),
+      golf_coach_player_intent: answer('notes', [{ player_id: 'p1', notes: 'Mine' }]),
+    };
+    const data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(seen.members).toContainEqual(['eq', ['team_id', 't1']]);
+    expect(seen.members).toContainEqual(['in', ['status', ['active', 'inactive']]]);
+    expect(seen.notes).toContainEqual(['eq', ['coach_id', 'c1']]);
+    expect(data.players[0]!.coachNote).toBe('Mine');
+  });
+
+  it('30803 the server refuses a change and says why: its words are shown and nothing on the screen moves', async () => {
+    const user = userEvent.setup();
+    actions.accept.mockResolvedValue({ success: false, error: 'This request has already been processed' });
+    actions.intent.mockResolvedValue({ ok: false, error: 'Not authorized for this player' });
+    actions.remove.mockResolvedValue({ success: false, error: 'This player has a saved in-progress round. Have them finish or discard it before removing them from the team.' });
+    wrap(roster());
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
+    await expectCode('CH-3002', /This request has already been processed\./);
+    expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']);
+    await openPeek(user);
+    await user.type(noteField(), 'x');
+    await user.tab();
+    await expectCode('CH-3004', /Not authorized for this player\./);
+    expect(noteField().value).toBe('x');
+    await openRemove(user);
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    await expectCode('CH-3001', /saved in-progress round/);
+    expect(screen.getByRole('button', { name: `Actions for ${theo.name}` })).toBeTruthy();
+    expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(true);
+  });
+
+  it('30901 a change that lands says what happened in a toast and taps success once: added, declined, note saved, removed', async () => {
+    const user = userEvent.setup();
+    actions.accept.mockResolvedValue({ success: true });
+    actions.reject.mockResolvedValue({ success: true });
+    actions.intent.mockResolvedValue({ ok: true });
+    actions.remove.mockResolvedValue({ success: true });
+    wrap(roster());
+    const taps = () => hapticSpy.mock.calls.filter(([kind]) => kind === 'success').length;
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
+    expect(await screen.findByText('Grace Liu added to Varsity')).toBeTruthy();
+    expect(taps()).toBe(1);
+    await user.click(within(region()).getByRole('button', { name: 'Decline' }));
+    expect(await screen.findByText('Request from Owen Park declined')).toBeTruthy();
+    expect(taps()).toBe(2);
+    await openPeek(user);
+    await user.type(noteField(), 'Lag putting drills');
+    await user.tab();
+    expect(await screen.findByText('Note saved for Theo')).toBeTruthy();
+    expect(taps()).toBe(3);
+    await openRemove(user);
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    expect(await screen.findByText('Theo Marchetti removed from Varsity')).toBeTruthy();
+    expect(taps()).toBe(4);
+    expect(screen.queryByRole('button', { name: `Actions for ${theo.name}` })).toBeNull();
+    expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(false);
+    await waitFor(() => expect(screen.queryByRole('complementary', { name: theo.name })).toBeNull());
+  });
+
+  it('31202 the cards or list choice is remembered on this device, and a device that refuses storage still switches', async () => {
+    const user = userEvent.setup();
+    const first = wrap(roster());
+    await toList(user);
+    expect(localStorage.getItem('ch-roster-view')).toBe('list');
+    first.unmount();
+    wrap(roster());
+    expect(await screen.findByRole('table', { name: 'Roster' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Team view' }));
+    expect(localStorage.getItem('ch-roster-view')).toBe('faces');
+    const errors: unknown[] = [];
+    const caught = (e: ErrorEvent) => {
+      errors.push(e.error);
+      e.preventDefault();
+    };
+    window.addEventListener('error', caught);
+    const denied = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    await toList(user);
+    expect(screen.getByRole('table', { name: 'Roster' })).toBeTruthy();
+    denied.mockRestore();
+    window.removeEventListener('error', caught);
+    // The refusal is handled inside Roster, not left to surface as an uncaught error.
+    expect(errors).toEqual([]);
+  });
+
+  it('31203 a saved note reads back: close the player and open them again, and the new text is there', async () => {
+    const user = userEvent.setup();
+    actions.intent.mockResolvedValue({ ok: true });
+    wrap(roster());
+    await openPeek(user);
+    await user.type(noteField(), 'Lag putting drills');
+    await user.tab();
+    expect(await screen.findByText('Note saved for Theo')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('complementary', { name: theo.name })).toBeNull());
+    await openPeek(user);
+    expect(noteField().value).toBe('Lag putting drills');
+    // Emptying it saves no note, and that reads back too.
+    await user.clear(noteField());
+    await user.tab();
+    await waitFor(() => expect(actions.intent).toHaveBeenLastCalledWith({ player_id: 'theo', notes: null }));
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('complementary', { name: theo.name })).toBeNull());
+    await openPeek(user);
+    expect(noteField().value).toBe('');
+  });
+
+  it('31301 a decision takes the request off the list at once and puts it back in its place when the server refuses; Remove waits for the server', async () => {
+    const user = userEvent.setup();
+    let answer: (v: unknown) => void = () => {};
+    actions.accept.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
+    wrap(roster());
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[1]!);
+    expect(requestNames()).toEqual(['Grace Liu']);
+    await act(async () => answer({ success: false, error: 'nope' }));
+    await waitFor(() => expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']));
+    actions.remove.mockImplementation(() => new Promise(() => {}));
+    await openRemove(user);
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    await expectCode('CH-3402');
+    expect(screen.getByRole('button', { name: `Actions for ${theo.name}` })).toBeTruthy();
+  });
+
+  it('31403 the Retry on a failed removal completes it: the player leaves the list and the dialog closes', async () => {
+    const user = userEvent.setup();
+    actions.remove.mockImplementationOnce(fail).mockResolvedValue({ success: true });
+    wrap(roster());
+    await openRemove(user);
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    await expectCode('CH-3001');
+    await user.click(within(code('CH-3001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: `Actions for ${theo.name}` })).toBeNull());
+    expect(actions.remove).toHaveBeenCalledTimes(2);
+    expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(false);
+  });
+
+  it('31403 the Retry on a failed approval or decline puts the decision through: the request stays off the list', async () => {
+    const user = userEvent.setup();
+    actions.accept.mockImplementationOnce(fail).mockResolvedValue({ success: true });
+    actions.reject.mockImplementationOnce(fail).mockResolvedValue({ success: true });
+    wrap(roster());
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
+    await expectCode('CH-3002');
+    await waitFor(() => expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']));
+    await user.click(within(code('CH-3002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
+    await user.click(within(region()).getByRole('button', { name: 'Decline' }));
+    await expectCode('CH-3003');
+    await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
+    await user.click(within(code('CH-3003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Join requests' })).toBeNull());
+    expect(actions.accept).toHaveBeenCalledTimes(2);
+    expect(actions.reject).toHaveBeenCalledTimes(2);
+  });
+
+  it('31403 the Retry on a failed note save marks the note saved, so leaving the field again writes nothing more', async () => {
+    const user = userEvent.setup();
+    actions.intent.mockImplementationOnce(() => Promise.resolve({ ok: false, error: 'nope' })).mockResolvedValue({ ok: true });
+    wrap(roster());
+    await openPeek(user);
+    await user.type(noteField(), 'Lag putting drills');
+    await user.tab();
+    await expectCode('CH-3004');
+    await user.click(within(code('CH-3004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Note saved for Theo')).toBeTruthy();
+    expect(actions.intent).toHaveBeenCalledTimes(2);
+    await user.click(noteField());
+    await user.tab();
+    expect(actions.intent).toHaveBeenCalledTimes(2);
+  });
+
+  it('31704 Remove player taps the warning haptic as it is pressed, then the success pattern when the removal lands', async () => {
+    const user = userEvent.setup();
+    actions.remove.mockResolvedValue({ success: true });
+    wrap(roster());
+    await openRemove(user);
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+    expect(hapticSpy.mock.calls.map(([kind]) => kind)).toEqual(['warning', 'success']);
+  });
+
+  it('32001 the coach note saves when the field is left, only if it changed, with the outer spaces trimmed; an emptied note saves as none', async () => {
+    const user = userEvent.setup();
+    actions.intent.mockResolvedValue({ ok: true });
+    wrap(roster());
+    await openPeek(user);
+    await user.click(noteField());
+    await user.tab();
+    expect(actions.intent).not.toHaveBeenCalled();
+    await user.type(noteField(), '  Lag putting  ');
+    await user.tab();
+    await waitFor(() => expect(actions.intent).toHaveBeenCalledTimes(1));
+    expect(actions.intent).toHaveBeenCalledWith({ player_id: 'theo', notes: 'Lag putting' });
+    await user.click(noteField());
+    await user.tab();
+    expect(actions.intent).toHaveBeenCalledTimes(1);
+    await user.clear(noteField());
+    await user.tab();
+    await waitFor(() => expect(actions.intent).toHaveBeenCalledTimes(2));
+    expect(actions.intent).toHaveBeenLastCalledWith({ player_id: 'theo', notes: null });
+  });
+
+  it('32101 the loader reads in two parallel rounds and answers when reads fail: each failure is logged and flagged, nothing throws', async () => {
+    const boom = { error: { message: 'boom' } };
+    const reads = () => logServer.mock.calls.map(([, read]) => read);
+    actions.requests.mockRejectedValue(new Error('down'));
+    tables.current = { golf_teams: boom, golf_team_members: boom };
+    const none = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(none).toMatchObject({ teamError: true, playersError: true, requestsError: true, players: [], requests: [], teamName: 'Your team', joinCode: null });
+    expect(reads()).toEqual(expect.arrayContaining(['team', 'members', 'joinRequests']));
+    logServer.mockClear();
+    // The second round needs the members' ids; each of its reads can fail alone.
+    actions.requests.mockResolvedValue({ success: true, data: [] });
+    tables.current = {
+      golf_teams: { data: { name: 'Varsity', join_code: 'X', season: null } },
+      golf_team_members: { data: [member('p1', 'Theo')] },
+      golf_rounds: boom,
+      golf_player_focus_areas: boom,
+      golf_goals: boom,
+      golf_coach_player_intent: boom,
+    };
+    const part = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(part).toMatchObject({ playersError: false, teamError: false, statsError: true, notesError: true });
+    expect(part.players[0]).toMatchObject({ rounds: 0, avg: null, focusAreas: null, goals: null, attention: null });
+    expect(reads()).toEqual(expect.arrayContaining(['rounds', 'golf_player_focus_areas', 'golf_goals', 'coachNotes']));
+  });
+
+  it('32301 a failed change is reported with its roster action, a crash with its section, and each intent leaves a breadcrumb', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const user = userEvent.setup();
+    actions.accept.mockRejectedValue(new Error('boom'));
+    actions.remove.mockImplementation(fail);
+    const view = wrap(roster());
+    await openPeek(user);
+    expect(chTrail).toHaveBeenCalledWith('roster open player');
+    await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
+    await expectCode('CH-3002');
+    expect(chTrail).toHaveBeenCalledWith('action roster.approveRequest');
+    expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'roster', action: 'roster.approveRequest' }));
+    await openRemove(user);
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    await expectCode('CH-3001');
+    expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'roster', action: 'roster.removePlayer', severity: 'low' }));
+    view.unmount();
+    wrap(roster({ requests: null as never }));
+    expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'roster.requests', severity: 'high' }));
+    quiet.mockRestore();
+  });
+
+  it('32401 this file names every Roster catalog code it forces, in a test title', () => {
+    const self = fileURLToPath(import.meta.url);
+    const catalog = readFileSync(resolve(dirname(self), '../../../docs/clubhouse/catalog/roster.md'), 'utf8');
+    const titles = readFileSync(self, 'utf8')
+      .split('\n')
+      .filter((line) => /^\s*(it|describe)\(/.test(line))
+      .join('\n');
+    const forced = catalog
+      .split('\n')
+      .filter((line) => /^\| CH-3[0-5]\d\d \|/.test(line) && !/retired/i.test(line) && !/\|\s*preview\s*\|\s*$/.test(line.trim()))
+      .map((line) => /^\| (CH-\d{4}) \|/.exec(line)![1]!);
+    // A floor, so an unreadable catalog can't pass by finding nothing.
+    expect(forced.length).toBeGreaterThanOrEqual(27);
+    expect(forced.filter((c) => !titles.includes(c))).toEqual([]);
   });
 });

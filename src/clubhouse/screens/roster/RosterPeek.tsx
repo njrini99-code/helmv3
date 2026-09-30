@@ -24,14 +24,25 @@ const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
 };
 
 /** The player drawer. Esc closes it; the coach's note saves when the field loses focus. */
-export function RosterPeek({ p, notesLocked, onClose }: { p: ChRosterPlayer | undefined; notesLocked: boolean; onClose: () => void }) {
+export function RosterPeek({
+  p,
+  notesLocked,
+  onClose,
+  onNoteSaved,
+}: {
+  p: ChRosterPlayer | undefined;
+  notesLocked: boolean;
+  onClose: () => void;
+  onNoteSaved: NoteSaved;
+}) {
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!p) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !(e.target instanceof HTMLTextAreaElement)) onClose();
+      // Esc inside an open dialog (Remove, Invite) closes that dialog and leaves the panel alone.
+      if (e.key === 'Escape' && !(e.target instanceof HTMLTextAreaElement) && !document.querySelector('dialog[open]')) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -50,14 +61,14 @@ export function RosterPeek({ p, notesLocked, onClose }: { p: ChRosterPlayer | un
           exit={reduced ? { opacity: 0 } : { opacity: 0, x: 12 }}
           transition={chTween('base')}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} />
         </m.aside>
       )}
     </AnimatePresence>
   );
 }
 
-function PeekBody({ p, notesLocked, onClose }: { p: ChRosterPlayer; notesLocked: boolean; onClose: () => void }) {
+function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer; notesLocked: boolean; onClose: () => void; onNoteSaved: NoteSaved }) {
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
@@ -169,7 +180,7 @@ function PeekBody({ p, notesLocked, onClose }: { p: ChRosterPlayer; notesLocked:
         </div>
       </div>
 
-      <CoachNote key={p.id} p={p} locked={notesLocked} />
+      <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />
 
       {profileHref && (
         <div className="ch-rs-peek__foot">
@@ -187,16 +198,31 @@ export const NOTE_MAX = 2000;
 /** The counter appears when this many characters are left. */
 const NOTE_WARN = 200;
 
+/** Tells the list that a note is now stored, so the player reads back with it (31203). */
+export type NoteSaved = (playerId: string, note: string | null) => void;
+
 /** The coach's private note. Shared by the desktop panel and the phone profile (D-56). */
-export function CoachNote({ p, locked }: { p: ChRosterPlayer; locked: boolean }) {
+export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: boolean; onSaved: NoteSaved }) {
   const [saved, setSaved] = useState(p.coachNote ?? '');
   const [draft, setDraft] = useState(p.coachNote ?? '');
-  const save = useAction('roster.coachNote', (notes: string) => setIntent({ player_id: p.id, notes: notes || null }), {
-    done: `Note saved for ${p.firstName}`,
-    failed: `Couldn't save your note about ${p.firstName}`,
-    hint: 'Your text is still in the field. Try again in a moment.',
-    code: 'CH-3004',
-  });
+  const save = useAction(
+    'roster.coachNote',
+    async (notes: string) => {
+      const res = await setIntent({ player_id: p.id, notes: notes || null });
+      // Inside the action, so the toast's Retry marks the note saved as well (31403).
+      if (res.ok) {
+        setSaved(notes);
+        onSaved(p.id, notes || null);
+      }
+      return res;
+    },
+    {
+      done: `Note saved for ${p.firstName}`,
+      failed: `Couldn't save your note about ${p.firstName}`,
+      hint: 'Your text is still in the field. Try again in a moment.',
+      code: 'CH-3004',
+    },
+  );
   const left = NOTE_MAX - draft.length;
   const helpId = `note-help-${p.id}`;
   return (
@@ -220,8 +246,7 @@ export function CoachNote({ p, locked }: { p: ChRosterPlayer; locked: boolean })
           if (locked) return;
           const next = draft.trim();
           if (next === saved.trim()) return;
-          const res = await save.run(next);
-          if (res.success) setSaved(next);
+          await save.run(next);
         }}
         aria-busy={save.pending}
       />

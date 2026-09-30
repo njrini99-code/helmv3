@@ -59,10 +59,11 @@ export function RosterRequests({
             </span>
           </span>
           <div className="ch-rs-req__act">
-            <Button size="sm" variant="ghost" disabled={busy === r.id || busy === 'all'} onClick={() => void decide(r, false)}>
+            {/* One decision at a time, as on the phone: a click while another is in flight would be refused with no word. */}
+            <Button size="sm" variant="ghost" disabled={busy != null} onClick={() => void decide(r, false)}>
               Decline
             </Button>
-            <Button size="sm" variant="primary" disabled={busy === r.id || busy === 'all'} onClick={() => void decide(r, true)} feel={null}>
+            <Button size="sm" variant="primary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
               Approve
             </Button>
           </div>

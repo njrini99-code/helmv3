@@ -4,10 +4,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { isClubhouseFor } from '@/clubhouse/gate';
-import { loadRoster } from '@/clubhouse/data/roster';
-import { Roster } from '@/clubhouse/screens/roster/Roster';
-import { CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
-import { resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
+import { ClubhouseRosterRoute } from '@/clubhouse/routes/roster';
 import Link from 'next/link';
 import { AlertCircle, Users } from 'lucide-react';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -88,12 +85,8 @@ export default async function GolfRosterPage() {
 
   const { coach, player } = session;
 
-  // Clubhouse Roster (golf_clubhouse_ui): its own loader and screen.
-  if (coach && isClubhouseFor('coach')) {
-    const teamId = await resolveCoachActiveTeamIdForRequest(coach.organization_id ?? null, coach.id);
-    if (!teamId) return <CoachHomeNoTeam />;
-    return <Roster data={await loadRoster({ teamId, coachId: coach.id })} />;
-  }
+  // Clubhouse Roster (golf_clubhouse_ui): coaches only, with its own route, loader and screen.
+  if (coach && isClubhouseFor('coach')) return <ClubhouseRosterRoute />;
 
   const supabase = await createClient();
 

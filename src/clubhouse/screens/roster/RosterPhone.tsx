@@ -20,6 +20,7 @@ import { haptic } from '../../lib/haptics';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../shell/phone-chrome';
+import type { NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { formatHcp, rowNote } from './format';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
@@ -57,6 +58,7 @@ export function RosterPhone({
   onClose,
   onInvite,
   onRemove,
+  onNoteSaved,
   onRetry,
   children,
 }: {
@@ -68,6 +70,7 @@ export function RosterPhone({
   onClose: () => void;
   onInvite: () => void;
   onRemove: (p: ChRosterPlayer) => void;
+  onNoteSaved: NoteSaved;
   onRetry: () => void;
   /** The dialogs (invite, remove confirm), shared with desktop. */
   children?: ReactNode;
@@ -197,7 +200,7 @@ export function RosterPhone({
             />
             <div className="ch-rsm-scroll">
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} />
+                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} onNoteSaved={onNoteSaved} />
               </SectionBoundary>
             </div>
           </PhoneScreen>

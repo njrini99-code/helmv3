@@ -19,7 +19,7 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 - [x] A narrow canvas (container below 860px) reflows without horizontal page scroll
 
 ## wired
-- [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
+- [x] Everything is read server-side in one request, in two parallel rounds (the second needs the first's player ids), so final data is on first paint (no client fetch waterfall)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
 - [x] Null, zero and "early read" render differently, and windows and samples are stated
