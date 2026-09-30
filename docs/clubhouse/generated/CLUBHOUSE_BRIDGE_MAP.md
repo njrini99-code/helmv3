@@ -75,7 +75,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
 | P010 | 2 | 5 |  | 11 | 8 | 17 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 66 |
-| P011 | 13 | 6 |  | 13 | 10 | 19 | 2 | 5 | 2 |  | 11 | 2 | 1 | 3 | 3 | 3 | 7 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 118 |
+| P011 | 13 | 7 |  | 13 | 10 | 19 | 2 | 5 | 2 |  | 11 | 2 | 1 | 3 | 3 | 3 | 7 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 119 |
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
 
@@ -928,6 +928,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110204 | CH-11404 | 02 Initial loading / skeleton | `A_COURSES_TEES_ARE_LOADING` | implemented | A course's tees are loading |
 | 110205 | CH-11405 | 02 Initial loading / skeleton | `THE_PICKED_TEES_SCORECARD_IS_LOADING` | implemented | The picked tees' scorecard is loading |
 | 110206 |  | 02 Initial loading / skeleton | `REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON` | reserved | A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405. |
+| 110207 | CH-11406 | 02 Initial loading / skeleton | `A_ROUNDS_REVIEW_IS_LOADING` | implemented | A round's review is loading |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |

@@ -83,6 +83,7 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | CH-11403 | The course library is loading | Four row-shaped blocks, `aria-busy` | `CoursePicker` | round-setup.test › CH-11403 |
 | CH-11404 | A course's tees are loading | Three tee-card-shaped blocks | `CoursePicker` | preview |
 | CH-11405 | The picked tees' scorecard is loading | Nine hole-row blocks where the scorecard goes; Start waits ("Loading the scorecard") | `RoundSetup` | preview |
+| CH-11406 | A round's review is loading | The back link, the green hero, the figures and the scorecard frame as skeletons, in place; outside Clubhouse, Fairway's | `RoundReviewSkeleton` via `ClubhouseSwitch` in `rounds/[id]/loading.tsx` | round-review.test › CH-11406 |
 
 ## 115xx Confirm
 

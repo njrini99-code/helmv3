@@ -29,3 +29,15 @@ export function RoundsSkeleton() {
     </main>
   );
 }
+
+/** Route loading for a round's review (CH-11406): the back link, the green hero, five figures and the scorecard, in place. */
+export function RoundReviewSkeleton() {
+  return (
+    <main className="ch-rv" aria-busy="true" aria-label="Loading the round" data-ch-code="CH-11406">
+      <Skeleton width={96} height={34} radius={17} />
+      <Skeleton width="100%" height={182} radius={20} />
+      <Skeleton width="100%" height={96} radius={16} />
+      <Skeleton width="100%" height={430} radius={18} />
+    </main>
+  );
+}

@@ -9220,6 +9220,17 @@
     "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx"
   },
   {
+    "id": 110207,
+    "page": "P011",
+    "category": 2,
+    "item": 7,
+    "name": "A_ROUNDS_REVIEW_IS_LOADING",
+    "chCode": "CH-11406",
+    "meaning": "A round's review is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,

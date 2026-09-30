@@ -55,6 +55,7 @@ course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405),
 | 110204 | CH-11404 | `A_COURSES_TEES_ARE_LOADING` | A course's tees are loading |
 | 110205 | CH-11405 | `THE_PICKED_TEES_SCORECARD_IS_LOADING` | The picked tees' scorecard is loading |
 | 110206 | — | `REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON` | A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405. |
+| 110207 | CH-11406 | `A_ROUNDS_REVIEW_IS_LOADING` | A round's review is loading |
 
 ## 03 — Background loading / refresh
 

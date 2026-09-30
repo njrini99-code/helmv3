@@ -1,6 +1,7 @@
 import 'server-only';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadRoundsLibrary } from '../data/rounds';
+import { chLogServer } from '../lib/track-server';
 import { RoundsLibrary } from '../screens/rounds/RoundsLibrary';
 import { resolveClubhouseTeam } from './team';
 import '../styles/rounds.css';
@@ -14,7 +15,13 @@ import '../styles/rounds.css';
 export async function ClubhouseRoundsRoute() {
   const session = await getGolfSessionProfile();
   if (!session?.player) return null;
-  const team = await resolveClubhouseTeam(session);
-  const data = await loadRoundsLibrary({ playerId: session.player.id, teamId: team?.teamId ?? null });
+  // The team only sets the time zone for "today", so a failed membership read costs that, not the page: the rounds are the player's own.
+  let teamId: string | null = null;
+  try {
+    teamId = (await resolveClubhouseTeam(session))?.teamId ?? null;
+  } catch (err) {
+    chLogServer('rounds', 'team', err);
+  }
+  const data = await loadRoundsLibrary({ playerId: session.player.id, teamId });
   return <RoundsLibrary data={data} playerId={session.player.id} />;
 }

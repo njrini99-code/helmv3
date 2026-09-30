@@ -19,7 +19,7 @@ vi.mock('@/lib/utils/emergency-save', () => ({ clearEmergencySave: vi.fn() }));
 const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
 const teamOf = vi.hoisted(() => ({ current: null as unknown }));
-vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
+vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => (teamOf.current instanceof Error ? Promise.reject(teamOf.current) : Promise.resolve(teamOf.current)) }));
 // Review, New round and Continue aren't rebuilt yet, so their controls aren't drawn. `links.all` stands in for the day they are.
 const links = vi.hoisted(() => ({ all: false }));
 vi.mock('../shell/nav', async (orig) => {
@@ -470,6 +470,20 @@ describe('Rounds route', () => {
       </LazyMotion>,
     );
     expect(screen.getByText('No rounds yet')).toBeTruthy();
+  });
+
+  it('110801 a team read that fails costs only the team clock: the rounds still show, and the failure is logged', async () => {
+    session.current = { userId: 'u2', coach: null, player: { id: 'p1' } };
+    teamOf.current = new Error('Clubhouse: the player team membership read failed');
+    tables.current = { golf_rounds: { data: [] } };
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>{(await ClubhouseRoundsRoute())!}</ToastProvider>
+      </LazyMotion>,
+    );
+    expect(screen.getByText('No rounds yet')).toBeTruthy();
+    expect(logServer).toHaveBeenCalledWith('rounds', 'team', expect.any(Error));
+    teamOf.current = null;
   });
 
   it('CH-11401 the route skeleton holds the page shape and says it is loading', async () => {

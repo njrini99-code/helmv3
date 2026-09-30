@@ -30,6 +30,8 @@ import { ClubhouseRoundReviewRoute } from '../routes/round-review';
 import { firstHole, RoundReview } from '../screens/rounds/RoundReview';
 import { isRebuilt } from '../shell/nav';
 import { ToastProvider } from '../ui/Toast';
+import { ClubhouseMarker } from '../shell/context';
+import ReviewLoading from '@/app/golf/(dashboard)/dashboard/rounds/[id]/loading';
 import {
   PREVIEW_REVIEW,
   PREVIEW_REVIEW_COACH,
@@ -348,5 +350,19 @@ describe('Round review route', () => {
       false,
       false,
     ]);
+  });
+});
+
+describe('Round review · loading', () => {
+  it('CH-11406 inside Clubhouse the review loads in its own shape; outside it, Fairway keeps its skeleton', () => {
+    const { unmount } = render(
+      <ClubhouseMarker role="player">
+        <ReviewLoading />
+      </ClubhouseMarker>,
+    );
+    expect(document.querySelector('[data-ch-code="CH-11406"]')!.getAttribute('aria-busy')).toBe('true');
+    unmount();
+    render(<ReviewLoading />);
+    expect(document.querySelector('[data-ch-code="CH-11406"]')).toBeNull();
   });
 });
