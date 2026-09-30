@@ -4,12 +4,14 @@ Reference: `design/handoff/Player - CoachHelm.html`, `Coach - CoachHelm.html`, `
 Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm` (Sentry `surface=coachhelm.<section>`)
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a gap (`phone/coachhelm.md` "Board to data" and "Differences from the board")
 - [x] Every control is mapped to an existing server action: Assign as focus is `createFocusAreaFromInsightV2`, Dismiss is `dismissInsight`, Undo is `reactivateInsight`; the player's Accept is `acceptFocusArea` and Decline `declineFocusArea` (Q-77). Share with the player has no action and is not drawn. No new action and no migration
 - [ ] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (the gaps are written in `phone/coachhelm.md`; the tracker entry is the lead's)
 
 ## desktop
+
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used (`.ch-hl-*` over `--ch-*`), and `clubhouse:check` is clean
 - [x] Numbers are tabular (`.ch-num` on the values, samples and counts), with a true minus and `—` for no data (`formatComparison`)
@@ -19,6 +21,7 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 - [ ] A narrow canvas (container below 900px and 640px) reflows without horizontal page scroll
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data; a coach reads only the active players of the team the shell resolved
 - [x] Every Supabase call reads `error`; the visible-insights and rounds reads paginate (`fetchAllRowsResult`), and the rest are small by nature (a team's roster, the ids of at most 30 insights); the player's feedback read is one unpaginated read; a failed read is never an empty page (the two delivery actions answer an empty list on failure, so the loader checks the insights table itself)
@@ -27,6 +30,7 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 - [x] Unit tests cover the loaders' derivations and the mapping from generator output (`coachhelm.test › Generator output to the board`, `CoachHelm loaders`)
 
 ## states
+
 - [x] Loading: a route skeleton per role, shaped like the page, so nothing shifts when data lands (CH-13401, CH-13402)
 - [x] Empty (first run): says what will appear here and the one next step (CH-13301, CH-13302, CH-13306, CH-13307, CH-13308)
 - [x] Empty (filtered or no results): N/A, there is no search or filter; only strengths (CH-13303) and nothing flagged in the pulse (CH-13309) are their own states
@@ -41,6 +45,7 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 - [x] N/A: nothing is optimistic; the chip, the dismissed notice and the restored card wait for the server
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('coachhelm', '<read>')` (`gate`, `feed`, `visible`, `dismissed`, `rounds`, `drills`, `assigned`, `roster`, `players`, `heads`)
 - [ ] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (every action by name through `useAction`)
@@ -49,10 +54,12 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 - [ ] Every failure path was forced once locally and seen in the console or Sentry
 
 ## phone-spec
+
 - [x] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/` and maps each screen to components (`phone/coachhelm.md` names `Coach and Player - CoachHelm - Mobile.html`)
 - [x] It says `Status: approved`
 
 ## phone
+
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss
@@ -60,6 +67,7 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 - [ ] Checked on a real iPhone through `npm run ios:dev` (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics felt
 
 ## motion
+
 - [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
 - [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
 - [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
@@ -68,6 +76,7 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 - [x] Haptics follow v2 (D-70): selection for picking a player or an insight (CH-13701); light for Assign as focus, and success or error through `useAction` (CH-13702); warning before Dismiss (CH-13703); every other tap silent
 
 ## accessibility
+
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [ ] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent: the gauge's track is hidden and its legend says every number in words (CH-13802); the bars carry their values as text
@@ -75,11 +84,13 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 - [ ] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [x] No request waterfall on the server beyond what depends on the last read: the coach's gate, roster, then the pulse, the visible insights and the top insights together, then the drills and the focus areas together; the player's gate, feed, then the drills
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

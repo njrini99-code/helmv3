@@ -77,6 +77,7 @@ it covers in part, and which none does. Coverage is by reading the test bodies, 
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  1280px (preview, /clubhouse-preview/classes and its states), 2026-09-30, logged in PROGRESS.md
 Reference: design/handoff/Player - Classes.html
@@ -85,6 +86,7 @@ Result:    looked at by eye against the board in the 2026-09-30 pass; axe clean 
 ```
 
 ### Phone
+
 ```text
 Viewport:     390px (preview, headless Chromium, the 2026-09-30 pass logged in PROGRESS.md)
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

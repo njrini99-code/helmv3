@@ -44,6 +44,7 @@ mutation-checked: the code they read is the shell's `nav.ts`, which this pass do
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  924, 1280 and 1400px (preview)
 Reference: design/handoff/screenshots/stats-team-01..05 (v1); Coach - Stats.html (v2, same screen)
@@ -53,6 +54,7 @@ Result:    matched, logged 2026-09-29 in PROGRESS.md (every section, lens, leg a
 ```
 
 ### Phone
+
 ```text
 Viewport:     built to the approved spec (docs/clubhouse/phone/stats-team.md); no browser capture is
               recorded yet

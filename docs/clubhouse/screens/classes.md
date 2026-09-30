@@ -4,12 +4,14 @@ Reference: `design/handoff/Player - Classes.html`, `Player - Classes - Mobile.ht
 Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surface=classes.<section>`)
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a gap (`phone/classes.md` "Board to data" and "Differences from the board")
 - [x] Every control is mapped to an existing server action or the RLS-scoped write the current page uses: Add, Edit and Import write `golf_player_classes` then `syncClassToCalendar` (its own action, not waited on; an import starts each class from its own day, `syncStartFor`; a class with no start or end time is taken off the calendar with `removeClassFromCalendar` instead of synced); Remove is `removeClassFromCalendar` then delete; the reader is `extractClassesFromScheduleImage` or `parseScheduleText`. No new action and no migration
 - [ ] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (the gaps are written in `phone/classes.md`; the tracker entry is the lead's)
 
 ## desktop
+
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used (`.ch-cl-*` over `--ch-*`), and `clubhouse:check` is clean
 - [x] Numbers are tabular (`.ch-num` on the credits, the week, the times and the counts), with `—` and plain words for no data ("Instructor not listed", "Not set", "No time")
@@ -19,6 +21,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] A narrow canvas (container below 1000px and 640px) reflows without horizontal page scroll
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (the classes and the team's events for the week are read in parallel)
 - [x] Reads go through the RLS-scoped client and writes through the browser client under the same policies; the calendar sync and removal are the current server actions, unchanged
 - [x] Every Supabase call reads `error` (`classes.error`, `week.error` are separate; a failed read is never an empty page); both lists are limited to 500
@@ -27,6 +30,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [x] Unit tests cover the loader's derivations and the write shapes (`classes.test › Classes loader`, `Classes live writes`)
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands (CH-12401); a schedule being read (CH-12402); a class going on the calendar (CH-12403)
 - [x] Empty (first run): says what will appear here and the two next steps (CH-12301); no team (CH-12305)
 - [x] Empty (filtered or no results): N/A, there is no search or filter; nothing overlaps this week is its own state (CH-12302)
@@ -41,6 +45,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [x] N/A: nothing is optimistic; a class joins the list when the server has stored it
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('classes', '<read>')` (`classes`, `events`)
 - [ ] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (open, add, import, and every action by name through `useAction`)
@@ -49,10 +54,12 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] Every failure path was forced once locally and seen in the console or Sentry
 
 ## phone-spec
+
 - [x] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/` and maps each screen to components (`phone/classes.md` names `Player - Classes - Mobile.html`)
 - [x] It says `Status: approved`
 
 ## phone
+
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss
@@ -60,6 +67,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] Checked on a real iPhone through `npm run ios:dev` (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics felt
 
 ## motion
+
 - [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
 - [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
 - [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
@@ -68,6 +76,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [x] Haptics follow v2 (D-70): selection for opening a class, choosing a day and the file or paste switch (CH-12701, CH-12703, CH-12705); warning before the remove question, the delete-all question and on Discard (CH-12702, CH-12704); success and error through `useAction`; an error when a file can't be read; every other tap silent
 
 ## accessibility
+
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [ ] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent: the term overview is one labelled region and its drawing is hidden (CH-12803); the card's week strip is hidden and the button says the same in words (CH-12802)
@@ -75,11 +84,13 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [x] No request waterfall on the server, with independent reads in parallel
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real player account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

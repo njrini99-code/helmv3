@@ -40,6 +40,7 @@ inside and outside the shell.
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  1280px (preview, /clubhouse-preview/hub and hub-player), logged 2026-09-30 in PROGRESS.md
 Reference: design/handoff/Coach - Team Hub.html and Player - Team Hub.html
@@ -49,6 +50,7 @@ Result:    matched in the 2026-09-30 browser pass (Updates rows without a link w
 ```
 
 ### Phone
+
 ```text
 Viewport:     390px (preview, headless Chromium, the 2026-09-30 pass logged in PROGRESS.md)
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

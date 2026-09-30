@@ -4,12 +4,14 @@ Reference: `design/handoff/recruiting/` (the owner's canvas "Clubhouse Recruitin
 Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry `surface=recruiting.<section>`)
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a gap (`pages/P014-recruiting/DESIGN.md` "Data assumptions": every figure is `golf_recruits` or `golf_recruit_documents`; the pipeline's counts and shares are computed from the list, not stored)
 - [x] Every control is mapped to an existing server action: Add, Edit, stage and Delete are `createRecruit`, `updateRecruit` and `deleteRecruit`; documents are `getRecruitDocuments`, `deleteRecruitDocument` and `getRecruitDocumentUrl`, and an upload is `prepareRecruitDocumentUpload`, a PUT to Storage, then `completeRecruitDocumentUpload` (the current page keeps `uploadRecruitDocument`); Email and Call are `mailto:` and `tel:` links. `createRecruit` takes an optional request id. One migration (film), written and not applied
 - [x] N/A: the Recruiting boards have no README to disagree with; what the boards do not show (the upload dialog, removing a document, the no-team page, an empty stage, the phone's Add form) is listed as questions in `pages/P014-recruiting/DESIGN.md`, and the tracker entry is the lead's
 
 ## desktop
+
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used (`.ch-rec-*` and `.ch-recm-*` over `--ch-*`), and `clubhouse:check` is clean
 - [x] Numbers are tabular (`.ch-num` on the counts, the class year and the dates), with `—` for no data (an empty pipeline's shares)
@@ -19,6 +21,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [x] A narrow canvas (container below 860px) reflows without horizontal page scroll (checked at 924px: the panel sits under the list)
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (`getRecruits`; a prospect's documents are read when it opens, with their own skeleton and failure)
 - [x] Reads and writes are the current page's own server actions, which scope to the coach's active team with RLS behind them; no service role
 - [x] Every read reads its error (`loadRecruiting` flags it and logs `chLogServer('recruiting', 'prospects')`; a failed read is never an empty list)
@@ -27,6 +30,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [x] Unit tests cover the derivations (`recruiting.test › the rules`, `the loader, the route and the page`)
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page (CH-14401); a prospect's documents (CH-14402); a save, an upload (with its progress, CH-14407), a removal and a delete each say so (CH-14403 to CH-14406)
 - [x] Empty (first run): says what will appear here and the one next step (CH-14301); no team (CH-14306)
 - [x] Empty (filtered or no results): distinct from first run, and offers to clear the search or show every stage (CH-14302)
@@ -41,6 +45,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [x] Optimistic updates roll back on failure and tell the coach (a stage, CH-14003)
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('recruiting', 'prospects')`
 - [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=recruiting.<section>` (`recruiting.pipeline`, `.list`, `.panel`)
 - [x] Key intents leave a `chTrail` breadcrumb (`recruiting open`, `add`, `edit`, `stage`, `upload`, and every action by name through `useAction`)
@@ -49,10 +54,12 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [ ] Every failure path was forced once locally and seen in the console or Sentry
 
 ## phone-spec
+
 - [x] `docs/clubhouse/phone/recruiting.md` names the owner's mobile boards (`design/handoff/recruiting/Phone*.dc.html`) and maps each screen to components
 - [x] It says `Status: approved`
 
 ## phone
+
 - [x] Built at 390px and 430px, respecting the safe areas (both widths scanned; the shell's top bar and sheets own the safe areas)
 - [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent (`native.mjs recruiting` at 390 and 430: clean, after two shared hit-area rules in `controls.css`)
 - [x] Sheets are used instead of popovers, and they drag to dismiss (the edit sheet, the stage picker, the action sheet, the upload dialog)
@@ -60,6 +67,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [ ] Checked on a real iPhone through `npm run ios:dev` (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics felt
 
 ## motion
+
 - [x] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
 - [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
 - [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
@@ -68,6 +76,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for saves; warning before Delete and Remove; medium only for a sheet settling; error when a write fails; every other tap silent
 
 ## accessibility
+
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons (CH-14801, CH-14802)
 - [x] N/A: no charts
@@ -75,11 +84,13 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [x] Text contrast meets WCAG AA on every surface (`a11y.mjs recruiting` at 1280, 390 and 430: 40 scans, no violations)
 
 ## performance
+
 - [x] No request waterfall on the server: one read before first paint
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

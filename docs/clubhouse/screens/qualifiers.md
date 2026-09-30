@@ -7,6 +7,7 @@ Surface tag: `qualifiers.<list|hero|facts|leaderboard|scorecard|rounds|selection
 One tracker row covers both roles. Players already read `/qualifiers` and `/qualifiers/[id]`, like Calendar and Messages. The checklist file comes from the row name, so the slug is `qualifiers`.
 
 Feature doc: `memory/features/qualifiers.md`. Its rules hold in Clubhouse:
+
 - Dates never close entry. Only the coach closes a qualifier.
 - Every refusal names the next step.
 - The round cap is written together with the qualifier.
@@ -91,6 +92,7 @@ Types come from `src/lib/types/database.ts` and were checked against the live sc
 | Player: enter a qualifier round | route `/golf/dashboard/rounds/new?qualifier=<id>` | Not drawn and not rebuilt (Q-6). |
 
 Missing actions:
+
 - Nothing changes squad size or coach picks after creation.
 - Nothing adds or removes an entrant after creation. RLS already lets a coach do both, so this needs actions, not a migration (Q-11).
 - No migration is written in this run. Every schema candidate depends on an open question: a per-round date (Q-12), and started rounds after a close (Q-7).
@@ -114,12 +116,14 @@ Missing actions:
   - Players enter only the qualifiers they are entered in, and within `num_rounds`.
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (D-30 to D-33; Q-16, the phone tab, is D-34)
 
 ## desktop
+
 - [x] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth): 38 states at each width, side by side with the prototype captures; the differences left are decisions, logged in PROGRESS.md
 - [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [x] Numbers are tabular, with a true minus, `E` for even and `—` for no data
@@ -129,6 +133,7 @@ Missing actions:
 - [x] A narrow canvas (container below 860px) reflows without horizontal page scroll (checked at 924px on every captured state: no page, canvas or panel overflow)
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall; the course picker looks courses up on demand, and a live qualifier refreshes on new rounds)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data (the setup actions too)
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
@@ -137,6 +142,7 @@ Missing actions:
 - [x] Unit tests cover the loader's derivations
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [x] Empty (first run): says what will appear here and the one next step
 - [x] Empty (filtered or no results): distinct from first run, and offers to clear filters
@@ -151,6 +157,7 @@ Missing actions:
 - [x] Optimistic updates roll back on failure and tell the coach (none: every write waits for the server; a partial edit save says what saved, CH-09902)
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('<screen>', '<read>')`
 - [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
@@ -159,6 +166,7 @@ Missing actions:
 - [x] Every failure path was forced once locally and seen in the console or Sentry (each numbered failure in qualifiers.test; close, save and course lookup in the preview console, with outbound reports blocked)
 
 ## phone-spec
+
 - [x] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/mobile/` (or is a draft the owner approved), and maps each screen to components
 - [x] It says `Status: approved` (the design is the owner's, D-22; Q-5, Q-15, Q-16 and Q-20 answered by D-30, D-33 and D-34)
 
@@ -180,6 +188,7 @@ Missing actions:
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
+
 - [x] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] N/A: no charts (scorecards are tables)
@@ -187,11 +196,13 @@ Missing actions:
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [x] No request waterfall on the server, with independent reads in parallel
 - [x] Client JS is limited to the interactive islands, and animation code is loaded lazily (the list, detail and form are client components, interactive throughout; Qualifiers loads no animation or chart library)
 - [x] No layout shift after first paint (CLS 0.0001 or less on seven preview states)
 
 ## verified
+
 - [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

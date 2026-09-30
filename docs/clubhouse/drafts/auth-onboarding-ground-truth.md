@@ -56,6 +56,7 @@ every rule below still holds behind them.
 ## Open questions for the owner
 
 See PROGRESS.md Q-99. They cover:
+
 - the rate-limit state the server cannot report;
 - showing only the team's name before membership (no roster faces or counts);
 - the empty-team state, which needs a count the player may not read yet.

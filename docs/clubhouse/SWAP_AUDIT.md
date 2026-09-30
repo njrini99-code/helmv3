@@ -29,7 +29,7 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Doc
 | CoachHelm | **Open**: F-04 views not rebuilt | F-04 |
 | Migrations | **Passed (review)**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback | §5 |
 | Phone/accessibility | **Blocked / not exercised**: needs the owner's iPhone pass on the preview | — |
-| Build/regression | Full `test:all` on the train: 13 failures in 8 files, **all fixed** (F-15..F-20); build rerun at the frozen SHA in §6 | §4 |
+| Build/regression | Local `test:all`: 13 failures in 8 files, fixed (F-15..F-20). First CI run on #2110 added F-21..F-25, all fixed or owner-decided; `next build` exit 0 locally | §4 |
 | Cutover/rollback | Release package in §6; rollback = flag off (Clubhouse) or redeploy `6ee77e98e` (owner) | §6 |
 | Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
 
@@ -96,8 +96,13 @@ Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias dro
 | F-16 | P2 | Reproduced | `formatToPar` declared twice (Clubhouse copy). | **Fixed**: one implementation in `lib/golf/format-to-par.ts`. Fairway's integer inputs print unchanged |
 | F-17 | P2 | Reproduced | `message-mute` actions were not wrapped with `withAdminObserved`. | **Fixed** and registered under messaging |
 | F-18 | P2 | Reproduced | `qualifiers/[id]/selection` had no error or loading boundary. | **Fixed** |
-| F-19 | P2 (tests) | Reproduced | Three Fairway page tests hit the Clubhouse branch, because the flag is on in tests. | **Fixed**: they pin the gate off. The Clubhouse side of those guarantees is covered by the Clubhouse suites |
+| F-19 | P2 (tests) | Reproduced | Three Fairway page tests hit the Clubhouse branch, because the flag is on in tests. | **Fixed**: they pin the gate off. Clubhouse's own empty-vs-error behaviour on those screens is **Risk to test** (not reverified) |
 | F-20 | P2 (guard) | Reproduced | Migration-header guard: four files had no `VERIFY:` or `ROLLBACK:` line (two pre-existing on main, so main's guard was already red). | **Fixed** (comment-only edits) |
+| F-21 | P1 | Reproduced (CI ast-grep + static check on #2110) | Team Hub's attendance and task-assignment reads asked for `.limit(2000)` / `.limit(5000)`; PostgREST returns at most 1000, so a large team's RSVP and task counts were cut short. | **Fixed** `43cd77f83`: `fetchAllRowsResult` ordered by id. Test `hub-paged-reads.test.ts` |
+| F-22 | P2 (CI) | Reproduced (#2110) | Held migrations failed squawk (a constraint added without `NOT VALID`; `begin`/`commit` inside the tool's transaction) and raised sqlfluff by 182 (LT02/LT05/CP02). | **Fixed** `9b39e3ce2`, `89cc93f49`: layout only; squawk 0 issues |
+| F-23 | P2 (CI) | Reproduced (#2110) | Semgrep's definer rule mis-anchors on a header comment in held `20260930150000` (the function does set `search_path`). | Owner chose an inline `nosemgrep` (Q-107) |
+| F-24 | P2 (CI) | Reproduced (#2110) | Markdown lint up about 13.6k across Clubhouse docs, 11.6k of it long table lines. | Blank-line rules auto-fixed; the owner approved a one-time `markdown:ratchet --update` (Q-107) |
+| F-25 | P3 (CI) | Reproduced (#2110) | Calendar test 10703 loops every write scenario and passed the 5s default on CI. | 20s timeout on that test, assertions unchanged |
 
 ## 5. Schema compatibility (flag-off deploy with no migration applied)
 

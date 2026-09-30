@@ -61,6 +61,7 @@ page's copy on a fresh read fails 81204 and 81401; resetting the draft on save f
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  1280px (preview); states player, noteam, failed, partial, assistant, failwrites, loading
 Reference: none (no Settings screen in the handoff; D-18 and the design system)
@@ -69,6 +70,7 @@ Result:    built to D-18 and logged 2026-09-29 in PROGRESS.md. Not re-checked af
 ```
 
 ### Phone
+
 ```text
 Viewport:     built to the owner-approved design; not viewed in a browser at 390px (no dev server was run in the pass
               that built it). The tests run in jsdom, which has no layout, so nothing about spacing, the 52px rows,

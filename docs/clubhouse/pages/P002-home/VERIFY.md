@@ -36,6 +36,7 @@ Mutation checks (2026-09-30): 57 breakages, one at a time, across 12 Home source
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  924, 1280 and 1400px (preview) for Coach Home
 Reference: design/handoff/screenshots/home-01-top and home-02-leaderboard (v1); Coach - Home.html (v2, same screen)
@@ -44,6 +45,7 @@ Result:    Coach Home matched, logged 2026-09-29 in PROGRESS.md (fidelity pass a
 ```
 
 ### Phone
+
 ```text
 Viewport:     390 × 844 (preview)
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

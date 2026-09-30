@@ -44,6 +44,7 @@ submit, a roving tab), 50806 (the coach flag) and 52401 (a catalog row no test n
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  924, 1280 and 1400px (preview)
 Reference: design/handoff/screenshots/stats-player-01..14 (v1); Coach - Stats.html (v2, same screen)
@@ -53,6 +54,7 @@ Result:    matched, logged 2026-09-29 in PROGRESS.md (every tab and state: early
 ```
 
 ### Phone
+
 ```text
 Viewport:     built to the approved spec (docs/clubhouse/phone/stats-player.md); no browser capture is
               recorded yet

@@ -20,6 +20,7 @@ Sections
 | Preferences | yes | yes | This device (animations; haptics in the app) |
 
 Data (same tables and actions as the current Settings page):
+
 - Profile: `golf_coaches.full_name, avatar_url` / `golf_players.first_name, last_name, avatar_url`; photos to the `avatars` bucket under the user's folder.
 - Email and password: Supabase Auth (`updateUser`; password re-authenticates first).
 - Email and push: `users.notification_preferences` via `get/updateNotificationPreferences`. Device push: `usePushSubscription`.
@@ -31,12 +32,14 @@ Data (same tables and actions as the current Settings page):
 - Delete account: `DELETE /api/account/delete` (unchanged route).
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above (design-system components; no Settings screenshot exists, layout decided by the owner, D-18)
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (D-18)
 
 ## desktop
+
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth) (awaiting owner review)
 - [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [x] N/A: no scores on this page (numbers are settings values, shown with units)
@@ -46,6 +49,7 @@ Data (same tables and actions as the current Settings page):
 - [x] A narrow canvas (container below 860px) reflows without horizontal page scroll (rail becomes a strip; forms one column below 560px)
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked (no list reads here)
@@ -54,6 +58,7 @@ Data (same tables and actions as the current Settings page):
 - [x] Unit tests cover the loader's derivations (`settings-server.test.tsx`: both roles, every failed read flagged and logged, a throwing action; model validation is in `logic.test.ts`)
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [x] Empty (first run): a coach with no team sees why the Team section is empty; a player with no team sees Join a team
 - [x] N/A: no filters on this page
@@ -70,6 +75,7 @@ Data (same tables and actions as the current Settings page):
 - [x] Unsaved edits: leaving the page or switching sections asks first; the browser asks before unload
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('settings', '<read>')`
 - [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=settings.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (section change, each switch, sign out, copy, share, delete open)
@@ -78,10 +84,12 @@ Data (same tables and actions as the current Settings page):
 - [ ] Every failure path was forced once locally and seen in the console or Sentry (preview `?state=failwrites|failed|partial` done; live paths not)
 
 ## phone-spec
+
 - [ ] `docs/clubhouse/phone/settings.md` is written as an intentional native design, not a shrunk desktop
 - [ ] The owner approved it (the file says `Status: approved`)
 
 ## phone
+
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss
@@ -98,6 +106,7 @@ Data (same tables and actions as the current Settings page):
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
+
 - [x] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons and every switch
 - [x] N/A: no charts
@@ -105,11 +114,13 @@ Data (same tables and actions as the current Settings page):
 - [ ] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [x] No request waterfall on the server, with independent reads in parallel
 - [x] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

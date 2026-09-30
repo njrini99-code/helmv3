@@ -45,6 +45,7 @@ not going back, and the series scopes of Cancel event promising a soft cancel ag
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  924, 1280 and 1400px (preview)
 Reference: design/handoff/screenshots/calendar-01..12 (v1); Coach - Calendar.html (v2, same screen)
@@ -54,6 +55,7 @@ Result:    matched, logged 2026-09-29 in PROGRESS.md (week, day, month, agenda, 
 ```
 
 ### Phone
+
 ```text
 Viewport:     tests at the phone width only (jsdom, six cases); no browser at 390 or 430
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

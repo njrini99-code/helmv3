@@ -45,6 +45,7 @@ shell does not list `/my-qualifiers` for a coach (`isRebuilt` is shared shell co
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  1280 and 924px (preview)
 Reference: design/handoff/Coach - Qualifiers.html (v2); Qualifiers.html (v1)
@@ -53,6 +54,7 @@ Result:    matched, logged 2026-09-29 in PROGRESS.md (21 states). Not re-checked
 ```
 
 ### Phone
+
 ```text
 Viewport:     390 × 844 (preview)
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

@@ -11,12 +11,14 @@ Reference: <handoff file and screenshots>
 Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 
 ## spec
+
 - [ ] Desktop reference files and screenshots are named above
 - [ ] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [ ] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
 - [ ] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md
 
 ## desktop
+
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [ ] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [ ] Numbers are tabular, with a true minus, `E` for even and `—` for no data
@@ -26,6 +28,7 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] A narrow canvas (container below 860px) reflows without horizontal page scroll
 
 ## wired
+
 - [ ] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
 - [ ] Reads go through the RLS-scoped client, with no service role for a user's own data
 - [ ] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
@@ -34,6 +37,7 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] Unit tests cover the loader's derivations
 
 ## states
+
 - [ ] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [ ] Empty (first run): says what will appear here and the one next step
 - [ ] Empty (filtered or no results): distinct from first run, and offers to clear filters
@@ -48,6 +52,7 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] Optimistic updates roll back on failure and tell the coach
 
 ## error-tracking
+
 - [ ] Server read failures are logged with `chLogServer('<screen>', '<read>')`
 - [ ] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [ ] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
@@ -56,10 +61,12 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] Every failure path was forced once locally and seen in the console or Sentry
 
 ## phone-spec
+
 - [ ] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/mobile/` (or is a draft the owner approved), and maps each screen to components
 - [ ] It says `Status: approved`
 
 ## phone
+
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss
@@ -76,6 +83,7 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
+
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [ ] Landmarks, headings in order, table roles, and labels on icon buttons
 - [ ] Charts have a text equivalent (aria-label or a view-as-table path)
@@ -83,11 +91,13 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [ ] No request waterfall on the server, with independent reads in parallel
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

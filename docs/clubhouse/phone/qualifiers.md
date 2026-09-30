@@ -23,6 +23,7 @@ The phone foundation (tab bar, top bar, More, sheets) is specified by its own sp
 The page builds on the shell's pieces rather than this copy, and nothing here overrides the foundation.
 
 Two things are page-specific:
+
 - **Which tab owns Qualifiers.** The boards draw the Rounds tab (D-34). D-66 superseded it: Qualifiers opens from More for both roles, so the list's top bar reads "‹ More" and "Qualifiers" ("My qualifiers" on `/my-qualifiers`).
 - **The top bar per screen.** The list has the title "Qualifiers" and the bell. The detail has a "Qualifiers" back link and the title "Qualifier". The create form has Cancel and a trailing Create, and hides the tab bar.
 
@@ -39,6 +40,7 @@ The Safari chrome is prototype framing, since the app is the Capacitor shell. To
 | 05 | Completed | Board 02 with the Completed pill and Selected badges. |
 
 **01 List**
+
 - Count line ("2 active · 3 concluded"), a 28px H1 ("Lineup decisions") and the subline.
 - A full-width large primary "Create qualifier". Coach only.
 - Pills (All, Active, Concluded, with counts), 36px high, not wrapping.
@@ -54,6 +56,7 @@ opens `/qualifiers/[id]/selection` (Q-65), and Edit opens a sheet with Edit deta
 Reopen (Q-20).
 
 **02 Detail**
+
 - Status pill and dates.
 - A 24px name.
 - "8 entrants · course".
@@ -68,6 +71,7 @@ Reopen (Q-20).
 - Not on phone, compared with desktop: round-by-round, the Selections panel, and Close or Reopen (Q-20).
 
 **03 Player rounds sheet**
+
 - Opened by tapping a leaderboard row.
 - Title: the player. Subtitle: "3 · +4 · 2 of 3 rounds".
 - Round chips ("R1 · +4"). Unplayed rounds are disabled, and the latest played round is selected.
@@ -77,11 +81,13 @@ Reopen (Q-20).
 - Rounds without hole rows need an empty line ("No hole-by-hole card for this round"). That is 14 of 215 live qualifier rounds, and 19 are not 18 holes.
 
 **04 Create**
+
 - Sections: Basics; Schedule (start and end side by side, then the deadline); Course and rules (rounds and course side by side, then the one-round acknowledgement); Travel squad (squad and picks side by side, with the readout); Players (56px rows with a checkbox, avatar, name and year).
 - Cancel and Create sit in the top bar, so the keyboard never covers the submit.
 - The board's caption says "Same fields as the web form". The phone form has no scoring rules field, no help text and no error states (Q-20).
 
 **05 Completed**
+
 - As 02, with "Selected" badges in the leaderboard.
 - The confirmed squad list and the pick reasoning are not shown (Q-20).
 
@@ -105,6 +111,7 @@ Reduced motion swaps the slide and the sheet rise for fades.
 ## Touch targets
 
 These page controls fall short of 44px:
+
 - the round chips (34px);
 - the pills (36px).
 
@@ -117,6 +124,7 @@ The sheet's 32px close button belongs to the foundation, so its spec settles tha
 The desktop questions also apply on phone: Q-7 to Q-14, the Live pulse (Q-17) and raw colours (Q-18).
 
 Raw colours in `qual-mobile.css` that need tokens:
+
 - `#1C1B18` → `--ch-ink-900`
 - `#F4F1E8` → ivory
 
