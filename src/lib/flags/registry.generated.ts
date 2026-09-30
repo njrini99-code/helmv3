@@ -268,6 +268,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "No planned removal — permanent ops tooling. This registry entry documents the existing toggle; it does not wire the call sites, which sit outside this PR's file-ownership boundary. Wiring is left to the Sentry session that owns those two files.",
   },
   {
+    feature_id: "golf_clubhouse_front_door",
+    owner: "golf/clubhouse",
+    purpose: "Draws the Clubhouse entrance pages (the first page a visitor sees, the greeting after it, and the pages that bring a new person in) in place of the current ones. Presentation only: the same server actions and redirects sit behind both.",
+    type: "release",
+    status: "active",
+    created_at: "2026-09-30",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: true,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "When the owner turns production on and the old entrance pages are retired, delete them, the layout branch that chooses between them, and this flag in the same change.",
+  },
+  {
     feature_id: "golf_clubhouse_ui",
     owner: "golf/clubhouse",
     purpose: "Renders the Clubhouse coach shell and rebuilt screens (src/clubhouse) in place of the Fairway dashboard shell for coaches. Routes not yet rebuilt show a \"not rebuilt yet\" placeholder inside the Clubhouse shell.",

@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from 'react';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
 import { chTagSession } from '../lib/track';
+import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
@@ -50,6 +51,8 @@ export function ClubhouseFrame({
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
   const { showAnimations } = useAppearancePreferences();
   useEffect(() => chTagSession(), []);
+  // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
+  useEffect(() => liftHandoffCurtain(), []);
 
   return (
     <ClubhouseMarker role={role}>

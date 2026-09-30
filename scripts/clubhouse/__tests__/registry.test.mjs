@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, renderContract, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
+import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, renderContract, authRouteToPages, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
 
 const map = {
   categories: {},
@@ -135,4 +135,21 @@ test('renderContract rebuilds the tables from the registry and keeps the written
   assert.ok(out.includes('From the shell (P001): 10401 CH-1301.'));
   assert.ok(!out.includes('| old | table |'));
   assert.ok(out.includes('## 25 — Cat 25\n\nStatus:'));
+});
+
+test('an auth page (sign in, welcome) lives outside the dashboard, in the (auth) or (onboarding) route groups, with no roles (P015)', () => {
+  const auth = (over = {}) => page({ id: 'P015', name: 'Auth', slug: 'auth', bridgeNamespace: 15, area: 'auth', routes: ['/golf/login', '/golf/welcome'], roles: [], progressRow: 'Auth', ...over });
+  const withAuthProgress = { progressMd: progress.replace('| Messages |', '| Auth | /a | done | done | done | doing | doing | done | doing | doing | doing | doing | doing |\n| Messages |') };
+  const only = (pages) => ({ manifests: pages, rows: [], bridge: [], map: { ...map, overrides: {} }, ...withAuthProgress });
+  assert.deepEqual(authRouteToPages('/golf/login'), ['src/app/golf/(auth)/login/page.tsx', 'src/app/golf/(onboarding)/login/page.tsx']);
+  assert.deepEqual(authRouteToPages('/golf/player?joinCode=1'), ['src/app/golf/(auth)/player/page.tsx', 'src/app/golf/(onboarding)/player/page.tsx']);
+  assert.deepEqual(checkRegistry(ctx(only([auth()]))), []);
+  // A route with no page in either group, and a dashboard route on an auth page, are refused.
+  assert.ok(checkRegistry({ ...ctx(only([auth({ routes: ['/golf/nowhere'] })])), exists: (p) => !p.includes('nowhere') }).some((x) => x.includes('/golf/nowhere has none of')));
+  assert.ok(checkRegistry(ctx(only([auth({ routes: ['/golf/dashboard/stats'] })]))).some((x) => x.includes('is an auth route')));
+  // A visitor has no role, so an auth page may not claim one; and only "auth" is a known area.
+  assert.ok(checkRegistry(ctx(only([auth({ roles: ['coach'] })]))).some((x) => x.includes('roles must be empty')));
+  assert.ok(checkRegistry(ctx(only([auth({ area: 'settings' })]))).some((x) => x.includes('area "settings" is not auth')));
+  // A dashboard page is unchanged: its routes are still refused outside /golf/dashboard.
+  assert.ok(checkRegistry(ctx({ manifests: [page({ routes: ['/golf/login'] })] })).some((x) => x.includes('is not under /golf/dashboard')));
 });

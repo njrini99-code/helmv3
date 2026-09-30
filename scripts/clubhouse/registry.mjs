@@ -188,6 +188,17 @@ function routeToPage(route) {
 }
 
 /**
+ * The pages that sit outside the dashboard (sign in, welcome, sign up, onboarding) are drawn for a visitor with no
+ * role: a manifest marks them `"area": "auth"`. Their routes live under /golf/ in the (auth) or (onboarding) route
+ * groups, and they have no roles.
+ */
+const AUTH_GROUPS = ['(auth)', '(onboarding)'];
+export function authRouteToPages(route) {
+  const rest = route.replace(/^\/golf/, '').replace(/\?.*$/, '');
+  return AUTH_GROUPS.map((group) => join('src/app/golf', group, rest, 'page.tsx'));
+}
+
+/**
  * Every rule the Foundation V2 plan asks the registry to hold. `ctx` carries
  * the parsed sources and two file accessors so tests can run it in memory.
  */
@@ -209,9 +220,16 @@ export function checkRegistry(ctx) {
     else namespaces.set(m.bridgeNamespace, m.id);
     if (Number(m.id?.slice(1)) !== m.bridgeNamespace) v.push(`${at}: ${m.id} must use namespace ${Number(m.id?.slice(1))} (D-60)`);
     for (const r of m.routes ?? []) {
+      if (m.area === 'auth') {
+        if (!/^\/golf\/[a-z]/.test(r) || /^\/golf\/dashboard(\/|$)/.test(r)) v.push(`${at}: route ${r} is an auth route, so it must be a /golf page outside /golf/dashboard`);
+        else if (!authRouteToPages(r).some((p) => exists(p))) v.push(`${at}: route ${r} has none of ${authRouteToPages(r).join(', ')}`);
+        continue;
+      }
       if (!/^\/golf\/dashboard(\/|$)/.test(r)) v.push(`${at}: route ${r} is not under /golf/dashboard`);
       else if (!exists(routeToPage(r))) v.push(`${at}: route ${r} has no ${routeToPage(r)}`);
     }
+    if (m.area !== undefined && m.area !== 'auth') v.push(`${at}: area "${m.area}" is not auth`);
+    if (m.area === 'auth' && (m.roles ?? []).length) v.push(`${at}: an auth page is drawn for a visitor with no role, so roles must be empty`);
     if (!(m.routes ?? []).length && m.id !== 'P001') v.push(`${at}: no routes`);
     for (const r of m.roles ?? []) if (!['coach', 'player'].includes(r)) v.push(`${at}: role ${r} is not coach or player`);
     for (const f of m.semanticFeatures ?? []) if (!features.has(f)) v.push(`${at}: semantic feature ${f} is not in memory/registry.yml`);
@@ -447,7 +465,7 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists 
   pm += '\n| Page | Name | Routes | Roles | Features | Design | Implementation | Contract | Bridge | Data | Verification | Docs |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n';
   for (const m of pages) {
     const s = m.status;
-    pm += `| ${m.id} | ${cell(m.name)} | ${(m.routes ?? []).map((r) => `\`${r}\``).join('<br>') || '(shell)'} | ${m.roles.join(', ')} | ${m.semanticFeatures.join(', ')} | ${s.design} | ${s.implementation} | ${s.contract} | ${s.bridge} | ${s.data} | ${s.verification} | ${s.docs} |\n`;
+    pm += `| ${m.id} | ${cell(m.name)} | ${(m.routes ?? []).map((r) => `\`${r}\``).join('<br>') || '(shell)'} | ${(m.roles ?? []).join(', ') || 'signed out'} | ${m.semanticFeatures.join(', ')} | ${s.design} | ${s.implementation} | ${s.contract} | ${s.bridge} | ${s.data} | ${s.verification} | ${s.docs} |\n`;
   }
   pm += '\nPages not designed yet have no ID (D-60). The v2 design (`design/handoff/VERSIONS.md`) adds CoachHelm, Team Hub, player Home, Rounds and Classes; they are registered when their build starts (D-67).\n';
   out['docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md'] = pm;

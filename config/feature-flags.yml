@@ -662,3 +662,32 @@ flags:
     cleanup_plan: >-
       When every coach screen is rebuilt and the owner turns production on,
       delete the Fairway coach shell branch and this flag in the same change.
+
+  # Clubhouse front door: the owner's new sign-in page, welcome, sign-up and
+  # onboarding (src/clubhouse/screens/auth, P015). They sit outside the
+  # dashboard and a signed-out visitor has no role, so they are not behind
+  # golf_clubhouse_ui's per-role check. Off in production until the owner says
+  # so; the current pages render exactly as before while it is off. The flag
+  # chooses the page that is drawn, never what signing in does: both pages call
+  # the same server actions and follow the same redirects.
+  - feature_id: golf_clubhouse_front_door
+    owner: golf/clubhouse
+    purpose: >-
+      Draws the Clubhouse entrance pages (the first page a visitor sees, the
+      greeting after it, and the pages that bring a new person in) in place of
+      the current ones. Presentation only: the same server actions and
+      redirects sit behind both.
+    type: release
+    status: active
+    created_at: "2026-09-30"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      When the owner turns production on and the old entrance pages are
+      retired, delete them, the layout branch that chooses between them, and
+      this flag in the same change.

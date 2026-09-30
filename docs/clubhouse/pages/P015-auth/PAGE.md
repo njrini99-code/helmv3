@@ -1,0 +1,118 @@
+# P015 — Auth
+
+The entrance to GolfHelm, drawn for someone with no role yet: sign in, then a welcome that says who is here and what
+has happened since they were last in. Sign up and onboarding are the next phase and join this page when they are
+built.
+
+## Identity
+
+```text
+Page ID:            P015
+Page Name:          Auth
+Route:              /golf/login (sign in) and /golf/welcome (the greeting after it). Later: /golf/signup and the
+                    onboarding steps
+Bridge Namespace:   15 (Bridge IDs 15ccii, D-68; catalog codes CH-15xxx)
+Roles:              none: drawn for a visitor with no role (the manifest's area is "auth")
+Implementation Root: src/clubhouse/screens/auth
+Manifest:           config/clubhouse/pages/P015-auth.json
+Flag:               golf_clubhouse_front_door (release, off in production, on in preview and development)
+```
+
+The flag chooses which page is drawn and nothing else. With it off, the current pages render exactly as before. With it
+on, both call the same server action (`loginAction`) and follow the same redirects.
+
+## Purpose
+
+### Primary user
+
+A college golf coach or a player opening GolfHelm: signing in to something they already have, and being greeted by
+name when they arrive.
+
+### Job to be done
+
+Get an existing account into the app quickly and surely, and say where they are going and what changed while they
+were away.
+
+### Primary action
+
+Sign in. On the welcome: Continue.
+
+### Secondary actions
+
+Show or hide the password; Forgot password; Create an account (not in the App Store build); Home (not in the App Store
+build); read the newest three unread items.
+
+### Information hierarchy
+
+1. Sign in: the two fields and the button. Around them, the course and one line of tagline.
+2. Welcome: the greeting and the person's name, then the card (who they are here as, since when, what is new), then
+   Continue.
+
+### User should notice first
+
+Sign in: the ivory panel. Welcome: their own name.
+
+### User should never have to think about
+
+What time it is (the sky and the greeting follow their clock), whether a refusal was about the account or the network
+(each has its own words), or whether they were signed in (a lost session sends them back to sign in, and a slow auth
+server never does).
+
+### Success looks like
+
+A returning coach signs in in one move, reads "Good morning, Coach Reyes.", sees three things that need them, and
+presses Continue into the dashboard, without a blank page at any step and without the course ever restarting.
+
+## Semantic features
+
+Canonical IDs from `memory/registry.yml`:
+
+```text
+- auth_onboarding_join (memory/features/auth-onboarding-join.md)
+```
+
+## Design authority
+
+```text
+Package:          design/handoff/auth/ (README.md, the four boards, src/*.jsx and *.css, screenshots)
+Desktop reference: design/handoff/auth/Sign in.html, Sign in - Times of day.html, Sign up.html (Sign up is phase 2)
+Phone spec:       docs/clubhouse/phone/auth.md (approved), from design/handoff/auth/Sign in - Mobile.html and
+                  Sign up - Mobile.html (Sign up is phase 2)
+Decisions:        Q-96 (owner, 2026-09-30: who onboards and how), Q-98 (open: the flag, the welcome's "since"
+                  source, the wrong-password wording)
+Status:           approved. The hand-off's dashboard-side reveal is not built (DESIGN.md, "Not built")
+```
+
+## Related pages
+
+### Enters from
+
+The marketing site (Log in), a sign-out, an expired session (`?message=session_expired`), a password reset, the
+invite and demo links (`returnTo`, `ref`), and the proxy sending any signed-out visit to a protected page.
+
+### Exits to
+
+The dashboard (Home, P002), the page the person was trying to reach (a safe `returnTo`, through the welcome), the admin
+console for an admin, onboarding for an account with no profile yet, Forgot password, Create an account.
+
+## Ownership
+
+```text
+Design:          the owner (Claude Design)
+Implementation:  src/clubhouse/screens/auth, src/clubhouse/routes/auth.tsx, src/clubhouse/data/welcome*.ts,
+                 and the shared rules in src/lib/auth/golf-sign-in-logic.ts (used by the current form too)
+Data:            users, golf_coaches, golf_players, golf_team_coach_staff (read by loginAction to decide where a sign-in goes);
+                 users.last_seen, notifications, golf_calendar_notifications (read by the welcome)
+```
+
+## Current status
+
+```text
+Design:         approved
+Implementation: in_progress (sign in and welcome built behind the flag; sign up and onboarding not started)
+Contract:       partial (CONTRACT.md covers sign in and the welcome; sign up and onboarding join it when built)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
+Data:           existing (no migration)
+Verification:   partial (VERIFY.md)
+Docs:           current
+```
