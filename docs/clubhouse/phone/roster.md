@@ -9,11 +9,28 @@ components in `src/clubhouse/screens/roster/`, the loader
 `src/clubhouse/data/roster.ts` (`ChRoster`), the route branch in
 `src/app/golf/(dashboard)/dashboard/roster/page.tsx`, and the catalog
 `docs/clubhouse/catalog/roster.md` (3xxx). Nothing here is built yet. The open
-owner questions are listed at the end as Q-30 to Q-39 (also in `PROGRESS.md`), and none of them is decided here.
+owner questions are listed at the end as Q-30 to Q-39 (also in `PROGRESS.md`).
+Q-30 was answered by the owner's foundation decision. The rest are open, and
+none of them is decided here.
 
 The page sits inside the phone foundation (`docs/clubhouse/phone/foundation.md`,
-still a draft). Where Roster depends on the shell, this file lists what it
-needs and does not specify the shell itself.
+owned by the Messages phone work). Where Roster depends on the shell, this
+file lists what it needs and does not specify the shell itself.
+
+The owner decided the foundation on 2026-09-29. The Messages phone work
+records it as D-40 onward on `agent/clubhouse-messages-mobile`. Roster
+references these answers and does not ask them again:
+
+- **Tab bar:** coaches get the design's five tabs (Home, Helm, Rounds, Stats,
+  More) in ivory glass. Roster lives under More, as drawn.
+- **More:** More stays today's sheet (CH-1802) until a More screen is
+  designed.
+- **Red:** red is allowed for destructive actions, so Remove from team is a
+  red button.
+- **Chrome and avatars:** the Safari bar is dropped. Phone avatars use one
+  neutral colour, which the foundation adds as tokens.
+- **Not yet:** pull to refresh waits for a design, so Roster doesn't build
+  it.
 
 ## Sources and captures
 
@@ -39,8 +56,8 @@ needs and does not specify the shell itself.
 
   Today the phone gets the desktop page reflowed. The player panel lands under
   eight tall face cards, and the join requests take the first screen.
-- The `MSafari` bar drawn in every frame is the browser's own chrome, not app UI,
-  and is not built.
+- The `MSafari` bar drawn in every frame is the browser's own chrome, not app UI.
+  It is dropped (owner, foundation).
 
 ## Structure on the phone
 
@@ -76,19 +93,19 @@ build therefore adds phone components next to the desktop ones in
 
 | Element in the design | Component | Data or action | Notes and gaps |
 | --- | --- | --- | --- |
-| Top bar: back "‹ More", title "Roster", trailing user-plus "Invite players" | foundation top bar | none | The trailing action replaces the bell on this screen. Where "‹ More" returns to is a foundation question (see Needs from the foundation). |
+| Top bar: back "‹ More", title "Roster", trailing user-plus "Invite players" | foundation top bar | none | The trailing action replaces the bell on this screen. Roster lives under More (owner, foundation). While More stays a sheet, "‹ More" behaves exactly as the foundation specifies for screens reached from More, as the Messages inbox does. Roster adds nothing of its own. |
 | Kicker "Varsity · 7 active" | `RosterPhone` header | `teamName`; count of `players` with `status === 'active'` | The desktop kicker adds `season`, which the design drops. `teamError` shows "Your team", as on desktop. |
 | Large title "Roster" | `RosterPhone` header | none | Desktop's "Your players." headline and team-average line are not drawn. |
 | Banner "2 join requests" + "Grace Liu, Owen Park" + chevron | `RosterPhone` banner, opening `RosterRequestsSheet` | `requests.length`, the first two `requests[].name`, then "and N more" | "1 join request" in the singular. Hidden when there are no requests. When `requestsError` is set, it becomes the CH-3203 notice in the same slot, and a crash is contained by `SectionBoundary roster.requests` (CH-3204). |
 | "Sort by" + segmented Avg · SG · Name | `Segmented` (`size="sm"`, label "Sort players") | client sort of `players`: Avg is `avg` ascending, nulls last (as desktop); SG is `sgPerRound` descending, nulls last (new sort key, no new data); Name follows Q-39 | The sort applies inside each section. Desktop's Handicap and Rounds sorts are not on the phone (Q-36). |
 | Active section: rows in a panel | `RosterPhoneRow` in `SectionBoundary roster.list` (CH-3205) | `players` where `status === 'active'` | Each row is one button (see Accessibility). |
-| Row avatar, 40 with a champagne ring | `Avatar size={40}` | `name` | The ring is `--ch-champagne-500` at 30%. |
+| Row avatar, 40 with a champagne ring | `Avatar size={40}` | `name` | The fill and initials use the foundation's one neutral phone avatar tokens (owner). The ring is `--ch-champagne-500` at 30%, as drawn. |
 | Row name + "Captain" chip | row | `name` | **No captain column.** The chip is not shown (data gap, Q-31). Long names truncate with an ellipsis (capture 05). |
 | Row subline "Senior · Improving", tinted amber or green | row | `classYear` · a note: `attention.text` when set (amber `--ch-chart-loss` for `warning`, green `--ch-chart-gain` for `positive`, the same rules as desktop); otherwise `form` as a word (Improving, Steady, Slipping); for `early`, "Early read · N rounds", or "No rounds this season" when `rounds === 0` | The sample's "Medical · wrist" is an availability note, which has no column: the Q-1 migration is unapplied. |
 | Row sparkline, 48 × 20 | `FormLine` (`earlyBelow={3}`) | `trend` (up to 7 18-hole scores, oldest first) | It is drawn at 3 or more rounds, which matches the design's `trend.length > 2` and every other page (Q-37). Below 3 there is no line, and the subline says "Early read". The design's spark has no mean line and no fill, so the build adds a bare option to `FormLine` for row size. |
 | Row figures "70.9" / "+0.8 hcp" | row | `formatFixed(avg)`; `formatHcp(handicap)` + " hcp" | "—" when null (for example when `statsError` is set, CH-3202). |
 | "Inactive" heading and panel | `RosterPhone` | `players` where `status === 'inactive'` | Hidden when there are none. In the database, `inactive` means the member has lost team access (Q-1), not that they are injured (Q-38). |
-| Pull to refresh | foundation | `router.refresh()` | Waits for the foundation design (MOBILE.md). |
+| Pull to refresh | none | none | Not built: it waits for a design (owner, foundation). Each notice's Try again still refreshes the page. |
 
 The phone list also carries these states from the page:
 
@@ -104,7 +121,7 @@ The phone list also carries these states from the page:
 | Element in the design | Component | Data or action | Notes and gaps |
 | --- | --- | --- | --- |
 | Top bar: back "‹ Roster", no title, trailing ⋯ "More actions" | foundation top bar | none | ⋯ opens an action sheet (Q-34). |
-| Avatar 64 with a green ring | `Avatar size={64}` | `name` | The ring is `--ch-green-600` over a `--ch-bg-page` gap. |
+| Avatar 64 with a green ring | `Avatar size={64}` | `name` | The fill and initials use the neutral phone avatar tokens. The ring is `--ch-green-600` over a `--ch-bg-page` gap. |
 | Name, 24px | `RosterProfile` | `name` | Long names wrap to two lines (capture 13). |
 | "Sophomore · Class of 2029 · Captain", in green | `RosterProfile` | `classYear` · `Class of ${gradYear}` | **No captain column** (Q-31). For an inactive player, "Inactive" is added (Q-38). |
 | "Charlotte, NC · Business" | `RosterProfile` | `hometown` · `highSchool` (each only when set) | **No major column** (Q-31). |
@@ -147,9 +164,9 @@ Haptics go only through `haptic()`. Outcome haptics come from `useAction`.
 | Approve all | Every card leaves | one `commit` at the end (Q-35) |
 | Copy the join code | Toast "Join code copied" | `success`, or `error` (CH-3703, CH-3006) |
 | Share the invite link | Native share sheet | none (OS) |
-| ⋯, then Remove from team | Confirm sheet (CH-3501) | `warning` when the confirm opens (foundation grammar); outcome from `useAction` (CH-3001) |
+| ⋯, then Remove from team | Confirm sheet (CH-3501). The Remove button is red, since red is allowed for destructive actions (owner, foundation). Decline on a join request stays neutral, as drawn: the player can ask again | `warning` on the destructive button, then `commit` or `error` from `useAction` (CH-3001), as in the foundation's grammar |
 | Message, Plan 1:1 | Navigate | `press` (secondary buttons pass `feel="press"`) |
-| Pull to refresh on the list | `router.refresh()` | light (`press`) at the threshold; waits for the foundation |
+| Pull to refresh | Not built: it waits for a design (owner, foundation) | none |
 
 There is no long press. The row menu that desktop hides behind ⋯ is reached
 from the profile's ⋯ on the phone, so every desktop affordance still has a
@@ -199,7 +216,6 @@ used yet:
 | CH-3403 | loading | Approve all in flight: the footer reads "Approving" and can't be pressed again |
 | CH-3603 | motion | Profile push and pop |
 | CH-3604 | motion | Sheet rise and drag |
-| CH-3704 | haptic | Pull to refresh threshold |
 | CH-3806 | a11y | A row reads as one button: name, class, note, average and handicap |
 
 ## Accessibility
@@ -231,44 +247,43 @@ becomes `.ch-well-soft`, `--shadow-sm` becomes `--ch-shadow-sm`, and so on.
 | `rgb(176 149 96 / .3)` (row avatar ring) | `--ch-champagne-500` at 30% |
 | `#F4F2EA` (sheet footer) | `--ch-ivory-100` |
 | `#F4F1E8` (Captain chip text) | `--ch-ivory-100`; the chip itself is not built |
+| `.qm .fw-avatar` neutral (`#E9E3D3`, `#5A4E36`) | the foundation's neutral phone avatar tokens (owner) |
 | Scrim, grab, close button, top bar and tab bar glass | the foundation's |
 | `--font-mono` on the join code | `--ch-font-sans` with tabular numbers (doctrine) |
 
 ## Needs from the foundation
 
-Roster can't be built until the foundation spec
-(`docs/clubhouse/phone/foundation.md`, owned by the Messages phone work) is
-approved and built. From it, Roster needs:
+The foundation is decided (owner, 2026-09-29; D-40 onward on the Messages
+phone branch). Roster's phone build starts once it is built. From it, Roster
+needs:
 
-1. **The tab set and bar style.**
-   - The design's tab bar is light glass with Home, Helm, Rounds, Stats and
-     More, and Roster sits under More (More active, badge on More).
-   - D-3 and `nav.ts` instead have a green bar with Roster as a tab that
-     carries the `joinRequests` badge.
-   - Whichever wins, the join-request count needs a badge home.
-2. **What "‹ More" returns to.** The design implies a More screen that
-   Roster is pushed from. Today More is a sheet (`TabBar`, CH-1802).
-3. **A top bar** with a back label, a centred title (or none), and one trailing
-   action. On pushed screens the bell does not show.
+1. **The coach tab bar** (Home, Helm, Rounds, Stats, More, ivory glass),
+   with Roster under More, and the More tab active on Roster and its profile.
+   - Roster leaves the tab list in `nav.ts` and joins the More sheet.
+   - The `joinRequests` count needs a home: a badge on the More tab, as
+     drawn, and on Roster's row in the More sheet.
+2. **The "‹ More" link on screens reached from the More sheet,** shared with
+   the Messages inbox. More stays a sheet until a More screen is designed.
+3. **A top bar** with a back label, a centred title (or none), and one
+   trailing action. On pushed screens the bell does not show.
 4. **A sheet primitive.** It needs:
    - a grab handle and drag to dismiss (`Modal`'s phone variant has no drag)
    - a title with a subtitle and a close button
    - a scrolling body, with a footer pinned above the home indicator
    - `data-state="open"` for the swipe-back guard
 5. **An action-sheet form of `Menu`,** for ⋯.
-6. **The push and pop transition** (220ms) and the pull-to-refresh control.
-7. **Toasts above the tab bar** (shell.css does this today).
+6. **The push and pop transition** (220ms).
+7. **The neutral phone avatar tokens.**
+8. **Toasts above the tab bar** (shell.css does this today).
 
-## Owner questions (open; none is recorded as decided)
+## Owner questions
 
-These are tracked in `PROGRESS.md` as Q-30 to Q-39. Each lists the recommended
-option first, with its trade-off. No D-number is recorded until the owner
-answers.
+These are tracked in `PROGRESS.md` as Q-30 to Q-39. Q-30 is answered. The rest
+are open: each lists the recommended option first, with its trade-off, and no
+D-number is recorded until the owner answers.
 
 - **Q-30 Where does Roster live on the phone?**
-  - *Recommended:* under More, as drawn, once the foundation settles the tab set.
-  - *Trade-off:* Roster is one tap deeper, and the join-request badge moves to More. This supersedes D-3's tab list, so it is decided together with the foundation.
-  - *Alternative:* keep Roster as a tab (D-3) and drop the "‹ More" back link.
+  - *Answered 2026-09-29* by the owner's foundation decision (D-40 onward, Messages phone branch): under More, as drawn, with the design's five coach tabs. More stays a sheet until a More screen is designed.
 - **Q-31 What replaces the fields with no column** (Captain, major, birthday, home course, about)?
   - *Recommended:* build without them. About shows the real fields (hometown, high school, class of, jersey when set, member since), and birthday is never collected.
   - *Trade-off:* the profile is thinner than drawn.
