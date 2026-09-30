@@ -2112,6 +2112,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60407,
+    "page": "P006",
+    "category": 4,
+    "item": 7,
+    "name": "SIGNED_IN_WITH_NO_TEAM",
+    "chCode": "CH-6307",
+    "meaning": "Signed in with no team (coach or player)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60501,
     "page": "P006",
     "category": 5,
@@ -2746,6 +2757,17 @@
     "name": "EVERYONE_ON_THE_TEAM_IS_ALREADY_IN",
     "chCode": "CH-7307",
     "meaning": "Everyone on the team is already in the group (Add)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70408,
+    "page": "P007",
+    "category": 4,
+    "item": 8,
+    "name": "SIGNED_IN_WITH_NO_TEAM",
+    "chCode": "CH-7308",
+    "meaning": "Signed in with no team (coach or player)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },

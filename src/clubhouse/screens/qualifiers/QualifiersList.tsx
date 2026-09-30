@@ -68,7 +68,8 @@ export function QualifiersList({ data }: { data: ChQList }) {
           <h1>{title}</h1>
           <p>{lede}</p>
         </div>
-        {coach && (
+        {/* One primary per screen: with no qualifiers the page empty state (CH-09301) carries Create qualifier. */}
+        {coach && (data.listError || data.items.length > 0) && (
           <div className="ch-qf-head__act">
             <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
               Create qualifier
@@ -85,35 +86,31 @@ export function QualifiersList({ data }: { data: ChQList }) {
           onRetry={() => router.refresh()}
         />
       ) : data.items.length === 0 ? (
-        <div className="ch-qf-empty ch-sheet">
-          {data.mode === 'mine' ? (
-            <EmptyState
-              code="CH-09306"
-              icon={Medal}
-              title="You aren’t entered in any qualifiers."
-              body="Qualifiers your coach enters you in show here, with your rounds and where you stand."
-              action={<Button href={LIST}>See the team’s qualifiers</Button>}
-            />
-          ) : (
-            <EmptyState
-              code="CH-09301"
-              icon={Medal}
-              title="No qualifiers yet."
-              body={
-                coach
-                  ? 'Create one to decide who travels. Players enter rounds from their app, and the leaderboard builds as they sign.'
-                  : 'Your coach’s qualifiers show here once they’re set up.'
-              }
-              action={
-                coach ? (
-                  <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
-                    Create qualifier
-                  </Button>
-                ) : undefined
-              }
-            />
-          )}
-        </div>
+        data.mode === 'mine' ? (
+          <EmptyState
+            size="page"
+            code="CH-09306"
+            icon={Medal}
+            title="You aren’t entered in any qualifiers"
+            body="Qualifiers your coach enters you in show here, with your rounds and where you stand."
+            action={<Button href={LIST}>See the team’s qualifiers</Button>}
+          />
+        ) : (
+          <EmptyState
+            size="page"
+            code="CH-09301"
+            icon={Medal}
+            title="No qualifiers yet"
+            body={coach ? 'Set up a qualifier to rank players across counted rounds and pick your lineup.' : 'Your coach’s qualifiers show here once they’re set up.'}
+            action={
+              coach ? (
+                <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
+                  Create qualifier
+                </Button>
+              ) : undefined
+            }
+          />
+        )
       ) : (
         <>
           <div className="ch-qf-tools">

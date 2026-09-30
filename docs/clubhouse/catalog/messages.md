@@ -80,6 +80,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7305 | Nothing open | "Start your first conversation." / "Pick a conversation." | `MessagesView` | messages.test › CH-7305 |
 | CH-7306 | Nothing has been shared in the conversation (phone Details) | "No files shared yet." | `FilesPanel` | messages.test › CH-7306 |
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |
+| CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren't on a team yet" + "Messages open once you're on a team roster, with your coaches and teammates." | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
 
 ## 74xx Loading
 

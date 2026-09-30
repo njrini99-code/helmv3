@@ -39,14 +39,13 @@ export async function ClubhouseStatsRoute({ player, window, tab }: { player?: st
 export function StatsNoTeam({ coach }: { coach: boolean }) {
   return (
     <main className="ch-st">
-      <div className="ch-st-card">
-        <EmptyState
-          code="CH-4309"
-          icon={Users}
-          title="You aren't on a team yet."
-          body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'}
-        />
-      </div>
+      <EmptyState
+        size="page"
+        code="CH-4309"
+        icon={Users}
+        title="You aren't on a team yet"
+        body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'}
+      />
     </main>
   );
 }
@@ -54,21 +53,20 @@ export function StatsNoTeam({ coach }: { coach: boolean }) {
 export function NotOnTeam({ coach }: { coach: boolean }) {
   return (
     <main className="ch-st">
-      <div className="ch-st-card">
-        <EmptyState
-          code={coach ? 'CH-5306' : 'CH-5307'}
-          icon={UserX}
-          title={coach ? 'That player isn’t on your team.' : 'Your stats aren’t available.'}
-          body={coach ? 'They may have been removed, or the link is from another team.' : 'You aren’t on an active team roster right now.'}
-          action={
-            coach ? (
-              <Button size="sm" href="/golf/dashboard/stats">
-                Back to team stats
-              </Button>
-            ) : undefined
-          }
-        />
-      </div>
+      <EmptyState
+        size="page"
+        code={coach ? 'CH-5306' : 'CH-5307'}
+        icon={UserX}
+        title={coach ? 'That player isn’t on your team' : 'Your stats aren’t available'}
+        body={coach ? 'They may have been removed, or the link is from another team.' : 'You aren’t on an active team roster right now.'}
+        action={
+          coach ? (
+            <Button size="sm" href="/golf/dashboard/stats">
+              Back to team stats
+            </Button>
+          ) : undefined
+        }
+      />
     </main>
   );
 }

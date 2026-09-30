@@ -72,16 +72,16 @@ Every save goes through `useAction`, so these belong to the shell:
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-09301 | The team has no qualifiers | Coach: "No qualifiers yet." + Create qualifier. Player: "No qualifiers yet." with "Your coach's qualifiers show here once they're set up." | `EmptyState` | qualifiers.test › CH-09301 |
+| CH-09301 | The team has no qualifiers | The page empty state (v2 medallion): Coach: "No qualifiers yet" + "Set up a qualifier to rank players across counted rounds and pick your lineup." + Create qualifier (v2 copy). Player: "No qualifiers yet" + "Your coach's qualifiers show here once they're set up." | `EmptyState` | qualifiers.test › CH-09301 |
 | CH-09302 | Search or filter matches nothing | "No qualifiers match your filters." + Clear filters | `EmptyState` | qualifiers.test › CH-09302 |
 | CH-09303 | Nothing has concluded yet | "No concluded qualifiers yet." under Concluded | `EmptyState` | qualifiers.test › CH-09303 |
 | CH-09304 | No round is in yet | "Awaiting first round." + "7 players entered. Standings appear once a player submits a round." | `EmptyState` | qualifiers.test › CH-09304 |
 | CH-09305 | The roster has no active players (form) | "No active players on the roster." | `EmptyState` | qualifiers.test › CH-09305 |
-| CH-09306 | A player isn't entered in any qualifier (/my-qualifiers) | "You aren't entered in any qualifiers." + See the team's qualifiers | `EmptyState` | qualifiers.test › CH-09306 |
+| CH-09306 | A player isn't entered in any qualifier (/my-qualifiers) | The page empty state (v2 medallion): "You aren't entered in any qualifiers" + See the team's qualifiers | `EmptyState` | qualifiers.test › CH-09306 |
 | CH-09308 | A round has no hole-by-hole card | "No hole-by-hole card for this round. Only the total was recorded." | `Scorecard` | qualifiers.test › CH-09308 |
-| CH-09309 | Not on a team | "You aren't on a team yet." | `EmptyState` (route) | preview |
-| CH-09310 | The qualifier isn't on the viewer's team, or doesn't exist | "That qualifier isn't on your team." + Back to qualifiers | `EmptyState` (route) | preview |
-| CH-09311 | A player opens /new or /edit | "Only coaches create qualifiers." (or edit) + a way back | `EmptyState` (route) | preview |
+| CH-09309 | Not on a team | The page empty state (v2 medallion): "You aren't on a team yet" | `EmptyState` (route) | preview |
+| CH-09310 | The qualifier isn't on the viewer's team, or doesn't exist | The page empty state (v2 medallion): "That qualifier isn't on your team" + Back to qualifiers | `EmptyState` (route) | preview |
+| CH-09311 | A player opens /new or /edit | The page empty state (v2 medallion): "Only coaches create qualifiers" (or edit) + a way back | `EmptyState` (route) | preview |
 | CH-09312 | The course search matches nothing | "No courses match “Pine”." | `EmptyState` | qualifiers.test › CH-09312 |
 | CH-09314 | A course has no tee sets | "This course has no tee sets yet." | `EmptyState` | qualifiers.test › CH-09314 |
 

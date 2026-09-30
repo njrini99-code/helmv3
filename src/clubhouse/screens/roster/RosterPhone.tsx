@@ -142,19 +142,18 @@ export function RosterPhone({
             onRetry={onRetry}
           />
         ) : players.length === 0 ? (
-          <div className="ch-rsm-panel">
-            <EmptyState
-              code="CH-3301"
-              icon={Users}
-              title="No players on the roster yet."
-              body="Share your join code and approve requests as they arrive. Players appear here once approved."
-              action={
-                <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
-                  Invite players
-                </Button>
-              }
-            />
-          </div>
+          <EmptyState
+            size="page"
+            code="CH-3301"
+            icon={Users}
+            title="No players yet"
+            body="Share your team code, then approve requests as they arrive. Players appear here as soon as they join."
+            action={
+              <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
+                Invite players
+              </Button>
+            }
+          />
         ) : (
           <>
             <div className="ch-rsm-sort">

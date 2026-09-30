@@ -33,7 +33,7 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 | CH-2304 | No players on the roster | "No players on the roster yet." + "Share your team's join code from Roster, and players appear here once you approve them." | `Leaderboard` | home.test › CH-2304 |
 | CH-2305 | Players, but no 18-hole rounds | "No 18-hole rounds this season yet." + "6 players are on the roster. The leaderboard fills in as rounds are posted." | `Leaderboard` | home.test › CH-2305 |
 | CH-2306 | A player has fewer than three rounds | "Early read" in the SG column, with "Strokes gained appears after three rounds" on hover | `Leaderboard` | home.test › CH-2306 |
-| CH-2307 | A coach with no active team | "You aren't on a team yet." + what Home shows once they are | `CoachHomeNoTeam` | home.test › CH-2307 |
+| CH-2307 | A coach with no active team | The page empty state (v2 medallion): "You aren't on a team yet" + what Home shows once they are | `CoachHomeNoTeam` | home.test › CH-2307 |
 
 ## 24xx Loading
 

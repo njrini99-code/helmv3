@@ -279,6 +279,8 @@ describe('Qualifiers · list', () => {
     const { unmount } = wrap(<QualifiersList data={list('coach', 'all', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/No qualifiers yet/);
     expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'Create qualifier' })).toBeTruthy();
+    // One primary per screen: the header's Create qualifier steps aside (D-71).
+    expect(screen.getAllByRole('link', { name: 'Create qualifier' })).toHaveLength(1);
     unmount();
     wrap(<QualifiersList data={list('player', 'all', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/Your coach’s qualifiers show here/);

@@ -81,6 +81,7 @@ vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: a.
 import type { ChMessagesData } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
 import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
+import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import './dialog-polyfill';
@@ -763,5 +764,14 @@ describe('Messages · phone', () => {
     expect(live.msgs.sendMessage).toHaveBeenCalledWith('5 works. Bay 4.');
     const box = await screen.findByRole('textbox', { name: /Message Jonah/ });
     expect((box as HTMLTextAreaElement).value).toBe('5 works. Bay 4.');
+  });
+});
+
+describe('Messages · no team', () => {
+  it('CH-7308 a coach or player with no team gets the v2 page empty state', () => {
+    render(<MessagesNoTeam />);
+    const el = code('CH-7308')!;
+    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren't on a team yet" })).toBeTruthy();
   });
 });

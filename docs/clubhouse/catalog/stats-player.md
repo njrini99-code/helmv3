@@ -42,8 +42,8 @@ its own boundary, so a crash stays inside the tab.
 | CH-5303 | No focus areas | "No focus areas yet." + (coach) "Add one from a weak leg in Game detail." / (player) "Your coach adds focus areas; they show here." | `Development` | stats-player.test › CH-5303 |
 | CH-5304 | No goals | "No goals set." + who sets them | `Development` | stats-player.test › CH-5304 |
 | CH-5305 | Fewer than three rounds in the window | "Early read. Luca has 2 countable rounds in this window, so averages and trends will move a lot. Strokes gained shows once there are three." | `StatsPlayer` | stats-player.test › CH-5305 |
-| CH-5306 | A coach opens a player who isn't on their team | "That player isn't on your team." + "They may have been removed, or the link is from another team." + Back to team stats | `NotOnTeam` (route) | stats-player.test › CH-5306 |
-| CH-5307 | A player who isn't on an active roster | "Your stats aren't available." + "You aren't on an active team roster right now." | `NotOnTeam` (route) | stats-player.test › CH-5307 |
+| CH-5306 | A coach opens a player who isn't on their team | The page empty state (v2 medallion): "That player isn't on your team" + "They may have been removed, or the link is from another team." + Back to team stats | `NotOnTeam` (route) | stats-player.test › CH-5306 |
+| CH-5307 | A player who isn't on an active roster | The page empty state (v2 medallion): "Your stats aren't available" + "You aren't on an active team roster right now." | `NotOnTeam` (route) | stats-player.test › CH-5307 |
 
 ## 54xx Loading
 

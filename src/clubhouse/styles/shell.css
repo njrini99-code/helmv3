@@ -347,6 +347,153 @@
 .ch-empty--compact {
   padding: 20px 12px;
 }
+.ch-empty__action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* The v2 page empty state (gh-polish.css .gh-empty): the whole page body is
+   empty. A medallion on faint rings, a title that names what belongs, one or
+   two sentences, one primary action. Its parts rise in once, 55ms apart. */
+.ch-empty-page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 140px);
+  padding: 56px 24px;
+}
+.ch-empty-page__in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 460px;
+  text-align: center;
+}
+.ch-empty-page__in > * {
+  animation: ch-reveal var(--ch-dur-reveal) var(--ch-ease) backwards;
+}
+.ch-empty-page__in > :nth-child(2) {
+  animation-delay: var(--ch-reveal-step);
+}
+.ch-empty-page__in > :nth-child(3) {
+  animation-delay: calc(var(--ch-reveal-step) * 2);
+}
+.ch-empty-page__in > :nth-child(4) {
+  animation-delay: calc(var(--ch-reveal-step) * 3);
+}
+.ch-empty-page__in > :nth-child(5) {
+  animation-delay: calc(var(--ch-reveal-step) * 4);
+}
+.ch-empty-page__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+  margin-bottom: 4px;
+}
+.ch-empty-page__art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle at center, rgb(21 90 57 / 0.1) 0 1px, transparent 1.5px 17px);
+  -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%);
+  mask: radial-gradient(circle, #000 30%, transparent 70%);
+}
+.ch-empty-page__ic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: var(--ch-green-800);
+  color: #f4f1e8;
+  box-shadow: 0 16px 30px -14px rgb(11 58 37 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+.ch-empty-page__title {
+  margin: 0;
+  font: 600 26px/1.15 var(--ch-font-sans);
+  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.028em;
+  color: var(--ch-ink-950);
+  text-wrap: balance;
+}
+.ch-empty-page__body {
+  max-width: 42ch;
+  margin: 0;
+  font: 400 15px/1.55 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-empty-page__prog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ch-empty-page__seg {
+  display: flex;
+  gap: 5px;
+}
+.ch-empty-page__seg i {
+  width: 34px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.1);
+}
+.ch-empty-page__seg i.is-on {
+  background: var(--ch-green-600);
+}
+.ch-empty-page__prog-t {
+  font: 500 12.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-empty-page__a {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-empty-page__in > *,
+[data-motion='off'] [data-ui='clubhouse'] .ch-empty-page__in > * {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-empty-page__in > * {
+    animation: none !important;
+  }
+}
+@media (max-width: 820px) {
+  .ch-empty-page {
+    min-height: 0;
+    padding: 52px 22px 40px;
+  }
+  .ch-empty-page__art {
+    width: 120px;
+    height: 120px;
+  }
+  .ch-empty-page__title {
+    font-size: 21px;
+  }
+  .ch-empty-page__body {
+    font-size: 14.5px;
+  }
+  .ch-empty-page__a {
+    flex-direction: column;
+    align-self: stretch;
+  }
+  .ch-empty-page__a > * {
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+  }
+}
 .ch-empty__icon {
   display: grid;
   place-items: center;

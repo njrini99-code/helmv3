@@ -1,9 +1,8 @@
 import 'server-only';
-import { Users } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadCalendar, parseView } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
-import { EmptyState } from '../ui/States';
+import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { resolveClubhouseTeam } from './team';
 import '../styles/calendar.css';
 
@@ -31,17 +30,7 @@ export async function ClubhouseCalendarRoute({
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
   if (!team) {
-    return (
-      <main className="ch-cal">
-        <div className="ch-cal-surface" style={{ padding: 8 }}>
-          <EmptyState
-            icon={Users}
-            title="You aren't on a team yet."
-            body={session.coach ? 'The calendar fills in once your team is set up.' : 'Team events show here once a coach adds you to a team roster.'}
-          />
-        </div>
-      </main>
-    );
+    return <CalendarNoTeam coach={!!session.coach} />;
   }
   const data = await loadCalendar({
     role: team.role,

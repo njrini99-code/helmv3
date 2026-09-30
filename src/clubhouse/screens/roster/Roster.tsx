@@ -40,6 +40,7 @@ const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
 const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a - b);
 
 export function Roster({ data }: { data: ChRoster }) {
+  const copy = useCopyText();
   const toast = useToast();
   const router = useRouter();
   const [players, setPlayers] = useState(data.players);
@@ -257,9 +258,12 @@ export function Roster({ data }: { data: ChRoster }) {
               Export
             </Button>
           )}
-          <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
-            Invite players
-          </Button>
+          {/* One primary per screen: the page empty state (CH-3301) carries Invite players while there's nobody. */}
+          {(players.length > 0 || data.playersError) && (
+            <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
+              Invite players
+            </Button>
+          )}
         </div>
       </header>
 
@@ -297,19 +301,25 @@ export function Roster({ data }: { data: ChRoster }) {
           onRetry={() => router.refresh()}
         />
       ) : players.length === 0 ? (
-        <div className="ch-rs-empty ch-sheet">
-          <EmptyState
-            code="CH-3301"
-            icon={Users}
-            title="No players on the roster yet."
-            body="Share your join code and approve requests as they arrive. Players appear here once approved."
-            action={
-              <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
-                Invite players
+        <EmptyState
+          size="page"
+          code="CH-3301"
+          icon={Users}
+          title="No players yet"
+          body="Share your team code, then approve requests as they arrive. Players appear here as soon as they join."
+          action={
+            <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
+              Invite players
+            </Button>
+          }
+          secondaryAction={
+            data.joinCode ? (
+              <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+                Copy team code
               </Button>
-            }
-          />
-        </div>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <div className="ch-rs-bar">

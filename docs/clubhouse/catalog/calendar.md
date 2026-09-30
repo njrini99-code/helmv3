@@ -61,6 +61,7 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6304 | The team has no documents to attach | "Your team has no documents yet. Upload one in Documents, then attach it here." | `FilePicker` | calendar.test › CH-6304 |
 | CH-6305 | An opened event left the loaded range | "This event isn't in the loaded range anymore. It may have moved or been cancelled." + back to Today | `EventDetail` | preview |
 | CH-6306 | Nothing needs attention this week | Coach: "No overlaps and no replies waiting." Player: "You're all caught up." | `Summary` | calendar.test › CH-6306 |
+| CH-6307 | Signed in with no team (coach or player) | The page empty state: "You aren't on a team yet" + Coach: "The calendar fills in once your team is set up." Player: "Team events show here once a coach adds you to a team roster." | `CalendarNoTeam`, from the route | calendar.test › CH-6307 |
 
 ## 64xx Loading
 

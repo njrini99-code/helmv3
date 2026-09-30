@@ -50,9 +50,7 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <main className="ch-qf">
-      <div className="ch-qf-empty ch-sheet">{children}</div>
-    </main>
+    <main className="ch-qf">{children}</main>
   );
 }
 
@@ -60,9 +58,10 @@ export function QualifiersNoTeam({ coach }: { coach: boolean }) {
   return (
     <Frame>
       <EmptyState
+        size="page"
         code="CH-09309"
         icon={Users}
-        title="You aren’t on a team yet."
+        title="You aren’t on a team yet"
         body={coach ? 'Qualifiers fill in once your team is set up.' : 'Your team’s qualifiers show here once a coach adds you to a team roster.'}
       />
     </Frame>
@@ -73,9 +72,10 @@ function NotFound() {
   return (
     <Frame>
       <EmptyState
+        size="page"
         code="CH-09310"
         icon={SearchX}
-        title="That qualifier isn’t on your team."
+        title="That qualifier isn’t on your team"
         body="It may have been deleted, or the link is from another team."
         action={
           <Button size="sm" href="/golf/dashboard/qualifiers">
@@ -91,9 +91,10 @@ function CoachOnly({ edit, id }: { edit: boolean; id?: string }) {
   return (
     <Frame>
       <EmptyState
+        size="page"
         code="CH-09311"
         icon={Lock}
-        title={edit ? 'Only coaches edit qualifiers.' : 'Only coaches create qualifiers.'}
+        title={edit ? 'Only coaches edit qualifiers' : 'Only coaches create qualifiers'}
         body="You can see your team’s qualifiers and where you stand in the ones you’re entered in."
         action={
           <Button size="sm" href={edit && id && isUuid(id) ? `/golf/dashboard/qualifiers/${id}` : '/golf/dashboard/qualifiers'}>

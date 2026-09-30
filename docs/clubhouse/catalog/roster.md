@@ -44,7 +44,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3301 | No players yet | "No players on the roster yet." + "Share your join code and approve requests as they arrive…" + Invite players | `Roster`, `RosterPhone` | roster.test › CH-3301 |
+| CH-3301 | No players yet | The page empty state (v2 medallion): "No players yet" + "Share your team code, then approve requests as they arrive. Players appear here as soon as they join." + Invite players; on desktop also Copy team code when the team has one (v2 says "by email"; there is no email invite, Data gaps) | `Roster`, `RosterPhone` | roster.test › CH-3301 |
 | CH-3302 | A search matches nobody | "No players match "zzz"" + Show everyone | `Roster` | roster.test › CH-3302 |
 | CH-3303 | A status filter has nobody | "No inactive players." / "No active players." + Show everyone | `Roster` | roster.test › CH-3303 |
 | CH-3304 | The team has no join code | "Your team has no join code yet." + "Make one in Settings, then invite players here." + Open team settings | `InviteModal` | roster.test › CH-3304 |

@@ -271,10 +271,15 @@ describe('Roster · reads that fail', () => {
 });
 
 describe('Roster · empty', () => {
-  it('CH-3301 no players yet: invite is the next step', () => {
+  it('CH-3301 no players yet: the v2 page empty state, invite first and copy the team code second', () => {
     wrap(roster({ players: [], requests: [] }));
-    expect(code('CH-3301')!.textContent).toMatch(/No players on the roster yet/);
-    expect(within(code('CH-3301') as HTMLElement).getByRole('button', { name: 'Invite players' })).toBeTruthy();
+    const el = code('CH-3301') as HTMLElement;
+    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(within(el).getByRole('heading', { level: 2, name: 'No players yet' })).toBeTruthy();
+    const buttons = within(el).getAllByRole('button').map((b) => b.textContent);
+    expect(buttons).toEqual(['Invite players', 'Copy team code']);
+    // One primary per screen: the header's Invite players steps aside.
+    expect(screen.getAllByRole('button', { name: 'Invite players' })).toHaveLength(1);
   });
 
   it('CH-3302 a search with no match offers Show everyone', async () => {

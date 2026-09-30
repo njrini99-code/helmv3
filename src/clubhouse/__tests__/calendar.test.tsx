@@ -46,6 +46,7 @@ vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAtte
 import type { ChCalendarData } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
+import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
@@ -394,5 +395,18 @@ describe('Calendar · haptics and accessibility', () => {
     const title = screen.getByRole('textbox', { name: 'Event title' });
     expect(title.getAttribute('aria-invalid')).toBe('true');
     expect(title.getAttribute('aria-describedby')).toBe('ch-ed-title-err');
+  });
+});
+
+describe('Calendar · no team', () => {
+  it('CH-6307 a coach or player with no team gets the v2 page empty state', () => {
+    const { unmount } = render(<CalendarNoTeam coach />);
+    const el = code('CH-6307')!;
+    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren't on a team yet" })).toBeTruthy();
+    expect(el.textContent).toMatch(/once your team is set up/);
+    unmount();
+    render(<CalendarNoTeam coach={false} />);
+    expect(code('CH-6307')!.textContent).toMatch(/once a coach adds you/);
   });
 });

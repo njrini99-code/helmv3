@@ -70,8 +70,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 |  | 1 | 2 | 5 | 1 | 16 |  |  |  |  | 1 |  |  |  |  | 2 | 3 | 6 |  |  |  |  |  |  |  | 37 |
 | P004 |  | 1 | 1 | 9 |  | 11 | 2 |  |  |  |  |  |  |  |  | 2 | 2 | 4 |  |  |  |  |  |  |  | 32 |
 | P005 |  |  | 2 | 5 | 1 | 9 |  | 2 |  |  |  |  |  |  |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 29 |
-| P006 |  | 5 | 1 | 6 | 4 | 24 |  |  |  |  | 2 | 1 |  |  |  | 3 | 3 | 4 |  |  |  |  |  |  |  | 53 |
-| P007 |  | 10 |  | 7 | 5 | 31 | 1 | 2 |  | 1 | 2 |  |  |  | 1 | 4 | 4 | 4 |  |  |  |  |  |  |  | 72 |
+| P006 |  | 5 | 1 | 7 | 4 | 24 |  |  |  |  | 2 | 1 |  |  |  | 3 | 3 | 4 |  |  |  |  |  |  |  | 54 |
+| P007 |  | 10 |  | 8 | 5 | 31 | 1 | 2 |  | 1 | 2 |  |  |  | 1 | 4 | 4 | 4 |  |  |  |  |  |  |  | 73 |
 | P008 |  | 1 | 3 | 4 | 15 | 36 |  |  |  | 1 | 5 | 3 | 1 |  |  | 8 | 7 | 7 |  |  |  |  |  |  |  | 91 |
 | P009 |  | 4 | 3 | 10 | 10 | 22 |  | 2 |  | 1 | 1 | 1 |  |  |  | 2 | 2 | 3 |  |  |  |  |  |  |  | 61 |
 
@@ -296,6 +296,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60404 | CH-6304 | 04 Empty | `THE_TEAM_HAS_NO_DOCUMENTS_TO_ATTACH` | implemented | The team has no documents to attach |
 | 60405 | CH-6305 | 04 Empty | `AN_OPENED_EVENT_LEFT_THE_LOADED_RANGE` | implemented | An opened event left the loaded range |
 | 60406 | CH-6306 | 04 Empty | `NOTHING_NEEDS_ATTENTION_THIS_WEEK` | implemented | Nothing needs attention this week |
+| 60407 | CH-6307 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 60501 | CH-6101 | 05 Validation | `AN_EVENT_WITH_NO_TITLE` | implemented | An event with no title |
 | 60502 | CH-6102 | 05 Validation | `AN_EVENT_THAT_ENDS_BEFORE_IT_STARTS` | implemented | An event that ends before it starts |
 | 60503 | CH-6103 | 05 Validation | `BUSY_TIME_WITH_NO_NAME` | implemented | Busy time with no name |
@@ -359,6 +360,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70405 | CH-7305 | 04 Empty | `NOTHING_OPEN` | implemented | Nothing open |
 | 70406 | CH-7306 | 04 Empty | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | implemented | Nothing has been shared in the conversation (phone Details) |
 | 70407 | CH-7307 | 04 Empty | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | implemented | Everyone on the team is already in the group (Add) |
+| 70408 | CH-7308 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 70501 | CH-7101 | 05 Validation | `A_FILE_OF_THE_WRONG_TYPE_OR` | implemented | A file of the wrong type or size |
 | 70502 | CH-7102 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_TITLE` | implemented | An announcement with no title |
 | 70503 | CH-7103 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_BODY` | implemented | An announcement with no body |
