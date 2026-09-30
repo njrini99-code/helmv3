@@ -293,7 +293,7 @@ export function previewList(role: 'coach' | 'player' = 'coach', mode: 'all' | 'm
 
 const ROSTER = Object.entries(P)
   .filter(([, p]) => p.active)
-  .map(([k, p]) => ({ id: PLAYER_ID[k]!, name: p.name, classYear: p.year, locked: false, inactive: false }))
+  .map(([k, p]) => ({ id: PLAYER_ID[k]!, name: p.name, classYear: p.year, locked: false as const, inactive: false }))
   .sort((a, b) => (a.name.split(' ')[1] ?? '').localeCompare(b.name.split(' ')[1] ?? ''));
 
 export function previewCreateForm(): ChQFormData {
@@ -327,8 +327,8 @@ export function previewCreateForm(): ChQFormData {
 export function previewEditForm(): ChQFormData {
   const s = SAMPLES[0]!;
   const played = new Set(s.entries.filter(([, r]) => r.length > 0).map(([k]) => PLAYER_ID[k]!));
-  const players = [
-    ...ROSTER.map((p) => ({ ...p, locked: played.has(p.id) })),
+  const players: ChQFormData['players'] = [
+    ...ROSTER.map((p) => ({ ...p, locked: played.has(p.id) ? ('round' as const) : (false as const) })),
     { id: PLAYER_ID.mia!, name: P.mia!.name, classYear: P.mia!.year, locked: false, inactive: true },
   ];
   return {

@@ -367,7 +367,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                         <Avatar name={p.name} size={30} />
                         <span>
                           <b>{p.name}</b>
-                          <small>{p.locked && on ? 'Has a round in it' : p.inactive ? 'Not on the active roster' : (p.classYear ?? ' ')}</small>
+                          <small>{p.locked && on ? (p.locked === 'squad' ? 'Has a squad place' : 'Has a round in it') : p.inactive ? 'Not on the active roster' : (p.classYear ?? ' ')}</small>
                         </span>
                       </Checkbox>
                     );

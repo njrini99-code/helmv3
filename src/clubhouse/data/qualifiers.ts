@@ -137,8 +137,8 @@ export interface ChQFormPlayer {
   id: string;
   name: string;
   classYear: string | null;
-  /** Has a round in this qualifier, so can't be taken out of it. */
-  locked: boolean;
+  /** Why the player can't be taken out: a round in this qualifier (any status), or a selection row. Matches setQualifierEntrants. */
+  locked: false | 'round' | 'squad';
   /** Entered but no longer on the active roster. */
   inactive: boolean;
 }
@@ -467,7 +467,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   const byLast = (a: { name: string }, b: { name: string }) => (a.name.split(' ').slice(-1)[0] ?? '').localeCompare(b.name.split(' ').slice(-1)[0] ?? '') || a.name.localeCompare(b.name);
 
   if (!input.qualifierId) {
-    const players = roster.map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now), locked: false, inactive: false })).sort(byLast);
+    const players = roster.map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now), locked: false as const, inactive: false })).sort(byLast);
     return {
       mode: 'create',
       id: null,
@@ -490,13 +490,16 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   const q = qRes.data as (QRow & { team_id: string }) | null;
   if (!q || q.team_id !== input.teamId) return null;
 
-  const [entries, usedRes, coursesRes] = await Promise.all([
+  const [entries, usedRes, placedRes, coursesRes] = await Promise.all([
     readEntries(supabase, [q.id], 'qualifiers'),
     // Any round counts, started or not: an entrant with one can't be removed (setQualifierEntrants), and its slot can't be cut.
     supabase.from('golf_rounds').select('player_id, qualifier_round_number').eq('qualifier_id', q.id).limit(1000),
+    // So does a selection row, confirmed or not (setQualifierEntrants refuses both).
+    supabase.from('golf_qualifier_selections').select('player_id').eq('qualifier_id', q.id),
     supabase.from('golf_qualifier_round_courses').select('round_number, course_id, course_name, tee_id').eq('qualifier_id', q.id).order('round_number', { ascending: true }),
   ]);
   if (usedRes.error) chLogServer('qualifiers', 'usedRounds', usedRes.error, 'qualifiers');
+  if (placedRes.error) chLogServer('qualifiers', 'placed', placedRes.error, 'qualifiers');
   if (coursesRes.error) chLogServer('qualifiers', 'roundCourses', coursesRes.error, 'qualifiers');
   const courseRows = (coursesRes.data ?? []) as Array<{ round_number: number; course_id: string | null; course_name: string | null; tee_id: string | null }>;
   const teeIds = [...new Set(courseRows.map((c) => c.tee_id).filter((t): t is string => !!t))];
@@ -511,14 +514,16 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   }
 
   const used = (usedRes.data ?? []) as Array<{ player_id: string; qualifier_round_number: number | null }>;
-  const lockedIds = new Set(used.map((u) => u.player_id));
+  const roundIds = new Set(used.map((u) => u.player_id));
+  const placedIds = new Set(((placedRes.data ?? []) as Array<{ player_id: string }>).map((r) => r.player_id));
+  const lockOf = (id: string): ChQFormPlayer['locked'] => (roundIds.has(id) ? 'round' : placedIds.has(id) ? 'squad' : false);
   const entered = entries.rows.filter((e) => e.player).map((e) => e.player as PlayerCols);
   const rosterIds = new Set(roster.map((p) => p.id));
   const players: ChQFormPlayer[] = [
     ...roster,
     ...entered.filter((p) => !rosterIds.has(p.id)),
   ]
-    .map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now), locked: lockedIds.has(p.id), inactive: !rosterIds.has(p.id) }))
+    .map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now), locked: lockOf(p.id), inactive: !rosterIds.has(p.id) }))
     .sort(byLast);
 
   return {
@@ -548,8 +553,8 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
       par: c.tee_id ? (tees.get(c.tee_id)?.total_par ?? null) : null,
     })),
     players,
-    // Without the entrants or the rounds already played, a save could drop a player or cut a scored round.
-    playersError: !!rosterRes.error || entries.error || !!usedRes.error,
+    // Without the entrants, the rounds already played or the squad places, a save could drop a player or cut a scored round.
+    playersError: !!rosterRes.error || entries.error || !!usedRes.error || !!placedRes.error,
     coursesError: !!coursesRes.error || teesError,
     squadLocked: parseSelectionState(q.selection_state) === 'selected',
     minRounds: Math.max(1, ...used.map((u) => u.qualifier_round_number ?? 1)),

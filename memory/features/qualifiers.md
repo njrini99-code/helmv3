@@ -182,7 +182,9 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
   refuse: resizing a confirmed squad, fewer pick spots than picks chosen,
   entering a player off the active roster, and taking out a player who has a
   round (any status) or a selection row. Refusals are not filed as faults
-  (`observeSoftFailures: false`).
+  (`observeSoftFailures: false`). The form locks those same players in ("Has
+  a round in it", "Has a squad place"). `setQualifierRoundCourses` also
+  checks `verifyTeamAccess`, uuids and the demo guard before it writes.
 - The selection workspace (turning the leaderboard into the travel squad) is
   hidden until it is designed (D-32); the Selections card shows who is
   qualifying now, and the confirmed squad read-only.

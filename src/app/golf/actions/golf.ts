@@ -53,6 +53,8 @@ import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { assertHolesPlayedMatchesPayload } from '@/lib/golf/holes-played-assert';
 import { validateRoundEntry, validateHolesPlayed, firstBlockingPartialHoleIssue, clampPuttDistanceFeet } from '@/lib/golf/round-entry-validation';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
+import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { isUuid } from '@/lib/utils/uuid';
 import {
   createHelmFlightRecorder,
   recordRescuedStepOutcome,
@@ -4483,11 +4485,36 @@ async function setQualifierRoundCoursesImpl(
   roundCourses: QualifierRoundCourseInput[],
 ): Promise<ActionResult> {
   try {
+    if (!isUuid(qualifierId)) {
+      return { success: false, error: 'That qualifier link isn’t valid.' };
+    }
+    if (roundCourses.some((rc) => [rc.courseId, rc.teeId].some((id) => id != null && !isUuid(id)))) {
+      return { success: false, error: 'A round’s course or tees aren’t valid. Choose them again.' };
+    }
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'You must be signed in to edit a qualifier' };
+    }
+
+    // The caller must coach the qualifier's team before anything is written;
+    // RLS stays the second gate. The team comes from the row, never the caller.
+    const { data: owner, error: ownerError } = await supabase.from('golf_qualifiers').select('team_id').eq('id', qualifierId).maybeSingle();
+    if (ownerError) {
+      await logServerError(`setQualifierRoundCourses: qualifier read failed: ${ownerError.message}`, { action: 'setQualifierRoundCourses.access', featureArea: 'qualifiers' }, 'warning');
+      return { success: false, error: 'Couldn’t check this qualifier. Try again.' };
+    }
+    if (!owner) {
+      return { success: false, error: 'That qualifier wasn’t found. It may have been deleted.' };
+    }
+    const access = await verifyTeamAccess(owner.team_id, user.id, supabase);
+    if (!access.allowed) {
+      return {
+        success: false,
+        error: access.reason === 'unavailable' ? 'Couldn’t confirm your access to this team. Try again.' : 'Only a coach of this team can change this qualifier.',
+      };
     }
 
     // Never coerce a malformed update into a one-round qualifier. That turns a
@@ -4573,7 +4600,7 @@ async function setQualifierRoundCoursesImpl(
 
 const observedSetQualifierRoundCourses = withAdminObserved(
   'setQualifierRoundCourses',
-  { sport: 'golf', feature: 'qualifiers' },
+  { sport: 'golf', feature: 'qualifiers', demoSafe: true },
   setQualifierRoundCoursesImpl,
 );
 

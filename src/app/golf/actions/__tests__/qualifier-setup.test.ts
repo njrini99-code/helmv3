@@ -131,6 +131,48 @@ describe('setQualifierEntrants', () => {
     expect((data as Array<{ player_id: string }>).map((e) => e.player_id).sort()).toEqual([p(1), p(2)].sort());
   });
 
+  it('refuses a qualifier the caller cannot see (another team’s, hidden by RLS) as not found', async () => {
+    fake = createFakeSupabase({ user: { id: 'coach-user' }, tables: { golf_qualifiers: [], golf_qualifier_entries: [] } });
+    expect(await setQualifierEntrants(Q, [p(1)])).toEqual({ success: false, error: 'That qualifier wasn’t found. It may have been deleted.' });
+    expect(await setQualifierSquadSize(Q, { total: 5, coachPicks: 1 })).toEqual({ success: false, error: 'That qualifier wasn’t found. It may have been deleted.' });
+    expect(verifyTeamAccess).not.toHaveBeenCalled();
+  });
+
+  it('refuses a player who is active on another team, and enters nobody', async () => {
+    fake = createFakeSupabase({
+      user: { id: 'coach-user' },
+      tables: {
+        golf_qualifiers: [{ id: Q, team_id: TEAM, selection_state: 'open' }],
+        golf_qualifier_entries: [p(1), p(2)].map((player_id, i) => ({ id: `e${i}`, qualifier_id: Q, player_id, status: 'entered' })),
+        golf_team_members: [
+          ...[p(1), p(2)].map((player_id) => ({ team_id: TEAM, player_id, status: 'active' })),
+          { team_id: '44444444-4444-4444-8444-444444444444', player_id: p(4), status: 'active' },
+        ],
+        golf_rounds: [],
+        golf_qualifier_selections: [],
+      },
+    });
+    expect(await setQualifierEntrants(Q, [p(1), p(2), p(4)])).toEqual({ success: false, error: 'One player isn’t on the active roster, so nothing changed.' });
+    const { data } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    expect((data as unknown[]).length).toBe(2);
+  });
+
+  it('says what saved when the new players went in but taking players out matched no row', async () => {
+    const real = fake.from.bind(fake);
+    fake.from = ((table: string) => {
+      const builder = real(table);
+      if (table === 'golf_qualifier_entries') {
+        // RLS refusing the delete: no error, no rows.
+        const refused = { eq: () => refused, in: () => refused, select: async () => ({ data: [], error: null }) };
+        Object.assign(builder, { delete: () => refused });
+      }
+      return builder;
+    }) as typeof fake.from;
+    expect(await setQualifierEntrants(Q, [p(1), p(3)])).toEqual({ success: false, error: 'The new players were entered, but taking players out didn’t save. Save again to finish.' });
+    const { data } = await real('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    expect((data as Array<{ player_id: string }>).map((e) => e.player_id).sort()).toEqual([p(1), p(2), p(3)].sort());
+  });
+
   it('refuses to take out a player with a round in any status, not only started or finished', async () => {
     world({ rounds: [{ player_id: p(2), status: 'draft' }] });
     expect((await setQualifierEntrants(Q, [p(1)])).success).toBe(false);

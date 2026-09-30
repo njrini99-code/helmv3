@@ -27,6 +27,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { describeError } from '@/lib/utils/describe-error';
 import { isUuid } from '@/lib/utils/uuid';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 
 export type QualifierSetupResult<T = undefined> = { success: true; data: T } | { success: false; error: string };
 
@@ -151,16 +152,18 @@ async function setQualifierEntrantsImpl(qualifierId: string, playerIds: string[]
   }
 
   if (remove.length) {
-    const [played, squad] = await Promise.all([
+    // Rounds in slices of 20 players: at most 50 rounds each keeps a slice under the 1,000-row read cap.
+    const checks = await Promise.all([
       // Any status: a draft or started round would be stranded without its entry.
-      sb.from('golf_rounds').select('player_id').eq('qualifier_id', qualifierId).in('player_id', remove),
-      sb.from('golf_qualifier_selections').select('player_id').eq('qualifier_id', qualifierId).in('player_id', remove),
+      ...chunkIds(remove, 20).map((ids) => sb.from('golf_rounds').select('player_id').eq('qualifier_id', qualifierId).in('player_id', ids)),
+      ...chunkIds(remove).map((ids) => sb.from('golf_qualifier_selections').select('player_id').eq('qualifier_id', qualifierId).in('player_id', ids)),
     ]);
-    if (played.error || squad.error) {
-      await logServerError(`qualifierSetup.entrants: removal check failed: ${describeError(played.error ?? squad.error)}`, { action: 'qualifierSetup.entrants', featureArea: 'qualifiers' }, 'warning');
+    const failed = checks.find((r) => r.error);
+    if (failed) {
+      await logServerError(`qualifierSetup.entrants: removal check failed: ${describeError(failed.error)}`, { action: 'qualifierSetup.entrants', featureArea: 'qualifiers' }, 'warning');
       return { success: false, error: 'Couldn’t check whether those players have rounds. Try again.' };
     }
-    const blocked = new Set([...(played.data ?? []), ...(squad.data ?? [])].map((r) => r.player_id)).size;
+    const blocked = new Set(checks.flatMap((r) => (r.data ?? []).map((row) => row.player_id))).size;
     if (blocked) {
       return {
         success: false,
@@ -180,13 +183,26 @@ async function setQualifierEntrantsImpl(qualifierId: string, playerIds: string[]
     }
   }
   if (remove.length) {
-    const { data: deleted, error } = await sb.from('golf_qualifier_entries').delete().eq('qualifier_id', qualifierId).in('player_id', remove).select('player_id');
-    if (error || (deleted?.length ?? 0) !== remove.length) {
+    let removed = 0;
+    let error: unknown = null;
+    for (const ids of chunkIds(remove)) {
+      const res = await sb.from('golf_qualifier_entries').delete().eq('qualifier_id', qualifierId).in('player_id', ids).select('player_id');
+      if (res.error) {
+        error = res.error;
+        break;
+      }
+      removed += res.data?.length ?? 0;
+    }
+    if (error || removed !== remove.length) {
       await logServerError(`qualifierSetup.entrants: delete failed: ${describeError(error ?? 'row count mismatch')}`, { action: 'qualifierSetup.entrants', featureArea: 'qualifiers' });
       revalidate(qualifierId);
       return {
         success: false,
-        error: add.length ? 'The new players were entered, but taking players out didn’t save. Save again to finish.' : 'Couldn’t take those players out. Try again.',
+        error: removed
+          ? `${add.length ? 'The new players were entered, but only' : 'Only'} ${removed} of ${remove.length} players were taken out. Save again to finish.`
+          : add.length
+            ? 'The new players were entered, but taking players out didn’t save. Save again to finish.'
+            : 'Couldn’t take those players out. Try again.',
       };
     }
   }

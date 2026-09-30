@@ -247,18 +247,21 @@ describe('Qualifiers · the loader', () => {
     await expectCode('CH-09203', /The field didn’t load/);
   });
 
-  it('editing: players with a round are locked in, and the round count cannot drop below a scored round', async () => {
+  it('editing: players with a round or a squad place are locked in, and the round count cannot drop below a scored round', async () => {
     tables.current = {
       golf_team_members: { data: [{ player: player('p1', 'Ann') }, { player: player('p3', 'Cal') }] },
       golf_qualifiers: { data: Q },
       golf_qualifier_entries: { data: entries },
       golf_rounds: { data: [{ player_id: 'p2', qualifier_round_number: 2 }] },
+      golf_qualifier_selections: { data: [{ player_id: 'p1' }] },
       golf_qualifier_round_courses: { data: [] },
     };
     const form = (await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' }))!;
     expect(form.minRounds).toBe(2);
     expect(form.squadLocked).toBe(true);
-    expect(form.players.find((p) => p.id === 'p2')).toMatchObject({ locked: true, inactive: true });
+    expect(form.players.find((p) => p.id === 'p2')).toMatchObject({ locked: 'round', inactive: true });
+    expect(form.players.find((p) => p.id === 'p1')).toMatchObject({ locked: 'squad', inactive: false });
+    expect(form.players.find((p) => p.id === 'p3')?.locked).toBe(false);
     expect(form.initial.playerIds.sort()).toEqual(['p1', 'p2']);
   });
 });
