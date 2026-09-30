@@ -51,21 +51,21 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Every failure path was forced once locally and seen in the console or Sentry (stats-team.test forces the rounds, roster, team, round cache, putts and D1 reads, each asserting its `chLogServer`, plus the five section crashes (high) and the export (low), each asserting its `chReport`. The preview's failed, partial, empty, crash and loading states were loaded in the browser with the console read. The crash state found that a section crash on the server render failed the whole page; each section now has a Suspense inside its boundary)
 
 ## phone-spec
-- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
-- [ ] The owner approved it (the file says `Status: approved`)
+- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (open, phone design: `design/handoff/mobile/` has no Stats design; `docs/clubhouse/phone/stats-team.md` is a draft)
+- [ ] The owner approved it (the file says `Status: approved`) (open, owner: the draft says `Status: draft (awaiting owner approval)`)
 
 ## phone
-- [ ] Built at 390px and 430px, respecting the safe areas
-- [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
-- [ ] Sheets are used instead of popovers, and they drag to dismiss
-- [ ] The bottom tab bar and toasts don't overlap content
-- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
+- [ ] Built at 390px and 430px, respecting the safe areas (open, phone design: waits for an approved phone spec)
+- [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent (open, phone design: waits for an approved phone spec)
+- [ ] Sheets are used instead of popovers, and they drag to dismiss (open, phone design: waits for an approved phone spec)
+- [ ] The bottom tab bar and toasts don't overlap content (open, phone design: waits for an approved phone spec)
+- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device (open, phone design: waits for an approved phone spec)
 
 ## motion
 - [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
 - [x] Press scales to 0.985 on every tappable surface
 - [x] No count-ups and no entrance staggers; data is final on mount
-- [x] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on). With Playwright `reducedMotion: reduce`, every Stats transition (page dim, leg cards, trend lines, grid rows, the switches) drops from 150 and 90ms to 0.01ms (the app-wide rule in globals.css), and toasts go through the hook. This page has no sheets
+- [x] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on). With Playwright `reducedMotion: reduce`, every Stats transition (page dim, leg cards, trend lines, grid rows, the switches) drops from 150 and 90ms to 0.01ms (the app-wide rule in globals.css), and toasts go through the hook. The switch pill's 220ms slide, which runs since the shell loads `domMax` (314b03055), is dropped by the hook when motion is reduced. The browser proof of the slide is part of the merge pass (D-27). This page has no sheets
 - [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
 
 ## accessibility
@@ -78,10 +78,10 @@ Verified by `stats-team.test.tsx` (CH-48xx) and `npm run clubhouse:a11y`; states
 
 ## performance
 - [x] No request waterfall on the server, with independent reads in parallel. `loadTeamStats` reads the team and roster together. The season's rounds need the roster's ids; the D1 read is already in flight beside them. The round cache, the putts and D1 then load together, with each id chunk in parallel, and one cache read now serves the window, the previous window and the bests (it had been read twice)
-- [x] Client JS is limited to the interactive islands, and animation code is loaded lazily. `StatsTeam` now renders on the server: the figures, putting and season bests are HTML. Only `StatsTeamIslands` ships as client code: the window switch and its busy state, Export, Try again, Show the season, and the trend, leg cards and grid, which share the focused player and leg. Team stats' own client code went from 17.7 to 11.8 KB minified (6.6 to 4.7 KB gzip); in the production build the route's client chunks are 5.2 KB smaller, and the Season bests copy and the putting rings are in no client chunk. The shell's animation features load in their own chunk after first paint (D-25). Every capture at 924 and 1280px (sections, lens, focus, every state) is pixel-identical before and after
+- [x] Client JS is limited to the interactive islands, and animation code is loaded lazily. `StatsTeam` now renders on the server: the figures, putting and season bests are HTML. Only `StatsTeamIslands` ships as client code: the window switch and its busy state, Export, Try again, Show the season, and the trend, leg cards and grid, which share the focused player and leg. Team stats' own client code went from 17.7 to 11.8 KB minified (6.6 to 4.7 KB gzip); in the production build the route's client chunks are 5.2 KB smaller, and the Season bests copy and the putting rings are in no client chunk. The shell's animation features load in their own chunk after first paint (D-25; `domMax` since 314b03055, so layout slides run). The first-load JS with `domMax` is measured at the merge pass (D-27). Every capture at 924 and 1280px (sections, lens, focus, every state) is pixel-identical before and after
 - [x] No layout shift after first paint (PerformanceObserver on the preview: CLS 0.0001 at 924px and 0 at 1280px on load. Choosing a lens, leg or player and scrolling adds only input-driven shifts. The route skeleton was sized to the loaded page: the header, first figure card and trend card now start at the same place at 924, 1100, 1280, 1400 and 1600px. At 1280px the trend card had dropped 40px when data landed. The phone width waits for the phone gate)
 
 ## verified
 - [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
-- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
-- [ ] Owner review of the built screen
+- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md (open, owner: the live pass on a Vercel preview, Q-4; agents don't sign in)
+- [ ] Owner review of the built screen (open, owner: the lead carries it; the player views start after it)

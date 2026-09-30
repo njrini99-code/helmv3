@@ -60,6 +60,14 @@ Starting the next session:
    (owner, 2026-09-29). Work that needs a schema change is written as a
    migration and left unapplied. Open for the owner: marking #2102 ready for
    review, and the live pass on a Vercel preview (Q-4).
+5. Team stats (coach) has cleared its whole contract apart from owner and
+   phone items: every desktop gate, from spec to performance, is done. Open:
+   the phone spec and phone build (no Stats mobile design; the draft awaits
+   approval), the live pass with a real coach account (Q-4), and the owner's
+   review. Deferred to the merge pass (D-27): the full `clubhouse:a11y` run,
+   one `npm run build`, and the browser proof of the `domMax` switch slide
+   and first-load JS. Next: the Stats player views, after the owner reviews
+   Team stats.
 
 ## Screens
 
@@ -172,3 +180,4 @@ Noted by the owner 2026-09-29: these migrations go out with the deployment of th
 - 2026-09-29 · Stats (team) · performance, motion: `StatsTeam` split into server sections (figures, putting, bests) and client islands (`StatsTeamIslands`: switch, Export, Try again, trend, legs, grid); the shell's motion features load lazily (D-25). Team client code 17.7 → 11.8 KB minified (esbuild, shared modules external). The production build's route client chunks went 2963.8 → 2958.6 KB (885.7 → 884.2 KB gzip). The Season bests copy and the putting rings are in no client chunk. The dev RSC payload for the preview grew 31 → 48 KB, because server sections are sent as markup, plus dev debug info; production can't be measured here (the preview 404s there). Parity: 26 Stats captures and 10 page captures, pre-split vs split, pixel-identical apart from the shimmer and typing-dot phases. CH-4901/4902, keyboard path and crash state re-run the same. Reduced motion is honoured by the app-wide rule (globals.css:2664) plus the shell's `data-motion` for the Settings switch. vitest src/clubhouse 288/288, typecheck 0, eslint 0, clubhouse:check 0, clubhouse:a11y 0 (105 pages), build 0.
 - 2026-09-29 · Stats (team) · spec: the lead compared the design project through DesignSync. `Stats.html` matches `design/handoff/` apart from the Qualifiers nav item (not built, D-23); `stats.jsx`, `stats-sg.jsx`, `stats.css`, `cal.css`, `depth.css`, `sidebar.css` and the colour, elevation, typography, spacing and base tokens match. Later the same day the lead compared the rest: `styles.css`, `tokens/fonts.css`, `components/components.css` and `_ds_bundle.js` are byte-identical, and `stats-game.jsx`, `stats-game.css` and `stats-sheet.jsx` (player views) match by distinctive-line checks. Not compared: `roster-data.js` and `msg.css` (not used by Stats).
 - 2026-09-29 · Stats (team) · spec: the design project, compared by the lead via DesignSync (88af5e29), 2026-09-29. Byte-identical to `design/handoff/`: `_ds/.../styles.css`, `tokens/fonts.css`, `components/components.css` (and its `design-system/` copy), `_ds_bundle.js`. By distinctive lines: `stats-game.jsx`, `stats-game.css`, `stats-sheet.jsx`. Earlier: `Stats.html` (apart from the Qualifiers nav item), `stats.jsx`, `stats-sg.jsx`, `stats.css`, `cal.css`, `depth.css`, `sidebar.css`, `roster.css`, and the colour, elevation, typography, spacing and base tokens. Not compared: `msg.css` (Stats doesn't load it). The player views can treat `stats-game` and `stats-sheet` as current.
+- 2026-09-29 · Stats (team) · tracker pass (docs only, no servers): the row matches the checklist: spec, desktop, wired, states, error-tracking, motion, accessibility and performance are done; phone-spec, phone and verified are open. Each open box names its owner: phone design, owner, or the merge pass. The motion and islands evidence now cite `domMax` (314b03055) and D-26/D-27 (929e6681d). The catalog matches the code after the split, and `SCREENS.md` has Team stats and its old link ticked. clubhouse:check 0.
