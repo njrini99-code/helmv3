@@ -5,9 +5,9 @@
 /* Ink (warm black) */
 --ink-950:#141412;--ink-900:#1C1B18;--ink-700:#3A3833;--ink-600:#55524B;--ink-500:#6B6860;--ink-400:#8F8B81;--ink-300:#B3AFA5;
 /* Augusta green */
---green-50:#EEF5F0;--green-100:#DDEBE1;--green-200:#BCD6C4;--green-400:#4F8A64;--green-500:#1F6B45;--green-600:#155A39;--green-700:#0F4A2F;--green-800:#0B3A25;--green-900:#082B1C;
+--green-25:#F5F9F6;--green-50:#EEF5F0;--green-100:#DDEBE1;--green-200:#BCD6C4;--green-400:#4F8A64;--green-500:#1F6B45;--green-600:#155A39;--green-700:#0F4A2F;--green-800:#0B3A25;--green-900:#082B1C;
 /* Champagne — hairline detail only */
---champagne-300:#DCCDA6;--champagne-500:#B09560;
+--champagne-100:#EFE6D2;--champagne-300:#DCCDA6;--champagne-500:#B09560;
 /* Status */
 --positive-600:#1C6B43;--positive-100:#E6F2EA;
 --warning-600:#94600E;--warning-100:#FAF0DC;

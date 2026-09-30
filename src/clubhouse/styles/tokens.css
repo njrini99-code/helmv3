@@ -26,6 +26,7 @@
   --ch-ink-400: #8f8b81;
   --ch-ink-300: #b3afa5;
   /* Augusta green */
+  --ch-green-25: #f5f9f6;
   --ch-green-50: #eef5f0;
   --ch-green-100: #ddebe1;
   --ch-green-200: #bcd6c4;
@@ -37,6 +38,7 @@
   --ch-green-900: #082b1c;
   --ch-frame: #0a331f;
   /* Champagne: hairline detail only */
+  --ch-champagne-100: #efe6d2;
   --ch-champagne-300: #dccda6;
   --ch-champagne-500: #b09560;
   /* Status (text on tint) */
@@ -84,6 +86,12 @@
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
   --ch-border-focus: var(--ch-ink-900);
+  /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
+  --ch-green-ring: rgb(21 90 57 / 0.28);
+  --ch-green-rule: rgb(21 90 57 / 0.4);
+  --ch-ink-rule: rgb(28 25 18 / 0.2);
+  --ch-champagne-ring: rgb(110 84 36 / 0.14);
+  --ch-champagne-rule: rgb(176 149 96 / 0.25);
   --ch-focus-halo: rgb(28 25 18 / 0.1);
 
   /* Type */

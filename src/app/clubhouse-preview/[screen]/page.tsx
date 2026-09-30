@@ -16,6 +16,10 @@ import '@/clubhouse/styles/messages.css';
 import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
 import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
 import { PreviewSettings } from '@/clubhouse/preview/PreviewSettings';
+import { QualifiersList } from '@/clubhouse/screens/qualifiers/QualifiersList';
+import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
+import { PreviewQualifierDetail, PreviewQualifierForm } from '@/clubhouse/preview/PreviewQualifiers';
+import { DETAIL_INDEX, previewCreateForm, previewDetail, previewEditForm, previewList } from '@/clubhouse/preview/fixtures-qualifiers';
 import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
 import { MessagesSkeleton } from '@/clubhouse/screens/messages/MessagesSkeleton';
 import { Calendar } from '@/clubhouse/screens/calendar/Calendar';
@@ -48,6 +52,9 @@ import {
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
  *   /clubhouse-preview/settings ?state=player | noteam | failed | partial | assistant | failwrites | loading, &section=
+ *   /clubhouse-preview/qualifiers ?state=empty | failed | partial | loading  (and qualifiers-player, my-qualifiers ?state=empty)
+ *   /clubhouse-preview/qualifier ?q=live | upcoming | selected | completed | spring, &state=failed | scores | partial | failwrites | loading
+ *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  */
 export default async function ClubhousePreview({
@@ -55,11 +62,32 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q } = await searchParams;
+  const qDetail = (role: 'coach' | 'player') => {
+    const d = previewDetail(DETAIL_INDEX[q ?? 'live'] ?? 0, role);
+    if (state === 'failed') return { ...d, entriesError: true, board: null, entrants: 0 };
+    if (state === 'scores') return { ...d, roundsError: true, board: null };
+    if (state === 'partial') return { ...d, holesError: true, coursesError: true, par: null, selectionsError: true, selections: null };
+    return d;
+  };
+  const qList = (role: 'coach' | 'player', mode: 'all' | 'mine') => {
+    const l = previewList(role, mode);
+    if (state === 'empty') return { ...l, items: [] };
+    if (state === 'failed') return { ...l, items: [], listError: true };
+    if (state === 'partial') return { ...l, standingsError: true, items: l.items.map((i) => ({ ...i, leaders: [] })) };
+    return l;
+  };
+  const qForm = (edit: boolean) => {
+    const f = edit ? previewEditForm() : previewCreateForm();
+    if (state === 'failed') return { ...f, playersError: true };
+    if (state === 'noroster') return { ...f, players: [], initial: { ...f.initial, playerIds: [] } };
+    if (state === 'courses') return { ...f, coursesError: true, roundCourses: [] };
+    return f;
+  };
   const calView = view === 'day' || view === 'month' || view === 'agenda' ? view : 'week';
 
   const screens: Record<string, { path: string; node: React.ReactNode }> = {
@@ -140,6 +168,34 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/settings',
       node: state === 'loading' ? <SettingsSkeleton /> : <PreviewSettings state={state} section={section} />,
     },
+    qualifiers: {
+      path: '/golf/dashboard/qualifiers',
+      node: state === 'loading' ? <QualifiersSkeleton /> : <QualifiersList data={qList('coach', 'all')} />,
+    },
+    'qualifiers-player': {
+      path: '/golf/dashboard/qualifiers',
+      node: <QualifiersList data={qList('player', 'all')} />,
+    },
+    'my-qualifiers': {
+      path: '/golf/dashboard/my-qualifiers',
+      node: <QualifiersList data={qList('player', 'mine')} />,
+    },
+    qualifier: {
+      path: '/golf/dashboard/qualifiers',
+      node: state === 'loading' ? <QualifierDetailSkeleton /> : <PreviewQualifierDetail data={qDetail('coach')} state={state} />,
+    },
+    'qualifier-player': {
+      path: '/golf/dashboard/qualifiers',
+      node: <PreviewQualifierDetail data={qDetail('player')} state={state} />,
+    },
+    'qualifier-new': {
+      path: '/golf/dashboard/qualifiers',
+      node: state === 'loading' ? <QualifierFormSkeleton /> : <PreviewQualifierForm data={qForm(false)} state={state} />,
+    },
+    'qualifier-edit': {
+      path: '/golf/dashboard/qualifiers',
+      node: state === 'loading' ? <QualifierFormSkeleton /> : <PreviewQualifierForm data={qForm(true)} state={state} />,
+    },
     'messages-player': {
       path: '/golf/dashboard/messages',
       node: <PreviewMessages state={state} role="player" />,
@@ -147,7 +203,7 @@ export default async function ClubhousePreview({
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const user = screen === 'calendar-player' || screen === 'messages-player' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const user = screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
 
   return (
     <PreviewBell state={bell}>

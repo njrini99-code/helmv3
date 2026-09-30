@@ -4,7 +4,7 @@ import {
   CalendarDays,
   Flag,
   House,
-  ListOrdered,
+  Medal,
   MessageSquare,
   Sparkles,
   Users,
@@ -25,7 +25,8 @@ export interface ChNavItem {
 /**
  * Coach navigation, in the handoff's order. Practice and Events are in the
  * design but have no route yet, so they are left out rather than pointing at
- * nothing (tracker: open questions).
+ * nothing (tracker: open questions). Lineups is hidden until it has its own
+ * design; Qualifiers sits under Program, as in the Qualifiers design (D-33).
  */
 export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
@@ -35,7 +36,7 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'Team' },
-  { id: 'lineups', label: 'Lineups', href: '/golf/dashboard/qualifiers', icon: ListOrdered, section: 'Team' },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Program' },
   { id: 'scouting', label: 'Scouting', href: '/golf/dashboard/recruiting', icon: Binoculars, section: 'Program' },
 ];
 
@@ -46,6 +47,7 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
   { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3 },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal },
 ];
 
 export type ChRole = 'coach' | 'player';
@@ -99,12 +101,32 @@ export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavIt
 const SETTINGS_ROUTES = ['/golf/dashboard/settings', '/golf/dashboard/settings/notifications', '/golf/dashboard/settings/coaching-intelligence'];
 
 export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
-  coach: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/stats', '/golf/dashboard/stats/team', ...SETTINGS_ROUTES],
-  player: ['/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats', ...SETTINGS_ROUTES],
+  coach: [
+    '/golf/dashboard',
+    '/golf/dashboard/calendar',
+    '/golf/dashboard/messages',
+    '/golf/dashboard/roster',
+    '/golf/dashboard/stats',
+    '/golf/dashboard/stats/team',
+    '/golf/dashboard/qualifiers',
+    ...SETTINGS_ROUTES,
+  ],
+  player: ['/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
+};
+
+/**
+ * Addresses under a rebuilt route that belong to the same screen (SCREENS.md
+ * lists them with their parent). Qualifiers: /new, /[id] and /[id]/edit. A
+ * player on /new or /edit gets Clubhouse's coach-only state, not a Fairway page.
+ */
+const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
+  '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/edit)?)$/i,
 };
 
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
-  return CH_REBUILT_ROUTES[role].includes(pathname.replace(/\/$/, '') || '/');
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (CH_REBUILT_ROUTES[role].includes(path)) return true;
+  return Object.entries(CH_REBUILT_CHILDREN).some(([parent, child]) => CH_REBUILT_ROUTES[role].includes(parent) && child.test(path));
 }
 
 /** A link target only once its screen is rebuilt; until then the control isn't rendered. */

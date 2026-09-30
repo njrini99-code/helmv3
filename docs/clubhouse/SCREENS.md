@@ -32,7 +32,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Game Fingerprint** `/players/[id]/game` — One player's deep dive: where strokes are lost and gained (printable at `/game/print`)
 - [ ] **Genome** `/players/[id]/genome` — One player's skill profile against a baseline, with a one-line verdict
 - [ ] **Recruiting HQ** `/recruiting` — Prospects from watchlist to commitment
-- [ ] **Qualifiers** `/qualifiers` — Set up and run team qualifiers that decide lineups (with `/new`, `/[id]`, `/[id]/edit`)
+- [x] **Qualifiers** `/qualifiers` — Set up and run team qualifiers that decide lineups (with `/new`, `/[id]`, `/[id]/edit`)
 - [ ] **Travel** `/travel` — Tournament trips: itineraries and logistics, linked from Calendar events
 - [ ] **Tasks** `/tasks` — Assign tasks to players and track completion live
 - [ ] **Documents** `/documents` — Team files and resources (Calendar can already attach them)
@@ -56,7 +56,8 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring during a round (with `/rounds/continue/[id]`, `/rounds/recover`)
 - [ ] **Round review** `/rounds/[id]/review` — AI analysis of a round they played
 - [ ] **Team Hub** `/team-hub` — Their team at a glance: tasks, announcements, travel, classes, teammates
-- [ ] **My Qualifiers** `/my-qualifiers` — Their qualifier rounds and where they stand
+- [x] **My Qualifiers** `/my-qualifiers` — The qualifiers they're entered in and where they stand
+- [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only: standings with their row marked, and the squad once confirmed (with `/[id]`)
 - [ ] **Roster** `/roster` — Their teammates
 - [ ] **Team info** `/team` — Team details
 - [ ] **Announcements** `/announcements` — Team news from the coaches (Clubhouse has them inside Messages)

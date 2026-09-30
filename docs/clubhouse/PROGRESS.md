@@ -105,6 +105,7 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
 | Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Messages | /golf/dashboard/messages (coach and player) | done | done | done | doing | doing | done | doing | doing | doing | doing | doing |
 | Settings | /golf/dashboard/settings (coach and player) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
+| Qualifiers | /golf/dashboard/qualifiers with /new, /[id], /[id]/edit (coach; list and detail also player), /golf/dashboard/my-qualifiers (player) | done | done | done | done | done | done | todo | done | done | done | doing |
 | CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role) | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
@@ -179,6 +180,31 @@ Noted by the owner 2026-09-29: these migrations go out with the deployment of th
 - D-57 (2026-09-29, owner, Q-37): A form sparkline shows from 3 rounds, the same threshold as desktop and every other page.
 - D-58 (2026-09-29, owner, Q-38): The phone's Inactive section lists `status = inactive` members, with their form as the note, and the profile adds "Inactive" to its identity line.
 - D-59 (2026-09-29, owner, Q-39): The phone's Name sort is by last name, as on desktop.
+- D-30 (2026-09-29, Q-5, Q-6): Qualifiers is one page for both roles. Players get a read-only list and detail of their team's qualifiers, with their own entries first, their row marked on the leaderboard, and the confirmed squad once the coach has committed it. Players get no create, edit, close, round-by-round or pick reasoning. `/my-qualifiers` renders the same list filtered to their entries, in place. Enter round waits for Round entry to be rebuilt (owner).
+- D-31 (2026-09-29, Q-7): Closed means closed. Close and Reopen call `updateQualifierStatus`. The closed notice says players can't enter or submit rounds until the coach reopens it (the live `submit_round_atomic` rule), and Reopen shows on every completed qualifier. No migration (owner).
+- D-32 (2026-09-29, Q-10, Q-11): Edit qualifier is built as the create form, prefilled, plus new server actions for squad size and picks and for adding or removing entrants. The selection workspace is not built, so there is no "Open selection workspace" or "Manage selections" until it is designed. The Selections card shows who is auto-qualifying now, and the confirmed squad read-only once `selection_state = 'selected'` (owner). What the workspace does: it is where a coach turns the leaderboard into the travel squad, by keeping the top finishers, choosing the coach's-pick players with a written reason, and confirming the squad so players are told.
+- D-33 (2026-09-29, Q-8, Q-9, Q-12 to Q-15, Q-17 to Q-20): The recommendations in those questions are accepted as written (owner):
+  - one server ranking (to par, then total strokes, then more rounds), with "Qualifying" while live;
+  - spots from `selection_slots_total`;
+  - a course per round with no date, and the per-round course and tee picker kept in the forms;
+  - par per round from the tee or the rounds, and one par only when every round agrees;
+  - round-by-round, teammates' scorecards and pick reasoning coach-only;
+  - Qualifiers under Program, and Lineups hidden;
+  - a static Live dot;
+  - raw colours mapped to tokens, with two new ones;
+  - every column fits at 924 and up;
+  - the phone form keeps every web field.
+
+  Q-16 stays open with the phone foundation (answered since: D-34).
+- D-34 (2026-09-29, Q-16): On the phone, Qualifiers opens from the Rounds tab, as the boards draw it. This follows the owner's foundation decision: the design's five-tab ivory bar, which `messages-mobile` is building on its branch. The Qualifiers phone build waits for that foundation to merge (owner).
+- D-35 (2026-09-29): Once Qualifiers desktop is verified, one forward-only migration closes the older database gaps the security review found. It is written and reviewed (`db-migration-reviewer`, pgTAP, `npm run test:rls` once locally) but not applied; applying it is the owner's call. It covers:
+  - `coach_reasoning` becomes coach-only: table-level SELECT is revoked and a column list without it is granted back, or it moves somewhere coach-gated (revoking the one column alone does nothing);
+  - the entries insert check also requires a `golf_team_members` row for that player on the qualifier's team;
+  - the remove-with-round trigger becomes `SECURITY DEFINER` with a fixed `search_path`, and covers draft rounds;
+  - `anon` grants on the four qualifier tables are revoked, and the helpers' `search_path` gains `pg_temp`.
+
+  Live counts (aggregates only): of 224 qualifier rounds, none has no team, another team or another status, so the trigger gap is latent. There are 6 selection rows and none has reasoning written, so nothing has leaked (owner).
+- D-36 (2026-09-29): A player seeing only their own scorecards is a screen choice, not a privacy rule. Players can read teammates' `golf_holes` through RLS, and that stays (owner).
 
 ## Open owner questions
 
@@ -224,6 +250,81 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Q-62 answered 2026-09-29 (D-47). Leave group for the group's creator. The design shows it; desktop hides it. Recommended: keep the desktop rule, because nobody else could manage the group. Trade-off: differs from the drawing.
 - Q-63 answered 2026-09-29 (D-48). Delete conversation. Recommended: hide it. There is no delete policy and no defined meaning (for you only, or for both). Trade-off: a drawn row is missing.
 - Q-64 answered 2026-09-29 (D-49). Design details with no backend. Recommended: leave out the event card in a thread (no writer, and 0 such rows); show every group with the people mark (no group type); keep the six stored reactions (no check); mark only the creator as "Admin"; keep desktop's View stats for coaches in a player's direct details, which the design leaves out; keep the drawn message icon on the other person in a direct thread's Details, where a tap goes back to that thread. Trade-off: small differences from the drawing.
+
+Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 2026-09-29; map in `screens/qualifiers.md`). The owner answered every question on 2026-09-29; Q-16 last, with the phone foundation (D-30 to D-33). Each still shows the options as they were put.
+
+- Q-5 (answered 2026-09-29, D-30) Player view (the design is coach-only):
+  - Recommended: one page for both roles, like Calendar, built from the design system and reviewed by the owner, like Settings (D-18).
+    - Players see the team's qualifiers, their own first, with their position, rounds and to-par.
+    - The detail is read-only: facts, leaderboard with cut lines and their own row marked, course per round, scoring rules, and the confirmed squad once `selection_state = 'selected'`.
+    - No Create, Edit, Close, selections, round-by-round or pick reasoning.
+    - `/my-qualifiers` opens the same list filtered to their entries, rendered in place (D-23).
+  - Trade-off: the player marks (the "You" row, their standing) are not drawn.
+  - Alternative: coaches first, and players wait for a player design.
+- Q-6 (answered 2026-09-29, D-30) The player's main action, entering a qualifier round (`/rounds/new?qualifier=`), isn't rebuilt, and `rebuiltHref` would hide it. With the flag on, `/rounds/new` already shows the not-rebuilt notice (`NotRebuilt`, CH-1301, a link back to Home), so today's flag-on players can't enter a round anywhere in Clubhouse.
+  - Recommended: ship the read-only player view (Q-5) with the coach page, and add Enter round when Round entry is rebuilt.
+  - Trade-off: players see their standing but enter rounds only with the flag off until then. That is no worse than the notice they get now.
+  - Alternative: hold the player view until Round entry is rebuilt. Round entry has no design yet, so players would have no Qualifiers in Clubhouse until one is designed and built.
+- Q-7 (answered 2026-09-29, D-31) Close and Reopen map to `updateQualifierStatus` (`completed`, `in_progress`). The design's closed notice says "Rounds already started can still be submitted". Live `submit_round_atomic` refuses every round linked to a completed qualifier, including a started one. The `golf.ts` comment says that refusal was removed on 2026-08-31; the feature doc says it stays.
+  - Recommended: the copy follows the live rule: "Players can't enter or submit rounds until you reopen it."
+  - Also recommended: Reopen shows on every completed qualifier. The design has it only right after a close; the feature doc requires a way back.
+  - Trade-off: if started rounds should still submit after a close, that is a migration to write (unapplied) changing the RPC guard.
+- Q-8 (answered 2026-09-29, D-33) Ranking, which disagrees in four places:
+  - the design's code: rounds played, then to-par, then last round;
+  - the design's caption: to-par, then fewer rounds pending;
+  - `getQualifierLeaderboard`: to-par, then total strokes, then more rounds;
+  - the workspace loader: entry aggregates; the RPC `get_qualifier_leaderboard`: gross total.
+  - Recommended: one server ranking, the live action's. The leaderboard, cut lines, "Auto-qualifying now" and the workspace all use it, and the caption says exactly that. While a qualifier is live, "Locked" becomes "Qualifying", because nothing is locked before the last round. The "final-round scorecard playoff" stays rules text; it is not computed.
+  - Trade-off: different from the drawn order and label.
+- Q-9 (answered 2026-09-29, D-33) Spots: two columns hold it. `selection_slots_total` is what the create form writes and the workspace uses. Legacy `spots_available` is set on 8 of 18 live qualifiers and differs on 1.
+  - Recommended: show `selection_slots_total` everywhere.
+  - Trade-off: that one qualifier shows a different number from the old page.
+- Q-10 (answered 2026-09-29, D-32) Selection workspace: "Open selection workspace" and "Manage selections" lead to an undrawn screen. Today it is the Fairway `/coachhelm/qualifying/[id]`, and its four actions exist (open → scoring → closed → selected, coach picks need reasoning).
+  - Recommended: build it in Clubhouse from the design system, as the Selections card grown into a panel: advance state, pick, reasoning, confirm. It needs an owner review.
+  - Trade-off: an undrawn surface.
+  - Alternative: hide the button until a design exists. Coaches then can't commit a squad in Clubhouse.
+- Q-11 (answered 2026-09-29, D-32) Edit qualifier is not drawn (the prototype only toasts).
+  - Recommended: the create form, prefilled, at `/qualifiers/[id]/edit`, over `updateGolfQualifierDetails` and `setQualifierRoundCourses`.
+  - Also recommended: new server actions to change squad size and picks, and to add or remove entrants. RLS already allows both; no migration is needed.
+  - Trade-off: two new actions to write and review.
+- Q-12 (answered 2026-09-29, D-33) Course and date per round: the detail draws a course and a date for each round. `golf_qualifier_round_courses` has course and tee but no date, and only 7 of 18 live qualifiers have rows. The design's create form has one free-text course.
+  - Recommended: show a round's course when set, else the qualifier's, with no per-round date. The create and edit forms keep today's per-round course and tee picker, which gives the par and the round setup defaults.
+  - Trade-off: a field the design doesn't draw.
+  - Alternative: a migration adding a round date (written, unapplied).
+- Q-13 (answered 2026-09-29, D-33) Par ("Par 72"): the qualifier has no par, and `course_id` is null on all 18.
+  - Recommended: par per round from the assigned tee's `total_par` (all 22 round-course rows have one), else from submitted rounds (`total_score − score_to_par`). Show one par only when every round agrees, else "—".
+  - Trade-off: 7 live qualifiers mix pars and will show no single par.
+- Q-14 (answered 2026-09-29, D-33) Player visibility: RLS lets active players read teammates' rounds and holes, and `coach_reasoning` once selected. Today's UI shows players neither round-by-round nor selections.
+  - Recommended: keep round-by-round, teammates' scorecards and the pick reasoning coach-only (the stricter rule wins, as in D-10). Players see totals, their own scorecards and, per Q-5, the confirmed squad without reasoning.
+  - Trade-off: tightening RLS to match would be a separate migration.
+- Q-15 (answered 2026-09-29, D-33) Navigation: the design's sidebar has Lineups under Team and Qualifiers under Program (medal icon). Clubhouse today points Lineups at `/qualifiers`.
+  - Recommended: add Qualifiers under Program once it's rebuilt, and hide Lineups until it has its own design (as Q-2).
+  - Trade-off: coaches lose the Lineups label they use now.
+  - Player navigation gets Qualifiers only with Q-5 and Q-6.
+- Q-16 (answered 2026-09-29, D-34) Phone home for Qualifiers: the tab bar, top bar, More and sheets belong to the foundation spec (owned by `messages-mobile`, from the owner's `m-shell.jsx` and `m.css`); `qual-mobile.jsx` carries an older copy of that shell. The page-level question is which tab owns Qualifiers. The boards mark Rounds active.
+  - Recommended: Qualifiers sits under the Rounds tab, as drawn, once the foundation's tab set is approved.
+  - Trade-off: it depends on the foundation keeping a Rounds tab.
+  - Alternative: Qualifiers is reached from More.
+- Q-17 (answered 2026-09-29, D-33) Live pulse: `.qf-pulse` runs a 1.6s infinite pulse on "Live". The doctrine allows 90, 150, 220 and 360ms, and cause and effect only.
+  - Recommended: a static dot.
+  - Trade-off: a quieter live cue.
+  - Alternative: one 360ms pulse when a realtime update lands.
+- Q-18 (answered 2026-09-29, D-33) Raw colours need `--ch-*` tokens:
+  - `#EDF4EF` (pressed pill, opened row) → `--ch-bg-selected` (#EEF5F0, one step off);
+  - `#F5F9F6` (opened-row tray) → a new `--ch-green-25`;
+  - `#EFE6D2` with its `rgb(110 84 36 / .14)` ring (one-round box) → a new `--ch-champagne-100`, or `--ch-warning-100`;
+  - `rgb(21 90 57 / .28 and .4)` (pill ring, cut line) → green-600 alpha tokens;
+  - `rgb(28 25 18 / .07)` → `--ch-border-hairline`.
+  - Recommended: map to existing tokens where they are within a step, and add the two new ones through `design/handoff/design-system/`.
+  - Trade-off: a design-system change.
+- Q-19 (answered 2026-09-29, D-33) Fit at 1280 and 924: the drawn leaderboard (720px minimum) and round-by-round tables scroll inside their panels. That hides Status, the chevron, Total and To par at both widths, and the Dates fact truncates ("Sep 22 – Oc…").
+  - Recommended: fit every column without horizontal scroll at 924 and up (narrower columns; Avg moves into the opened row) and let the Dates fact wrap.
+  - Trade-off: the geometry departs from the drawn reference.
+- Q-20 (answered 2026-09-29, D-33) Phone gaps:
+  - The form has no scoring rules field, help text or error states, although the board says "Same fields as the web form".
+  - The detail has no Close or Reopen, no round-by-round, and no confirmed squad or reasoning.
+  - Recommended: the phone form keeps every web field and its inline errors. Close and Reopen sit behind Edit as a sheet action. Round-by-round stays desktop-only, because the player sheet covers per-round scores. The completed detail adds the confirmed squad above the leaderboard.
+  - Trade-off: additions not drawn on the phone boards.
 
 ## Data gaps (shown honestly, never invented)
 
@@ -275,6 +376,14 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Phone shell (2026-09-29): `m.css` styles a More screen (`.m-me`, `.m-more`) that no board draws (Q-43). The design has no player tab bar (Q-40). The top-bar glass `rgb(247 245 239 / .9)` and the phone avatar colours have no `--ch-*` token yet; they go into the design system first (Q-45).
 - 2026-09-29 (owner): After Clubhouse: forward-only migration to revoke `anon` grants on `golf_message_attachments` and exclude deleted messages from the attachment SELECT policy (security review of D-48). Not applied; the owner decides on apply.
 
+- Qualifiers (live counts, 2026-09-29):
+  - No per-round date column exists (Q-12).
+  - No qualifier par exists (Q-13).
+  - Of 215 completed qualifier rounds, 19 aren't 18 holes. Proposed: Avg is shown only over 18-hole rounds, and says so when some are excluded.
+  - 14 rounds have no hole rows and 33 have fewer than 18 scored. Proposed: the scorecard says there's no hole-by-hole card instead of drawing blanks.
+  - The entry deadline is metadata and never enforced. Proposed: the form's help text ("When players must confirm in") becomes "Shown to players; entry stays open until you close it".
+  - "Selection opens once the first round is submitted" is not automatic. `selection_state` moves only when the coach advances it (13 of 18 live qualifiers are still `open`).
+
 ## Verification log
 
 <!-- Append: date, screen, gate, what ran, result. -->
@@ -304,3 +413,30 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - 2026-09-29 · Foundation, Messages · tracker pass (docs only, no servers): the phone specs carry a build status, every open box names who owns it (the owner: the real-iPhone check and review; the merge pass: e2e, build, full suite, performance, live forced failures; the next agent slot: reduced motion and a keyboard walk), the phone-only states list their catalog numbers, and the shell catalog notes the bell sheet in the scan. Gate cells unchanged: both `phone` gates stay doing with one open box each. `clubhouse:check` exit 0.
 - 2026-09-29 · Foundation, Messages · docs completed (no servers): the Foundation checklist went from 43 open boxes to 15, each tick citing a test, a catalog number, a file or a check, and each open box naming its owner (the owner: iPhone check, review, voice, mark-one-read failures; the merge pass: lazy motion, layout shift, live Sentry, a real-account browser pass; the next agent: desktop side by side, narrow-canvas measure, loader label test, section boundaries on the shell, press on the sheet Close coins, a keyboard walk). Messages: 8 open, each owned. `verified` moved to doing on both rows (the first box has its exit codes). `team-communications.md`: 20260907160000 is applied (read-only check of `schema_migrations`, `pg_proc` and `pg_policies`), `golf_user_on_conversation_team` left the drift exemption, and the D-45 and D-47 contracts, the files action and the queued attachment migration are recorded.
 - 2026-09-29 · Messages · Foundation V2 classification (D-61): D-45 and D-47 are EXISTING (UI reuse of `createGolfTeamBroadcast`, `addGolfGroupMember` and `getGolfGroupAddCandidates`, unchanged since 79f6e1a07 and already used by Fairway; their policies are live). D-48 is HELD-FEATURE: `getGolfConversationFiles` returns "Not available" unless `isClubhouseFor(role)`, tested; plan `held/features/conversation-files.md`. The attachment fix is `held/data/message-attachments-hardening.md`, SQL NOT WRITTEN. typecheck:fast 0, `test:file` 54/54 (the files action 7, messages 47), `clubhouse:check` 0; `npm run build` for the changed `'use server'` file belongs to the merge pass.
+- 2026-09-29 · Qualifiers · spec (doing), phone-spec (doing).
+  - Rendered `Qualifiers.html` headless at 1280 and 924: 21 states each (list, filters, no match, live, scorecard, closed, reopened, upcoming, completed, create, validation, created).
+  - Rendered `Qualifiers Mobile.html` at 390 × 844: 11 states, plus the five boards as drawn.
+  - The only console warning is a missing React key inside the bundle's `RoundStrip`. Captures are kept outside the repo.
+  - Checked read-only against the live schema: columns, CHECK constraints, RLS on the four qualifier tables and on `golf_rounds` and `golf_holes`, and aggregate counts with no names.
+  - The design system was not compared with the design project (no DesignSync access in this session).
+- 2026-09-29 · Qualifiers · desktop, wired, states, error-tracking, motion, accessibility and performance done; verified doing (a real coach account and owner review left). Coach and player, list, detail, create and edit.
+  - Gates: typecheck:fast 0; eslint on the 31 changed files 0 (one warning, already in the preview page); vitest `src/clubhouse` plus the setup actions 342/342, exit 0; clubhouse:check 0; knowledge:check 0; `npm run build` 0 (the later commits change only CSS and markup); `clubhouse:a11y` against my own server on :3102 clean, 156 pages, 53 of them Qualifiers.
+  - Compared 38 states at 1280 and 924 with the prototype captures. Fixed on the way: the heading size, the section-head spacing, the squad readout running out of its box, the textarea height, and a two-line "No rounds submitted".
+  - Differences left, all decisions:
+    - standings rank by to par, then strokes (D-33), so a player at +8 after one round sits above one at +10 after two;
+    - Avg moved into the scorecards tray, and a Status column was added;
+    - Course per round shows the tee and par, not a date;
+    - no selection workspace button (D-32), and Lineups is hidden in the nav (D-33);
+    - players are listed by last name;
+    - a long date range wraps instead of being cut off;
+    - not reproduced: the empty help line the design system keeps under every field, and the pin icon in the Course field.
+  - Browser checks:
+    - the keyboard reaches every control, and Esc closes the Close dialog and the course picker, returning focus;
+    - the close, save and course-lookup failures were forced in the preview and seen in the console, with outbound reports blocked;
+    - layout shift was 0.0001 or less on seven states.
+  - Security review of the new setup actions: RLS client only, no service role, and verifyTeamAccess before any write, all met. Fixed from the review:
+    - the squad size can't change under a confirm that lands at the same moment;
+    - a player with a round in any status stays entered;
+    - players never fetch the pick reasoning;
+    - refusals no longer file as faults.
+  - Left for a migration (owner): players can read `coach_reasoning` in the database, the entry-insert policy doesn't check the player's team, and the stranding trigger runs as the caller. These are logged in `memory/features/qualifiers.md`.

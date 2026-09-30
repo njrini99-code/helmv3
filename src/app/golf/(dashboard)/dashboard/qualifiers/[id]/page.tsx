@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -48,6 +50,9 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   if (!isUuid(id)) notFound();
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
+
+  // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
+  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) return <ClubhouseQualifiersRoute view="detail" id={id} />;
 
   const { coach, player } = session;
   const isCoach = !!coach;
@@ -173,7 +178,8 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   // Honest W29 datum the legacy hides: how many selections are actually made.
   const { count: selectionsCount } = await supabase
     .from('golf_qualifier_selections')
-    .select('*', { count: 'exact', head: true })
+    // Not '*': signed-in users can't read coach_reasoning once D-35's migration is applied.
+    .select('player_id', { count: 'exact', head: true })
     .eq('qualifier_id', id);
 
   // Feature G — the course the coach assigned to each round (if any).

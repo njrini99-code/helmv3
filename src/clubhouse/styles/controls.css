@@ -642,3 +642,49 @@
   font: 400 11.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+
+/* Checkbox (ui/Checkbox): a native input under the design system's box. */
+.ch-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.ch-check.is-disabled {
+  cursor: default;
+}
+.ch-check__input {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.ch-check__box {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+  color: var(--ch-text-on-accent);
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-check__box.is-on {
+  background: var(--ch-green-600);
+  box-shadow: none;
+}
+.ch-check.is-disabled .ch-check__box {
+  opacity: 0.55;
+}
+.ch-check__input:focus-visible + .ch-check__box {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-check__input[aria-invalid='true'] + .ch-check__box {
+  box-shadow: inset 0 0 0 1.5px var(--ch-danger-600);
+}

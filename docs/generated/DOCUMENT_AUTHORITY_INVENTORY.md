@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 176 | 12 | 40 | 78 |
+| `UNKNOWN` | 183 | 12 | 40 | 78 |
 
 ## Files
 
@@ -657,19 +657,25 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/shell.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/message-attachments-hardening.md` | current | - | - | - | - |
+| `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
@@ -678,6 +684,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/screens/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/home.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-player.md` | current | - | - | - | - |

@@ -102,7 +102,7 @@ is a second thing to keep true.
 **Qualifiers** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/qualifiers.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/my-qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/components/fairway/pages/qualifiers/**`, `src/components/fairway/pages/my-qualifiers/**`, `src/app/golf/actions/golf.ts` … and 7 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/my-qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/components/fairway/pages/qualifiers/**`, `src/components/fairway/pages/my-qualifiers/**`, `src/clubhouse/screens/qualifiers/**` … and 15 more in the registry
 - **Telemetry:** `qualifiers` (golfhelm, med), `my_qualifiers` (golfhelm, low)
 - **Incidents:** `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md`
 - **Repair units:** `qualifier-manual-close-only-2026-08-22` (verified_in_production)

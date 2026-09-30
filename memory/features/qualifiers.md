@@ -14,6 +14,9 @@ There are three user surfaces:
 - Player "My Qualifiers" view for entered qualifiers.
 - CoachHelm V3 qualifying surfaces for more intelligence-oriented standing/board views.
 
+Behind the `golf_clubhouse_ui` flag, the same routes render the Clubhouse
+screens in place (see "Clubhouse surfaces" below).
+
 ## Primary Entry Points
 
 ### Routes
@@ -21,6 +24,7 @@ There are three user surfaces:
 - `src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/qualifiers/new/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx`
+- `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/edit/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/my-qualifiers/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`
 
@@ -31,11 +35,14 @@ There are three user surfaces:
 - `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
 - `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx`
+- Clubhouse: `src/clubhouse/screens/qualifiers/**`, loader
+  `src/clubhouse/data/qualifiers.ts`, route `src/clubhouse/routes/qualifiers.tsx`
 
 ### Actions And Engine Code
 
 - `src/app/golf/actions/golf.ts`
 - `src/app/golf/actions/v3/qualifying.ts`
+- `src/app/golf/actions/qualifier-setup.ts` (squad size and entrants, D-32)
 - `src/lib/coachhelm/v3/qualifying/**`
 
 ## Core Data
@@ -152,8 +159,53 @@ Leaderboard reads qualifier
   the courses. An empty or zero "Rounds" value blocks the save with an inline
   field error. Test: `__tests__/FairwayEditQualifier.save.test.tsx`.
 
+## Clubhouse surfaces
+
+Owner decisions D-30 to D-33 (`docs/clubhouse/PROGRESS.md`); numbered states
+in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
+
+- Players get a read-only view of their team's qualifiers (D-30): standings
+  with their own row marked, their own scorecards only, and the squad once the
+  coach confirms it (`selection_state = 'selected'`), never the pick
+  reasoning. Enter round waits for the Round entry rebuild.
+- Standings rank scored players first, then to par ascending, then total
+  strokes, then more rounds; a tie needs the same to par and total and shows
+  as T (the `getQualifierLeaderboard` rule). The average counts 18-hole rounds
+  only.
+- Closed means closed (D-31): the notice says players can't enter or submit
+  rounds, including rounds already started, until the coach reopens it.
+  Reopen shows on every completed qualifier.
+- Edit qualifier is the create form prefilled (D-32). It saves in order:
+  details, rounds and courses, squad size, players, and when a step fails it
+  keeps "Saved X, but not Y" on the form. `setQualifierSquadSize` and
+  `setQualifierEntrants` run on the RLS client after `verifyTeamAccess`, and
+  refuse: resizing a confirmed squad, fewer pick spots than picks chosen,
+  entering a player off the active roster, and taking out a player who has a
+  round (any status) or a selection row. Refusals are not filed as faults
+  (`observeSoftFailures: false`). The form locks those same players in ("Has
+  a round in it", "Has a squad place"). `setQualifierRoundCourses` also
+  checks `verifyTeamAccess`, uuids and the demo guard before it writes.
+- The selection workspace (turning the leaderboard into the travel squad) is
+  hidden until it is designed (D-32); the Selections card shows who is
+  qualifying now, and the confirmed squad read-only.
+
 ## Known Risk Areas
 
+- Database gaps found by the Clubhouse security review (2026-09-29), older
+  than the Clubhouse screens. D-35 closes them in one held migration,
+  `20260929200000_golf_qualifier_db_hardening.sql` (owner applies; pgTAP
+  `supabase/tests/rls/golf_qualifier_db_hardening.sql`):
+  - `coach_reasoning` becomes coach-only. Signed-in users lose SELECT on that
+    column, and coaches read it through `golf_qualifier_selection_reasons()`.
+    Read it only through `src/lib/golf/qualifier-selection-reasons.ts`, never
+    by selecting the column or `*` with a user's client.
+  - The entries insert and update policies require an active member of the
+    qualifier's team.
+  - The remove-with-round guard runs as its owner and covers every unfinished
+    round.
+  - `anon` loses its grants on three qualifier tables.
+  Players can also read teammates' `golf_holes` through RLS; showing only
+  their own cards is a screen choice (D-36).
 - Leaderboard totals can drift if entry stats are updated outside round submission.
   The aggregate refresh must check both its source read and affected-row write;
   an error-free zero-row PostgREST update is still a failure that must be logged.

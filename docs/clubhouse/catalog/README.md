@@ -25,7 +25,8 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 6 | Calendar |
 | 7 | Messages |
 | 8 | Settings |
-| 09, 10, … | Pages after these, in the order their catalogs are started |
+| 09 | Qualifiers (list, detail, create and edit; coach and player) |
+| 10, 11, … | Pages after these, in the order their catalogs are started |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |
@@ -71,4 +72,5 @@ its own.
 
 Pages: [shell](shell.md) · [home](home.md) · [roster](roster.md) ·
 [stats-team](stats-team.md) · [stats-player](stats-player.md) ·
-[calendar](calendar.md) · [messages](messages.md) · [settings](settings.md).
+[calendar](calendar.md) · [messages](messages.md) · [settings](settings.md) ·
+[qualifiers](qualifiers.md).
