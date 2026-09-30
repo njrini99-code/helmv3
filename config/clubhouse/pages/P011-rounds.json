@@ -4,9 +4,11 @@
   "slug": "rounds",
   "bridgeNamespace": 11,
   "routes": [
-    "/golf/dashboard/rounds"
+    "/golf/dashboard/rounds",
+    "/golf/dashboard/rounds/[id]"
   ],
   "roles": [
+    "coach",
     "player"
   ],
   "semanticFeatures": [
@@ -45,7 +47,8 @@
     "route": "src/clubhouse/routes/rounds.tsx",
     "styles": "src/clubhouse/styles/rounds.css",
     "tests": [
-      "src/clubhouse/__tests__/rounds.test.tsx"
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/rounds.md",

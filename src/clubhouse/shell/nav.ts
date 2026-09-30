@@ -131,9 +131,19 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
   '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
 };
 
+/**
+ * Rebuilt addresses whose parent isn't rebuilt for that role. A coach has no
+ * Rounds library in v2, but opens a player's round review from Stats.
+ */
+const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
+  coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i],
+  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i],
+};
+
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
   const path = pathname.replace(/\/$/, '') || '/';
   if (CH_REBUILT_ROUTES[role].includes(path)) return true;
+  if (CH_REBUILT_PATTERNS[role].some((re) => re.test(path))) return true;
   return Object.entries(CH_REBUILT_CHILDREN).some(([parent, child]) => CH_REBUILT_ROUTES[role].includes(parent) && child.test(path));
 }
 

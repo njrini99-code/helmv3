@@ -87,13 +87,20 @@ describe('Rounds library, on screen', () => {
     expect(screen.getByText('Since August 1 · 8 counted rounds')).toBeTruthy();
   });
 
-  it('draws no control whose screen is not rebuilt yet: no New round, Continue or round links', () => {
+  it('draws no control whose screen is not rebuilt yet: no New round or Continue; every round opens its review', () => {
     show(PREVIEW_ROUNDS);
     expect(screen.queryByRole('link', { name: /New round/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Continue at hole/ })).toBeNull();
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
-    // The round is still there to read, as a named group.
+    const all = screen.getAllByRole('link');
+    expect(all.every((l) => /^\/golf\/dashboard\/rounds\/a0000000-/.test(l.getAttribute('href') ?? ''))).toBe(true);
+    expect(all).toHaveLength(PREVIEW_ROUNDS.rounds.list.length);
+  });
+
+  it('a round whose review can’t be opened is still there to read, as one named group', () => {
+    const odd = { ...PREVIEW_ROUNDS_IDLE.rounds.list[0]!, id: 'not-a-round-id' };
+    show({ ...PREVIEW_ROUNDS_IDLE, rounds: { list: [odd], error: false } });
     expect(screen.getByRole('group', { name: 'Sep 26, Finley GC, 72 (E)' })).toBeTruthy();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
   });
 
   it('CH-11703 once round entry is rebuilt: New round, and Continue at the next hole with the press haptic', async () => {
@@ -212,7 +219,7 @@ describe('Rounds library, on screen', () => {
   it('CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
     show(PREVIEW_ROUNDS_NO_SEASON);
     await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
-    const row = screen.getByRole('group', { name: 'Sep 9, Finley GC, 38 (+2)' });
+    const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
     expect(within(row).getByText('Holes').nextSibling!.textContent).toBe('9');
     expect(screen.getByText('Since August 1')).toBeTruthy();
   });
@@ -225,7 +232,7 @@ describe('Rounds library, on screen', () => {
     await expectCode('CH-11303', /No rounds at “Pinehurst”/);
     await user.clear(search);
     await user.type(search, 'hope');
-    expect(screen.getAllByRole('group').map((g) => g.getAttribute('aria-label'))).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
+    expect(screen.getAllByRole('link').map((g) => g.getAttribute('aria-label'))).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
   });
 
   it('groups by month (newest first) or by course, each with its count and low', async () => {
@@ -242,18 +249,17 @@ describe('Rounds library, on screen', () => {
   it('a round under par is marked in red on its score only; a round that does not count says Not counted', () => {
     const nc = toLibraryRound({ ...previewRow(30, ['2026-09-01', 'Finley GC', 'Blue', 'practice', 40, 72, 20, [2, 14], 2, 20]) });
     show({ ...PREVIEW_ROUNDS_IDLE, rounds: { list: [...PREVIEW_ROUNDS_IDLE.rounds.list, nc!], error: false } });
-    const under = screen.getByRole('group', { name: 'Aug 18, Carolina GC, 69 (−3)' });
+    const under = screen.getByRole('link', { name: 'Aug 18, Carolina GC, 69 (−3)' });
     expect(under.querySelector('.ch-rd-sc__s')!.className).toContain('is-under');
-    expect(screen.getByRole('group', { name: 'Sep 26, Finley GC, 72 (E)' }).querySelector('.ch-rd-sc__s')!.className).not.toContain('is-under');
-    expect(within(screen.getByRole('group', { name: 'Sep 1, Finley GC, 40 (−32)' })).getByText('Not counted')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' }).querySelector('.ch-rd-sc__s')!.className).not.toContain('is-under');
+    expect(within(screen.getByRole('link', { name: 'Sep 1, Finley GC, 40 (−32)' })).getByText('Not counted')).toBeTruthy();
   });
 
-  it('CH-11702 CH-11801 once Review is rebuilt, each round is one named link to its review, with the selection haptic', async () => {
-    links.all = true;
+  it('CH-11702 CH-11801 each round is one named link to its review, with the selection haptic', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
     const r = screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' });
-    expect(r.getAttribute('href')).toBe('/golf/dashboard/rounds/r1/review');
+    expect(r.getAttribute('href')).toBe('/golf/dashboard/rounds/a0000000-0000-4000-8000-000000000001');
     await user.click(r);
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-rd-title');
@@ -364,7 +370,7 @@ describe('Rounds loader', () => {
     const d = await loadRoundsLibrary({ playerId: 'p1', teamId: 't1' });
     expect(d.rounds.error).toBe(false);
     expect(d.rounds.list.map((r) => [r.id, r.score])).toEqual([
-      ['r1', 72],
+      ['a0000000-0000-4000-8000-000000000001', 72],
       ['nine', 38],
       ['july', 70],
     ]);

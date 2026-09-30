@@ -17,9 +17,12 @@ const SAMPLE: Array<[string, string, string, string, number, number, number, [nu
   ['2026-08-18', 'Carolina GC', 'Championship', 'qualifier', 69, 72, 27, [11, 14], 14, 34],
 ];
 
+/** A round id in the shape the database uses (the review route matches a UUID). */
+export const previewRoundId = (n: number) => `a0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+
 export function previewRow(i: number, [date, course, tees, type, score, par, putts, fir, gir, out]: (typeof SAMPLE)[number]): ChRoundListRow {
   return {
-    id: `r${i + 1}`,
+    id: previewRoundId(i + 1),
     course_name: course,
     tees_played: tees,
     round_date: date,
@@ -39,7 +42,13 @@ export function previewRow(i: number, [date, course, tees, type, score, par, put
 
 const LIST: ChLibraryRound[] = SAMPLE.map((s, i) => toLibraryRound(previewRow(i, s))).filter((r): r is ChLibraryRound => r != null);
 // A 9-hole practice loop: listed, but it sets no season figure (full 18 only).
-const NINE = toLibraryRound({ ...previewRow(20, ['2026-09-09', 'Finley GC', 'Blue', 'practice', 38, 36, 16, [4, 7], 5, 38]), id: 'r9h', holes_played: 9, back_nine: null, total_gir_possible: 9 });
+const NINE = toLibraryRound({
+  ...previewRow(20, ['2026-09-09', 'Finley GC', 'Blue', 'practice', 38, 36, 16, [4, 7], 5, 38]),
+  id: previewRoundId(21),
+  holes_played: 9,
+  back_nine: null,
+  total_gir_possible: 9,
+});
 const WITH_NINE = [...LIST.slice(0, 4), ...(NINE ? [NINE] : []), ...LIST.slice(4)];
 
 // The in-progress round on the board: Finley GC, Blue, practice, holes 1–3 scored (4, 6, 3 on par 4, 5, 3).

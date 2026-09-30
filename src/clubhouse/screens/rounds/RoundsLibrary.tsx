@@ -28,7 +28,7 @@ type Group = 'month' | 'course';
 export const roundsLinks = {
   newRound: () => rebuiltHref('/golf/dashboard/rounds/new', 'player'),
   continueRound: (id: string) => rebuiltHref(`/golf/dashboard/rounds/continue/${id}`, 'player'),
-  review: (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}/review`, 'player'),
+  review: (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, 'player'),
 };
 
 /** Groups in display order: months newest first, or courses by their newest round. */
