@@ -196,6 +196,7 @@ vi.mock('@/lib/coachhelm/v3/chat/ui-parts', () => ({
 }));
 vi.mock('@/lib/coachhelm/v3/llm/chat-call-row', () => ({ buildChatLlmCallRow: vi.fn(() => ({})) }));
 
+import { convertToModelMessages } from 'ai';
 import { POST } from './route';
 
 type FakeChunk = Record<string, unknown>;
@@ -1185,5 +1186,79 @@ describe('POST /coachhelm/v3/chat/stream — #1999 review follow-ups (claims-blo
     expect(wire).not.toContain('<<<CLAIMS>>>');
     expect(wire).not.toContain('<<<END_CLAIMS>>>');
     expect(wire).toBe('First fact. middle text Last fact.');
+  });
+});
+
+describe('POST /coachhelm/v3/chat/stream — a Confirm card the coach never answered', () => {
+  beforeEach(() => {
+    mocks.streamText.mockReset();
+    mocks.createUIMessageStream.mockClear();
+    mocks.auditNumericClaims.mockReset().mockReturnValue([]);
+    mocks.collectNumbers.mockReset().mockReturnValue([]);
+    mocks.appendMessage.mockClear();
+    mocks.getConversation.mockReset().mockResolvedValue({
+      id: '11111111-1111-4111-8111-111111111111',
+      coach_id: 'coach-1',
+    });
+    mocks.findAssistantTurn.mockReset().mockResolvedValue(null);
+    mocks.listRecentMessages.mockReset().mockResolvedValue([]);
+    mocks.buildCoachTools.mockReset().mockReturnValue({});
+    mocks.onFinishAssistantParts = null;
+    vi.mocked(convertToModelMessages).mockClear();
+  });
+
+  const proposalTurn = (state: string) => ({
+    id: 'a1',
+    role: 'assistant',
+    parts: [
+      {
+        type: 'tool-create_team_announcement',
+        toolCallId: 'call_1',
+        state,
+        input: { title: 'Practice moved' },
+        approval: { id: 'appr_1' },
+      },
+    ],
+  });
+
+  const userTurn = (id: string, text: string) => ({ id, role: 'user', parts: [{ type: 'text', text }] });
+
+  /** The card the route handed the SDK to convert, for a thread ending as given. */
+  async function convertedCard(messages: unknown[]) {
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () => minimalUiMessageStream(),
+    }));
+    await runPostAndSettle({
+      conversation_id: '11111111-1111-4111-8111-111111111111',
+      client_turn_id: 'turn-2',
+      messages,
+    });
+    const [converted] = vi.mocked(convertToModelMessages).mock.calls[0]!;
+    const assistant = (converted as unknown as Array<{ role: string; parts: unknown[] }>).find(
+      (m) => m.role === 'assistant',
+    );
+    return assistant!.parts[0] as { state: string; approval: { id: string; approved?: boolean } };
+  }
+
+  it('a newer question turns it into a denial before the SDK sees the thread', async () => {
+    const card = await convertedCard([
+      userTurn('u1', 'Announce that practice moved'),
+      proposalTurn('approval-requested'),
+      userTurn('u2', 'Actually, how is the team putting?'),
+    ]);
+
+    expect(card.state).toBe('approval-responded');
+    expect(card.approval).toMatchObject({ id: 'appr_1', approved: false });
+  });
+
+  it('a live card (no newer question) is passed through untouched', async () => {
+    const card = await convertedCard([
+      userTurn('u1', 'Announce that practice moved'),
+      proposalTurn('approval-requested'),
+    ]);
+
+    expect(card.state).toBe('approval-requested');
+    expect(card.approval.approved).toBeUndefined();
   });
 });

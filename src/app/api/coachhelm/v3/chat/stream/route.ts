@@ -95,6 +95,7 @@ import {
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
 import { linkProposalsToMessage, proposalKeysFromParts } from '@/lib/coachhelm/v3/chat/action-runs';
+import { denyAbandonedApprovals } from '@/lib/coachhelm/v3/chat/abandoned-approvals';
 // `publishableParts` also drops dangling tool calls: storing one poisons the
 // conversation permanently, because a reload rehydrates the thread from
 // `ui_parts` and sends the orphaned `tool_use` back with no matching
@@ -611,8 +612,14 @@ export async function POST(req: NextRequest) {
         // to `isIncompleteToolPart`'s drop condition before shipping it —
         // otherwise a preliminary result can precede the final one for the
         // same `toolCallId` and reintroduce this exact bug class.
+        //
+        // A Confirm card the coach never answered, followed by a newer
+        // question, is a Cancel: see `denyAbandonedApprovals`. Left as it was,
+        // the SDK is handed a tool call with no result and rejects the whole
+        // request ("Tool result is missing for tool call …") for every later
+        // question in the thread.
         messages: await convertToModelMessages(
-          uiMessages.map((m) => ({
+          denyAbandonedApprovals(uiMessages).map((m) => ({
             ...m,
             parts: m.parts.filter((p) => !isIncompleteToolPart(p)),
           })),
