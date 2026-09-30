@@ -11,6 +11,19 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10102,
+    "page": "P001",
+    "category": 1,
+    "item": 2,
+    "name": "SHELL_READY",
+    "meaning": "Every Clubhouse page opens in the frame: on wide screens the sidebar, the top bar with the bell and the page; on a phone the page with the role's tab bar and More sheet.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/ClubhouseFrame.tsx#ClubhouseFrame",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
     "id": 10201,
     "page": "P001",
     "category": 2,
@@ -20,6 +33,19 @@
     "meaning": "The bell is loading its list",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10301,
+    "page": "P001",
+    "category": 3,
+    "item": 1,
+    "name": "BELL_REFRESHES_ON_OPEN",
+    "meaning": "The bell reads its list again every time it opens; a list already shown stays on screen while the new one loads.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/Bell.tsx#Bell (load effect)",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
   },
   {
     "id": 10401,
@@ -207,6 +233,84 @@
     "meaning": "Someone presses Try again on a notice while offline",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10801,
+    "page": "P001",
+    "category": 8,
+    "item": 1,
+    "name": "CLUBHOUSE_GATE",
+    "meaning": "Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check.",
+    "status": "implemented",
+    "where": "src/clubhouse/gate.ts#isClubhouseFor",
+    "tests": [
+      "src/clubhouse/__tests__/gate.test.ts"
+    ]
+  },
+  {
+    "id": 10802,
+    "page": "P001",
+    "category": 8,
+    "item": 2,
+    "name": "ROLE_SCOPED_NAV",
+    "meaning": "Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/nav.ts#navFor, isRebuilt; ClubhouseFrame",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
+    "id": 10901,
+    "page": "P001",
+    "category": 9,
+    "item": 1,
+    "name": "CHANGE_LANDED",
+    "meaning": "A change made through useAction that lands fires the success haptic and names itself in a toast; an action with no done line (an instant switch) shows no toast, its new position being the confirmation.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
+    "id": 11301,
+    "page": "P001",
+    "category": 13,
+    "item": 1,
+    "name": "BELL_MARK_ALL_OPTIMISTIC",
+    "meaning": "Mark all read clears the unread rows at once and puts them back when the write fails (with CH-1001); opening an unread notification marks it read at once.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/Bell.tsx#markAllButton, openItem",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
+    "id": 11401,
+    "page": "P001",
+    "category": 14,
+    "item": 1,
+    "name": "ROUTE_TRY_AGAIN",
+    "meaning": "A page that crashes shows its error view with Try again (Reload after an update), locked while it retries, the number of tries, and Back to Home.",
+    "status": "implemented",
+    "where": "src/clubhouse/ui/Notices.tsx#RouteErrorView; src/components/errors/RouteErrorBoundary.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
+    "id": 11402,
+    "page": "P001",
+    "category": 14,
+    "item": 2,
+    "name": "TOAST_RETRY",
+    "meaning": "Every error toast from useAction carries Retry, which runs the same action with the same arguments again.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
   },
   {
     "id": 11601,
@@ -528,6 +632,19 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11901,
+    "page": "P001",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_CHROME",
+    "meaning": "On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/TabBar.tsx; nav.ts#phoneTabsFor; styles/shell.css",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
     "id": 12001,
     "page": "P001",
     "category": 20,
@@ -581,6 +698,32 @@
     "meaning": "A slow response to a click (slow click)",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 12301,
+    "page": "P001",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.<read>.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/track.ts, track-server.ts, use-action.ts",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
+    "id": 12401,
+    "page": "P001",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "Every catalog code is used in code and forced by a test that names it; clubhouse:check fails a row of kinds 0 to 5 that no test names.",
+    "status": "implemented",
+    "where": "scripts/clubhouse/check.mjs",
+    "tests": [
+      "scripts/clubhouse/__tests__/check.test.mjs"
+    ]
   },
   {
     "id": 20201,

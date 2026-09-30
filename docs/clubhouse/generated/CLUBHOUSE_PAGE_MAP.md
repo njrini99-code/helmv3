@@ -6,7 +6,7 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 
 | Page | Name | Routes | Roles | Features | Design | Implementation | Contract | Bridge | Data | Verification | Docs |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | Shell | (shell) | coach, player | ios_native_shell, team_communications | approved | in_progress | partial | reserved | existing | partial | missing |
+| P001 | Shell | (shell) | coach, player | ios_native_shell, team_communications | approved | in_progress | complete | reserved | existing | partial | current |
 | P002 | Home | `/golf/dashboard` | coach | team_operations, calendar_events, stats_analytics | approved | in_progress | partial | reserved | existing | partial | missing |
 | P003 | Roster | `/golf/dashboard/roster` | coach | roster_team | approved | in_progress | partial | reserved | existing | partial | missing |
 | P004 | Stats (team) | `/golf/dashboard/stats`<br>`/golf/dashboard/stats/team` | coach | stats_analytics | approved | in_progress | partial | reserved | existing | partial | missing |

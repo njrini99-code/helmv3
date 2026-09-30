@@ -306,7 +306,7 @@ describe('Shell · sidebar data', () => {
     expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
   });
 
-  it('D-66 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {
+  it('D-66 10802 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {
     const shell: ChShellData = { nextEvent: null, pendingJoinRequests: null };
     const read = () =>
       [...document.querySelectorAll('.ch-nav__group')].map((g) => [
@@ -530,7 +530,7 @@ describe('Shell · phone chrome', () => {
     badgeState.messages = 0;
   });
 
-  it('CH-1808 each role gets its own phone tabs, and More carries the Messages unread count', () => {
+  it('CH-1808 11901 each role gets its own phone tabs, and More carries the Messages unread count', () => {
     badgeState.messages = 3;
     const { unmount } = wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
     const bar = code('CH-1808')!;
@@ -624,5 +624,127 @@ describe('Shell · phone back', () => {
     act(() => setDepth(0));
     await waitFor(() => expect((window.history.state as { chPhone?: number } | null)?.chPhone ?? 0).toBe(0));
     expect(screen.getByTestId('depth').textContent).toBe('0');
+  });
+});
+
+/** P001 behaviour contracts with no catalog row (config/clubhouse/bridge-contracts.json, D-69). */
+describe('Shell · behaviour contracts (P001)', () => {
+  const shell: ChShellData = { nextEvent: null, pendingJoinRequests: 2 };
+  const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
+
+  it('10102 the frame is the sidebar, the top bar, the page and the phone tab bar; 10802 a route not rebuilt for the role shows the notice, never the page', () => {
+    const { unmount } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster">
+        <p>Roster body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.getByRole('complementary', { name: 'Sidebar' })).toBeTruthy();
+    expect(document.querySelector('.ch-topbar')).not.toBeNull();
+    expect(code('CH-1808')).not.toBeNull();
+    expect(document.getElementById('ch-content')!.textContent).toMatch(/Roster body/);
+    unmount();
+    // Roster is rebuilt for coaches only: a player on the same address gets the notice.
+    render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/roster">
+        <p>Roster body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.queryByText('Roster body')).toBeNull();
+    expect(code('CH-1301')).not.toBeNull();
+  });
+
+  it('10301 the bell reads its list again every time it opens', async () => {
+    const user = userEvent.setup();
+    const api = bell({});
+    const button = screen.getByRole('button', { name: /Notifications/ });
+    await user.click(button);
+    await screen.findByText('Ava in Varsity team');
+    await user.keyboard('{Escape}');
+    await user.click(button);
+    await waitFor(() => expect(api.load).toHaveBeenCalledTimes(2));
+  });
+
+  it('11301 Mark all read clears the rows at once, and puts them back when the write fails', async () => {
+    const user = userEvent.setup();
+    let fail: (v: { success: false; error: string }) => void = () => {};
+    bell({ markAll: vi.fn(() => new Promise<{ success: false; error: string }>((r) => (fail = r))) });
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    await screen.findByText('Ava in Varsity team');
+    expect(document.querySelectorAll('.ch-bellp__row.is-unread')).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Mark all read' }));
+    expect(document.querySelectorAll('.ch-bellp__row.is-unread')).toHaveLength(0);
+    await act(async () => fail({ success: false, error: 'nope' }));
+    await expectCode('CH-1001');
+    expect(document.querySelectorAll('.ch-bellp__row.is-unread')).toHaveLength(1);
+  });
+
+  function Saver({ fn, done = 'Profile saved' }: { fn: () => Promise<{ success: boolean; error?: string }>; done?: string }) {
+    const a = useAction('test.save', fn, { done, failed: "Couldn't save your profile", code: 'CH-8001' });
+    return (
+      <button type="button" onClick={() => void a.run()}>
+        Save
+      </button>
+    );
+  }
+
+  it('10901 a change that lands names itself in a toast with the success haptic; an empty done line shows no toast', async () => {
+    const user = userEvent.setup();
+    const { unmount } = wrap(<Saver fn={() => Promise.resolve({ success: true })} />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Profile saved');
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    unmount();
+    wrap(<Saver fn={() => Promise.resolve({ success: true })} done="" />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledTimes(2));
+    expect(document.querySelector('.ch-toast')).toBeNull();
+  });
+
+  it('11402 Retry on an error toast runs the same action again', async () => {
+    const user = userEvent.setup();
+    const fn = vi.fn().mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValueOnce({ success: true });
+    wrap(<Saver fn={fn} />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await expectCode('CH-8001', /Couldn't save your profile/);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await screen.findByText('Profile saved');
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('11401 a crashed page offers Try again (Reload after an update), locks it while retrying, and counts the tries', async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+    const view = (props: { kind: RouteErrorKind; isRetrying: boolean; retryCount: number }) => (
+      <LazyMotion features={domAnimation}>
+        <div className="ch-root" data-ui="clubhouse">
+          <RouteErrorView {...props} onRetry={onRetry} homePath="/golf/dashboard" />
+        </div>
+      </LazyMotion>
+    );
+    const { rerender } = render(view({ kind: 'unknown', isRetrying: false, retryCount: 0 }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('link', { name: 'Back to Home' }).getAttribute('href')).toBe('/golf/dashboard');
+    rerender(view({ kind: 'unknown', isRetrying: true, retryCount: 1 }));
+    expect((screen.getByRole('button', { name: 'Trying again' }) as HTMLButtonElement).disabled).toBe(true);
+    rerender(view({ kind: 'chunk', isRetrying: false, retryCount: 2 }));
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+    expect(screen.getByText('Tried again 2 times.')).toBeTruthy();
+  });
+
+  it('12301 a thrown action is reported with its surface; a refused one is reported at low severity', async () => {
+    const { chReport } = await import('../lib/track');
+    const report = vi.mocked(chReport);
+    report.mockClear();
+    const user = userEvent.setup();
+    const { unmount } = wrap(<Saver fn={() => Promise.reject(new Error('boom'))} />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await expectCode('CH-8001');
+    expect(report).toHaveBeenCalledWith(expect.any(Error), { surface: 'test', action: 'test.save' });
+    unmount();
+    report.mockClear();
+    wrap(<Saver fn={() => Promise.resolve({ success: false, error: 'nope' })} />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(report).toHaveBeenCalledWith(expect.any(Error), { surface: 'test', action: 'test.save', severity: 'low' }));
   });
 });

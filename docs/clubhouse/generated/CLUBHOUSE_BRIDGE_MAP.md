@@ -65,7 +65,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 1 | 1 |  | 4 |  | 9 | 4 |  |  |  |  |  |  |  |  | 12 | 6 | 11 |  | 1 | 1 | 3 |  |  |  | 53 |
+| P001 | 2 | 1 | 1 | 4 |  | 9 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 11 | 1 | 1 | 1 | 3 | 1 | 1 |  | 64 |
 | P002 |  | 1 |  | 7 |  | 10 |  |  |  |  |  |  |  | 1 |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 29 |
 | P003 |  | 1 | 2 | 5 | 1 | 16 |  |  |  |  | 1 |  |  |  |  | 2 | 3 | 6 |  |  |  |  |  |  |  | 37 |
 | P004 |  | 1 | 1 | 9 |  | 11 | 2 |  |  |  |  |  |  |  |  | 2 | 2 | 4 |  |  |  |  |  |  |  | 32 |
@@ -80,7 +80,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
 | 10101 | CH-1904 | 01 Default / core UI | `MOVING_TO_ANOTHER_PAGE_2` | implemented | Moving to another page |
+| 10102 |  | 01 Default / core UI | `SHELL_READY` | implemented | Every Clubhouse page opens in the frame: on wide screens the sidebar, the top bar with the bell and the page; on a phone the page with the role's tab bar and More sheet. |
 | 10201 | CH-1401 | 02 Initial loading / skeleton | `THE_BELL_IS_LOADING_ITS_LIST` | implemented | The bell is loading its list |
+| 10301 |  | 03 Background loading / refresh | `BELL_REFRESHES_ON_OPEN` | implemented | The bell reads its list again every time it opens; a list already shown stays on screen while the new one loads. |
 | 10401 | CH-1301 | 04 Empty | `A_PAGE_THAT_HASNT_BEEN_REBUILT_IN` | implemented | A page that hasn't been rebuilt in Clubhouse |
 | 10402 | CH-1302 | 04 Empty | `THE_BELL_HAS_NOTHING` | implemented | The bell has nothing |
 | 10403 | CH-1303 | 04 Empty | `THE_BELLS_FILTER_HAS_NOTHING` | implemented | The bell's filter has nothing |
@@ -98,6 +100,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
 | 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice while offline |
+| 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
+| 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
+| 10901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change made through useAction that lands fires the success haptic and names itself in a toast; an action with no done line (an instant switch) shows no toast, its new position being the confirmation. |
+| 11301 |  | 13 Optimistic UI | `BELL_MARK_ALL_OPTIMISTIC` | implemented | Mark all read clears the unread rows at once and puts them back when the write fails (with CH-1001); opening an unread notification marks it read at once. |
+| 11401 |  | 14 Retry / recovery | `ROUTE_TRY_AGAIN` | implemented | A page that crashes shows its error view with Try again (Reload after an update), locked while it retries, the number of tries, and Back to Home. |
+| 11402 |  | 14 Retry / recovery | `TOAST_RETRY` | implemented | Every error toast from useAction carries Retry, which runs the same action with the same arguments again. |
 | 11601 | CH-1601 | 16 Micro animation | `MOVING_TO_ANOTHER_PAGE` | reserved | Moving to another page, or its first load |
 | 11602 | CH-1602 | 16 Micro animation | `OPENING_MORE_ON_A_PHONE` | reserved | Opening More on a phone |
 | 11603 | CH-1603 | 16 Micro animation | `OPENING_THE_BELL_OR_ANY_MENU` | reserved | Opening the bell or any menu |
@@ -127,11 +135,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11809 | CH-1809 | 18 Accessibility | `A_PUSHED_PHONE_SCREEN_IS_NAMED_BY` | implemented | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it |
 | 11810 | CH-1810 | 18 Accessibility | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | reserved | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
 | 11811 | CH-1811 | 18 Accessibility | `ON_THE_PHONE_THE_BELL_OPENS_AS` | implemented | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up |
+| 11901 |  | 19 Responsive layout | `PHONE_CHROME` | implemented | On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest. |
 | 12001 | CH-1906 | 20 Keyboard / input | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | implemented | On the phone, the edge swipe or the browser's back while a screen is pushed |
 | 12101 | CH-1954 | 21 Performance | `THE_PAGE_IS_SLOW_TO_RESPOND_OR` | reserved | The page is slow to respond or shifts after loading (INP, CLS, LCP) |
 | 12201 | CH-1951 | 22 Analytics | `SOMEONE_CLICKS_THE_SAME_THING_OVER_AND` | reserved | Someone clicks the same thing over and over (rage click) |
 | 12202 | CH-1952 | 22 Analytics | `A_CLICK_THAT_DOES_NOTHING` | reserved | A click that does nothing (dead click) |
 | 12203 | CH-1953 | 22 Analytics | `A_SLOW_RESPONSE_TO_A_CLICK` | reserved | A slow response to a click (slow click) |
+| 12301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.<read>. |
+| 12401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | Every catalog code is used in code and forced by a test that names it; clubhouse:check fails a row of kinds 0 to 5 that no test names. |
 
 ## P002 Home
 

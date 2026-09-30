@@ -35,7 +35,7 @@ export function isOffline(): boolean {
 
 /**
  * Every Clubhouse button that changes something goes through this. The coach
- * is always told the outcome: success is a toast with a commit haptic, and
+ * is always told the outcome: success is a toast with the success haptic (D-70), and
  * failure is an error toast that says what failed, why if the server said, and
  * offers Retry, with an error haptic. Failures are reported to Sentry with
  * the action name. Nothing fails silently, and a button can't double-submit.
