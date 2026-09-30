@@ -9,9 +9,8 @@ components in `src/clubhouse/screens/roster/`, the loader
 `src/clubhouse/data/roster.ts` (`ChRoster`), the route branch in
 `src/app/golf/(dashboard)/dashboard/roster/page.tsx`, and the catalog
 `docs/clubhouse/catalog/roster.md` (3xxx). Nothing here is built yet. The open
-owner questions are listed at the end as Q-30 to Q-39 (also in `PROGRESS.md`).
-Q-30 was answered by the owner's foundation decision. The rest are open, and
-none of them is decided here.
+owner questions Q-30 to Q-39 were answered on 2026-09-29 and are recorded as
+D-50 to D-59 in `PROGRESS.md`. The answers are listed at the end.
 
 The page sits inside the phone foundation (`docs/clubhouse/phone/foundation.md`,
 owned by the Messages phone work). Where Roster depends on the shell, this
@@ -70,7 +69,7 @@ build therefore adds phone components next to the desktop ones in
 | --- | --- | --- |
 | `RosterPhone`: the list screen | new | header, toolbar, face cards and table |
 | `RosterPhoneRow`: one player row | new | `ch-rs-face` and `ch-rs-row` |
-| `RosterProfile`: the pushed player screen | new, reusing `CoachNote` if Q-36 keeps it | `RosterPeek` side panel |
+| `RosterProfile`: the pushed player screen | new, reusing `CoachNote` (D-56) | `RosterPeek` side panel |
 | `RosterRequestsSheet`: the join requests sheet | new view; the approve and decline logic moves out of `RosterRequests` into a shared hook so both views use it | the inline `RosterRequests` card |
 | `InviteModal` | reused as is (`Modal` is already a bottom sheet under 820px) | same |
 | Remove confirm | reused `Modal` (CH-3501, CH-3402) | same |
@@ -97,14 +96,14 @@ build therefore adds phone components next to the desktop ones in
 | Kicker "Varsity · 7 active" | `RosterPhone` header | `teamName`; count of `players` with `status === 'active'` | The desktop kicker adds `season`, which the design drops. `teamError` shows "Your team", as on desktop. |
 | Large title "Roster" | `RosterPhone` header | none | Desktop's "Your players." headline and team-average line are not drawn. |
 | Banner "2 join requests" + "Grace Liu, Owen Park" + chevron | `RosterPhone` banner, opening `RosterRequestsSheet` | `requests.length`, the first two `requests[].name`, then "and N more" | "1 join request" in the singular. Hidden when there are no requests. When `requestsError` is set, it becomes the CH-3203 notice in the same slot, and a crash is contained by `SectionBoundary roster.requests` (CH-3204). |
-| "Sort by" + segmented Avg · SG · Name | `Segmented` (`size="sm"`, label "Sort players") | client sort of `players`: Avg is `avg` ascending, nulls last (as desktop); SG is `sgPerRound` descending, nulls last (new sort key, no new data); Name follows Q-39 | The sort applies inside each section. Desktop's Handicap and Rounds sorts are not on the phone (Q-36). |
+| "Sort by" + segmented Avg · SG · Name | `Segmented` (`size="sm"`, label "Sort players") | client sort of `players`: Avg is `avg` ascending, nulls last (as desktop); SG is `sgPerRound` descending, nulls last (new sort key, no new data); Name is by last name, as on desktop (D-59) | The sort applies inside each section. Desktop's Handicap and Rounds sorts are not on the phone (D-56). |
 | Active section: rows in a panel | `RosterPhoneRow` in `SectionBoundary roster.list` (CH-3205) | `players` where `status === 'active'` | Each row is one button (see Accessibility). |
 | Row avatar, 40 with a champagne ring | `Avatar size={40}` | `name` | The fill and initials use the foundation's one neutral phone avatar tokens (owner). The ring is `--ch-champagne-500` at 30%, as drawn. |
-| Row name + "Captain" chip | row | `name` | **No captain column.** The chip is not shown (data gap, Q-31). Long names truncate with an ellipsis (capture 05). |
+| Row name + "Captain" chip | row | `name` | **No captain column.** The chip is not shown (data gap, D-51). Long names truncate with an ellipsis (capture 05). |
 | Row subline "Senior · Improving", tinted amber or green | row | `classYear` · a note: `attention.text` when set (amber `--ch-chart-loss` for `warning`, green `--ch-chart-gain` for `positive`, the same rules as desktop); otherwise `form` as a word (Improving, Steady, Slipping); for `early`, "Early read · N rounds", or "No rounds this season" when `rounds === 0` | The sample's "Medical · wrist" is an availability note, which has no column: the Q-1 migration is unapplied. |
-| Row sparkline, 48 × 20 | `FormLine` (`earlyBelow={3}`) | `trend` (up to 7 18-hole scores, oldest first) | It is drawn at 3 or more rounds, which matches the design's `trend.length > 2` and every other page (Q-37). Below 3 there is no line, and the subline says "Early read". The design's spark has no mean line and no fill, so the build adds a bare option to `FormLine` for row size. |
+| Row sparkline, 48 × 20 | `FormLine` (`earlyBelow={3}`) | `trend` (up to 7 18-hole scores, oldest first) | It is drawn at 3 or more rounds, which matches the design's `trend.length > 2` and every other page (D-57). Below 3 there is no line, and the subline says "Early read". The design's spark has no mean line and no fill, so the build adds a bare option to `FormLine` for row size. |
 | Row figures "70.9" / "+0.8 hcp" | row | `formatFixed(avg)`; `formatHcp(handicap)` + " hcp" | "—" when null (for example when `statsError` is set, CH-3202). |
-| "Inactive" heading and panel | `RosterPhone` | `players` where `status === 'inactive'` | Hidden when there are none. In the database, `inactive` means the member has lost team access (Q-1), not that they are injured (Q-38). |
+| "Inactive" heading and panel | `RosterPhone` | `players` where `status === 'inactive'` | Hidden when there are none. In the database, `inactive` means the member has lost team access (Q-1), not that they are injured (D-58). |
 | Pull to refresh | none | none | Not built: it waits for a design (owner, foundation). Each notice's Try again still refreshes the page. |
 
 The phone list also carries these states from the page:
@@ -120,19 +119,19 @@ The phone list also carries these states from the page:
 
 | Element in the design | Component | Data or action | Notes and gaps |
 | --- | --- | --- | --- |
-| Top bar: back "‹ Roster", no title, trailing ⋯ "More actions" | foundation top bar | none | ⋯ opens an action sheet (Q-34). |
+| Top bar: back "‹ Roster", no title, trailing ⋯ "More actions" | foundation top bar | none | ⋯ opens an action sheet with View stats, then Remove from team (D-54). It waits for the foundation's action sheet. |
 | Avatar 64 with a green ring | `Avatar size={64}` | `name` | The fill and initials use the neutral phone avatar tokens. The ring is `--ch-green-600` over a `--ch-bg-page` gap. |
 | Name, 24px | `RosterProfile` | `name` | Long names wrap to two lines (capture 13). |
-| "Sophomore · Class of 2029 · Captain", in green | `RosterProfile` | `classYear` · `Class of ${gradYear}` | **No captain column** (Q-31). For an inactive player, "Inactive" is added (Q-38). |
-| "Charlotte, NC · Business" | `RosterProfile` | `hometown` · `highSchool` (each only when set) | **No major column** (Q-31). |
+| "Sophomore · Class of 2029 · Captain", in green | `RosterProfile` | `classYear` · `Class of ${gradYear}` | **No captain column** (D-51). For an inactive player, "Inactive" is added (D-58). |
+| "Charlotte, NC · Business" | `RosterProfile` | `hometown` · `highSchool` (each only when set) | **No major column** (D-51). |
 | Message button | `Button` | links to `/golf/dashboard/messages?player=<id>`: the Messages deep link that exists today opens or starts the direct thread, and shows CH-7001 when the player has no account | Desktop links the plain inbox; the phone uses the deep link. Built through `rebuiltHref`. |
-| Plan 1:1 button | `Button` | Calendar editor | **No 1:1 seed.** `?new=1` opens the editor as a practice with every active player invited (`editor.tsx`). Q-32. |
+| Plan 1:1 button | `Button` | Links to `/golf/dashboard/calendar?new=1&with=<playerId>` (D-52). The new seed opens the editor as a meeting with only that player invited | Before D-52, `?new=1` opened a practice with every active player invited. A player the Calendar doesn't list (inactive, or no longer on the team) opens the editor with nobody invited, never the whole team. |
 | Figures: Scoring avg · Handicap · SG / round | `RosterProfile` `dl` | `avg`, `handicap`, `sgPerRound` | SG is green for gains and amber for losses, and "—" under 3 SG rounds (`MIN_SG_ROUNDS`). Desktop's fourth figure, Rounds, is dropped here; the count moves to "All N". |
 | "Scoring trend", "Last N rounds", full-width line, legend (first · note · last) | `FormLine` at full width | `trend`; the note is `attention.text` or the form word | Under 3 rounds, "Early read" shows instead of the design's two-point line (capture 11). With no rounds, it shows CH-3305. |
 | "Recent rounds" rows: flag, course, date, score, to par | `RosterProfile` | `recent` (3 rows: `course`, `date`, `score`, `toPar`) | To par uses `formatToPar`. Red is used only under par (`is-under`), and even par shows E. |
-| "All 21" | link | `rounds` (18-hole countable rounds this season) | **Target not wired.** Q-33. |
-| About: a line of prose, then Home course, Birthday, Member | `RosterProfile` facts | Real fields only: Hometown (`hometown`), High school (`highSchool`), Class of (`gradYear`), Jersey (`jersey`, only when set), Member (`joined`, "Since Aug 2025") | **There are no columns for about, home course or birthday.** They are never invented, and birthday is never proposed, because it is minors' PII (Q-31). In live data no member has a jersey number, 12 of 106 players have a high school, and 90 have a hometown. |
-| (not drawn) coach's note, Development counts | none | `coachNote`, `setIntent`; `focusAreas`, `goals` | Q-36. |
+| "All 21" | link | `rounds` (18-hole countable rounds this season) | Links to `/golf/dashboard/stats?player=<id>&window=season&tab=rounds` (D-53). The season window counts the same 18-hole rounds. |
+| About: a line of prose, then Home course, Birthday, Member | `RosterProfile` facts | Real fields only: Hometown (`hometown`), High school (`highSchool`), Class of (`gradYear`), Jersey (`jersey`, only when set), Member (`joined`, "Since Aug 2025") | **There are no columns for about, home course or birthday.** They are never invented, and birthday is never proposed, because it is minors' PII (D-51). In live data no member has a jersey number, 12 of 106 players have a high school, and 90 have a hometown. |
+| (not drawn) coach's note, Development counts | none | `coachNote`, `setIntent`; `focusAreas`, `goals` | The coach's note stays, after About, and Development counts are dropped (D-56). |
 | Crash containment | `SectionBoundary roster.peek` (CH-3206) | none | Same surface tag. |
 
 ## Screen 3: Join requests sheet
@@ -144,7 +143,7 @@ The phone list also carries these states from the page:
 | "hcp" well with "7.2" | `RosterRequestsSheet` | `formatHcp(handicap)` | Shows "—" when the handicap is null. |
 | Clock + "Requested yesterday" | `RosterRequestsSheet` | `requestedAgo`, computed on the server from `created_at`, as today | none |
 | Decline · Approve (with a check icon) | `Button` × 2 | `rejectJoinRequest` and `acceptJoinRequest` through `useAction` (CH-3003, CH-3002), optimistic, as today | The request comes back to the list if the action fails. |
-| Footer "Approve all 2" | `Button variant="primary" size="lg"` | **No bulk action** | Q-35. |
+| Footer "Approve all 2" | `Button variant="primary" size="lg"` | `acceptJoinRequest` for each request in turn, through `useAction('roster.approveAll')` (D-55) | Names every request that failed and says how many were added (CH-3007). |
 | Team code well "FINLEY-26" + Copy | `.ch-well-soft` + `Button size="sm"` | `joinCode`; copy through the `InviteModal` copy path (success CH-3703, failure CH-3006) | Uses the desktop type (Instrument Sans, tabular, 0.02em), not the design's tracked mono, per doctrine. When `teamError` is set it shows CH-3207; with no code, CH-3304. |
 | "Players join with this code. Approved players see the team calendar and messages." | `RosterRequestsSheet` | none | True today: approval makes them a team member, which gives them the calendar and team chat. |
 | Invite by email | none | **No action.** | Not offered. |
@@ -161,7 +160,7 @@ Haptics go only through `haptic()`. Outcome haptics come from `useAction`.
 | Tap the join requests banner | Open the sheet (360ms rise) | `press` |
 | Drag a sheet down past its threshold, or tap the scrim | Dismiss | `press` on a drag dismiss, as the More sheet does |
 | Approve or Decline | The card leaves optimistically | `commit` on success, `error` on failure (`useAction`) |
-| Approve all | Every card leaves | one `commit` at the end (Q-35) |
+| Approve all | Every card leaves | one `commit` at the end, or `error` when any failed (D-55) |
 | Copy the join code | Toast "Join code copied" | `success`, or `error` (CH-3703, CH-3006) |
 | Share the invite link | Native share sheet | none (OS) |
 | ⋯, then Remove from team | Confirm sheet (CH-3501). The Remove button is red, since red is allowed for destructive actions (owner, foundation). Decline on a join request stays neutral, as drawn: the player can ask again | `warning` on the destructive button, then `commit` or `error` from `useAction` (CH-3001), as in the foundation's grammar |
@@ -189,14 +188,14 @@ Every 3xxx number still holds on the phone. Where each one lands:
 | --- | --- |
 | CH-3001, 3501, 3402 | ⋯ → Remove from team, confirm sheet |
 | CH-3002, 3003 | Requests sheet |
-| CH-3004, 3101, 3209 | Profile coach's note, if Q-36 keeps it |
-| CH-3005 | Desktop only, if Q-36 drops Export |
+| CH-3004, 3101, 3209 | Profile coach's note (D-56) |
+| CH-3005 | Desktop only (D-56) |
 | CH-3006, 3703, 3207, 3304 | Requests sheet code well and Invite sheet |
 | CH-3201, 3202, 3301, 3401 | List screen |
 | CH-3203, 3204 | Banner slot |
 | CH-3205 | List |
 | CH-3206 | Profile |
-| CH-3208 | Profile Development, if Q-36 keeps it |
+| CH-3208 | Desktop only; the phone drops Development counts (D-56) |
 | CH-3302, 3303 | Desktop only (the phone has no search and no status filter) |
 | CH-3305 | Profile trend |
 | CH-3601, 3602 | Replaced by push, pop and row press on the phone |
@@ -276,49 +275,17 @@ needs:
 7. **The neutral phone avatar tokens.**
 8. **Toasts above the tab bar** (shell.css does this today).
 
-## Owner questions
+## Owner answers (Q-30 to Q-39, 2026-09-29)
 
-These are tracked in `PROGRESS.md` as Q-30 to Q-39. Q-30 is answered. The rest
-are open: each lists the recommended option first, with its trade-off, and no
-D-number is recorded until the owner answers.
-
-- **Q-30 Where does Roster live on the phone?**
-  - *Answered 2026-09-29* by the owner's foundation decision (D-40 onward, Messages phone branch): under More, as drawn, with the design's five coach tabs. More stays a sheet until a More screen is designed.
-- **Q-31 What replaces the fields with no column** (Captain, major, birthday, home course, about)?
-  - *Recommended:* build without them. About shows the real fields (hometown, high school, class of, jersey when set, member since), and birthday is never collected.
-  - *Trade-off:* the profile is thinner than drawn.
-  - *Alternative:* write an unapplied migration for captain, major and a short bio, which the owner would apply.
-- **Q-32 What does Plan 1:1 open?**
-  - *Recommended:* add a Calendar seed, `/golf/dashboard/calendar?new=1&with=<playerId>`, which opens the editor as a meeting with only that player invited.
-  - *Trade-off:* it changes Calendar's route and editor, with their own tests.
-  - *Alternative:* hide Plan 1:1 until then (the existing gap), which leaves the profile with only one action.
-- **Q-33 What does "All N" rounds open?**
-  - *Recommended:* the player's Stats on the Rounds tab for the season (`/golf/dashboard/stats?player=<id>&window=season&tab=rounds`). The season window makes the count match `rounds`.
-  - *Trade-off:* StatsPlayer needs a `tab` URL parameter; its tab is local state today.
-  - *Alternative:* a "Full stats" link to the Overview, which keeps Stats unchanged but loses the "All N" label.
-- **Q-34 What do the two controls with no drawn target open: the profile's ⋯ and the top bar's invite button?**
-  - *Recommended:*
-    - ⋯ opens an action sheet with View stats, then Remove from team (confirm, CH-3501);
-    - the invite button opens the existing Invite players sheet (join code, Copy, share link).
-  - *Trade-off:* Remove is two taps away, and the code appears in two sheets.
-  - *Alternatives:* no ⋯, with Remove at the foot of the profile; the invite button opens the join requests sheet instead, which with no requests is just the code.
-  - Either way there is no invite by email, because no action exists for it.
-- **Q-35 Is Approve all built?**
-  - *Recommended:* yes, on the existing per-request action, run in sequence. One toast reports the outcome, and any failures stay listed (CH-3007).
-  - *Trade-off:* it takes N round trips and has a partial-failure path. Live data shows 0 pending requests on any team today, so it will rarely be used.
-  - *Alternative:* leave it out.
-- **Q-36 Which desktop features that the design doesn't draw stay on the phone?**
-  - *Recommended:*
-    - keep the coach's note on the profile after About;
-    - drop Development counts;
-    - make Export, search, the status filter, the layout toggle, the Needs-a-look chips and the Handicap and Rounds sorts desktop only (row notes carry "needs a look").
-  - *Trade-off:* the note is a section the design lacks.
-- **Q-37 How many rounds before the sparkline is drawn?**
-  - *Recommended:* 3 rounds. This matches desktop, the design's `> 2`, and CH-2306 and CH-5305.
-  - *Trade-off:* the brief said 4. Six active players have exactly 3 rounds today and would show a line under 3 but not under 4.
-- **Q-38 What does Inactive mean on the phone?**
-  - *Recommended:* the Inactive section lists `status = inactive` members, whose notes show their form, and the profile adds "Inactive" to its identity line.
-  - *Trade-off:* the drawn profile has no status, and "Medical · wrist" waits for the Q-1 availability migration.
-- **Q-39 Does Name sort by first or last name?**
-  - *Recommended:* by last name, as desktop does.
-  - *Trade-off:* the drawn sample sorts by first name.
+| Question | Answer | Decision |
+| --- | --- | --- |
+| Q-30 Where does Roster live on the phone? | Under More, per the foundation decision (the five-tab ivory bar, D-40 onward). More stays a sheet | D-50 |
+| Q-31 Fields with no column | Real fields only, with no migration. Birthday is never collected | D-51 |
+| Q-32 Plan 1:1 | The Calendar new-event editor with that player invited, via `?new=1&with=<playerId>` | D-52 |
+| Q-33 "All N" rounds | Stats on the Rounds tab for the season (`window=season&tab=rounds`) | D-53 |
+| Q-34 ⋯ and the invite button | ⋯ opens an action sheet (View stats, Remove from team). Invite opens the existing Invite players sheet | D-54 |
+| Q-35 Approve all | Loops the existing approve action one request at a time, through `useAction`. It names every failure and says how many were added | D-55 |
+| Q-36 Desktop features not drawn | The coach's note stays on the profile. Development counts, Export, search, filters, the layout toggle, Needs-a-look chips and the Handicap and Rounds sorts stay desktop only | D-56 |
+| Q-37 Sparkline threshold | 3 rounds | D-57 |
+| Q-38 Inactive | Listed under Inactive and labelled on the profile | D-58 |
+| Q-39 Name sort | By last name | D-59 |

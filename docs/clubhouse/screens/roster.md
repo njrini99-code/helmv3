@@ -52,8 +52,8 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/handoff/mobile/Roster Mobile.html`, `m-roster.jsx`: list, profile, join requests sheet). The design boards were captured at 390 × 844, as was the current preview at 390px.
 - [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop. It adds a pushed profile, a requests sheet and a list with sections, and maps every element to a component and to a loader field or action.
 - [x] The owner approved it: the file says `Status: approved`. Handing over the design is the approval (D-22, `design/handoff/mobile/README.md`).
-- [ ] The phone foundation it sits in is approved. The owner decided it on 2026-09-29 (D-40 onward, recorded on `agent/clubhouse-messages-mobile`). Tick this when that lands on this branch, where `phone/foundation.md` still says draft.
-- [ ] The owner questions from the spec are answered. Q-30 (where Roster lives) is answered by the foundation. Q-31 to Q-39 are open: fields with no column, Plan 1:1, All N, ⋯ and invite targets, Approve all, desktop-only features, sparkline threshold, Inactive, and name sort.
+- [x] The phone foundation it sits in is approved. The owner decided it on 2026-09-29, the lead relayed it, and it is recorded as D-40 onward on `agent/clubhouse-messages-mobile`, whose `phone/foundation.md` says `Status: approved`. It merges into this branch before the shell-dependent pieces are built.
+- [x] The owner questions from the spec are answered: Q-30 to Q-39, 2026-09-29, recorded as D-50 to D-59 in `PROGRESS.md`.
 
 ## phone
 - [ ] Built at 390px and 430px, respecting the safe areas
