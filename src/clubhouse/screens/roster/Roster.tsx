@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, UserMinus, UserPlus, Users } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
@@ -19,12 +19,14 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
+import { useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
 import { RosterPeek } from './RosterPeek';
+import { RosterPhone } from './RosterPhone';
 import { formatHcp } from './format';
 import '../../styles/roster.css';
 
@@ -48,6 +50,30 @@ export function Roster({ data }: { data: ChRoster }) {
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
   const jr = useJoinRequests(data.teamName, data.requests);
+  const phone = useChPhone();
+  // Phone: the open player lives in the URL (?player=), so Back and the edge swipe return to the list.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const listY = useRef(0);
+  useEffect(() => {
+    if (!phone) return;
+    const read = () => setOpenId(new URLSearchParams(window.location.search).get('player'));
+    read();
+    window.addEventListener('popstate', read);
+    return () => window.removeEventListener('popstate', read);
+  }, [phone]);
+  useEffect(() => {
+    if (phone && !openId && listY.current) window.scrollTo(0, listY.current);
+  }, [phone, openId]);
+  const openPlayer = useCallback((id: string) => {
+    chTrail('roster open player');
+    haptic('select');
+    listY.current = window.scrollY;
+    const url = new URL(window.location.href);
+    url.searchParams.set('player', id);
+    window.history.pushState(null, '', url.pathname + url.search);
+    setOpenId(id);
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     try {
@@ -135,6 +161,78 @@ export function Roster({ data }: { data: ChRoster }) {
     items.push({ label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => setRemoving(p) });
     return items;
   };
+
+  const dialogs = (
+    <>
+      <InviteModal
+        open={invite}
+        onClose={() => setInvite(false)}
+        teamName={data.teamName}
+        code={data.joinCode}
+        codeFailed={data.teamError}
+        onRetry={() => router.refresh()}
+      />
+      <Modal
+        code="CH-3501"
+        open={!!removing}
+        onClose={() => setRemoving(null)}
+        width={460}
+        icon={UserMinus}
+        title="Remove player?"
+        description={removing ? `Remove ${removing.name} from ${data.teamName}? They can rejoin later with the team code.` : undefined}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRemoving(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={remove.pending}
+              feel={null}
+              onClick={async () => {
+                const p = removing;
+                if (!p) return;
+                const res = await remove.run(p);
+                if (res.success) {
+                  setPlayers((ps) => ps.filter((x) => x.id !== p.id));
+                  if (sel === p.id) setSel(null);
+                  if (openId === p.id) {
+                    // Their profile is gone: back to the list, and a reload doesn't reopen it.
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('player');
+                    window.history.replaceState(null, '', url.pathname + url.search);
+                    setOpenId(null);
+                  }
+                  setRemoving(null);
+                }
+              }}
+            >
+              {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
+            </Button>
+          </>
+        }
+      >
+        <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
+      </Modal>
+    </>
+  );
+
+  if (phone) {
+    return (
+      <RosterPhone
+        data={data}
+        players={players}
+        jr={jr}
+        openId={openId}
+        onOpen={openPlayer}
+        onInvite={() => setInvite(true)}
+        onRemove={setRemoving}
+        onRetry={() => router.refresh()}
+      >
+        {dialogs}
+      </RosterPhone>
+    );
+  }
 
   return (
     <main className="ch-rs">
@@ -297,49 +395,7 @@ export function Roster({ data }: { data: ChRoster }) {
         </>
       )}
 
-      <InviteModal
-        open={invite}
-        onClose={() => setInvite(false)}
-        teamName={data.teamName}
-        code={data.joinCode}
-        codeFailed={data.teamError}
-        onRetry={() => router.refresh()}
-      />
-      <Modal
-        code="CH-3501"
-        open={!!removing}
-        onClose={() => setRemoving(null)}
-        width={460}
-        icon={UserMinus}
-        title="Remove player?"
-        description={removing ? `Remove ${removing.name} from ${data.teamName}? They can rejoin later with the team code.` : undefined}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setRemoving(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              disabled={remove.pending}
-              feel={null}
-              onClick={async () => {
-                const p = removing;
-                if (!p) return;
-                const res = await remove.run(p);
-                if (res.success) {
-                  setPlayers((ps) => ps.filter((x) => x.id !== p.id));
-                  if (sel === p.id) setSel(null);
-                  setRemoving(null);
-                }
-              }}
-            >
-              {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
-            </Button>
-          </>
-        }
-      >
-        <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
-      </Modal>
+      {dialogs}
     </main>
   );
 }

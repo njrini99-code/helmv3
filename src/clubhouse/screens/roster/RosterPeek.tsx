@@ -187,7 +187,8 @@ export const NOTE_MAX = 2000;
 /** The counter appears when this many characters are left. */
 const NOTE_WARN = 200;
 
-function CoachNote({ p, locked }: { p: ChRosterPlayer; locked: boolean }) {
+/** The coach's private note. Shared by the desktop panel and the phone profile (D-56). */
+export function CoachNote({ p, locked }: { p: ChRosterPlayer; locked: boolean }) {
   const [saved, setSaved] = useState(p.coachNote ?? '');
   const [draft, setDraft] = useState(p.coachNote ?? '');
   const save = useAction('roster.coachNote', (notes: string) => setIntent({ player_id: p.id, notes: notes || null }), {

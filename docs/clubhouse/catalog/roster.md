@@ -87,3 +87,4 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3803 | Esc closes the player panel, except while typing a note | `RosterPeek` key handler | roster.test › CH-3803 |
 | CH-3804 | The note counter is announced politely; a locked note says why it's locked | `aria-live`, `aria-describedby` | roster.test › CH-3101 |
 | CH-3805 | No axe violations in any preview state, both layouts, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
+| CH-3806 | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration | `RosterPhoneRow` `aria-label`, spark `aria-hidden` | roster.test › CH-3806 |

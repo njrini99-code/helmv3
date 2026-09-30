@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Roster: every numbered state in docs/clubhouse/catalog/roster.md, found by its number. */
 
@@ -367,3 +367,104 @@ describe('Roster · loading, haptics, accessibility', () => {
     await waitFor(() => expect(screen.queryByRole('complementary', { name: theo.name })).toBeNull());
   });
 });
+
+describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({
+      matches: q === '(max-width: 820px)',
+      media: q,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as never;
+    window.scrollTo = vi.fn() as never;
+    window.history.replaceState(null, '', '/golf/dashboard/roster');
+  });
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+    window.history.replaceState(null, '', '/');
+  });
+  const names = (list: string) =>
+    within(screen.getByRole('list', { name: list }))
+      .getAllByRole('button')
+      .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
+
+  it('CH-3701 active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
+    expect(names('Active players')).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
+    expect(names('Inactive')).toEqual(['Mia Thornton']);
+    await user.click(screen.getByRole('radio', { name: 'Strokes gained' }));
+    expect(names('Active players')).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Eli Brandt', 'Jonah Okafor', 'Priya Natarajan', 'Luca Ferraro']);
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    await user.click(screen.getByRole('radio', { name: 'Name' }));
+    expect(names('Active players')).toEqual(['Sofia Alvarez', 'Eli Brandt', 'Luca Ferraro', 'Ava Lindqvist', 'Theo Marchetti', 'Priya Natarajan', 'Jonah Okafor']);
+  });
+
+  it('CH-3806 a row is one button that reads name, class, note, average and handicap; the spark needs three rounds (D-57)', () => {
+    wrap(roster());
+    const jonah = screen.getByRole('button', { name: 'Jonah Okafor, Sophomore, Scoring up 2.1, average 74.1, handicap 3.9' });
+    expect(jonah.getAttribute('data-ch-code')).toBe('CH-3806');
+    expect(jonah.querySelector('.ch-rsm-row__spark')?.getAttribute('aria-hidden')).toBe('true');
+    const luca = screen.getByRole('button', { name: /^Luca Ferraro, Freshman, Early read · 2 rounds/ });
+    expect(luca.querySelector('svg')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Mia Thornton, Junior, inactive, Improving, average 73.8/ })).toBeTruthy();
+  });
+
+  it('opening a player pushes ?player= and shows their profile; Back returns to the list', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await user.click(screen.getByRole('button', { name: /^Jonah Okafor/ }));
+    expect(window.location.search).toBe('?player=jonah');
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
+    expect(screen.getByText('Sophomore · Class of 2029')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
+    expect(screen.getByRole('link', { name: 'Plan 1:1' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=jonah');
+    expect(screen.getByRole('link', { name: 'All 21 rounds this season' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=jonah&window=season&tab=rounds');
+    // Real facts only (D-51): no birthday, home course or major.
+    expect(screen.getByText('Hometown')).toBeTruthy();
+    expect(screen.queryByText(/Birthday|Home course/)).toBeNull();
+    expect(screen.getByRole('textbox', { name: /Coach.s note/ })).toBeTruthy();
+
+    window.history.replaceState(null, '', '/golf/dashboard/roster');
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
+  });
+
+  it('a link with ?player= opens the profile; an inactive player is labelled (D-58)', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=mia');
+    wrap(roster());
+    expect(screen.getByRole('heading', { level: 1, name: 'Mia Thornton' })).toBeTruthy();
+    expect(screen.getByText('Junior · Class of 2028 · Inactive')).toBeTruthy();
+  });
+
+  it('CH-3501 ⋯ → Remove from team confirms, and a removed player\'s profile closes', async () => {
+    const user = userEvent.setup();
+    actions.remove.mockResolvedValue({ success: true });
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    wrap(roster());
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Remove from team' }));
+    await expectCode('CH-3501', /Remove Theo Marchetti from Varsity/);
+    await user.click(screen.getByRole('button', { name: 'Remove player' }));
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy());
+    expect(window.location.search).toBe('');
+    expect(screen.queryByRole('button', { name: /^Theo Marchetti/ })).toBeNull();
+  });
+
+  it('CH-3202 season stats that did not load: the profile says so instead of "no rounds"', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    wrap(roster({ statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null, trend: [], recent: [], rounds: 0, form: 'early', attention: null })) }));
+    expect(code('CH-3202')!.textContent).toMatch(/Season stats didn't load/);
+    expect(code('CH-3305')).toBeNull();
+  });
+});
+

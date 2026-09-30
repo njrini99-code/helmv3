@@ -10,6 +10,7 @@ export function FormLine({
   height = 34,
   label,
   earlyBelow = 2,
+  bare = false,
 }: {
   data: number[];
   width?: number;
@@ -17,6 +18,8 @@ export function FormLine({
   label: string;
   /** Below this many points the line isn't drawn, and an "Early read" pill says why. */
   earlyBelow?: number;
+  /** Line and end point only, no mean or fill: the phone roster's row spark. */
+  bare?: boolean;
 }) {
   if (data.length < earlyBelow) {
     return (
@@ -38,8 +41,8 @@ export function FormLine({
   const [ex, ey] = pts[pts.length - 1]!;
   return (
     <svg style={{ maxWidth: width }} viewBox={`0 0 ${width} ${height}`} className={`ch-form ch-form--${tone}`} role="img" aria-label={label}>
-      <line x1={pad} x2={width - pad} y1={y(avg)} y2={y(avg)} className="ch-form__mean" />
-      <path d={`${line} L${ex},${height} L${pad},${height} Z`} className="ch-form__fill" />
+      {!bare && <line x1={pad} x2={width - pad} y1={y(avg)} y2={y(avg)} className="ch-form__mean" />}
+      {!bare && <path d={`${line} L${ex},${height} L${pad},${height} Z`} className="ch-form__fill" />}
       <path d={line} className="ch-form__line" />
       <circle cx={ex} cy={ey} r="3" className="ch-form__end" />
     </svg>

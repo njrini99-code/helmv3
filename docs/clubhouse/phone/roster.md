@@ -88,6 +88,36 @@ build therefore adds phone components next to the desktop ones in
   under `@media (max-width: 820px)` inside `RosterSkeleton`, not through the
   hook.
 
+## Build status (2026-09-29)
+
+These parts are built and don't depend on the shell:
+
+- **`RosterPhone` and `RosterPhoneRow`**, chosen by `useChPhone()` in
+  `Roster`:
+  - kicker, title, Avg, SG and Name sort (by last name), the Active list,
+    then Inactive
+  - the row: note, a spark from 3 rounds, average and handicap, and CH-3806
+- **`RosterProfile`,** pushed through `?player=` with `pushState`, so Back and
+  the edge swipe return to the list. It has:
+  - identity, marked "Inactive" when the player is inactive
+  - Message, which opens the Messages deep link
+  - Plan 1:1, which opens `calendar?new=1&with=`
+  - figures, the trend, recent rounds with "All N" (`stats?…&window=season&tab=rounds`)
+  - About with real fields only, and the coach's note
+- **The phone skeleton**, switched in CSS.
+- **The Calendar 1:1 seed** (D-52) and **the Stats `tab` parameter** (D-53).
+- **Approve all** (`useJoinRequests`, D-55, CH-3007).
+
+Until the foundation lands on this branch, three controls use today's
+components, and none of them is dead:
+- the header keeps Invite players, which opens `InviteModal`
+- the join requests keep their inline card, where the banner and sheet will go
+- the profile's ⋯ is the shared `Menu`
+
+The banner, the requests sheet with its Approve all footer (CH-3403), the
+top-bar actions, the ⋯ action sheet and the push transition come with the
+foundation.
+
 ## Screen 1: Roster list
 
 | Element in the design | Component | Data or action | Notes and gaps |
