@@ -25,6 +25,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10007 | Assigning a task fails | "Couldn't assign Book physicals" + "What you entered is still here." Done: "Book physicals assigned to the team" (or "to 3 players") | `useAction('hub.assignTask')` → `createTask` | hub.test › CH-10007 |
 | CH-10008 | Uploading a file fails | "Couldn't upload Local rules.pdf" + "Check the file is under 50 MB and try again." Each file says so on its own. Done: "Local rules.pdf shared with the team" | `useAction('hub.uploadDocument')` → `uploadGolfDocument`, `createGolfDocument` | hub.test › CH-10008 |
 | CH-10009 | Deleting a post, task or file fails | "Couldn't delete NCAA hours log" + Retry; it stays. Done: "Deleted NCAA hours log" | `useAction('hub.delete')` → `deleteAnnouncement`, `deleteTask`, `deleteGolfDocument` | hub.test › CH-10009 |
+| CH-10011 | Unticking a done task fails | "Couldn't reopen Sign travel waiver" + Retry; it stays done. Done: "Sign travel waiver is open again" | `useAction('hub.uncompleteTask')` → `uncompleteTask` | hub.test › CH-10011 |
 | CH-10010 | Saving an edit to an announcement fails | "Couldn't save the announcement" + "Your changes are still here. Try again in a moment." (the server's reason when it gave one, for example "Message is required.") The sheet stays open with the words; the card is unchanged. Done: "Saved "Bus leaves at 6"" | `useAction('hub.editAnnouncement')` → `updateAnnouncement` | hub.test › CH-10010 |
 
 ## 101xx Validation

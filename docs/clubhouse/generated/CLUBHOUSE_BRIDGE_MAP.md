@@ -74,7 +74,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
-| P010 | 2 | 6 |  | 12 | 9 | 19 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 71 |
+| P010 | 2 | 6 |  | 12 | 9 | 20 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 72 |
 | P011 | 13 | 7 |  | 13 | 10 | 19 | 2 | 5 | 2 |  | 11 | 2 | 1 | 3 | 3 | 3 | 7 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 119 |
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
@@ -886,6 +886,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100617 | CH-10208 | 06 Server / system error | `THE_COACHS_ROSTER_DOESNT_LOAD` | implemented | The coach's roster doesn't load |
 | 100618 | CH-10010 | 06 Server / system error | `SAVING_AN_EDIT_TO_AN_ANNOUNCEMENT_FAILS` | implemented | Saving an edit to an announcement fails |
 | 100619 | CH-10209 | 06 Server / system error | `THE_TEAMS_DOCUMENTS_DONT_LOAD` | implemented | The team's documents don't load |
+| 100620 | CH-10011 | 06 Server / system error | `UNTICKING_A_DONE_TASK_FAILS` | implemented | Unticking a done task fails |
 | 100701 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 | 100801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The role from the session decides the controls: a player is never drawn New announcement, Plan a trip, Assign, the drop zone or a delete menu, and a coach is never drawn a reply button, Got it or a task box. |
 | 100802 |  | 08 Permission / authorization | `PLAYER_GETS_ONLY_WHAT_IS_THEIRS` | implemented | A player's data carries none of their teammates' read receipts (an announcement's acknowledged and recipient counts), replies, task completions, traveler lists or names, and no roster; those are in a coach's data only, where the same post reads 5 of 6. |

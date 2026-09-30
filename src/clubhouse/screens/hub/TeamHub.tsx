@@ -85,6 +85,8 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
   const [acked, setAcked] = useState(() => new Set<string>());
   const [done, setDone] = useState(() => new Set<string>());
+  // Tasks the player unticked this visit, over what the page loaded as completed.
+  const [undone, setUndone] = useState(() => new Set<string>());
   const [gone, setGone] = useState(() => new Set<string>());
   const [compose, setCompose] = useState(false);
   // The post open in the edit sheet, and the edits that have landed (shown at once; the page's read follows).
@@ -145,12 +147,27 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     'hub.completeTask',
     (t: ChHubTask) =>
       optimistic(
-        () => setDone(withId(t.id)),
+        () => {
+          setDone(withId(t.id));
+          setUndone(withoutId(t.id));
+        },
         () => setDone(withoutId(t.id)),
         () => writes.completeTask(t.id),
       ),
     (t) => ({ done: `${t.title} done`, failed: `Couldn't mark ${t.title} done`, code: 'CH-10003' }),
   );
+  const uncomplete = useAction(
+    'hub.uncompleteTask',
+    (t: ChHubTask) =>
+      optimistic(
+        // `undone` wins over `done` and the loaded status, so taking it back off restores exactly what was there.
+        () => setUndone(withId(t.id)),
+        () => setUndone(withoutId(t.id)),
+        () => writes.uncompleteTask(t.id),
+      ),
+    (t) => ({ done: `${t.title} is open again`, failed: `Couldn't reopen ${t.title}`, code: 'CH-10011' }),
+  );
+  const taskDone = (t: ChHubTask) => (t.status === 'completed' || done.has(t.id)) && !undone.has(t.id);
   const open = useAction(
     'hub.openDocument',
     async (f: ChHubFile) => {
@@ -209,7 +226,8 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     void reply.run(r, s);
   };
   const onAck = (a: ChHubAnnouncement) => void ack.run(a);
-  const onToggle = (t: ChHubTask) => void complete.run(t);
+  // A tick marks it done; a tick on a done task (an accidental one) opens it again.
+  const onToggle = (t: ChHubTask) => void (taskDone(t) ? uncomplete.run(t) : complete.run(t));
   const onOpen = (f: ChHubFile) => void open.run(f);
   const onUpload = async (files: File[]) => {
     setUploading(true);
@@ -369,7 +387,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                 </SectionBoundary>
                 {!coach && (
                   <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
-                    <Tasks role={data.role} data={tasks} done={done} onToggle={onToggle} />
+                    <Tasks role={data.role} data={tasks} isDone={taskDone} onToggle={onToggle} />
                   </SectionBoundary>
                 )}
               </div>
@@ -430,7 +448,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
         {tab === 'tasks' && coach && (
           <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
             <div className="ch-hb-list">
-              <Tasks role={data.role} data={tasks} done={done} onToggle={onToggle} onAssign={() => setAssign(true)} onDelete={(t) => askDelete({ kind: 'task', t })} />
+              <Tasks role={data.role} data={tasks} isDone={taskDone} onToggle={onToggle} onAssign={() => setAssign(true)} onDelete={(t) => askDelete({ kind: 'task', t })} />
             </div>
           </SectionBoundary>
         )}

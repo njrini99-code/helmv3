@@ -50,6 +50,7 @@ whole action again (101401).
 | ACT-P010-REPLY | Going, Maybe, Can't in RSVPs (player) | `onReply` → `reply.run` | `writes.reply` → `respondToEvent` | golf_event_attendance | done 100901 · refused 100601 · optimistic 101301 · Retry 101401 · closed events not offered 100803 |
 | ACT-P010-ACKNOWLEDGE | Got it on a post (player) | `onAck` → `ack.run` | `writes.acknowledge` → `acknowledgeAnnouncement` | golf_announcement_acknowledgements | refused 100602 · optimistic 101301 · no toast on success (100901) |
 | ACT-P010-COMPLETE-TASK | A task's box (player) | `onToggle` → `complete.run` | `writes.completeTask` → `completeTask` | golf_task_assignments | done 100901 · refused 100603 · optimistic 101301 |
+| ACT-P010-UNCOMPLETE-TASK | A done task's box (player) | `onToggle` → `uncomplete.run` | `writes.uncompleteTask` → `uncompleteTask` | golf_task_assignments | refused CH-10011 · optimistic |
 | ACT-P010-OPEN-FILE | A file row in Documents | `onOpen` → `open.run` | `writes.openDocument` → `getPreviewUrl` | golf_documents, storage documents | refused 100604 · opens in a tab of its own, closed again on a failure |
 | ACT-P010-POST-ANNOUNCEMENT | Post in New announcement (coach), with the files chosen in Attach from Documents | `ComposeSheet` `submit` → `create.run` | `writes.postAnnouncement` → `createEnrichedAnnouncement` (`documentIds`: the chosen files, in the order chosen) | golf_announcements, golf_announcement_recipients, golf_announcement_documents | fields 100501 · 100502 · sending 100202 · done 100901 · refused 100605 · text and files kept 101201 · page reads again 101501 · files not loaded 100619 · no files yet 100412 |
 | ACT-P010-EDIT-ANNOUNCEMENT | Edit announcement in a post's More menu, then Save changes (coach) | `Announcement` `onEdit` → `ComposeSheet` (edit) `submit` → `save.run(id, input)` | `writes.editAnnouncement` → `updateAnnouncement` (headline, message, acknowledgement; urgency as posted) | golf_announcements | field 100501 · saving 100206 · done 100901 · refused 100618 · words kept 101201 · card shows it at once, then the page reads again 101501 · Retry 101401 |
@@ -87,7 +88,7 @@ There are no realtime hooks: the page is read once on the server.
 | --- | --- | --- | --- |
 | respondToEvent | actions/golf.ts | Existing (Calendar's reply) | a player's reply |
 | acknowledgeAnnouncement | actions/communication.ts | Existing | Got it |
-| completeTask, createTask, deleteTask | actions/tasks.ts | Existing | a player's check, a coach's assign and delete |
+| completeTask, uncompleteTask, createTask, deleteTask | actions/tasks.ts | Existing (uncompleteTask new 2026-09-30) | a player's check, a coach's assign and delete |
 | getPreviewUrl, uploadGolfDocument, createGolfDocument, deleteGolfDocument, getDocuments | actions/documents.ts | Existing | the files; the same `getDocuments` read (already in the page's data) is what Attach from Documents lists, so it has no read of its own |
 | createEnrichedAnnouncement, updateAnnouncement, deleteAnnouncement, getAnnouncementsWithMeta | actions/announcements.ts | Existing | a coach's posts (with `documentIds` for the files attached), the fix to a post's wording, and their receipts |
 | createGolfTravelItinerary | actions/travel.ts | Existing | Plan a trip |

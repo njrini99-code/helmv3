@@ -8758,6 +8758,17 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100620,
+    "page": "P010",
+    "category": 6,
+    "item": 20,
+    "name": "UNTICKING_A_DONE_TASK_FAILS",
+    "chCode": "CH-10011",
+    "meaning": "Unticking a done task fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100701,
     "page": "P010",
     "category": 7,

@@ -301,20 +301,19 @@ function UpdateBody({ n }: { n: ChHubUpdate }) {
 export function Tasks({
   role,
   data,
-  done,
+  isDone,
   onToggle,
   onAssign,
   onDelete,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['tasks'];
-  done: Set<string>;
+  isDone: (t: ChHubTask) => boolean;
   onToggle: (t: ChHubTask) => void;
   onAssign?: () => void;
   onDelete?: (t: ChHubTask) => void;
 }) {
   const coach = role === 'coach';
-  const isDone = (t: ChHubTask) => t.status === 'completed' || done.has(t.id);
   const open = data.rows.filter((t) => !isDone(t)).length;
   return (
     <section className="ch-hb-card" aria-labelledby="ch-hb-tasks">
@@ -343,7 +342,7 @@ export function Tasks({
                     <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>
                   </span>
                 ) : (
-                  <button type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} disabled={d} onClick={() => onToggle(t)}>
+                  <button type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} onClick={() => onToggle(t)}>
                     {d && <Icon icon={Check} size={13} />}
                   </button>
                 )}

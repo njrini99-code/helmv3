@@ -31,7 +31,7 @@ vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: actions.docs, cre
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: actions.notifs, markAllNotificationsRead: vi.fn(), markNotificationRead: vi.fn() }));
 vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: vi.fn() }));
 vi.mock('@/app/golf/actions/golf', () => ({ respondToEvent: vi.fn() }));
-vi.mock('@/app/golf/actions/tasks', () => ({ completeTask: vi.fn(), createTask: vi.fn(), deleteTask: vi.fn() }));
+vi.mock('@/app/golf/actions/tasks', () => ({ completeTask: vi.fn(), uncompleteTask: vi.fn(), createTask: vi.fn(), deleteTask: vi.fn() }));
 vi.mock('@/app/golf/actions/travel', () => ({ createGolfTravelItinerary: vi.fn() }));
 const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
@@ -61,6 +61,7 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
     reply: vi.fn(ok),
     acknowledge: vi.fn(ok),
     completeTask: vi.fn(ok),
+    uncompleteTask: vi.fn(ok),
     openDocument: vi.fn(() => Promise.resolve({ success: true, data: { url: 'https://files.example/d1' } })),
     postAnnouncement: vi.fn(() => Promise.resolve({ success: true, data: { announcementId: 'n' } })),
     editAnnouncement: vi.fn(ok),
@@ -141,6 +142,26 @@ describe('Team Hub · player', () => {
     await user.click(box);
     await expectCode('CH-10003', /Couldn't mark Sign travel waiver done/);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Sign travel waiver' }).getAttribute('aria-pressed')).toBe('false'));
+  });
+
+  it('a tick on a done task opens it again (an accidental tick), with its own write; CH-10011 a refusal leaves it done', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_PLAYER, writes());
+    const box = () => screen.getByRole('button', { name: /^Sign travel waiver/ });
+    await user.click(box());
+    await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('true'));
+    await user.click(box());
+    await waitFor(() => expect(w.uncompleteTask).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(w.uncompleteTask).mock.calls[0]![0]).toBe(vi.mocked(w.completeTask).mock.calls[0]![0]);
+    await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('false'));
+    cleanup();
+    const refused = show(PREVIEW_HUB_PLAYER, writes({ uncompleteTask: refuse() }));
+    await user.click(box());
+    await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('true'));
+    await user.click(box());
+    await expectCode('CH-10011', /Couldn't reopen Sign travel waiver/);
+    await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('true'));
+    expect(refused.completeTask).toHaveBeenCalledTimes(1);
   });
 
   it('a file opens its signed link in a new tab; CH-10004 one that fails says so and closes the tab', async () => {

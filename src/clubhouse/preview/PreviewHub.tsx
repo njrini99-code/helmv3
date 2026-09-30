@@ -16,6 +16,7 @@ export function PreviewHub({ data, state, tab }: { data: ChTeamHub; state?: stri
       reply: r,
       acknowledge: r,
       completeTask: r,
+      uncompleteTask: r,
       openDocument: () => wait(fail ? { success: false } : { success: true, data: { url: 'about:blank' } }),
       postAnnouncement: () => wait(fail ? { success: false } : { success: true, data: { announcementId: 'new' } }),
       editAnnouncement: r,

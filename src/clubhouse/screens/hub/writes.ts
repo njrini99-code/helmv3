@@ -4,7 +4,7 @@ import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { respondToEvent } from '@/app/golf/actions/golf';
-import { completeTask, createTask, deleteTask } from '@/app/golf/actions/tasks';
+import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
 import { createGolfTravelItinerary } from '@/app/golf/actions/travel';
 import type { ChHubUrgency } from '../../data/hub';
 import type { ServerResult } from '../../lib/use-action';
@@ -19,6 +19,8 @@ export interface ChHubWrites {
   reply(eventId: string, status: 'accepted' | 'tentative' | 'declined'): Promise<ServerResult>;
   acknowledge(announcementId: string): Promise<ServerResult>;
   completeTask(taskId: string): Promise<ServerResult>;
+  /** Undo the player's own tick (an accidental one): the task is open again. */
+  uncompleteTask(taskId: string): Promise<ServerResult>;
   openDocument(documentId: string): Promise<ServerResult<{ url: string }>>;
   postAnnouncement(input: { title: string; body: string; requiresAck: boolean; playerIds: string[] | null; documentIds: string[] }): Promise<ServerResult<{ announcementId: string }>>;
   /** A posted announcement's headline, message and acknowledgement (updateAnnouncement takes no audience or attachments). */
@@ -51,6 +53,7 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
   reply: (eventId, status) => respondToEvent(eventId, status) as Promise<ServerResult>,
   acknowledge: (id) => acknowledgeAnnouncement(id),
   completeTask: (id) => completeTask(id),
+  uncompleteTask: (id) => uncompleteTask(id),
   async openDocument(id) {
     const res = await getPreviewUrl(id);
     if (res.error || !res.data) return { success: false, error: res.noContent ? 'This file has no stored copy to open.' : (res.error ?? undefined) };

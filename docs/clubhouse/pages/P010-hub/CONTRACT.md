@@ -104,6 +104,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 100617 | CH-10208 | `THE_COACHS_ROSTER_DOESNT_LOAD` | The coach's roster doesn't load |
 | 100618 | CH-10010 | `SAVING_AN_EDIT_TO_AN_ANNOUNCEMENT_FAILS` | Saving an edit to an announcement fails |
 | 100619 | CH-10209 | `THE_TEAMS_DOCUMENTS_DONT_LOAD` | The team's documents don't load |
+| 100620 | CH-10011 | `UNTICKING_A_DONE_TASK_FAILS` | Unticking a done task fails |
 
 ## 07 — Network / offline
 
