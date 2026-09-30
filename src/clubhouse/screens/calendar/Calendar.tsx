@@ -16,7 +16,7 @@ import { Segmented } from '../../ui/Segmented';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { addDays, addMonths, dayNum, findOverlaps, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalView } from './model';
+import { addDays, addMonths, dayNum, findOverlaps, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
 import { AgendaView, MonthView, TimeGrid, type ChNow } from './views';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
@@ -181,6 +181,7 @@ export function Calendar({
   initialEvent,
   initialNew = false,
   initialWith,
+  initialType,
   frozen = false,
 }: {
   data: ChCalendarData;
@@ -188,6 +189,8 @@ export function Calendar({
   initialNew?: boolean;
   /** With `initialNew`: a 1:1 with this player (Roster's Plan 1:1, D-52). */
   initialWith?: string;
+  /** With `initialNew`: the new event's type (the phone Home's quick chips). */
+  initialType?: ChCalType;
   frozen?: boolean;
 }) {
   const preview = frozen;
@@ -204,13 +207,14 @@ export function Calendar({
   // `?new=1` (Home's New event) opens the editor once; `&with=<playerId>` (Roster's Plan 1:1) makes it a
   // meeting with only that player invited. The params are dropped so a reload doesn't reopen it.
   const [editor, setEditor] = useState<EditorSeed | null>(() =>
-    initialNew && coach ? (initialWith ? { event: null, type: 'meeting', invite: [initialWith] } : { event: null }) : null,
+    initialNew && coach ? (initialWith ? { event: null, type: 'meeting', invite: [initialWith] } : { event: null, type: initialType }) : null,
   );
   useEffect(() => {
     if (!initialNew || frozen) return;
     const url = new URL(window.location.href);
     url.searchParams.delete('new');
     url.searchParams.delete('with');
+    url.searchParams.delete('type');
     window.history.replaceState(null, '', url.pathname + url.search);
   }, [initialNew, frozen]);
   const [cancelling, setCancelling] = useState<ChCalEvent | null>(null);

@@ -94,7 +94,56 @@ export const PREVIEW_HOME: ChCoachHome = {
     rosterSize: 6,
     rows: LEADERS,
   },
+  phone: {
+    next: {
+      id: 'a1',
+      title: 'Short-game block',
+      type: 'practice',
+      date: '2026-10-14',
+      startIso: '2026-10-14T19:30:00Z',
+      endIso: '2026-10-14T21:00:00Z',
+      allDay: false,
+      startLabel: '3:30 PM',
+      rangeLabel: '3:30 – 5:00 PM',
+      location: 'Practice green',
+      invitees: ['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan'],
+      going: 5,
+      conflict: false,
+    },
+    today: [
+      ['a1', 'Short-game block', 'practice', '19:30', '21:00', 'Practice green', '3:30 PM', '3:30 – 5:00 PM', false],
+      ['a2', '1:1 with Jonah', 'meeting', '20:45', '21:15', 'Range bay 4', '4:45 PM', '4:45 – 5:15 PM', true],
+      ['a3', 'Putting ladder', 'practice', '21:30', '22:30', 'Green 2', '5:30 PM', '5:30 – 6:30 PM', false],
+      ['a4', 'Parent call', 'meeting', '22:00', '22:30', null, '6:00 PM', '6:00 – 6:30 PM', true],
+    ].map(([id, title, type, start, end, location, startLabel, rangeLabel, conflict]) => ({
+      id: id as string,
+      title: title as string,
+      type: type as 'practice' | 'meeting',
+      date: '2026-10-14',
+      startIso: `2026-10-14T${start}:00Z`,
+      endIso: `2026-10-14T${end}:00Z`,
+      allDay: false,
+      startLabel: startLabel as string,
+      rangeLabel: rangeLabel as string,
+      location: location as string | null,
+      invitees: null,
+      going: null,
+      conflict: conflict as boolean,
+    })),
+    form: {
+      avg: 73.4,
+      delta: -0.9,
+      line: [74.6, 74.4, 74.5, 74.1, 74.0, 73.9, 74.0, 73.7, 73.6, 73.5, 73.6, 73.4],
+      roundsThisWeek: 11,
+      gir: { pct: 61, delta: 3 },
+      putts: { avg: 30.4, delta: 0.3 },
+    },
+    weekNote: { weekday: 'Thursday', title: 'Qualifier · Pinehurst No. 2' },
+  },
 };
+
+/** The preview's frozen clock: Tuesday 14 October, 2:40 PM Eastern, as the phone boards draw it. */
+export const PREVIEW_HOME_NOW = '2026-10-14T18:40:00Z';
 
 /** Failure and empty variants, so every state can be seen without breaking anything. */
 export const PREVIEW_HOME_FAILED: ChCoachHome = {
@@ -103,6 +152,7 @@ export const PREVIEW_HOME_FAILED: ChCoachHome = {
   week: { ...PREVIEW_HOME.week, error: true },
   latestRounds: { rounds: [], error: true, holesError: false },
   leaderboard: { ...PREVIEW_HOME.leaderboard, error: true },
+  phone: { next: null, today: [], form: null, weekNote: null },
 };
 
 export const PREVIEW_HOME_EMPTY: ChCoachHome = {
@@ -111,4 +161,12 @@ export const PREVIEW_HOME_EMPTY: ChCoachHome = {
   week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
   latestRounds: { rounds: [], error: false, holesError: false },
   leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
+  phone: { next: null, today: [], form: null, weekNote: null },
+};
+
+/** Players and rounds, but nothing on the calendar ahead: the phone's Up next shows how to add the first event. */
+export const PREVIEW_HOME_NO_EVENTS: ChCoachHome = {
+  ...PREVIEW_HOME,
+  week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
+  phone: { ...PREVIEW_HOME.phone, next: null, today: [], weekNote: null },
 };

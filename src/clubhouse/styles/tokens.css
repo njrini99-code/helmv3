@@ -36,6 +36,9 @@
   --ch-green-700: #0f4a2f;
   --ch-green-800: #0b3a25;
   --ch-green-900: #082b1c;
+  /* The mint accents on the green hero (v2 phone Home, m-home.css). */
+  --ch-hero-mint: #9fe0b6;
+  --ch-hero-mint-strong: #7bc79a;
   --ch-frame: #0a331f;
   /* Champagne: hairline detail only */
   --ch-champagne-100: #efe6d2;

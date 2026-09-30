@@ -36,6 +36,8 @@ import {
   PREVIEW_HOME,
   PREVIEW_HOME_EMPTY,
   PREVIEW_HOME_FAILED,
+  PREVIEW_HOME_NO_EVENTS,
+  PREVIEW_HOME_NOW,
   PREVIEW_PLAYER as PREVIEW_PLAYER_USER,
   PREVIEW_SHELL,
 } from '@/clubhouse/preview/fixtures';
@@ -45,7 +47,7 @@ import {
  * handoff's sample data, with no auth and no database, for comparison with
  * design/handoff/screenshots. 404 in production.
  *
- *   /clubhouse-preview/home   ?state=empty | failed | loading | error
+ *   /clubhouse-preview/home   ?state=empty | noevents | failed | loading | error   (empty is the first-run page)
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
@@ -100,7 +102,10 @@ export default async function ClubhousePreview({
         ) : state === 'error' ? (
           <PreviewError kind="unknown" />
         ) : (
-          <CoachHome data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : PREVIEW_HOME} />
+          <CoachHome
+            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : PREVIEW_HOME}
+            now={PREVIEW_HOME_NOW}
+          />
         ),
     },
     roster: {

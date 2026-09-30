@@ -12,14 +12,14 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { PhoneIconAction } from '../../ui/PhoneBar';
-import { ScoreMark } from '../../ui/ScoreMark';
+import { Nine } from '../../ui/Nine';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { dayLabel, plural, positionLabel, shortRange, type ChQHole, type ChQRow, type ChQStatus } from './model';
+import { dayLabel, plural, positionLabel, shortRange, type ChQRow, type ChQStatus } from './model';
 import { StateBadge, StatusPill, ToPar } from './parts';
 import { Courses, Selections } from './QualifierSections';
 
@@ -383,8 +383,8 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | n
                 <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={() => router.refresh()} />
               ) : holes && holes.length ? (
                 <>
-                  <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" roundNo={n} />
-                  <Nine holes={holes.filter((h) => h.n > 9)} label="In" roundNo={n} />
+                  <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />
+                  <Nine holes={holes.filter((h) => h.n > 9)} label="In" caption={`Round ${n}, back nine`} />
                 </>
               ) : (
                 <p className="ch-qfm-muted" data-ch-code="CH-09308">
@@ -401,49 +401,5 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | n
         </div>
       )}
     </Modal>
-  );
-}
-
-/** One nine: hole numbers, par and score (the shell's MNine), with the nine's totals. */
-function Nine({ holes, label, roundNo }: { holes: ChQHole[]; label: 'Out' | 'In'; roundNo: number }) {
-  if (!holes.length) return null;
-  const sum = (k: 'par' | 'score') => (holes.every((h) => h[k] != null) ? holes.reduce((s, h) => s + (h[k] as number), 0) : null);
-  return (
-    <table className="ch-qfm-nine ch-num">
-      <caption className="ch-sr-only">
-        Round {roundNo}, {label === 'Out' ? 'front nine' : 'back nine'}
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">{label}</th>
-          {holes.map((h) => (
-            <th key={h.n} scope="col">
-              {h.n}
-            </th>
-          ))}
-          <th scope="col">Tot</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr className="is-par">
-          <th scope="row">Par</th>
-          {holes.map((h) => (
-            <td key={h.n}>{h.par}</td>
-          ))}
-          <td>{sum('par') ?? '—'}</td>
-        </tr>
-        <tr>
-          <th scope="row">Score</th>
-          {holes.map((h) => (
-            <td key={h.n}>
-              <ScoreMark score={h.score} par={h.par} size="sm" />
-            </td>
-          ))}
-          <td>
-            <b>{sum('score') ?? '—'}</b>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   );
 }

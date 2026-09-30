@@ -15,15 +15,16 @@ vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 
-import { loadCoachHome, type ChCoachHome } from '../data/home';
-import { CoachHome, CoachHomeNoTeam } from '../screens/home/CoachHome';
+import { loadCoachHome, teamForm, type ChCoachHome } from '../data/home';
+import { CoachHome, CoachHomeNoTeam, isFirstRun } from '../screens/home/CoachHome';
 import { HomeActions } from '../screens/home/HomeActions';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { LatestRound } from '../screens/home/LatestRound';
 import { Leaderboard } from '../screens/home/Leaderboard';
 import { Week, dayLabel } from '../screens/home/Week';
 import { ToastProvider } from '../ui/Toast';
-import { PREVIEW_HOME } from '../preview/fixtures';
+import './dialog-polyfill';
+import { PREVIEW_HOME, PREVIEW_HOME_NOW } from '../preview/fixtures';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -227,5 +228,153 @@ describe('Home · loading, motion, haptics, accessibility', () => {
     expect(rows.length).toBeGreaterThan(6);
     for (const row of rows) for (const child of row.children) expect(['cell', 'columnheader', 'rowheader']).toContain(child.getAttribute('role'));
     expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+  });
+});
+
+describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('the hero: date, greeting, brief, and Up next with its countdown and replies, opening the event in Calendar', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya.' })).toBeTruthy();
+    const next = document.querySelector('a.ch-hm-next') as HTMLAnchorElement;
+    expect(next.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a1');
+    // 2:40 PM against a 3:30 PM start.
+    expect(next.textContent).toMatch(/In 50 min/);
+    expect(next.textContent).toMatch(/5 of 6 going/);
+    expect(next.querySelector('.is-soon')).not.toBeNull();
+  });
+
+  it('Today: a timeline, with overlaps marked and each row opening its event', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const rows = document.querySelectorAll('.ch-hm-tl__r');
+    expect(rows).toHaveLength(4);
+    expect(screen.getAllByText('Overlaps another event').length).toBe(2);
+    expect(screen.getByRole('link', { name: /1:1 with Jonah/ }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a2');
+  });
+
+  it('the team form: gains green, losses amber (D-42), and a text equivalent for the line', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const form = document.querySelector('.ch-hm-form')!;
+    expect(form.textContent).toMatch(/73\.4/);
+    expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
+    // Putts up 0.3 is worse.
+    expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
+    expect(screen.getByRole('img', { name: /Team scoring, a five-round average/ })).toBeTruthy();
+  });
+
+  it('CH-2701 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
+    const user = userEvent.setup();
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    expect(sheet.querySelectorAll('table.ch-nine')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=theo');
+    expect(screen.getByRole('link', { name: 'Player stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+  });
+
+  it('CH-2303 a round posted as a total says so in its sheet', async () => {
+    const user = userEvent.setup();
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    await user.click(screen.getByRole('button', { name: /Jonah Okafor/ }));
+    await expectCode('CH-2303', /Posted as a total/);
+  });
+
+  it('CH-2309 nothing ahead: Up next says so, with quick types that open the editor on that type', () => {
+    const base = PREVIEW_HOME;
+    wrap(
+      <CoachHome
+        data={{ ...base, week: { ...base.week, agenda: [], days: base.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) }, phone: { ...base.phone, next: null, today: [], weekNote: null } }}
+        now={PREVIEW_HOME_NOW}
+      />,
+    );
+    expect(code('CH-2309')!.textContent).toMatch(/No events scheduled/);
+    expect(screen.getByRole('link', { name: 'Qualifier' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&type=qualifier');
+    expect(screen.getByRole('link', { name: 'Add event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+    // With nothing ahead, the week strip steps aside.
+    expect(screen.queryByRole('heading', { name: 'This week' })).toBeNull();
+  });
+
+  it('CH-2212 CH-2213 CH-2214 a phone section that crashes is contained; the hero stays', () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const p = PREVIEW_HOME.phone;
+    wrap(
+      <CoachHome
+        data={{ ...PREVIEW_HOME, phone: { ...p, next: { ...p.next!, type: "nope" as never }, today: null as never, form: { ...p.form!, line: null as never } } }}
+        now={PREVIEW_HOME_NOW}
+      />,
+    );
+    expect(code('CH-2213')).not.toBeNull();
+    expect(code('CH-2214')).not.toBeNull();
+    expect(code('CH-2212')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(PREVIEW_HOME.greeting);
+    quiet.mockRestore();
+  });
+
+  it('CH-2201 CH-2202 CH-2211 failed reads show notices on the phone, never empty states', () => {
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, week: { ...PREVIEW_HOME.week, error: true }, latestRounds: { rounds: [], error: true, holesError: false }, phone: { ...PREVIEW_HOME.phone, next: null, today: [], form: null } }} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2201')).not.toBeNull();
+    expect(code('CH-2202')).not.toBeNull();
+    expect(code('CH-2211')).not.toBeNull();
+    expect(code('CH-2302')).toBeNull();
+    expect(code('CH-2309')).toBeNull();
+  });
+});
+
+describe('Home · first run (v2 page empty state, D-71)', () => {
+  it('CH-2308 a team with nothing yet gets the first steps; the header’s actions step aside', () => {
+    const empty: ChCoachHome = {
+      ...PREVIEW_HOME,
+      week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
+      latestRounds: { rounds: [], error: false, holesError: false },
+      leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
+      phone: { next: null, today: [], form: null, weekNote: null },
+    };
+    wrap(<CoachHome data={empty} />);
+    expect(code('CH-2308')!.textContent).toMatch(/Your season starts here/);
+    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster');
+    expect(screen.getByRole('link', { name: 'Add an event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+    expect(screen.queryByRole('link', { name: /New event/ })).toBeNull();
+  });
+
+  it('a failed read is never taken for a first run', () => {
+    const nothing: ChCoachHome = {
+      ...PREVIEW_HOME,
+      week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
+      latestRounds: { rounds: [], error: false, holesError: false },
+      leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
+      phone: { next: null, today: [], form: null, weekNote: null },
+    };
+    expect(isFirstRun(nothing)).toBe(true);
+    expect(isFirstRun({ ...nothing, leaderboard: { ...nothing.leaderboard, error: true } })).toBe(false);
+    expect(isFirstRun({ ...nothing, latestRounds: { ...nothing.latestRounds, error: true } })).toBe(false);
+    expect(isFirstRun({ ...nothing, week: { ...nothing.week, error: true } })).toBe(false);
+  });
+});
+
+describe('Home · the team’s form (teamForm)', () => {
+  const r = (score: number, gir = 10, putts = 30) => ({ total_score: score, total_gir: gir, total_gir_possible: 18, total_putts: putts });
+  it('averages the last ten against the ten before, and compares greens and putts the same way', () => {
+    const f = teamForm([...Array.from({ length: 10 }, () => r(72, 12, 29)), ...Array.from({ length: 10 }, () => r(74, 9, 31))], 3)!;
+    expect(f.avg).toBe(72);
+    expect(f.delta).toBe(-2);
+    expect(Math.round(f.gir.pct!)).toBe(67);
+    expect(Math.round(f.gir.delta!)).toBe(17);
+    expect(f.putts.delta).toBe(-2);
+    expect(f.roundsThisWeek).toBe(3);
+    // Oldest to newest, a five-round moving average.
+    expect(f.line[0]).toBe(74);
+    expect(f.line[f.line.length - 1]).toBe(72);
+  });
+  it('makes no comparison with fewer than five rounds before, and nothing with no rounds', () => {
+    expect(teamForm(Array.from({ length: 12 }, () => r(73)), 0)!.delta).toBeNull();
+    expect(teamForm([], 0)).toBeNull();
   });
 });

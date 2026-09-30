@@ -19,7 +19,7 @@ import { usePhoneChromeState } from './phone-chrome';
  * the pushed variant instead (back link, centred title, one action), which
  * lands in the slot here. Settings lives in the More sheet on the phone (D-41).
  */
-export function TopBar({ item, pathname }: { item: ChNavItem | undefined; pathname: string }) {
+export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | undefined; pathname: string; teamName?: string | null }) {
   const pageTrail = useCrumbTrail();
   const { pageTop, immersive, setSlot } = usePhoneChromeState();
   const crumbs =
@@ -41,6 +41,11 @@ export function TopBar({ item, pathname }: { item: ChNavItem | undefined; pathna
       </nav>
       {/* The phone's tab-root title. Only one of it and the breadcrumbs is displayed at a width. */}
       <b className="ch-topbar__ptitle">{crumbs[crumbs.length - 1]}</b>
+      {/* The green hero's bar (usePhoneHero, the phone Home): the team in place of the title. */}
+      <span className="ch-topbar__team" aria-hidden="true">
+        <img src="/helm-main-logo-transparent-white-trim.png" alt="" width={22} height={22} />
+        {teamName ?? 'GolfHelm'}
+      </span>
       <div className="ch-topbar__pslot" ref={setSlot} />
       <div className="ch-topbar__actions">
         <Bell />

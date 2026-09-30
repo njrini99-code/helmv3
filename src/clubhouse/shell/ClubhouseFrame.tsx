@@ -67,7 +67,7 @@ export function ClubhouseFrame({
                 <div className="ch-app">
                   <Sidebar userData={userData} shell={shell} pathname={pathname} />
                   <div className="ch-canvas" id="ch-canvas">
-                    <TopBar item={item} pathname={pathname} />
+                    <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} />
                     <OfflineBanner />
                     <RouteFrame routeKey={pathname}>
                       {rebuilt ? children : <NotRebuilt label={item?.label ?? 'This page'} />}
@@ -86,7 +86,7 @@ export function ClubhouseFrame({
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
 function FrameRoot({ motionOff, children }: { motionOff: boolean; children: ReactNode }) {
-  const { immersive, noTabs } = usePhoneChromeState();
+  const { immersive, noTabs, hero } = usePhoneChromeState();
   return (
     <div
       className={`ch-root ${clubhouseFontVariables}`}
@@ -94,6 +94,7 @@ function FrameRoot({ motionOff, children }: { motionOff: boolean; children: Reac
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}
       data-phone-notabs={noTabs ? '' : undefined}
+      data-phone-hero={hero ? '' : undefined}
     >
       {children}
     </div>

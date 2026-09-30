@@ -1,6 +1,6 @@
 import 'server-only';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { loadCalendar, parseView } from '../data/calendar';
+import { loadCalendar, parseNewType, parseView } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { resolveClubhouseTeam } from './team';
@@ -11,7 +11,8 @@ import '../styles/calendar.css';
  * players see team events they can reply to and only their own classes.
  * `view`, `date` and `event` come from the URL so every state is linkable;
  * `new=1` opens the event editor (Home's New event); `with=<playerId>` makes it
- * a 1:1 with that player (Roster's Plan 1:1).
+ * a 1:1 with that player (Roster's Plan 1:1); `type=<practice|qualifier|…>`
+ * picks the new event's type (the phone Home's quick chips).
  */
 export async function ClubhouseCalendarRoute({
   view,
@@ -19,12 +20,14 @@ export async function ClubhouseCalendarRoute({
   event,
   isNew,
   withPlayer,
+  newType,
 }: {
   view?: string;
   date?: string;
   event?: string;
   isNew?: boolean;
   withPlayer?: string;
+  newType?: string;
 }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
@@ -40,5 +43,5 @@ export async function ClubhouseCalendarRoute({
     view: parseView(view),
     date,
   });
-  return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} />;
+  return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} />;
 }

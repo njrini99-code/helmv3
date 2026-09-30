@@ -1,11 +1,17 @@
-import { Users } from 'lucide-react';
+'use client';
+
+import { CalendarPlus, Flag, UserPlus, Users } from 'lucide-react';
 import type { ChCoachHome } from '../../data/home';
+import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
+import { useChPhone } from '../../lib/use-phone';
+import { rebuiltHref } from '../../shell/nav';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Week } from './Week';
 import { LatestRound } from './LatestRound';
 import { Leaderboard } from './Leaderboard';
 import { HomeActions } from './HomeActions';
+import { HomePhone } from './HomePhone';
 import '../../styles/home.css';
 
 /**
@@ -13,9 +19,12 @@ import '../../styles/home.css';
  * and the latest round in one lit sheet, then the season leaderboard. Calm
  * and not card-heavy (the owner rejected card grids and imagery).
  */
-export function CoachHome({ data }: { data: ChCoachHome }) {
+export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string }) {
+  const phone = useChPhone();
+  if (isFirstRun(data)) return <HomeFirstRun data={data} />;
+  if (phone) return <HomePhone data={data} now={now} />;
   return (
-    <main className="ch-h-main">
+    <main className="ch-h-main ch-h-main--desk">
       <header className="ch-h-head">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
@@ -33,6 +42,54 @@ export function CoachHome({ data }: { data: ChCoachHome }) {
       <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
         <Leaderboard data={data.leaderboard} />
       </SectionBoundary>
+    </main>
+  );
+}
+
+/**
+ * A team with nothing yet: no players, no events this week, no rounds, and
+ * every read answered (a failed read is never taken for "nothing yet").
+ */
+export function isFirstRun(data: ChCoachHome): boolean {
+  return (
+    !data.week.error &&
+    !data.latestRounds.error &&
+    !data.leaderboard.error &&
+    data.leaderboard.rosterSize === 0 &&
+    data.latestRounds.rounds.length === 0 &&
+    data.week.days.every((d) => d.eventCount === 0) &&
+    !data.phone.next
+  );
+}
+
+/** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.coach; D-71): the two first steps. */
+function HomeFirstRun({ data }: { data: ChCoachHome }) {
+  const roster = rebuiltHref('/golf/dashboard/roster');
+  return (
+    <main className="ch-h-main">
+      <header className="ch-h-head">
+        <span className="ch-h-head__date">{data.todayLabel}</span>
+        <h1 className="ch-display">{data.greeting}</h1>
+      </header>
+      <EmptyState
+        size="page"
+        code="CH-2308"
+        icon={Flag}
+        title="Your season starts here"
+        body="Add your players and your first event. Home fills in with replies, recent rounds and the leaderboard as the team plays."
+        action={
+          roster ? (
+            <Button variant="primary" leftIcon={UserPlus} href={roster}>
+              Invite players
+            </Button>
+          ) : undefined
+        }
+        secondaryAction={
+          <Button leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1">
+            Add an event
+          </Button>
+        }
+      />
     </main>
   );
 }

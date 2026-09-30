@@ -12,6 +12,8 @@ import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
  *                            and one action) in place of the tab root's title and bell
  *   usePhoneImmersive(open)  a pushed screen (a thread, details) covers the page, so the
  *                            shell's top bar and tab bar go inert
+ *   usePhoneHero(on)         a tab root drawn on the green hero (Home): the top bar turns
+ *                            green and shows the team in place of the page title
  *   usePhoneTabsHidden(on)   a full-page form (a create form) hides the tab bar, so its
  *                            submit in the top bar is the only way forward
  *   usePhoneStackHistory(depth, popTo)
@@ -29,6 +31,8 @@ interface Ctx {
   setImmersive: (fn: (n: number) => number) => void;
   noTabs: number;
   setNoTabs: (fn: (n: number) => number) => void;
+  hero: number;
+  setHero: (fn: (n: number) => number) => void;
 }
 
 const PhoneChromeCtx = createContext<Ctx>({
@@ -40,6 +44,8 @@ const PhoneChromeCtx = createContext<Ctx>({
   setImmersive: () => {},
   noTabs: 0,
   setNoTabs: () => {},
+  hero: 0,
+  setHero: () => {},
 });
 
 export function PhoneChromeProvider({ children }: { children: ReactNode }) {
@@ -47,14 +53,28 @@ export function PhoneChromeProvider({ children }: { children: ReactNode }) {
   const [pageTop, setPageTop] = useState(0);
   const [immersive, setImmersive] = useState(0);
   const [noTabs, setNoTabs] = useState(0);
-  const value = useMemo(() => ({ slot, setSlot, pageTop, setPageTop, immersive, setImmersive, noTabs, setNoTabs }), [slot, pageTop, immersive, noTabs]);
+  const [hero, setHero] = useState(0);
+  const value = useMemo(
+    () => ({ slot, setSlot, pageTop, setPageTop, immersive, setImmersive, noTabs, setNoTabs, hero, setHero }),
+    [slot, pageTop, immersive, noTabs, hero],
+  );
   return <PhoneChromeCtx.Provider value={value}>{children}</PhoneChromeCtx.Provider>;
 }
 
 /** For the shell: whether a page supplies the top bar, whether a pushed screen covers the page, and where the page's top bar goes. */
-export function usePhoneChromeState(): { pageTop: boolean; immersive: boolean; noTabs: boolean; setSlot: (el: HTMLElement | null) => void } {
-  const { pageTop, immersive, noTabs, setSlot } = useContext(PhoneChromeCtx);
-  return { pageTop: pageTop > 0, immersive: immersive > 0, noTabs: noTabs > 0, setSlot };
+export function usePhoneChromeState(): { pageTop: boolean; immersive: boolean; noTabs: boolean; hero: boolean; setSlot: (el: HTMLElement | null) => void } {
+  const { pageTop, immersive, noTabs, hero, setSlot } = useContext(PhoneChromeCtx);
+  return { pageTop: pageTop > 0, immersive: immersive > 0, noTabs: noTabs > 0, hero: hero > 0, setSlot };
+}
+
+/** While `on`, the phone top bar is the green hero's bar (the v2 phone Home): the team and the bell, on green. */
+export function usePhoneHero(on: boolean): void {
+  const { setHero } = useContext(PhoneChromeCtx);
+  useEffect(() => {
+    if (!on) return;
+    setHero((n) => n + 1);
+    return () => setHero((n) => n - 1);
+  }, [on, setHero]);
 }
 
 /** While `on`, the phone tab bar is hidden: a full-page form whose Cancel and submit sit in the top bar. */

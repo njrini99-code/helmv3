@@ -49,6 +49,10 @@ const TYPES: ReadonlySet<string> = new Set(['practice', 'qualifier', 'tournament
 export function parseView(v: string | undefined): ChCalView {
   return v === 'day' || v === 'month' || v === 'agenda' ? v : 'week';
 }
+/** A new event's type from the URL: one a coach can create, else none (the editor's default). */
+export function parseNewType(v: string | undefined): ChCalType | undefined {
+  return v === 'practice' || v === 'qualifier' || v === 'tournament' || v === 'meeting' || v === 'travel' || v === 'other' ? v : undefined;
+}
 export function parseDate(v: string | undefined, fallback: string): string {
   return v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T12:00:00Z`)) ? v : fallback;
 }

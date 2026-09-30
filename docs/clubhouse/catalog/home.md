@@ -22,6 +22,10 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 | CH-2208 | The team chat doesn't load | Nothing looks broken: Message team opens Messages instead of the team chat | `loadCoachHome` → `teamChatId: null`; logged `clubhouse.home.team chat` | home.test › CH-2208 |
 | CH-2209 | Event replies don't load | Agenda rows keep their place and drop who is invited and "5 of 6 confirmed", never "0 players" | `loadCoachHome`; logged `clubhouse.home.attendance` | home.test › CH-2209 |
 | CH-2210 | The team's timezone doesn't load | The date, greeting and week are read in Eastern time (the product default) | `loadCoachHome`; logged `clubhouse.home.timezone` | home.test › CH-2210 |
+| CH-2211 | The team's form doesn't load (phone) | "Team scoring didn't load." + "Posted rounds are safe. Try again; the error has been reported." in place of the form card | `HomePhone`, `RefreshNotice` | home.test › CH-2211 |
+| CH-2212 | The team's form crashes while drawing (phone) | "Team scoring couldn't be shown." The rest of Home stays | `SectionBoundary home.form` | home.test › CH-2212 |
+| CH-2213 | Up next crashes while drawing (phone) | "Up next couldn't be shown." inside the hero; the greeting stays | `SectionBoundary home.upNext` | home.test › CH-2213 |
+| CH-2214 | Today crashes while drawing (phone) | "Today couldn't be shown." | `SectionBoundary home.today` | home.test › CH-2214 |
 
 ## 23xx Empty
 
@@ -34,6 +38,8 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 | CH-2305 | Players, but no 18-hole rounds | "No 18-hole rounds this season yet." + "6 players are on the roster. The leaderboard fills in as rounds are posted." | `Leaderboard` | home.test › CH-2305 |
 | CH-2306 | A player has fewer than three rounds | "Early read" in the SG column, with "Strokes gained appears after three rounds" on hover | `Leaderboard` | home.test › CH-2306 |
 | CH-2307 | A coach with no active team | The page empty state (v2 medallion): "You aren't on a team yet" + what Home shows once they are | `CoachHomeNoTeam` | home.test › CH-2307 |
+| CH-2308 | A team with nothing yet: no players, no events this week, no rounds, and every read answered | The v2 page empty state (gh-states.jsx `EMPTY.home.coach`, D-71): "Your season starts here" + "Add your players and your first event…" Invite players (Roster) and Add an event (Calendar's editor); the header's actions step aside | `HomeFirstRun` in `CoachHome` | home.test › CH-2308 |
+| CH-2309 | Nothing on the calendar ahead (phone) | Up next reads "No events scheduled" + what the card will hold, with Practice, Qualifier, Tournament and Meeting (each opens the editor on that type, `?new=1&type=`) and Add event. The week strip steps aside | `NoEvents` in `HomePhone` | home.test › CH-2309 |
 
 ## 24xx Loading
 

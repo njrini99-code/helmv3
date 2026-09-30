@@ -80,6 +80,42 @@ export interface ChLeaderRow {
   quietDays: number | null;
 }
 
+/** One team event as the phone Home draws it (Up next and Today). */
+export interface ChHomeEvent {
+  id: string;
+  title: string;
+  type: 'practice' | 'qualifier' | 'tournament' | 'meeting' | 'travel' | 'other';
+  /** Team-local date, YYYY-MM-DD. */
+  date: string;
+  startIso: string;
+  endIso: string | null;
+  allDay: boolean;
+  /** "3:30 PM" */
+  startLabel: string;
+  /** "3:30 – 5:30 PM", or "All day" */
+  rangeLabel: string;
+  location: string | null;
+  /** Invitees' names, in roster order; null when replies didn't load (CH-2209). */
+  invitees: string[] | null;
+  /** Accepted replies; null when replies didn't load. */
+  going: number | null;
+  /** Overlaps another of today's timed events. */
+  conflict: boolean;
+}
+
+/** The team's scoring form (phone Home): the last ten 18-hole rounds against the ten before. */
+export interface ChTeamForm {
+  avg: number;
+  /** Against the previous ten; null with fewer than five rounds to compare. */
+  delta: number | null;
+  /** A five-round moving average, oldest to newest, for the line. */
+  line: number[];
+  roundsThisWeek: number;
+  /** Greens in regulation, percent; delta in points. */
+  gir: { pct: number | null; delta: number | null };
+  putts: { avg: number | null; delta: number | null };
+}
+
 export interface ChCoachHome {
   greeting: string;
   /** The team chat to open from "Message team"; null opens Messages. */
@@ -91,6 +127,16 @@ export interface ChCoachHome {
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
   latestRounds: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
   leaderboard: { rows: ChLeaderRow[]; scorecards: number; rosterSize: number; error: boolean };
+  /** The phone Home's extra reads (docs/clubhouse/phone/home.md). Each follows its source's error flag. */
+  phone: {
+    /** The next team event from now, today or later in the loaded window. */
+    next: ChHomeEvent | null;
+    today: ChHomeEvent[];
+    /** Null when there are no 18-hole rounds or the rounds didn't load. */
+    form: ChTeamForm | null;
+    /** The first competition later this week, for the week strip's note. */
+    weekNote: { weekday: string; title: string } | null;
+  };
 }
 
 const COMPETITION_TYPES = new Set(['tournament', 'qualifier']);
@@ -197,13 +243,15 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const todays = events.filter((e) => e.localDate === today);
   const later = events.filter((e) => e.localDate > today && e.localDate <= weekEnd && COMPETITION_TYPES.has(e.event_type));
   const nextId = todays.find((e) => new Date(e.end_time ?? e.start_time) > now)?.id;
+  // The phone's Up next: the first event not over yet, today or after (the window runs a day past the week).
+  const upcoming = events.find((e) => e.localDate >= today && new Date(e.end_time ?? e.start_time) > now) ?? null;
 
   // Who is invited, and who has said yes, for the rows shown. A failed read
   // drops the counts and names, never shows "0 players".
   const invited = new Map<string, string[]>();
   const accepted = new Map<string, number>();
   let attendanceError = false;
-  for (const ids of chunkIds([...todays, ...later].map((e) => e.id))) {
+  for (const ids of chunkIds([...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))])) {
     const { data, error } = await fetchAllRowsResult((from, to) =>
       supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
     );
@@ -244,6 +292,31 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   ];
   const nextComp = [...todays, ...later].find((e) => COMPETITION_TYPES.has(e.event_type) && new Date(e.end_time ?? e.start_time) > now);
   const longDay = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' });
+
+  // ── Phone: Up next and Today ──
+  const clockAmPm = (iso: string) => timeFmt.format(new Date(iso));
+  const timed = todays.filter((e) => !e.all_day && e.end_time);
+  const overlaps = (e: (typeof events)[number]) =>
+    !e.all_day && !!e.end_time && timed.some((o) => o.id !== e.id && new Date(o.start_time) < new Date(e.end_time!) && new Date(e.start_time) < new Date(o.end_time!));
+  const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
+    const ids = inviteesOf(e.id);
+    return {
+      id: e.id,
+      title: e.title,
+      type: HOME_TYPES.has(e.event_type) ? (e.event_type as ChHomeEvent['type']) : 'other',
+      date: e.localDate,
+      startIso: e.start_time,
+      endIso: e.end_time,
+      allDay: !!e.all_day,
+      startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
+      rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
+      location: e.location,
+      invitees: ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null,
+      going: ids ? (accepted.get(e.id) ?? 0) : null,
+      conflict: e.localDate === today && overlaps(e),
+    };
+  };
+  const firstLater = later.find((e) => e.localDate > today);
 
   // ── Season rounds ──
   let roundsError = !!rosterRes.error;
@@ -323,6 +396,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   }
   rows.sort((a, b) => a.avg - b.avg || b.rounds - a.rounds);
 
+  // ── Phone: the team's form ──
+  const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
+
   return {
     greeting: `${greeting}, ${firstName}.`,
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
@@ -334,5 +410,53 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     week: { days, agenda, error: !!eventsRes.error },
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: full.length, rosterSize: roster.length, error: roundsError },
+    phone: {
+      next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
+      today: eventsRes.error ? [] : todays.map(toPhone),
+      form,
+      weekNote: firstLater ? { weekday: longDay.format(new Date(firstLater.start_time)), title: firstLater.title } : null,
+    },
+  };
+}
+
+const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other']);
+
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+
+/**
+ * The team's form from its 18-hole rounds, newest first: the scoring average
+ * of the last ten against the ten before, greens and putts the same way, and
+ * a five-round moving average for the line. Exported for the tests.
+ */
+export function teamForm(
+  full: Array<{ total_score: number | null; total_gir: number | null; total_gir_possible: number | null; total_putts: number | null }>,
+  roundsThisWeek: number,
+): ChTeamForm | null {
+  const scored = full.filter((r) => r.total_score != null);
+  if (!scored.length) return null;
+  const last = scored.slice(0, 10);
+  const prev = scored.slice(10, 20);
+  const avgOf = (list: typeof scored) => mean(list.map((r) => r.total_score as number));
+  const girOf = (list: typeof scored) => {
+    const withGir = list.filter((r) => r.total_gir != null && r.total_gir_possible);
+    const possible = withGir.reduce((a, r) => a + (r.total_gir_possible as number), 0);
+    return possible ? (withGir.reduce((a, r) => a + (r.total_gir as number), 0) / possible) * 100 : null;
+  };
+  const puttsOf = (list: typeof scored) => mean(list.filter((r) => r.total_putts != null).map((r) => r.total_putts as number));
+  const avg = avgOf(last) as number;
+  const comparable = prev.length >= 5;
+  const gir = girOf(last);
+  const prevGir = comparable ? girOf(prev) : null;
+  const putts = puttsOf(last);
+  const prevPutts = comparable ? puttsOf(prev) : null;
+  const window = scored.slice(0, 20).reverse();
+  const line = window.length >= 5 ? window.slice(4).map((_, i) => mean(window.slice(i, i + 5).map((r) => r.total_score as number)) as number) : window.map((r) => r.total_score as number);
+  return {
+    avg,
+    delta: comparable ? avg - (avgOf(prev) as number) : null,
+    line,
+    roundsThisWeek,
+    gir: { pct: gir, delta: gir != null && prevGir != null ? gir - prevGir : null },
+    putts: { avg: putts, delta: putts != null && prevPutts != null ? putts - prevPutts : null },
   };
 }

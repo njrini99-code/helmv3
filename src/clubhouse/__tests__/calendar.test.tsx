@@ -43,7 +43,8 @@ vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getE
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.markAttendance }));
 
-import type { ChCalendarData } from '../data/calendar';
+import { parseNewType, type ChCalendarData } from '../data/calendar';
+import type { ChCalType } from '../screens/calendar/model';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
@@ -57,7 +58,7 @@ async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
 }
-function wrap(data: ChCalendarData, props: { initialEvent?: string; initialNew?: boolean; initialWith?: string } = {}) {
+function wrap(data: ChCalendarData, props: { initialEvent?: string; initialNew?: boolean; initialWith?: string; initialType?: ChCalType } = {}) {
   return render(
     <LazyMotion features={domAnimation}>
       <ToastProvider>
@@ -85,6 +86,17 @@ beforeEach(() => {
   a.getCalendarFeeds.mockResolvedValue({ success: true, data: [] });
   a.getDocuments.mockResolvedValue({ success: true, data: [] });
   a.getAttendanceReport.mockResolvedValue({ success: true, data: { attendance: [] } });
+});
+
+describe('Calendar · new event deep link', () => {
+  it('?new=1&type= opens the editor on that type (the phone Home’s quick chips); an unknown type is ignored', async () => {
+    wrap(cal(), { initialNew: true, initialType: 'qualifier' });
+    const chosen = await screen.findByRole('radio', { name: /Qualifier/ });
+    expect(chosen.getAttribute('aria-checked')).toBe('true');
+    expect(parseNewType('qualifier')).toBe('qualifier');
+    expect(parseNewType('class')).toBeUndefined();
+    expect(parseNewType('<script>')).toBeUndefined();
+  });
 });
 
 describe('Calendar · saves that fail', () => {
