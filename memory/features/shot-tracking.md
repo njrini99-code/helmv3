@@ -142,7 +142,7 @@ be 1000 yards or less.", `code: 'hole_invalid'`) instead of the raw
 `result.error` on the `hole_invalid` result is the bare key `'hole_invalid'`,
 not a sentence — same shape as `'round_missing'`, `'conflict'`, `'busy'`.
 Both "Save & Exit" flows (the new-round engine's, `use-new-round-session.ts`, and
-`continue-round-client.tsx`'s `handleSaveForLater`) branch on
+the continue engine's, `use-continue-round-session.ts`, `handleSaveForLater`) branch on
 `result.error === 'hole_invalid'` and surface `result.message` instead,
 matching the class of defect P1 fixed for `round_missing` — a client that
 throws/toasts `result.error` unconditionally renders the literal key.
@@ -223,7 +223,8 @@ had moved past this device's own last known checkpoint (a poll-detected
 staleness, or an explicit `conflict` result from a save). That resync made
 the NEXT save from this now-stale device pass the optimistic lock and
 overwrite the other device's holes/shots with this device's outdated
-in-memory state, with no warning. Fixed in both `continue-round-client.tsx`
+in-memory state, with no warning. Fixed in both the continue engine
+(`use-continue-round-session.ts`, moved out of `continue-round-client.tsx` on 2026-09-30)
 and the new-round engine (`use-new-round-session.ts`, moved out of `new-round-client.tsx` on 2026-09-30): `use-round-status-sync.ts` no longer updates the
 ref when its own staleness check is positive — it only invokes the new
 `onRoundStale` callback (previously unwired in both screens). Both screens'
@@ -383,7 +384,8 @@ the hole index the checkpoint started on.
 - `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` (the new-round screen)
 - `src/lib/golf/round-session/use-new-round-session.ts` (the new-round engine the screen calls: setup, holes, tracking, autosave, recovery, submit; moved out of the screen 2026-09-30). A second renderer starts a round with `start(form)`: it runs over the form it is handed (not state), then the engine runs under that form. The screen's Back to setup, Change course and submit-overlay actions live in the engine too. Its routes and error-log tags are optional inputs (`routes.ts`) that default to the Fairway values.
-- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
+- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx` (the continue-round screen)
+- `src/lib/golf/round-session/use-continue-round-session.ts` (the continue-round engine the screen calls: resume tracking, autosave, recovery, submit; moved out of the screen 2026-09-30)
 - `src/components/fairway/pages/rounds-tracking/**`
 - `src/components/fairway/pages/rounds-recover/**`
 
