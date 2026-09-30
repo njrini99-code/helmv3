@@ -1331,3 +1331,22 @@ button.ch-more__row[disabled] {
   color: var(--ch-warning-600);
   text-align: center;
 }
+
+/* Print (Calendar's More › Print week): the page alone, unclipped, without the frame, sidebar, top bar or tabs. */
+@media print {
+  .ch-app {
+    display: block;
+    height: auto;
+    background: none;
+  }
+  .ch-canvas {
+    margin: 0;
+    overflow: visible;
+    border-radius: 0;
+  }
+  .ch-sidebar,
+  .ch-topbar,
+  .ch-tabbar {
+    display: none !important;
+  }
+}

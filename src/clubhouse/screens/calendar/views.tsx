@@ -80,6 +80,7 @@ function EventBlock({
   return (
     <button
       type="button"
+      data-print-visible
       className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${sel ? ' is-sel' : ''}`}
       style={{ top, height: h, left: `calc(${w * lane}% + 3px)`, width: `calc(${w}% - ${lanes > 1 ? 4 : 6}px)` }}
       aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}`}
@@ -133,6 +134,7 @@ export function TimeGrid({
           <button
             key={d}
             type="button"
+            data-print-visible
             className={'ch-wk__day' + (d === now.date ? ' is-today' : '')}
             onClick={() => {
               haptic('select');
@@ -155,6 +157,7 @@ export function TimeGrid({
                 <button
                   key={e.id}
                   type="button"
+                  data-print-visible
                   className={`ch-ev-bar ch-ev--${e.type}${selId === e.id ? ' is-sel' : ''}`}
                   aria-pressed={selId === e.id}
                   onClick={() => {
@@ -229,6 +232,7 @@ export function MonthView({
             <button
               key={date}
               type="button"
+              data-print-visible
               className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : '') + (date === selDate ? ' is-sel' : '')}
               aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${evs.length} ${evs.length === 1 ? 'event' : 'events'}` : 'no events'}`}
               aria-pressed={date === selDate}
@@ -301,6 +305,7 @@ export function AgendaView({
             <button
               key={e.id}
               type="button"
+              data-print-visible
               className={'ch-ag__row' + (selId === e.id ? ' is-sel' : '') + (e.type === 'class' || e.type === 'busy' ? ' is-class' : '')}
               aria-pressed={selId === e.id}
               onClick={() => {

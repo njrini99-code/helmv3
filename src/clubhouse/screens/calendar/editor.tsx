@@ -42,6 +42,8 @@ export interface EditorSeed {
   /** A new event's type and invitees (Roster's Plan 1:1). Ids the Calendar doesn't list are dropped, never widened to the team. */
   type?: ChCalType;
   invite?: string[];
+  /** Duplicate (the event's More menu): a new event with this one's title, type, day, time, place, notes and invitees. */
+  copyOf?: ChCalEvent;
 }
 
 function FindTime({
@@ -214,6 +216,7 @@ export function EventEditor({
     if (!seed) return;
     const { people, today } = latest.current;
     const e = seed.event;
+    const c = seed.copyOf;
     const init = e
       ? {
           title: e.title,
@@ -225,16 +228,28 @@ export function EventEditor({
           notes: e.notes ?? '',
           invited: e.people,
         }
-      : {
-          title: '',
-          type: seed.type ?? ('practice' as ChCalType),
-          date: seed.date ?? today,
-          win: [15.5, 17.5] as [number, number],
-          allDay: false,
-          loc: '',
-          notes: '',
-          invited: seed.invite ? seed.invite.filter((id) => people.some((p) => p.id === id)) : people.map((p) => p.id),
-        };
+      : c
+        ? {
+            title: c.title,
+            type: (c.type === 'class' ? 'practice' : c.type) as ChCalType,
+            date: seed.date ?? c.date,
+            win: [c.start ?? 8, c.end ?? 17] as [number, number],
+            allDay: c.allDay,
+            loc: c.location ?? '',
+            notes: c.notes ?? '',
+            // Invitees the Calendar no longer lists (a player who left) are dropped, never widened to the team.
+            invited: c.people.filter((id) => people.some((p) => p.id === id)),
+          }
+        : {
+            title: '',
+            type: seed.type ?? ('practice' as ChCalType),
+            date: seed.date ?? today,
+            win: [15.5, 17.5] as [number, number],
+            allDay: false,
+            loc: '',
+            notes: '',
+            invited: seed.invite ? seed.invite.filter((id) => people.some((p) => p.id === id)) : people.map((p) => p.id),
+          };
     setTitle(init.title);
     setType(init.type);
     setDate(init.date);
@@ -247,7 +262,7 @@ export function EventEditor({
     setBaseline(seed.proposal ? '' : snapshot({ ...init, repeat: 'none' }));
     setDiscarding(false);
     setRepeat('none');
-    setUntil(addDays(seed.date ?? today, 56));
+    setUntil(addDays(init.date, 56));
     setScope('this');
     setTouched(false);
   }, [seed]);

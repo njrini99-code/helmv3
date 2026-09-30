@@ -101,7 +101,8 @@ axe exception is the 7-day week at 390px, which the phone build replaces.
 ## Data assumptions
 
 Only data the app has. Not shown because no source exists: a Workout type (practices stand in, D-11),
-Print week, Duplicate, Message invitees (Q-67).
+Message invitees (Q-67). Print week (More, the browser's print with the shell and tools dropped) and
+Duplicate (Event actions, New event seeded from the event) were built 2026-09-30 (CLICKABLES gaps 9 and 15).
 
 ## Existing backend capabilities used
 
@@ -131,7 +132,7 @@ D-11 (types are the database's), D-22 (the phone board is the spec), D-47 and D-
 
 ## Explicit non-goals
 
-Two-way sync with a calendar app (the links are one-way), a Workout type, Print week, Duplicate, Message
+Two-way sync with a calendar app (the links are one-way), a Workout type, Message
 invitees, and a first-run page empty state for a team that has never scheduled anything (D-71 names it;
 it is not built yet, and an empty range still draws the grid).
 

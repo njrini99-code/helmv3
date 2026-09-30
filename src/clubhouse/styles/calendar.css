@@ -326,6 +326,25 @@
   box-shadow: var(--ch-shadow-sm);
 }
 
+/* Print (More › Print week): the view as it is, without the tools; shell.css drops the shell's chrome. */
+@media print {
+  .ch-cal {
+    max-width: none;
+    padding: 0;
+  }
+  .ch-cal-tools,
+  .ch-cal-step,
+  .ch-cal-jump {
+    display: none !important;
+  }
+  .ch-cal-surface {
+    box-shadow: none;
+  }
+  .ch-wk {
+    overflow: visible;
+  }
+}
+
 /* Week and day grid */
 .ch-wk {
   padding: 10px 10px 0;

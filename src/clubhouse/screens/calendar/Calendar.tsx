@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Rss, TriangleAlert, Users } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
@@ -56,6 +56,7 @@ function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; t
         <span className="ch-cal-jump__nav">
           <IconButton icon={ChevronLeft} label="Previous month" size="sm" onClick={() => setMonth(addMonths(month, -1))} />
           <IconButton icon={ChevronRight} label="Next month" size="sm" onClick={() => setMonth(addMonths(month, 1))} />
+          <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
         </span>
       </div>
       <div className="ch-cal-jump__grid">
@@ -319,11 +320,14 @@ export function Calendar({
     },
     onEdit: (e, proposal) => setEditor({ event: e, proposal }),
     onCancel: (e) => setCancelling(e),
+    onDuplicate: (e) => setEditor({ event: null, copyOf: e }),
     refresh,
   };
 
   const moreItems = [
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
+    // The board's Print week: the browser's print of what is on screen; the print rules (calendar.css, shell.css) drop the chrome.
+    { label: `Print ${view}`, icon: Printer, onSelect: () => window.print() },
     ...(coach ? [{ label: 'Add busy time', icon: Lock, onSelect: () => setBusyOpen(true) }] : []),
     ...(coach && overlaps.length ? [{ label: `Overlaps · ${overlaps.length}`, icon: TriangleAlert, onSelect: () => setInsp({ kind: 'overlap' as const, id: overlaps[0]!.id }) }] : []),
   ];

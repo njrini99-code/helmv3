@@ -8,6 +8,7 @@ import {
   CircleX,
   ClipboardCheck,
   Clock,
+  Copy,
   Ellipsis,
   Link2,
   Lock,
@@ -78,6 +79,8 @@ export interface InspCtx {
   go: (next: ChInsp) => void;
   onEdit: (e: ChCalEvent, proposal?: [number, number]) => void;
   onCancel: (e: ChCalEvent) => void;
+  /** Duplicate: New event seeded from this one (coach). Absent where the editor isn't offered. */
+  onDuplicate?: (e: ChCalEvent) => void;
   refresh: () => void;
 }
 
@@ -384,6 +387,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           label="Event actions"
           items={[
             { label: 'Copy link', icon: Link2, onSelect: () => void copyLink() },
+            ...(coach && ctx.onDuplicate ? [{ label: 'Duplicate', icon: Copy, onSelect: () => ctx.onDuplicate!(e) }] : []),
             ...(coach && e.canEdit && !e.cancelled
               ? ([{ kind: 'separator' }, { label: 'Cancel event', icon: CircleX, danger: true, onSelect: () => ctx.onCancel(e) }] as const)
               : []),

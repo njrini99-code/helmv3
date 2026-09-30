@@ -174,6 +174,22 @@ describe('Calendar · saves that fail', () => {
     expect(hapticSpy).toHaveBeenCalledWith('warning');
   });
 
+  it("Duplicate opens New event with the event's title, type, day, time, place and invitees, and publishes a new event", async () => {
+    const user = userEvent.setup();
+    a.createGolfEvent.mockResolvedValue({ success: true });
+    wrap(cal(), { initialEvent: 'e9' });
+    await eventMenu(user, 'Duplicate');
+    await screen.findByRole('button', { name: 'Publish event' });
+    expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Travel briefing');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
+    const sent = a.createGolfEvent.mock.calls[0]![0] as Record<string, unknown>;
+    expect(sent).toMatchObject({ title: 'Travel briefing', eventType: 'meeting', startTime: '13:30', endTime: '14:15', location: 'Team room' });
+    expect(String(sent.startDate)).toMatch(/-15$/);
+    expect((sent.attendeeIds as string[]).length).toBe(PREVIEW_CALENDAR.people.length);
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+  });
+
   it('CH-6501 CH-6002 cancelling asks first; a failed cancel says so', async () => {
     const user = userEvent.setup();
     a.deleteGolfEvent.mockImplementation(fail);
@@ -595,6 +611,34 @@ const openMore = async (user: User, item: RegExp) => {
 };
 const dialogOpen = () => document.querySelector('dialog[open]') !== null;
 const noDialogOpen = () => expect(dialogOpen()).toBe(false);
+
+describe('Calendar · Print and the jump panel', () => {
+  beforeEach(freezeClock);
+  afterEach(() => vi.useRealTimers());
+
+  it("More › Print week prints what is on screen (the board's Print week), and names the view it prints", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+    try {
+      wrap(cal());
+      await openMore(user, /^Print week$/);
+      expect(print).toHaveBeenCalledTimes(1);
+    } finally {
+      print.mockRestore();
+    }
+  });
+
+  it('the jump panel has its own Close, as Esc and an outside click do', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    wrap(cal());
+    const title = screen.getByRole('button', { name: /Jump to a date/ });
+    await user.click(title);
+    const panel = screen.getByRole('dialog', { name: 'Jump to a date' });
+    await user.click(within(panel).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog', { name: 'Jump to a date' })).toBeNull();
+    expect(title.getAttribute('aria-expanded')).toBe('false');
+  });
+});
 
 describe('Calendar · the failure toast’s Retry', () => {
   beforeEach(freezeClock);
@@ -1124,7 +1168,8 @@ describe('Calendar · what each role is given', () => {
     expect(menuItems()).toEqual(['Copy link']);
     await user.keyboard('{Escape}');
     await user.click(screen.getByRole('button', { name: 'More' }));
-    expect(menuItems()).toEqual(['Add to calendar app']);
+    // Printing is not planning: a player prints their week too.
+    expect(menuItems()).toEqual(['Add to calendar app', 'Print week']);
     player.unmount();
     // The same address, for a coach.
     wrap(cal(), seeded);
