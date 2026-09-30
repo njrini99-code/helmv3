@@ -253,6 +253,8 @@ $function$;
 CREATE OR REPLACE FUNCTION public.calculate_round_strokes_gained(p_round_id uuid)
  RETURNS TABLE(sg_total numeric, sg_tee numeric, sg_approach numeric, sg_around_green numeric, sg_putting numeric)
  LANGUAGE plpgsql
+ -- search_path is set just below; the rule mis-anchors on a header comment (owner-approved 2026-09-30).
+ -- nosemgrep: helmv3-security-definer-without-search-path
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
