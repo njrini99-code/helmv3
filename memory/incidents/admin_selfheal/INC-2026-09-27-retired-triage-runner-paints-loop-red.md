@@ -2,7 +2,7 @@
 
 - Feature: `admin_selfheal`
 - Surface: `/admin/errors` loop view (self-heal circuit), and repair-contract STEP 0b
-- Status: FIXED on main in 1a326692d (#2081), awaiting deploy; RECURRED 2026-09-30 under `metadata.runner`, fixed on `agent/health-20260930-0955` (PR pending)
+- Status: FIXED on main in 1a326692d (#2081), awaiting deploy; RECURRED 2026-09-30 under `metadata.runner`, fixed in ec225fe22 (#2103, pending merge)
 - Risk: R1. Read-model only. No schema, RLS, grant or data change.
 - Signal: `background_job_logs` `selfheal-triage` rows with `status = 'failed'` and `metadata.method = 'claude-code-cloud-session'` at 2026-09-25 09:05Z, 2026-09-26 09:09Z and 2026-09-27 09:20Z, each a few minutes after a completed `vercel-cron` Diagnose run.
 

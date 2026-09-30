@@ -255,8 +255,8 @@ items:
     incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: ec225fe22ce5d42995b98d6667135733ba043641
+    pr: 2103
     regression_tests:
       - src/lib/admin/__tests__/selfheal-registry.test.ts
     queued_for_release: false
