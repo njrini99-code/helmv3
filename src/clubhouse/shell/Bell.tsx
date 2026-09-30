@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, m } from 'framer-motion';
-import { Bell as BellIcon, BellOff, ChevronDown, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, type LucideIcon } from 'lucide-react';
+import { Bell as BellIcon, BellOff, ChevronDown, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -25,8 +25,10 @@ import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
 import { Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
-import { CH_POP } from '../lib/motion';
+import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { useSheetDrag } from '../lib/sheet-drag';
+import { useChPhone } from '../lib/use-phone';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
 
@@ -35,7 +37,9 @@ import { useAction, type ServerResult } from '../lib/use-action';
  * current app's bell (`getUnifiedNotifications`, the 45s badge poll in
  * NotificationBadgeProvider, mark one or all read), in Clubhouse's voice.
  * The list is fetched when the panel opens; a warm list stays on screen
- * while it refreshes.
+ * while it refreshes. On the phone the panel is a sheet (MOBILE.md: popovers
+ * become sheets): it rises over a scrim, is modal (CH-1811), and drags shut
+ * (CH-1611).
  */
 
 export interface ChBellApi {
@@ -101,6 +105,7 @@ export function Bell() {
   const router = useRouter();
   const id = useId();
   const reduced = useChReducedMotion();
+  const phone = useChPhone();
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -115,6 +120,8 @@ export function Bell() {
     setOpen(false);
     if (focus) btn.current?.focus();
   }, []);
+  const closeSheet = useCallback(() => close(), [close]);
+  const drag = useSheetDrag(panel, closeSheet, { enabled: phone && !reduced });
 
   useEffect(() => {
     if (!open) return;
@@ -159,7 +166,22 @@ export function Bell() {
       if (t instanceof Element && t.closest('.ch-menu')) return;
       if (!panel.current?.contains(t) && !btn.current?.contains(t)) close(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector('.ch-menu') && close();
+    const onKey = (e: KeyboardEvent) => {
+      if (document.querySelector('.ch-menu')) return;
+      if (e.key === 'Escape') close();
+      // The phone sheet is modal: Tab stays inside it.
+      if (e.key === 'Tab' && phone && panel.current) {
+        const all = [...panel.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]')];
+        const first = all[0];
+        const last = all[all.length - 1];
+        const at = document.activeElement;
+        if (!first || !last) return;
+        if (!panel.current.contains(at) || (e.shiftKey && at === first) || (!e.shiftKey && at === last)) {
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus();
+        }
+      }
+    };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
     requestAnimationFrame(() => panel.current?.focus());
@@ -167,7 +189,7 @@ export function Bell() {
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open, close]);
+  }, [open, close, phone]);
 
   const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
 
@@ -189,6 +211,99 @@ export function Bell() {
   const counts = countByCategory(list);
   const cats = NOTIFICATION_CATEGORY_IDS.filter((c) => counts[c] > 0);
   const groups = groupByDayBucket(list.filter((i) => itemMatchesFilter(i, filter)));
+
+  const filterMenu = cats.length > 1 && (
+    <Menu
+      label="Show notifications"
+      items={[
+        { label: 'All', checked: filter === 'all', onSelect: () => setFilter('all') },
+        ...cats.map((c) => ({ label: CATEGORY[c].label, icon: CATEGORY[c].icon, checked: filter === c, onSelect: () => setFilter(c) })),
+      ]}
+      trigger={(p) => (
+        <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm ch-bellp__filter" aria-label={`Show ${filter === 'all' ? 'all' : CATEGORY[filter].label}`} {...p}>
+          {filter === 'all' ? 'All' : CATEGORY[filter].label}
+          <Icon icon={ChevronDown} size={13} />
+        </button>
+      )}
+    />
+  );
+  const markAllButton = (
+    <Button
+      size="sm"
+      variant="ghost"
+      disabled={unread === 0 || markAll.pending}
+      onClick={async () => {
+        const before = items;
+        const at = new Date().toISOString();
+        setItems((prev) => prev?.map((i) => ({ ...i, read_at: i.read_at ?? at })) ?? prev);
+        const r = await markAll.run();
+        if (r.success) api.refetchCount();
+        else setItems(before);
+      }}
+    >
+      Mark all read
+    </Button>
+  );
+  const body = (
+    <div className="ch-bellp__body">
+      {failed && !items?.length ? (
+        <InlineNotice code="CH-1201" title="Notifications didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
+      ) : items === null ? (
+        <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
+          {[0, 1, 2, 3].map((k) => (
+            <div key={k} className="ch-bellp__skelrow">
+              <Skeleton width={32} height={32} radius={9} />
+              <span>
+                <Skeleton width="70%" height={12} />
+                <Skeleton width="45%" height={10} />
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="ch-bellp__empty" data-ch-code={filter === 'all' ? 'CH-1302' : 'CH-1303'}>
+          <Icon icon={BellOff} size={18} />
+          <b>{filter === 'all' ? "You're all caught up." : 'Nothing of this kind.'}</b>
+          <span>{filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}</span>
+          {filter !== 'all' && (
+            <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
+              Show all
+            </Button>
+          )}
+        </div>
+      ) : (
+        groups.map((g) => (
+          <section key={g.bucket} aria-label={DAY_BUCKET_LABEL[g.bucket]}>
+            <div className="ch-bellp__day">{DAY_BUCKET_LABEL[g.bucket]}</div>
+            {g.items.map((item) => {
+              const cat = CATEGORY[item.category] ?? CATEGORY.messages;
+              const unreadRow = isUnread(item);
+              return (
+                <button key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
+                  <span className="ch-bellp__ic">
+                    <Icon icon={cat.icon} size={15} />
+                  </span>
+                  <span className="ch-bellp__main">
+                    <span className="ch-bellp__top">
+                      <b>
+                        {unreadRow && <span className="ch-sr-only">Unread: </span>}
+                        {item.title}
+                      </b>
+                      <time className="ch-num" dateTime={item.created_at}>
+                        {ago(item.created_at)}
+                      </time>
+                    </span>
+                    {item.body && <span className="ch-bellp__txt">{item.body}</span>}
+                  </span>
+                  <span className="ch-bellp__dot" aria-hidden />
+                </button>
+              );
+            })}
+          </section>
+        ))
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -216,8 +331,59 @@ export function Bell() {
       {typeof document !== 'undefined' &&
         createPortal(
           <AnimatePresence>
-            {open && (
+            {open && phone && (
               <m.div
+                key="scrim"
+                className="ch-scrim"
+                data-ui="clubhouse"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={chTween('base')}
+                onClick={() => close()}
+              />
+            )}
+            {open && phone && (
+              <m.div
+                key="sheet"
+                ref={panel}
+                id={id}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Notifications"
+                // Read by the iOS swipe-back guard (NativeSwipeBackBridge): no edge swipe while the sheet is up.
+                data-state="open"
+                data-ch-code="CH-1811"
+                tabIndex={-1}
+                className="ch-bellp ch-bellp--sheet"
+                data-ui="clubhouse"
+                initial={reduced ? { opacity: 0 } : { y: '100%' }}
+                animate={reduced ? { opacity: 1 } : { y: 0 }}
+                exit={reduced ? { opacity: 0 } : { y: '100%' }}
+                transition={chTween('slow')}
+              >
+                <div className="ch-bellp__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+                <div className="ch-bellp__shead" onPointerDown={drag.onPointerDown}>
+                  <span className="ch-bellp__stitle">
+                    <b>Notifications</b>
+                    {unread > 0 && <span className="ch-num">{unread} unread</span>}
+                  </span>
+                  <button type="button" className="ch-bellp__x" aria-label="Close" onClick={() => close()}>
+                    <Icon icon={X} size={16} />
+                  </button>
+                </div>
+                {(filterMenu || unread > 0) && (
+                  <div className="ch-bellp__tools">
+                    {filterMenu || <span />}
+                    {markAllButton}
+                  </div>
+                )}
+                {body}
+              </m.div>
+            )}
+            {open && !phone && (
+              <m.div
+                key="popover"
                 ref={panel}
                 id={id}
                 role="dialog"
@@ -233,95 +399,10 @@ export function Bell() {
                     Notifications
                     {unread > 0 && <span className="ch-num"> · {unread} unread</span>}
                   </b>
-                  {cats.length > 1 && (
-                    <Menu
-                      label="Show notifications"
-                      items={[
-                        { label: 'All', checked: filter === 'all', onSelect: () => setFilter('all') },
-                        ...cats.map((c) => ({ label: CATEGORY[c].label, icon: CATEGORY[c].icon, checked: filter === c, onSelect: () => setFilter(c) })),
-                      ]}
-                      trigger={(p) => (
-                        <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm ch-bellp__filter" aria-label={`Show ${filter === 'all' ? 'all' : CATEGORY[filter].label}`} {...p}>
-                          {filter === 'all' ? 'All' : CATEGORY[filter].label}
-                          <Icon icon={ChevronDown} size={13} />
-                        </button>
-                      )}
-                    />
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={unread === 0 || markAll.pending}
-                    onClick={async () => {
-                      const before = items;
-                      const at = new Date().toISOString();
-                      setItems((prev) => prev?.map((i) => ({ ...i, read_at: i.read_at ?? at })) ?? prev);
-                      const r = await markAll.run();
-                      if (r.success) api.refetchCount();
-                      else setItems(before);
-                    }}
-                  >
-                    Mark all read
-                  </Button>
+                  {filterMenu}
+                  {markAllButton}
                 </div>
-                <div className="ch-bellp__body">
-                  {failed && !items?.length ? (
-                    <InlineNotice code="CH-1201" title="Notifications didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
-                  ) : items === null ? (
-                    <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
-                      {[0, 1, 2, 3].map((k) => (
-                        <div key={k} className="ch-bellp__skelrow">
-                          <Skeleton width={32} height={32} radius={9} />
-                          <span>
-                            <Skeleton width="70%" height={12} />
-                            <Skeleton width="45%" height={10} />
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : groups.length === 0 ? (
-                    <div className="ch-bellp__empty" data-ch-code={filter === 'all' ? 'CH-1302' : 'CH-1303'}>
-                      <Icon icon={BellOff} size={18} />
-                      <b>{filter === 'all' ? "You're all caught up." : 'Nothing of this kind.'}</b>
-                      <span>{filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}</span>
-                      {filter !== 'all' && (
-                        <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
-                          Show all
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    groups.map((g) => (
-                      <section key={g.bucket} aria-label={DAY_BUCKET_LABEL[g.bucket]}>
-                        <div className="ch-bellp__day">{DAY_BUCKET_LABEL[g.bucket]}</div>
-                        {g.items.map((item) => {
-                          const cat = CATEGORY[item.category] ?? CATEGORY.messages;
-                          const unreadRow = isUnread(item);
-                          return (
-                            <button key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
-                              <span className="ch-bellp__ic">
-                                <Icon icon={cat.icon} size={15} />
-                              </span>
-                              <span className="ch-bellp__main">
-                                <span className="ch-bellp__top">
-                                  <b>
-                                    {unreadRow && <span className="ch-sr-only">Unread: </span>}
-                                    {item.title}
-                                  </b>
-                                  <time className="ch-num" dateTime={item.created_at}>
-                                    {ago(item.created_at)}
-                                  </time>
-                                </span>
-                                {item.body && <span className="ch-bellp__txt">{item.body}</span>}
-                              </span>
-                              <span className="ch-bellp__dot" aria-hidden />
-                            </button>
-                          );
-                        })}
-                      </section>
-                    ))
-                  )}
-                </div>
+                {body}
               </m.div>
             )}
           </AnimatePresence>,

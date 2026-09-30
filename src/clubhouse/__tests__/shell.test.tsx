@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -129,6 +129,33 @@ describe('Shell · bell', () => {
     bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
     await user.click(screen.getByRole('button', { name: 'Notifications' }));
     await expectCode('CH-1302', /all caught up/);
+  });
+
+  it('CH-1811 on the phone the bell is a modal sheet: focus moves in, Tab stays inside, Close gives focus back', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const user = userEvent.setup();
+      bell({});
+      const trigger = screen.getByRole('button', { name: /Notifications/ });
+      await user.click(trigger);
+      await expectCode('CH-1811');
+      const sheet = code('CH-1811') as HTMLElement;
+      expect(sheet.getAttribute('role')).toBe('dialog');
+      expect(sheet.getAttribute('aria-modal')).toBe('true');
+      expect(sheet.classList.contains('ch-popover')).toBe(false);
+      await within(sheet).findByText('Ava in Varsity team');
+      await waitFor(() => expect(sheet.contains(document.activeElement)).toBe(true));
+      const focusables = sheet.querySelectorAll<HTMLElement>('button:not(:disabled)');
+      focusables[focusables.length - 1]!.focus();
+      await user.tab();
+      expect(document.activeElement).toBe(focusables[0]);
+      await user.click(within(sheet).getByRole('button', { name: 'Close' }));
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(trigger);
+    } finally {
+      window.matchMedia = real;
+    }
   });
 
   it('CH-1303 the filter has nothing after a refresh', async () => {
@@ -385,6 +412,25 @@ describe('Shell · navigation and accessibility', () => {
         expect(onCloseSpy).toHaveBeenCalledTimes(1);
         expect(hapticSpy).toHaveBeenCalledWith('press');
         await waitFor(() => expect(dialog.hasAttribute('open')).toBe(false));
+      } finally {
+        window.matchMedia = real;
+      }
+    });
+
+    it('the bell sheet drags shut from its header', async () => {
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        const user = userEvent.setup();
+        bell({});
+        const trigger = screen.getByRole('button', { name: /Notifications/ });
+        await user.click(trigger);
+        await expectCode('CH-1811');
+        const sheet = code('CH-1811') as HTMLElement;
+        hapticSpy.mockClear();
+        await drag(sheet.querySelector('.ch-bellp__shead') as HTMLElement, sheet, 120);
+        expect(hapticSpy).toHaveBeenCalledWith('press');
+        expect(trigger.getAttribute('aria-expanded')).toBe('false');
       } finally {
         window.matchMedia = real;
       }

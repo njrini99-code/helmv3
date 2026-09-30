@@ -61,7 +61,7 @@ bar that never renders. The rendered bar:
 - None of the Messages boards has a large title. The `.m-top--lg` class exists but is unused.
 - The phone bar has no Settings gear and no breadcrumbs, although the desktop `TopBar` has both
   (D-41).
-- The bell is the desktop `Bell`: same feed, same actions (D-17).
+- The bell is the desktop `Bell`: same feed, same actions (D-17). On the phone it opens as a sheet, not a popover (`MOBILE.md`: popovers become sheets): grab, a title with the unread count, Close, the filter and Mark all read under it, and the list, which scrolls (CH-1811, CH-1612).
 
 ## Tab bar (`MTabs`, `.qm-tabs`)
 

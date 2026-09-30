@@ -59,7 +59,8 @@ D-40 to D-43).
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
 | CH-1609 | A page or section is loading | Skeletons shimmer left to right (1.4s loop); they hold still when Animations is off or motion is reduced | `.ch-skel` | preview |
 | CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 220ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
-| CH-1611 | Someone drags a phone sheet (More, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (360ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button | `useSheetDrag` in `TabBar` and `Modal` | shell.test › CH-1611 |
+| CH-1611 | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (360ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button | `useSheetDrag` in `TabBar`, `Bell` and `Modal` | shell.test › CH-1611 |
+| CH-1612 | Opening the bell on a phone | The notifications sheet rises (360ms) over a fading scrim (220ms), as More does; a fade when motion is reduced | `Bell`, `chTween('slow')` | preview |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
 
@@ -86,6 +87,7 @@ D-40 to D-43).
 | CH-1808 | The phone tab bar lists the role's tabs (coach: Home, Helm, Rounds, Stats, More; player: Home, Calendar, Messages, My stats, More; D-40), and when Messages is under More, More is named with its unread count ("More, 3 unread messages") | `TabBar`, `phoneTabsFor` | shell.test › CH-1808 |
 | CH-1809 | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it | `PhoneScreen`, `usePhoneImmersive` | shell.test › CH-1809 |
 | CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |
+| CH-1811 | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up | `Bell` (`aria-modal`, `data-state="open"`) | shell.test › CH-1811 |
 
 ## 19xx Network and UX
 
