@@ -15,8 +15,9 @@ import '../styles/stats.css';
  * /golf/dashboard/stats in Clubhouse.
  *   coach  - team stats, or ?player=<id> for any player on their team
  *   player - always their own profile; ?player= is ignored, never trusted
+ * `?tab=` opens a profile tab (overview, game, rounds, dev).
  */
-export async function ClubhouseStatsRoute({ player, window }: { player?: string; window?: string }) {
+export async function ClubhouseStatsRoute({ player, window, tab }: { player?: string; window?: string; tab?: string }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
@@ -25,12 +26,12 @@ export async function ClubhouseStatsRoute({ player, window }: { player?: string;
 
   if (team.role === 'player') {
     const profile = await loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win });
-    return profile ? <StatsPlayer data={profile} coachId={null} /> : <NotOnTeam coach={false} />;
+    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} /> : <NotOnTeam coach={false} />;
   }
 
   if (player) {
     const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win });
-    return profile ? <StatsPlayer data={profile} coachId={team.coachId} /> : <NotOnTeam coach />;
+    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} /> : <NotOnTeam coach />;
   }
   return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win })} />;
 }
