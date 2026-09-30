@@ -382,7 +382,7 @@ the hole index the checkpoint started on.
 
 - `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` (the new-round screen)
-- `src/lib/golf/round-session/use-new-round-session.ts` (the new-round engine the screen calls: setup, holes, tracking, autosave, recovery, submit; moved out of the screen 2026-09-30)
+- `src/lib/golf/round-session/use-new-round-session.ts` (the new-round engine the screen calls: setup, holes, tracking, autosave, recovery, submit; moved out of the screen 2026-09-30). A second renderer starts a round with `start(form)`: it runs over the form it is handed (not state), then the engine runs under that form. The screen's Back to setup, Change course and submit-overlay actions live in the engine too. Its routes and error-log tags are optional inputs (`routes.ts`) that default to the Fairway values.
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
 - `src/components/fairway/pages/rounds-tracking/**`
 - `src/components/fairway/pages/rounds-recover/**`

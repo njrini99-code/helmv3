@@ -174,8 +174,12 @@ describe('New Round — future round dates (B7)', () => {
   });
 
   it('validateBeforeStart rejects a future round date before persistRoundStart runs', () => {
+    // The rules moved into validateStartForm (step 5a) so `start(form)` checks the form it is given; the screen's own
+    // gate still runs them over its state.
+    const rules = slice('export function validateStartForm(', 'export interface NewRoundSessionPorts');
+    expect(rules).toMatch(/future/i);
     const validate = slice('const validateBeforeStart = useCallback((): string | null => {', 'const persistRoundStart = useCallback(async (');
-    expect(validate).toMatch(/future/i);
+    expect(validate).toContain('validateStartForm({ setup: setupData,');
   });
 });
 
@@ -286,7 +290,7 @@ describe('New Round — 36-hole-day conflict prompt gives Resume/Discard/Start-n
 
   it('Resume navigates to Continue Round for the conflicting round, and only Resume does', () => {
     const resume = slice('const handleConflictResume = () => {', 'const handleConflictConfirmDiscard = async () => {');
-    expect(resume).toContain('router.push(`/golf/dashboard/rounds/continue/${inProgressConflict.roundId}`)');
+    expect(resume).toContain('router.push(routesRef.current.continueRound(inProgressConflict.roundId))');
   });
 
   it('the destructive delete never runs unless discardConfirming is already true (guards the two-step confirm)', () => {
@@ -322,10 +326,10 @@ describe('New Round — 36-hole-day conflict prompt gives Resume/Discard/Start-n
   });
 
   it('handleHolesSave and startWithPreloadedConfigs each record themselves as the retry target, so Discard/Start-new never skip the save-course step', () => {
-    expect(source).toContain('lastStartRetryRef.current = () => handleHolesSave(configuredHoles);');
+    expect(source).toContain('lastStartRetryRef.current = () => handleHolesSave(configuredHoles, form);');
     expect(source).toContain('lastStartRetryRef.current = () => startWithPreloadedConfigs(configs);');
     // Both retry targets must still reach the save-course / cloud-catalog step.
-    const holesSave = slice('const handleHolesSave = async (configuredHoles: HoleConfig[]) => {', 'const buildPartialRoundData = useCallback(');
+    const holesSave = slice('const handleHolesSave = async (configuredHoles: HoleConfig[], form?: NewRoundStartForm)', 'const buildPartialRoundData = useCallback(');
     expect(holesSave).toContain('savePlayerCourse(');
     const preloaded = slice('const startWithPreloadedConfigs = useCallback(async (', 'const handleSetupSubmit = async (');
     expect(preloaded).toContain('contributeCourseFromRound(');

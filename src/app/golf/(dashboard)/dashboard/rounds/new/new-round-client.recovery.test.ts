@@ -68,7 +68,7 @@ describe('New Round shot recovery boundary', () => {
     // round_missing helper so a dead snapshot id is re-created, not echoed.
     expect(restoreSource).toContain('await writeRoundRecreatingIfMissing(');
     expect(restoreSource).toContain('recoveryData,');
-    expect(restoreSource).toContain('router.push(`/golf/dashboard/rounds/continue/${result.data.roundId}`)');
+    expect(restoreSource).toContain('router.push(routesRef.current.continueRound(result.data.roundId))');
   });
 
   it('keeps a completed-hole retry distinct from a deliberate re-edit and reopens a scorecard slot correctly', () => {

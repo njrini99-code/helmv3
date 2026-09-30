@@ -48,6 +48,12 @@ import { logError, isStaleServerActionError, softReloadForStaleServerAction } fr
 import { clearPendingTeePick, loadPendingTeePick, savePendingTeePick } from '@/lib/golf/new-round-pick-cache';
 import { reportRoundSetupRestoredAfterReload } from '@/lib/golf/new-round-setup-restore-signal';
 import { reportDuplicateCompletedRoundWarned, reportRoundStartValidationBlocked } from '@/lib/golf/round-start-guard-signal';
+import {
+  LEGACY_NEW_ROUND_LOG_SOURCE,
+  resolveRoundRoutes,
+  type RoundSessionLogSource,
+  type RoundSessionRoutes,
+} from '@/lib/golf/round-session/routes';
 
 export type Hole = RoundHole;
 
@@ -107,6 +113,89 @@ export interface NewRoundClientProps {
   playerId: string;
 }
 
+/**
+ * The setup a round starts from: everything `validateStartForm` and `persistRoundStart` read. The legacy screen's
+ * setup state passes as this; a renderer that keeps the form itself passes that.
+ */
+export interface NewRoundSetup {
+  setup: RoundSetupForm;
+  qualifierId: string | null;
+  /** The qualifier's round number, when `setup.roundType` is 'qualifier'. */
+  qualifierRoundNumber: number | null;
+}
+
+/** Everything `start` needs, as one argument (ROUNDS_PLAN step 5a). */
+export interface NewRoundStartForm extends NewRoundSetup {
+  /** golf_courses.id of a cloud pick, else null. */
+  courseId: string | null;
+  /** golf_course_tees.id of a cloud pick, else null. */
+  teeId: string | null;
+  /** The holes this round plays, in order (the chosen nine of an 18-hole card already sliced): 9 or 18. */
+  holes: HoleConfig[];
+  /** A hand-typed course: save it to the player's library and offer it to the cloud library (the legacy "save course" opt-in). */
+  saveCourse: boolean;
+}
+
+export type NewRoundStartFailureReason =
+  | 'invalid'
+  | 'offline'
+  | 'in_progress_exists'
+  | 'duplicate_completed_round'
+  | 'server_rejected'
+  | 'transport';
+
+/**
+ * How a start ended. `roundId` is the server round that now exists. A failure carries the player-facing sentence
+ * (also set as the engine's `error`, except `in_progress_exists`, which the conflict dialog draws instead).
+ */
+export type NewRoundStartResult =
+  | { ok: true; roundId: string }
+  | { ok: false; reason: NewRoundStartFailureReason; error: string };
+
+/**
+ * Everything that must be true before a round can start, independent of WHICH control starts it. Returns the
+ * user-facing error, or null to proceed. This is the body `validateBeforeStart` had, taking the setup as an argument
+ * so `start(form)` checks the form it was given rather than the state.
+ *
+ * EXTRACTED 2026-07-25 and this is load-bearing, not tidying. These checks
+ * used to live only inside `handleSetupSubmit`, and the confirm screen
+ * reached them because a course pick with usable holes routed through the
+ * form's submit button. The confirm screen now starts the round from the
+ * hole editor's own "Start round" button instead — which never touches
+ * `onSubmit`. Without this shared gate, a player who switched Round type to
+ * "Qualifier" on the confirm screen and left the qualifier unpicked could
+ * start a round that no qualifier owns.
+ */
+export function validateStartForm({ setup, qualifierId, qualifierRoundNumber }: NewRoundSetup): string | null {
+  if (!setup.courseName) return 'Please enter a course name';
+  if (setup.roundType === 'qualifier') {
+    if (!qualifierId) return 'Please select a qualifier';
+    if (!qualifierRoundNumber) return 'Please select which round of the qualifier this is';
+  }
+  // Ranges mirror the server Zod schema in golf.ts — keep them in step.
+  if (setup.courseRating) {
+    const rating = parseFloat(setup.courseRating);
+    if (isNaN(rating) || rating < 50 || rating > 85) {
+      return 'Course rating must be between 50.0 and 85.0';
+    }
+  }
+  if (setup.courseSlope) {
+    const slope = parseInt(setup.courseSlope);
+    if (isNaN(slope) || slope < 55 || slope > 155) {
+      return 'Course slope must be between 55 and 155';
+    }
+  }
+  // B7: only the terminal submit path (golf.ts) rejected a future round
+  // date — by which point an entire round had already been tracked under
+  // the wrong day. This is the one gate every round-start entry point
+  // (handleSetupSubmit, handleConfirmedHolesSave, start) shares, so catching
+  // it here blocks it before persistRoundStart ever creates the round.
+  if (setup.roundDate && setup.roundDate > localDayIso()) {
+    return 'Round date cannot be in the future.';
+  }
+  return null;
+}
+
 
 /**
  * What the engine asks of the screen that draws it.
@@ -126,14 +215,29 @@ export interface NewRoundSessionPorts {
   haptic: (event: 'error') => unknown;
 }
 
+/** What a screen may tell the new-round engine beyond its ports; each omitted value is the Fairway screen's own. */
+export interface NewRoundSessionOptions {
+  ports: NewRoundSessionPorts;
+  /** Where the engine sends the player. Read at call time, so passing a new object each render is safe. */
+  routes?: Partial<RoundSessionRoutes>;
+  /** The `component` and `route` tags on the error log of a round start that failed. */
+  logSource?: RoundSessionLogSource;
+}
+
 /**
  * The new-round engine: setup, holes, tracking, autosave, recovery and submit, without the screen that draws it.
  * Moved out of NewRoundClient unchanged (ROUNDS_PLAN step 4a), so a second renderer can drive the same engine.
  */
-export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { ports: NewRoundSessionPorts }) {
+export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRoundClientProps & NewRoundSessionOptions) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast, haptic } = ports;
+  // Read at call time, never listed as a dependency: a screen that passes a new `routes` object each render must not
+  // re-create the callbacks or re-run the effects that list `router`.
+  const routesRef = useRef(resolveRoundRoutes(routes));
+  routesRef.current = resolveRoundRoutes(routes);
+  const logSourceRef = useRef(logSource ?? LEGACY_NEW_ROUND_LOG_SOURCE);
+  logSourceRef.current = logSource ?? LEGACY_NEW_ROUND_LOG_SOURCE;
   // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
   // not as a gate here — starting a New Round lands straight on the course
   // carousel. There is no in-flow resume prompt (the old prompt state was never
@@ -392,7 +496,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     setError('');
     isSubmittingRef.current = false;
     startTransition(() => {
-      router.replace(`/golf/dashboard/rounds/${targetRoundId}`);
+      router.replace(routesRef.current.round(targetRoundId));
     });
   }, [router]);
 
@@ -779,6 +883,9 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
   const [qualifierError, setQualifierError] = useState<string | null>(null);
   const [qualifierRoundError, setQualifierRoundError] = useState<string | null>(null);
   const [qualifierRoundRetry, setQualifierRoundRetry] = useState(0);
+  // The qualifier a `start(form)` adopted, whose round number the form already decided. Null on the legacy screen, whose
+  // player picks a qualifier and lets the round-number effect below choose the round.
+  const startedQualifierRef = useRef<string | null>(null);
 
   const buildRecoverySetupData = useCallback(() => ({
     ...setupData,
@@ -860,6 +967,9 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
   // (course/date/type/qualifier) changes below, so a stale confirmation
   // can never silently apply to a different course or date.
   const duplicateCourseConfirmedRef = useRef(false);
+  // The setup a `start(form)` just adopted. The effect below would otherwise run for that adoption after the start
+  // had already begun, and wipe what the start sets (the duplicate warning's confirmation, the conflict prompt).
+  const adoptedSetupRef = useRef<NewRoundSetup | null>(null);
   // 36-hole-day follow-up (2026-09-23): when `persistRoundStart` finds the
   // player's own in_progress round already at this course/date, the player —
   // not the server — decides whether it's the same abandoned round (resume
@@ -889,7 +999,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
   // contribution, both real, non-cosmetic writes) — not just the bare
   // persistRoundStart call. Set at the top of each of those two functions, so
   // it is always current regardless of which one is in flight.
-  const lastStartRetryRef = useRef<(() => Promise<void>) | null>(null);
+  const lastStartRetryRef = useRef<(() => Promise<unknown>) | null>(null);
   // Reactive mirror of "a cloud tee is selected" (selectedTeeIdRef is a ref and
   // can't drive render). Kept in lockstep with selectedTeeIdRef so the setup
   // screen can show a read-only "Course ready" confirmation for a cloud pick
@@ -900,6 +1010,18 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
   // it was shown for. Any change to what would actually start recomputes the
   // dedupe check server-side next tap.
   useEffect(() => {
+    const adopted = adoptedSetupRef.current;
+    adoptedSetupRef.current = null;
+    if (
+      adopted
+      && adopted.setup.courseName === setupData.courseName
+      && adopted.setup.roundDate === setupData.roundDate
+      && adopted.setup.roundType === setupData.roundType
+      && adopted.qualifierId === selectedQualifierId
+      && adopted.qualifierRoundNumber === selectedRoundNumber
+    ) {
+      return;
+    }
     duplicateCourseConfirmedRef.current = false;
     confirmSeparateRoundRef.current = false;
     setInProgressConflict(null);
@@ -1010,6 +1132,9 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
 
   // Fetch available round numbers when qualifier is selected
   useEffect(() => {
+    // `start(form)` adopted this qualifier with its round number, and the round it creates would come back here as the
+    // qualifier's active round and replace the tracker with Continue.
+    if (selectedQualifierId && selectedQualifierId === startedQualifierRef.current) return undefined;
     let cancelled = false;
     if (selectedQualifierId) {
       setAvailableRounds([]);
@@ -1027,7 +1152,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
               // The server found a durable qualifier parent. Resume it instead
               // of letting a blank new-round setup race or overwrite that
               // player's existing scorecard.
-              router.replace(`/golf/dashboard/rounds/continue/${result.data.activeRoundId}`);
+              router.replace(routesRef.current.continueRound(result.data.activeRoundId));
               return;
             }
             setAvailableRounds(result.data.availableRounds);
@@ -1330,46 +1455,11 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
 
 
   /**
-   * Everything that must be true before a round can start, independent of
-   * WHICH control starts it. Returns the user-facing error, or null to proceed.
-   *
-   * EXTRACTED 2026-07-25 and this is load-bearing, not tidying. These checks
-   * used to live only inside `handleSetupSubmit`, and the confirm screen
-   * reached them because a course pick with usable holes routed through the
-   * form's submit button. The confirm screen now starts the round from the
-   * hole editor's own "Start round" button instead — which never touches
-   * `onSubmit`. Without this shared gate, a player who switched Round type to
-   * "Qualifier" on the confirm screen and left the qualifier unpicked could
-   * start a round that no qualifier owns.
+   * The start gate, over this screen's own setup state. The rules (and why they are shared by every control that
+   * starts a round) live in `validateStartForm`, which `start(form)` runs over the form it is given.
    */
   const validateBeforeStart = useCallback((): string | null => {
-    if (!setupData.courseName) return 'Please enter a course name';
-    if (setupData.roundType === 'qualifier') {
-      if (!selectedQualifierId) return 'Please select a qualifier';
-      if (!selectedRoundNumber) return 'Please select which round of the qualifier this is';
-    }
-    // Ranges mirror the server Zod schema in golf.ts — keep them in step.
-    if (setupData.courseRating) {
-      const rating = parseFloat(setupData.courseRating);
-      if (isNaN(rating) || rating < 50 || rating > 85) {
-        return 'Course rating must be between 50.0 and 85.0';
-      }
-    }
-    if (setupData.courseSlope) {
-      const slope = parseInt(setupData.courseSlope);
-      if (isNaN(slope) || slope < 55 || slope > 155) {
-        return 'Course slope must be between 55 and 155';
-      }
-    }
-    // B7: only the terminal submit path (golf.ts) rejected a future round
-    // date — by which point an entire round had already been tracked under
-    // the wrong day. This is the one gate both round-start entry points
-    // (handleSetupSubmit, handleConfirmedHolesSave) share, so catching it
-    // here blocks it before persistRoundStart ever creates the round.
-    if (setupData.roundDate && setupData.roundDate > localDayIso()) {
-      return 'Round date cannot be in the future.';
-    }
-    return null;
+    return validateStartForm({ setup: setupData, qualifierId: selectedQualifierId, qualifierRoundNumber: selectedRoundNumber });
   }, [setupData, selectedQualifierId, selectedRoundNumber]);
 
   /**
@@ -1380,20 +1470,25 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
   const persistRoundStart = useCallback(async (
     initialHoles: Hole[],
     configuredHoles: HoleConfig[],
-  ): Promise<boolean> => {
+    // The setup to start from. Omitted, it is this screen's own state, as it always was; `start(form)` passes the form
+    // it was given, so a start never reads a setup the caller has only just asked React to set.
+    startSetup?: NewRoundSetup,
+  ): Promise<NewRoundStartResult> => {
+    const { setup, qualifierId, qualifierRoundNumber } = startSetup
+      ?? { setup: setupData, qualifierId: selectedQualifierId, qualifierRoundNumber: selectedRoundNumber };
     const initialData: PartialRoundData = {
-      courseName: setupData.courseName,
+      courseName: setup.courseName,
       courseId: resolvedCourseIdRef.current || undefined,
       teeId: selectedTeeIdRef.current || undefined,
-      courseCity: setupData.courseCity || undefined,
-      courseState: setupData.courseState || undefined,
-      courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-      courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-      teesPlayed: setupData.teesPlayed || undefined,
-      roundType: setupData.roundType,
-      roundDate: setupData.roundDate,
-      qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
-      qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
+      courseCity: setup.courseCity || undefined,
+      courseState: setup.courseState || undefined,
+      courseRating: setup.courseRating ? parseFloat(setup.courseRating) : undefined,
+      courseSlope: setup.courseSlope ? parseInt(setup.courseSlope) : undefined,
+      teesPlayed: setup.teesPlayed || undefined,
+      roundType: setup.roundType,
+      roundDate: setup.roundDate,
+      qualifierId: setup.roundType === 'qualifier' ? qualifierId ?? undefined : undefined,
+      qualifierRoundNumber: setup.roundType === 'qualifier' ? qualifierRoundNumber ?? undefined : undefined,
       currentHole: 1,
       holesToPlay: configuredHoles.length as 9 | 18,
       holes: [],
@@ -1412,15 +1507,15 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
       logError(
         new Error(`Round start failed: ${reason}`),
         {
-          component: 'NewRoundClient',
+          component: logSourceRef.current.component,
           action: 'round start',
-          route: '/golf/dashboard/rounds/new',
+          route: logSourceRef.current.route,
           featureArea: 'round_tracking',
           reason,
           courseId: resolvedCourseIdRef.current ?? null,
           teeId: selectedTeeIdRef.current ?? null,
-          roundType: setupData.roundType,
-          roundDate: setupData.roundDate,
+          roundType: setup.roundType,
+          roundDate: setup.roundDate,
           holeCount: configuredHoles.length,
           navigatorOnLine: typeof navigator !== 'undefined' ? navigator.onLine : null,
           probeConnected: connectionStatus.isConnected,
@@ -1437,8 +1532,9 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     // failed; otherwise attempt the save and let the catch below report it.
     if (!navigator.onLine && !connectionStatus.isConnected) {
       reportStartFailure('offline');
-      setError('Connect to the internet before starting so this round can be saved and resumed.');
-      return false;
+      const message = 'Connect to the internet before starting so this round can be saved and resumed.';
+      setError(message);
+      return { ok: false, reason: 'offline', error: message };
     }
 
     try {
@@ -1463,7 +1559,11 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
             scoredHoles: result.scoredHoles,
             updatedAt: result.updatedAt,
           });
-          return false;
+          return {
+            ok: false,
+            reason: 'in_progress_exists',
+            error: 'You already have an in-progress round for this course and date.',
+          };
         }
         // R8: a COMPLETED round already occupies this slot. Warn once; a
         // second tap of the same "Start round" control (duplicateCourseConfirmedRef)
@@ -1476,19 +1576,21 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
             completedRoundId: result.completedRoundId,
             courseId: resolvedCourseIdRef.current ?? null,
             teeId: selectedTeeIdRef.current ?? null,
-            roundType: setupData.roundType,
-            roundDate: setupData.roundDate,
+            roundType: setup.roundType,
+            roundDate: setup.roundDate,
           });
           duplicateCourseConfirmedRef.current = true;
-          setError('You already have a completed round for this course on this date. Tap Start round again to start a new one anyway.');
-          return false;
+          const message = 'You already have a completed round for this course on this date. Tap Start round again to start a new one anyway.';
+          setError(message);
+          return { ok: false, reason: 'duplicate_completed_round', error: message };
         }
         // B6: this call always sends `holes: []` (a fresh round), so
         // `conflict`/`round_missing`/`hole_invalid` cannot occur here — but
         // `busy`/`retry` can, and both are bare signal keys, not sentences.
         reportStartFailure('server_rejected', { serverError: result.error });
-        setError(describeRoundWriteFailure(result.error));
-        return false;
+        const message = describeRoundWriteFailure(result.error);
+        setError(message);
+        return { ok: false, reason: 'server_rejected', error: message };
       }
 
       // A round genuinely started — any stale duplicate confirmation from an
@@ -1512,21 +1614,22 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
         playerId,
         roundId: result.data.roundId,
         timestamp: Date.now(),
-        setupData,
+        setupData: setup,
         holes: initialHoles,
         completedHoleStats: [],
         inProgressShotsByHole: {},
         currentHoleIndex: 0,
         holesPerRound: configuredHoles.length as 9 | 18,
       });
-      return true;
+      return { ok: true, roundId: result.data.roundId };
     } catch (err) {
       reportStartFailure('transport', {
         errorName: err instanceof Error ? err.name : typeof err,
         errorMessage: err instanceof Error ? err.message : String(err),
       });
-      setError('Unable to save this round. Please try again before tracking.');
-      return false;
+      const message = 'Unable to save this round. Please try again before tracking.';
+      setError(message);
+      return { ok: false, reason: 'transport', error: message };
     }
   }, [connectionStatus.isConnected, playerId, selectedQualifierId, selectedRoundNumber, setupData]);
 
@@ -1538,7 +1641,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
    */
   const handleConflictResume = () => {
     if (!inProgressConflict) return;
-    router.push(`/golf/dashboard/rounds/continue/${inProgressConflict.roundId}`);
+    router.push(routesRef.current.continueRound(inProgressConflict.roundId));
   };
 
   // Destructive — requires the two-step confirm below (discardConfirming)
@@ -1601,7 +1704,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
       score: null,
     }));
     const persisted = await persistRoundStart(initialHoles, configs);
-    if (!persisted) {
+    if (!persisted.ok) {
       setIsStartingRound(false);
       return;
     }
@@ -1698,26 +1801,42 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
    * form uses and stay put.
    */
   const handleConfirmedHolesSave = async (configuredHoles: HoleConfig[]) => {
-    const validationError = validateBeforeStart();
+    await startRound({
+      setup: setupData,
+      qualifierId: selectedQualifierId,
+      qualifierRoundNumber: selectedRoundNumber,
+      courseId: resolvedCourseIdRef.current,
+      teeId: selectedTeeIdRef.current,
+      saveCourse: saveCourseChecked,
+      holes: configuredHoles,
+    });
+  };
+
+  /**
+   * The start behind both "Start round" on the confirm screen (`handleConfirmedHolesSave`, which passes this screen's
+   * state) and `start(form)` (which passes the caller's form): the gate, the durable start, the course save.
+   */
+  const startRound = async (form: NewRoundStartForm): Promise<NewRoundStartResult> => {
+    const validationError = validateStartForm(form);
     if (validationError) {
       // A validation block is the form working (e2530283): info log, not an error.
       reportRoundStartValidationBlocked({
         validationError,
-        roundType: setupData.roundType,
-        roundDate: setupData.roundDate,
+        roundType: form.setup.roundType,
+        roundDate: form.setup.roundDate,
       });
       setError(validationError);
-      return;
+      return { ok: false, reason: 'invalid', error: validationError };
     }
     setError('');
     setIsStartingRound(true);
-    await handleHolesSave(configuredHoles);
+    return handleHolesSave(form.holes, form);
   };
 
-  const handleHolesSave = async (configuredHoles: HoleConfig[]) => {
+  const handleHolesSave = async (configuredHoles: HoleConfig[], form?: NewRoundStartForm): Promise<NewRoundStartResult> => {
     // See `lastStartRetryRef`'s own comment: this makes the 36-hole-day
     // conflict prompt's retries re-run the save-course step below too.
-    lastStartRetryRef.current = () => handleHolesSave(configuredHoles);
+    lastStartRetryRef.current = () => handleHolesSave(configuredHoles, form);
     // Convert HoleConfig to Hole format
     const initialHoles: Hole[] = configuredHoles.map((h) => ({
       number: h.holeNumber,
@@ -1725,14 +1844,15 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
       yardage: h.yardage,
       score: null,
     }));
-    const persisted = await persistRoundStart(initialHoles, configuredHoles);
-    if (!persisted) {
+    const persisted = await persistRoundStart(initialHoles, configuredHoles, form);
+    if (!persisted.ok) {
       setIsStartingRound(false);
-      return;
+      return persisted;
     }
 
     // Save course configuration if user opted in
-    if (saveCourseChecked && setupData.courseName) {
+    const setup = form?.setup ?? setupData;
+    if ((form ? form.saveCourse : saveCourseChecked) && setup.courseName) {
       const holeConfigs: SavedCourseHoleConfig[] = configuredHoles.map((h) => ({
         holeNumber: h.holeNumber,
         par: h.par,
@@ -1740,12 +1860,12 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
       }));
 
       const result = await savePlayerCourse({
-        courseName: setupData.courseName,
-        courseCity: setupData.courseCity || undefined,
-        courseState: setupData.courseState || undefined,
-        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-        teesPlayed: setupData.teesPlayed || undefined,
+        courseName: setup.courseName,
+        courseCity: setup.courseCity || undefined,
+        courseState: setup.courseState || undefined,
+        courseRating: setup.courseRating ? parseFloat(setup.courseRating) : undefined,
+        courseSlope: setup.courseSlope ? parseInt(setup.courseSlope) : undefined,
+        teesPlayed: setup.teesPlayed || undefined,
         holesPerRound: configuredHoles.length,
         holeConfigs,
       });
@@ -1762,12 +1882,12 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
       if (selectedTeeIdRef.current == null) {
         try {
           const contrib = await contributeCourseFromRound({
-            courseName: setupData.courseName,
-            city: setupData.courseCity || null,
-            state: setupData.courseState || null,
-            teeName: setupData.teesPlayed || null,
-            courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : null,
-            slopeRating: setupData.courseSlope ? parseInt(setupData.courseSlope) : null,
+            courseName: setup.courseName,
+            city: setup.courseCity || null,
+            state: setup.courseState || null,
+            teeName: setup.teesPlayed || null,
+            courseRating: setup.courseRating ? parseFloat(setup.courseRating) : null,
+            slopeRating: setup.courseSlope ? parseInt(setup.courseSlope) : null,
             holes: holeConfigs.map(h => ({ holeNumber: h.holeNumber, par: h.par, yardage: h.yardage })),
           });
           if (contrib.success) {
@@ -1779,6 +1899,51 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     }
 
     setStep('tracking');
+    return persisted;
+  };
+
+  /**
+   * Start a round from a setup form the caller holds itself (Clubhouse's setup screen), ROUNDS_PLAN step 5a.
+   *
+   * The start runs over `form`, never over state, so calling it straight after picking a course reads no stale
+   * closure. The engine then takes the form on as its own setup (the same values the legacy setup screen would have
+   * put in state), so tracking, autosave, recovery and submit run under it.
+   *
+   * Order matters. State is adopted before the durable start, and adoption fires the setup effects:
+   *  - the identity effect clears the duplicate-course and start-new bypasses and the conflict prompt. This call does
+   *    that itself for a form that changed (before it reads them), and tells the effect the adopted setup is its own,
+   *    so the effect, which runs after the start has begun, cannot wipe what the start then sets. A form that did not
+   *    change fires nothing, so a second tap of Start after the duplicate warning still confirms it.
+   *  - the qualifier effects are told the form's qualifier is already decided (`startedQualifierRef`): left alone the
+   *    round-number effect would null the adopted round number, refetch it, and, once the round exists, find it as
+   *    the qualifier's active round and `router.replace` the player away from the tracker.
+   *
+   * A conflict prompt (`inProgressConflict`) leaves the result `in_progress_exists`. Resume / Discard / Start a new
+   * round then retry the whole start with this same form, so the renderer follows `step` becoming 'tracking', not
+   * the promise, after a retry.
+   */
+  const start = async (form: NewRoundStartForm): Promise<NewRoundStartResult> => {
+    const setupChanged =
+      form.setup.courseName !== setupData.courseName
+      || form.setup.roundDate !== setupData.roundDate
+      || form.setup.roundType !== setupData.roundType
+      || form.qualifierId !== selectedQualifierId
+      || form.qualifierRoundNumber !== selectedRoundNumber;
+    if (setupChanged) {
+      duplicateCourseConfirmedRef.current = false;
+      confirmSeparateRoundRef.current = false;
+    }
+    adoptedSetupRef.current = form;
+    startedQualifierRef.current = form.qualifierId;
+    resolvedCourseIdRef.current = form.courseId;
+    selectedTeeIdRef.current = form.teeId;
+    setCloudPickActive(form.teeId != null);
+    setSetupData(form.setup);
+    setSelectedQualifierId(form.qualifierId);
+    setSelectedRoundNumber(form.qualifierRoundNumber);
+    setSaveCourseChecked(form.saveCourse);
+    setHolesPerRound(form.holes.length === 9 ? 9 : 18);
+    return startRound(form);
   };
 
   /**
@@ -2469,7 +2634,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
         setError('');
         showToast('Round saved on this device. Opening recovery flow.', 'warning');
         startTransition(() => {
-          router.push('/golf/dashboard/rounds/recover?from=submit');
+          router.push(routesRef.current.recover);
         });
         return;
       }
@@ -2596,7 +2761,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     // re-save. Set before router.push (async; the listeners stay live until
     // the component actually unmounts).
     roundExitedSafelyRef.current = true;
-    router.push('/golf/dashboard/rounds');
+    router.push(routesRef.current.library);
     router.refresh();
   };
 
@@ -2627,7 +2792,7 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     // on a coincident unload/pagehide. Same reasoning as handleSaveForLater.
     roundExitedSafelyRef.current = true;
     // Redirect to rounds page
-    router.push('/golf/dashboard/rounds');
+    router.push(routesRef.current.library);
   };
 
   const selectedCourse = selectedCourseId
@@ -2731,12 +2896,106 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
       clearEmergencySave(rd.roundId, playerId);
       setShowNewRoundRecovery(false);
       setNewRoundRecoveryData(null);
-      router.push(`/golf/dashboard/rounds/continue/${result.data.roundId}`);
+      router.push(routesRef.current.continueRound(result.data.roundId));
     } catch {
       setError('Unable to restore your saved shots. Keep this screen open and try again.');
     } finally {
       setIsRestoringRecovery(false);
     }
+  };
+
+  // Screen handlers that were inline in NewRoundClient: session logic (refs, steps, submit flags) a second renderer
+  // would otherwise copy (ROUNDS_PLAN step 5a). Moved verbatim.
+
+  // Back to setup from tracking: drops the round's holes, shots and server id, and keeps the chosen course (and any
+  // cloud pick) so setup opens on the same course.
+  const handleConfirmBackToSetup = () => {
+    setShowBackToSetupModal(false);
+    setCompletedHoleStats([]);
+    setInProgressShotsByHole({});
+    setCurrentHoleIndex(0);
+    activeProgressHoleRef.current = 0;
+    setSavedRoundId(null);
+    savedRoundIdRef.current = null;
+    setStep(preloadedHoleConfigs ? 'setup' : 'holes');
+  };
+
+  // "Change course" on the setup screen.
+  const handleClearSelectedCourse = () => {
+    setSelectedCourseId(null);
+    setPreloadedHoleConfigs(null);
+    // Clear any cloud-link so a subsequently hand-typed course can't inherit
+    // a stale tee_id/course_id from the previously selected course.
+    resolvedCourseIdRef.current = null;
+    selectedTeeIdRef.current = null;
+    setCloudPickActive(false);
+    setPickedCourseImage(null);
+    setSetupData((prev) => ({
+      ...prev,
+      courseName: '',
+      courseCity: '',
+      courseState: '',
+      courseRating: '',
+      courseSlope: '',
+      teesPlayed: 'White',
+    }));
+  };
+
+  // The saved / new course toggle on the setup screen.
+  const handleCourseModeChange = (next: 'new' | 'saved') => {
+    if (next === 'saved') {
+      setCourseMode('saved');
+      setCourseSearchQuery('');
+      if (!selectedCourseId && savedCourses.length > 0) {
+        handleSavedCourseSelect(savedCourses[0]!.id);
+      }
+    } else {
+      setCourseMode('new');
+      setSelectedCourseId(null);
+      resolvedCourseIdRef.current = null;
+      selectedTeeIdRef.current = null;
+      setCloudPickActive(false);
+      setPickedCourseImage(null);
+      setPreloadedHoleConfigs(null);
+      setCourseSearchQuery('');
+      setSetupData((prev) => ({
+        ...prev,
+        courseName: '',
+        courseCity: '',
+        courseState: '',
+        courseRating: '',
+        courseSlope: '',
+        teesPlayed: 'White',
+      }));
+    }
+  };
+
+  // The submit overlay's actions. Each one clears the submit flag the overlay's screen was holding, so no renderer
+  // has to know `isSubmittingRef` exists.
+  const handleSubmitGoBack = () => {
+    setError('');
+    setQualifierClosed(false);
+    isSubmittingRef.current = false;
+    setStep('tracking');
+    // Always re-show the finish confirm so user can submit again
+    if (pendingFinalStats) {
+      setShowFinishConfirm(true);
+    }
+  };
+  const handleSubmitRetry = () => {
+    setError('');
+    isSubmittingRef.current = false;
+    if (pendingFinalStats) void handleRoundSubmit(pendingFinalStats);
+  };
+  const handleSubmitSaveAndExit = async () => {
+    setError('');
+    isSubmittingRef.current = false;
+    await handleSaveForLater();
+  };
+  const handleSubmitDiscard = async () => {
+    setError('');
+    isSubmittingRef.current = false;
+    await handleDeleteRound();
   };
 
   return {
@@ -2824,7 +3083,10 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     handleQuickPickConfirm,
     handleTeePick,
     handleSavedCourseSelect,
+    handleClearSelectedCourse,
+    handleCourseModeChange,
     persistRoundStart,
+    start,
     handleConflictResume,
     handleConflictConfirmDiscard,
     handleConflictStartNewRound,
@@ -2843,5 +3105,10 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     recoveredHoleCount,
     handleDiscardRecovery,
     handleRestoreRecovery,
+    handleConfirmBackToSetup,
+    handleSubmitGoBack,
+    handleSubmitRetry,
+    handleSubmitSaveAndExit,
+    handleSubmitDiscard,
   };
 }

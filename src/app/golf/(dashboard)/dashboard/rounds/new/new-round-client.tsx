@@ -84,18 +84,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     setCurrentHoleIndex,
     holes,
     completedHoleStats,
-    setCompletedHoleStats,
     error,
     setError,
     showExitModal,
     setShowExitModal,
-    setSavedRoundId,
     inProgressShotsByHole,
-    setInProgressShotsByHole,
     holesPerRound,
     setHolesPerRound,
-    isSubmittingRef,
-    savedRoundIdRef,
     isStartingRound,
     roundConflictBlocked,
     pendingFinalStats,
@@ -105,8 +100,6 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     setShowBackToSetupModal,
     completedRoundId,
     qualifierClosed,
-    setQualifierClosed,
-    activeProgressHoleRef,
     maxRoundDate,
     showNewRoundRecovery,
     setShowNewRoundRecovery,
@@ -127,24 +120,17 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     loadingSavedCourses,
     recentCourses,
     courseMode,
-    setCourseMode,
     selectedCourseId,
-    setSelectedCourseId,
-    resolvedCourseIdRef,
-    selectedTeeIdRef,
     inProgressConflict,
     setInProgressConflict,
     conflictActionBusy,
     discardConfirming,
     setDiscardConfirming,
     cloudPickActive,
-    setCloudPickActive,
     pickedCourseImage,
-    setPickedCourseImage,
     teePickerOpen,
     setTeePickerOpen,
     preloadedHoleConfigs,
-    setPreloadedHoleConfigs,
     saveCourseChecked,
     setSaveCourseChecked,
     courseSearchQuery,
@@ -156,6 +142,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     handleQuickPickConfirm,
     handleTeePick,
     handleSavedCourseSelect,
+    handleClearSelectedCourse,
+    handleCourseModeChange,
     handleConflictResume,
     handleConflictConfirmDiscard,
     handleConflictStartNewRound,
@@ -174,6 +162,11 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     recoveredHoleCount,
     handleDiscardRecovery,
     handleRestoreRecovery,
+    handleConfirmBackToSetup,
+    handleSubmitGoBack,
+    handleSubmitRetry,
+    handleSubmitSaveAndExit,
+    handleSubmitDiscard,
   } = useNewRoundSession({ playerId, ports: { showToast, hideMobileNav, showMobileNav, haptic } });
   // Shared across BOTH the setup/holes return below and the tracking-step
   // return further down, so the SAME recovery prompt renders regardless of
@@ -329,33 +322,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           savedCourses={savedCourses}
           filteredSavedCourses={filteredSavedCourses}
           courseMode={courseMode}
-          onCourseModeChange={(next) => {
-            if (next === 'saved') {
-              setCourseMode('saved');
-              setCourseSearchQuery('');
-              if (!selectedCourseId && savedCourses.length > 0) {
-                handleSavedCourseSelect(savedCourses[0]!.id);
-              }
-            } else {
-              setCourseMode('new');
-              setSelectedCourseId(null);
-              resolvedCourseIdRef.current = null;
-              selectedTeeIdRef.current = null;
-              setCloudPickActive(false);
-    setPickedCourseImage(null);
-              setPreloadedHoleConfigs(null);
-              setCourseSearchQuery('');
-              setSetupData((prev) => ({
-                ...prev,
-                courseName: '',
-                courseCity: '',
-                courseState: '',
-                courseRating: '',
-                courseSlope: '',
-                teesPlayed: 'White',
-              }));
-            }
-          }}
+          onCourseModeChange={handleCourseModeChange}
           courseSearchQuery={courseSearchQuery}
           setCourseSearchQuery={setCourseSearchQuery}
           selectedCourseId={selectedCourseId}
@@ -363,25 +330,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           selectedCourse={selectedCourse}
           cloudPickActive={cloudPickActive}
           pickedCourseImage={pickedCourseImage}
-          onClearSelectedCourse={() => {
-            setSelectedCourseId(null);
-            setPreloadedHoleConfigs(null);
-            // Clear any cloud-link so a subsequently hand-typed course can't inherit
-            // a stale tee_id/course_id from the previously selected course.
-            resolvedCourseIdRef.current = null;
-            selectedTeeIdRef.current = null;
-            setCloudPickActive(false);
-    setPickedCourseImage(null);
-            setSetupData((prev) => ({
-              ...prev,
-              courseName: '',
-              courseCity: '',
-              courseState: '',
-              courseRating: '',
-              courseSlope: '',
-              teesPlayed: 'White',
-            }));
-          }}
+          onClearSelectedCourse={handleClearSelectedCourse}
           setupData={setupData}
           setSetupData={setSetupData}
           maxRoundDate={maxRoundDate}
@@ -440,17 +389,6 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const inProgressShots = inProgressShotsByHole[currentHoleIndex] ?? [];
   const activeHoleShots = completedStatsForHole?.shots ?? inProgressShots;
   const activeShotNumber = activeHoleShots.length > 0 ? activeHoleShots.length + 1 : 1;
-
-  const handleConfirmBackToSetup = () => {
-    setShowBackToSetupModal(false);
-    setCompletedHoleStats([]);
-    setInProgressShotsByHole({});
-    setCurrentHoleIndex(0);
-    activeProgressHoleRef.current = 0;
-    setSavedRoundId(null);
-    savedRoundIdRef.current = null;
-    setStep(preloadedHoleConfigs ? 'setup' : 'holes');
-  };
 
   return (
     <>
@@ -627,33 +565,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           courseName={setupData.courseName}
           error={error || undefined}
           completedRoundId={completedRoundId ?? undefined}
-          onGoBack={() => {
-            setError('');
-            setQualifierClosed(false);
-            isSubmittingRef.current = false;
-            setStep('tracking');
-            // Always re-show the finish confirm so user can submit again
-            if (pendingFinalStats) {
-              setShowFinishConfirm(true);
-            }
-          }}
-          onRetry={qualifierClosed ? undefined : (pendingFinalStats ? () => {
-            setError('');
-            isSubmittingRef.current = false;
-            void handleRoundSubmit(pendingFinalStats);
-          } : undefined)}
+          onGoBack={handleSubmitGoBack}
+          onRetry={qualifierClosed ? undefined : (pendingFinalStats ? handleSubmitRetry : undefined)}
           secondaryActionLabel={qualifierClosed ? 'Save as practice round' : undefined}
           onSecondaryAction={qualifierClosed ? handleSaveAsPractice : undefined}
-          onSaveAndExit={async () => {
-            setError('');
-            isSubmittingRef.current = false;
-            await handleSaveForLater();
-          }}
-          onDiscard={async () => {
-            setError('');
-            isSubmittingRef.current = false;
-            await handleDeleteRound();
-          }}
+          onSaveAndExit={handleSubmitSaveAndExit}
+          onDiscard={handleSubmitDiscard}
         />
       )}
 
