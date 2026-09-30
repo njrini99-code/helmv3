@@ -39,6 +39,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10106 | A return before the departure | "The return can't be before the departure." | `TripSheet` | hub.test › CH-10106 |
 | CH-10107 | A task with a name under three characters | "Name the task, at least three characters." | `AssignSheet` | hub.test › CH-10107 |
 | CH-10108 | A task for nobody | "Choose at least one player." | `AssignSheet` | hub.test › CH-10108 |
+| CH-10109 | Posting or saving an edit with no message (the server requires one) | "Add a message." Warning haptic; nothing is sent | `ComposeSheet` | hub.test › CH-10109 |
 
 ## 102xx Didn't load
 

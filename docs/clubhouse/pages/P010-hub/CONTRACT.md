@@ -75,6 +75,7 @@ Checked before anything is sent, with the message under the field and the warnin
 | 100506 | CH-10106 | `A_RETURN_BEFORE_THE_DEPARTURE` | A return before the departure |
 | 100507 | CH-10107 | `A_TASK_WITH_A_NAME_UNDER_THREE` | A task with a name under three characters |
 | 100508 | CH-10108 | `A_TASK_FOR_NOBODY` | A task for nobody |
+| 100509 | CH-10109 | `POSTING_OR_SAVING_AN_EDIT_WITH_NO` | Posting or saving an edit with no message (the server requires one) |
 
 ## 06 — Server / system error
 

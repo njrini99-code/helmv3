@@ -206,6 +206,8 @@ export function ComposeSheet({
     }
   }
   const titleErr = tried && title.trim().length < 3 ? 'Give it a headline, at least three characters.' : null;
+  // The server refuses an announcement without a message (announcements.ts, body.min(1)), so it is required here too.
+  const bodyErr = tried && !body.trim() ? 'Add a message.' : null;
   const pickErr = tried && aud === 'pick' && picked.length === 0 ? 'Choose at least one player, or send it to the whole team.' : null;
   // A file deleted from Documents while the sheet was open is not sent.
   const attached = docs.filter((d) => documents.folders.some((f) => f.files.some((x) => x.id === d)));
@@ -245,7 +247,7 @@ export function ComposeSheet({
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     setTried(true);
-    if (title.trim().length < 3 || (!edit && aud === 'pick' && picked.length === 0)) {
+    if (title.trim().length < 3 || !body.trim() || (!edit && aud === 'pick' && picked.length === 0)) {
       haptic('warning');
       return;
     }
@@ -285,8 +287,17 @@ export function ComposeSheet({
             onChange={(e) => setTitle(e.target.value)}
           />
         </Field>
-        <Field label="Message (optional)" id={`${id}-b`}>
-          <textarea id={`${id}-b`} className="ch-textarea" rows={4} maxLength={4000} value={body} onChange={(e) => setBody(e.target.value)} />
+        <Field label="Message" id={`${id}-b`} error={bodyErr} errorCode="CH-10109">
+          <textarea
+            id={`${id}-b`}
+            className="ch-textarea"
+            rows={4}
+            maxLength={4000}
+            value={body}
+            aria-invalid={!!bodyErr}
+            aria-describedby={bodyErr ? `${id}-b-err` : undefined}
+            onChange={(e) => setBody(e.target.value)}
+          />
         </Field>
         {!edit && (
           <div className="ch-field">

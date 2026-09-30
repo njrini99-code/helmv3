@@ -223,7 +223,7 @@ describe('Team Hub · coach', () => {
     expect(screen.getByLabelText('3 of 5 done')).toBeTruthy();
   });
 
-  it('CH-10101 CH-10102 CH-10402 101201 posting: a headline, an audience; the post keeps its text when it fails (CH-10005)', async () => {
+  it('CH-10101 CH-10109 CH-10102 CH-10402 101201 posting: a headline, a message (the server requires one), an audience; the post keeps its text when it fails (CH-10005)', async () => {
     const user = userEvent.setup();
     let release: (v: { success: boolean }) => void = () => {};
     const post = vi.fn(() => new Promise<{ success: boolean }>((r) => (release = r)));
@@ -232,15 +232,19 @@ describe('Team Hub · coach', () => {
     const dialog = await screen.findByRole('dialog', { name: 'New announcement' });
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
     await expectCode('CH-10101', /at least three characters/);
+    await expectCode('CH-10109', /Add a message/);
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     await user.type(within(dialog).getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.click(within(dialog).getByRole('button', { name: 'Post' }));
+    expect(post).not.toHaveBeenCalled();
+    await user.type(within(dialog).getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(within(dialog).getByRole('radio', { name: 'Choose players' }));
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
     await expectCode('CH-10102', /Choose at least one player/);
     await user.click(within(dialog).getByRole('button', { name: 'Eli Brandt' }));
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
     await expectCode('CH-10402', /Posting/);
-    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: ['eli'], documentIds: [] });
+    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: 'Details in the app.', requiresAck: true, playerIds: ['eli'], documentIds: [] });
     release({ success: false });
     await expectCode('CH-10005', /Couldn’t post the announcement/);
     expect((within(dialog).getByRole('textbox', { name: 'Headline' }) as HTMLInputElement).value).toBe('Bus leaves at 6');
@@ -261,8 +265,9 @@ describe('Team Hub · coach', () => {
     expect(router.refresh).toHaveBeenCalled();
     await user.click(within(dialog).getByRole('radio', { name: 'Whole team' }));
     await user.type(within(dialog).getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
-    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: [] });
+    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: [] });
   });
 
   it('CH-10208 CH-10310 a task with no roster to choose from: never "For 0 of 0", and Assign stops with the reason, not "Choose at least one player"', async () => {
@@ -315,6 +320,7 @@ describe('Team Hub · coach', () => {
     await user.click(screen.getByRole('button', { name: 'New announcement' }));
     const dialog = await screen.findByRole('dialog', { name: 'New announcement' });
     await user.type(within(dialog).getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
     await waitFor(() => expect(router.refresh).toHaveBeenCalled());
   });
@@ -692,6 +698,7 @@ const scenarios: Scenario[] = [
       await user.click(screen.getByRole('button', { name: 'New announcement' }));
       const d = within(await screen.findByRole('dialog', { name: 'New announcement' }));
       await user.type(d.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+      await user.type(d.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
       await user.click(d.getByRole('button', { name: 'Post' }));
     },
     notYet: () => {
@@ -1125,6 +1132,7 @@ describe('Team Hub · roles, states and layout', () => {
     await user.click(screen.getByRole('button', { name: 'New announcement' }));
     const dialog = await screen.findByRole('dialog', { name: 'New announcement' });
     await user.type(within(dialog).getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(dialogOpen()).toBe(false));
     expect(await reopen(user, 'New announcement', 'New announcement', 'Headline')).toBe('Bus leaves at 6');
@@ -1262,9 +1270,11 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     expect(dialog.getByRole('button', { name: 'Pairings and tee times, PDF' }).getAttribute('aria-pressed')).toBe('false');
 
     await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Waiver and hotel');
+
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(dialog.getByRole('button', { name: 'Post' }));
     await expectCode('CH-10005');
-    expect(post).toHaveBeenCalledWith({ title: 'Waiver and hotel', body: '', requiresAck: true, playerIds: null, documentIds: ['d3', 'd2'] });
+    expect(post).toHaveBeenCalledWith({ title: 'Waiver and hotel', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: ['d3', 'd2'] });
     // Refused: the sheet and its files are still there.
     expect(dialogOpen()).toBe(true);
     expect(attached(dialog)).toEqual(['Remove Travel waiver', 'Remove Hotel confirmation']);
@@ -1285,8 +1295,9 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     expect(code('CH-10209')).toBeNull();
     expect(dialog.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
     await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(dialog.getByRole('button', { name: 'Post' }));
-    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: [] }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: [] }));
   });
 
   it('CH-10209 documents that did not load: the sheet says so and is not passed off as empty; Try again reads the page again, and the files that arrive can be attached with the words kept', async () => {
@@ -1299,6 +1310,7 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     expect(code('CH-10311')).toBeNull();
     expect(dialog.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
     await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(within(code('CH-10209') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(router.refresh).toHaveBeenCalled());
     // The read that follows gives the files.
@@ -1308,7 +1320,7 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     await user.click(dialog.getByRole('button', { name: 'Attach from Documents' }));
     await user.click(dialog.getByRole('button', { name: 'Team handbook, PDF' }));
     await user.click(dialog.getByRole('button', { name: 'Post' }));
-    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: ['d5'] }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: ['d5'] }));
   });
 
   it('a failed read with the post still possible: the failure does not stop a post with no files', async () => {
@@ -1317,8 +1329,9 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     show(withDocuments({ folders: [], error: true }), writes({ postAnnouncement: post }), 'ann');
     const dialog = await openCompose(user);
     await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(dialog.getByRole('button', { name: 'Post' }));
-    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: [] }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: [] }));
   });
 
   it('a file deleted from Documents while the post is being written comes off its chips and is not sent', async () => {
@@ -1334,8 +1347,9 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     rerender(tree(withDocuments(without), w, 'ann'));
     expect(attached(dialog)).toEqual(['Remove Hotel confirmation']);
     await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Hotel is booked');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(dialog.getByRole('button', { name: 'Post' }));
-    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Hotel is booked', body: '', requiresAck: true, playerIds: null, documentIds: ['d2'] }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Hotel is booked', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: ['d2'] }));
   });
 });
 
@@ -1348,7 +1362,7 @@ describe('Team Hub · Edit an announcement', () => {
     await openRowMenu(user, /More for Pairings and tee times for Thursday/, 'Edit announcement');
     const dialog = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
     const headline = () => dialog.getByRole('textbox', { name: 'Headline' }) as HTMLInputElement;
-    const message = () => dialog.getByRole('textbox', { name: 'Message (optional)' }) as HTMLTextAreaElement;
+    const message = () => dialog.getByRole('textbox', { name: 'Message' }) as HTMLTextAreaElement;
     expect(headline().value).toBe('Pairings and tee times for Thursday');
     expect(message().value).toMatch(/^First group off at 8:42\./);
     expect((dialog.getByRole('switch', { name: 'Ask players to acknowledge' }) as HTMLInputElement).checked).toBe(true);
@@ -1387,6 +1401,7 @@ describe('Team Hub · Edit an announcement', () => {
     const { rerender } = render(tree(PREVIEW_HUB_COACH, w, 'ann'));
     let dialog = await openCompose(user);
     await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Draft post');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
     await user.click(dialog.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(dialogOpen()).toBe(false));
 

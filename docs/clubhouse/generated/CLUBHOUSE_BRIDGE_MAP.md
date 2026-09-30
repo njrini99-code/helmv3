@@ -74,7 +74,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
-| P010 | 2 | 6 |  | 12 | 8 | 19 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 70 |
+| P010 | 2 | 6 |  | 12 | 9 | 19 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 71 |
 | P011 | 13 | 7 |  | 13 | 10 | 19 | 2 | 5 | 2 |  | 11 | 2 | 1 | 3 | 3 | 3 | 7 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 119 |
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
@@ -866,6 +866,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100506 | CH-10106 | 05 Validation | `A_RETURN_BEFORE_THE_DEPARTURE` | implemented | A return before the departure |
 | 100507 | CH-10107 | 05 Validation | `A_TASK_WITH_A_NAME_UNDER_THREE` | implemented | A task with a name under three characters |
 | 100508 | CH-10108 | 05 Validation | `A_TASK_FOR_NOBODY` | implemented | A task for nobody |
+| 100509 | CH-10109 | 05 Validation | `POSTING_OR_SAVING_AN_EDIT_WITH_NO` | implemented | Posting or saving an edit with no message (the server requires one) |
 | 100601 | CH-10001 | 06 Server / system error | `A_PLAYERS_RSVP_REPLY_FAILS` | implemented | A player's RSVP reply fails |
 | 100602 | CH-10002 | 06 Server / system error | `ACKNOWLEDGING_A_POST_FAILS` | implemented | Acknowledging a post fails |
 | 100603 | CH-10003 | 06 Server / system error | `CHECKING_OFF_A_TASK_FAILS` | implemented | Checking off a task fails |

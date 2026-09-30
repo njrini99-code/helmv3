@@ -8538,6 +8538,17 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100509,
+    "page": "P010",
+    "category": 5,
+    "item": 9,
+    "name": "POSTING_OR_SAVING_AN_EDIT_WITH_NO",
+    "chCode": "CH-10109",
+    "meaning": "Posting or saving an edit with no message (the server requires one)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100601,
     "page": "P010",
     "category": 6,
