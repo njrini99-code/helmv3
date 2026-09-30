@@ -12,6 +12,7 @@ import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { useToast } from '@/components/ui/sonner';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
+import { haptic } from '@/lib/haptics';
 import { useNewRoundSession, type NewRoundClientProps } from '@/lib/golf/round-session/use-new-round-session';
 // The post-hole decision lives with the engine; its tests import it from here.
 export { decidePostHoleCompleteAction, type PostHoleCompleteAction } from '@/lib/golf/round-session/use-new-round-session';
@@ -173,7 +174,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     recoveredHoleCount,
     handleDiscardRecovery,
     handleRestoreRecovery,
-  } = useNewRoundSession({ playerId, ports: { showToast, hideMobileNav, showMobileNav } });
+  } = useNewRoundSession({ playerId, ports: { showToast, hideMobileNav, showMobileNav, haptic } });
+  // Shared across BOTH the setup/holes return below and the tracking-step
+  // return further down, so the SAME recovery prompt renders regardless of
+  // which step the player is on when a recoverable snapshot is found (B4).
   const recoveryDialog = (
     <ModalShell
       open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
