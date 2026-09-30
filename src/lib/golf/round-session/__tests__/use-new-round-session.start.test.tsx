@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({
   savePlayerCourse: vi.fn(),
   contributeCourseFromRound: vi.fn(),
   logError: vi.fn(),
+  reportValidationBlocked: vi.fn(),
+  reportDuplicateWarned: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => {
@@ -76,8 +78,8 @@ vi.mock('@/lib/error-logging', () => ({
 }));
 vi.mock('@/lib/golf/new-round-setup-restore-signal', () => ({ reportRoundSetupRestoredAfterReload: vi.fn() }));
 vi.mock('@/lib/golf/round-start-guard-signal', () => ({
-  reportDuplicateCompletedRoundWarned: vi.fn(),
-  reportRoundStartValidationBlocked: vi.fn(),
+  reportDuplicateCompletedRoundWarned: (...args: unknown[]) => mocks.reportDuplicateWarned(...args),
+  reportRoundStartValidationBlocked: (...args: unknown[]) => mocks.reportValidationBlocked(...args),
 }));
 
 import {
@@ -207,6 +209,11 @@ describe('start(form)', () => {
   });
 
   it('keeps a qualifier round number the form decided, and does not leave for Continue when the round it made comes back as active', async () => {
+    // Start's own check finds round 2 open; every later answer (the effect, if it ran) finds the round it made active.
+    mocks.getNextQualifierRoundNumber.mockResolvedValueOnce({
+      success: true,
+      data: { nextRoundNumber: 2, availableRounds: [2] },
+    });
     const hook = render();
     await act(async () => {
       await hook.result.current.start(form({
@@ -217,7 +224,8 @@ describe('start(form)', () => {
     });
 
     expect(mocks.savePartialRound.mock.calls[0]![0]).toMatchObject({ qualifierId: 'qualifier-1', qualifierRoundNumber: 2 });
-    expect(mocks.getNextQualifierRoundNumber).not.toHaveBeenCalled();
+    expect(mocks.getNextQualifierRoundNumber).toHaveBeenCalledTimes(1);
+    expect(mocks.getNextQualifierRoundNumber).toHaveBeenCalledWith('qualifier-1');
     expect(mocks.router.replace).not.toHaveBeenCalled();
     expect(hook.result.current.selectedQualifierId).toBe('qualifier-1');
     expect(hook.result.current.selectedRoundNumber).toBe(2);
@@ -442,5 +450,359 @@ describe('screen handlers that live in the engine', () => {
 
     expect(mocks.deleteInProgressRound).toHaveBeenCalledWith('round-1');
     expect(mocks.router.push).toHaveBeenCalledWith('/clubhouse/rounds');
+  });
+});
+
+const qualifierForm = (roundNumber: number | null = 2) =>
+  form({ setup: { ...form().setup, roundType: 'qualifier' }, qualifierId: 'qualifier-1', qualifierRoundNumber: roundNumber });
+
+type StartResult = Awaited<ReturnType<ReturnType<typeof render>['result']['current']['start']>>;
+
+describe('start(form): the qualifier round is checked with the server before a round is created', () => {
+  it('refuses a round the player already has in progress, and hands back its id to continue', async () => {
+    mocks.getNextQualifierRoundNumber.mockResolvedValue({
+      success: true,
+      data: { nextRoundNumber: 2, availableRounds: [], activeRoundId: 'round-active' },
+    });
+    const hook = render();
+    let result: StartResult | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(qualifierForm());
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: 'qualifier_round_active',
+      error: 'You already have a round in progress for this qualifier.',
+      roundId: 'round-active',
+    });
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+    expect(hook.result.current.error).toBe('You already have a round in progress for this qualifier.');
+    expect(hook.result.current.step).toBe('setup');
+  });
+
+  it('refuses a round number past the qualifier\'s rounds, or one the player cannot play now', async () => {
+    mocks.getNextQualifierRoundNumber.mockResolvedValue({
+      success: true,
+      data: { nextRoundNumber: 2, availableRounds: [2] },
+    });
+    const hook = render();
+    let result: StartResult | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(qualifierForm(7));
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: 'qualifier_round_unavailable',
+      error: 'Round 7 of this qualifier is not open to you now. Your next round is 2.',
+    });
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+    expect(hook.result.current.error).toContain('Round 7');
+  });
+
+  it('refuses a qualifier the server cannot vouch for: not entered, signed out, or unreachable', async () => {
+    mocks.getNextQualifierRoundNumber.mockResolvedValueOnce({ success: false, error: 'You are not entered in this qualifier' });
+    const hook = render();
+    let result: StartResult | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(qualifierForm());
+    });
+    expect(result).toEqual({ ok: false, reason: 'qualifier_unverified', error: 'You are not entered in this qualifier' });
+
+    mocks.getNextQualifierRoundNumber.mockRejectedValueOnce(new Error('Load failed'));
+    await act(async () => {
+      result = await hook.result.current.start(qualifierForm());
+    });
+    expect(result).toEqual({
+      ok: false,
+      reason: 'qualifier_unverified',
+      error: 'We could not verify your next qualifier round. Try again before starting.',
+    });
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+  });
+
+  it('starts the round the server says is open, and never asks about a practice round', async () => {
+    mocks.getNextQualifierRoundNumber.mockResolvedValueOnce({ success: true, data: { nextRoundNumber: 2, availableRounds: [2] } });
+    const hook = render();
+    await act(async () => {
+      await hook.result.current.start(qualifierForm(2));
+    });
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.step).toBe('tracking');
+    hook.unmount();
+
+    mocks.getNextQualifierRoundNumber.mockClear();
+    const practice = render();
+    await act(async () => {
+      await practice.result.current.start(form());
+    });
+    expect(mocks.getNextQualifierRoundNumber).not.toHaveBeenCalled();
+  });
+});
+
+describe('start(form): the hole rules the legacy hole editor enforces', () => {
+  const at = (index: number, patch: Partial<(typeof holes)[number]>) => holes.map((h, i) => (i === index ? { ...h, ...patch } : h));
+
+  it.each([
+    ['ten holes', holes.slice(0, 10), 'A round has 9 or 18 holes'],
+    ['no holes', [], 'A round has 9 or 18 holes'],
+    ['a par of 2', at(3, { par: 2 }), 'Hole 4: par must be 3 to 6'],
+    ['a par of 7', at(3, { par: 7 }), 'Hole 4: par must be 3 to 6'],
+    ['a par of 4.5', at(3, { par: 4.5 }), 'Hole 4: par must be 3 to 6'],
+    ['no yardage', at(0, { yardage: 0 }), 'Hole 1 needs a yardage'],
+    ['a yardage that is not a number', at(0, { yardage: Number.NaN }), 'Hole 1 needs a yardage'],
+    ['a yardage over 999', at(17, { yardage: 1000 }), 'Hole 18: 1000 yards is too long (999 at most)'],
+  ])('refuses %s before anything is adopted or written', async (_name, badHoles, message) => {
+    const hook = render();
+    let result: StartResult | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(form({ holes: badHoles }));
+    });
+
+    expect(result).toEqual({ ok: false, reason: 'invalid', error: message });
+    expect(hook.result.current.error).toBe(message);
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+    expect(hook.result.current.setupData.courseName).toBe('');
+    expect(hook.result.current.resolvedCourseIdRef.current).toBeNull();
+  });
+
+  it('accepts a 9-hole round, and the edge pars and yardages', async () => {
+    const hook = render();
+    let result: StartResult | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(
+        form({ holes: holes.slice(0, 9).map((h, i) => ({ ...h, par: i % 2 ? 6 : 3, yardage: i % 2 ? 999 : 1 })) }),
+      );
+    });
+    expect(result).toEqual({ ok: true, roundId: 'round-1' });
+  });
+});
+
+describe('start(form): nothing is adopted until the form has passed', () => {
+  it('leaves the engine untouched by a refused form, so the qualifier picker still works afterwards', async () => {
+    const hook = render();
+    await act(async () => {
+      await hook.result.current.start({ ...qualifierForm(), holes: holes.slice(0, 10) });
+    });
+
+    expect(hook.result.current.setupData.courseName).toBe('');
+    expect(hook.result.current.selectedQualifierId).toBeNull();
+    expect(hook.result.current.selectedRoundNumber).toBeNull();
+    expect(hook.result.current.selectedTeeIdRef.current).toBeNull();
+    expect(hook.result.current.cloudPickActive).toBe(false);
+
+    // The guard that keeps a started qualifier out of the round-number effect must not have been armed.
+    await act(async () => {
+      hook.result.current.setSelectedQualifierId('qualifier-1');
+    });
+    expect(mocks.getNextQualifierRoundNumber).toHaveBeenCalledWith('qualifier-1');
+  });
+
+  it('leaves the engine untouched by a qualifier the server refused', async () => {
+    mocks.getNextQualifierRoundNumber.mockResolvedValueOnce({ success: false, error: 'You are not entered in this qualifier' });
+    const hook = render();
+    await act(async () => {
+      await hook.result.current.start(qualifierForm());
+    });
+    expect(hook.result.current.setupData.courseName).toBe('');
+    expect(hook.result.current.selectedQualifierId).toBeNull();
+  });
+});
+
+describe('start(form): the conflict prompt does not outlive the setup it was raised for', () => {
+  it('is cleared as soon as a different setup is started', async () => {
+    mocks.savePartialRound.mockResolvedValueOnce({
+      success: false,
+      error: 'in_progress_exists',
+      roundId: 'round-old',
+      scoredHoles: 4,
+      updatedAt: null,
+    });
+    const hook = render();
+    let first: StartResult | undefined;
+    await act(async () => {
+      first = await hook.result.current.start(form());
+    });
+    expect(first).toMatchObject({ ok: false, reason: 'in_progress_exists', roundId: 'round-old' });
+    expect(hook.result.current.inProgressConflict).not.toBeNull();
+
+    mocks.savePartialRound.mockRejectedValueOnce(new Error('Load failed'));
+    await act(async () => {
+      await hook.result.current.start(form({ setup: { ...form().setup, courseName: 'Pinehurst No. 4' } }));
+    });
+    expect(hook.result.current.inProgressConflict).toBeNull();
+    expect(hook.result.current.discardConfirming).toBe(false);
+  });
+});
+
+describe('start(form): a round that is already running is not started again', () => {
+  it('refuses a second start once the round exists, before the screen has re-rendered as tracking', async () => {
+    const hook = render();
+    let second: StartResult | undefined;
+    await act(async () => {
+      await hook.result.current.start(form());
+      second = await hook.result.current.start(form());
+    });
+
+    expect(second).toEqual({ ok: false, reason: 'already_started', error: 'A round is already in progress on this screen.' });
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.error).toBe('');
+  });
+
+  it('refuses on the step alone: tracking or submitting, whether or not a round id is recorded yet', async () => {
+    const hook = render();
+    for (const step of ['tracking', 'submitting'] as const) {
+      act(() => {
+        hook.result.current.setStep(step);
+      });
+      let result: StartResult | undefined;
+      await act(async () => {
+        result = await hook.result.current.start(form());
+      });
+      expect(result).toMatchObject({ ok: false, reason: 'already_started' });
+    }
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+    expect(hook.result.current.setupData.courseName).toBe('');
+  });
+
+  it('refuses while tracking or submitting, and starts again after Back to setup', async () => {
+    const hook = render();
+    await act(async () => {
+      await hook.result.current.start(form());
+    });
+    let result: StartResult | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(form());
+    });
+    expect(result).toMatchObject({ ok: false, reason: 'already_started' });
+
+    act(() => {
+      hook.result.current.setStep('submitting');
+    });
+    await act(async () => {
+      result = await hook.result.current.start(form());
+    });
+    expect(result).toMatchObject({ ok: false, reason: 'already_started' });
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      hook.result.current.setStep('tracking');
+    });
+    act(() => {
+      hook.result.current.handleConfirmBackToSetup();
+    });
+    await act(async () => {
+      result = await hook.result.current.start(form());
+    });
+    expect(result).toEqual({ ok: true, roundId: 'round-1' });
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('start(form): a library save that fails does not undo a started round', () => {
+  beforeEach(() => {
+    mocks.savePlayerCourse.mockRejectedValue(new Error('Load failed'));
+    mocks.contributeCourseFromRound.mockResolvedValue({ success: false });
+  });
+  afterEach(() => {
+    mocks.savePlayerCourse.mockReset();
+    mocks.contributeCourseFromRound.mockReset();
+  });
+
+  it('still answers with the round, moves to tracking and frees the start lock', async () => {
+    const hook = render();
+    let result: StartResult | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(form({ courseId: null, teeId: null, saveCourse: true }));
+    });
+
+    expect(result).toEqual({ ok: true, roundId: 'round-1' });
+    expect(mocks.savePlayerCourse).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.step).toBe('tracking');
+    expect(hook.result.current.isStartingRound).toBe(false);
+  });
+
+  it('is unchanged on the legacy screen: the rejection still reaches its caller', async () => {
+    const hook = render();
+    act(() => {
+      hook.result.current.setSetupData(form().setup);
+      hook.result.current.setSaveCourseChecked(true);
+    });
+    let error: unknown;
+    await act(async () => {
+      try {
+        await hook.result.current.handleConfirmedHolesSave(holes);
+      } catch (err) {
+        error = err;
+      }
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.step).toBe('setup');
+  });
+});
+
+describe('the legacy Start round (handleConfirmedHolesSave) goes through the start gate', () => {
+  it('starts nothing for a qualifier round the player has not picked, and says why', async () => {
+    const hook = render();
+    act(() => {
+      hook.result.current.setSetupData({ ...form().setup, roundType: 'qualifier' });
+    });
+    await act(async () => {
+      await hook.result.current.handleConfirmedHolesSave(holes);
+    });
+
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+    expect(hook.result.current.error).toBe('Please select a qualifier');
+    expect(hook.result.current.isStartingRound).toBe(false);
+    expect(mocks.reportValidationBlocked).toHaveBeenCalledWith(
+      expect.objectContaining({ validationError: 'Please select a qualifier', roundType: 'qualifier' }),
+      { component: 'NewRoundClient', route: '/golf/dashboard/rounds/new' },
+    );
+  });
+
+  it('sends the same request start(form) does for the same setup', async () => {
+    const legacy = render();
+    act(() => {
+      legacy.result.current.setSetupData(form().setup);
+      legacy.result.current.resolvedCourseIdRef.current = 'course-1';
+      legacy.result.current.selectedTeeIdRef.current = 'tee-1';
+    });
+    await act(async () => {
+      await legacy.result.current.handleConfirmedHolesSave(holes);
+    });
+    legacy.unmount();
+
+    const fresh = render();
+    await act(async () => {
+      await fresh.result.current.start(form());
+    });
+
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(2);
+    expect(mocks.savePartialRound.mock.calls[0]).toEqual(mocks.savePartialRound.mock.calls[1]);
+    expect(mocks.savePartialRound.mock.calls[0]![0].holeConfigs).toHaveLength(18);
+  });
+});
+
+describe('the guard signals carry the renderer\'s own log source', () => {
+  const logSource = { component: 'ClubhouseRoundNew', route: '/clubhouse/rounds/new' };
+
+  it('for a form the start gate refuses, and for a duplicate-course warning', async () => {
+    const hook = render({ logSource });
+    await act(async () => {
+      await hook.result.current.start(form({ setup: { ...form().setup, roundDate: '2999-01-01' } }));
+    });
+    expect(mocks.reportValidationBlocked).toHaveBeenCalledWith(
+      expect.objectContaining({ validationError: 'Round date cannot be in the future.' }),
+      logSource,
+    );
+
+    mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'duplicate_completed_round', completedRoundId: 'done-1' });
+    await act(async () => {
+      await hook.result.current.start(form());
+    });
+    expect(mocks.reportDuplicateWarned).toHaveBeenCalledWith(expect.objectContaining({ completedRoundId: 'done-1' }), logSource);
   });
 });

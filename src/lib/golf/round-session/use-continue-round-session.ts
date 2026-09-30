@@ -80,11 +80,6 @@ export interface ContinueRoundSessionProps {
 }
 
 /**
- * The continue-round engine: resume tracking, autosave, recovery and submit for an in-progress round, without the
- * screen that draws it. Moved out of ContinueRoundClient unchanged (ROUNDS_PLAN step 5b), so a second renderer can
- * drive the same engine.
- */
-/**
  * What the engine asks of the screen that draws it.
  *
  * Identity matters: `showToast` is a dependency of the conflict, auto-save-warning and re-create callbacks, so a new
@@ -104,6 +99,11 @@ export interface ContinueRoundSessionOptions {
   routes?: Partial<RoundSessionRoutes>;
 }
 
+/**
+ * The continue-round engine: resume tracking, autosave, recovery and submit for an in-progress round, without the
+ * screen that draws it. Moved out of ContinueRoundClient unchanged (ROUNDS_PLAN step 5b), so a second renderer can
+ * drive the same engine.
+ */
 export function useContinueRoundSession({
   roundId: routeRoundId,
   playerId,

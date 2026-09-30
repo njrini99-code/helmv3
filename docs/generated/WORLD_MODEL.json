@@ -16299,6 +16299,23 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "shot_tracking",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/new-round-setup-restore-signal.ts",
+          "anchor": "src/lib/golf/round-session/routes"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-start-guard-signal.ts",
+          "anchor": "src/lib/golf/round-session/routes"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "stats_analytics",
       "kind": "feature_relation",
       "evidence": [
@@ -20096,6 +20113,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/shot-analysis/stats-cache-baseline.ts",
           "anchor": "src/lib/golf/strokes-gained"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/start-form.ts",
+          "anchor": "src/lib/golf/local-day"
         },
         {
           "kind": "import_graph",

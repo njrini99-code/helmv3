@@ -85,6 +85,20 @@ describe('reportRoundSetupRestoredAfterReload', () => {
   });
 });
 
+describe('reportRoundSetupRestoredAfterReload log source', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('carries the log source a renderer passes, and the Fairway one by default', () => {
+    reportRoundSetupRestoredAfterReload({ courseId: 'c-1', teeId: 't-1' }, { component: 'ClubhouseRoundNew', route: '/clubhouse/rounds/new' });
+    reportRoundSetupRestoredAfterReload({ courseId: 'c-1', teeId: 't-1' });
+    const [own, legacy] = sentry.logger.info.mock.calls as Array<[string, Record<string, unknown>]>;
+    expect(own![1]).toMatchObject({ component: 'ClubhouseRoundNew', route: '/clubhouse/rounds/new' });
+    expect(legacy![1]).toMatchObject({ component: 'NewRoundClient', route: '/golf/dashboard/rounds/new' });
+  });
+});
+
 describe('NewRoundClient restore call site', () => {
   it('routes the restore through the info-level helper, not logError(new Error(...))', () => {
     const source = [
@@ -99,6 +113,6 @@ describe('NewRoundClient restore call site', () => {
     ),
 ].join('\n');
     expect(source).not.toMatch(/new Error\(\s*['"]Round setup restored after reload['"]/);
-    expect(source).toMatch(/reportRoundSetupRestoredAfterReload\(\{\s*courseId: pending\.courseId,\s*teeId: pending\.teeId\s*\}\)/);
+    expect(source).toMatch(/reportRoundSetupRestoredAfterReload\(\{\s*courseId: pending\.courseId,\s*teeId: pending\.teeId\s*\}(?:, logSourceRef\.current)?\)/);
   });
 });

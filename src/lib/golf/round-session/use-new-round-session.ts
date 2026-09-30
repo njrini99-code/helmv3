@@ -54,19 +54,28 @@ import {
   type RoundSessionLogSource,
   type RoundSessionRoutes,
 } from '@/lib/golf/round-session/routes';
+import {
+  validateStartForm,
+  validateStartHoles,
+  type NewRoundSetup,
+  type NewRoundStartForm,
+  type NewRoundStartResult,
+  type RoundSetupForm,
+} from '@/lib/golf/round-session/start-form';
+
+// What a round starts from, its result and the rules that gate it live in a plain module (no 'use client') so
+// setup screens and server code can import them without the hook; the engine keeps exporting them.
+export {
+  validateStartForm,
+  validateStartHoles,
+  type NewRoundSetup,
+  type NewRoundStartFailureReason,
+  type NewRoundStartForm,
+  type NewRoundStartResult,
+  type RoundSetupForm,
+} from '@/lib/golf/round-session/start-form';
 
 export type Hole = RoundHole;
-
-export interface RoundSetupForm {
-  courseName: string;
-  courseCity: string;
-  courseState: string;
-  courseRating: string;
-  courseSlope: string;
-  teesPlayed: string;
-  roundType: 'practice' | 'tournament' | 'qualifier';
-  roundDate: string;
-}
 
 /** What handleHoleComplete should do immediately after recording/editing a hole's score. */
 export type PostHoleCompleteAction =
@@ -112,94 +121,6 @@ export function decidePostHoleCompleteAction(params: {
 export interface NewRoundClientProps {
   playerId: string;
 }
-
-/**
- * The setup a round starts from: everything `validateStartForm` and `persistRoundStart` read. The legacy screen's
- * setup state passes as this; a renderer that keeps the form itself passes that.
- */
-export interface NewRoundSetup {
-  setup: RoundSetupForm;
-  qualifierId: string | null;
-  /** The qualifier's round number, when `setup.roundType` is 'qualifier'. */
-  qualifierRoundNumber: number | null;
-}
-
-/** Everything `start` needs, as one argument (ROUNDS_PLAN step 5a). */
-export interface NewRoundStartForm extends NewRoundSetup {
-  /** golf_courses.id of a cloud pick, else null. */
-  courseId: string | null;
-  /** golf_course_tees.id of a cloud pick, else null. */
-  teeId: string | null;
-  /**
-   * The holes this round plays, in order: 9 or 18 (the chosen nine of an 18-hole card already sliced). The engine
-   * numbers them 1..N by position, a back nine included, as the legacy hole editor does, whatever `holeNumber` says.
-   */
-  holes: HoleConfig[];
-  /** A hand-typed course: save it to the player's library and offer it to the cloud library (the legacy "save course" opt-in). */
-  saveCourse: boolean;
-}
-
-export type NewRoundStartFailureReason =
-  | 'invalid'
-  | 'in_flight'
-  | 'offline'
-  | 'in_progress_exists'
-  | 'duplicate_completed_round'
-  | 'server_rejected'
-  | 'transport';
-
-/**
- * How a start ended. `roundId` is the server round that now exists. A failure carries the player-facing sentence
- * (also set as the engine's `error`, except `in_progress_exists`, which the conflict dialog draws instead).
- */
-export type NewRoundStartResult =
-  | { ok: true; roundId: string }
-  | { ok: false; reason: NewRoundStartFailureReason; error: string };
-
-/**
- * Everything that must be true before a round can start, independent of WHICH control starts it. Returns the
- * user-facing error, or null to proceed. This is the body `validateBeforeStart` had, taking the setup as an argument
- * so `start(form)` checks the form it was given rather than the state.
- *
- * EXTRACTED 2026-07-25 and this is load-bearing, not tidying. These checks
- * used to live only inside `handleSetupSubmit`, and the confirm screen
- * reached them because a course pick with usable holes routed through the
- * form's submit button. The confirm screen now starts the round from the
- * hole editor's own "Start round" button instead — which never touches
- * `onSubmit`. Without this shared gate, a player who switched Round type to
- * "Qualifier" on the confirm screen and left the qualifier unpicked could
- * start a round that no qualifier owns.
- */
-export function validateStartForm({ setup, qualifierId, qualifierRoundNumber }: NewRoundSetup): string | null {
-  if (!setup.courseName) return 'Please enter a course name';
-  if (setup.roundType === 'qualifier') {
-    if (!qualifierId) return 'Please select a qualifier';
-    if (!qualifierRoundNumber) return 'Please select which round of the qualifier this is';
-  }
-  // Ranges mirror the server Zod schema in golf.ts — keep them in step.
-  if (setup.courseRating) {
-    const rating = parseFloat(setup.courseRating);
-    if (isNaN(rating) || rating < 50 || rating > 85) {
-      return 'Course rating must be between 50.0 and 85.0';
-    }
-  }
-  if (setup.courseSlope) {
-    const slope = parseInt(setup.courseSlope);
-    if (isNaN(slope) || slope < 55 || slope > 155) {
-      return 'Course slope must be between 55 and 155';
-    }
-  }
-  // B7: only the terminal submit path (golf.ts) rejected a future round
-  // date — by which point an entire round had already been tracked under
-  // the wrong day. This is the one gate every round-start entry point
-  // (handleSetupSubmit, handleConfirmedHolesSave, start) shares, so catching
-  // it here blocks it before persistRoundStart ever creates the round.
-  if (setup.roundDate && setup.roundDate > localDayIso()) {
-    return 'Round date cannot be in the future.';
-  }
-  return null;
-}
-
 
 /**
  * What the engine asks of the screen that draws it.
@@ -1364,7 +1285,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       // mid-setup — the process kill that caused it never reaches JS. Logged
       // as an info-level Sentry log + breadcrumb, never as an exception
       // (see new-round-setup-restore-signal.ts).
-      reportRoundSetupRestoredAfterReload({ courseId: pending.courseId, teeId: pending.teeId });
+      reportRoundSetupRestoredAfterReload({ courseId: pending.courseId, teeId: pending.teeId }, logSourceRef.current);
       handleTeePick(pending);
       return;
     }
@@ -1569,6 +1490,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
             ok: false,
             reason: 'in_progress_exists',
             error: 'You already have an in-progress round for this course and date.',
+            roundId: result.roundId,
           };
         }
         // R8: a COMPLETED round already occupies this slot. Warn once; a
@@ -1584,7 +1506,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
             teeId: selectedTeeIdRef.current ?? null,
             roundType: setup.roundType,
             roundDate: setup.roundDate,
-          });
+          }, logSourceRef.current);
           duplicateCourseConfirmedRef.current = true;
           const message = 'You already have a completed round for this course on this date. Tap Start round again to start a new one anyway.';
           setError(message);
@@ -1820,9 +1742,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
 
   /**
    * The start behind both "Start round" on the confirm screen (`handleConfirmedHolesSave`, which passes this screen's
-   * state) and `start(form)` (which passes the caller's form): the gate, the durable start, the course save.
+   * state) and `start(form)` (which passes the caller's form, `fromStart`): the gate, the durable start, the course
+   * save.
    */
-  const startRound = async (form: NewRoundStartForm): Promise<NewRoundStartResult> => {
+  const startRound = async (form: NewRoundStartForm, fromStart = false): Promise<NewRoundStartResult> => {
     const validationError = validateStartForm(form);
     if (validationError) {
       // A validation block is the form working (e2530283): info log, not an error.
@@ -1830,19 +1753,19 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
         validationError,
         roundType: form.setup.roundType,
         roundDate: form.setup.roundDate,
-      });
+      }, logSourceRef.current);
       setError(validationError);
       return { ok: false, reason: 'invalid', error: validationError };
     }
     setError('');
     setIsStartingRound(true);
-    return handleHolesSave(form.holes, form);
+    return handleHolesSave(form.holes, form, fromStart);
   };
 
-  const handleHolesSave = async (configuredHoles: HoleConfig[], form?: NewRoundStartForm): Promise<NewRoundStartResult> => {
+  const handleHolesSave = async (configuredHoles: HoleConfig[], form: NewRoundStartForm, fromStart = false): Promise<NewRoundStartResult> => {
     // See `lastStartRetryRef`'s own comment: this makes the 36-hole-day
     // conflict prompt's retries re-run the save-course step below too.
-    lastStartRetryRef.current = () => handleHolesSave(configuredHoles, form);
+    lastStartRetryRef.current = () => handleHolesSave(configuredHoles, form, fromStart);
     // Convert HoleConfig to Hole format
     const initialHoles: Hole[] = configuredHoles.map((h) => ({
       number: h.holeNumber,
@@ -1857,8 +1780,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     }
 
     // Save course configuration if user opted in
-    const setup = form?.setup ?? setupData;
-    if ((form ? form.saveCourse : saveCourseChecked) && setup.courseName) {
+    const setup = form.setup;
+    const saveCourseToLibrary = async () => {
       const holeConfigs: SavedCourseHoleConfig[] = configuredHoles.map((h) => ({
         holeNumber: h.holeNumber,
         par: h.par,
@@ -1902,9 +1825,24 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
           }
         } catch { /* best-effort: catalog growth must never block the round */ }
       }
+    };
+    if (form.saveCourse && setup.courseName) {
+      if (fromStart) {
+        // The round exists by now. A library save that throws (a dropped connection) must not leave a caller's Start
+        // hanging with the round created and the engine still on setup, so it is best-effort here. The legacy screen
+        // lets it reject, as it always did.
+        try {
+          await saveCourseToLibrary();
+        } catch { /* best-effort: the library save must never undo a started round */ }
+      } else {
+        await saveCourseToLibrary();
+      }
     }
 
     setStep('tracking');
+    // The legacy screen leaves this set once tracking starts; a caller that follows Back to setup must not find its
+    // Start blocked by it.
+    if (fromStart) setIsStartingRound(false);
     return persisted;
   };
 
@@ -1915,7 +1853,13 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
    * closure. The engine then takes the form on as its own setup (the same values the legacy setup screen would have
    * put in state), so tracking, autosave, recovery and submit run under it.
    *
-   * Order matters. State is adopted before the durable start, and adoption fires the setup effects:
+   * Nothing is adopted until the form has passed every check that can refuse it: the start gate, the hole rules
+   * (`validateStartHoles`), and, for a qualifier round, the server's own answer about that round
+   * (`getNextQualifierRoundNumber`: a round already in progress is Continue's, and a round number the player cannot
+   * play now is refused before it starts a round that could never be submitted). A call while a round is already
+   * tracking or submitting, or while another call runs, changes nothing.
+   *
+   * Then order matters. State is adopted before the durable start, and adoption fires the setup effects:
    *  - the identity effect clears the duplicate-course and start-new bypasses and the conflict prompt. This call does
    *    that itself for a form that changed (before it reads them), and tells the effect the adopted setup is its own,
    *    so the effect, which runs after the start has begun, cannot wipe what the start then sets. A form that did not
@@ -1942,7 +1886,30 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     }
   };
   const startFromForm = async (startForm: NewRoundStartForm): Promise<NewRoundStartResult> => {
+    // A round is already tracking or submitting, or was created a moment ago and the screen has not re-rendered as
+    // tracking yet (`savedRoundIdRef` is set as soon as it exists). Starting again would take the empty-shell reuse
+    // path on the server and wipe the shots held in memory.
+    if (stepRef.current === 'tracking' || stepRef.current === 'submitting' || savedRoundIdRef.current) {
+      return { ok: false, reason: 'already_started', error: 'A round is already in progress on this screen.' };
+    }
     const form = { ...startForm, holes: startForm.holes.map((h, i) => ({ ...h, holeNumber: i + 1 })) };
+    const invalid = validateStartForm(form) ?? validateStartHoles(form.holes);
+    if (invalid) {
+      reportRoundStartValidationBlocked({
+        validationError: invalid,
+        roundType: form.setup.roundType,
+        roundDate: form.setup.roundDate,
+      }, logSourceRef.current);
+      setError(invalid);
+      return { ok: false, reason: 'invalid', error: invalid };
+    }
+    if (form.setup.roundType === 'qualifier') {
+      const refusal = await checkQualifierRound(form);
+      if (refusal) {
+        setError(refusal.error);
+        return refusal;
+      }
+    }
     const setupChanged =
       form.setup.courseName !== setupData.courseName
       || form.setup.roundDate !== setupData.roundDate
@@ -1952,6 +1919,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     if (setupChanged) {
       duplicateCourseConfirmedRef.current = false;
       confirmSeparateRoundRef.current = false;
+      setInProgressConflict(null);
+      setDiscardConfirming(false);
     }
     adoptedSetupRef.current = form;
     startedQualifierRef.current = form.qualifierId;
@@ -1963,7 +1932,45 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     setSelectedRoundNumber(form.qualifierRoundNumber);
     setSaveCourseChecked(form.saveCourse);
     setHolesPerRound(form.holes.length === 9 ? 9 : 18);
-    return startRound(form);
+    return startRound(form, true);
+  };
+
+  /**
+   * The round-number check the legacy screen makes when its player picks a qualifier (the effect on
+   * `selectedQualifierId`), made for a form that brings its qualifier round with it: the server does not enforce
+   * `num_rounds` or entry when a round is created, so a round it will never accept would otherwise start and then
+   * fail at submit. Null when the form's round is the one the player can play now.
+   */
+  const checkQualifierRound = async (form: NewRoundStartForm): Promise<Extract<NewRoundStartResult, { ok: false }> | null> => {
+    const unverified = (error?: string): Extract<NewRoundStartResult, { ok: false }> => ({
+      ok: false,
+      reason: 'qualifier_unverified',
+      error: error || 'We could not verify your next qualifier round. Try again before starting.',
+    });
+    let next: Awaited<ReturnType<typeof getNextQualifierRoundNumber>>;
+    try {
+      next = await getNextQualifierRoundNumber(form.qualifierId!);
+    } catch {
+      return unverified();
+    }
+    if (!next.success) return unverified(next.error);
+    if (!next.data) return unverified();
+    if (next.data.activeRoundId) {
+      return {
+        ok: false,
+        reason: 'qualifier_round_active',
+        error: 'You already have a round in progress for this qualifier.',
+        roundId: next.data.activeRoundId,
+      };
+    }
+    if (form.qualifierRoundNumber == null || !next.data.availableRounds.includes(form.qualifierRoundNumber)) {
+      return {
+        ok: false,
+        reason: 'qualifier_round_unavailable',
+        error: `Round ${form.qualifierRoundNumber} of this qualifier is not open to you now. Your next round is ${next.data.nextRoundNumber}.`,
+      };
+    }
+    return null;
   };
 
   /**

@@ -101,6 +101,34 @@ describe('reportRoundStartValidationBlocked', () => {
   });
 });
 
+describe('the guard signals name the screen that raised them', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const context = { completedRoundId: 'r-1', courseId: null, teeId: null, roundType: 'practice', roundDate: '2026-09-25' };
+  const blocked = { validationError: 'Round date cannot be in the future.', roundType: 'practice', roundDate: '2026-09-30' };
+
+  it('default to the Fairway New Round screen', () => {
+    reportDuplicateCompletedRoundWarned(context);
+    reportRoundStartValidationBlocked(blocked);
+    for (const call of sentry.logger.info.mock.calls) {
+      expect(call[1]).toMatchObject({ component: 'NewRoundClient', route: '/golf/dashboard/rounds/new', sport: 'golf', feature: 'round_tracking' });
+    }
+    expect(sentry.logger.info).toHaveBeenCalledTimes(2);
+  });
+
+  it('carry the log source a renderer passes', () => {
+    const logSource = { component: 'ClubhouseRoundNew', route: '/clubhouse/rounds/new' };
+    reportDuplicateCompletedRoundWarned(context, logSource);
+    reportRoundStartValidationBlocked(blocked, logSource);
+    for (const call of sentry.logger.info.mock.calls) {
+      expect(call[1]).toMatchObject({ ...logSource, sport: 'golf', feature: 'round_tracking' });
+    }
+    expect(sentry.logger.info).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('NewRoundClient guard call sites', () => {
   const source = [
   // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
