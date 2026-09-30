@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, Plus, TriangleAlert, Upload } from 'lucide-react';
-import { conflictsOf, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
+import { classNameOf, conflictsOf, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -176,9 +176,12 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     const res = await writes.importRows(rows);
     const r = normalise(res);
     if (r.success) {
-      const added = (r.data?.rows ?? []).map((row) => toChClass(row, 'mist'));
-      setClasses((prev) => orderClasses([...prev, ...added]));
-      setImported({ classes: added, skipped: r.data?.skipped ?? [] });
+      // A skipped class the page has never seen was saved by an earlier attempt whose answer was lost: it joins the page
+      // and goes on the calendar like a new one. A class the page already shows stays skipped.
+      const recovered = (r.data?.known ?? []).filter((row) => !classes.some((c) => c.id === row.id)).map((row) => toChClass(row, 'mist'));
+      const added = [...(r.data?.rows ?? []).map((row) => toChClass(row, 'mist')), ...recovered];
+      setClasses((prev) => orderClasses([...prev, ...added.filter((a) => !prev.some((p) => p.id === a.id))]));
+      setImported({ classes: added, skipped: (r.data?.skipped ?? []).filter((name) => !recovered.some((c) => classNameOf(c.code, c.name) === name)) });
       // Like the current importer, each class starts from next Monday, so a schedule read mid-term doesn't fill the calendar with meetings already held,
       // but only inside its own term (a class in next term, or one imported before its term begins, has the whole term). Not waited on, like a save.
       if (added.length) void syncClasses(added, Object.fromEntries(added.map((c) => [c.id, syncStartFor(c.semester, term.label, todayIso)])));

@@ -746,6 +746,8 @@ describe('Classes live writes', () => {
     const w = live();
     const res = await w.importRows(stat.map((r) => ({ ...r, semester: 'Fall 2026' })));
     expect(res).toMatchObject({ success: true, data: { rows: [], skipped: ['STAT 201 - Probability and Statistics'] } });
+    // The stored row it matched comes back, so a page that never saw it (a lost answer) can show and sync it.
+    expect((res as { data?: { known?: Array<{ class_name: string }> } }).data?.known?.map((r) => r.class_name)).toEqual(['STAT 201 - Probability and Statistics']);
     expect(client.log.filter((c) => c.op === 'insert')).toHaveLength(0);
     // A blank term is no term.
     client.answers['golf_player_classes.select'] = { data: [{ class_name: 'STAT 201 - Probability and Statistics', semester: '  ' }] };
@@ -1619,6 +1621,26 @@ describe('Classes, import', () => {
     expect(names()).toHaveLength(5);
     // The import itself succeeded once; a sync of nothing doesn't succeed a second time.
     expect(hapticSpy.mock.calls.filter(([feel]) => feel === 'success')).toHaveLength(1);
+  });
+
+  it('CH-12307 an import retried after its answer was lost shows and syncs the classes the first attempt saved; a class the page already had stays skipped', async () => {
+    const user = userEvent.setup();
+    const geog = { code: 'GEOG 110', name: 'Global Environmental Change', instructor: '', days: ['M', 'W'], start: '15:30', end: '16:45', building: 'Carroll Hall', room: '111', credits: 3, semester: 'Fall 2026', notes: '' } as unknown as ChClassInput;
+    const lost = rowFor('lost-1', geog);
+    const had = PREVIEW_CLASSES.classes.list[0]!;
+    const importRows = vi.fn(async () => ({
+      success: true as const,
+      data: { rows: [], skipped: [lost.class_name, classNameOf(had.code, had.name)], known: [lost, rowFor(had.id, { ...geog, code: had.code, name: had.name } as ChClassInput)] },
+    }));
+    const w = show(PREVIEW_CLASSES, { importRows });
+    await openImport(user);
+    await pasteAndRead(user);
+    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
+    await waitFor(() => expect(names()).toContain('Global Environmental Change'));
+    await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(1));
+    expect((w.sync.mock.calls[0] as unknown as [{ id: string }])[0].id).toBe('lost-1');
+    expect(names().filter((n) => n === had.name)).toHaveLength(1);
   });
 
   it('CH-12002 an import whose calendar sync partly fails keeps every class, names the one that did not sync, and Retry syncs again', async () => {

@@ -29,7 +29,8 @@ export interface ChClassesWrites {
   /** Put one saved class on the team calendar (a diff-upsert, so repeating it is safe). A class with no start or no end time is taken off the calendar instead. */
   sync(c: ChClass, opts?: { semesterStartDate?: string }): Promise<ServerResult>;
   /** Save the reviewed rows of an import, skipping classes already on the schedule. */
-  importRows(rows: ChImportRow[]): Promise<ServerResult<{ rows: ChClassRow[]; skipped: string[] }>>;
+  /** `known`: the stored rows the skipped ones matched, so a page that never saw them (an earlier attempt's answer was lost) can show and sync them. */
+  importRows(rows: ChImportRow[]): Promise<ServerResult<{ rows: ChClassRow[]; skipped: string[]; known?: ChClassRow[] }>>;
   /** Read a screenshot, PDF, TXT file or pasted text into review rows. */
   read(source: ChReadSource): Promise<ChReadResult>;
 }
@@ -163,10 +164,11 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       }));
       // `golf_player_classes` has no uniqueness beyond its id, and calendar-sync reconciles per class id, so importing the same
       // schedule twice doubled the calendar. Skip what is already there. A failed read is not evidence that nothing is, so it stops.
-      const existing = await sb.from('golf_player_classes').select('class_name, semester').eq('player_id', ctx.playerId);
+      const existing = await sb.from('golf_player_classes').select(COLUMNS).eq('player_id', ctx.playerId);
       if (existing.error) return { success: false, error: `Couldn't check for classes you already have: ${existing.error.message}` };
       // A row saved before the term column was filled is in the current term (the page reads it so); every new row carries a term.
-      const taken = new Set((existing.data ?? []).map((r) => importKey(r.class_name, r.semester?.trim() || ctx.term)));
+      const stored = (existing.data ?? []) as ChClassRow[];
+      const taken = new Set(stored.map((r) => importKey(r.class_name, r.semester?.trim() || ctx.term)));
       // The batch checks itself too: a schedule that lists a class twice (a reader's repeat, a pasted table's duplicate row) saves it once.
       const fresh: typeof payloads = [];
       const skipped: string[] = [];
@@ -178,10 +180,12 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
           fresh.push(p);
         }
       }
-      if (!fresh.length) return { success: true, data: { rows: [], skipped } };
+      const skippedKeys = new Set(payloads.filter((p) => !fresh.includes(p)).map((p) => importKey(p.class_name, p.semester)));
+      const known = stored.filter((r) => skippedKeys.has(importKey(r.class_name, r.semester?.trim() || ctx.term)));
+      if (!fresh.length) return { success: true, data: { rows: [], skipped, known } };
       const { data, error } = await sb.from('golf_player_classes').insert(fresh).select(COLUMNS);
-      if (error) return res<{ rows: ChClassRow[]; skipped: string[] }>(error);
-      return { success: true, data: { rows: (data ?? []) as ChClassRow[], skipped } };
+      if (error) return res<{ rows: ChClassRow[]; skipped: string[]; known?: ChClassRow[] }>(error);
+      return { success: true, data: { rows: (data ?? []) as ChClassRow[], skipped, known } };
     },
 
     read: readScheduleLive,
