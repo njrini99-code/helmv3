@@ -147,10 +147,31 @@ describe('Stats team · reads that fail', () => {
   it('CH-4204 CH-4205 CH-4206 CH-4207 CH-4208 a section that crashes on the server render leaves the page standing', async () => {
     const { renderToString } = await import('react-dom/server');
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // Without the Suspense inside each boundary, this throws and the whole page fails.
+    // Without the Suspense inside SectionBoundary, this throws and the whole page fails.
     const html = renderToString(tree(stats({ figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never })));
     expect(html).toContain('Team stats');
     expect(html).toContain('Export');
+    quiet.mockRestore();
+  });
+
+  it('CH-4204 the shared SectionBoundary: a child that throws on the server render is left out, and the page renders', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const { SectionBoundary } = await import('../ui/SectionBoundary');
+    const Throws = () => {
+      throw new Error('boom');
+    };
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const html = renderToString(
+      <main>
+        <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
+          <Throws />
+          <p>inside the section</p>
+        </SectionBoundary>
+        <p>the rest of the page</p>
+      </main>,
+    );
+    expect(html).toContain('the rest of the page');
+    expect(html).not.toContain('inside the section');
     quiet.mockRestore();
   });
 

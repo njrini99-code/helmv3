@@ -2,7 +2,7 @@
 
 import { Download, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
@@ -121,26 +121,26 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
       ) : (
         !data.roundsError && (
           <>
-            <Section surface="stats.team.figures" label="Team figures" code="CH-4204">
+            <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
               <TeamFigures figures={data.figures} cacheError={data.cacheError} onRetry={() => router.refresh()} />
-            </Section>
+            </SectionBoundary>
 
-            <Section surface="stats.team.trend" label="The trend chart" code="CH-4205">
+            <SectionBoundary surface="stats.team.trend" label="The trend chart" code="CH-4205">
               <TeamTrend data={data} focus={focus} setFocus={setFocus} />
-            </Section>
+            </SectionBoundary>
 
-            <Section surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
+            <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
               <LegTrends legWeeks={data.legWeeks} leg={leg} setLeg={setLeg} />
               <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} playerHref={playerHref} />
-            </Section>
+            </SectionBoundary>
 
             <div className="ch-st-grid2">
-              <Section surface="stats.team.putting" label="Team putting" code="CH-4207">
+              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
                 <TeamPutting putting={data.putting} failed={data.puttsError} onRetry={() => router.refresh()} />
-              </Section>
-              <Section surface="stats.team.bests" label="Season bests" code="CH-4208">
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
                 <SeasonBests bests={data.bests} playerHref={playerHref} />
-              </Section>
+              </SectionBoundary>
             </div>
           </>
         )
@@ -153,20 +153,6 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  * Each section below is its own component so that its SectionBoundary
  * contains everything it computes: a crash in one never reaches the page.
  */
-
-/**
- * An error boundary only catches in the browser. The Suspense inside it
- * covers the server render: a section that throws there is left out of the
- * HTML and rendered again in the browser, where the boundary catches it.
- * Without it, one section's crash on first load fails the whole page.
- */
-function Section({ surface, label, code, children }: { surface: string; label: string; code: string; children: ReactNode }) {
-  return (
-    <SectionBoundary surface={surface} label={label} code={code}>
-      <Suspense fallback={null}>{children}</Suspense>
-    </SectionBoundary>
-  );
-}
 
 function TeamFigures({ figures, cacheError, onRetry }: { figures: ChTeamStats['figures']; cacheError: boolean; onRetry: () => void }) {
   return (
