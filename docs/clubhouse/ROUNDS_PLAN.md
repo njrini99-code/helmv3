@@ -20,13 +20,10 @@ Boards: `Player - Rounds.html` and `Player - Rounds - Mobile.html`
 
 ## Order
 
-1. **Library**. It is read-only over existing loaders, and it puts the
-   player's Rounds tab on a Clubhouse page.
-2. **Review**. It is also read-only, except for the coach's note, which uses the
-   existing action. Stats (D-53) and Home's latest round link here.
-3. **Engine extraction**, as a separate commit that changes no behavior.
-4. **Setup and Tracking** are the Clubhouse renderer over the extracted engine.
-   The legacy Fairway entry stays the production path until the flag flips.
+1. **Library**, built.
+2. **Review**, built at `/rounds/[id]` (Q-72e).
+3. **Setup and Tracking, as the Clubhouse renderer**, built against a neutral contract with fixtures and a preview, like Library and Review. `/rounds/new` and `/continue` stay un-rebuilt while they are built, so no half-built state is reachable and New round and Continue stay hidden.
+4. **Engine extraction last, one engine per commit**, as pure moves that return exactly the contract (below). The legacy Fairway entry stays the production path until the flag flips.
 
 Each surface gets the usual contract: catalog codes on page 11 (`CH-11…`),
 covering empty states, didn't-load states, error toasts and messages (D-69), a
@@ -35,49 +32,28 @@ manifest (`P011-rounds.json`), a checklist, and a phone spec
 
 ## The engine seam
 
-`rounds/new/new-round-client.tsx` (3,272 lines) is the hardened round-entry
-engine:
+Round entry is two engines and one tracking screen, all Fairway-rendered today:
 
-- Lines 177–2790 are session logic: 49 `useState`, 23 `useEffect`, 20
-  `useCallback`, offline store, sync engine, drafts, conflict blocking, the
-  pagehide beacon, checkpoints, and qualifier-closed handling.
-- Lines 2790–3230 render it through Fairway components (`FairwayNewRoundEntry`,
-  `FairwayCoursePicker`, `FairwayShotTracking`, `ModalShell`, `FwButton`).
+- `rounds/new/new-round-client.tsx` (3,272 lines): setup, the course and tee pickers, the hole card, tracking, save for later, discard, the summary and submit. Lines 180–2786 are session logic (49 `useState`, 23 `useEffect`, 20 `useCallback`: the offline store, sync engine, drafts, conflict blocking, the pagehide beacon, checkpoints, qualifier-closed handling). Lines 2787–3273 render it through Fairway (`FairwayNewRoundEntry`, `FairwayCoursePicker`, `FairwayShotTracking`, `ModalShell`, `FwButton`, the save, summary and submit overlays). Only 39 names cross from the logic into the tracking render.
+- `rounds/continue/[id]/continue-round-client.tsx` (1,940 lines): the same for a round already started.
+- `components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx` and its parts (3,536 lines): the shot screen. Its header says it copies `components/golf/ShotTrackingComprehensive.tsx`'s logic verbatim; only the JSX differs. The logic itself is already shared hooks: `useShotStateMachine`, `usePenaltyHandler`, `useEditShotModal`, `useUndoManager`, `calculateHoleStats`, `round-entry-validation`, `distance-units`. Clubhouse may use those (shared, non-UI).
 
-Clubhouse may not import Fairway, and forking about 2,600 lines of hardening
-would split every future fix in two. So the logic moves, unchanged, into a
-hook:
+**The tracking contract** is the shot screen's props, which both engines pass: `holes`, `currentHoleIndex`, `onHoleComplete(holeIndex, stats) → Promise<boolean>` (true only once the hole is durably checkpointed), `onHoleStatsUpdate`, `onSaveShot`, `onExit`, `onNavigateToHole`, `initialShots`, `initialShotNumber`, `onAutoSave(shots, holeIndex)`, `autoSaveInterval`, `autoSaveDisabled`. The Clubhouse shot screen implements it, so it can sit behind either engine unchanged.
 
-- **Where:** `src/lib/golf/round-session/use-new-round-session.ts`, outside
-  `src/clubhouse`, because the legacy client imports it too.
-- **Imports:** nothing under `@/components/fairway`, `@/lib/fairway` or
-  `@/lib/redesign`. Check the import graph before any Clubhouse file imports
-  it.
-- **Ports:** the body's side effects become injected ports:
-  - `toast` (4 call sites),
-  - `haptic` (1),
-  - `navigate` (12 `router.` calls),
-  - `confirm` (the modal flags stay as state).
+**Avoid a third copy.** The Clubhouse shot screen would be the third copy of the handlers in `ShotTrackingComprehensive` (`handleNextShot`, `completeHole`, `isReadyForNextShot`, the double-tap guard, the distance-unit boundary). Before it is built, those handlers move into one shared hook (`useShotTracking`) that the Fairway screen then calls too: a pure move with its own tests, done like the engine moves.
 
-  Legacy passes sonner, `@/lib/haptics` and `useRouter`. Clubhouse passes
-  CH-coded toasts, `src/clubhouse/lib/haptics.ts` and its router.
-- **Tests:** eight of the nine `new-round-client.*.test.ts` files are
-  source-text tests. They `readFileSync` the client and assert logic strings:
-  - the pagehide beacon,
-  - conflict-block checks,
-  - `hole_invalid`,
-  - `expectedUpdatedAt`,
-  - unreadable-write handling.
+**The engine moves** (step 4) go into `src/lib/golf/round-session/`, outside `src/clubhouse`, importing nothing from Fairway:
 
-  They follow the logic: only their file URL changes, and every assertion stays
-  word for word. `decide-post-hole` tests an exported function, which moves with
-  its export and is re-exported from the client.
-- **Proof:**
-  - Run all nine files before and after, and `typecheck:fast`.
-  - Also run the rounds-tracking component tests, and `npm run build` (the
-    client is imported by a server page).
-  - A fresh-context `code-reviewer` pass on the move diff.
-  - The move commit touches no Clubhouse file.
+- The body's side effects become injected ports: `showToast` (the legacy sonner call sites), `hideMobileNav` and `showMobileNav` (the legacy mobile-nav context), and `haptic`. `router` and `searchParams` stay, since they are Next, not Fairway.
+- Source-text tests follow the logic by path only, every assertion word for word:
+  - the eight `new-round-client.*.test.ts` files that `readFileSync` the client;
+  - `src/lib/golf/__tests__/round-start-guard-signal.test.ts` and `new-round-setup-restore-signal.test.ts`;
+  - whatever the `continue-round-client.*.test.ts` files read.
+- Proof for each move:
+  - the 40-file, 207-test baseline for rounds (`rounds/`, `rounds-tracking/`, `rounds-new/`) before and after, plus the tests above;
+  - `typecheck:fast`, and `npm run build`;
+  - a fresh-context `code-reviewer` on the move diff;
+  - the move commit touches no Clubhouse file.
 
 ## Board to source
 
