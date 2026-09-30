@@ -90,33 +90,35 @@ build therefore adds phone components next to the desktop ones in
 
 ## Build status (2026-09-29)
 
-These parts are built and don't depend on the shell:
+Built on the phone foundation (D-40 to D-43, merged from
+`agent/clubhouse-messages-mobile`). `Roster` picks `RosterPhone` with
+`useChPhone()`.
 
-- **`RosterPhone` and `RosterPhoneRow`**, chosen by `useChPhone()` in
-  `Roster`:
-  - kicker, title, Avg, SG and Name sort (by last name), the Active list,
-    then Inactive
-  - the row: note, a spark from 3 rounds, average and handicap, and CH-3806
-- **`RosterProfile`,** pushed through `?player=` with `pushState`, so Back and
-  the edge swipe return to the list. It has:
-  - identity, marked "Inactive" when the player is inactive
+- **List** (`RosterPhone`, `RosterPhoneRow`):
+  - `PhoneTop` (`‹ More` via `useBackFromMore`, title Roster, invite as a `PhoneIconAction`)
+  - kicker and the large title
+  - the join requests banner (CH-3203 in its slot)
+  - Avg, SG and Name sort (Name by last name), the Active list, then Inactive
+  - rows with a note, a spark from 3 rounds, average and handicap (CH-3806)
+- **Profile** (`RosterProfile`): a `PhoneScreen` with a `PhoneBar` (`‹ Roster`,
+  ⋯), kept in the history by `usePhoneStackHistory`, so the iOS edge swipe pops
+  it (CH-1906). A `?player=` link opens it once. It has:
+  - identity, marked Inactive when the player is inactive
   - Message, which opens the Messages deep link
   - Plan 1:1, which opens `calendar?new=1&with=`
-  - figures, the trend, recent rounds with "All N" (`stats?…&window=season&tab=rounds`)
+  - figures, the trend, recent rounds with "All N"
   - About with real fields only, and the coach's note
-- **The phone skeleton**, switched in CSS.
-- **The Calendar 1:1 seed** (D-52) and **the Stats `tab` parameter** (D-53).
-- **Approve all** (`useJoinRequests`, D-55, CH-3007).
+- **Sheets** (`ui/Modal`, a bottom sheet on the phone):
+  - the join requests sheet: cards, Approve all with CH-3403 in flight and CH-3007 on partial failure, and the team code with Copy
+  - the ⋯ action sheet: View stats, and Remove from team in red (D-42) behind the CH-3501 confirm
+- **Loading:** the phone skeleton, switched in CSS.
+- **Other pages:** the Calendar 1:1 seed (D-52) and the Stats `tab` parameter
+  (D-53).
 
-Until the foundation lands on this branch, three controls use today's
-components, and none of them is dead:
-- the header keeps Invite players, which opens `InviteModal`
-- the join requests keep their inline card, where the banner and sheet will go
-- the profile's ⋯ is the shared `Menu`
-
-The banner, the requests sheet with its Approve all footer (CH-3403), the
-top-bar actions, the ⋯ action sheet and the push transition come with the
-foundation.
+Not yet:
+- pull to refresh, which waits for a design (D-43)
+- drag to dismiss on sheets, which `ui/Modal` doesn't have
+- the browser pass at 390 × 844 and the device pass
 
 ## Screen 1: Roster list
 

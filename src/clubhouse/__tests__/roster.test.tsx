@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
@@ -31,6 +31,7 @@ import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
 import { NOTE_MAX } from '../screens/roster/RosterPeek';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
 import './dialog-polyfill';
 
@@ -101,7 +102,7 @@ describe('Roster · saves that fail', () => {
 
   it('CH-3007 approve all: every failure is named, the count added is said, and Retry re-tries only those', async () => {
     const user = userEvent.setup();
-    const three = [...PREVIEW_ROSTER.requests, { id: 'r3', name: 'Sam Reyes', meta: 'Freshman', handicap: null }];
+    const three = [...PREVIEW_ROSTER.requests, { id: 'r3', name: 'Sam Reyes', meta: 'Freshman', classYear: 'Freshman', gradYear: 2030, requested: 'today', handicap: null }];
     actions.accept.mockImplementation((id: string) => Promise.resolve(id === 'r1' ? { success: true } : { success: false, error: 'nope' }));
     const { result } = renderHook(() => useJoinRequests('Varsity', three), {
       wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
@@ -381,22 +382,52 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
       removeListener: () => {},
       dispatchEvent: () => false,
     })) as never;
-    window.scrollTo = vi.fn() as never;
     window.history.replaceState(null, '', '/golf/dashboard/roster');
+    router.back.mockClear();
   });
   afterEach(() => {
     window.matchMedia = realMatchMedia;
     window.history.replaceState(null, '', '/');
   });
+  /** The shell's phone top bar, where the page's PhoneTop renders. */
+  function SlotHost() {
+    const { setSlot } = usePhoneChromeState();
+    return <div ref={setSlot} data-testid="phone-top" />;
+  }
+  const phone = (data: ChRoster) =>
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <Roster data={data} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
   const names = (list: string) =>
     within(screen.getByRole('list', { name: list }))
       .getAllByRole('button')
       .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
+  const profileHeading = (name: string) => screen.queryByRole('heading', { level: 2, name });
+
+  it('the top bar reads "‹ More", Roster, and Invite players, which opens the invite sheet', async () => {
+    const user = userEvent.setup();
+    phone(roster());
+    const top = screen.getByTestId('phone-top');
+    expect(within(top).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
+    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
+    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    await user.click(within(top).getByRole('button', { name: 'Invite players' }));
+    expect(await screen.findByText('FINLEY-26')).toBeTruthy();
+    expect(hapticSpy).toHaveBeenCalledWith('press');
+  });
 
   it('CH-3701 active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
     const user = userEvent.setup();
-    wrap(roster());
-    expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
+    phone(roster());
     expect(names('Active players')).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
     expect(names('Inactive')).toEqual(['Mia Thornton']);
     await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
@@ -407,7 +438,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
   });
 
   it('CH-3806 a row is one button that reads name, class, note, average and handicap; the spark needs three rounds (D-57)', () => {
-    wrap(roster());
+    phone(roster());
     const jonah = screen.getByRole('button', { name: 'Jonah Okafor, Sophomore, Scoring up 2.1, average 74.1, handicap 3.9' });
     expect(jonah.getAttribute('data-ch-code')).toBe('CH-3806');
     expect(jonah.querySelector('.ch-rsm-row__spark')?.getAttribute('aria-hidden')).toBe('true');
@@ -416,13 +447,13 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(screen.getByRole('button', { name: /^Mia Thornton, Junior, inactive, Improving, average 73.8/ })).toBeTruthy();
   });
 
-  it('opening a player pushes ?player= and shows their profile; Back returns to the list', async () => {
+  it('CH-1906 a player is a pushed screen: a history entry, "‹ Roster" and the back gesture both pop it', async () => {
     const user = userEvent.setup();
-    wrap(roster());
+    phone(roster());
     await user.click(screen.getByRole('button', { name: /^Jonah Okafor/ }));
-    expect(window.location.search).toBe('?player=jonah');
+    expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1);
     expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
+    expect(profileHeading('Jonah Okafor')).toBeTruthy();
     expect(screen.getByText('Sophomore · Class of 2029')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
     expect(screen.getByRole('link', { name: 'Plan 1:1' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=jonah');
@@ -432,39 +463,78 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(screen.queryByText(/Birthday|Home course/)).toBeNull();
     expect(screen.getByRole('textbox', { name: /Coach.s note/ })).toBeTruthy();
 
-    window.history.replaceState(null, '', '/golf/dashboard/roster');
-    act(() => {
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
-    expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Back to Roster' }));
+    await waitFor(() => expect(profileHeading('Jonah Okafor')).toBeNull());
+
+    await user.click(screen.getByRole('button', { name: /^Eli Brandt/ }));
+    expect(profileHeading('Eli Brandt')).toBeTruthy();
+    act(() => window.history.back());
+    await waitFor(() => expect(profileHeading('Eli Brandt')).toBeNull());
   });
 
-  it('a link with ?player= opens the profile; an inactive player is labelled (D-58)', () => {
+  it('a link with ?player= opens the profile once; an inactive player is labelled (D-58)', () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?player=mia');
-    wrap(roster());
-    expect(screen.getByRole('heading', { level: 1, name: 'Mia Thornton' })).toBeTruthy();
+    phone(roster());
+    expect(profileHeading('Mia Thornton')).toBeTruthy();
     expect(screen.getByText('Junior · Class of 2028 · Inactive')).toBeTruthy();
+    expect(window.location.search).toBe('');
   });
 
-  it('CH-3501 ⋯ → Remove from team confirms, and a removed player\'s profile closes', async () => {
+  it("CH-3501 ⋯ opens the action sheet; Remove from team asks first, and a removed player's profile closes", async () => {
     const user = userEvent.setup();
     actions.remove.mockResolvedValue({ success: true });
     window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
-    wrap(roster());
+    phone(roster());
     await user.click(screen.getByRole('button', { name: 'More actions' }));
-    await user.click(await screen.findByRole('menuitem', { name: 'Remove from team' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    expect(within(sheet).getByRole('link', { name: 'View stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+    await user.click(within(sheet).getByRole('button', { name: 'Remove from team' }));
     await expectCode('CH-3501', /Remove Theo Marchetti from Varsity/);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy());
-    expect(window.location.search).toBe('');
+    await waitFor(() => expect(profileHeading('Theo Marchetti')).toBeNull());
     expect(screen.queryByRole('button', { name: /^Theo Marchetti/ })).toBeNull();
+  });
+
+  it('the join requests banner opens the sheet; approving one leaves the banner counting the rest', async () => {
+    const user = userEvent.setup();
+    actions.accept.mockResolvedValue({ success: true });
+    phone(roster());
+    await user.click(screen.getByRole('button', { name: /2 join requests/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Join requests' });
+    expect(within(sheet).getByText('2 waiting · Varsity')).toBeTruthy();
+    expect(within(sheet).getByText('Requested yesterday')).toBeTruthy();
+    expect(within(sheet).getByText('FINLEY-26')).toBeTruthy();
+    await user.click(within(sheet).getAllByRole('button', { name: 'Approve' })[0]!);
+    await waitFor(() => expect(within(sheet).queryByText('Grace Liu')).toBeNull());
+    expect(screen.getByRole('button', { name: /1 join request/ })).toBeTruthy();
+  });
+
+  it('CH-3403 Approve all shows its progress and cannot be pressed twice; the sheet closes once every request is in', async () => {
+    const user = userEvent.setup();
+    let finish: () => void = () => {};
+    actions.accept.mockImplementation(() => new Promise((resolve) => (finish = () => resolve({ success: true }))));
+    phone(roster());
+    await user.click(screen.getByRole('button', { name: /2 join requests/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Join requests' });
+    await user.click(within(sheet).getByRole('button', { name: 'Approve all 2' }));
+    await expectCode('CH-3403', /Approving/);
+    expect((code('CH-3403')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
+    act(() => finish());
+    await waitFor(() => expect(actions.accept).toHaveBeenCalledTimes(2));
+    act(() => finish());
+    await waitFor(() => expect(screen.getByText('2 players added to Varsity')).toBeTruthy());
+    await waitFor(() => expect(screen.queryByRole('button', { name: /join request/ })).toBeNull());
+  });
+
+  it('CH-3203 join requests that did not load say so in the banner slot', () => {
+    phone(roster({ requestsError: true, requests: [] }));
+    expect(code('CH-3203')!.textContent).toMatch(/Join requests didn't load/);
   });
 
   it('CH-3202 season stats that did not load: the profile says so instead of "no rounds"', () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
-    wrap(roster({ statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null, trend: [], recent: [], rounds: 0, form: 'early', attention: null })) }));
-    expect(code('CH-3202')!.textContent).toMatch(/Season stats didn't load/);
+    phone(roster({ statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null, trend: [], recent: [], rounds: 0, form: 'early', attention: null })) }));
+    expect(screen.getAllByText(/Season stats didn't load/).length).toBeGreaterThan(0);
     expect(code('CH-3305')).toBeNull();
   });
 });
-

@@ -1,13 +1,12 @@
 'use client';
 
-import { BarChart3, CalendarPlus, Ellipsis, Flag, MessageSquare, UserMinus } from 'lucide-react';
+import { CalendarPlus, Flag, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import type { ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
-import { Menu, type MenuItem } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
@@ -17,26 +16,21 @@ import { formatHcp, rowNote } from './format';
 /**
  * A player on the phone, pushed from the list (`?player=`): who they are,
  * Message and Plan 1:1, their figures and form, recent rounds, the real facts
- * we hold (D-51, never invented), and the coach's note (D-56).
- *
- * The ⋯ menu (View stats, Remove from team) becomes the foundation's action
- * sheet once it lands (D-54). Until then it is the shared Menu.
+ * we hold (D-51, never invented), and the coach's note (D-56). Its screen,
+ * top bar and ⋯ action sheet are RosterPhone's.
  */
 export function RosterProfile({
   p,
   notesLocked,
   statsError,
-  onRemove,
 }: {
   p: ChRosterPlayer;
   notesLocked: boolean;
   statsError: boolean;
-  onRemove: (p: ChRosterPlayer) => void;
 }) {
   const note = rowNote(p, statsError);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${p.id}`);
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
-  const statsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
   const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&tab=rounds`);
   const identity = [p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.status === 'inactive' ? 'Inactive' : null].filter(Boolean).join(' · ');
   const place = [p.hometown, p.highSchool].filter(Boolean).join(' · ');
@@ -47,29 +41,13 @@ export function RosterProfile({
     ['Jersey', p.jersey],
     ['Member', p.joined ? p.joined.replace(/^Joined /, 'Since ') : null],
   ].filter((f): f is [string, string] => !!f[1]);
-  const menu: MenuItem[] = [
-    ...(statsHref ? [{ label: 'View stats', icon: BarChart3, href: statsHref } as MenuItem, { kind: 'separator' } as MenuItem] : []),
-    { label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => onRemove(p) },
-  ];
   const sg = p.sgPerRound;
 
   return (
     <article className="ch-rsm-prof">
-      <div className="ch-rsm-prof__bar">
-        <Menu
-          label={`Actions for ${p.name}`}
-          items={menu}
-          trigger={(t) => (
-            <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-rsm-prof__more" aria-label="More actions" {...t}>
-              <Icon icon={Ellipsis} size={18} />
-            </button>
-          )}
-        />
-      </div>
-
       <section className="ch-rsm-hero">
         <Avatar name={p.name} size={64} />
-        <h1>{p.name}</h1>
+        <h2>{p.name}</h2>
         {identity && <p className="ch-rsm-hero__id">{identity}</p>}
         {place && <p className="ch-rsm-hero__m">{place}</p>}
         {(messageHref || planHref) && (

@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, UserMinus, UserPlus, Users } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
@@ -25,6 +25,7 @@ import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
+import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
 import { formatHcp } from './format';
@@ -51,28 +52,22 @@ export function Roster({ data }: { data: ChRoster }) {
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
   const jr = useJoinRequests(data.teamName, data.requests);
   const phone = useChPhone();
-  // Phone: the open player lives in the URL (?player=), so Back and the edge swipe return to the list.
+  // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
+  // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
   const [openId, setOpenId] = useState<string | null>(null);
-  const listY = useRef(0);
   useEffect(() => {
     if (!phone) return;
-    const read = () => setOpenId(new URLSearchParams(window.location.search).get('player'));
-    read();
-    window.addEventListener('popstate', read);
-    return () => window.removeEventListener('popstate', read);
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get('player');
+    if (!id) return;
+    url.searchParams.delete('player');
+    window.history.replaceState(null, '', url.pathname + url.search);
+    setOpenId(id);
   }, [phone]);
-  useEffect(() => {
-    if (phone && !openId && listY.current) window.scrollTo(0, listY.current);
-  }, [phone, openId]);
   const openPlayer = useCallback((id: string) => {
     chTrail('roster open player');
     haptic('select');
-    listY.current = window.scrollY;
-    const url = new URL(window.location.href);
-    url.searchParams.set('player', id);
-    window.history.pushState(null, '', url.pathname + url.search);
     setOpenId(id);
-    window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
@@ -196,13 +191,8 @@ export function Roster({ data }: { data: ChRoster }) {
                 if (res.success) {
                   setPlayers((ps) => ps.filter((x) => x.id !== p.id));
                   if (sel === p.id) setSel(null);
-                  if (openId === p.id) {
-                    // Their profile is gone: back to the list, and a reload doesn't reopen it.
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('player');
-                    window.history.replaceState(null, '', url.pathname + url.search);
-                    setOpenId(null);
-                  }
+                  // Their profile is gone: back to the list.
+                  if (openId === p.id) setOpenId(null);
                   setRemoving(null);
                 }
               }}
@@ -225,6 +215,7 @@ export function Roster({ data }: { data: ChRoster }) {
         jr={jr}
         openId={openId}
         onOpen={openPlayer}
+        onClose={() => setOpenId(null)}
         onInvite={() => setInvite(true)}
         onRemove={setRemoving}
         onRetry={() => router.refresh()}
@@ -560,18 +551,8 @@ function InviteModal({
   codeFailed: boolean;
   onRetry: () => void;
 }) {
-  const toast = useToast();
+  const copy = useCopyText();
   const link = code && typeof window !== 'undefined' ? `${window.location.origin}/golf/join/${encodeURIComponent(code)}` : null;
-  const copy = async (text: string, what: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      haptic('success');
-      toast({ title: `${what} copied` });
-    } catch {
-      haptic('error');
-      toast({ tone: 'error', title: `Couldn't copy the ${what.toLowerCase()}`, body: 'Select it and copy it by hand.', code: 'CH-3006' });
-    }
-  };
   const share = async () => {
     if (!link) return;
     try {

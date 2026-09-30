@@ -46,7 +46,13 @@ export interface ChRosterPlayer {
 export interface ChJoinRequest {
   id: string;
   name: string;
+  /** Class, graduation year and age in one line (desktop card). */
   meta: string;
+  /** The same parts apart, for the phone sheet. */
+  classYear: string | null;
+  gradYear: number | null;
+  /** "today", "yesterday", "3 days ago". */
+  requested: string;
   handicap: number | null;
 }
 
@@ -73,9 +79,9 @@ function daysBetween(a: Date, b: Date) {
 
 function relativeAgo(iso: string, now: Date): string {
   const d = daysBetween(now, new Date(iso));
-  if (d <= 0) return 'requested today';
-  if (d === 1) return 'requested yesterday';
-  return `requested ${d} days ago`;
+  if (d <= 0) return 'today';
+  if (d === 1) return 'yesterday';
+  return `${d} days ago`;
 }
 
 /**
@@ -187,18 +193,20 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
 
   const requests: ChJoinRequest[] = (requestsRes.success ? (requestsRes.data ?? []) : [])
     .filter((r) => r.status === 'pending')
-    .map((r) => ({
-      id: r.id,
-      name: r.player ? fullName(r.player) : 'A player',
-      meta: [
-        classYearLabel(r.player?.graduation_year ?? null, now),
-        r.player?.graduation_year ? `Class of ${r.player.graduation_year}` : null,
-        relativeAgo(r.created_at, now),
-      ]
-        .filter(Boolean)
-        .join(' · '),
-      handicap: r.player?.handicap ?? null,
-    }));
+    .map((r) => {
+      const gradYear = r.player?.graduation_year ?? null;
+      const classYear = classYearLabel(gradYear, now);
+      const requested = relativeAgo(r.created_at, now);
+      return {
+        id: r.id,
+        name: r.player ? fullName(r.player) : 'A player',
+        meta: [classYear, gradYear ? `Class of ${gradYear}` : null, `requested ${requested}`].filter(Boolean).join(' · '),
+        classYear,
+        gradYear,
+        requested,
+        handicap: r.player?.handicap ?? null,
+      };
+    });
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',

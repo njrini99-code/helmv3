@@ -56,6 +56,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | --- | --- | --- | --- | --- |
 | CH-3401 | Roster is loading | Header, toolbar and six face cards as skeletons in their final slots | `RosterSkeleton`, `aria-busy` | roster.test › CH-3401 |
 | CH-3402 | A remove is in flight | The button reads "Removing" and can't be pressed again | `Modal` footer | roster.test › CH-3402 |
+| CH-3403 | Approve all is in flight (phone join requests sheet, D-55) | The footer reads "Approving" and can't be pressed again; each Approve and Decline waits too | `RequestsSheet` footer | roster.test › CH-3403 |
 
 ## 35xx Confirm
 

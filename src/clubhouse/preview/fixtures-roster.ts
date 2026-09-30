@@ -24,8 +24,8 @@ export const PREVIEW_ROSTER: ChRoster = {
   statsError: false,
   requestsError: false,
   requests: [
-    { id: 'r1', name: 'Grace Liu', meta: 'Freshman · Class of 2030 · requested yesterday', handicap: 7.2 },
-    { id: 'r2', name: 'Owen Park', meta: 'Sophomore · Class of 2029 · requested 3 days ago', handicap: 4.8 },
+    { id: 'r1', name: 'Grace Liu', meta: 'Freshman · Class of 2030 · requested yesterday', classYear: 'Freshman', gradYear: 2030, requested: 'yesterday', handicap: 7.2 },
+    { id: 'r2', name: 'Owen Park', meta: 'Sophomore · Class of 2029 · requested 3 days ago', classYear: 'Sophomore', gradYear: 2029, requested: '3 days ago', handicap: 4.8 },
   ],
   players: RAW.map(([id, name, cls, grad, home, status, avg, hcp, rounds, sg, trend, focus, goals, last, attention, jersey]) => ({
     id,
