@@ -78,6 +78,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5805 | No axe violations on every tab and state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-5806 | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it | `ScrollRegion` | a11y scan |
 | CH-5807 | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing | `aria-expanded`; `aria-pressed` | stats-player.test › phone rounds |
+| CH-5808 | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text | `RoundsTable`, `rebuiltHref` | stats-player.test › CH-5808 |
 
 ## 59xx Network and UX
 

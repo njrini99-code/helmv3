@@ -213,6 +213,7 @@ The profile's own (51801 to 51807): real tabs with their panels, "Stats › name
 | 51805 | CH-5805 | `NO_AXE_VIOLATIONS_ON_EVERY_TAB_AND` | No axe violations on every tab and state, 1280px and 390px |
 | 51806 | CH-5806 | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 51807 | CH-5807 | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
+| 51808 | CH-5808 | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 

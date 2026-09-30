@@ -3243,6 +3243,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 51808,
+    "page": "P005",
+    "category": 18,
+    "item": 8,
+    "name": "IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS",
+    "chCode": "CH-5808",
+    "meaning": "In the Rounds table each course opens that round's review (for a coach and the player), named \"Finley GC, Oct 14: open the round\"; where the review isn't rebuilt, it stays text",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 51901,
     "page": "P005",
     "category": 19,

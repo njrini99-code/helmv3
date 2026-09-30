@@ -210,6 +210,15 @@ describe('Stats player · opened from a link', () => {
     expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe('tab-rounds');
   });
 
+  it('CH-5808 a round in the table opens its review; a round the review can\'t open stays text', () => {
+    const id = '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c';
+    const [first, second] = PREVIEW_PLAYER.rounds;
+    wrap(<StatsPlayer data={player({ rounds: [{ ...first!, id }, { ...second!, id: 'not-a-uuid' }] })} coachId="c1" initialTab="rounds" />);
+    const link = screen.getByRole('link', { name: `${first!.course}, ${first!.date}: open the round` });
+    expect(link).toHaveAttribute('href', `/golf/dashboard/rounds/${id}`);
+    expect(screen.queryByRole('link', { name: `${second!.course}, ${second!.date}: open the round` })).toBeNull();
+  });
+
   it('50102 no tab, or one that does not exist, opens Overview', () => {
     const { unmount } = wrap(<StatsPlayer data={player()} coachId="c1" initialTab="sg" />);
     expect(selected()).toMatch(/Overview/);

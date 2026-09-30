@@ -256,7 +256,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 
         {tab === 'rounds' && (
           <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
-            <RoundsTable rounds={data.rounds} />
+            <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} />
           </SectionBoundary>
         )}
 
@@ -342,7 +342,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   );
 }
 
-function RoundsTable({ rounds }: { rounds: ChPlayerProfile['rounds'] }) {
+function RoundsTable({ rounds, role }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player' }) {
   return (
     <section className="ch-st-card">
       <div className="ch-st-card__head">
@@ -367,7 +367,19 @@ function RoundsTable({ rounds }: { rounds: ChPlayerProfile['rounds'] }) {
             </div>
             {rounds.map((r) => (
               <div key={r.id} className="ch-tr" role="row">
-                <span role="cell" className="ch-tr__course">{r.course}</span>
+                <span role="cell" className="ch-tr__course">
+                  {/* CH-5808: a round opens its review where the review is rebuilt for this viewer. */}
+                  {(() => {
+                    const href = rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role);
+                    return href ? (
+                      <Link href={href} className="ch-tr__link" aria-label={`${r.course}, ${r.date}: open the round`}>
+                        {r.course}
+                      </Link>
+                    ) : (
+                      r.course
+                    );
+                  })()}
+                </span>
                 <span role="cell" className="ch-n2">{r.date}</span>
                 <span role="cell" className="r ch-num ch-n">{r.score}</span>
                 <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>

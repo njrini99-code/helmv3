@@ -69,7 +69,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P004 | 2 | 1 | 1 | 9 | 1 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 47 |
-| P005 | 4 |  | 2 | 5 | 1 | 11 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 52 |
+| P005 | 4 |  | 2 | 5 | 1 | 11 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 53 |
 | P006 | 4 | 5 | 3 | 8 | 4 | 24 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 85 |
 | P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 89 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
@@ -381,6 +381,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51805 | CH-5805 | 18 Accessibility | `NO_AXE_VIOLATIONS_ON_EVERY_TAB_AND` | reserved | No axe violations on every tab and state, 1280px and 390px |
 | 51806 | CH-5806 | 18 Accessibility | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | reserved | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 51807 | CH-5807 | 18 Accessibility | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | implemented | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
+| 51808 | CH-5808 | 18 Accessibility | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | implemented | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
 | 51901 |  | 19 Responsive layout | `PHONE_PROFILE` | implemented | At 820px and below a profile is the phone view (who, three figures, Game detail one section at a time, scoring line, rounds, development), never a shrunken desktop; a coach's top bar is Player stats with Team and Share, a player's is My stats with More. |
 | 52001 |  | 20 Keyboard / input | `KEYBOARD_PATH` | implemented | The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it; each section tab is one Tab stop chosen with Enter or Space. |
 | 52101 |  | 21 Performance | `ONE_PASS_LOADER` | implemented | loadPlayerProfile reads the team, the player and the membership together, then the rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once; a failed rounds, shot detail, benchmark, focus area or goal read is logged and flagged, never thrown. |

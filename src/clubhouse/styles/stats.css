@@ -892,6 +892,20 @@ a.ch-lg__r:focus-visible {
 .ch-tr__course {
   font: 500 14px/1.25 var(--ch-font-sans);
 }
+.ch-tr__link {
+  color: inherit;
+  text-decoration: none;
+}
+.ch-tr__link:hover {
+  color: var(--ch-green-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ch-tr__link:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 .ch-n {
   font: 500 15px/1 var(--ch-font-sans);
 }
