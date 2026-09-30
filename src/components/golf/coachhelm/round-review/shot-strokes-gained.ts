@@ -193,6 +193,7 @@ function toCategorizableRawShot(shot: CategorizableShot): RawShot {
     distance_unit_after: null,
     miss_direction: null,
     putt_break: null,
+    is_penalty: shot.is_penalty ?? null,
   };
 }
 
@@ -225,12 +226,18 @@ export function sumHoleStrokesGainedByCategory(
     putting: false,
   };
 
-  for (const shot of shots) {
+  // `shots` arrive in shot order (the open hole's shots), so the index is the
+  // shot number. A penalty is charged to the shot that EARNED it (previous real
+  // shot, else the next), the same rule the stats engine and the SQL functions
+  // use, so it needs the hole's other shots (Q-89).
+  const rawShots = shots.map((s, i) => ({ ...toCategorizableRawShot(s), shot_number: i + 1 }));
+  for (let i = 0; i < shots.length; i++) {
+    const shot = shots[i]!;
     if (typeof shot.sg !== 'number' || !Number.isFinite(shot.sg)) continue;
-    const rawShot = toCategorizableRawShot(shot);
+    const rawShot = rawShots[i]!;
     const parForCategory = par ?? 0;
     const category: SgAttributionCategory = shot.is_penalty
-      ? getPenaltyCategory(rawShot, parForCategory)
+      ? getPenaltyCategory(rawShot, parForCategory, rawShots)
       : getStrokesGainedCategory(rawShot, parForCategory);
 
     total += shot.sg;

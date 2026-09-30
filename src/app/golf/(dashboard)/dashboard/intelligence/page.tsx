@@ -511,6 +511,8 @@ async function loadPlayersDrillData(
             .select('id, player_id, status, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts, strokes_gained_total, round_date')
             .in('player_id', playerIds)
             .eq('status', 'completed')
+            // Test rounds (QA/demo data, OD-03) never reach a coach's averages.
+            .eq('is_test', false)
             .not('total_score', 'is', null)
             .order('id', { ascending: true })
             .range(from, to),

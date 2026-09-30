@@ -105,6 +105,25 @@ function shotPageCalls(): number {
   return mockFrom.mock.calls.filter(([table]) => table === 'golf_shots').length;
 }
 
+/** The query builders the loader created for one table, in call order. */
+function chainsFor(table: string): Array<Record<string, { mock: { calls: unknown[][] } }>> {
+  return mockFrom.mock.calls
+    .map(([t], i) => [t, mockFrom.mock.results[i]!.value] as const)
+    .filter(([t]) => t === table)
+    .map(([, chain]) => chain as Record<string, { mock: { calls: unknown[][] } }>);
+}
+
+/** One putting shot row on the shared make % definition (src/lib/golf/putt-make.ts):
+ *  start distance = distance_to_hole_before, made = result 'hole' OR putt_made true.
+ *  (These fixtures used to carry putt_distance_feet, the column the loader read
+ *  before it moved to the shared definition.) */
+const puttShot = (roundId: string, feet: number, made: boolean) => ({
+  round_id: roundId,
+  distance_to_hole_before: feet,
+  result: made ? 'hole' : 'green',
+  putt_made: made,
+});
+
 describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,11 +133,9 @@ describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
   describe('getPuttMakeLeakMap', () => {
     it('accumulates putt shots past 1000 rows via paged fetches', async () => {
       // 1500 gradeable putts at 4 ft (band 3_5), alternating made/missed.
-      shotRows = Array.from({ length: 1500 }, (_, i) => ({
-        round_id: `round-${i % ROUND_COUNT}`,
-        putt_distance_feet: 4,
-        putt_made: i % 2 === 0,
-      }));
+      shotRows = Array.from({ length: 1500 }, (_, i) =>
+        puttShot(`round-${i % ROUND_COUNT}`, 4, i % 2 === 0),
+      );
 
       const result = await getPuttMakeLeakMap('player-1');
 
@@ -136,11 +153,11 @@ describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
       // [min, max) edges put every 3-footer in "3-5 ft" (chart 78% beside a
       // 47% table on the same putts).
       shotRows = [
-        ...Array.from({ length: 10 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 3, putt_made: true })),
-        ...Array.from({ length: 4 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 4, putt_made: i < 2 })),
-        ...Array.from({ length: 6 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 5, putt_made: i < 1 })),
-        { round_id: 'round-0', putt_distance_feet: 25, putt_made: false },
-        { round_id: 'round-1', putt_distance_feet: 26, putt_made: false },
+        ...Array.from({ length: 10 }, (_, i) => puttShot(`round-${i}`, 3, true)),
+        ...Array.from({ length: 4 }, (_, i) => puttShot(`round-${i}`, 4, i < 2)),
+        ...Array.from({ length: 6 }, (_, i) => puttShot(`round-${i}`, 5, i < 1)),
+        puttShot('round-0', 25, false),
+        puttShot('round-1', 26, false),
       ];
 
       const result = await getPuttMakeLeakMap('player-1');
@@ -155,6 +172,49 @@ describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
       expect(band('5_10')?.sample_n).toBe(0);
       expect(band('15_25')?.sample_n).toBe(1); // 25 ft
       expect(band('25_plus')?.sample_n).toBe(1); // 26 ft
+    });
+
+    it("counts a holed putt whose putt_made is null (result 'hole') and starts from distance_to_hole_before", async () => {
+      shotRows = Array.from({ length: 12 }, (_, i) => ({
+        round_id: `round-${i}`,
+        distance_to_hole_before: 4,
+        // The old reader selected putt_distance_feet and dropped putt_made-null rows.
+        putt_distance_feet: null,
+        result: 'hole',
+        putt_made: null,
+      }));
+
+      const result = await getPuttMakeLeakMap('player-1');
+      const band = result.data?.putting.find((b) => b.bucket_id === '3_5');
+
+      expect(result.success).toBe(true);
+      expect(band?.sample_n).toBe(12);
+      expect(band?.team_value).toBe(100);
+    });
+
+    it('selects the shared make % columns and filters on the start distance, not putt_distance_feet', async () => {
+      await getPuttMakeLeakMap('player-1');
+
+      const shotChains = chainsFor('golf_shots');
+      expect(shotChains.length).toBeGreaterThan(0);
+      const selects = shotChains.flatMap((c) => c.select!.mock.calls.map((a) => String(a[0])));
+      for (const sel of selects) {
+        expect(sel).toContain('distance_to_hole_before');
+        expect(sel).toContain('result');
+        expect(sel).toContain('putt_made');
+        expect(sel).not.toContain('putt_distance_feet');
+      }
+      const notCalls = shotChains.flatMap((c) => c.not!.mock.calls);
+      expect(notCalls).toContainEqual(['distance_to_hole_before', 'is', null]);
+      expect(notCalls.map((a) => a[0])).not.toContain('putt_distance_feet');
+    });
+
+    it('reads countable rounds of real players only: is_test = false and status = completed', async () => {
+      await getPuttMakeLeakMap('player-1');
+
+      const eqCalls = chainsFor('golf_rounds').flatMap((c) => c.eq!.mock.calls);
+      expect(eqCalls).toContainEqual(['is_test', false]);
+      expect(eqCalls).toContainEqual(['status', 'completed']);
     });
 
     it('paginates the completed-round-id fetch past 1000 rows', async () => {
