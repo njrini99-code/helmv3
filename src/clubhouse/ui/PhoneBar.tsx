@@ -12,27 +12,34 @@ import { Icon } from './Icon';
  * page's own top (`PhoneTop`).
  */
 export interface ChPhoneBarParts {
-  /** The back link. `label` is the parent's name; leave it empty for a bare chevron (a conversation). */
-  back?: { label?: string; onBack: () => void; ariaLabel?: string } | null;
+  /**
+   * The back link. `label` is the parent's name; leave it empty for a bare
+   * chevron (a conversation). `chevron: false` makes it a plain text action
+   * on the left ("Cancel").
+   */
+  back?: { label?: string; onBack: () => void; ariaLabel?: string; chevron?: boolean } | null;
   title: ReactNode;
   /** Left-aligned title block (a conversation's avatar, name and subline) instead of a centred title. */
   lead?: boolean;
+  /** The tab root's look: the title at the left, in the larger size, with no back link. */
+  start?: boolean;
   action?: ReactNode;
   /** The title's id, for the screen's aria-labelledby. */
   titleId?: string;
 }
 
-export function PhoneBarParts({ back, title, lead = false, action, titleId }: ChPhoneBarParts) {
+export function PhoneBarParts({ back, title, lead = false, start = false, action, titleId }: ChPhoneBarParts) {
+  const chevron = back?.chevron !== false;
   return (
     <>
       {back && (
         <button
           type="button"
-          className={'ch-pbar__back' + (back.label ? '' : ' is-bare')}
+          className={'ch-pbar__back' + (back.label ? '' : ' is-bare') + (chevron ? '' : ' is-text')}
           onClick={back.onBack}
-          aria-label={back.ariaLabel ?? (back.label ? `Back to ${back.label}` : 'Back')}
+          aria-label={back.ariaLabel ?? (!chevron ? back.label : back.label ? `Back to ${back.label}` : 'Back')}
         >
-          <Icon icon={ChevronLeft} size={20} />
+          {chevron && <Icon icon={ChevronLeft} size={20} />}
           {back.label && <span aria-hidden="true">{back.label}</span>}
         </button>
       )}
@@ -41,7 +48,7 @@ export function PhoneBarParts({ back, title, lead = false, action, titleId }: Ch
           {title}
         </div>
       ) : (
-        <h1 className="ch-pbar__title" id={titleId} tabIndex={-1}>
+        <h1 className={'ch-pbar__title' + (start ? ' is-start' : '')} id={titleId} tabIndex={-1}>
           {title}
         </h1>
       )}

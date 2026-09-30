@@ -19,6 +19,7 @@ export function PhoneScreen({
   className,
   children,
   code,
+  keyboardAware = false,
 }: {
   /** The id of the screen's title in its `PhoneBar`. */
   labelledBy: string;
@@ -26,6 +27,12 @@ export function PhoneScreen({
   children: ReactNode;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
+  /**
+   * The screen has a composer or a field at its foot: it lifts by the iOS
+   * keyboard's height (`--keyboard-height`) and tells the shell not to
+   * scroll fields into view itself (`data-fw-keyboard-aware`).
+   */
+  keyboardAware?: boolean;
 }) {
   usePhoneImmersive(true);
   const reduced = useChReducedMotion();
@@ -39,6 +46,8 @@ export function PhoneScreen({
   return (
     <m.section
       ref={ref}
+      // The iOS shell's keyboard contract attribute (not a class): see keyboardAware.
+      data-fw-keyboard-aware={keyboardAware ? '' : undefined}
       className={'ch-pscreen' + (className ? ` ${className}` : '')}
       aria-labelledby={labelledBy}
       data-ch-code={code}

@@ -580,8 +580,6 @@
     height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
     padding: env(safe-area-inset-top) 8px 6px 16px;
     background: var(--ch-phone-bar-bg);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
   .ch-topbar__crumbs,
   .ch-topbar__settings {
@@ -601,8 +599,9 @@
   .ch-topbar[data-phone='page'] {
     padding-left: 16px;
   }
+  /* A page's own top replaces the title and the bell (its action takes the right edge). */
   .ch-topbar[data-phone='page'] .ch-topbar__ptitle,
-  .ch-topbar[data-phone='page'] .ch-bell {
+  .ch-topbar[data-phone='page'] .ch-topbar__actions {
     display: none;
   }
   .ch-topbar[data-phone='page'] .ch-topbar__pslot {
@@ -716,6 +715,9 @@
     cursor: pointer;
     transition: transform var(--ch-dur-instant) var(--ch-ease);
   }
+  .ch-pbar__back.is-text {
+    margin-left: -4px;
+  }
   .ch-pbar__back.is-bare {
     justify-content: center;
     width: 44px;
@@ -741,7 +743,18 @@
     font: 600 16px/1 var(--ch-font-sans);
     color: var(--ch-text-primary);
     white-space: nowrap;
+  }
+  /* The title takes focus when a screen is pushed (for VoiceOver): it is a destination, not a control, so no ring. */
+  .ch-pbar__title:focus {
     outline: none;
+  }
+  .ch-pbar__title.is-start {
+    position: static;
+    flex: 1;
+    max-width: none;
+    transform: none;
+    font-size: 17px;
+    letter-spacing: -0.01em;
   }
   .ch-pbar__lead {
     display: flex;
@@ -797,6 +810,10 @@
     background: var(--ch-bg-page);
     outline: none;
     overscroll-behavior: contain;
+  }
+  /* The keyboard never resizes the WebView: a screen with a composer lifts itself by the keyboard's height. */
+  body.keyboard-open .ch-pscreen[data-fw-keyboard-aware] {
+    padding-bottom: var(--keyboard-height);
   }
   .ch-notyet {
     min-height: 60dvh;
