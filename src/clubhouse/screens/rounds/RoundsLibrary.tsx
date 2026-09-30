@@ -143,7 +143,7 @@ export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: {
               <InlineNotice code="CH-11201" title="Your rounds didn't load" body="Nothing is lost. Your posted rounds are still saved; try again in a moment." onRetry={refresh} />
             ) : (
               <SectionBoundary surface="rounds.season" label="Season scoring" code="CH-11203">
-                <SeasonCard season={data.season} />
+                <SeasonCard season={data.season} phone={phone} />
               </SectionBoundary>
             )}
           </div>

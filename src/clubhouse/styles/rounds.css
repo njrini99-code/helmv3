@@ -93,7 +93,7 @@
 }
 .ch-rd-strip {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(9, minmax(0, 44px));
   gap: 4px;
   margin: 20px 0 18px;
 }
@@ -710,10 +710,12 @@ a.ch-rd-sc:focus-visible {
   color: var(--ch-score-under);
 }
 
-@container chrd (max-width: 1000px) {
+@container chrd (max-width: 860px) {
   .ch-rd-hero {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+@container chrd (max-width: 1000px) {
   .ch-rd-sc {
     grid-template-columns: 64px minmax(0, 1fr) auto 64px;
   }
@@ -855,6 +857,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero h1 {
   margin: 0;
+  color: var(--ch-ivory-100);
   font: 600 38px/1 var(--ch-font-sans);
   letter-spacing: -0.035em;
   font-variation-settings: 'wdth' 86;

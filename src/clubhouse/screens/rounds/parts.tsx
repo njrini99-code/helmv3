@@ -157,12 +157,13 @@ export function UnfinishedCard({
 }
 
 /** Strokes over par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). CH-11803: one labelled image; each bar has a title. */
-export function Ribbon({ rounds, avg }: { rounds: ChRoundsSeason['ribbon']; avg: number }) {
+export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeason['ribbon']; avg: number; compact?: boolean }) {
   const maxOver = Math.max(1, ...rounds.map((x) => x.toPar));
   const maxUnder = Math.max(0, ...rounds.map((x) => -x.toPar));
-  const W = 640,
+  // The phone draws a narrower canvas, so its labels render at a readable size.
+  const W = compact ? 380 : 640,
     L = 40,
-    R = 100,
+    R = compact ? 76 : 100,
     u = Math.min(20, 160 / (maxOver + maxUnder)),
     top = 16;
   const base = top + maxOver * u;
@@ -184,9 +185,9 @@ export function Ribbon({ rounds, avg }: { rounds: ChRoundsSeason['ribbon']; avg:
       ))}
       <line x1={L} x2={W - R} y1={y(avg)} y2={y(avg)} className="ch-rd-rib__avg" />
       <g transform={`translate(${W - R + 8},${y(avg)})`}>
-        <rect x="0" y="-10" width="86" height="20" rx="10" className="ch-rd-rib__chip" />
-        <text x="43" y="4" textAnchor="middle" className="ch-rd-rib__t is-avg">
-          Your avg {formatToPar(avg, 1)}
+        <rect x="0" y="-10" width={compact ? 64 : 86} height="20" rx="10" className="ch-rd-rib__chip" />
+        <text x={compact ? 32 : 43} y="4" textAnchor="middle" className="ch-rd-rib__t is-avg">
+          {compact ? 'Avg' : 'Your avg'} {formatToPar(avg, 1)}
         </text>
       </g>
       {rounds.map((x, i) => {
@@ -199,7 +200,7 @@ export function Ribbon({ rounds, avg }: { rounds: ChRoundsSeason['ribbon']; avg:
           <g key={x.id}>
             <title>{`${shortDay(x.date)} · ${x.score} (${formatToPar(d)})${x.type ? ` · ${TYPE_LABEL[x.type]}` : ''}`}</title>
             <rect x={cx - bw * 0.26} y={d === 0 ? base - 1.5 : y0} width={bw * 0.52} height={d === 0 ? 3 : h} rx="4" className={cls} />
-            <text x={cx} y={d >= 0 ? base - h - 6 : base + h + 13} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
+            <text x={cx} y={base - (d >= 0 ? h : 0) - 6} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
               {x.score}
             </text>
             <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
@@ -216,7 +217,10 @@ export function Ribbon({ rounds, avg }: { rounds: ChRoundsSeason['ribbon']; avg:
 }
 
 /** Season scoring (rounds-flow.jsx `rf-season`): average, best, putts and greens, then the ribbon. */
-export function SeasonCard({ season }: { season: ChRoundsSeason }) {
+/** Rounds on the phone's ribbon: the last ten, so each bar and label stays readable. */
+export const PHONE_RIBBON = 10;
+
+export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; phone?: boolean }) {
   if (!season.rounds) {
     return (
       <section className="ch-rd-season is-empty" aria-labelledby="ch-rd-season-k" data-ch-code="CH-11302">
@@ -263,7 +267,7 @@ export function SeasonCard({ season }: { season: ChRoundsSeason }) {
             <b>Every round vs par</b>
             <span>Bar height is strokes over par · the number on top is your score · shorter is better</span>
           </div>
-          <Ribbon rounds={season.ribbon} avg={season.toPar} />
+          <Ribbon rounds={phone ? season.ribbon.slice(-PHONE_RIBBON) : season.ribbon} avg={season.toPar} compact={phone} />
           <div className="ch-rd-season__lg">
             {under && (
               <span>

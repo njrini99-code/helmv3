@@ -3,7 +3,8 @@
 import { ChevronRight, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { LEGS, type ChTeamStats } from '../../data/stats-team';
+import type { ChLeg, ChTeamStats } from '../../data/stats-team';
+import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -162,8 +163,8 @@ export function ScoreLine({ values, from, to, label }: { values: Array<number | 
 /** Strokes gained per round in each leg, a bar either side of zero. */
 function Legs({ data }: { data: ChTeamStats }) {
   const max = 1.4;
-  const legs = LEGS.map((l, i) => ({ l, v: data.legTotals[i] ?? null }));
-  const known = legs.filter((x): x is { l: (typeof LEGS)[number]; v: number } => x.v != null);
+  const legs = LEGS_LIST.map((l, i) => ({ l, v: data.legTotals[i] ?? null }));
+  const known = legs.filter((x): x is { l: ChLeg; v: number } => x.v != null);
   const losing = known.filter((x) => x.v < -0.05);
   if (!known.length)
     return (

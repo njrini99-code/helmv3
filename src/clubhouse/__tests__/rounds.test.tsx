@@ -33,6 +33,7 @@ import { loadRoundsLibrary } from '../data/rounds';
 import { seasonFrom, teeColorFor, teeLabel, toLibraryRound, type ChRoundsLibrary } from '../data/rounds-shape';
 import { ClubhouseRoundsRoute } from '../routes/rounds';
 import { groupRounds, RoundsLibrary } from '../screens/rounds/RoundsLibrary';
+import { SeasonCard } from '../screens/rounds/parts';
 import { RoundsSkeleton } from '../screens/rounds/RoundsSkeleton';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from '../screens/rounds/writes';
 import { ToastProvider } from '../ui/Toast';
@@ -273,6 +274,14 @@ describe('Rounds library, on screen', () => {
     expect(rib.querySelectorAll('rect.is-under')).toHaveLength(1);
     expect([...rib.querySelectorAll('title')].map((t) => t.textContent)[0]).toBe('Aug 18 · 69 (−3) · Qualifier');
     expect(screen.getByText('Under par')).toBeTruthy();
+  });
+
+  it('on the phone the ribbon draws the last ten rounds, on a narrower canvas', () => {
+    const many = Array.from({ length: 14 }, (_, i) => ({ id: 'x' + i, date: '2026-09-' + String(i + 1).padStart(2, '0'), score: 72 + (i % 4), toPar: i % 4, type: null }));
+    render(<SeasonCard season={{ ...PREVIEW_ROUNDS_IDLE.season, ribbon: many }} phone />);
+    const rib = screen.getByRole('img', { name: /last 10 rounds/ });
+    expect(rib.getAttribute('viewBox')).toMatch(/^0 0 380 /);
+    expect([...rib.querySelectorAll('title')].map((t) => t.textContent)[0]).toMatch(/^Sep 5 /);
   });
 
   it('the season figures: average, to par, best, putts and greens from countable 18-hole rounds', () => {
