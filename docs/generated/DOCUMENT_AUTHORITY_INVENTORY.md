@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 253 | 12 | 54 | 82 |
+| `UNKNOWN` | 271 | 12 | 57 | 82 |
 
 ## Files
 
@@ -725,6 +725,24 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P003-roster/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P004-stats-team/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P005-stats-player/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/PAGE.md` | current | - | - | yes | - |
