@@ -1,0 +1,56 @@
+{
+  "id": "P013",
+  "name": "CoachHelm",
+  "slug": "coachhelm",
+  "bridgeNamespace": 13,
+  "routes": [
+    "/golf/dashboard/coachhelm"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "coachhelm_ai",
+    "player_coachhelm_development",
+    "coach_intelligence_triage"
+  ],
+  "progressRow": "CoachHelm",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md)",
+    "desktop": [
+      "design/handoff/Player - CoachHelm.html",
+      "design/handoff/Coach - CoachHelm.html",
+      "design/handoff/helm3.jsx",
+      "design/handoff/helm3.css",
+      "design/handoff/coachhelm2.css"
+    ],
+    "phone": [
+      "design/handoff/Coach and Player - CoachHelm - Mobile.html",
+      "design/handoff/helm3.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/coachhelm",
+    "loader": "src/clubhouse/data/coachhelm.ts",
+    "route": "src/clubhouse/routes/coachhelm.tsx",
+    "styles": "src/clubhouse/styles/coachhelm.css",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/coachhelm.md",
+  "checklist": "docs/clubhouse/screens/coachhelm.md",
+  "phoneSpec": "docs/clubhouse/phone/coachhelm.md",
+  "actions": [],
+  "held": []
+}
