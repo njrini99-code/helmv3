@@ -666,6 +666,10 @@ features:
         # section requires. golf.ts (already mapped, above) is the only
         # caller of the recorder today, so this is where it belongs.
         - src/lib/observability/**
+        # The new-round engine (useNewRoundSession) left new-round-client.tsx on
+        # 2026-09-30 (ROUNDS_PLAN step 4b); shot tracking's review and e2e gate
+        # follow it here.
+        - src/lib/golf/round-session/**
       db:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql

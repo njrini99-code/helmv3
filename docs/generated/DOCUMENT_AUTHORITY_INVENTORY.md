@@ -42,14 +42,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 42 | 5 | 18 | 75 |
+| `PLAN` | 42 | 5 | 18 | 74 |
 | `AUDIT_SNAPSHOT` | 58 | 6 | 32 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 301 | 12 | 62 | 83 |
+| `UNKNOWN` | 301 | 12 | 62 | 81 |
 
 ## Files
 
@@ -340,7 +340,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 18 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 4 |
-| `docs/clubhouse/ROUNDS_PLAN.md` | current | - | - | - | 1 |
+| `docs/clubhouse/ROUNDS_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
@@ -671,7 +671,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/classes.md` | current | - | - | - | - |
@@ -773,7 +773,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/VERIFY.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P011-rounds/WIRING.md` | current | - | - | - | 1 |
+| `docs/clubhouse/pages/P011-rounds/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |

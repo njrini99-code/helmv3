@@ -1,6 +1,5 @@
 'use client';
 
-import { haptic } from '@/lib/haptics';
 import { startTransition, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
@@ -110,23 +109,31 @@ export interface NewRoundClientProps {
 
 
 /**
- * The new-round engine: setup, holes, tracking, autosave, recovery and submit, without the screen that draws it.
- * Moved out of NewRoundClient unchanged (ROUNDS_PLAN step 4a), so a second renderer can drive the same engine.
- */
-/**
- * What the engine asks of the screen that draws it. The legacy screen passes `useToast()` and `useMobileNav()`'s
- * functions each render, as the engine used to call them itself; a second renderer passes its own.
+ * What the engine asks of the screen that draws it.
+ *
+ * Identity matters: `showToast` is a dependency of the autosave, hole-checkpoint and conflict callbacks, and the
+ * two nav functions of the effect that hides the nav for the round. A new function each render re-creates those
+ * callbacks and re-runs that effect each render. The legacy screen passes exactly that on purpose (`useToast()`
+ * makes new functions per call and the nav context per provider render, as the engine used to get them), so its
+ * behaviour is unchanged. A new renderer passes stable, module-level ports, as the shot screen does
+ * (`ShotTrackingPorts`), and gets each callback made once.
  */
 export interface NewRoundSessionPorts {
   showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => unknown;
   hideMobileNav: () => void;
   showMobileNav: () => void;
+  /** The error tick on a failed submit. The legacy screen passes `@/lib/haptics`; Clubhouse passes its own (its `useAction` already ticks, so it may pass a no-op). */
+  haptic: (event: 'error') => unknown;
 }
 
+/**
+ * The new-round engine: setup, holes, tracking, autosave, recovery and submit, without the screen that draws it.
+ * Moved out of NewRoundClient unchanged (ROUNDS_PLAN step 4a), so a second renderer can drive the same engine.
+ */
 export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { ports: NewRoundSessionPorts }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { showToast } = ports;
+  const { showToast, haptic } = ports;
   // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
   // not as a gate here — starting a New Round lands straight on the course
   // carousel. There is no in-flow resume prompt (the old prompt state was never
@@ -2732,9 +2739,6 @@ export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { 
     }
   };
 
-  // Shared across BOTH the setup/holes return below and the tracking-step
-  // return further down, so the SAME recovery prompt renders regardless of
-  // which step the player is on when a recoverable snapshot is found (B4).
   return {
     router,
     connectionStatus,
