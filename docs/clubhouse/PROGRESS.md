@@ -38,6 +38,25 @@ copied from `CHECKLIST_TEMPLATE.md`. It has one section per gate, and
 unchecked box. That checklist is the definition of pro quality for the
 screen.
 
+## Where we left off (2026-09-30 overnight, for the owner)
+
+Branch `agent/clubhouse`, draft PR #2102. Nothing merged, deployed or migrated; `golf_clubhouse_ui` untouched.
+All 13 pages have manifests, page docs and contracts; `clubhouse:check` and `docs:check` clean; Clubhouse
+tests all green; axe clean on every preview state it scans (Hub, Rounds, Classes and CoachHelm added tonight).
+
+Built tonight: CoachHelm (P013, coach and player), Classes (P012, players; reviewed and fixed), Rounds
+setup and shot tracking (preview only until the engine move), first-run pages for Messages, Calendar and
+Team stats, Accept and Decline for a proposed focus area, toasts inside open sheets (CH-1812), and a run of
+fixes (each in the verification log below).
+
+Your decisions, oldest first (each has the reversible choice already made): Q-65 to Q-78 under "Open owner
+questions". The ones that block something: Q-75a (Classes "Delete all"), Q-76 (rebuild the CoachHelm
+drills), Q-78 (the round engine move, which makes #2102 touch the live Fairway round flow).
+
+Not verified yet: no iPhone pass (`npm run ios:dev`), no real-account pass on any page, no `npm run build`
+of tonight's route changes (the classes page split, the coachhelm page signature). Held migrations are
+unchanged (`supabase/migrations/HELD.md`).
+
 ## Where we left off (2026-09-29)
 
 All eight built pages (shell, Home, Roster, Stats team and player, Calendar,
@@ -279,6 +298,7 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Q-75 (open, 2026-09-30; built the reversible choice) Classes (P012): (a) Delete all: the Fairway page has it and the Clubhouse page does not; recommended to build it behind the same confirm and calendar-first order (not built yet). (b) Add class is a sheet (a bottom sheet on the phone) instead of the board's inline card: one form path for validation, the phone keyboard and Discard. (c) The coach-visibility copy follows the RLS policy (an active coach reads the whole class row), not the board's "busy time only", which would be untrue. (d) Grade, next deadline and "Share with coach" are not drawn: `golf_player_classes` has no columns for them; a schema change is the owner's call.
 - Q-76 (open, 2026-09-30; built the reversible choice) CoachHelm's Fairway drills: /my-development, /my-game-profile, /my-standing and focus-area cards go to `coachhelm?view=development|profile|standing`. With the flag on, the Clubhouse branch drew the board for all of them, so those views were unreachable while looking reachable. Built: those three views show the shell's "not rebuilt yet" page (CH-1301), the same as any unbuilt route, and `?view=insights` stays the board. Falling through to the Fairway page was rejected: it would draw Fairway inside the Clubhouse frame. Recommended next: rebuild Development first (focus areas and goals), then Profile and Standing.
 - Q-77 (open, 2026-09-30; built the recommended option, Accept and Decline in Stats Development; the CoachHelm board is still without them) A coach's Assign as focus creates a proposal the player accepts, but no Clubhouse screen offers Accept or Decline (`acceptFocusArea`, `declineFocusArea` are reached only from Fairway), and Clubhouse Stats shows "Proposed, waiting to be accepted" with no action. Recommended: build Accept and Decline on the player's side (Stats Development tab and the CoachHelm board) before coaches rely on Assign.
+- Q-78 (open, 2026-09-30; in progress) The round engine move (ROUNDS_PLAN step 4). With the flag on, a Clubhouse player can review and discard a round but cannot start or continue one: `/rounds/new` and `/rounds/continue/[id]` show "not rebuilt" until the new-round engine leaves `new-round-client.tsx` for a hook the Clubhouse screens can call. That move touches the live Fairway round flow, which is not behind the flag, so until now #2102 was prod-safe with the flag off apart from the shared shot hook. Being done as labelled, contiguous commits (extract the hook in place, move the file, add ports), each green on the full rounds baseline and the source-text tests, reviewed by a fresh code-reviewer, and not pushed until that review is clean, so they can be reverted or split into their own PR. Recommended: keep them in #2102 only if the review and a real-device round pass; otherwise split them.
 
 Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 2026-09-29; map in `screens/qualifiers.md`). The owner answered every question on 2026-09-29; Q-16 last, with the phone foundation (D-30 to D-33). Each still shows the options as they were put.
 
