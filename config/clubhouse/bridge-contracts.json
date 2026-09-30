@@ -8897,6 +8897,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110203,
+    "page": "P011",
+    "category": 2,
+    "item": 3,
+    "name": "THE_COURSE_LIBRARY_IS_LOADING",
+    "chCode": "CH-11403",
+    "meaning": "The course library is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110204,
+    "page": "P011",
+    "category": 2,
+    "item": 4,
+    "name": "A_COURSES_TEES_ARE_LOADING",
+    "chCode": "CH-11404",
+    "meaning": "A course's tees are loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110205,
+    "page": "P011",
+    "category": 2,
+    "item": 5,
+    "name": "THE_PICKED_TEES_SCORECARD_IS_LOADING",
+    "chCode": "CH-11405",
+    "meaning": "The picked tees' scorecard is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -8985,6 +9018,50 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110409,
+    "page": "P011",
+    "category": 4,
+    "item": 9,
+    "name": "NO_COURSE_CHOSEN_YET",
+    "chCode": "CH-11309",
+    "meaning": "No course chosen yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110410,
+    "page": "P011",
+    "category": 4,
+    "item": 10,
+    "name": "THE_COURSE_SEARCH_MATCHES_NOTHING",
+    "chCode": "CH-11310",
+    "meaning": "The course search matches nothing (or the library is empty)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110411,
+    "page": "P011",
+    "category": 4,
+    "item": 11,
+    "name": "A_COURSE_HAS_NO_TEES_READY_TO",
+    "chCode": "CH-11311",
+    "meaning": "A course has no tees ready to play",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110412,
+    "page": "P011",
+    "category": 4,
+    "item": 12,
+    "name": "QUALIFIER_CHOSEN_BUT_NONE_IS_OPEN",
+    "chCode": "CH-11312",
+    "meaning": "Qualifier chosen, but none is open",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110501,
     "page": "P011",
     "category": 5,
@@ -9047,6 +9124,39 @@
     "name": "A_HOLE_REACHES_SHOT_12",
     "chCode": "CH-11106",
     "meaning": "A hole reaches shot 12",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110507,
+    "page": "P011",
+    "category": 5,
+    "item": 7,
+    "name": "A_HOLES_YARDAGE_IS_MISSING_OR_TOO",
+    "chCode": "CH-11107",
+    "meaning": "A hole's yardage is missing or too long (1 to 999, the legacy editor's bounds)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110508,
+    "page": "P011",
+    "category": 5,
+    "item": 8,
+    "name": "ADDING_A_COURSE_A_STEP_ISNT_COMPLETE",
+    "chCode": "CH-11108",
+    "meaning": "Adding a course: a step isn't complete",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110509,
+    "page": "P011",
+    "category": 5,
+    "item": 9,
+    "name": "THE_ROUNDS_DATE_IS_AFTER_TODAY",
+    "chCode": "CH-11109",
+    "meaning": "The round's date is after today",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -9194,6 +9304,61 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110614,
+    "page": "P011",
+    "category": 6,
+    "item": 14,
+    "name": "STARTING_THE_ROUND_FAILS",
+    "chCode": "CH-11007",
+    "meaning": "Starting the round fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110615,
+    "page": "P011",
+    "category": 6,
+    "item": 15,
+    "name": "A_COURSES_TEES_DONT_LOAD",
+    "chCode": "CH-11208",
+    "meaning": "A course's tees don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110616,
+    "page": "P011",
+    "category": 6,
+    "item": 16,
+    "name": "THE_COURSE_LIBRARY_DOESNT_LOAD",
+    "chCode": "CH-11209",
+    "meaning": "The course library doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110617,
+    "page": "P011",
+    "category": 6,
+    "item": 17,
+    "name": "THE_PICKED_TEES_SCORECARD_DOESNT_LOAD",
+    "chCode": "CH-11210",
+    "meaning": "The picked tees' scorecard doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110618,
+    "page": "P011",
+    "category": 6,
+    "item": 18,
+    "name": "THE_PLAYERS_QUALIFIERS_DONT_LOAD",
+    "chCode": "CH-11211",
+    "meaning": "The player's qualifiers don't load (Qualifier chosen)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -9300,6 +9465,28 @@
     "name": "SCORECARD_FROM_THE_TOP_BAR",
     "chCode": "CH-11509",
     "meaning": "Scorecard, from the top bar",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111110,
+    "page": "P011",
+    "category": 11,
+    "item": 10,
+    "name": "BROWSE_COURSES",
+    "chCode": "CH-11510",
+    "meaning": "Browse courses (or Change course)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111111,
+    "page": "P011",
+    "category": 11,
+    "item": 11,
+    "name": "ADD_A_COURSE",
+    "chCode": "CH-11511",
+    "meaning": "Add a course",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

@@ -50,6 +50,7 @@
       "src/clubhouse/__tests__/rounds.test.tsx",
       "src/clubhouse/__tests__/round-review.test.tsx",
       "src/clubhouse/__tests__/round-tracking.test.tsx",
+      "src/clubhouse/__tests__/round-setup.test.tsx",
       "src/lib/golf/__tests__/shot-entry-rules.test.ts"
     ]
   },

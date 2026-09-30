@@ -75,7 +75,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
 | P010 | 2 | 5 |  | 10 | 8 | 16 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
-| P011 |  | 2 |  | 8 | 6 | 13 | 1 |  |  |  | 9 |  |  |  |  | 3 | 7 | 8 |  |  |  |  |  |  |  | 57 |
+| P011 |  | 5 |  | 12 | 9 | 18 | 1 |  |  |  | 11 |  |  |  |  | 3 | 7 | 8 |  |  |  |  |  |  |  | 74 |
 
 ## P001 Shell
 
@@ -899,6 +899,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- |
 | 110201 | CH-11401 | 02 Initial loading / skeleton | `THE_PAGE_IS_ON_ITS_WAY` | implemented | The page is on its way |
 | 110202 | CH-11402 | 02 Initial loading / skeleton | `A_HOLED_OUT_HOLE_IS_SAVING` | implemented | A holed-out hole is saving |
+| 110203 | CH-11403 | 02 Initial loading / skeleton | `THE_COURSE_LIBRARY_IS_LOADING` | implemented | The course library is loading |
+| 110204 | CH-11404 | 02 Initial loading / skeleton | `A_COURSES_TEES_ARE_LOADING` | implemented | A course's tees are loading |
+| 110205 | CH-11405 | 02 Initial loading / skeleton | `THE_PICKED_TEES_SCORECARD_IS_LOADING` | implemented | The picked tees' scorecard is loading |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -907,12 +910,19 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110406 | CH-11306 | 04 Empty | `A_HOLE_WITH_A_SCORE_BUT_NO` | implemented | A hole with a score but no shots tracked |
 | 110407 | CH-11307 | 04 Empty | `A_ROUND_THAT_DOESNT_EXIST_OR_ONE` | implemented | A round that doesn't exist, or one this viewer may not see |
 | 110408 | CH-11308 | 04 Empty | `A_HOLE_WITH_NO_SHOTS_YET` | implemented | A hole with no shots yet |
+| 110409 | CH-11309 | 04 Empty | `NO_COURSE_CHOSEN_YET` | implemented | No course chosen yet |
+| 110410 | CH-11310 | 04 Empty | `THE_COURSE_SEARCH_MATCHES_NOTHING` | implemented | The course search matches nothing (or the library is empty) |
+| 110411 | CH-11311 | 04 Empty | `A_COURSE_HAS_NO_TEES_READY_TO` | implemented | A course has no tees ready to play |
+| 110412 | CH-11312 | 04 Empty | `QUALIFIER_CHOSEN_BUT_NONE_IS_OPEN` | implemented | Qualifier chosen, but none is open |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
 | 110504 | CH-11104 | 05 Validation | `THE_DISTANCE_ISNT_A_NUMBER` | implemented | The distance isn't a number |
 | 110505 | CH-11105 | 05 Validation | `A_CHANGED_SHOT_BREAKS_A_SHOT_RULE` | implemented | A changed shot breaks a shot rule |
 | 110506 | CH-11106 | 05 Validation | `A_HOLE_REACHES_SHOT_12` | implemented | A hole reaches shot 12 |
+| 110507 | CH-11107 | 05 Validation | `A_HOLES_YARDAGE_IS_MISSING_OR_TOO` | implemented | A hole's yardage is missing or too long (1 to 999, the legacy editor's bounds) |
+| 110508 | CH-11108 | 05 Validation | `ADDING_A_COURSE_A_STEP_ISNT_COMPLETE` | implemented | Adding a course: a step isn't complete |
+| 110509 | CH-11109 | 05 Validation | `THE_ROUNDS_DATE_IS_AFTER_TODAY` | implemented | The round's date is after today |
 | 110601 | CH-11001 | 06 Server / system error | `DISCARDING_AN_UNFINISHED_ROUND_FAILS` | implemented | Discarding an unfinished round fails |
 | 110602 | CH-11201 | 06 Server / system error | `THE_POSTED_ROUNDS_DONT_LOAD` | implemented | The posted rounds don't load |
 | 110603 | CH-11202 | 06 Server / system error | `THE_ROUND_IN_PROGRESS_CHECK_FAILS` | implemented | The round-in-progress check fails |
@@ -926,6 +936,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110611 | CH-11005 | 06 Server / system error | `SUBMITTING_THE_ROUND_FAILS` | implemented | Submitting the round fails |
 | 110612 | CH-11006 | 06 Server / system error | `DISCARDING_FROM_EXIT_FAILS` | implemented | Discarding from Exit fails |
 | 110613 | CH-11207 | 06 Server / system error | `THE_SHOT_SCREEN_GETS_A_HOLE_THAT` | implemented | The shot screen gets a hole that doesn't exist |
+| 110614 | CH-11007 | 06 Server / system error | `STARTING_THE_ROUND_FAILS` | implemented | Starting the round fails |
+| 110615 | CH-11208 | 06 Server / system error | `A_COURSES_TEES_DONT_LOAD` | implemented | A course's tees don't load |
+| 110616 | CH-11209 | 06 Server / system error | `THE_COURSE_LIBRARY_DOESNT_LOAD` | implemented | The course library doesn't load |
+| 110617 | CH-11210 | 06 Server / system error | `THE_PICKED_TEES_SCORECARD_DOESNT_LOAD` | implemented | The picked tees' scorecard doesn't load |
+| 110618 | CH-11211 | 06 Server / system error | `THE_PLAYERS_QUALIFIERS_DONT_LOAD` | implemented | The player's qualifiers don't load (Qualifier chosen) |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 111101 | CH-11501 | 11 Destructive | `DISCARD_ON_AN_UNFINISHED_ROUND` | implemented | Discard on an unfinished round |
 | 111102 | CH-11502 | 11 Destructive | `UNDO` | implemented | Undo |
@@ -936,6 +951,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111107 | CH-11507 | 11 Destructive | `DISCARD_ROUND_FROM_EXIT` | implemented | Discard round from Exit |
 | 111108 | CH-11508 | 11 Destructive | `THE_LAST_HOLE_IS_SAVED` | implemented | The last hole is saved |
 | 111109 | CH-11509 | 11 Destructive | `SCORECARD_FROM_THE_TOP_BAR` | implemented | Scorecard, from the top bar |
+| 111110 | CH-11510 | 11 Destructive | `BROWSE_COURSES` | implemented | Browse courses (or Change course) |
+| 111111 | CH-11511 | 11 Destructive | `ADD_A_COURSE` | implemented | Add a course |
 | 111601 | CH-11601 | 16 Micro animation | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | reserved | Hovering a round that opens its review |
 | 111602 | CH-11602 | 16 Micro animation | `THE_SHOT_LOG_OPENS` | implemented | The shot log opens |
 | 111603 | CH-11603 | 16 Micro animation | `SUBMITTING_THE_ROUND` | implemented | Submitting the round |

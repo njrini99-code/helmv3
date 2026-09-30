@@ -22,7 +22,7 @@ Boards: `Player - Rounds.html` and `Player - Rounds - Mobile.html`
 
 1. **Library**, built.
 2. **Review**, built at `/rounds/[id]` (Q-72e).
-3. **Setup and Tracking, as the Clubhouse renderer** (Tracking built 2026-09-30 in `screens/rounds/track/`, over `useShotTracking` and `shot-entry-rules`; preview `/clubhouse-preview/track`; Setup next), built against a neutral contract with fixtures and a preview, like Library and Review. `/rounds/new` and `/continue` stay un-rebuilt while they are built, so no half-built state is reachable and New round and Continue stay hidden.
+3. **Setup and Tracking, as the Clubhouse renderer** (Tracking built 2026-09-30 in `screens/rounds/track/`, over `useShotTracking` and `shot-entry-rules`; preview `/clubhouse-preview/track`; Setup built the same day in `screens/rounds/setup/` against `ChSetupPorts`, preview `/clubhouse-preview/setup`), built against a neutral contract with fixtures and a preview, like Library and Review. `/rounds/new` and `/continue` stay un-rebuilt while they are built, so no half-built state is reachable and New round and Continue stay hidden.
 4. **Engine extraction last, one engine per commit**, as pure moves that return exactly the contract (below). The legacy Fairway entry stays the production path until the flag flips.
 
 Each surface gets the usual contract: catalog codes on page 11 (`CH-11…`),

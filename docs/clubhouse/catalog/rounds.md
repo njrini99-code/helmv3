@@ -5,11 +5,11 @@ Routes: `/golf/dashboard/rounds` (the library, for players) and `/golf/dashboard
 The library shows the round in progress, the season's scoring, then every posted round by month or by course. Review, New round and Continue are the next surfaces in the plan. Until each is rebuilt, its control is not drawn (`nav.rebuiltHref`). No control ever leads nowhere.
 
 Where things live:
-- Code: `src/clubhouse/screens/rounds/` (`RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton`, `RoundReview`, `ReviewLoadFailed`), and `track/` for the shot screen (`RoundTracking` over the shared `useShotTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `labels`)
+- Code: `src/clubhouse/screens/rounds/` (`RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton`, `RoundReview`, `ReviewLoadFailed`), `setup/` for a new round (`RoundSetup`, `CoursePicker`, `AddCourseSheet`, `HoleConfig`, `shape`), and `track/` for the shot screen (`RoundTracking` over the shared `useShotTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `labels`)
 - Loaders: `src/clubhouse/data/rounds.ts` (`loadRoundsLibrary`) and `round-review.ts` (`loadRoundReview`), with their pure steps in `rounds-shape.ts` and `round-review-shape.ts`
 - Routes: `src/clubhouse/routes/rounds.tsx`, `round-review.tsx`
-- Tests: `src/clubhouse/__tests__/rounds.test.tsx` (library), `round-review.test.tsx` (review) and `round-tracking.test.tsx` (the shot screen)
-- Preview: `/clubhouse-preview/rounds` (`?state=idle|many|empty|noseason|failed|unfinished-failed|failwrites`) `/clubhouse-preview/round` (`?state=coach|noshots|noholes|total|holebyhole`) and `/clubhouse-preview/track` (`?state=approach|putt|holed|checkpointfail|last|meters|exit|card|summary|submitting|posted|submitfail`)
+- Tests: `src/clubhouse/__tests__/rounds.test.tsx` (library), `round-review.test.tsx` (review) and `round-setup.test.tsx` (a new round), `round-tracking.test.tsx` (the shot screen)
+- Preview: `/clubhouse-preview/rounds` (`?state=idle|many|empty|noseason|failed|unfinished-failed|failwrites`) `/clubhouse-preview/round` (`?state=coach|noshots|noholes|total|holebyhole`) `/clubhouse-preview/setup` (`?state=failcourses|failtees|failholes|failstart|noqualifiers|qualifiersfailed`) and `/clubhouse-preview/track` (`?state=approach|putt|holed|checkpointfail|last|meters|exit|card|summary|submitting|posted|submitfail`)
 
 Discard goes through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), and the success and error haptics (D-70).
 
@@ -23,6 +23,7 @@ Discard goes through `useAction`, so these belong to the shell: offline refusal 
 | CH-11004 | Changing or deleting a shot fails | In the sheet: "Couldn't save the change." + the engine's reason; the sheet stays open with what was typed | `EditShotSheet` (`editError`) | preview |
 | CH-11005 | Submitting the round fails | "The round didn't submit" + "It's saved on this device. Check your connection, then try again." + Try again | `SubmitOverlay` | round-tracking.test › CH-11603 |
 | CH-11006 | Discarding from Exit fails | In the discard question: "Couldn't discard the round." + the reason; the round is kept | `ExitSheet` (`discardError`) | preview |
+| CH-11007 | Starting the round fails | "Couldn't start your round at Finley GC" + "Nothing was saved yet. Try again in a moment." + Retry; Retry opens the round when it lands | `RoundSetup` (`useAction('rounds.start')`, the follow-up inside the action) | round-setup.test › CH-11007 |
 
 ## 111xx Validation (tracking)
 
@@ -36,6 +37,9 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | CH-11104 | The distance isn't a number | "Enter the distance as a number, like 150." under a red-ringed box | `ShotEntry` | round-tracking.test › CH-11104 |
 | CH-11105 | A changed shot breaks a shot rule | In the sheet: the reason; a block disables Save, a warning turns it into "Save anyway" | `EditShotSheet`, `editedShotIssues` | preview |
 | CH-11106 | A hole reaches shot 12 | "Shot 12 of 15. 3 more before the limit."; at 15 "This is the most strokes a hole can record (15). Hole out or pick up." | `ShotEntry` | round-tracking.test › CH-11106 |
+| CH-11107 | A hole's yardage is missing or too long (1 to 999, the legacy editor's bounds) | The Start hint names it ("Hole 4 needs a yardage"); a wrong value rings its box | `setupBlocker`, `holeIssue`, `HoleConfig` | round-setup.test › CH-11109 (rules) |
+| CH-11108 | Adding a course: a step isn't complete | The footer names it ("Enter the course's name", "Name the tees you're playing", "A course rating is between 55 and 80", "Hole 1 needs a yardage"); Next waits | `addCourseIssue` | round-setup.test › CH-11108 |
+| CH-11109 | The round's date is after today | "The round's date can't be after today" in the dock; the date box is ringed; Start waits | `setupBlocker`, `RoundSetup` | round-setup.test › CH-11109 |
 
 ## 112xx Didn't load
 
@@ -48,6 +52,10 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | CH-11205 | A review's shots don't load | "The shots for this round didn't load" + "The scorecard is right; only the shot-by-shot detail is missing." + Try again, in the hole card | `HoleCard` | round-review.test › CH-11205 |
 | CH-11206 | The round itself doesn't load | "This round didn't load" + "Nothing is lost; the round is still saved. Try again in a moment." + Try again | `ReviewLoadFailed` | round-review.test › CH-11206 |
 | CH-11207 | The shot screen gets a hole that doesn't exist | "This hole didn't load. Go back to Rounds and continue the round from there." | `RoundTracking` | preview |
+| CH-11208 | A course's tees don't load | "The tees at Finley GC didn't load" + "Try again, or add the course by hand." + Try again | `CoursePicker` | round-setup.test › CH-11208 |
+| CH-11209 | The course library doesn't load | "The course library didn't load" + "Your round isn't started yet, so nothing is lost. Try again, or add the course by hand." + Try again | `CoursePicker` | round-setup.test › CH-11209 |
+| CH-11210 | The picked tees' scorecard doesn't load | "The scorecard didn't load" + "Your course and tees are picked; only the pars and yardages are missing. Try again."; Start waits | `RoundSetup` | round-setup.test › CH-11210 |
+| CH-11211 | The player's qualifiers don't load (Qualifier chosen) | "Your qualifiers didn't load" + "Play it as a practice round, or come back in a moment." | `RoundSetup` | round-setup.test › CH-11211 |
 
 ## 113xx Empty
 
@@ -61,6 +69,10 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | CH-11306 | A hole with a score but no shots tracked | "No shots were tracked on this hole. It was scored as a total." | `HoleCard` | round-review.test › CH-11306 |
 | CH-11307 | A round that doesn't exist, or one this viewer may not see | "This round isn't here" + (player) "It may have been deleted, or it isn’t one of your rounds." / (coach) "… or it was played by someone who isn’t on your team." + Go to your rounds / Go to Stats. The same page either way, so it never confirms someone else's round exists | `ClubhouseRoundReviewRoute` | round-review.test › CH-11307 |
 | CH-11308 | A hole with no shots yet | "No shots yet on this hole" in the shot log | `ShotLog` | round-tracking.test › CH-11502 |
+| CH-11309 | No course chosen yet | The scorecard's place holds a faint card: "Your scorecard appears here once you pick a course and tees."; the dock says "Choose a course to start" | `RoundSetup` | round-setup.test › CH-11309 |
+| CH-11310 | The course search matches nothing (or the library is empty) | "No courses match “zzz”. Check the spelling, or add it by hand." | `CoursePicker` | round-setup.test › CH-11510 |
+| CH-11311 | A course has no tees ready to play | "Chapel Ridge GC has no tees ready to play yet. A coach can finish them in the course library; for now, add the course by hand."; draft tees show, not playable | `CoursePicker` | round-setup.test › CH-11208 |
+| CH-11312 | Qualifier chosen, but none is open | "No qualifier is open for you right now. Your coach opens one when it's time; until then, play a practice or tournament round." | `RoundSetup` | round-setup.test › CH-11312 |
 
 ## 114xx Loading
 
@@ -68,6 +80,9 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | --- | --- | --- | --- | --- |
 | CH-11401 | The page is on its way | The header, the round card beside the season card, the tools and four rows, in place | `RoundsSkeleton` via `rounds/loading.tsx` (`ClubhouseSwitch`) | rounds.test › CH-11401 |
 | CH-11402 | A holed-out hole is saving | "Saving hole 4…" with a spinner above its shots; the shots can't be changed until it lands | `HoleReview` | round-tracking.test › CH-11402 |
+| CH-11403 | The course library is loading | Four row-shaped blocks, `aria-busy` | `CoursePicker` | round-setup.test › CH-11403 |
+| CH-11404 | A course's tees are loading | Three tee-card-shaped blocks | `CoursePicker` | preview |
+| CH-11405 | The picked tees' scorecard is loading | Nine hole-row blocks where the scorecard goes; Start waits ("Loading the scorecard") | `RoundSetup` | preview |
 
 ## 115xx Confirm
 
@@ -82,6 +97,8 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | CH-11507 | Discard round from Exit | "Discard this round?" + "It deletes every shot you entered at Finley GC. This can't be undone." + Keep it / Discard round | `ExitSheet` | round-tracking.test › CH-11506 |
 | CH-11508 | The last hole is saved | "Round complete": score and to par, putts, fairways, greens, front and back, the card; Back to hole 18 / Submit round | `RoundCompleteSheet` | round-tracking.test › CH-11508 |
 | CH-11509 | Scorecard, from the top bar | Both nines with par, score and putts, totals of what's scored, the current hole marked | `ScorecardSheet` | round-tracking.test › CH-11509 |
+| CH-11510 | Browse courses (or Change course) | "Where are you playing?": search, Recently played, Team courses, Course library (one Results list when searching), Add a course; a course opens its tees with length, par, rating and slope | `CoursePicker` | round-setup.test › CH-11510 |
+| CH-11511 | Add a course | Four steps (course, tee, holes, review); the course is the round's own, and "Save this course for next time" (on) saves it and offers it to the library (Q-72h) | `AddCourseSheet` | round-setup.test › CH-11511 |
 
 ## 116xx Motion
 

@@ -2,7 +2,7 @@
 
 Status: approved. The owner's v2 boards are the spec (D-22): `design/handoff/Player - Rounds.html` and `Player - Rounds - Mobile.html` (`rounds-flow.jsx`, `rounds-course.jsx`, `rounds-track.jsx`, `rounds-review.jsx`, `rounds-flow.css`, `rounds-track.css`, `rounds-data.js`). The whole project, its order and its engine seam are in `docs/clubhouse/ROUNDS_PLAN.md`. Gaps are Q-72.
 
-This file covers the library, a round's review and the shot screen (Tracking), built in `src/clubhouse/screens/rounds/` (Tracking in `track/`). Setup gets its section when it is built.
+This file covers the library, a round's review and the shot screen (Tracking), built in `src/clubhouse/screens/rounds/` (Tracking in `track/`) and a new round's setup (`setup/`).
 
 The route is `/golf/dashboard/rounds`, for players. It is the player's third phone tab (D-66). Coaches have no Rounds library in v2; `/golf/dashboard/rounds` keeps the Fairway page for them.
 
@@ -89,4 +89,22 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
 - The action bar sits at the bottom of the entry, above the home indicator; quick distances fill the row at 44px.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round complete) are bottom sheets that drag to close.
 - Not yet: the numeric pad has no Done key on iOS (the Fairway screen adds a bar for it); an iPhone pass.
+
+## Setup: board to source
+
+The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and `rounds-course.jsx` (AddCourse). The screen draws; the round screen's ports (`ChSetupPorts` in `setup/shape.ts`) read the course library (`listCourses`, `getRecentlyPlayedCourses`, `getTeamSavedCourses`, `getCourseDetail`, `getTeeWithHoles` in `actions/course-library.ts`) and start the round (the legacy engine's start, when the engine moves; ROUNDS_PLAN step 4).
+
+- Course and tees: the picker's three groups are the library's recent, team and all courses; a tee shows length, par, rating and slope, and a draft tee shows but can't be played. The board's per-hole length bars need every tee's holes up front; the card draws one bar for the tee's length against the course's longest instead.
+- No course photos (Q-72a): the course card is a typographic green band; Add a course has no photo step.
+- Add a course is the round's own course (Q-72h): the library's add is coach-only, so a player's typed course goes with the round, and "Save this course for next time" (on by default; the legacy screen's opt-in, off by default) saves it and offers it to the library. One tee, not the board's several.
+- The spine is Course, Scorecard, Track (the board's Setup, Holes, Track, Done): setup ends when tracking opens.
+- The note is a plain list of what is tracked, not "50+ stats" (Q-72b).
+- Pars are 3 to 6 and yardages 1 to 999, the legacy editor's rules; the date can't be after today (the team's today, from the server).
+- The qualifier: the first open qualifier is offered above Round details (Play sets the type, the course and the tees, and says which round it counts as); a qualifier with no round open shows why and can't be chosen.
+
+## Setup on the phone
+
+- One column; the band shrinks; the scorecard is one column of holes with 36px par buttons and 40px yardage boxes.
+- The dock (summary and Start round) sits above the home indicator.
+- The picker and Add a course are bottom sheets that drag to close.
 
