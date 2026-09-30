@@ -6,13 +6,7 @@ export const MINUS = '−';
 export const NO_DATA = '—';
 
 /** Score relative to par: E, +3, −2, −0.4. */
-export function formatToPar(value: number | null | undefined, digits?: number): string {
-  if (value == null || Number.isNaN(value)) return NO_DATA;
-  const d = digits ?? (Number.isInteger(value) ? 0 : 1);
-  const rounded = Number(value.toFixed(d));
-  if (rounded === 0) return 'E';
-  return (rounded > 0 ? '+' : MINUS) + Math.abs(rounded).toFixed(d);
-}
+export { formatToPar } from '@/lib/golf/format-to-par';
 
 /** Signed delta, for example strokes gained: +1.8, −0.9, 0.0. */
 export function formatSigned(value: number | null | undefined, digits = 1): string {

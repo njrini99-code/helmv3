@@ -13,6 +13,12 @@
 --
 -- Written by an agent and NOT applied. Apply through `npm run db:apply` after
 -- review (docs/operations/APPLY_PATH.md), then `npm run db:types`.
+--
+-- ROLLBACK: alter table public.golf_team_members drop column availability,
+--   drop column availability_note, drop column availability_updated_at;
+--   (the two check constraints go with the columns).
+-- VERIFY: select availability, count(*) from public.golf_team_members group by 1;
+--   every existing row reads 'available'.
 
 alter table public.golf_team_members
   add column if not exists availability text not null default 'available',

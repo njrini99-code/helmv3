@@ -132,6 +132,8 @@ function animates(strippedSrc) {
 // suite fails — unlike an allowlist, it cannot rot into a silent pass.
 const SAFE_DELEGATES = new Map([
   ['useRouteRevealMotion', 'src/lib/motion/route-motion.ts'],
+  // Clubhouse's hydration-safe gate: the OS media query or Settings > Animations off.
+  ['useChReducedMotion', 'src/clubhouse/lib/reduced-motion.ts'],
 ]);
 
 function honorsReducedMotion(rawSrc) {

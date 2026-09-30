@@ -16,6 +16,8 @@ import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supa
 let fake: FakeSupabase;
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => fake }));
+// This covers the Fairway rounds list; golf_clubhouse_ui is on in tests and would draw Clubhouse's instead.
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => false, isClubhouseFrontDoor: () => false }));
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(() => { throw new Error('REDIRECT'); }),
   notFound: vi.fn(() => { throw new Error('NOT_FOUND'); }),

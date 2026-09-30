@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /**
  * Per-conversation mute for the signed-in participant. Writes the caller's own
@@ -13,7 +14,7 @@ import { describeError } from '@/lib/utils/describe-error';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function getGolfConversationMute(
+async function getGolfConversationMuteImpl(
   conversationId: string,
 ): Promise<{ success: true; data: { muted: boolean; until: string | null } } | { success: false; error: string }> {
   if (typeof conversationId !== 'string' || !UUID.test(conversationId)) return { success: false, error: 'Invalid conversation' };
@@ -39,7 +40,7 @@ export async function getGolfConversationMute(
 }
 
 /** `hours` null mutes until turned off; a number mutes for that long; `muted: false` unmutes. */
-export async function setGolfConversationMute(
+async function setGolfConversationMuteImpl(
   conversationId: string,
   muted: boolean,
   hours: number | null = null,
@@ -66,4 +67,17 @@ export async function setGolfConversationMute(
   }
   if (!data || data.length === 0) return { success: false, error: 'You are not in this conversation' };
   return { success: true, data: { muted, until } };
+}
+
+type MuteResult = { success: true; data: { muted: boolean; until: string | null } } | { success: false; error: string };
+
+const observedGetGolfConversationMute = withAdminObserved('getGolfConversationMute', { sport: 'golf', feature: 'messaging' }, getGolfConversationMuteImpl);
+const observedSetGolfConversationMute = withAdminObserved('setGolfConversationMute', { sport: 'golf', feature: 'messaging' }, setGolfConversationMuteImpl);
+
+export async function getGolfConversationMute(conversationId: string): Promise<MuteResult> {
+  return observedGetGolfConversationMute(conversationId);
+}
+
+export async function setGolfConversationMute(conversationId: string, muted: boolean, hours: number | null = null): Promise<MuteResult> {
+  return observedSetGolfConversationMute(conversationId, muted, hours);
 }
