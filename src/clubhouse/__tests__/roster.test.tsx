@@ -389,6 +389,14 @@ describe('Roster · loading, haptics, accessibility', () => {
     expect(card.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it("Schedule 1:1 in the player panel opens Calendar's editor with only that player invited (D-52)", async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await openPeek(user);
+    const panel = screen.getByRole('complementary', { name: theo.name });
+    expect(within(panel).getByRole('link', { name: 'Schedule 1:1' }).getAttribute('href')).toBe(`/golf/dashboard/calendar?new=1&with=${theo.id}`);
+  });
+
   it('CH-3803 Esc closes the player panel, but not while typing a note', async () => {
     const user = userEvent.setup();
     wrap(roster());

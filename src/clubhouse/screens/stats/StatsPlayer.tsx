@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
+import { CalendarPlus, Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
@@ -96,6 +96,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   };
   // A coach's Message opens the direct thread with this player (Messages' ?player= link), not the bare inbox.
   const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${data.id}`) : null;
+  // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52).
+  const planHref = coach ? rebuiltHref(`/golf/dashboard/calendar?new=1&with=${data.id}`) : null;
 
   const heroFigs: Array<[string, string, string, string?]> = [
     ['Scoring avg', formatFixed(w.avg), coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
@@ -179,11 +181,16 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           </div>
           <h1 className="ch-display">{coach ? data.name : 'Your stats'}</h1>
           <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join(' · ')}</p>
-          {coach && (messageHref || coachId) && (
+          {coach && (messageHref || planHref || coachId) && (
             <div className="ch-pf-hero__act">
               {messageHref && (
                 <Button leftIcon={MessageSquare} href={messageHref}>
                   Message
+                </Button>
+              )}
+              {planHref && (
+                <Button leftIcon={CalendarPlus} href={planHref}>
+                  Schedule 1:1
                 </Button>
               )}
               {coachId && (

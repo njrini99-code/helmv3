@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, GraduationCap, Hash, MapPin, MessageSquare, School, X } from 'lucide-react';
+import { ArrowRight, CalendarPlus, GraduationCap, Hash, MapPin, MessageSquare, School, X } from 'lucide-react';
 import { AnimatePresence, m } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { setIntent } from '@/app/golf/actions/v3/intent';
@@ -82,6 +82,8 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
     { icon: Hash, label: 'Jersey', value: p.jersey },
   ].filter((f) => f.value);
   const messageHref = rebuiltHref('/golf/dashboard/messages');
+  // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52), as the phone's Plan 1:1.
+  const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
   const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
 
   return (
@@ -101,11 +103,18 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
         <span className="ch-rs-peek__sub">
           {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null].filter(Boolean).join(' · ') || 'Player'}
         </span>
-        {messageHref && (
+        {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
-            <Button size="sm" leftIcon={MessageSquare} href={messageHref}>
-              Message
-            </Button>
+            {messageHref && (
+              <Button size="sm" leftIcon={MessageSquare} href={messageHref}>
+                Message
+              </Button>
+            )}
+            {planHref && (
+              <Button size="sm" leftIcon={CalendarPlus} href={planHref}>
+                Schedule 1:1
+              </Button>
+            )}
           </div>
         )}
       </div>

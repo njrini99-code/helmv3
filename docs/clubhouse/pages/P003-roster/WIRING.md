@@ -68,7 +68,7 @@ Links out are plain links through `rebuiltHref`, so a destination that is not re
 | Open full profile | desktop panel | `stats?player=<id>` |
 | All N | phone profile | `stats?player=<id>&window=season&tab=rounds` (D-53) |
 | Message | desktop panel and row menu; phone profile | `messages` (desktop); `messages?player=<id>` (phone) |
-| Plan 1:1 | phone profile | `calendar?new=1&with=<id>` (D-52) |
+| Plan 1:1 (phone), Schedule 1:1 (desktop panel) | phone profile; desktop panel | `calendar?new=1&with=<id>` (D-52) |
 | Open team settings | Invite sheet, when the team has no join code | `settings?section=team` |
 
 ## Components

@@ -78,7 +78,7 @@ The sidebar (Team › Roster, with the join requests count) and the More sheet o
 
 ### Exits to
 
-Stats for a player (`stats?player=<id>`; from the phone profile's All N, `&window=season&tab=rounds`, D-53), Messages (desktop: the inbox; phone: `messages?player=<id>`, which opens or starts the direct thread), Calendar's editor with the player invited (phone Plan 1:1, `calendar?new=1&with=<id>`, D-52), and Settings › Team when the team has no join code.
+Stats for a player (`stats?player=<id>`; from the phone profile's All N, `&window=season&tab=rounds`, D-53), Messages (desktop: the inbox; phone: `messages?player=<id>`, which opens or starts the direct thread), Calendar's editor with the player invited (phone Plan 1:1 and the desktop panel's Schedule 1:1, `calendar?new=1&with=<id>`, D-52), and Settings › Team when the team has no join code.
 
 `/golf/dashboard/roster/[id]` (the Fairway player page) is not part of this page: inside the Clubhouse frame it shows the not-rebuilt notice.
 

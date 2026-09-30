@@ -57,6 +57,7 @@ The tab strip, the Game detail chips and the phone's All N rounds are local stat
 | ACT-P005-CHANGE-WINDOW | The Last 10, Season, Qualifiers switch (desktop and phone) | `changeWindow` in `StatsPlayer` | `loadPlayerProfile` (the server render the new address triggers) | the tables above | address 50102 · busy 50302 · offline 50701 · slow 50702 |
 | ACT-P005-PAGE-PLAYERS | Previous player, Next player (coach) | a link from `href` (keeps the window) | `loadPlayerProfile` | the tables above | ready 50103 · busy 50302 · not on the team 50804 |
 | ACT-P005-MESSAGE-PLAYER | Message (coach; the phone header icon) | a link to `/golf/dashboard/messages?player=<id>` | none (Messages opens the thread) | none | 50104 |
+| ACT-P005-SCHEDULE-PLAYER | Schedule 1:1 (coach, desktop hero) | a link to `/golf/dashboard/calendar?new=1&with=<id>` (D-52) | none (Calendar opens its editor) | none | Calendar 60103 |
 | ACT-P005-ADD-FOCUS-AREA | Add focus area, Propose focus area (coach) | `submit` in `FocusAreaSheet` → `save.run` | `createFocusArea` (`actions/development.ts`) | golf_player_focus_areas | name 50501 · lands 50901 · fails 50601 · adding 50301 · text kept 51201 · page read again 51501 · coach only 50806 · offline 10703 |
 | ACT-P005-SHARE-PLAYER | Share (coach, phone) | `share` in `StatsPlayerPhone` | none (`navigator.share`, else the clipboard) | none | fails 50610 |
 | ACT-P005-RETRY-READ | Try again on a failed-read notice | `router.refresh` | `loadPlayerProfile` | the tables above | recovery 51401 · rounds 50602 · shot detail 50603 · development 50604 |

@@ -794,6 +794,14 @@ describe('Stats player · the page', () => {
     }
   });
 
+  it("a coach's Schedule 1:1 opens Calendar's editor with only this player invited (D-52); a player's profile has none", () => {
+    const { unmount } = show(player());
+    expect(screen.getByRole('link', { name: 'Schedule 1:1' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=jonah');
+    unmount();
+    show(player({ viewer: 'player' }));
+    expect(screen.queryByRole('link', { name: 'Schedule 1:1' })).toBeNull();
+  });
+
   it('51202 the tab stays when the window changes or the coach pages to another player', async () => {
     const user = userEvent.setup();
     const view = show(player());
