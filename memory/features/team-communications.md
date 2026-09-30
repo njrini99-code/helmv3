@@ -757,3 +757,17 @@ The Clubhouse view reuses `useGolfConversations`, `useGolfMessages`, `useMessage
 the directory of who may be messaged (org coaches and active team players) and the team timezone. Players start
 direct threads only, as in the Fairway sheet. Reactions render as icons (stored values unchanged).
 Checklist and decisions: `docs/clubhouse/screens/messages.md`, `docs/clubhouse/PROGRESS.md` (D-13 to D-15).
+
+Below 820px the same container renders a phone stack (`src/clubhouse/screens/messages/MessagesPhone.tsx`, spec
+`docs/clubhouse/phone/messages.md`, D-44 to D-49): inbox, thread, details, new message. It adds no hook and one
+read action. A coach's new group is `createGolfTeamBroadcast` (players) followed by `addGolfGroupMember` for each
+chosen coach (D-45), and a group's creator adds members from Details through `getGolfGroupAddCandidates` and
+`addGolfGroupMember` (D-47), on desktop too. Both are creator-only on the server.
+
+`getGolfConversationFiles(conversationId)` (D-48) lists a conversation's shared files for Details. Contract: the
+caller must be a row in `golf_conversation_participants` for that conversation, checked before any attachment is
+read (a stranger and a non-existent id both get "Not a participant"); the read runs on the RLS client; files on
+deleted messages are filtered in the query, newest first, capped at 100; it returns metadata only (id, message id,
+name, MIME type, size, sent at, sender), never a storage path or signed URL. Opening a file still goes through
+`getGolfMessageAttachments` for that one message. Test:
+`src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts`.

@@ -381,6 +381,8 @@ async function getGolfConversationFilesImpl(conversationId: string): Promise<{
       .from('golf_message_attachments')
       .select('id, message_id, file_name, mime_type, file_size, created_at, message:golf_messages!inner(conversation_id, sender_id, is_deleted)')
       .eq('message.conversation_id', conversationId)
+      // In the query, so files on deleted messages don't take slots under the cap.
+      .not('message.is_deleted', 'is', true)
       .order('created_at', { ascending: false })
       .limit(100);
 

@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   membership: { data: { id: 'p-1' } as unknown, error: null as unknown },
   files: { data: [] as unknown[], error: null as unknown },
   attachmentReads: 0,
+  notFilters: [] as unknown[][],
   logServerError: vi.fn(async () => undefined),
 }));
 
@@ -35,7 +36,12 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       if (table === 'golf_message_attachments') {
         mocks.attachmentReads += 1;
-        const chain = { eq: () => chain, order: () => chain, limit: async () => mocks.files };
+        const chain = {
+          eq: () => chain,
+          not: (...args: unknown[]) => (mocks.notFilters.push(args), chain),
+          order: () => chain,
+          limit: async () => mocks.files,
+        };
         return { select: () => chain };
       }
       throw new Error(`unexpected table ${table}`);
@@ -62,6 +68,7 @@ describe('getGolfConversationFiles', () => {
     mocks.membership = { data: { id: 'p-1' }, error: null };
     mocks.files = { data: [], error: null };
     mocks.attachmentReads = 0;
+    mocks.notFilters = [];
   });
 
   it('refuses someone who is not in the conversation, before reading any file', async () => {
@@ -83,6 +90,11 @@ describe('getGolfConversationFiles', () => {
     expect(res.files?.map((f) => f.id)).toEqual(['a', 'c']);
     expect(res.files?.[0]).toEqual({ id: 'a', messageId: 'm-a', fileName: 'a.pdf', mimeType: 'application/pdf', fileSize: 48 * 1024, sentAt: '2026-10-14T15:02:00Z', senderId: 'u-2' });
     expect(JSON.stringify(res)).not.toMatch(/storage|team\/conv|signed/i);
+  });
+
+  it('leaves deleted messages out in the query, so they take no slots under the cap', async () => {
+    await getGolfConversationFiles('c-1');
+    expect(mocks.notFilters).toEqual([['message.is_deleted', 'is', true]]);
   });
 
   it('reports a failed read as an error, and logs it', async () => {
