@@ -59,7 +59,7 @@ D-40 to D-43).
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
 | CH-1609 | A page or section is loading | Skeletons shimmer left to right (1.4s loop); they hold still when Animations is off or motion is reduced | `.ch-skel` | preview |
 | CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 220ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
-| CH-1611 | Someone drags a phone sheet (More, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (220ms, instant when motion is reduced). The Close button inside stays a button | `useSheetDrag` in `TabBar` and `Modal` | shell.test › CH-1611 |
+| CH-1611 | Someone drags a phone sheet (More, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (360ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button | `useSheetDrag` in `TabBar` and `Modal` | shell.test › CH-1611 |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
 

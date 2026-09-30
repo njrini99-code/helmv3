@@ -35,7 +35,7 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
   const moreBtn = useRef<HTMLButtonElement>(null);
   const sheet = useRef<HTMLDivElement>(null);
   const closeMore = useCallback(() => setMoreOpen(false), []);
-  const drag = useSheetDrag(sheet, closeMore, { reduced });
+  const drag = useSheetDrag(sheet, closeMore, { enabled: !reduced });
 
   useEffect(() => setMoreOpen(false), [pathname]);
   // The sheet is modal: focus moves into it, Tab stays inside, Esc closes it,

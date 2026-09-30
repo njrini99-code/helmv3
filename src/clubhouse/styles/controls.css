@@ -377,6 +377,12 @@
   .ch-modal__head {
     touch-action: none;
   }
+  /* With reduced motion the sheet fades instead of rising, and doesn't drag. */
+  @media (prefers-reduced-motion: reduce) {
+    .ch-modal__panel {
+      animation-name: ch-fade;
+    }
+  }
   .ch-modal__foot .ch-btn {
     flex: 1;
     height: 44px;

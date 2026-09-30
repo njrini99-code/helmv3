@@ -13,7 +13,7 @@ import { Icon } from './Icon';
  * for free, and focus returns to the opener. Desktop: a centred sheet (radius
  * 20). Phone: a bottom sheet with a grab handle (see ui-controls.css) that
  * follows the finger down from its grab or header and closes past the
- * threshold (CH-1611).
+ * threshold (CH-1611). With reduced motion it fades and doesn't drag.
  */
 export function Modal({
   open,
@@ -41,7 +41,7 @@ export function Modal({
   const opener = useRef<Element | null>(null);
   const phone = useChPhone();
   const reduced = useChReducedMotion();
-  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced });
+  const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
 
   useEffect(() => {
     const d = ref.current;

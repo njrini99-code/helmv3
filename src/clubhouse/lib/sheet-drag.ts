@@ -10,8 +10,9 @@ const FLICK_PX_PER_MS = 0.5;
 
 /**
  * A phone sheet follows the finger down, and closes past 80px or on a quick
- * flick with the press haptic; let go sooner and it springs back in 220ms
- * (instantly when motion is reduced). CH-1611.
+ * flick with the press haptic; let go sooner and it springs back in 360ms,
+ * the sheet's own duration. With reduced motion there is no drag (pass
+ * `enabled: false`); Close, the scrim and Esc still close it. CH-1611.
  *
  * The sheet moves by the CSS `translate` property, which composes with the
  * `transform` its open and close animations use, so a closing sheet leaves
@@ -19,7 +20,7 @@ const FLICK_PX_PER_MS = 0.5;
  * starts a drag (the grab and the header, with `touch-action: none` there);
  * a press on a control inside it is left alone.
  */
-export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () => void, { enabled = true, reduced = false } = {}) {
+export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () => void, { enabled = true } = {}) {
   const stop = useRef<(() => void) | null>(null);
   useEffect(() => () => stop.current?.(), []);
 
@@ -52,7 +53,7 @@ export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () =
           onClose();
           return;
         }
-        el.style.transition = reduced ? 'none' : 'translate var(--ch-dur-base) var(--ch-ease)';
+        el.style.transition = 'translate var(--ch-dur-slow) var(--ch-ease)';
         el.style.translate = '';
       };
       stop.current = () => {
@@ -65,7 +66,7 @@ export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () =
       window.addEventListener('pointerup', end);
       window.addEventListener('pointercancel', end);
     },
-    [sheet, onClose, enabled, reduced],
+    [sheet, onClose, enabled],
   );
 
   return { onPointerDown };

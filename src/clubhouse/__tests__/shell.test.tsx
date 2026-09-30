@@ -389,6 +389,30 @@ describe('Shell · navigation and accessibility', () => {
         window.matchMedia = real;
       }
     });
+
+    it('with reduced motion a sheet does not drag', async () => {
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' || q === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
+      try {
+        const onClose = vi.fn();
+        wrap(
+          <Modal open onClose={onClose} title="Requests">
+            Body
+          </Modal>,
+        );
+        const dialog = document.querySelector('dialog.ch-modal') as HTMLElement;
+        const head = dialog.querySelector('.ch-modal__head') as HTMLElement;
+        act(() => {
+          head.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+          window.dispatchEvent(new MouseEvent('pointermove', { clientY: 300 }));
+          window.dispatchEvent(new MouseEvent('pointerup', { clientY: 300 }));
+        });
+        expect(dialog.style.translate).toBe('');
+        expect(onClose).not.toHaveBeenCalled();
+      } finally {
+        window.matchMedia = real;
+      }
+    });
   });
 
   it('CH-1803 the current page is marked in the navigation, and landmarks are named', () => {
