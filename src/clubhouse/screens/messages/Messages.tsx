@@ -175,7 +175,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
         await refetch();
         setSelectedId(res.conversationId);
-        haptic('commit');
+        haptic('success');
       });
     },
     [convs, data.teamId, refetch, attempt],
@@ -203,7 +203,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         }
         await refetch();
         setSelectedId(res.conversationId);
-        haptic('commit');
+        haptic('success');
         toast({ title: data.role === 'coach' ? `Group created · ${title}` : 'Group created' });
         if (missed.length) {
           chReport(new Error(`${missed.length} coach(es) not added to a new group`), { surface: 'messages.createGroup', severity: 'low' });
@@ -489,13 +489,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
     edit: (id, text) =>
       attempt('edit', { failed: "Couldn't edit the message", hint: 'Your edit is still in the box. Try again.', code: 'CH-7007' }, async () => {
         await msgs.editMessage(id, text);
-        haptic('commit');
+        haptic('success');
         toast({ title: 'Message edited' });
       }),
     remove: async (id) => {
       const ok = await attempt('remove', { failed: "Couldn't delete the message", hint: 'It’s back in the thread. Try again in a moment.', code: 'CH-7008' }, async () => {
         await msgs.removeMessage(id);
-        haptic('commit');
+        haptic('success');
         toast({ title: 'Message deleted' });
       });
       if (!ok) void msgs.refetch();
@@ -518,7 +518,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       return attempt('leave', { failed: "Couldn't leave the group", hint: 'Try again in a moment.', code: 'CH-7010' }, async () => {
         const res = await leaveGolfGroup(selectedId);
         if ('error' in res) throw new Error(res.error);
-        haptic('commit');
+        haptic('success');
         toast({ title: 'You left the group' });
         setSelectedId(null);
         await refetch();
@@ -530,7 +530,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if (!selectedId) throw new Error('No conversation open');
         const res = await addGolfGroupMember(selectedId, userId);
         if ('error' in res) throw new Error(res.error);
-        haptic('commit');
+        haptic('success');
         toast({ title: `Added ${firstName(name)} to ${selected?.title ?? 'the group'}` });
         setMembersAttempt((n) => n + 1);
         await refetch();
@@ -554,7 +554,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         const r = await setGolfConversationMute(selectedId, muted, hours);
         if (!r.success) throw new Error(r.error);
         setMuteState(r.data);
-        haptic('commit');
+        haptic('success');
         toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
       });
     },
@@ -583,7 +583,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       attempt('completeTask', { failed: "Couldn't mark the task done", hint: 'Try again in a moment.', code: 'CH-7013' }, async () => {
         const r = await completeAnnouncementTask(taskId);
         if (!r.success) throw new Error(r.error || 'task update failed');
-        haptic('commit');
+        haptic('success');
         toast({ title: 'Task marked done' });
         await loadAnns();
       }),
@@ -592,7 +592,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         chTrail('messages post announcement');
         const r = await createEnrichedAnnouncement({ title, body, urgency: urgent ? 'urgent' : 'normal', requiresAcknowledgement: ack, recipientPlayerIds: null, documentIds: [], inlineTasks: [] });
         if (!r.success || !r.data) throw new Error(r.error || 'announcement failed');
-        haptic('commit');
+        haptic('success');
         toast({ title: `Posted to ${data.teamName ?? 'the team'} · ${title}` });
         await loadAnns();
         setSelectedId(null);

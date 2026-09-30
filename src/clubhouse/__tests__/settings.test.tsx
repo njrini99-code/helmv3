@@ -517,11 +517,19 @@ describe('Settings · motion, haptics, accessibility', () => {
     await user.click(screen.getByRole('switch', { name: 'Animations' }));
   });
 
-  it('CH-8701 CH-8702 CH-8703 select, commit and error haptics', async () => {
-    const { user } = setup({ section: 'notifications', writes: { setDelivery: vi.fn().mockImplementationOnce(okw).mockImplementationOnce(() => fail()) } });
+  it('CH-8701 CH-8702 CH-8703 a switch ticks, a save that lands is silent, a failure has the error pattern (D-70)', async () => {
+    const setDelivery = vi.fn().mockImplementationOnce(okw).mockImplementationOnce(() => fail());
+    const { user } = setup({ section: 'notifications', writes: { setDelivery } });
     await user.click(screen.getByRole('switch', { name: 'Tasks by push' }));
-    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('commit'));
+    await waitFor(() => expect(setDelivery).toHaveBeenCalledTimes(1));
+    // Let the landed save finish before asserting it stayed silent.
+    await act(async () => {
+      await setDelivery.mock.results[0]?.value;
+      await new Promise((r) => setTimeout(r, 0));
+    });
     expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    expect(hapticSpy).not.toHaveBeenCalledWith('commit');
     await user.click(screen.getByRole('switch', { name: 'Tasks by email' }));
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('error'));
   });

@@ -76,8 +76,8 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
         window.clearTimeout(slow);
       }
       inflight.current -= 1;
+      // An autosave that lands is silent (D-70); "All changes saved" says it.
       if (ok) {
-        haptic('commit');
         if (inflight.current === 0) setStatus('saved');
         return;
       }

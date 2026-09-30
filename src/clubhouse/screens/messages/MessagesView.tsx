@@ -741,7 +741,7 @@ export function Bubble({
               : "Not sent."}
             <button
               type="button"
-              onClick={() => (haptic("press"), api.retry(m.id))}
+              onClick={() => api.retry(m.id)}
             >
               Retry
             </button>
@@ -807,7 +807,7 @@ export function Composer({
       ? await api.sendFiles(text, pending)
       : await api.send(text);
     setSending(false);
-    if (ok) haptic("commit");
+    if (ok) haptic("success");
     else {
       haptic("error");
       // Keep what they wrote: a failed send never eats the draft.
@@ -1287,7 +1287,6 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
                   disabled={done || busy === p.userId}
                   aria-label={done ? `${p.name} added` : `Add ${p.name}`}
                   onClick={async () => {
-                    haptic("press");
                     setBusy(p.userId);
                     const ok = await api.addMember(p.userId, p.name);
                     setBusy(null);

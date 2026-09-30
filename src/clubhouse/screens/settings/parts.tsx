@@ -322,10 +322,8 @@ export function useInstantSave(surface: string) {
       n.delete(op.key);
       return n;
     });
-    if (r.success || r.ok) {
-      haptic('commit');
-      return true;
-    }
+    // The control already ticked when it changed (D-70); a save that lands is silent.
+    if (r.success || r.ok) return true;
     op.rollback();
     haptic('error');
     if (r.error) chReport(new Error(r.error), { surface: `settings.${surface}`, action: op.key, severity: 'low' });

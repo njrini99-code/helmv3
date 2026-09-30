@@ -120,10 +120,10 @@ describe('Roster · saves that fail', () => {
     await waitFor(() => expect(screen.getByText('2 players added to Varsity')).toBeTruthy());
     expect(actions.accept.mock.calls.map((c) => c[0])).toEqual(['r2', 'r3']);
     expect(result.current.reqs).toEqual([]);
-    expect(hapticSpy).toHaveBeenCalledWith('commit');
+    expect(hapticSpy).toHaveBeenCalledWith('success');
   });
 
-  it('approve all that lands says how many were added, one commit tap', async () => {
+  it('approve all that lands says how many were added, one success tap (D-70)', async () => {
     actions.accept.mockResolvedValue({ success: true });
     const { result } = renderHook(() => useJoinRequests('Varsity', PREVIEW_ROSTER.requests), {
       wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
@@ -131,7 +131,7 @@ describe('Roster · saves that fail', () => {
     await act(() => result.current.approveAll());
     expect(screen.getByText('2 players added to Varsity')).toBeTruthy();
     expect(result.current.reqs).toEqual([]);
-    expect(hapticSpy.mock.calls.filter(([k]) => k === 'commit')).toHaveLength(1);
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
     expect(nameList(['A', 'B', 'C'])).toBe('A, B and C');
   });
 
@@ -325,7 +325,7 @@ describe('Roster · loading, haptics, accessibility', () => {
     expect((code('CH-3402')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('CH-3701 CH-3702 opening a player ticks; an export lands with a commit tap', async () => {
+  it('CH-3701 CH-3702 opening a player ticks; an export lands with a success tap (D-70)', async () => {
     const user = userEvent.setup();
     const url = URL as unknown as { createObjectURL?: unknown; revokeObjectURL?: unknown };
     const prev = [url.createObjectURL, url.revokeObjectURL];
@@ -335,7 +335,7 @@ describe('Roster · loading, haptics, accessibility', () => {
     await openPeek(user);
     expect(hapticSpy).toHaveBeenCalledWith('select');
     await user.click(screen.getByRole('button', { name: 'Export' }));
-    expect(hapticSpy).toHaveBeenCalledWith('commit');
+    expect(hapticSpy).toHaveBeenCalledWith('success');
     [url.createObjectURL, url.revokeObjectURL] = prev;
   });
 
@@ -422,7 +422,8 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
     await user.click(within(top).getByRole('button', { name: 'Invite players' }));
     expect(await screen.findByText('FINLEY-26')).toBeTruthy();
-    expect(hapticSpy).toHaveBeenCalledWith('press');
+    // An icon action that isn't a primary button is silent (D-70).
+    expect(hapticSpy).not.toHaveBeenCalledWith('press');
   });
 
   it('CH-3701 active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {

@@ -57,8 +57,8 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
     chTrail(`settings device push ${v ? 'on' : 'off'}`);
     try {
       const r = v ? await push.subscribe() : await push.unsubscribe();
-      if (r.ok) haptic('commit');
-      else {
+      // The switch already ticked (selection, D-70); only a failure adds a haptic.
+      if (!r.ok) {
         haptic('error');
         if (r.error) chReport(new Error(r.error), { surface: 'settings.notifications', action: 'devicePush', severity: 'low' });
         toast({ tone: 'error', title: v ? "Couldn't turn on push here" : "Couldn't turn off push here", body: r.error && r.error.length < 90 ? r.error : 'Try again in a moment.', code: 'CH-8007' });

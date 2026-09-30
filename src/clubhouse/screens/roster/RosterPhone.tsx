@@ -96,7 +96,6 @@ export function RosterPhone({
             icon={UserPlus}
             label="Invite players"
             onClick={() => {
-              haptic('press');
               onInvite();
             }}
           />
@@ -121,7 +120,6 @@ export function RosterPhone({
             error={data.requestsError}
             onRetry={onRetry}
             onOpen={() => {
-              haptic('press');
               setRequestsOpen(true);
             }}
           />
@@ -193,7 +191,6 @@ export function RosterPhone({
                   icon={Ellipsis}
                   label="More actions"
                   onClick={() => {
-                    haptic('press');
                     setActing(true);
                   }}
                 />

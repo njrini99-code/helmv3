@@ -44,7 +44,7 @@ export function PreferencesSection({ device }: { device: ChDevice }) {
               setHapticsEnabled(v);
               setHaptics(v);
               // A confirming tap when turning them on, so the change is felt.
-              if (v) haptic('commit');
+              if (v) haptic('select');
             }}
           />
         </Row>

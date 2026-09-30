@@ -62,7 +62,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-4701 | Choosing a leg, focusing a player, changing the window or lens | A selection tick | `TeamCharts` `haptic('select')`, `Segmented` | stats-team.test › CH-4701 |
-| CH-4702 | An export lands / fails | A medium tap / the OS error pattern | `TeamHeadActions` export | preview |
+| CH-4702 | An export lands / fails | The OS success pattern / the OS error pattern (D-70) | `TeamHeadActions` export | preview |
 
 ## 48xx Accessibility
 

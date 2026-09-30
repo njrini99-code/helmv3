@@ -23,7 +23,7 @@ function Harness({ enabled }: { enabled: boolean }) {
 }
 
 describe('CH-1606 press', () => {
-  const animate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation);
+  const animate = vi.fn((..._args: unknown[]) => ({ cancel: vi.fn() }) as unknown as Animation);
   const original = Element.prototype.animate;
   beforeEach(() => {
     animate.mockClear();
@@ -45,7 +45,7 @@ describe('CH-1606 press', () => {
     fireEvent.pointerDown(getByText('Save'), { button: 0 });
     expect(animate).toHaveBeenCalledTimes(1);
     const [frames, opts] = animate.mock.calls[0] as unknown as [Array<Record<string, string>>, KeyframeAnimationOptions];
-    expect(Object.keys(frames[1])).toEqual(['scale']);
+    expect(Object.keys(frames[1] ?? {})).toEqual(['scale']);
     expect(opts.duration).toBe(CH_DUR.press * 1000);
     fireEvent.pointerUp(getByText('Save'));
     expect(animate).toHaveBeenCalledTimes(2);

@@ -49,7 +49,7 @@ export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () =
       const end = (ev: PointerEvent) => {
         stop.current?.();
         if (ev.type === 'pointerup' && (dy > CH_SHEET_CLOSE_PX || (dy > 10 && speed > FLICK_PX_PER_MS))) {
-          haptic('press');
+          haptic('commit');
           onClose();
           return;
         }

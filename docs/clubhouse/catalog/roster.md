@@ -76,7 +76,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3701 | Opening a player; changing a filter, layout or sort | A selection tick | `select()`, `Segmented`, `PillGroup` | roster.test › CH-3701 |
-| CH-3702 | An export lands | A medium tap | `exportCsv` | roster.test › CH-3702 |
+| CH-3702 | An export lands | The OS success pattern (D-70) | `exportCsv` | roster.test › CH-3702 |
 | CH-3703 | The code or link is copied | The OS success pattern | `useCopyText` (Invite sheet, phone requests sheet) | preview |
 
 ## 38xx Accessibility

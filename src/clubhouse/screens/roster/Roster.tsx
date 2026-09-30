@@ -137,7 +137,7 @@ export function Roster({ data }: { data: ChRoster }) {
       a.download = `${data.teamName.replace(/\W+/g, '-').toLowerCase()}-roster.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
-      haptic('commit');
+      haptic('success');
       toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
     } catch {
       haptic('error');

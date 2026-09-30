@@ -67,9 +67,9 @@ D-40 to D-43).
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-1701 | Changing tabs (not tapping the tab they're on) | A selection tick | `haptic('select')` in `TabBar` | shell.test › CH-1701 |
-| CH-1702 | Any save or send lands | A medium tap | `useAction` → `haptic('commit')` | shell.test › CH-1702 |
+| CH-1702 | Any save or send lands | The OS success pattern (D-70) | `useAction` → `haptic('commit')` | shell.test › CH-1702 |
 | CH-1703 | Any save or send fails | The OS error pattern | `useAction` → `haptic('error')` | shell.test › CH-1703 |
-| CH-1704 | Opening More; swiping the sheet away | A tick; a light tap | `TabBar`, `useSheetDrag` | shell.test › CH-1611 (the swipe); preview (the tick) |
+| CH-1704 | Opening More; swiping the sheet away | A tick; a medium tap as the sheet settles shut (D-70) | `TabBar`, `useSheetDrag` | shell.test › CH-1611 (the swipe); preview (the tick) |
 | CH-1705 | Opening the bell, a notification, or a menu item | A selection tick | `Bell`, `Menu` | preview |
 | CH-1706 | The connection drops | The OS warning pattern | `OfflineBanner` | shell.test › CH-1901 |
 

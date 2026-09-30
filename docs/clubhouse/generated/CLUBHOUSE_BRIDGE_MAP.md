@@ -497,7 +497,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81607 | CH-8607 | 16 Micro animation | `PRESSING_A_SECTION_OR_BUTTON` | reserved | Pressing a section or button |
 | 81608 | CH-8608 | 16 Micro animation | `ANIMATIONS_TURNED_OFF_IN_PREFERENCES` | reserved | Animations turned off in Preferences |
 | 81701 | CH-8701 | 17 Haptic | `PICKING_A_SECTION_FLIPPING_A_SWITCH_CHOOSING` | reserved | Picking a section, flipping a switch, choosing a segment, each slider step |
-| 81702 | CH-8702 | 17 Haptic | `A_SAVE_LANDS` | reserved | A save lands |
+| 81702 | CH-8702 | 17 Haptic | `A_SAVE_LANDS` | reserved | A Save changes that lands |
 | 81703 | CH-8703 | 17 Haptic | `A_SAVE_FAILS_OR_A_PHOTO_IS` | reserved | A save fails or a photo is rejected |
 | 81704 | CH-8704 | 17 Haptic | `OPENING_DELETE_ACCOUNT_OR_PRESSING_UPDATE_PASSWORD` | reserved | Opening Delete account, or pressing Update password with a problem |
 | 81705 | CH-8705 | 17 Haptic | `COPYING_THE_INVITE_CODE_OR_LINK` | reserved | Copying the invite code or link |

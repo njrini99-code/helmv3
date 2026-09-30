@@ -123,12 +123,12 @@ Success confirmations are listed next to their error: the toast shows for 4 seco
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-8701 | Picking a section, flipping a switch, choosing a segment, each slider step | A selection tick | `haptic('select')` | settings.test › CH-8701 |
-| CH-8702 | A save lands | A medium tap | `haptic('commit')` | settings.test › CH-8702 |
+| CH-8702 | A Save changes that lands | The OS success pattern (D-70). A switch, segment or slider that saves on change stays silent when it lands: its selection tick (CH-8701) was the feedback | `haptic('commit')` | settings.test › CH-8702 |
 | CH-8703 | A save fails or a photo is rejected | The OS error pattern | `haptic('error')` | settings.test › CH-8703 |
 | CH-8704 | Opening Delete account, or pressing Update password with a problem | The OS warning pattern | `haptic('warning')` | settings.test › CH-8704 |
 | CH-8705 | Copying the invite code or link | The OS success pattern | `haptic('success')` | settings.test › CH-8705 |
 | CH-8706 | Pressing a primary button (Save changes) | A light tap | `Button` default | preview |
-| CH-8707 | Turning Haptics back on | One confirming tap so the change is felt | `PreferencesSection` | preview |
+| CH-8707 | Turning Haptics back on | One selection tick so the change is felt (D-70) | `PreferencesSection` | preview |
 
 ## 88xx Accessibility
 

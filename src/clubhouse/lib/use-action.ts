@@ -78,7 +78,7 @@ export function useAction<A extends unknown[], T>(
       }
       if (refine) c = refine(result, c);
       if (result.success) {
-        haptic('commit');
+        haptic('success');
         if (c.done) toast({ title: c.done });
       } else {
         // A handled failure (the action returned success: false) is still tracked, at low severity.

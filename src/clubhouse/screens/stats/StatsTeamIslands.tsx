@@ -87,7 +87,7 @@ export function TeamHeadActions({ window: current, teamName, grid }: { window: C
       a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${current}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
-      haptic('commit');
+      haptic('success');
       toast({ title: 'Team stats exported' });
     } catch (err) {
       chReport(err, { surface: 'stats.team.export', severity: 'low' });

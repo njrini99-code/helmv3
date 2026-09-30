@@ -125,7 +125,6 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
             icon={SquarePen}
             label="New message"
             onClick={() => {
-              haptic("press");
               setComposing(true);
             }}
           />
@@ -332,7 +331,7 @@ function PhoneThread({
   const copy = async (m: ChMsg) => {
     try {
       await navigator.clipboard.writeText(m.text);
-      haptic("commit");
+      haptic("success");
       toast({ title: "Copied" });
     } catch {
       haptic("error");
@@ -512,7 +511,6 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
   };
   const tiles = (calendarHref ? 1 : 0) + 1;
   const message = async (userId: string) => {
-    haptic("press");
     if (!conv.group && userId === conv.memberIds[0]) return onBack();
     await api.startDirect(userId);
   };
@@ -532,7 +530,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               </p>
               <div className="ch-msp-tiles" style={{ ["--ch-msp-n" as string]: tiles }}>
                 {calendarHref && (
-                  <Link className="ch-msp-tile" href={calendarHref} onClick={() => haptic("press")}>
+                  <Link className="ch-msp-tile" href={calendarHref}>
                     <Icon icon={CalendarPlus} size={18} />
                     <span>Schedule</span>
                   </Link>
@@ -680,7 +678,6 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
     };
   }, [load, conv.id, attempt]);
   const open = async (f: ChFile) => {
-    haptic("press");
     const list = await api.attachments(f.messageId).catch(() => null);
     const hit = list?.find((x) => x.id === f.id) ?? null;
     if (!hit?.url) {

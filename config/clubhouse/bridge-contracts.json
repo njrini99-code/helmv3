@@ -4219,7 +4219,7 @@
     "item": 2,
     "name": "A_SAVE_LANDS",
     "chCode": "CH-8702",
-    "meaning": "A save lands",
+    "meaning": "A Save changes that lands",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },

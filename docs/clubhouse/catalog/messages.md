@@ -117,7 +117,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-7701 | A change fails | The OS error pattern | `fail()` | messages.test › CH-7701 |
-| CH-7702 | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) | A medium tap | `haptic('commit')` | preview |
+| CH-7702 | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) | The OS success pattern (D-70) | `haptic('commit')` | preview |
 | CH-7703 | Picking a reaction, a filter or a conversation | A selection tick | `haptic('select')` | preview |
 | CH-7704 | A long press on a message (phone) | A light tap as the sheet opens | `useLongPress` → `haptic('press')` | messages.test › CH-7704 |
 

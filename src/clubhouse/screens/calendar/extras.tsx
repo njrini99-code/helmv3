@@ -278,7 +278,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
     try {
       const r = await detachDocumentFromEvent(eventId, f.id);
       if (!r.success) throw new Error(r.error || 'detach failed');
-      haptic('commit');
+      haptic('success');
       toast({
         title: `Removed · ${f.title}`,
         action: {

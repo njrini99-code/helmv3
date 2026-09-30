@@ -355,7 +355,7 @@ describe('Shell · navigation and accessibility', () => {
       });
     };
 
-    it('the More sheet springs back short of 80px, and closes past it with the press haptic', async () => {
+    it('the More sheet springs back short of 80px, and closes past it with the medium settle (commit, D-70)', async () => {
       const user = userEvent.setup();
       wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
       const more = screen.getByRole('button', { name: 'More' });
@@ -369,7 +369,7 @@ describe('Shell · navigation and accessibility', () => {
       expect(more.getAttribute('aria-expanded')).toBe('true');
       expect(hapticSpy).not.toHaveBeenCalled();
       await drag(head, sheet, 120);
-      expect(hapticSpy).toHaveBeenCalledWith('press');
+      expect(hapticSpy).toHaveBeenCalledWith('commit');
       // Closed; the sheet itself leaves with its exit animation.
       expect(more.getAttribute('aria-expanded')).toBe('false');
     });
@@ -410,7 +410,7 @@ describe('Shell · navigation and accessibility', () => {
         expect(onCloseSpy).not.toHaveBeenCalled();
         await drag(head, dialog, 100);
         expect(onCloseSpy).toHaveBeenCalledTimes(1);
-        expect(hapticSpy).toHaveBeenCalledWith('press');
+        expect(hapticSpy).toHaveBeenCalledWith('commit');
         await waitFor(() => expect(dialog.hasAttribute('open')).toBe(false));
       } finally {
         window.matchMedia = real;
@@ -429,7 +429,7 @@ describe('Shell · navigation and accessibility', () => {
         const sheet = code('CH-1811') as HTMLElement;
         hapticSpy.mockClear();
         await drag(sheet.querySelector('.ch-bellp__shead') as HTMLElement, sheet, 120);
-        expect(hapticSpy).toHaveBeenCalledWith('press');
+        expect(hapticSpy).toHaveBeenCalledWith('commit');
         expect(trigger.getAttribute('aria-expanded')).toBe('false');
       } finally {
         window.matchMedia = real;
@@ -482,7 +482,7 @@ describe('Shell · navigation and accessibility', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
   });
 
-  it('CH-1702 CH-1703 a save lands with a commit tap; a failure with the error pattern', async () => {
+  it('CH-1702 CH-1703 a save lands with a success tap (D-70); a failure with the error pattern', async () => {
     function Two() {
       const ok = useAction('t.ok', () => Promise.resolve({ success: true }), { done: 'Saved', failed: 'Nope', code: 'CH-8001' });
       const bad = useAction('t.bad', () => Promise.resolve({ success: false }), { done: 'Saved', failed: 'Nope', code: 'CH-8001' });
@@ -496,7 +496,7 @@ describe('Shell · navigation and accessibility', () => {
     const user = userEvent.setup();
     wrap(<Two />);
     await user.click(screen.getByRole('button', { name: 'ok' }));
-    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('commit'));
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
     await user.click(screen.getByRole('button', { name: 'bad' }));
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('error'));
   });
