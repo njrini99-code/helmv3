@@ -1,24 +1,32 @@
 # Phone design: Qualifiers
 
-Status: owner design, mapping open. The design is `design/handoff/mobile/Qualifiers Mobile.html`, `qual-mobile.jsx` and `qual-mobile.css`, and it shares `qual-core.jsx`, `qual-data.js` and `qual.css` with desktop. Under D-22 the owner's design is the phone spec. This mapping stays open until Q-5, Q-15, Q-16 and Q-20 are answered, so the `phone-spec` gate is `doing`.
+Status: owner design, mapping open. The design is `design/handoff/mobile/Qualifiers Mobile.html`, `qual-mobile.jsx` and `qual-mobile.css`, and it shares `qual-core.jsx`, `qual-data.js` and `qual.css` with desktop. Under D-22 the owner's design is the phone spec. This mapping stays open until Q-5, Q-15, Q-16 and Q-20 are answered and the foundation spec is approved, so the `phone-spec` gate is `doing`.
 
 The boards are drawn at 402 × 874, an iPhone 16 Pro inside a Safari frame. They were rendered on 2026-09-29 at 390 × 844 without the bezel (`qualifiers-01..11`) and as drawn (`qualifiers-01..05-*-frame`); the captures are not committed. Every board is the coach's view, and there is no player phone design (Q-5).
 
 Only the second half of `qual-mobile.css` renders: the ivory top bar and the white hero. The first half (a green top bar, a green hero with `dl` figures, `.qm-row`, `.qm-chip`, `.qm-toast`, `.qm-entry`) is overridden or unused. Build from what renders.
 
-## Foundation pieces this design shows
+## Foundation (not specified here)
 
-MOBILE.md builds the foundation (tab bar, top bar, sheets) before any page's phone version. That foundation has no approved design yet. This design draws parts of it:
+The phone foundation (tab bar, top bar, More, sheets) is specified by its own spec, which the `messages-mobile` agent owns. It is built from the owner's shell, `m-shell.jsx` and `m.css` (in the Messages mobile handoff). This page sits inside that foundation and uses its pieces as they are approved there. MOBILE.md has it built before any page's phone version.
 
-| Piece | What the design draws | Foundation today (`phone/foundation.md`, D-3) |
+`qual-mobile.jsx` carries an older inline copy of the same shell. The pieces match by name:
+
+| Qualifiers copy | Shell piece | Difference in the newer shell |
 | --- | --- | --- |
-| Top bar | A 44px row under a 54px status-bar inset, on ivory glass (`rgb(247 245 239 / .9)`) with a hairline. The list has a left-aligned 17px title. Pushed screens have a green back link ("Qualifiers"), a centred title and the bell with its count. The form has Cancel on the left and Create on the right. The page's own H1 sits in the content below the bar. | Draft: a large title that collapses into the bar on scroll, with at most one trailing action. The design shows no large title in the bar and no collapse. |
-| Bottom tab bar | Ivory glass with a blur. Five tabs: Home, Helm, Rounds, Stats, More. The active tab has green-700 icon and label, with no chip. Rounds is active while in Qualifiers. It is hidden on the create form. | D-3 (approved): Augusta green with a raised ivory chip on the active tab. Draft tabs for coaches: Home, Calendar, Messages, Roster, More; for players: Home, Calendar, Messages, My stats, More. This conflicts (Q-16). |
-| Bottom sheet | Scrim `rgb(20 18 12 / .34)`, 22px top radius, `dp-sheet` paper, a 38 × 5 grab handle, a title and subtitle, a 32px round close button, a scrolling body, and a footer with two buttons padded above the home indicator. Maximum height 82%. Tapping the scrim closes it. | Draft: sheets with a grab handle and drag to dismiss. This is the first drawn sheet. Drag to dismiss isn't drawn but follows MOBILE.md. |
-| Segmented control | Round chips in a `dp-well` with `dp-chip` raised selection, 34px high. | Clubhouse has `Segmented`. |
-| Browser chrome | A Safari address bar (`golfhelm.app`) and toolbar under the tab bar. | Not a foundation piece. The app is the Capacitor shell with no browser chrome, loading `helmsportslabs.com` (Q-16). |
+| `Top` | `MTop` | adds a `large` title variant |
+| the inline `qm-tabs` nav | `MTabs` | badge dots on tabs |
+| `SafariBar` | `MSafari` | none |
+| `Sheet` | `MSheet` | adds a `tall` variant |
+| `Nine` | `MNine` | none |
 
-Not shown: the More sheet, pull to refresh, the push soft ask, the keyboard, swipe-back, toasts on phone. Toasts are styled in the CSS (`.qm-toast`) but never rendered.
+The page builds on the shell's pieces rather than this copy, and nothing here overrides the foundation.
+
+Two things are page-specific:
+- **Which tab owns Qualifiers.** The boards mark Rounds active while in Qualifiers (Q-16).
+- **The top bar per screen.** The list has the title "Qualifiers" and the bell. The detail has a "Qualifiers" back link and the title "Qualifier". The create form has Cancel and a trailing Create, and hides the tab bar.
+
+The Safari chrome is prototype framing, since the app is the Capacitor shell. Toasts are styled in `qual-mobile.css` (`.qm-toast`) but never rendered, so their phone placement follows the foundation.
 
 ## Screens
 
@@ -26,7 +34,7 @@ Not shown: the More sheet, pull to refresh, the push soft ask, the keyboard, swi
 | --- | --- | --- |
 | 01 | List | The desktop list components, with phone CSS under `@media (max-width: 820px)`. |
 | 02 | Detail, live | A phone detail component beside the desktop one, chosen with `useChPhone()`. The structure differs: one column, three facts, stacked leaderboard cards. |
-| 03 | Player rounds | A new `PlayerRoundsSheet` (phone). Desktop shows the same data by opening the leaderboard row. |
+| 03 | Player rounds | A new `PlayerRoundsSheet` (phone) on the foundation's sheet. Desktop shows the same data by opening the leaderboard row. |
 | 04 | Create | The desktop form components in one column, as a pushed full-height screen. |
 | 05 | Completed | Board 02 with the Completed pill and Selected badges. |
 
@@ -58,7 +66,7 @@ Not shown: the More sheet, pull to refresh, the push soft ask, the keyboard, swi
 - Title: the player. Subtitle: "3 · +4 · 2 of 3 rounds".
 - Round chips ("R1 · +4"). Unplayed rounds are disabled, and the latest played round is selected.
 - The round's course · date and gross.
-- Out and In nine tables: hole, Par, and Score through `ScoreMark` (`src/clubhouse/ui/ScoreMark.tsx`, already built), with nine totals.
+- Out and In nine tables (the shell's `MNine`): hole, Par, and Score through `ScoreMark` (`src/clubhouse/ui/ScoreMark.tsx`, already built), with nine totals.
 - Footer: Message (`/messages` through `rebuiltHref`) and Stats (`/stats?player=`).
 - Rounds without hole rows need an empty line ("No hole-by-hole card for this round"). That is 14 of 215 live qualifier rounds, and 19 are not 18 holes.
 
@@ -90,12 +98,13 @@ Reduced motion swaps the slide and the sheet rise for fades.
 
 ## Touch targets
 
-These fall short of 44px:
-- the sheet's close button (32px);
+These page controls fall short of 44px:
 - the round chips (34px);
 - the pills (36px).
 
-Each keeps its drawn size and gets a 44px hit area. The top bar buttons, the tabs (46px) and the player rows (56px) already meet it.
+Each keeps its drawn size and gets a 44px hit area. The player rows (56px) already meet it.
+
+The sheet's 32px close button belongs to the foundation, so its spec settles that one.
 
 ## Doctrine and data on phone
 
@@ -104,6 +113,5 @@ The desktop questions also apply on phone: Q-7 to Q-14, the Live pulse (Q-17) an
 Raw colours in `qual-mobile.css` that need tokens:
 - `#1C1B18` → `--ch-ink-900`
 - `#F4F1E8` → ivory
-- `#F4F2EA` (sheet footer) → ivory-100
-- `rgb(20 18 12 / .34)` → a scrim token
-- the Safari greys → dropped with the Safari frame
+
+The sheet footer `#F4F2EA`, the scrim `rgb(20 18 12 / .34)` and the Safari greys belong to the shell, so the foundation spec settles them.

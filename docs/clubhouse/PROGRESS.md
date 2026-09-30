@@ -163,10 +163,10 @@ Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 20
   - Recommended: add Qualifiers under Program once it's rebuilt, and hide Lineups until it has its own design (as Q-2).
   - Trade-off: coaches lose the Lineups label they use now.
   - Player navigation gets Qualifiers only with Q-5 and Q-6.
-- Q-16 Phone frame: the board shows an ivory glass tab bar (Home, Helm, Rounds, Stats, More, with Rounds active and no chip) and a Safari address bar (`golfhelm.app`). D-3 is Augusta green with an ivory chip, and the draft tab sets differ.
-  - Recommended: treat the tab bar and the Safari chrome as frame, not page spec. The page sits inside whatever foundation the owner approves, and the app has no browser chrome.
-  - Trade-off: side-by-side phone checks differ below the content.
-  - Alternative: adopt this tab bar as the foundation and revise D-3.
+- Q-16 Phone home for Qualifiers: the tab bar, top bar, More and sheets belong to the foundation spec (owned by `messages-mobile`, from the owner's `m-shell.jsx` and `m.css`); `qual-mobile.jsx` carries an older copy of that shell. The page-level question is which tab owns Qualifiers. The boards mark Rounds active.
+  - Recommended: Qualifiers sits under the Rounds tab, as drawn, once the foundation's tab set is approved.
+  - Trade-off: it depends on the foundation keeping a Rounds tab.
+  - Alternative: Qualifiers is reached from More.
 - Q-17 Live pulse: `.qf-pulse` runs a 1.6s infinite pulse on "Live". The doctrine allows 90, 150, 220 and 360ms, and cause and effect only.
   - Recommended: a static dot.
   - Trade-off: a quieter live cue.
