@@ -142,11 +142,21 @@ function barsFor(ev: InsightEvidence): ChHelmBar[] | null {
  * the only one the generators write (course-mgmt.ts and pressure-gap.ts, whose value is the same metric, in the same unit, as the
  * `golf_pga_standards` row of that metric id); the division sources are listed so none can slip in later as a D1 or D2 benchmark.
  */
-const COLLEGE_SOURCES: ReadonlySet<InsightComparisonSource> = new Set<InsightComparisonSource>(['cohort_avg', 'd1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg']);
+const COLLEGE_SOURCES: ReadonlySet<InsightComparisonSource> = new Set<InsightComparisonSource>(['cohort_avg']);
+
+/**
+ * College figures that have no like-for-like Tour row, so no gauge is drawn at all: the division targets (13 live `d2_avg` rows
+ * are a "miss severity", not the metric's own quantity) and the old women's-college green-hit estimate (`estimated_target`, a
+ * percent stored under a proximity-in-feet metric id). Substituting the Tour row there would print feet on a percent card.
+ */
+const COLLEGE_NO_TOUR: ReadonlySet<InsightComparisonSource> = new Set<InsightComparisonSource>([
+  'd1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg', 'estimated_target',
+]);
 
 function gaugeFor(ev: InsightEvidence, good: boolean, tour: ChTourBaseline | null): ChHelmGauge | null {
   const you = num(ev.your_value);
   if (you == null) return null;
+  if (COLLEGE_NO_TOUR.has(ev.comparison_source)) return null;
   // A college comparison becomes the Tour's value for this metric (the LPGA's for a women's team), and the Tour tick the generator
   // carried beside it is the same thing, so it is not drawn twice. Where the tour has no value there is no comparison and no gauge.
   const college = COLLEGE_SOURCES.has(ev.comparison_source);

@@ -228,12 +228,20 @@ describe('Generator output to the board', () => {
     }
   });
 
-  it('Q-88 every college source is treated the same: a division average is never drawn either', () => {
+  it('Q-88 a college cohort average is drawn as the Tour value for the same metric', () => {
     const p = penalties(jonah);
-    for (const source of ['cohort_avg', 'd1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg'] as const) {
-      const ins = { ...p, evidence: { ...p.evidence, comparison_source: source, comparison_label: 'D1 average' } };
+    const ins = { ...p, evidence: { ...p.evidence, comparison_source: 'cohort_avg' as const, comparison_label: 'College cohort avg' } };
+    expect(toChInsight(ins).evidence.gauge).toBeNull();
+    expect(toChInsight(ins, { tour: PREVIEW_TOUR }).evidence.gauge).toMatchObject({ cmp: 'Tour 0.3', sec: null });
+  });
+
+  it('Q-88 a division target or the old college estimate has no like-for-like Tour row, so no gauge is drawn', () => {
+    const p = penalties(jonah);
+    for (const source of ['d1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg', 'estimated_target'] as const) {
+      const ins = { ...p, evidence: { ...p.evidence, comparison_source: source, comparison_label: 'D2 average miss severity' } };
       expect(toChInsight(ins).evidence.gauge).toBeNull();
-      expect(toChInsight(ins, { tour: PREVIEW_TOUR }).evidence.gauge).toMatchObject({ cmp: 'Tour 0.3', sec: null });
+      expect(toChInsight(ins, { tour: PREVIEW_TOUR }).evidence.gauge).toBeNull();
+      expect(toChInsight(ins, { tour: PREVIEW_TOUR }).evidence.sample).toBe('21 rounds');
     }
   });
 
