@@ -143,7 +143,7 @@ A pushed screen: "‹ Chat", "Details", and Edit on groups.
 | Pinned | — | Hidden (Q-22) |
 | Members, with Add (groups) | `PhoneDetails` | `api.members` → `getGolfConversationParticipantIdentities` (CH-7204, CH-7405). Add: `getGolfGroupAddCandidates` and `addGolfGroupMember`, for the group's creator only (Q-26) |
 | Member row: avatar, name "(you)", role · Admin | `PhoneDetails` | `ChMember.subtitle`. "Admin" marks the creator only, as on desktop. The design also marks the assistant coach (Q-29) |
-| Member row: message icon | `PhoneDetails` | `api.startDirect(userId)`. Not shown on your own row, nor on the other person in a direct thread, since that is this conversation |
+| Member row: message icon | `PhoneDetails` | `api.startDirect(userId)`. As drawn, it isn't on your own row. It is drawn on the other person in a direct thread too, where it can only lead back to this conversation (Q-29) |
 | People (direct): you and them | `PhoneDetails` | The viewer, and `memberIds[0]` from the directory |
 | Files: a count, and a list or "No files shared yet." | — | Hidden (Q-23) |
 | Switch: Mute notifications | `Switch` | The same call as the Mute tile (Q-21) |

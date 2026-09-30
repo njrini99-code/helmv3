@@ -138,7 +138,7 @@ Open, from the owner's phone shell and Messages design (2026-09-29; `phone/found
 - Q-26 Add member. Recommended: wire the existing `getGolfGroupAddCandidates` and `addGolfGroupMember` for the group's creator, on desktop too, because the component is shared. Trade-off: desktop gains a control its handoff doesn't show.
 - Q-27 Leave group for the group's creator. The design shows it; desktop hides it. Recommended: keep the desktop rule, because nobody else could manage the group. Trade-off: differs from the drawing.
 - Q-28 Delete conversation. Recommended: hide it. There is no delete policy and no defined meaning (for you only, or for both). Trade-off: a drawn row is missing.
-- Q-29 Design details with no backend. Recommended: leave out the event card in a thread (no writer, and 0 such rows); show every group with the people mark (no group type); keep the six stored reactions (no check); mark only the creator as "Admin"; keep desktop's View stats for coaches in a player's direct details, which the design leaves out. Trade-off: small differences from the drawing.
+- Q-29 Design details with no backend. Recommended: leave out the event card in a thread (no writer, and 0 such rows); show every group with the people mark (no group type); keep the six stored reactions (no check); mark only the creator as "Admin"; keep desktop's View stats for coaches in a player's direct details, which the design leaves out; keep the drawn message icon on the other person in a direct thread's Details, where a tap goes back to that thread. Trade-off: small differences from the drawing.
 
 ## Data gaps (shown honestly, never invented)
 
