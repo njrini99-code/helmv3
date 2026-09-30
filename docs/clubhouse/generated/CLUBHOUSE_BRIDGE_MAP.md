@@ -77,6 +77,18 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-14912 | 15 Data freshness / sync | The server's fresh list replaces the page's copy after a write or Try again. |
 | CH-14913 | 20 Keyboard / input | Enter saves the form, Esc closes a dialog or clears the search, arrows move a stage. |
 | CH-14914 | 19 Responsive layout | Phone layout at 820px and below. |
+| CH-15004 | 07 Network / offline | The sign-in could not reach the server. |
+| CH-15402 | 03 Background loading / refresh | A sign-in in flight: work in progress on a shown page. |
+| CH-15901 | 12 State preservation | The invite returnTo and the demo ref are kept through the sign-in round trip: protects state that would otherwise be lost. |
+| CH-15902 | 08 Permission / authorization | Where a sign-in goes is decided by who the person is (onboarded, no profile yet, admin) and whether the returnTo is safe. |
+| CH-15903 | 08 Permission / authorization | A session the auth server has ruled invalid is sent back to sign in before anything is drawn. |
+| CH-15904 | 09 Success | A positive notice: the password was reset, the account was created, the person signed out. |
+| CH-15905 | 19 Responsive layout | The App Store build draws less (no Home link, no sign-up): a different shell, not a different state. |
+| CH-15906 | 14 Retry / recovery | A stale bundle reloads once, then says so: the recovery path. |
+| CH-15907 | 21 Performance | The form is in the server HTML; the course loads after first paint, on layers that never repaint on a loop. |
+| CH-15908 | 23 Logging / observability | A failed read or a crash is logged with its surface. |
+| CH-15909 | 19 Responsive layout | Phone layout at 820px and below. |
+| CH-15910 | 20 Keyboard / input | Enter moves to the next field, signs in, or continues; the button scrolls into view above the keyboard. |
 
 ## Count by page and category
 
@@ -85,8 +97,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P001 | 2 | 1 | 1 | 4 |  | 10 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 12 | 1 | 1 | 1 | 3 | 1 | 1 |  | 66 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
-| P004 | 2 | 1 | 1 | 12 | 1 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 50 |
-| P005 | 4 | 2 | 2 | 17 | 1 | 17 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 73 |
+| P004 | 2 | 1 | 1 | 19 | 2 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
+| P005 | 4 | 2 | 2 | 22 | 2 | 17 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 24 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 123 |
@@ -96,6 +108,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
 | P014 | 1 | 2 | 4 | 6 | 6 | 10 | 1 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 2 | 5 | 1 | 1 |  |  |  |  |  | 53 |
+| P015 |  | 1 | 1 | 3 | 2 | 12 | 1 | 2 | 1 |  |  | 1 |  | 1 |  | 6 | 5 | 5 | 2 | 1 | 1 |  | 1 |  |  | 46 |
 
 ## P001 Shell
 
@@ -305,8 +318,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40101 |  | 01 Default / core UI | `TEAM_STATS_READY` | implemented | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
 | 40102 |  | 01 Default / core UI | `WINDOW_FROM_THE_ADDRESS` | implemented | ?window=season or ?window=qualifiers opens that window and anything else opens Last 10; changing the switch writes the window back to /golf/dashboard/stats (Last 10 is the bare address) without moving the scroll. |
 | 40201 | CH-4401 | 02 Initial loading / skeleton | `STATS_IS_LOADING` | implemented | Team stats are loading (a player's profile is CH-5403) |
-| 40301 | CH-4402 | 03 Background loading / refresh | `CHANGING_THE_WINDOW` | implemented | Changing the window (Last 10, Season, Qualifiers) |
-| 40401 | CH-4301 | 04 Empty | `NO_18_HOLE_ROUNDS_IN_THE_WINDOW` | implemented | No 18-hole rounds in the window |
+| 40301 | CH-4402 | 03 Background loading / refresh | `CHANGING_THE_WINDOW` | implemented | Changing the window (Last 10, Season, Qualifiers) or the round filter |
+| 40401 | CH-4301 | 04 Empty | `NO_18_HOLE_ROUNDS_IN_THE_WINDOW` | implemented | No 18-hole rounds in the window (including Season when the team has only 9-hole rounds: D-71's first-run page is for no round of either length) |
 | 40402 | CH-4302 | 04 Empty | `NO_QUALIFIER_ROUNDS` | implemented | No qualifier rounds |
 | 40403 | CH-4303 | 04 Empty | `NO_STROKES_GAINED_IN_THE_WINDOW` | implemented | No strokes gained in the window |
 | 40404 | CH-4304 | 04 Empty | `NO_SCORES_IN_THE_WINDOW` | implemented | No scores in the window (Scoring lens) |
@@ -315,10 +328,18 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40407 | CH-4307 | 04 Empty | `NO_SEASON_BESTS_YET` | implemented | No season bests yet |
 | 40408 | CH-4308 | 04 Empty | `A_PLAYER_HAS_TOO_FEW_ROUNDS_FOR` | implemented | A player has too few rounds for strokes gained |
 | 40409 | CH-4309 | 04 Empty | `A_COACH_OR_PLAYER_WITH_NO_TEAM` | implemented | A coach or player with no team |
-| 40410 | CH-4310 | 04 Empty | `NO_COUNTABLE_ROUND_ALL_SEASON` | implemented | No countable round all season (D-71) |
+| 40410 | CH-4310 | 04 Empty | `NO_COUNTABLE_ROUND_ALL_SEASON` | implemented | No countable round all season, of either length (D-71) |
 | 40411 | CH-4311 | 04 Empty | `THE_WINDOW_HAS_NO_ROUND_POSTED_WITH` | implemented | The window has no round posted with shots, so the team has no strokes gained |
 | 40412 | CH-4312 | 04 Empty | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | implemented | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
+| 40413 | CH-4313 | 04 Empty | `THE_ROUND_FILTER_LEAVES_NO_ROUND` | implemented | The round filter leaves no round (a type, course, range or pick that matches nothing) |
+| 40414 | CH-4314 | 04 Empty | `THE_FILTER_LEAVES_FEWER_THAN_THREE_WHOLE` | implemented | The filter leaves fewer than three whole rounds (a 9-hole round counts as half: four 9-hole rounds are two, six are three) |
+| 40415 | CH-4315 | 04 Empty | `THE_SHEETS_ROUND_LIST_HAS_NOTHING_TO` | implemented | The sheet's round list (Only these, Exclude these) has nothing to offer |
+| 40416 | CH-4316 | 04 Empty | `THE_SHEETS_ROUND_LIST_IS_CUT_AT` | implemented | The sheet's round list is cut at 200 rounds |
+| 40417 | CH-4317 | 04 Empty | `A_FILTER_IS_ON_AND_SEASON_BESTS` | implemented | A filter is on and Season bests is showing |
+| 40418 | CH-4318 | 04 Empty | `THE_FILTER_LETS_9_HOLE_ROUNDS_IN` | implemented | The filter lets 9-hole rounds in (Holes: 9 holes or Both) |
+| 40419 | CH-4319 | 04 Empty | `NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT` | implemented | No round of the default length (18 holes), but the team has 9-hole rounds in this window |
 | 40501 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
+| 40502 | CH-4101 | 05 Validation | `THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT` | implemented | The filter's date range starts after it ends, and Done is tapped |
 | 40601 | CH-4001 | 06 Server / system error | `THE_BROWSER_BLOCKS_THE_CSV_EXPORT` | implemented | The browser blocks the CSV export |
 | 40602 | CH-4201 | 06 Server / system error | `TEAM_ROUNDS_DONT_LOAD` | implemented | Team rounds (or the roster) don't load |
 | 40603 | CH-4202 | 06 Server / system error | `PER_ROUND_FIGURES_DONT_LOAD` | implemented | Per-round figures (greens, putts, scrambling) don't load |
@@ -330,8 +351,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40609 | CH-4208 | 06 Server / system error | `SEASON_BESTS_CRASH` | implemented | Season bests crash |
 | 40610 | CH-4209 | 06 Server / system error | `D1_BENCHMARKS_DONT_LOAD` | implemented | Tour benchmarks don't load |
 | 40611 | CH-4210 | 06 Server / system error | `THE_TEAMS_OWN_DETAILS_DONT_LOAD` | implemented | The team's own details (name, men's or women's) don't load |
-| 40701 | CH-4901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, or Show the season) while offline |
-| 40702 | CH-4902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window change takes longer than 5 seconds |
+| 40701 | CH-4901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, or Show the season) or the round filter while offline |
+| 40702 | CH-4902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 40801 |  | 08 Permission / authorization | `COACH_ONLY_TEAM_STATS` | implemented | Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team is a coach's route in the Clubhouse frame (the Fairway page sends a player back to /stats). |
 | 40802 |  | 08 Permission / authorization | `TEAM_IS_THE_COACHS_OWN` | implemented | The team is always the one resolveClubhouseTeam gives the signed-in coach, never one named in the address: the loader reads that team's row, its active roster (golf_team_members by team_id, status active) and only those players' rounds; a coach with no team gets the no-team state and nothing is read. |
 | 40901 |  | 09 Success | `EXPORT_LANDED` | implemented | Export downloads the player grid as a CSV named for the team and window (for example varsity-stats-season.csv), one row per player with a round in the window, and a toast says Team stats exported with the success haptic; with nothing to export there is no button. |
@@ -342,11 +363,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | 17 Haptic | `AN_EXPORT_LANDS_FAILS` | reserved | An export lands / fails |
 | 41703 | CH-4703 | 17 Haptic | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | implemented | Sorting the phone's players by Avg or SG |
+| 41704 | CH-4704 | 17 Haptic | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | reserved | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 | 41801 | CH-4801 | 18 Accessibility | `THE_TREND_CHART_IS_AN_IMAGE_WITH` | reserved | The trend chart is an image with a written summary ("Strokes gained by week. The team has gained about 1.0 a round…"); the player list beside it is the chart's values as buttons |
 | 41802 | CH-4802 | 18 Accessibility | `THE_STROKES_GAINED_GRID_IS_A_TABLE` | reserved | The strokes gained grid is a table with a header for every value |
 | 41803 | CH-4803 | 18 Accessibility | `LOSS_AMBER_ON_A_TINTED_GRID_CELL` | reserved | Loss amber on a tinted grid cell is darkened to hold 4.5:1 |
 | 41804 | CH-4804 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 41805 | CH-4805 | 18 Accessibility | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | implemented | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
+| 41806 | CH-4806 | 18 Accessibility | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | reserved | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 | 41901 |  | 19 Responsive layout | `PHONE_VIEW` | implemented | At 820px and below Team stats is the phone view (window switch, four figures, scoring line, strokes gained by leg, players sorted by Avg or SG, team putting), never a shrunken desktop; the server renders desktop and the phone view takes over at hydration. |
 | 42001 |  | 20 Keyboard / input | `KEYBOARD_PATH` | implemented | The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
 | 42101 |  | 21 Performance | `ONE_PASS_LOADER` | implemented | loadTeamStats reads the team and its roster together, starts the D1 benchmarks before the rounds come back, then reads the round figures and the putts together, once each (id chunks in parallel); every failed read is logged and flagged, never thrown. |
@@ -364,12 +387,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50201 | CH-5403 | 02 Initial loading / skeleton | `A_PLAYERS_STATS_ARE_LOADING_THEIR_OWN` | implemented | A player's stats are loading: their own, or a coach's `?player=` |
 | 50202 | CH-5404 | 02 Initial loading / skeleton | `A_PLAYERS_ANSWER_TO_A_PROPOSED_FOCUS` | implemented | A player's answer to a proposed focus area is being sent |
 | 50301 | CH-5401 | 03 Background loading / refresh | `A_FOCUS_AREA_IS_BEING_PROPOSED` | implemented | A focus area is being proposed |
-| 50302 | CH-5402 | 03 Background loading / refresh | `CHANGING_THE_WINDOW_OR_THE_PLAYER` | implemented | Changing the window or the player (pager) |
+| 50302 | CH-5402 | 03 Background loading / refresh | `CHANGING_THE_WINDOW_OR_THE_PLAYER` | implemented | Changing the window, the round filter or the player (pager) |
 | 50401 | CH-5301 | 04 Empty | `NO_ROUNDS_WITH_SHOTS_IN_THE_WINDOW` | implemented | No rounds with shots in the window |
 | 50402 | CH-5302 | 04 Empty | `NO_ROUNDS_IN_THE_WINDOW` | implemented | No rounds in the window |
 | 50403 | CH-5303 | 04 Empty | `NO_FOCUS_AREAS` | implemented | No focus areas |
 | 50404 | CH-5304 | 04 Empty | `NO_GOALS` | implemented | No goals |
-| 50405 | CH-5305 | 04 Empty | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | implemented | Fewer than three rounds in the window |
+| 50405 | CH-5305 | 04 Empty | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | implemented | Fewer than three whole rounds in the window (or under the round filter; a 9-hole round counts as half) |
 | 50406 | CH-5308 | 04 Empty | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | implemented | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
 | 50407 | CH-5309 | 04 Empty | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | implemented | Phone: no strokes gained in the window (no leg and no total) |
 | 50408 | CH-5310 | 04 Empty | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | implemented | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
@@ -382,7 +405,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50415 | CH-5317 | 04 Empty | `A_MORE_DETAIL_PANEL_WITH_NO_DATA` | implemented | A More detail panel with no data behind it (outcomes by par, hole-out, toughest holes, fairways by tee type, tee miss by club, strokes to hole out, misses by distance, sand saves, up and downs, up and down by miss direction, finish after the chip, putting by distance, break tables, practice target, the Tour table) |
 | 50416 | CH-5318 | 04 Empty | `A_STANDING_TABLE_ROW_IS_UNDER_ITS` | implemented | A standing-table row is under its sample floor |
 | 50417 | CH-5319 | 04 Empty | `THE_WINDOW_HAS_MORE_18_HOLE_ROUNDS` | implemented | The window has more 18-hole rounds than the shot-level reads take (100) |
+| 50418 | CH-5320 | 04 Empty | `THE_ROUND_FILTER_LEAVES_NONE_OF_THIS` | implemented | The round filter leaves none of this player's rounds |
+| 50419 | CH-5321 | 04 Empty | `THE_SHEETS_ROUND_LIST_HAS_NOTHING_TO` | implemented | The sheet's round list (Only these, Exclude these) has nothing to offer |
+| 50420 | CH-5322 | 04 Empty | `THE_SHEETS_ROUND_LIST_IS_CUT_AT` | implemented | The sheet's round list is cut at 200 rounds |
+| 50421 | CH-5323 | 04 Empty | `THE_FILTER_LETS_9_HOLE_ROUNDS_IN` | implemented | The filter lets 9-hole rounds in (Holes: 9 holes or Both) |
+| 50422 | CH-5324 | 04 Empty | `NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT` | implemented | No round of the default length (18 holes), but this player has 9-hole rounds in this window |
 | 50501 | CH-5101 | 05 Validation | `A_FOCUS_AREA_WITH_A_NAME_UNDER` | implemented | A focus area with a name under three characters |
+| 50502 | CH-5102 | 05 Validation | `THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT` | implemented | The filter's date range starts after it ends, and Done is tapped |
 | 50601 | CH-5001 | 06 Server / system error | `PROPOSING_A_FOCUS_AREA_FAILS` | implemented | Proposing a focus area fails |
 | 50602 | CH-5201 | 06 Server / system error | `ROUNDS_DONT_LOAD` | implemented | Rounds don't load |
 | 50603 | CH-5202 | 06 Server / system error | `SHOT_LEVEL_DETAIL_DOESNT_LOAD` | implemented | Shot-level detail doesn't load |
@@ -400,8 +429,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50615 | CH-5210 | 06 Server / system error | `THE_APPROACH_SHOT_READ_FAILS` | implemented | The approach-shot read fails |
 | 50616 | CH-5211 | 06 Server / system error | `THE_PUTT_READ_FAILS` | implemented | The putt read fails |
 | 50617 | CH-5212 | 06 Server / system error | `THE_SPRAY_READ_THROWS` | implemented | The spray read throws |
-| 50701 | CH-5901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, on desktop or the phone) while offline |
-| 50702 | CH-5902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window change takes longer than 5 seconds |
+| 50701 | CH-5901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
+| 50702 | CH-5902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 50801 | CH-5306 | 08 Permission / authorization | `A_COACH_OPENS_A_PLAYER_WHO_ISNT` | implemented | A coach opens a player who isn't on their team |
 | 50802 | CH-5307 | 08 Permission / authorization | `A_PLAYER_WHO_ISNT_ON_AN_ACTIVE` | implemented | A player who isn't on an active roster |
 | 50803 |  | 08 Permission / authorization | `PLAYER_SEES_ONLY_OWN_STATS` | implemented | A player always gets their own profile: ?player= is never read, the loader is asked for the caller's own id as a player view (only their rounds, D1 comparisons, no team average, no pager), and the page has no Message, no Add focus area and no way to the team. |
@@ -417,6 +446,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | reserved | Opening Add focus area |
 | 51701 | CH-5701 | 17 Haptic | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | reserved | Changing tabs, the window, or paging players; choosing a Game detail leg |
 | 51702 | CH-5702 | 17 Haptic | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | reserved | Proposing a focus area with no name |
+| 51703 | CH-5703 | 17 Haptic | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | reserved | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 | 51801 | CH-5801 | 18 Accessibility | `THE_SECTIONS_ARE_REAL_TABS_SELECTED_STATE` | reserved | The sections are real tabs: selected state, each controls its panel |
 | 51802 | CH-5802 | 18 Accessibility | `A_COACH_SEES_STATS_JONAH_OKAFOR_IN` | reserved | A coach sees "Stats › Jonah Okafor" in the top bar, as in the handoff |
 | 51803 | CH-5803 | 18 Accessibility | `THE_STROKES_GAINED_ROUTE_IS_AN_IMAGE` | reserved | The strokes gained route is an image with every leg's value in words; the hero figures are a proper definition list |
@@ -425,6 +455,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51806 | CH-5806 | 18 Accessibility | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | reserved | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 51807 | CH-5807 | 18 Accessibility | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | implemented | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
 | 51808 | CH-5808 | 18 Accessibility | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | implemented | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
+| 51809 | CH-5809 | 18 Accessibility | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | reserved | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 | 51901 |  | 19 Responsive layout | `PHONE_PROFILE` | implemented | At 820px and below a profile is the phone view (who, three figures, Game detail one section at a time, scoring line, rounds, development), never a shrunken desktop; a coach's top bar is Player stats with Team and Share, a player's is My stats with More. |
 | 52001 |  | 20 Keyboard / input | `KEYBOARD_PATH` | implemented | The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it; the section tabs are one Tab stop, where the arrows, Home and End move between them and select. |
 | 52101 |  | 21 Performance | `ONE_PASS_LOADER` | implemented | loadPlayerProfile reads the team, the player and the membership together, then the rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once; a failed rounds, shot detail, benchmark, focus area or goal read is logged and flagged, never thrown. |
@@ -1311,6 +1342,57 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 141805 | CH-14805 | 18 Accessibility | `EMAIL_AND_CALL` | implemented | Email and Call |
 | 141901 | CH-14914 | 19 Responsive layout | `THE_PHONE` | implemented | The phone |
 | 142001 | CH-14913 | 20 Keyboard / input | `KEYBOARD` | implemented | Keyboard |
+
+## P015 Auth
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 150201 | CH-15401 | 02 Initial loading / skeleton | `THE_WELCOME_IS_READING_WHO_YOU_ARE` | implemented | The welcome is reading who you are and what is new |
+| 150301 | CH-15402 | 03 Background loading / refresh | `A_SIGN_IN_IS_IN_FLIGHT` | implemented | A sign-in is in flight (and stays so while it navigates away) |
+| 150401 | CH-15301 | 04 Empty | `THERE_IS_AN_EARLIER_VISIT_AND_NOTHING` | implemented | There is an earlier visit and nothing new since |
+| 150402 | CH-15302 | 04 Empty | `NO_EARLIER_VISIT_ON_RECORD` | implemented | No earlier visit on record |
+| 150403 | CH-15303 | 04 Empty | `THE_NAME_COULD_NOT_BE_READ_OR` | implemented | The name could not be read, or sanitises to nothing |
+| 150501 | CH-15101 | 05 Validation | `SUBMITTED_WITH_AN_EMPTY_EMAIL_OR_PASSWORD` | implemented | Submitted with an empty email or password (the button is off until both are filled, so this is the belt and braces for a pre-hydration submit) |
+| 150502 | CH-15110 | 05 Validation | `SIGN_UP_THE_TEAM_CODE_MATCHES_NO` | implemented | Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99) |
+| 150601 | CH-15001 | 06 Server / system error | `THE_SERVER_REFUSES_THE_CREDENTIALS` | implemented | The server refuses the credentials ("Invalid login credentials") |
+| 150602 | CH-15002 | 06 Server / system error | `THE_EMAIL_IS_NOT_CONFIRMED` | implemented | The email is not confirmed |
+| 150603 | CH-15003 | 06 Server / system error | `TOO_MANY_SIGN_IN_ATTEMPTS` | implemented | Too many sign-in attempts |
+| 150604 | CH-15005 | 06 Server / system error | `THE_APP_UPDATED_IN_THE_BACKGROUND_AND` | implemented | The app updated in the background and the tab held an old bundle, after the one reload (CH-15906) |
+| 150605 | CH-15006 | 06 Server / system error | `ANYTHING_ELSE_THROWS` | implemented | Anything else throws |
+| 150606 | CH-15007 | 06 Server / system error | `THE_SERVER_ANSWERS_WITH_ANY_OTHER_SENTENCE` | implemented | The server answers with any other sentence of its own, such as a lockout ("Too many login attempts. Please try again in 14 minutes.") |
+| 150607 | CH-15010 | 06 Server / system error | `SIGN_UP_THE_TEAM_CODE_CANNOT_BE` | implemented | Sign up: the team code cannot be checked (the request never reached the server) |
+| 150608 | CH-15011 | 06 Server / system error | `SIGN_UP_THE_EMAIL_ALREADY_HAS_AN` | implemented | Sign up: the email already has an account |
+| 150609 | CH-15012 | 06 Server / system error | `SIGN_UP_THE_ACCOUNT_COULD_NOT_BE` | implemented | Sign up: the account could not be made for any other reason (the server's rate limit, a breached password, the gate expired) |
+| 150610 | CH-15013 | 06 Server / system error | `ONBOARDING_THE_PHOTO_DID_NOT_UPLOAD_OR` | implemented | Onboarding: the photo did not upload, or the profile did not save |
+| 150611 | CH-15014 | 06 Server / system error | `REQUEST_ACCESS_COULD_NOT_BE_SENT` | implemented | Request access could not be sent |
+| 150612 | CH-15201 | 06 Server / system error | `THE_WELCOMES_NOTIFICATIONS_READ_FAILS` | implemented | The welcome's notifications read fails |
+| 150701 | CH-15004 | 07 Network / offline | `THE_SERVER_CANNOT_BE_REACHED` | implemented | The server cannot be reached |
+| 150801 | CH-15902 | 08 Permission / authorization | `WHERE_A_SIGN_IN_GOES` | reserved | Where a sign-in goes |
+| 150802 | CH-15903 | 08 Permission / authorization | `THE_WELCOME_IS_OPENED_WITH_A_SESSION` | reserved | The welcome is opened with a session the auth server has ruled invalid |
+| 150901 | CH-15904 | 09 Success | `GOLF_LOGIN_MESSAGE_NAMES_A_NOTICE` | implemented | `/golf/login?message=` names a notice |
+| 151201 | CH-15901 | 12 State preservation | `THE_PERSON_CAME_FROM_AN_INVITE_LINK` | reserved | The person came from an invite link or a demo link |
+| 151401 | CH-15906 | 14 Retry / recovery | `THE_APP_UPDATED_BETWEEN_LOAD_AND_SIGN` | reserved | The app updated between load and sign in (a stale bundle: a server action answers with something Next cannot parse) |
+| 151601 | CH-15601 | 16 Micro animation | `FIRST_PAINT_THEN_A_SIGN_IN_LANDING` | reserved | First paint, then a sign-in landing |
+| 151602 | CH-15602 | 16 Micro animation | `THE_WELCOME_DRAWS` | reserved | The welcome draws |
+| 151603 | CH-15603 | 16 Micro animation | `THE_WELCOMES_SCENE_PLAYS` | reserved | The welcome's scene plays |
+| 151604 | CH-15604 | 16 Micro animation | `CONTINUE_IS_PRESSED` | reserved | Continue is pressed (or Return) |
+| 151605 | CH-15605 | 16 Micro animation | `REDUCED_MOTION_OR_SETTINGS_PREFERENCES_ANIMATIONS_OFF` | reserved | Reduced motion, or Settings > Preferences > Animations off |
+| 151606 | CH-15606 | 16 Micro animation | `THE_TAB_IS_HIDDEN` | reserved | The tab is hidden |
+| 151701 | CH-15701 | 17 Haptic | `SIGN_IN_IS_TAPPED` | reserved | Sign in is tapped |
+| 151702 | CH-15702 | 17 Haptic | `A_SIGN_IN_LANDS` | reserved | A sign-in lands |
+| 151703 | CH-15703 | 17 Haptic | `A_WARNING_TONED_REFUSAL` | reserved | A warning-toned refusal (an empty field, an unverified email, a rate limit) |
+| 151704 | CH-15704 | 17 Haptic | `A_DANGER_TONED_REFUSAL` | reserved | A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected) |
+| 151705 | CH-15705 | 17 Haptic | `CONTINUE_ON_THE_WELCOME` | reserved | Continue on the welcome |
+| 151801 | CH-15801 | 18 Accessibility | `A_SKIP_LINK_IS_THE_FIRST_TAB` | implemented | A skip link is the first Tab stop and lands on the form |
+| 151802 | CH-15802 | 18 Accessibility | `A_REFUSED_SIGN_IN_IS_READ_OUT` | reserved | A refused sign-in is read out as it appears (`role="alert"` for danger and warning) and focus moves to the first invalid field; both fields name the notice in `aria-describedby` |
+| 151803 | CH-15803 | 18 Accessibility | `THE_WELCOME_ANNOUNCES_ITS_SENTENCE_ONCE_WHEN` | implemented | The welcome announces its sentence once, when it is final ("Good morning, Coach Reyes."): `role="status"`, `aria-live="polite"`, atomic; the `h1` holds the same words |
+| 151804 | CH-15804 | 18 Accessibility | `THE_PAINTED_COURSE_THE_TAGLINE_AND_THE` | implemented | The painted course, the tagline and the marks over it are decorative and hidden from assistive technology |
+| 151805 | CH-15805 | 18 Accessibility | `THE_PASSWORD_EYE_IS_A_NAMED_PRESSED` | reserved | The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone |
+| 151901 | CH-15905 | 19 Responsive layout | `THE_APP_STORE_BUILD` | implemented | The App Store build |
+| 151902 | CH-15909 | 19 Responsive layout | `THE_WINDOW_IS_820PX_WIDE_OR_LESS` | reserved | The window is 820px wide or less (a phone) |
+| 152001 | CH-15910 | 20 Keyboard / input | `THE_KEYBOARD` | reserved | The keyboard |
+| 152101 | CH-15907 | 21 Performance | `EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE` | reserved | Either screen loads, on a slow phone or a fast desktop |
+| 152301 | CH-15908 | 23 Logging / observability | `A_READ_FAILS_OR_THE_COURSE_CRASHES` | reserved | A read fails, or the course crashes |
 
 ## Tombstones
 

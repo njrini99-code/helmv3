@@ -35,7 +35,7 @@ Changing the window reloads the page in place: it dims and is marked busy, the f
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 40301 | CH-4402 | `CHANGING_THE_WINDOW` | Changing the window (Last 10, Season, Qualifiers) |
+| 40301 | CH-4402 | `CHANGING_THE_WINDOW` | Changing the window (Last 10, Season, Qualifiers) or the round filter |
 
 ## 04 — Empty
 
@@ -45,7 +45,7 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 40401 | CH-4301 | `NO_18_HOLE_ROUNDS_IN_THE_WINDOW` | No 18-hole rounds in the window |
+| 40401 | CH-4301 | `NO_18_HOLE_ROUNDS_IN_THE_WINDOW` | No 18-hole rounds in the window (including Season when the team has only 9-hole rounds: D-71's first-run page is for no round of either length) |
 | 40402 | CH-4302 | `NO_QUALIFIER_ROUNDS` | No qualifier rounds |
 | 40403 | CH-4303 | `NO_STROKES_GAINED_IN_THE_WINDOW` | No strokes gained in the window |
 | 40404 | CH-4304 | `NO_SCORES_IN_THE_WINDOW` | No scores in the window (Scoring lens) |
@@ -54,9 +54,16 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 40407 | CH-4307 | `NO_SEASON_BESTS_YET` | No season bests yet |
 | 40408 | CH-4308 | `A_PLAYER_HAS_TOO_FEW_ROUNDS_FOR` | A player has too few rounds for strokes gained |
 | 40409 | CH-4309 | `A_COACH_OR_PLAYER_WITH_NO_TEAM` | A coach or player with no team |
-| 40410 | CH-4310 | `NO_COUNTABLE_ROUND_ALL_SEASON` | No countable round all season (D-71) |
+| 40410 | CH-4310 | `NO_COUNTABLE_ROUND_ALL_SEASON` | No countable round all season, of either length (D-71) |
 | 40411 | CH-4311 | `THE_WINDOW_HAS_NO_ROUND_POSTED_WITH` | The window has no round posted with shots, so the team has no strokes gained |
 | 40412 | CH-4312 | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
+| 40413 | CH-4313 | `THE_ROUND_FILTER_LEAVES_NO_ROUND` | The round filter leaves no round (a type, course, range or pick that matches nothing) |
+| 40414 | CH-4314 | `THE_FILTER_LEAVES_FEWER_THAN_THREE_WHOLE` | The filter leaves fewer than three whole rounds (a 9-hole round counts as half: four 9-hole rounds are two, six are three) |
+| 40415 | CH-4315 | `THE_SHEETS_ROUND_LIST_HAS_NOTHING_TO` | The sheet's round list (Only these, Exclude these) has nothing to offer |
+| 40416 | CH-4316 | `THE_SHEETS_ROUND_LIST_IS_CUT_AT` | The sheet's round list is cut at 200 rounds |
+| 40417 | CH-4317 | `A_FILTER_IS_ON_AND_SEASON_BESTS` | A filter is on and Season bests is showing |
+| 40418 | CH-4318 | `THE_FILTER_LETS_9_HOLE_ROUNDS_IN` | The filter lets 9-hole rounds in (Holes: 9 holes or Both) |
+| 40419 | CH-4319 | `NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT` | No round of the default length (18 holes), but the team has 9-hole rounds in this window |
 
 ## 05 — Validation
 
@@ -67,6 +74,7 @@ Team stats has no form. The one thing it writes out is the CSV export, which wri
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 40501 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
+| 40502 | CH-4101 | `THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT` | The filter's date range starts after it ends, and Done is tapped |
 
 ## 06 — Server / system error
 
@@ -96,8 +104,8 @@ Changing the window while offline is refused before anything is requested: the s
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 40701 | CH-4901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, or Show the season) while offline |
-| 40702 | CH-4902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window change takes longer than 5 seconds |
+| 40701 | CH-4901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, or Show the season) or the round filter while offline |
+| 40702 | CH-4902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -184,6 +192,7 @@ Team stats' own haptics (41701 to 41703) on the v2 grammar (D-70): a selection t
 | 41701 | CH-4701 | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | `AN_EXPORT_LANDS_FAILS` | An export lands / fails |
 | 41703 | CH-4703 | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | Sorting the phone's players by Avg or SG |
+| 41704 | CH-4704 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
 
@@ -200,6 +209,7 @@ Team stats' own (41801 to 41805): the trend chart has a written summary and its 
 | 41803 | CH-4803 | `LOSS_AMBER_ON_A_TINTED_GRID_CELL` | Loss amber on a tinted grid cell is darkened to hold 4.5:1 |
 | 41804 | CH-4804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
+| 41806 | CH-4806 | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 

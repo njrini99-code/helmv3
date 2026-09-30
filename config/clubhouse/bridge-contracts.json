@@ -2198,7 +2198,7 @@
     "item": 1,
     "name": "CHANGING_THE_WINDOW",
     "chCode": "CH-4402",
-    "meaning": "Changing the window (Last 10, Season, Qualifiers)",
+    "meaning": "Changing the window (Last 10, Season, Qualifiers) or the round filter",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -2209,7 +2209,7 @@
     "item": 1,
     "name": "NO_18_HOLE_ROUNDS_IN_THE_WINDOW",
     "chCode": "CH-4301",
-    "meaning": "No 18-hole rounds in the window",
+    "meaning": "No 18-hole rounds in the window (including Season when the team has only 9-hole rounds: D-71's first-run page is for no round of either length)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -2308,7 +2308,7 @@
     "item": 10,
     "name": "NO_COUNTABLE_ROUND_ALL_SEASON",
     "chCode": "CH-4310",
-    "meaning": "No countable round all season (D-71)",
+    "meaning": "No countable round all season, of either length (D-71)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -2335,6 +2335,83 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 40413,
+    "page": "P004",
+    "category": 4,
+    "item": 13,
+    "name": "THE_ROUND_FILTER_LEAVES_NO_ROUND",
+    "chCode": "CH-4313",
+    "meaning": "The round filter leaves no round (a type, course, range or pick that matches nothing)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40414,
+    "page": "P004",
+    "category": 4,
+    "item": 14,
+    "name": "THE_FILTER_LEAVES_FEWER_THAN_THREE_WHOLE",
+    "chCode": "CH-4314",
+    "meaning": "The filter leaves fewer than three whole rounds (a 9-hole round counts as half: four 9-hole rounds are two, six are three)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40415,
+    "page": "P004",
+    "category": 4,
+    "item": 15,
+    "name": "THE_SHEETS_ROUND_LIST_HAS_NOTHING_TO",
+    "chCode": "CH-4315",
+    "meaning": "The sheet's round list (Only these, Exclude these) has nothing to offer",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40416,
+    "page": "P004",
+    "category": 4,
+    "item": 16,
+    "name": "THE_SHEETS_ROUND_LIST_IS_CUT_AT",
+    "chCode": "CH-4316",
+    "meaning": "The sheet's round list is cut at 200 rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40417,
+    "page": "P004",
+    "category": 4,
+    "item": 17,
+    "name": "A_FILTER_IS_ON_AND_SEASON_BESTS",
+    "chCode": "CH-4317",
+    "meaning": "A filter is on and Season bests is showing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40418,
+    "page": "P004",
+    "category": 4,
+    "item": 18,
+    "name": "THE_FILTER_LETS_9_HOLE_ROUNDS_IN",
+    "chCode": "CH-4318",
+    "meaning": "The filter lets 9-hole rounds in (Holes: 9 holes or Both)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40419,
+    "page": "P004",
+    "category": 4,
+    "item": 19,
+    "name": "NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT",
+    "chCode": "CH-4319",
+    "meaning": "No round of the default length (18 holes), but the team has 9-hole rounds in this window",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 40501,
     "page": "P004",
     "category": 5,
@@ -2346,6 +2423,17 @@
     "tests": [
       "src/clubhouse/__tests__/stats-team.test.tsx"
     ]
+  },
+  {
+    "id": 40502,
+    "page": "P004",
+    "category": 5,
+    "item": 2,
+    "name": "THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT",
+    "chCode": "CH-4101",
+    "meaning": "The filter's date range starts after it ends, and Done is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
     "id": 40601,
@@ -2475,7 +2563,7 @@
     "item": 1,
     "name": "CHANGING_THE_WINDOW_WHILE_OFFLINE",
     "chCode": "CH-4901",
-    "meaning": "Changing the window (the switch, or Show the season) while offline",
+    "meaning": "Changing the window (the switch, or Show the season) or the round filter while offline",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -2486,7 +2574,7 @@
     "item": 2,
     "name": "A_WINDOW_CHANGE_TAKES_LONGER_THAN_5",
     "chCode": "CH-4902",
-    "meaning": "A window change takes longer than 5 seconds",
+    "meaning": "A window or filter change takes longer than 5 seconds",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -2611,6 +2699,17 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 41704,
+    "page": "P004",
+    "category": 17,
+    "item": 4,
+    "name": "CHOOSING_A_ROUND_TYPE_A_LENGTH_A",
+    "chCode": "CH-4704",
+    "meaning": "Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 41801,
     "page": "P004",
     "category": 18,
@@ -2663,6 +2762,17 @@
     "chCode": "CH-4805",
     "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…\"); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 41806,
+    "page": "P004",
+    "category": 18,
+    "item": 6,
+    "name": "THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS",
+    "chCode": "CH-4806",
+    "meaning": "The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named \"Remove filter: Tournament\"; Clear is \"Clear filters\"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -2822,7 +2932,7 @@
     "item": 2,
     "name": "CHANGING_THE_WINDOW_OR_THE_PLAYER",
     "chCode": "CH-5402",
-    "meaning": "Changing the window or the player (pager)",
+    "meaning": "Changing the window, the round filter or the player (pager)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -2877,7 +2987,7 @@
     "item": 5,
     "name": "FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW",
     "chCode": "CH-5305",
-    "meaning": "Fewer than three rounds in the window",
+    "meaning": "Fewer than three whole rounds in the window (or under the round filter; a 9-hole round counts as half)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -3014,6 +3124,61 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50418,
+    "page": "P005",
+    "category": 4,
+    "item": 18,
+    "name": "THE_ROUND_FILTER_LEAVES_NONE_OF_THIS",
+    "chCode": "CH-5320",
+    "meaning": "The round filter leaves none of this player's rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50419,
+    "page": "P005",
+    "category": 4,
+    "item": 19,
+    "name": "THE_SHEETS_ROUND_LIST_HAS_NOTHING_TO",
+    "chCode": "CH-5321",
+    "meaning": "The sheet's round list (Only these, Exclude these) has nothing to offer",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50420,
+    "page": "P005",
+    "category": 4,
+    "item": 20,
+    "name": "THE_SHEETS_ROUND_LIST_IS_CUT_AT",
+    "chCode": "CH-5322",
+    "meaning": "The sheet's round list is cut at 200 rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50421,
+    "page": "P005",
+    "category": 4,
+    "item": 21,
+    "name": "THE_FILTER_LETS_9_HOLE_ROUNDS_IN",
+    "chCode": "CH-5323",
+    "meaning": "The filter lets 9-hole rounds in (Holes: 9 holes or Both)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50422,
+    "page": "P005",
+    "category": 4,
+    "item": 22,
+    "name": "NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT",
+    "chCode": "CH-5324",
+    "meaning": "No round of the default length (18 holes), but this player has 9-hole rounds in this window",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50501,
     "page": "P005",
     "category": 5,
@@ -3021,6 +3186,17 @@
     "name": "A_FOCUS_AREA_WITH_A_NAME_UNDER",
     "chCode": "CH-5101",
     "meaning": "A focus area with a name under three characters",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50502,
+    "page": "P005",
+    "category": 5,
+    "item": 2,
+    "name": "THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT",
+    "chCode": "CH-5102",
+    "meaning": "The filter's date range starts after it ends, and Done is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -3220,7 +3396,7 @@
     "item": 1,
     "name": "CHANGING_THE_WINDOW_WHILE_OFFLINE",
     "chCode": "CH-5901",
-    "meaning": "Changing the window (the switch, on desktop or the phone) while offline",
+    "meaning": "Changing the window (the switch, on desktop or the phone) or the round filter while offline",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -3231,7 +3407,7 @@
     "item": 2,
     "name": "A_WINDOW_CHANGE_TAKES_LONGER_THAN_5",
     "chCode": "CH-5902",
-    "meaning": "A window change takes longer than 5 seconds",
+    "meaning": "A window or filter change takes longer than 5 seconds",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -3419,6 +3595,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 51703,
+    "page": "P005",
+    "category": 17,
+    "item": 3,
+    "name": "CHOOSING_A_ROUND_TYPE_A_LENGTH_A",
+    "chCode": "CH-5703",
+    "meaning": "Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 51801,
     "page": "P005",
     "category": 18,
@@ -3504,6 +3691,17 @@
     "chCode": "CH-5808",
     "meaning": "In the Rounds table each course opens that round's review (for a coach and the player), named \"Finley GC, Oct 14: open the round\"; where the review isn't rebuilt, it stays text",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 51809,
+    "page": "P005",
+    "category": 18,
+    "item": 9,
+    "name": "THE_ROUND_FILTER_AS_ON_TEAM_STATS",
+    "chCode": "CH-5809",
+    "meaning": "The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is \"Remove filter: …\", Clear is \"Clear filters\", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -13220,5 +13418,511 @@
     "meaning": "Keyboard",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 150201,
+    "page": "P015",
+    "category": 2,
+    "item": 1,
+    "name": "THE_WELCOME_IS_READING_WHO_YOU_ARE",
+    "chCode": "CH-15401",
+    "meaning": "The welcome is reading who you are and what is new",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150301,
+    "page": "P015",
+    "category": 3,
+    "item": 1,
+    "name": "A_SIGN_IN_IS_IN_FLIGHT",
+    "chCode": "CH-15402",
+    "meaning": "A sign-in is in flight (and stays so while it navigates away)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150401,
+    "page": "P015",
+    "category": 4,
+    "item": 1,
+    "name": "THERE_IS_AN_EARLIER_VISIT_AND_NOTHING",
+    "chCode": "CH-15301",
+    "meaning": "There is an earlier visit and nothing new since",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150402,
+    "page": "P015",
+    "category": 4,
+    "item": 2,
+    "name": "NO_EARLIER_VISIT_ON_RECORD",
+    "chCode": "CH-15302",
+    "meaning": "No earlier visit on record",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150403,
+    "page": "P015",
+    "category": 4,
+    "item": 3,
+    "name": "THE_NAME_COULD_NOT_BE_READ_OR",
+    "chCode": "CH-15303",
+    "meaning": "The name could not be read, or sanitises to nothing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150501,
+    "page": "P015",
+    "category": 5,
+    "item": 1,
+    "name": "SUBMITTED_WITH_AN_EMPTY_EMAIL_OR_PASSWORD",
+    "chCode": "CH-15101",
+    "meaning": "Submitted with an empty email or password (the button is off until both are filled, so this is the belt and braces for a pre-hydration submit)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150502,
+    "page": "P015",
+    "category": 5,
+    "item": 2,
+    "name": "SIGN_UP_THE_TEAM_CODE_MATCHES_NO",
+    "chCode": "CH-15110",
+    "meaning": "Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150601,
+    "page": "P015",
+    "category": 6,
+    "item": 1,
+    "name": "THE_SERVER_REFUSES_THE_CREDENTIALS",
+    "chCode": "CH-15001",
+    "meaning": "The server refuses the credentials (\"Invalid login credentials\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150602,
+    "page": "P015",
+    "category": 6,
+    "item": 2,
+    "name": "THE_EMAIL_IS_NOT_CONFIRMED",
+    "chCode": "CH-15002",
+    "meaning": "The email is not confirmed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150603,
+    "page": "P015",
+    "category": 6,
+    "item": 3,
+    "name": "TOO_MANY_SIGN_IN_ATTEMPTS",
+    "chCode": "CH-15003",
+    "meaning": "Too many sign-in attempts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150604,
+    "page": "P015",
+    "category": 6,
+    "item": 4,
+    "name": "THE_APP_UPDATED_IN_THE_BACKGROUND_AND",
+    "chCode": "CH-15005",
+    "meaning": "The app updated in the background and the tab held an old bundle, after the one reload (CH-15906)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150605,
+    "page": "P015",
+    "category": 6,
+    "item": 5,
+    "name": "ANYTHING_ELSE_THROWS",
+    "chCode": "CH-15006",
+    "meaning": "Anything else throws",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150606,
+    "page": "P015",
+    "category": 6,
+    "item": 6,
+    "name": "THE_SERVER_ANSWERS_WITH_ANY_OTHER_SENTENCE",
+    "chCode": "CH-15007",
+    "meaning": "The server answers with any other sentence of its own, such as a lockout (\"Too many login attempts. Please try again in 14 minutes.\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150607,
+    "page": "P015",
+    "category": 6,
+    "item": 7,
+    "name": "SIGN_UP_THE_TEAM_CODE_CANNOT_BE",
+    "chCode": "CH-15010",
+    "meaning": "Sign up: the team code cannot be checked (the request never reached the server)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150608,
+    "page": "P015",
+    "category": 6,
+    "item": 8,
+    "name": "SIGN_UP_THE_EMAIL_ALREADY_HAS_AN",
+    "chCode": "CH-15011",
+    "meaning": "Sign up: the email already has an account",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150609,
+    "page": "P015",
+    "category": 6,
+    "item": 9,
+    "name": "SIGN_UP_THE_ACCOUNT_COULD_NOT_BE",
+    "chCode": "CH-15012",
+    "meaning": "Sign up: the account could not be made for any other reason (the server's rate limit, a breached password, the gate expired)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150610,
+    "page": "P015",
+    "category": 6,
+    "item": 10,
+    "name": "ONBOARDING_THE_PHOTO_DID_NOT_UPLOAD_OR",
+    "chCode": "CH-15013",
+    "meaning": "Onboarding: the photo did not upload, or the profile did not save",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150611,
+    "page": "P015",
+    "category": 6,
+    "item": 11,
+    "name": "REQUEST_ACCESS_COULD_NOT_BE_SENT",
+    "chCode": "CH-15014",
+    "meaning": "Request access could not be sent",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150612,
+    "page": "P015",
+    "category": 6,
+    "item": 12,
+    "name": "THE_WELCOMES_NOTIFICATIONS_READ_FAILS",
+    "chCode": "CH-15201",
+    "meaning": "The welcome's notifications read fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150701,
+    "page": "P015",
+    "category": 7,
+    "item": 1,
+    "name": "THE_SERVER_CANNOT_BE_REACHED",
+    "chCode": "CH-15004",
+    "meaning": "The server cannot be reached",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150801,
+    "page": "P015",
+    "category": 8,
+    "item": 1,
+    "name": "WHERE_A_SIGN_IN_GOES",
+    "chCode": "CH-15902",
+    "meaning": "Where a sign-in goes",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150802,
+    "page": "P015",
+    "category": 8,
+    "item": 2,
+    "name": "THE_WELCOME_IS_OPENED_WITH_A_SESSION",
+    "chCode": "CH-15903",
+    "meaning": "The welcome is opened with a session the auth server has ruled invalid",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150901,
+    "page": "P015",
+    "category": 9,
+    "item": 1,
+    "name": "GOLF_LOGIN_MESSAGE_NAMES_A_NOTICE",
+    "chCode": "CH-15904",
+    "meaning": "`/golf/login?message=` names a notice",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151201,
+    "page": "P015",
+    "category": 12,
+    "item": 1,
+    "name": "THE_PERSON_CAME_FROM_AN_INVITE_LINK",
+    "chCode": "CH-15901",
+    "meaning": "The person came from an invite link or a demo link",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151401,
+    "page": "P015",
+    "category": 14,
+    "item": 1,
+    "name": "THE_APP_UPDATED_BETWEEN_LOAD_AND_SIGN",
+    "chCode": "CH-15906",
+    "meaning": "The app updated between load and sign in (a stale bundle: a server action answers with something Next cannot parse)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151601,
+    "page": "P015",
+    "category": 16,
+    "item": 1,
+    "name": "FIRST_PAINT_THEN_A_SIGN_IN_LANDING",
+    "chCode": "CH-15601",
+    "meaning": "First paint, then a sign-in landing",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151602,
+    "page": "P015",
+    "category": 16,
+    "item": 2,
+    "name": "THE_WELCOME_DRAWS",
+    "chCode": "CH-15602",
+    "meaning": "The welcome draws",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151603,
+    "page": "P015",
+    "category": 16,
+    "item": 3,
+    "name": "THE_WELCOMES_SCENE_PLAYS",
+    "chCode": "CH-15603",
+    "meaning": "The welcome's scene plays",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151604,
+    "page": "P015",
+    "category": 16,
+    "item": 4,
+    "name": "CONTINUE_IS_PRESSED",
+    "chCode": "CH-15604",
+    "meaning": "Continue is pressed (or Return)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151605,
+    "page": "P015",
+    "category": 16,
+    "item": 5,
+    "name": "REDUCED_MOTION_OR_SETTINGS_PREFERENCES_ANIMATIONS_OFF",
+    "chCode": "CH-15605",
+    "meaning": "Reduced motion, or Settings > Preferences > Animations off",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151606,
+    "page": "P015",
+    "category": 16,
+    "item": 6,
+    "name": "THE_TAB_IS_HIDDEN",
+    "chCode": "CH-15606",
+    "meaning": "The tab is hidden",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151701,
+    "page": "P015",
+    "category": 17,
+    "item": 1,
+    "name": "SIGN_IN_IS_TAPPED",
+    "chCode": "CH-15701",
+    "meaning": "Sign in is tapped",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151702,
+    "page": "P015",
+    "category": 17,
+    "item": 2,
+    "name": "A_SIGN_IN_LANDS",
+    "chCode": "CH-15702",
+    "meaning": "A sign-in lands",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151703,
+    "page": "P015",
+    "category": 17,
+    "item": 3,
+    "name": "A_WARNING_TONED_REFUSAL",
+    "chCode": "CH-15703",
+    "meaning": "A warning-toned refusal (an empty field, an unverified email, a rate limit)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151704,
+    "page": "P015",
+    "category": 17,
+    "item": 4,
+    "name": "A_DANGER_TONED_REFUSAL",
+    "chCode": "CH-15704",
+    "meaning": "A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151705,
+    "page": "P015",
+    "category": 17,
+    "item": 5,
+    "name": "CONTINUE_ON_THE_WELCOME",
+    "chCode": "CH-15705",
+    "meaning": "Continue on the welcome",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151801,
+    "page": "P015",
+    "category": 18,
+    "item": 1,
+    "name": "A_SKIP_LINK_IS_THE_FIRST_TAB",
+    "chCode": "CH-15801",
+    "meaning": "A skip link is the first Tab stop and lands on the form",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151802,
+    "page": "P015",
+    "category": 18,
+    "item": 2,
+    "name": "A_REFUSED_SIGN_IN_IS_READ_OUT",
+    "chCode": "CH-15802",
+    "meaning": "A refused sign-in is read out as it appears (`role=\"alert\"` for danger and warning) and focus moves to the first invalid field; both fields name the notice in `aria-describedby`",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151803,
+    "page": "P015",
+    "category": 18,
+    "item": 3,
+    "name": "THE_WELCOME_ANNOUNCES_ITS_SENTENCE_ONCE_WHEN",
+    "chCode": "CH-15803",
+    "meaning": "The welcome announces its sentence once, when it is final (\"Good morning, Coach Reyes.\"): `role=\"status\"`, `aria-live=\"polite\"`, atomic; the `h1` holds the same words",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151804,
+    "page": "P015",
+    "category": 18,
+    "item": 4,
+    "name": "THE_PAINTED_COURSE_THE_TAGLINE_AND_THE",
+    "chCode": "CH-15804",
+    "meaning": "The painted course, the tagline and the marks over it are decorative and hidden from assistive technology",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151805,
+    "page": "P015",
+    "category": 18,
+    "item": 5,
+    "name": "THE_PASSWORD_EYE_IS_A_NAMED_PRESSED",
+    "chCode": "CH-15805",
+    "meaning": "The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151901,
+    "page": "P015",
+    "category": 19,
+    "item": 1,
+    "name": "THE_APP_STORE_BUILD",
+    "chCode": "CH-15905",
+    "meaning": "The App Store build",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151902,
+    "page": "P015",
+    "category": 19,
+    "item": 2,
+    "name": "THE_WINDOW_IS_820PX_WIDE_OR_LESS",
+    "chCode": "CH-15909",
+    "meaning": "The window is 820px wide or less (a phone)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 152001,
+    "page": "P015",
+    "category": 20,
+    "item": 1,
+    "name": "THE_KEYBOARD",
+    "chCode": "CH-15910",
+    "meaning": "The keyboard",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 152101,
+    "page": "P015",
+    "category": 21,
+    "item": 1,
+    "name": "EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE",
+    "chCode": "CH-15907",
+    "meaning": "Either screen loads, on a slow phone or a fast desktop",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 152301,
+    "page": "P015",
+    "category": 23,
+    "item": 1,
+    "name": "A_READ_FAILS_OR_THE_COURSE_CRASHES",
+    "chCode": "CH-15908",
+    "meaning": "A read fails, or the course crashes",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/auth.md"
   }
 ]

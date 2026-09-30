@@ -39,7 +39,7 @@ Changing the window or paging to another player reloads the page in place: it di
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 50301 | CH-5401 | `A_FOCUS_AREA_IS_BEING_PROPOSED` | A focus area is being proposed |
-| 50302 | CH-5402 | `CHANGING_THE_WINDOW_OR_THE_PLAYER` | Changing the window or the player (pager) |
+| 50302 | CH-5402 | `CHANGING_THE_WINDOW_OR_THE_PLAYER` | Changing the window, the round filter or the player (pager) |
 
 ## 04 — Empty
 
@@ -53,7 +53,7 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50402 | CH-5302 | `NO_ROUNDS_IN_THE_WINDOW` | No rounds in the window |
 | 50403 | CH-5303 | `NO_FOCUS_AREAS` | No focus areas |
 | 50404 | CH-5304 | `NO_GOALS` | No goals |
-| 50405 | CH-5305 | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | Fewer than three rounds in the window |
+| 50405 | CH-5305 | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | Fewer than three whole rounds in the window (or under the round filter; a 9-hole round counts as half) |
 | 50406 | CH-5308 | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
 | 50407 | CH-5309 | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | Phone: no strokes gained in the window (no leg and no total) |
 | 50408 | CH-5310 | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
@@ -66,6 +66,11 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50415 | CH-5317 | `A_MORE_DETAIL_PANEL_WITH_NO_DATA` | A More detail panel with no data behind it (outcomes by par, hole-out, toughest holes, fairways by tee type, tee miss by club, strokes to hole out, misses by distance, sand saves, up and downs, up and down by miss direction, finish after the chip, putting by distance, break tables, practice target, the Tour table) |
 | 50416 | CH-5318 | `A_STANDING_TABLE_ROW_IS_UNDER_ITS` | A standing-table row is under its sample floor |
 | 50417 | CH-5319 | `THE_WINDOW_HAS_MORE_18_HOLE_ROUNDS` | The window has more 18-hole rounds than the shot-level reads take (100) |
+| 50418 | CH-5320 | `THE_ROUND_FILTER_LEAVES_NONE_OF_THIS` | The round filter leaves none of this player's rounds |
+| 50419 | CH-5321 | `THE_SHEETS_ROUND_LIST_HAS_NOTHING_TO` | The sheet's round list (Only these, Exclude these) has nothing to offer |
+| 50420 | CH-5322 | `THE_SHEETS_ROUND_LIST_IS_CUT_AT` | The sheet's round list is cut at 200 rounds |
+| 50421 | CH-5323 | `THE_FILTER_LETS_9_HOLE_ROUNDS_IN` | The filter lets 9-hole rounds in (Holes: 9 holes or Both) |
+| 50422 | CH-5324 | `NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT` | No round of the default length (18 holes), but this player has 9-hole rounds in this window |
 
 ## 05 — Validation
 
@@ -76,6 +81,7 @@ The one form is Add focus area: a name of at least three characters, checked bef
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 50501 | CH-5101 | `A_FOCUS_AREA_WITH_A_NAME_UNDER` | A focus area with a name under three characters |
+| 50502 | CH-5102 | `THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT` | The filter's date range starts after it ends, and Done is tapped |
 
 ## 06 — Server / system error
 
@@ -111,8 +117,8 @@ Changing the window while offline is refused before anything is requested, and a
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 50701 | CH-5901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, on desktop or the phone) while offline |
-| 50702 | CH-5902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window change takes longer than 5 seconds |
+| 50701 | CH-5901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
+| 50702 | CH-5902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -218,6 +224,7 @@ The profile's own haptics (51701, 51702) on the v2 grammar (D-70): a selection t
 | --- | --- | --- | --- |
 | 51701 | CH-5701 | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | Changing tabs, the window, or paging players; choosing a Game detail leg |
 | 51702 | CH-5702 | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | Proposing a focus area with no name |
+| 51703 | CH-5703 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
 
@@ -237,6 +244,7 @@ The profile's own (51801 to 51807): real tabs with their panels, "Stats › name
 | 51806 | CH-5806 | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 51807 | CH-5807 | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
 | 51808 | CH-5808 | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
+| 51809 | CH-5809 | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 

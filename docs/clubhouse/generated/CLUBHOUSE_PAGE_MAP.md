@@ -20,5 +20,6 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 | P012 | Classes | `/golf/dashboard/classes` | player | calendar_events | approved | in_progress | complete | reserved | existing | partial | current |
 | P013 | CoachHelm | `/golf/dashboard/coachhelm` | coach, player | coachhelm_ai, player_coachhelm_development, coach_intelligence_triage | approved | in_progress | complete | reserved | existing | partial | current |
 | P014 | Recruiting | `/golf/dashboard/recruiting` | coach | recruiting | approved | in_progress | complete | reserved | existing | partial | current |
+| P015 | Auth | `/golf/login`<br>`/golf/welcome` | signed out | auth_onboarding_join | approved | in_progress | partial | reserved | existing | partial | current |
 
 Pages not designed yet have no ID (D-60). The v2 design (`design/handoff/VERSIONS.md`) adds CoachHelm, Team Hub, player Home, Rounds and Classes; they are registered when their build starts (D-67).
