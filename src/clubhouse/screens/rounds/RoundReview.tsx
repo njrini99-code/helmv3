@@ -31,8 +31,8 @@ export function firstHole(holes: ChReviewHole[]): number {
 }
 
 function Mark({ v }: { v: boolean | null }) {
-  if (v == null) return <i className="ch-rv-yn is-na" aria-label="Not applicable" />;
-  return <i className={'ch-rv-yn' + (v ? ' is-y' : ' is-n')} aria-label={v ? 'Hit' : 'Missed'} />;
+  if (v == null) return <i className="ch-rv-yn is-na" role="img" aria-label="Not applicable" />;
+  return <i className={'ch-rv-yn' + (v ? ' is-y' : ' is-n')} role="img" aria-label={v ? 'Hit' : 'Missed'} />;
 }
 
 /**
@@ -237,7 +237,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           <div key={k}>
             <dt>{k}</dt>
             <dd className="ch-num">{v}</dd>
-            <span className="ch-num">{m}</span>
+            <dd className="ch-num">{m}</dd>
           </div>
         ))}
       </dl>

@@ -800,8 +800,15 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/calendar/**
+        # A player's classes go on the team calendar (syncClassToCalendar); the
+        # route was unmapped, so `knowledge:map` resolved it to no feature.
+        - src/app/golf/(dashboard)/dashboard/classes/**
+        - src/clubhouse/routes/classes.tsx
       components:
         - src/components/golf/calendar/**
+        - src/clubhouse/screens/classes/**
+        - src/clubhouse/data/classes.ts
+        - src/clubhouse/data/classes-shape.ts
         # The SHIPPED calendar UI is the Fairway tree (event editor, detail
         # drawer, month/week/agenda views); only the older golf/calendar tree
         # was mapped, so `knowledge:map` resolved the live components to NO
@@ -854,6 +861,7 @@ features:
       tests:
         - src/test/lib/calendar/**
         - src/test/api/calendar/**
+        - src/clubhouse/__tests__/classes.test.tsx
     integrations:
       - supabase
       - notifications

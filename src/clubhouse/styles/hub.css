@@ -294,7 +294,8 @@
 .ch-hb-ann__h b {
   font: 600 13.5px/1 var(--ch-font-sans);
 }
-.ch-hb-ann__h span {
+/* The byline's meta, not the avatar (a span too, whose colour this used to override). */
+.ch-hb-ann__h > div span {
   font: 400 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }

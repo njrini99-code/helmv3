@@ -256,7 +256,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
             <div key={k}>
               <dt>{k}</dt>
               <dd className="ch-num">{v}</dd>
-              <span>{m}</span>
+              <dd>{m}</dd>
             </div>
           ))}
         </dl>
