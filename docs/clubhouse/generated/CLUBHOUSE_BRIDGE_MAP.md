@@ -65,7 +65,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 2 | 1 | 1 | 4 |  | 10 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 11 | 1 | 1 | 1 | 3 | 1 | 1 |  | 65 |
+| P001 | 2 | 1 | 1 | 4 |  | 10 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 12 | 1 | 1 | 1 | 3 | 1 | 1 |  | 66 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P004 | 2 | 1 | 1 | 9 | 1 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 47 |
@@ -138,6 +138,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11809 | CH-1809 | 18 Accessibility | `A_PUSHED_PHONE_SCREEN_IS_NAMED_BY` | implemented | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it |
 | 11810 | CH-1810 | 18 Accessibility | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | reserved | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
 | 11811 | CH-1811 | 18 Accessibility | `ON_THE_PHONE_THE_BELL_OPENS_AS` | implemented | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up |
+| 11812 | CH-1812 | 18 Accessibility | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | implemented | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
 | 11901 |  | 19 Responsive layout | `PHONE_CHROME` | implemented | On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest. |
 | 12001 | CH-1906 | 20 Keyboard / input | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | implemented | On the phone, the edge swipe or the browser's back while a screen is pushed |
 | 12101 | CH-1954 | 21 Performance | `THE_PAGE_IS_SLOW_TO_RESPOND_OR` | reserved | The page is slow to respond or shifts after loading (INP, CLS, LCP) |

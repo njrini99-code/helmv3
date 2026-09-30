@@ -643,6 +643,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11812,
+    "page": "P001",
+    "category": 18,
+    "item": 12,
+    "name": "A_TOAST_RAISED_WHILE_A_DIALOG_OR",
+    "chCode": "CH-1812",
+    "meaning": "A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11901,
     "page": "P001",
     "category": 19,

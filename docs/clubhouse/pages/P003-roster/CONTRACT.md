@@ -237,7 +237,7 @@ Roster's own (31801 to 31806): the table roles, a status as a word, Esc, the pol
 | 31805 | CH-3805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, both layouts, 1280px and 390px |
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 
 ## 19 — Responsive layout
 

@@ -201,6 +201,7 @@ Skip to content, the modal More sheet, the current page and named landmarks, ann
 | 11809 | CH-1809 | `A_PUSHED_PHONE_SCREEN_IS_NAMED_BY` | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it |
 | 11810 | CH-1810 | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
 | 11811 | CH-1811 | `ON_THE_PHONE_THE_BELL_OPENS_AS` | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up |
+| 11812 | CH-1812 | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
 
 ## 19 — Responsive layout
 

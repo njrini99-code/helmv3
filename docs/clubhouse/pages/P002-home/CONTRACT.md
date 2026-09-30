@@ -222,7 +222,7 @@ Home's own (21801 to 21806): N opens a new event but never while typing or in a 
 | 21806 | CH-2806 | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 | — | `COUNTDOWN_IS_A_NAMED_TIMER` | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 
 ## 19 — Responsive layout
 

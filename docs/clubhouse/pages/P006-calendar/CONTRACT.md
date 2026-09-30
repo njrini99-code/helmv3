@@ -285,7 +285,7 @@ Calendar's own (61801 to 61804): each event is a button named with its title and
 | 61803 | CH-6803 | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 
 ## 19 — Responsive layout
 

@@ -27,3 +27,8 @@ Data impact:    none
 ## 2026-09-29 — v2 foundation
 
 - v2 motion (D-64), haptics (D-70), the page empty state (D-71) and navigation (D-66) for every page.
+
+## 2026-09-30 — toasts inside an open dialog
+
+- CH-1812: a toast raised while a dialog or sheet is open renders inside it, so it is seen, announced and its Retry can be tapped. A modal dialog makes the rest of the page inert and the top layer paints over it; checked in headless Chromium and WebKit (a top-layer popover outside the dialog is inert too, so it is not a fix). Found by the Calendar contract pass; it had disabled every in-dialog Retry on every page.
+- The More sheet follows v2 `MoreM`; sign-out is shared with Settings (CH-1002).

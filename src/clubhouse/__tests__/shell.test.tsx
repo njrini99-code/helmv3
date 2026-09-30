@@ -34,7 +34,7 @@ const signOutSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/sign-out', () => ({ chSignOut: signOutSpy }));
 
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
-import { ToastProvider } from '../ui/Toast';
+import { ToastProvider, useToast } from '../ui/Toast';
 import { InlineNotice, RouteErrorView, type RouteErrorKind } from '../ui/Notices';
 import { Bell, BellSourceProvider, type ChBellApi } from '../shell/Bell';
 import { NotRebuilt } from '../shell/NotRebuilt';
@@ -117,6 +117,39 @@ describe('Shell · bell', () => {
     await expectCode('CH-1001');
     expect(code('CH-1001')!.closest('[role="alert"]')).not.toBeNull();
     expect(document.querySelector('.ch-toasts')!.getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('CH-1812 a toast raised while a dialog is open shows inside it, so Retry works; it moves back out when the dialog closes', async () => {
+    const user = userEvent.setup();
+    const retry = vi.fn();
+    function Sheet() {
+      const toast = useToast();
+      const [open, setOpen] = useState(true);
+      return (
+        <Modal open={open} onClose={() => setOpen(false)} title="Edit">
+          <button type="button" onClick={() => toast({ tone: 'error', title: "Couldn't save", action: { label: 'Retry', run: retry }, code: 'CH-9999' })}>
+            Save
+          </button>
+        </Modal>
+      );
+    }
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <Sheet />
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    const dialog = document.querySelector('dialog')!;
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(dialog.contains(code('CH-9999'))).toBe(true));
+    expect(dialog.querySelector('.ch-toasts')!.getAttribute('aria-live')).toBe('polite');
+    await user.click(within(dialog).getByRole('button', { name: 'Retry' }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(code('CH-9999')).not.toBeNull());
+    expect(dialog.contains(code('CH-9999'))).toBe(false);
   });
 
   it('CH-1201 the list does not load', async () => {

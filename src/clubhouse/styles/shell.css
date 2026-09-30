@@ -826,6 +826,11 @@ button.ch-more__row[disabled] {
     left: 12px;
     bottom: calc(var(--ch-tabbar-h) + 12px + env(safe-area-inset-bottom));
   }
+  /* CH-1812: inside an open sheet the toasts drop from the top, clear of the sheet's buttons. */
+  .ch-root .ch-toasts.ch-toasts--in-dialog {
+    top: calc(12px + env(safe-area-inset-top));
+    bottom: auto;
+  }
   /* The green hero's bar (usePhoneHero, the v2 phone Home, m-home.css .mh-hero__bar): the team and the bell on green. */
   .ch-root[data-phone-hero] .ch-topbar {
     background: var(--ch-green-800);

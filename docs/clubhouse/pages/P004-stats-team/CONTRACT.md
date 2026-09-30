@@ -198,7 +198,7 @@ Team stats' own (41801 to 41805): the trend chart has a written summary and its 
 | 41804 | CH-4804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 
 ## 19 — Responsive layout
 

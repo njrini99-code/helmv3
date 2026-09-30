@@ -89,6 +89,7 @@ D-40 to D-43).
 | CH-1809 | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it | `PhoneScreen`, `usePhoneImmersive` | shell.test › CH-1809 |
 | CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |
 | CH-1811 | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up | `Bell` (`aria-modal`, `data-state="open"`) | shell.test › CH-1811 |
+| CH-1812 | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page | `ToastProvider` follows the open dialog (`useToastHost`) | shell.test › CH-1812 |
 
 ## 19xx Network and UX
 
