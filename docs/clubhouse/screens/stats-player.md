@@ -30,6 +30,10 @@ and `getDetailedStats` access gate the current app uses.
 - [x] Null, zero and "early read" render differently, and windows and samples are stated
 - [x] Round dates are calendar dates (UTC noon, no zone shift); weeks start Monday
 - [x] Unit tests cover the window math, weighted rates, tour choice and week bucketing (`logic.test.ts`, "stats windows")
+- [x] `?tab=overview|game|rounds|dev` opens that tab, and anything else opens Overview (D-53).
+  - Roster's "All N" links to `window=season&tab=rounds`, whose count matches Roster's.
+  - Evidence: `stats-player.test.tsx` › "Stats player · opened from a link" (2 tests), commit 041ef83ee.
+  - No new state, so no catalog row.
 
 ## states
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands

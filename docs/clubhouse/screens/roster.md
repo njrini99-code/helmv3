@@ -46,7 +46,7 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
 - [x] No `catch` swallows an error without reporting or handling it on screen
 - [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [ ] Every failure path was forced once locally and seen in the console or Sentry
+- [ ] Every failure path was forced once locally and seen in the console or Sentry. Open because it needs a dev server with each failure forced in turn; the tests force each one, but not in a browser. Owner: the merge pass (D-27).
 
 ## phone-spec
 Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/handoff/mobile/Roster Mobile.html`, `m-roster.jsx`: list, profile, join requests sheet). The design boards were captured at 390 × 844, as was the current preview at 390px.
@@ -72,18 +72,18 @@ Evidence so far (2026-09-29): built on the foundation, and the preview captured 
 
 ## accessibility
 Verified by `roster.test.tsx` (CH-38xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/roster.md`.
-- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
+- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays. CH-3803 covers Esc, and `<dialog>` traps focus in sheets. Open because the path hasn't been walked in a browser end to end. Owner: the merge pass (D-27).
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent (aria-label or a view-as-table path)
 - [x] Status changes are announced (aria-live) and errors use role=alert
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [ ] No request waterfall on the server, with independent reads in parallel
-- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
-- [ ] No layout shift after first paint
+- [ ] No request waterfall on the server, with independent reads in parallel. `loadRoster` runs two parallel rounds: the second needs the first's player ids. Open because it hasn't been measured. Owner: the merge pass (D-27).
+- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily. Open because no bundle check has been run. Owner: the merge pass (D-27), with `npm run build`.
+- [ ] No layout shift after first paint. The skeleton matches the layout on desktop and phone. Open because no layout-shift measurement has been taken. Owner: the merge pass (D-27).
 
 ## verified
-- [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
-- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
-- [ ] Owner review of the built screen
+- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log. Logged 2026-09-29: typecheck 0, eslint 0 and `vitest src/clubhouse` 295/295 (2d4555d9b); typecheck:fast 0, test:file roster 37/37 and clubhouse:check 0 (46461e837); clubhouse:check 0 (eb8e079be).
+- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md. The preview pass at 1280 and 390 is logged (d9b1c81fc). Open because no real coach account has been used. Owner: the owner's live pass on a Vercel preview (Q-4).
+- [ ] Owner review of the built screen. Open. Owner: the owner.
