@@ -306,6 +306,44 @@ export interface AuditPlayer {
  */
 const CLAIM_EXEMPT = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}\s*(?:am|pm)?)\b/gi;
 
+/**
+ * A plain calendar year ("in 2026", "the 2026 season", "since 2019") or a
+ * season span ("2025-26", "2025-2026").
+ *
+ * A year is a label, not a statistic, but it is a four-digit integer above 12,
+ * so with no tool figure behind it the audit read it as an invented number and
+ * withheld the whole answer (production: three failed turns on 2026-09-10 with
+ * `2026` as the flagged claim). A span is worse: the hyphen was read as a minus
+ * sign, so "2025-2026" flagged a `-2026`.
+ *
+ * Deliberately narrow, because a fabricated figure must still be caught:
+ *   · 1900-2099 only, so "1250 yards" and any score or count outside that
+ *     range are untouched;
+ *   · an integer, not the start of a decimal or a thousands group ("2026.5",
+ *     "2,026") and not signed, prefixed ($, #) or a percentage;
+ *   · not followed, within two words, by a unit of measurement ("2050 yards",
+ *     "2010 total feet", "1975 lbs"), which read as measurements. Only units
+ *     that are never a noun a sentence can start with: "in 2026 putts per round
+ *     fell" and "in 2026 she shot 84" are ordinary years, so putts, strokes,
+ *     shots and rounds are not on the list.
+ *
+ * A dated expression ("Aug 16, 2026") is not handled here: it is audited as a
+ * whole against the evidence dates first, and this only sees what is left.
+ *
+ * No lookbehind on purpose: this module is bundled for the iOS WebView, where a
+ * lookbehind in a regex literal is a SyntaxError on older versions.
+ */
+const CALENDAR_YEAR = new RegExp(
+  String.raw`(^|[^\d.,$#%-])(?:19|20)\d{2}(?:\s*[-–]\s*(?:(?:19|20)\d{2}|\d{2}))?(?!\d|[.,]\d|\s*%)` +
+    String.raw`(?!\s+(?:[a-z]+\s+)?(?:yards?|yds?|feet|foot|ft|meters?|metres?|miles?|mph|pounds?|lbs?|degrees?)\b)`,
+  'gi',
+);
+
+/** Blank every plain calendar year out of `text`, keeping positions so a claim's context is unchanged. */
+function blankCalendarYears(text: string): string {
+  return text.replace(CALENDAR_YEAR, (match, prefix: string) => prefix + ' '.repeat(match.length - prefix.length));
+}
+
 /** The single pattern used both to find a claim in prose and to read a number out of tool text. */
 const NUMERIC_TOKEN_RE = /-?\d+(?:\.\d+)?/g;
 
@@ -1115,7 +1153,9 @@ export function auditNumericClaims(
   // either way, so a date's own digits are never re-examined as a bare
   // number (matched or not — a rejected date is reported once, as the
   // whole expression, not again for its day-of-month).
-  const { scrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows);
+  const { scrubbed: dateScrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows);
+  // A year that survives the date audit is a plain label ("in 2026").
+  const scrubbed = blankCalendarYears(dateScrubbed);
   const found: UnsupportedClaim[] = [...dateClaims];
   const seen = new Set<string>();
   const bind = buildBinder(scrubbed, nameSources);

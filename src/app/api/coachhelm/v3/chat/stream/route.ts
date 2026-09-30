@@ -89,13 +89,13 @@ import {
   createConversation,
   findAssistantTurn,
   getConversation,
-  listMessages,
   listRecentMessages,
   touchConversation,
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
 import { linkProposalsToMessage, proposalKeysFromParts } from '@/lib/coachhelm/v3/chat/action-runs';
 import { denyAbandonedApprovals } from '@/lib/coachhelm/v3/chat/abandoned-approvals';
+import { storedTurnChunks } from '@/lib/coachhelm/v3/chat/restore';
 // `publishableParts` also drops dangling tool calls: storing one poisons the
 // conversation permanently, because a reload rehydrates the thread from
 // `ui_parts` and sends the orphaned `tool_use` back with no matching
@@ -380,11 +380,20 @@ export async function POST(req: NextRequest) {
     if (!existing || existing.coach_id !== ctx.coach_id) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
-    // Idempotency: an already-answered turn is returned, not re-run.
+    // Idempotency: an already-answered turn is returned, not re-run. Returned
+    // as the same kind of stream a fresh answer is: the client reads a stream,
+    // and the JSON this used to send parsed as an empty one, so a retry that
+    // landed here ended with no answer and no error.
     const done = await findAssistantTurn(supabase, conversationId, clientTurnId);
     if (done) {
-      const messages = await listMessages(supabase, conversationId);
-      return NextResponse.json({ conversation_id: conversationId, replayed: true, messages });
+      return createUIMessageStreamResponse({
+        stream: createUIMessageStream({
+          execute: ({ writer }) => {
+            for (const chunk of storedTurnChunks(done)) writer.write(chunk as Parameters<typeof writer.write>[0]);
+          },
+        }),
+        headers: { 'x-conversation-id': conversationId },
+      });
     }
   } else {
     needsNewConversation = true;

@@ -1189,6 +1189,58 @@ describe('POST /coachhelm/v3/chat/stream — #1999 review follow-ups (claims-blo
   });
 });
 
+describe('POST /coachhelm/v3/chat/stream — a retry of a turn that already has an answer', () => {
+  const CONVERSATION = '11111111-1111-4111-8111-111111111111';
+
+  beforeEach(() => {
+    mocks.streamText.mockReset();
+    mocks.createUIMessageStream.mockClear();
+    mocks.checkBudget.mockClear();
+    mocks.appendMessage.mockClear();
+    mocks.getConversation.mockReset().mockResolvedValue({ id: CONVERSATION, coach_id: 'coach-1' });
+    mocks.findAssistantTurn.mockReset().mockResolvedValue({
+      id: 'stored-1',
+      conversation_id: CONVERSATION,
+      role: 'assistant',
+      content: 'Putting is steady this month.',
+      tool_calls: null,
+      tool_results: null,
+      cost_usd: null,
+      created_at: '2026-09-30T12:00:00.000Z',
+      client_turn_id: 'turn-1',
+      status: 'complete',
+      ui_parts: null,
+    });
+    mocks.lastWriter = null;
+  });
+
+  async function retry() {
+    const response = (await POST(
+      makeRequest({ conversation_id: CONVERSATION, client_turn_id: 'turn-1', messages: baseBody.messages }),
+    )) as unknown as { headers: Headers };
+    const call = mocks.createUIMessageStream.mock.results.at(-1);
+    if (call?.type === 'return') await call.value;
+    return response;
+  }
+
+  it('answers with a message stream carrying the stored answer, not JSON the chat client cannot read', async () => {
+    await retry();
+
+    const written = mocks.lastWriter!.write.mock.calls.map((c) => c[0] as { type: string; delta?: string });
+    expect(written.map((c) => c.type)).toEqual(['start', 'text-start', 'text-delta', 'text-end', 'finish']);
+    expect(written.find((c) => c.type === 'text-delta')?.delta).toBe('Putting is steady this month.');
+  });
+
+  it('keeps the conversation id header, and runs neither the model nor the budget gate', async () => {
+    const response = await retry();
+
+    expect(response.headers.get('x-conversation-id')).toBe(CONVERSATION);
+    expect(mocks.streamText).not.toHaveBeenCalled();
+    expect(mocks.checkBudget).not.toHaveBeenCalled();
+    expect(mocks.appendMessage).not.toHaveBeenCalled();
+  });
+});
+
 describe('POST /coachhelm/v3/chat/stream — a Confirm card the coach never answered', () => {
   beforeEach(() => {
     mocks.streamText.mockReset();

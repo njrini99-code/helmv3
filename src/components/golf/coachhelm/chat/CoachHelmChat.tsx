@@ -66,6 +66,15 @@ export interface CoachHelmChatProps {
   opening?: (ask: (text: string) => void) => React.ReactNode;
   /** Fires when the server mints a conversation for a thread that had none. */
   onConversationId?: (id: string) => void;
+  /**
+   * The coach chose "Start a new chat" under a lost-conversation error.
+   *
+   * A host that keeps the conversation id in the address bar (the Ask page and
+   * the Intelligence tab) owns this: resetting only the hook would leave `?c=`
+   * pointing at the dead thread, so a reload would open it again. Without it —
+   * the drawer never writes the URL — the hook resets itself.
+   */
+  onStartNew?: () => void;
   className?: string;
 }
 
@@ -81,6 +90,7 @@ export function CoachHelmChat({
   greeting,
   opening,
   onConversationId,
+  onStartNew,
   className,
 }: CoachHelmChatProps) {
   const chat = useCoachHelmChat({
@@ -293,7 +303,7 @@ export function CoachHelmChat({
                 // eslint-disable-next-line helm/no-raw-button -- inline retry inside an error notice
                 <button
                   type="button"
-                  onClick={notice.recovery === 'new-chat' ? chat.newConversation : chat.retry}
+                  onClick={notice.recovery === 'new-chat' ? (onStartNew ?? chat.newConversation) : chat.retry}
                   className={cn(
                     'mt-3 inline-flex min-h-[44px] items-center rounded-fw-md border border-border-subtle px-4',
                     'font-fw-sans text-body-sm text-text-secondary transition-colors hover:bg-surface-sunken',

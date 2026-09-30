@@ -44,9 +44,9 @@ function refusal(status: number, body: Record<string, unknown>): Error {
   return Object.assign(new Error(responseBody), { statusCode: status, responseBody });
 }
 
-async function renderChat() {
+async function renderChat(props: { onStartNew?: () => void } = {}) {
   const { CoachHelmChat } = await import('./CoachHelmChat');
-  return render(<CoachHelmChat players={[]} />);
+  return render(<CoachHelmChat players={[]} {...props} />);
 }
 
 describe('CoachHelmChat — a failed answer', () => {
@@ -97,6 +97,18 @@ describe('CoachHelmChat — a failed answer', () => {
     expect(setMessagesSpy).toHaveBeenCalledWith([]);
     expect(clearErrorSpy).toHaveBeenCalledTimes(1);
     expect(regenerateSpy).not.toHaveBeenCalled();
+  });
+
+  it('a host that owns the address bar takes over Start a new chat, so the hook alone does not reset', async () => {
+    // The Ask page keeps `?c=` in the URL; `AskSurface` resets both together.
+    const onStartNew = vi.fn();
+    currentError = refusal(404, { error: 'Conversation not found' });
+    await renderChat({ onStartNew });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start a new chat' }));
+
+    expect(onStartNew).toHaveBeenCalledTimes(1);
+    expect(setMessagesSpy).not.toHaveBeenCalled();
   });
 
   it.each([

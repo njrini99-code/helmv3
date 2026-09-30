@@ -733,6 +733,65 @@ describe('auditNumericClaims', () => {
  * The coverage helper is the fix for the seven-players-reported-as-six bug:
  * `partial` and `empty` must stay distinct, and neither may round to complete.
  */
+/**
+ * Production, 2026-09-10: three chat turns were withheld with `2026` as the only
+ * unsupported claim. A calendar year is a label, not a statistic, so it must not
+ * read as an invented figure; but the exemption is for years only, and a real
+ * ungrounded number written next to one must still be caught.
+ */
+describe('auditNumericClaims — calendar years', () => {
+  const claimsFor = (text: string) => auditNumericClaims(text, [measurement()]).map((c) => c.text);
+
+  it.each([
+    'So far in 2026 the team has played well.',
+    'The 2026 season is underway.',
+    'She has improved every year since 2019.',
+    'In 2026, the team is stronger.',
+    'Best finish of the year came in 2026.',
+    '2026 has been a strong year.',
+    'Compared with 2025 and 2024, scoring is down.',
+    'Across the 2025-26 season the team improved.',
+    'Across the 2025-2026 season the team improved.',
+    'Class of 2027 (2026 recruits included).',
+    'In 2026 putts per round fell.',
+    'Since 2019, 2020 and 2021 were the weakest years.',
+  ])('does not flag a plain year: %s', (text) => {
+    expect(claimsFor(text)).toEqual([]);
+  });
+
+  it('still flags an invented figure written next to a year', () => {
+    expect(claimsFor('In 2026 her make rate rose to 71%.')).toEqual(['71']);
+  });
+
+  it('still accepts a figure a tool produced when a year sits beside it', () => {
+    expect(claimsFor('In 2026 her make rate was 58% over 43 attempts.')).toEqual([]);
+  });
+
+  it.each([
+    ['a four-digit yardage', 'The hole plays 1250 yards.', '1250'],
+    ['a four-digit yardage inside the year range', 'The course is 2050 yards from tee to green.', '2050'],
+    ['a distance with a word before its unit', 'The drive went 2010 total yards.', '2010'],
+    ['a distance in feet', 'A putt of 2026 feet is not a thing.', '2026'],
+    ['a four-digit percentage', 'A rate of 2026%.', '2026'],
+    ['a decimal that starts like a year', 'An average of 2026.5 across the group.', '2026.5'],
+    ['a four-digit count outside the year range', 'The team logged 3400 strokes.', '3400'],
+    ['a four-digit count just below the year range', 'The team logged 1250 shots.', '1250'],
+    ['a signed number', 'Strokes gained of -2026.', '-2026'],
+  ])('still flags %s', (_name, text, flagged) => {
+    expect(claimsFor(text)).toContain(flagged);
+  });
+
+  it('still audits a dated expression as a whole, not as a bare year', () => {
+    // No ISO date in the evidence for this one, so the whole date is unsupported.
+    expect(claimsFor('Her round on Aug 16, 2026 was strong.')).toContain('Aug 16, 2026');
+  });
+
+  it('a year does not launder a fabricated day-of-month beside it', () => {
+    // "shot" is a verb here, not a unit, so the year is a plain label.
+    expect(claimsFor('In 2026 she shot 84 on the 27th.')).toEqual(['84', '27']);
+  });
+});
+
 describe('coverageFor', () => {
   it('reports a shortfall as partial, never as complete', () => {
     expect(coverageFor(6, 7)).toBe('partial');
