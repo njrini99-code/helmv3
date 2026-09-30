@@ -176,7 +176,20 @@ const buildUrl = (view: ChCalView, date: string, today: string, event?: string) 
 };
 
 /** `frozen` pins the clock to the loaded "now" (the dev preview renders a fixed day). */
-export function Calendar({ data, initialEvent, initialNew = false, frozen = false }: { data: ChCalendarData; initialEvent?: string; initialNew?: boolean; frozen?: boolean }) {
+export function Calendar({
+  data,
+  initialEvent,
+  initialNew = false,
+  initialWith,
+  frozen = false,
+}: {
+  data: ChCalendarData;
+  initialEvent?: string;
+  initialNew?: boolean;
+  /** With `initialNew`: a 1:1 with this player (Roster's Plan 1:1, D-52). */
+  initialWith?: string;
+  frozen?: boolean;
+}) {
   const preview = frozen;
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -188,12 +201,16 @@ export function Calendar({ data, initialEvent, initialNew = false, frozen = fals
     const e = initialEvent ? data.events.find((x) => x.id === initialEvent) : undefined;
     return e ? { kind: 'event', id: e.id, date: e.date } : null;
   });
-  // `?new=1` (Home's New event) opens the editor once; the param is dropped so a reload doesn't reopen it.
-  const [editor, setEditor] = useState<EditorSeed | null>(() => (initialNew && coach ? { event: null } : null));
+  // `?new=1` (Home's New event) opens the editor once; `&with=<playerId>` (Roster's Plan 1:1) makes it a
+  // meeting with only that player invited. The params are dropped so a reload doesn't reopen it.
+  const [editor, setEditor] = useState<EditorSeed | null>(() =>
+    initialNew && coach ? (initialWith ? { event: null, type: 'meeting', invite: [initialWith] } : { event: null }) : null,
+  );
   useEffect(() => {
     if (!initialNew || frozen) return;
     const url = new URL(window.location.href);
     url.searchParams.delete('new');
+    url.searchParams.delete('with');
     window.history.replaceState(null, '', url.pathname + url.search);
   }, [initialNew, frozen]);
   const [cancelling, setCancelling] = useState<ChCalEvent | null>(null);

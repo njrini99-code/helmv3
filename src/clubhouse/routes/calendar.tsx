@@ -11,9 +11,22 @@ import '../styles/calendar.css';
  * /golf/dashboard/calendar in Clubhouse. Coaches plan the team schedule;
  * players see team events they can reply to and only their own classes.
  * `view`, `date` and `event` come from the URL so every state is linkable;
- * `new=1` opens the event editor (Home's New event).
+ * `new=1` opens the event editor (Home's New event); `with=<playerId>` makes it
+ * a 1:1 with that player (Roster's Plan 1:1).
  */
-export async function ClubhouseCalendarRoute({ view, date, event, isNew }: { view?: string; date?: string; event?: string; isNew?: boolean }) {
+export async function ClubhouseCalendarRoute({
+  view,
+  date,
+  event,
+  isNew,
+  withPlayer,
+}: {
+  view?: string;
+  date?: string;
+  event?: string;
+  isNew?: boolean;
+  withPlayer?: string;
+}) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
@@ -38,5 +51,5 @@ export async function ClubhouseCalendarRoute({ view, date, event, isNew }: { vie
     view: parseView(view),
     date,
   });
-  return <Calendar data={data} initialEvent={event} initialNew={isNew} />;
+  return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} />;
 }

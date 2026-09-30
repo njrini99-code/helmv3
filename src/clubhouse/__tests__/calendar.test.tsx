@@ -56,7 +56,7 @@ async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
 }
-function wrap(data: ChCalendarData, props: { initialEvent?: string; initialNew?: boolean } = {}) {
+function wrap(data: ChCalendarData, props: { initialEvent?: string; initialNew?: boolean; initialWith?: string } = {}) {
   return render(
     <LazyMotion features={domAnimation}>
       <ToastProvider>
@@ -282,6 +282,31 @@ describe('Calendar · saves that fail', () => {
     wrap(cal(), { initialEvent: 'e9' });
     await eventMenu(user, 'Copy link');
     await expectCode('CH-6012', /Couldn't copy the link/);
+  });
+});
+
+describe('Calendar · seeds from other pages', () => {
+  const invitees = () => screen.getAllByRole('checkbox').filter((c) => (c as HTMLInputElement).checked).map((c) => c.closest('label')?.textContent ?? '');
+
+  it('a new event invites the whole team (Home: New event)', async () => {
+    wrap(cal(), { initialNew: true });
+    await screen.findByRole('button', { name: 'Publish event' });
+    expect(invitees()).toHaveLength(PREVIEW_CALENDAR.people.length);
+    expect(screen.getByRole('radio', { name: 'Practice' }).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('Plan 1:1 (?new=1&with=<player>) opens a meeting with only that player invited (D-52)', async () => {
+    wrap(cal(), { initialNew: true, initialWith: 'jonah' });
+    await screen.findByRole('button', { name: 'Publish event' });
+    expect(invitees()).toEqual([expect.stringContaining('Jonah Okafor')]);
+    expect(screen.getByRole('radio', { name: 'Meeting' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByText(/Invite · 1 of/)).toBeTruthy();
+  });
+
+  it('a 1:1 with a player the Calendar does not list invites nobody, never the whole team', async () => {
+    wrap(cal(), { initialNew: true, initialWith: 'not-on-team' });
+    await screen.findByRole('button', { name: 'Publish event' });
+    expect(invitees()).toEqual([]);
   });
 });
 
