@@ -44,7 +44,7 @@ export function cardOf(d: Draft, path: OnboardPath, step: OnboardStep, now: Date
       tag: 'Assistant coach',
       fields: [
         ['Team', team],
-        ['Role', 'Assistant coach'],
+        ['Role', 'Assistant'],
         ['Status', step === 'staffdone' ? 'Full access' : ''],
       ],
       band: team || 'GolfHelm Clubhouse',

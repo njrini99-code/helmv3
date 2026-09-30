@@ -174,7 +174,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
               />
             </div>
             <aside className="ch-ox-side" aria-label={f.path === 'request' ? 'Your request' : 'Your member card'}>
-              <MemberCard face={face} issued={issued} season={season} />
+              <MemberCard face={face} issued={issued && f.path !== 'request'} season={season} />
               <div className="ch-ox-side__cap">
                 <b>{f.path === 'request' ? 'Your request' : 'Your member card'}</b>
                 <span>{issued ? 'Issued today' : step === 'intro' ? 'Fills in as you go' : 'Updates as you answer'}</span>
