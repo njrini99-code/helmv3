@@ -123,10 +123,10 @@ Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 20
     - `/my-qualifiers` opens the same list filtered to their entries, rendered in place (D-23).
   - Trade-off: the player marks (the "You" row, their standing) are not drawn.
   - Alternative: coaches first, and players wait for a player design.
-- Q-6 The player's main action, entering a qualifier round (`/rounds/new?qualifier=`), isn't rebuilt, and `rebuiltHref` would hide it.
-  - Recommended: the player view (Q-5) ships together with Round entry, and the coach page ships first.
-  - Trade-off: players with the flag on keep the not-rebuilt notice for qualifiers until then.
-  - Alternative: ship the player page read-only without the action. That loses the reason players open it.
+- Q-6 The player's main action, entering a qualifier round (`/rounds/new?qualifier=`), isn't rebuilt, and `rebuiltHref` would hide it. With the flag on, `/rounds/new` already shows the not-rebuilt notice (`NotRebuilt`, CH-1301, a link back to Home), so today's flag-on players can't enter a round anywhere in Clubhouse.
+  - Recommended: ship the read-only player view (Q-5) with the coach page, and add Enter round when Round entry is rebuilt.
+  - Trade-off: players see their standing but enter rounds only with the flag off until then. That is no worse than the notice they get now.
+  - Alternative: hold the player view until Round entry is rebuilt. Round entry has no design yet, so players would have no Qualifiers in Clubhouse until one is designed and built.
 - Q-7 Close and Reopen map to `updateQualifierStatus` (`completed`, `in_progress`). The design's closed notice says "Rounds already started can still be submitted". Live `submit_round_atomic` refuses every round linked to a completed qualifier, including a started one. The `golf.ts` comment says that refusal was removed on 2026-08-31; the feature doc says it stays.
   - Recommended: the copy follows the live rule: "Players can't enter or submit rounds until you reopen it."
   - Also recommended: Reopen shows on every completed qualifier. The design has it only right after a close; the feature doc requires a way back.
