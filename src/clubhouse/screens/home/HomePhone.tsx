@@ -338,10 +338,17 @@ export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; n
 }
 
 function Rounds({ data, onOpen }: { data: ChCoachHome['latestRounds']; onOpen: (r: ChLatestRound) => void }) {
+  const teamStats = rebuiltHref('/golf/dashboard/stats');
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-rounds">
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-rounds">Latest rounds</h2>
+        {/* The board's "All": a coach has no rounds library, so it opens Team stats and says so (Q-79). */}
+        {teamStats && data.rounds.length > 0 && !data.error && (
+          <Link href={teamStats} className="ch-hm-link">
+            Team stats
+          </Link>
+        )}
       </div>
       {data.error ? (
         <RefreshNotice code="CH-2202" title="Recent rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." />

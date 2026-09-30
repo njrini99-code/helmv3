@@ -753,6 +753,15 @@ describe('Home · the phone, the page’s own contracts', () => {
     expect(within(sheet).getByRole('link', { name: 'Player stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
   });
 
+  it("20103 on the phone the Latest rounds header opens Team stats (the board's All, Q-79), and only when there are rounds", () => {
+    const { unmount } = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const header = document.getElementById('ch-hm-rounds')!.parentElement!;
+    expect(within(header).getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
+    unmount();
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [] } }} now={PREVIEW_HOME_NOW} />);
+    expect(within(document.getElementById('ch-hm-rounds')!.parentElement!).queryByRole('link')).toBeNull();
+  });
+
   it('20103 on the phone a round with a real id opens its review from the card (Round recap)', async () => {
     const user = userEvent.setup();
     const [first, ...others] = PREVIEW_HOME.latestRounds.rounds;

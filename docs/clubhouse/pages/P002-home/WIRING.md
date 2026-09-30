@@ -55,7 +55,7 @@ Each action's record is in `config/clubhouse/pages/P002-home.json` (`actions`), 
 | ACT-P002-OPEN-WEEK-DAY | A day in the week strip (phone) | `WeekStrip` | none | none | links 20103 · read as words 21802 |
 | ACT-P002-PAGE-ROUNDS | Previous, Next round | `step` in `LatestRound`; the pager in `PlayerHomePhone` | none | none | tick 21701, 21703 · position announced 21804 |
 | ACT-P002-OPEN-ROUND | A latest round (coach phone) | `RoundSheet` via `Rounds` | none | none | links 20103 · tick 21703 · breadcrumb 22301 · posted as a total 20403 · holes fail 20603 |
-| ACT-P002-OPEN-PLAYER-STATS | A leaderboard row, the latest round's stats link (coach) | links in `Leaderboard.Row` and `LatestRound` | none | none | links 20103 · hover and press 21602 |
+| ACT-P002-OPEN-PLAYER-STATS | A leaderboard row, the latest round's stats link (coach), the phone Latest rounds header's Team stats (Q-79) | links in `Leaderboard.Row`, `LatestRound` and `Rounds` (phone) | none | none | links 20103 · hover and press 21602 |
 | ACT-P002-MESSAGE-COACH | Message coach (player) | link built by `messageCoachHref` | `coachFor` (in `loadPlayerHome`) | golf_teams, golf_coaches | coach found 20805 · links 20103 · tap 21703 · Messages side 70801 (CH-7001) |
 | ACT-P002-CHOOSE-SCORING-WINDOW | Rounds shown: Last 5, 10, 20 (player) | `Segmented` in `Scoring` | none | none | tick 21703 · too few rounds 20410 |
 | ACT-P002-TRY-AGAIN | Try again on a notice | `RefreshNotice` -> `router.refresh` | none | none | 21402 · pending 21401 · offline 10704 · week fails 20601 |
