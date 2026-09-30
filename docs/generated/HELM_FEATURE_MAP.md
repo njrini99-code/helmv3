@@ -201,7 +201,7 @@ is a second thing to keep true.
 **Recruiting HQ** · active · criticality medium · owner product
 
 - **Behaviour:** `memory/features/recruiting.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/app/golf/actions/recruiting.ts`, `src/app/golf/actions/recruit-documents.ts`, `src/app/golf/actions/recruit-documents-categories.ts`, `supabase/migrations/*golf_recruits*.sql` … and 1 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/clubhouse/screens/recruiting/**`, `src/clubhouse/data/recruiting.ts`, `src/clubhouse/data/recruiting-shape.ts`, `src/clubhouse/routes/recruiting.tsx` … and 6 more in the registry
 - **Telemetry:** `recruiting_prospect_tracking` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

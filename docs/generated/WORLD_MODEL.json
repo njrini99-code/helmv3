@@ -579,8 +579,23 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/data/recruiting-shape.ts",
+        "pattern": "src/clubhouse/data/recruiting-shape.ts",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/data/recruiting.ts",
+        "pattern": "src/clubhouse/data/recruiting.ts",
+        "category": "components"
+      },
+      {
         "id": "components:src/clubhouse/routes/qualifiers.tsx",
         "pattern": "src/clubhouse/routes/qualifiers.tsx",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/routes/recruiting.tsx",
+        "pattern": "src/clubhouse/routes/recruiting.tsx",
         "category": "components"
       },
       {
@@ -591,6 +606,11 @@
       {
         "id": "components:src/clubhouse/screens/qualifiers/**",
         "pattern": "src/clubhouse/screens/qualifiers/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/screens/recruiting/**",
+        "pattern": "src/clubhouse/screens/recruiting/**",
         "category": "components"
       },
       {
@@ -2074,6 +2094,11 @@
       {
         "id": "tests:src/clubhouse/__tests__/qualifiers.test.tsx",
         "pattern": "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/recruiting.test.tsx",
+        "pattern": "src/clubhouse/__tests__/recruiting.test.tsx",
         "category": "tests"
       },
       {
@@ -19562,6 +19587,54 @@
     },
     {
       "source": "recruiting",
+      "target": "components:src/clubhouse/data/recruiting-shape.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/recruiting-shape.ts"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "components:src/clubhouse/data/recruiting.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/recruiting.ts"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "components:src/clubhouse/routes/recruiting.tsx",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/routes/recruiting.tsx"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "components:src/clubhouse/screens/recruiting/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/recruiting/**"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
       "target": "components:src/components/fairway/pages/recruiting/**",
       "kind": "feature_component",
       "evidence": [
@@ -19616,6 +19689,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/recruiting/**"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "tests:src/clubhouse/__tests__/recruiting.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/recruiting.test.tsx"
         }
       ]
     },
