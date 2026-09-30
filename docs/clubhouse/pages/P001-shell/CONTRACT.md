@@ -73,6 +73,7 @@ Mark all read fails (10601); the bell's list doesn't load (10602); the five rout
 | 10607 | CH-1206 | `ANYTHING_ELSE_CRASHED_THE_PAGE` | Anything else crashed the page |
 | 10608 | CH-1207 | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | The sidebar's next event doesn't load |
 | 10609 | CH-1208 | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | The Roster badge's join requests don't load |
+| 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's More sheet fails |
 
 ## 07 — Network / offline
 

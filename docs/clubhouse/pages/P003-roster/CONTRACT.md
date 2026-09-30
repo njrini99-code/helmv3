@@ -96,7 +96,7 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30615 | CH-3208 | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | Focus areas or goals don't load |
 | 30616 | CH-3209 | `THIS_COACHS_NOTES_DONT_LOAD` | This coach's notes don't load |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002.
 
 ## 07 — Network / offline
 

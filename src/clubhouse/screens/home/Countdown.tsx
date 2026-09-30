@@ -19,14 +19,15 @@ export function Countdown({ to, frozen }: { to: string; frozen?: string }) {
   const left = Math.floor((Date.parse(to) - now) / 1000);
   if (!(left > 0)) return null;
   const parts: Array<[number, string, string]> = [
-    [Math.floor(left / 86400), 'd', 'days'],
-    [Math.floor((left % 86400) / 3600), 'h', 'hours'],
-    [Math.floor((left % 3600) / 60), 'm', 'minutes'],
-    [left % 60, 's', 'seconds'],
+    [Math.floor(left / 86400), 'd', 'day'],
+    [Math.floor((left % 86400) / 3600), 'h', 'hour'],
+    [Math.floor((left % 3600) / 60), 'm', 'minute'],
+    [left % 60, 's', 'second'],
   ];
+  const said = ([v, , name]: [number, string, string]) => `${v} ${name}${v === 1 ? '' : 's'}`;
   return (
     // The seconds tick visually only; a screen reader hears the days, hours and minutes once.
-    <span className="ch-cd" role="timer" aria-label={`Starts in ${parts[0]![0]} days, ${parts[1]![0]} hours and ${parts[2]![0]} minutes`}>
+    <span className="ch-cd" role="timer" aria-label={`Starts in ${said(parts[0]!)}, ${said(parts[1]!)} and ${said(parts[2]!)}`}>
       {parts.map(([v, s]) => (
         <span key={s} aria-hidden="true">
           <b className="ch-num">{String(v).padStart(2, '0')}</b>

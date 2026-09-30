@@ -191,6 +191,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10610,
+    "page": "P001",
+    "category": 6,
+    "item": 10,
+    "name": "SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET",
+    "chCode": "CH-1002",
+    "meaning": "Signing out from the phone's More sheet fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -726,6 +737,46 @@
     ]
   },
   {
+    "id": 20101,
+    "page": "P002",
+    "category": 1,
+    "item": 1,
+    "name": "COACH_HOME_READY",
+    "meaning": "Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/home/CoachHome.tsx#CoachHome; src/clubhouse/data/home.ts#loadCoachHome",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx"
+    ]
+  },
+  {
+    "id": 20102,
+    "page": "P002",
+    "category": 1,
+    "item": 2,
+    "name": "PLAYER_HOME_READY",
+    "meaning": "Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
+    "tests": [
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 20103,
+    "page": "P002",
+    "category": 1,
+    "item": 3,
+    "name": "LINKS_OPEN_WHAT_THEY_NAME",
+    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions; src/clubhouse/screens/home/HomePhone.tsx#UpNext, Today, WeekStrip, NoEvents, RoundSheet; src/clubhouse/screens/home/Leaderboard.tsx#Row; src/clubhouse/screens/home/LatestRound.tsx#LatestRound; src/clubhouse/screens/home/player-links.ts",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
     "id": 20201,
     "page": "P002",
     "category": 2,
@@ -735,6 +786,20 @@
     "meaning": "Home is loading",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20301,
+    "page": "P002",
+    "category": 3,
+    "item": 1,
+    "name": "CLOCK_KEEPS_TIME",
+    "meaning": "The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-now.ts#useNow; src/clubhouse/screens/home/HomePhone.tsx#whenLabel; src/clubhouse/screens/home/Countdown.tsx#Countdown",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
   },
   {
     "id": 20401,
@@ -1067,6 +1132,98 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20618,
+    "page": "P002",
+    "category": 6,
+    "item": 18,
+    "name": "UNKNOWN_TIMEZONE_READS_AS_EASTERN",
+    "meaning": "A stored team timezone that is not a real zone reads like a missing one: the date, greeting and week are read in Eastern time, the bad value is logged as clubhouse.home.timezone, and Home still opens instead of failing the page.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/home.ts#homeClock",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx"
+    ]
+  },
+  {
+    "id": 20801,
+    "page": "P002",
+    "category": 8,
+    "item": 1,
+    "name": "ROLE_PICKS_THE_HOME",
+    "meaning": "/golf/dashboard hands a coach with the Clubhouse flag on Coach Home and a player with it on Player Home, and everyone else the existing GolfHelm dashboard; a session holding both profiles is treated as a coach, no session is sent to sign in, and a session with neither profile to sign up.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/page.tsx#GolfDashboardPage; src/clubhouse/gate.ts#isClubhouseFor",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx"
+    ]
+  },
+  {
+    "id": 20802,
+    "page": "P002",
+    "category": 8,
+    "item": 2,
+    "name": "TEAM_COMES_FROM_THE_SESSION",
+    "meaning": "The team Home reads is the coach's active team or the player's own active membership, taken from the session and never from the address; with no team nothing is read and the no-team page shows (CH-2307, CH-2313), and a player membership read that fails is the error page with Try again, never the no-team page.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/page.tsx#GolfDashboardPage; src/clubhouse/routes/team.ts#resolveClubhouseTeam",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx"
+    ]
+  },
+  {
+    "id": 20803,
+    "page": "P002",
+    "category": 8,
+    "item": 3,
+    "name": "PLAYER_READS_ONLY_OWN_ROUNDS",
+    "meaning": "Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/player-home.ts#loadPlayerHome",
+    "tests": [
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 20804,
+    "page": "P002",
+    "category": 8,
+    "item": 4,
+    "name": "PLAYER_WEEK_NAMES_NO_ONE",
+    "meaning": "A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 confirmed), and no teammate's name or id is in what the page receives.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/player-home.ts#loadPlayerHome (names: new Map()); src/clubhouse/data/home.ts#loadHomeWeek",
+    "tests": [
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 20805,
+    "page": "P002",
+    "category": 8,
+    "item": 5,
+    "name": "MESSAGE_COACH_FINDS_THE_TEAMS_COACH",
+    "meaning": "Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801).",
+    "status": "implemented",
+    "where": "src/clubhouse/data/player-home.ts#coachFor; src/clubhouse/screens/home/player-links.ts#messageCoachHref",
+    "tests": [
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 20806,
+    "page": "P002",
+    "category": 8,
+    "item": 6,
+    "name": "CONTROLS_STAY_WITH_THEIR_ROLE",
+    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
     "id": 21401,
     "page": "P002",
     "category": 14,
@@ -1076,6 +1233,19 @@
     "meaning": "Try again was pressed on a section",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 21402,
+    "page": "P002",
+    "category": 14,
+    "item": 2,
+    "name": "TRY_AGAIN_ASKS_THE_SERVER_AGAIN",
+    "meaning": "Try again on a section that did not load asks the server for the whole page again (router.refresh) and, offline, says so and asks nothing; a section that crashed only draws itself again and does not ask the server.",
+    "status": "implemented",
+    "where": "src/clubhouse/ui/RefreshNotice.tsx#RefreshNotice; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary; src/clubhouse/ui/Notices.tsx#InlineNotice",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx"
+    ]
   },
   {
     "id": 21601,
@@ -1120,6 +1290,20 @@
     "meaning": "New event (button or the N key)",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 21703,
+    "page": "P002",
+    "category": 17,
+    "item": 3,
+    "name": "TAPS_FOLLOW_THE_GRAMMAR",
+    "meaning": "Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/home/HomeActions.tsx; src/clubhouse/screens/home/HomePhone.tsx; src/clubhouse/screens/home/PlayerHomePhone.tsx; src/clubhouse/screens/home/LatestRound.tsx; src/clubhouse/screens/home/PlayerGame.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
   },
   {
     "id": 21801,
@@ -1186,6 +1370,74 @@
     "meaning": "On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 21807,
+    "page": "P002",
+    "category": 18,
+    "item": 7,
+    "name": "COUNTDOWN_IS_A_NAMED_TIMER",
+    "meaning": "The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/home/Countdown.tsx#Countdown",
+    "tests": [
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 21901,
+    "page": "P002",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_HOME",
+    "meaning": "At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, My latest round, Scoring and the parts of the game; wider canvases get the desktop Home.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/home/HomePhone.tsx#HomePhone; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/lib/use-phone.ts#useChPhone",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 22101,
+    "page": "P002",
+    "category": 21,
+    "item": 1,
+    "name": "LOADERS_NEVER_THROW",
+    "meaning": "Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', <read>) and flagged on its own section instead of throwing, so one failed read never takes the page down.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/home.ts#loadCoachHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 22301,
+    "page": "P002",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', <read>), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
+    "status": "implemented",
+    "where": "src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/data/home.ts; src/clubhouse/data/player-home.ts; src/clubhouse/screens/home/HomeActions.tsx; src/clubhouse/screens/home/HomePhone.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
+    ]
+  },
+  {
+    "id": 22401,
+    "page": "P002",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/home.test.tsx and player-home.test.tsx name in a test title every Home catalog code of kinds 0 to 5 that is not marked preview, and each hand contract on this page.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/home.test.tsx (22401)",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx"
+    ]
   },
   {
     "id": 30101,

@@ -1,20 +1,54 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/** Home: every numbered state in docs/clubhouse/catalog/home.md, found by its number. */
+/**
+ * Home: every numbered state in docs/clubhouse/catalog/home.md, found by its number,
+ * and the page's own contracts (docs/clubhouse/pages/P002-home/CONTRACT.md), found by
+ * their five-digit Bridge ID. Player Home's states are in player-home.test.tsx.
+ */
 
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => router }));
+const redirectSpy = vi.hoisted(() =>
+  vi.fn((to: string): never => {
+    throw new Error(`NEXT_REDIRECT ${to}`);
+  }),
+);
+vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectSpy }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 
+// The dashboard page (src/app/golf/(dashboard)/dashboard/page.tsx) is the route: its session, flag and team
+// resolvers are the only things faked. The loaders and screens under it are the real ones.
+const session = vi.hoisted(() => ({ current: null as unknown }));
+const flag = vi.hoisted(() => ({ coach: true, player: true }));
+const requestCache = vi.hoisted(() => ({ coachTeam: vi.fn(), playerTeam: vi.fn() }));
+vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => session.current }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: 'coach' | 'player') => flag[role] }));
+vi.mock('@/lib/golf/dashboard-request-cache', () => ({ resolveCoachActiveTeamIdForRequest: requestCache.coachTeam, getActivePlayerTeamMembership: requestCache.playerTeam }));
+vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
+vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
+// The existing dashboards are stubs named for what they stand in for; the test only asks which one the page chose.
+vi.mock('@/components/fairway/pages/dashboard/FairwayCoachDashboard', () => ({ FairwayCoachDashboard: Object.assign(() => null, { displayName: 'ExistingCoachDashboard' }) }));
+vi.mock('@/components/fairway/pages/dashboard/FairwayPlayerDashboard', () => ({ FairwayPlayerDashboard: Object.assign(() => null, { displayName: 'ExistingPlayerDashboard' }) }));
+vi.mock('@/app/golf/actions/dashboard-data', () => ({
+  getCachedCoachDashboardData: async () => ({ teamName: 'Varsity', joinCode: 'ABC', stats: {}, recentRounds: [], topPlayers: [], calendarEvents: [], teamScoringTrend: [], timezone: 'America/New_York' }),
+  getCachedPlayerDashboardData: async () => ({ teamName: 'Varsity', stats: { handicap: null }, recentRounds: [], timezone: 'America/New_York' }),
+}));
+vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: async () => ({ success: false }) }));
+vi.mock('@/app/golf/actions/player-hub-data', () => ({ getPlayerHubSummaryData: async () => null }));
+vi.mock('@/app/golf/actions/teams', () => ({ getTeamJoinRequests: async () => ({ success: true, data: [] }) }));
+
+import GolfDashboardPage from '@/app/golf/(dashboard)/dashboard/page';
 import { loadCoachHome, teamForm, type ChCoachHome } from '../data/home';
 import { CoachHome, CoachHomeNoTeam, isFirstRun } from '../screens/home/CoachHome';
 import { HomeActions } from '../screens/home/HomeActions';
@@ -22,9 +56,11 @@ import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { LatestRound } from '../screens/home/LatestRound';
 import { Leaderboard } from '../screens/home/Leaderboard';
 import { Week, dayLabel } from '../screens/home/Week';
+import { PlayerHome, PlayerHomeNoTeam } from '../screens/home/PlayerHome';
+import { chReport, chTrail } from '../lib/track';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
-import { PREVIEW_HOME, PREVIEW_HOME_NOW } from '../preview/fixtures';
+import { PREVIEW_HOME, PREVIEW_HOME_NOW, PREVIEW_HOME_NO_EVENTS } from '../preview/fixtures';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -56,11 +92,14 @@ beforeEach(() => {
   hapticSpy.mockClear();
   logServer.mockClear();
   router.push.mockClear();
+  router.refresh.mockClear();
+  vi.mocked(chReport).mockClear();
+  vi.mocked(chTrail).mockClear();
   tables.current = {};
 });
 
 describe('Home · reads that fail', () => {
-  it('CH-2201 the week does not load: a notice with Try again, never an empty week', async () => {
+  it('CH-2201 21402 the week does not load: a notice with Try again, never an empty week', async () => {
     tables.current = { golf_events: { error: { message: 'boom' } } };
     const data = await load();
     expect(data.week.error).toBe(true);
@@ -109,7 +148,7 @@ describe('Home · reads that fail', () => {
     quiet.mockRestore();
   });
 
-  it('CH-2208 the team chat does not load: Message team opens Messages instead', async () => {
+  it('CH-2208 20103 the team chat does not load: Message team opens Messages instead', async () => {
     tables.current = { golf_conversations: { error: { message: 'boom' } } };
     const data = await load();
     expect(data.teamChatId).toBeNull();
@@ -192,7 +231,7 @@ describe('Home · loading, motion, haptics, accessibility', () => {
     expect(screen.getByText('2 of 3')).toBeTruthy();
   });
 
-  it('CH-2702 CH-2801 N opens a new event, but not while typing', async () => {
+  it('CH-2702 CH-2801 21703 N opens a new event with the light tap, but not while typing', async () => {
     const user = userEvent.setup();
     wrap(
       <>
@@ -240,7 +279,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
-  it('the hero: date, greeting, brief, and Up next with its countdown and replies, opening the event in Calendar', () => {
+  it('20101 20103 21901 the hero: date, greeting, brief, and Up next with its countdown and replies, opening the event in Calendar', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya.' })).toBeTruthy();
     const next = document.querySelector('a.ch-hm-next') as HTMLAnchorElement;
@@ -251,7 +290,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(next.querySelector('.is-soon')).not.toBeNull();
   });
 
-  it('Today: a timeline, with overlaps marked and each row opening its event', () => {
+  it('20103 Today: a timeline, with overlaps marked and each row opening its event', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     const rows = document.querySelectorAll('.ch-hm-tl__r');
     expect(rows).toHaveLength(4);
@@ -269,7 +308,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(screen.getByRole('img', { name: /Team scoring, a five-round average/ })).toBeTruthy();
   });
 
-  it('CH-2701 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
+  it('CH-2701 20103 21703 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
     const user = userEvent.setup();
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
@@ -287,7 +326,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     await expectCode('CH-2303', /Posted as a total/);
   });
 
-  it('CH-2309 nothing ahead: Up next says so, with quick types that open the editor on that type', () => {
+  it('CH-2309 20103 nothing ahead: Up next says so, with quick types that open the editor on that type', () => {
     const base = PREVIEW_HOME;
     wrap(
       <CoachHome
@@ -376,5 +415,404 @@ describe('Home · the team’s form (teamForm)', () => {
   it('makes no comparison with fewer than five rounds before, and nothing with no rounds', () => {
     expect(teamForm(Array.from({ length: 12 }, () => r(73)), 0)!.delta).toBeNull();
     expect(teamForm([], 0)).toBeNull();
+  });
+});
+
+describe('Home · the loader', () => {
+  const boom = { error: { message: 'boom' } };
+  const roundRow = (i: number) => ({
+    id: `r${i}`,
+    player_id: 'p1',
+    course_name: 'Finley GC',
+    tees_played: null,
+    round_date: `2026-09-${String(28 - i).padStart(2, '0')}`,
+    round_type: 'practice',
+    total_score: 72,
+    score_to_par: 0,
+    front_nine: 36,
+    back_nine: 36,
+    holes_played: 18,
+    total_putts: 30,
+    total_gir: 11,
+    total_gir_possible: 18,
+    total_fairways_hit: 9,
+    total_fairways: 14,
+    strokes_gained_total: 0.5,
+    strokes_gained_tee: 0,
+    strokes_gained_approach: 0,
+    strokes_gained_around_green: 0,
+    strokes_gained_putting: 0,
+  });
+  const onePlayer = { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } }] };
+
+  it('22101 a failed read never throws: the page still loads, each section says it failed, and every read is logged', async () => {
+    // The roster, the week and the team chat fail together.
+    tables.current = { golf_team_settings: boom, golf_team_members: boom, golf_conversations: boom, golf_events: boom };
+    const gone = await load();
+    expect(gone.week.error).toBe(true);
+    expect(gone.latestRounds.error).toBe(true);
+    expect(gone.leaderboard.error).toBe(true);
+    expect(gone.teamChatId).toBeNull();
+    expect(gone.subline).toBeNull();
+    expect(gone.phone.form).toBeNull();
+    for (const read of ['timezone', 'roster', 'team chat', 'events']) logged(read);
+
+    // The season's rounds fail: the roster stays, and so does the count that says how many players there are.
+    logServer.mockClear();
+    tables.current = { golf_team_members: onePlayer, golf_rounds: boom };
+    const noRounds = await load();
+    logged('rounds');
+    expect(noRounds.leaderboard).toMatchObject({ error: true, rosterSize: 1, rows: [] });
+    expect(noRounds.latestRounds.error).toBe(true);
+    expect(noRounds.week.error).toBe(false);
+
+    // The rounds load and their hole-by-hole scores do not: the totals stay.
+    logServer.mockClear();
+    tables.current = { golf_team_members: onePlayer, golf_rounds: { data: [roundRow(0), roundRow(1)] }, golf_holes: boom };
+    const noHoles = await load();
+    logged('holes');
+    expect(noHoles.latestRounds).toMatchObject({ error: false, holesError: true });
+    expect(noHoles.latestRounds.rounds.map((x) => x.score)).toEqual([72, 72]);
+    expect(noHoles.leaderboard.rows).toHaveLength(1);
+  });
+
+  it('20618 a stored timezone that is not a real zone reads like a missing one: Eastern, logged, and Home still opens', async () => {
+    tables.current = { golf_team_settings: { data: { timezone: 'Mars/Olympus' } } };
+    const data = await load();
+    logged('timezone');
+    const et = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/New_York', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+    expect(data.todayLabel).toBe(et);
+    expect(data.week.days.some((d) => d.isToday)).toBe(true);
+  });
+});
+
+// ── The route: /golf/dashboard hands each role its Home ──
+// The page is the real one; only the session, the flag and the request-scoped team resolvers are faked.
+
+type PageEl = ReactElement<{ data: { greeting: string }; children: ReactElement }>;
+/** Which existing dashboard a page element wraps (the stubs above carry a displayName). */
+const existing = (el: PageEl) => (el.props.children.type as { displayName?: string }).displayName;
+const visit = async (params: { range?: string } = {}) => (await GolfDashboardPage({ searchParams: Promise.resolve(params) })) as PageEl;
+const coachSession = (over: Record<string, unknown> = {}) => ({ userId: 'u-coach', coach: { id: 'c1', organization_id: 'o1', full_name: 'Maya Reyes', avatar_url: null, ...over }, player: null });
+const playerSession = { userId: 'u-player', coach: null, player: { id: 'p-1', first_name: 'Theo', last_name: 'Marchetti', avatar_url: null } };
+type Reads = Array<{ table: string; filters: Array<[string, unknown[]]> }>;
+/** Every table answers empty, and every read is written down, with its filters. */
+function recordReads(): Reads {
+  const reads: Reads = [];
+  tables.current = new Proxy({} as import('./supabase-fake').ChFakeTables, {
+    get: (_t, table: string) => (filters: Array<[string, unknown[]]>) => {
+      reads.push({ table, filters: [...filters] });
+      return { data: null };
+    },
+  });
+  return reads;
+}
+const eqValues = (reads: Reads, column: string) => new Set(reads.flatMap((r) => r.filters).filter(([k, a]) => k === 'eq' && a[0] === column).map(([, a]) => a[1]));
+
+describe('Home · which Home a viewer gets', () => {
+  beforeEach(() => {
+    flag.coach = true;
+    flag.player = true;
+    session.current = null;
+    requestCache.coachTeam.mockReset();
+    requestCache.playerTeam.mockReset();
+    redirectSpy.mockClear();
+  });
+
+  it('20801 a coach with the Clubhouse flag on gets Coach Home, and the existing dashboard with it off', async () => {
+    session.current = coachSession();
+    requestCache.coachTeam.mockResolvedValue('t-coach');
+    const el = await visit();
+    expect(el.type).toBe(CoachHome);
+    expect(el.props.data.greeting).toMatch(/, Maya\.$/);
+    flag.coach = false;
+    const old = await visit();
+    expect(old.type).not.toBe(CoachHome);
+    expect(existing(old)).toBe('ExistingCoachDashboard');
+  });
+
+  it('20801 a player with the Clubhouse flag on gets Player Home, and the existing dashboard with it off', async () => {
+    session.current = playerSession;
+    requestCache.playerTeam.mockResolvedValue({ data: { team_id: 't-player' }, error: null });
+    const el = await visit();
+    expect(el.type).toBe(PlayerHome);
+    expect(el.props.data.greeting).toMatch(/, Theo\.$/);
+    flag.player = false;
+    const old = await visit();
+    expect(old.type).not.toBe(PlayerHome);
+    expect(existing(old)).toBe('ExistingPlayerDashboard');
+  });
+
+  it('20801 a session holding both profiles gets the coach’s Home and never Player Home, even with the coach flag off', async () => {
+    session.current = { ...coachSession(), player: playerSession.player };
+    requestCache.coachTeam.mockResolvedValue('t-coach');
+    expect((await visit()).type).toBe(CoachHome);
+    flag.coach = false;
+    const old = await visit();
+    expect(existing(old)).toBe('ExistingCoachDashboard');
+    expect(requestCache.playerTeam).not.toHaveBeenCalled();
+  });
+
+  it('20801 no session is sent to sign in, and a session with neither profile to sign up', async () => {
+    await expect(visit()).rejects.toThrow('NEXT_REDIRECT /golf/login');
+    session.current = { userId: 'u-none', coach: null, player: null };
+    await expect(visit()).rejects.toThrow('NEXT_REDIRECT /golf/signup');
+  });
+
+  it('20802 Coach Home reads the team the session resolves to; nothing in the address can point it at another team', async () => {
+    session.current = coachSession();
+    requestCache.coachTeam.mockResolvedValue('t-coach');
+    const reads = recordReads();
+    await visit({ team: 't-other', range: '7d' } as { range?: string });
+    expect(requestCache.coachTeam).toHaveBeenCalledWith('o1', 'c1');
+    expect(reads.length).toBeGreaterThan(0);
+    expect(eqValues(reads, 'team_id')).toEqual(new Set(['t-coach']));
+  });
+
+  it('20802 Player Home reads the team of the player’s own active membership, and only that player', async () => {
+    session.current = playerSession;
+    requestCache.playerTeam.mockResolvedValue({ data: { team_id: 't-player' }, error: null });
+    const reads = recordReads();
+    await visit({ team: 't-other' } as { range?: string });
+    expect(requestCache.playerTeam).toHaveBeenCalledWith('p-1');
+    expect(eqValues(reads, 'team_id')).toEqual(new Set(['t-player']));
+    expect(eqValues(reads, 'id')).toEqual(new Set(['p-1', 't-player']));
+  });
+
+  it('20802 CH-2307 CH-2313 with no team, a coach and a player get the no-team page and nothing is read', async () => {
+    const reads = recordReads();
+    session.current = coachSession({ organization_id: null });
+    expect((await visit()).type).toBe(CoachHomeNoTeam);
+    expect(requestCache.coachTeam).not.toHaveBeenCalled();
+    session.current = coachSession();
+    requestCache.coachTeam.mockResolvedValue(null);
+    expect((await visit()).type).toBe(CoachHomeNoTeam);
+    session.current = playerSession;
+    requestCache.playerTeam.mockResolvedValue({ data: null, error: null });
+    expect((await visit()).type).toBe(PlayerHomeNoTeam);
+    expect(reads).toEqual([]);
+  });
+
+  it('20802 a player’s membership read that fails is the error page, never "You aren’t on a team yet"', async () => {
+    session.current = playerSession;
+    requestCache.playerTeam.mockResolvedValue({ data: null, error: { message: 'boom' } });
+    await expect(visit()).rejects.toThrow(/membership read failed/);
+    expect(logServer).toHaveBeenCalledWith('route', 'playerTeam', expect.anything(), 'teams');
+  });
+});
+
+/** Links are followed by the browser; a test only reads where they point. */
+const stopNavigation = (e: Event) => e.preventDefault();
+
+describe('Home · Coach Home’s own contracts', () => {
+  beforeEach(() => {
+    document.addEventListener('click', stopNavigation, true);
+  });
+  afterEach(() => {
+    document.removeEventListener('click', stopNavigation, true);
+    vi.restoreAllMocks();
+  });
+
+  it('20101 Coach Home opens with its header, the week beside the latest round, and the leaderboard', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} />);
+    expect(screen.getByRole('heading', { level: 1, name: PREVIEW_HOME.greeting })).toBeTruthy();
+    expect(document.body.textContent).toContain(PREVIEW_HOME.todayLabel);
+    expect(screen.getByText(PREVIEW_HOME.subline!)).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Message team/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /New event/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'This week' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Latest round' })).toBeTruthy();
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    // The phone Home is not drawn on a wide canvas.
+    expect(document.querySelector('.ch-hm')).toBeNull();
+  });
+
+  it('20103 links out of Coach Home open what they name', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} />);
+    const href = (name: string | RegExp) => screen.getByRole('link', { name }).getAttribute('href');
+    expect(href(/Message team/)).toBe('/golf/dashboard/messages?conversation=c-team');
+    expect(href(/New event/)).toBe('/golf/dashboard/calendar?new=1');
+    expect(href('Full roster')).toBe('/golf/dashboard/roster');
+    expect(href("Theo's stats")).toBe('/golf/dashboard/stats?player=theo');
+    // A leaderboard row is a link (its role is row, for the table), to that player's stats.
+    expect(document.querySelector('a.ch-h-lb__row')!.getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+  });
+
+  it('20806 Coach Home draws no player control: no Message coach, no Post a round, no countdown', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} />);
+    expect(screen.queryByRole('link', { name: 'Message coach' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Post a round' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Scoring' })).toBeNull();
+    expect(document.querySelector('.ch-cd')).toBeNull();
+  });
+
+  it('21402 Try again on a failed read asks the server for the whole page again; a crashed section only draws itself again', async () => {
+    const user = userEvent.setup();
+    const failed = wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
+    await user.click(within(code('CH-2204') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    failed.unmount();
+
+    router.refresh.mockClear();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, rows: null as never } })} />);
+    const crashes = vi.mocked(chReport).mock.calls.length;
+    expect(crashes).toBeGreaterThan(0);
+    await user.click(within(code('CH-2207') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    // The section drew again (and crashed again, reported again); the server was not asked.
+    expect(vi.mocked(chReport).mock.calls.length).toBeGreaterThan(crashes);
+    expect(router.refresh).not.toHaveBeenCalled();
+  });
+
+  it('21402 CH-1905 Try again while offline says so and asks nothing', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+    try {
+      wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
+      await user.click(within(code('CH-2204') as HTMLElement).getByRole('button', { name: 'Try again' }));
+      expect(code('CH-1905')!.textContent).toMatch(/You're offline/);
+      expect(router.refresh).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });
+    }
+  });
+
+  it('21703 on the desktop, New event gives the light tap, paging gives a tick, and Message team is silent', async () => {
+    const user = userEvent.setup();
+    wrap(<CoachHome data={PREVIEW_HOME} />);
+    await user.click(screen.getByRole('link', { name: /Message team/ }));
+    expect(hapticSpy).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('link', { name: /New event/ }));
+    expect(hapticSpy.mock.calls).toEqual([['press']]);
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Next round' }));
+    expect(hapticSpy.mock.calls).toEqual([['select']]);
+  });
+
+  it('22301 a section that crashes is reported at high severity under its own surface, and N leaves a breadcrumb', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const broken = home({
+      week: { ...PREVIEW_HOME.week, days: null as never },
+      latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: null as never },
+      leaderboard: { ...PREVIEW_HOME.leaderboard, rows: null as never },
+    });
+    const view = wrap(<CoachHome data={broken} />);
+    for (const surface of ['home.week', 'home.latestRound', 'home.leaderboard']) {
+      expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
+    }
+    view.unmount();
+    wrap(<HomeActions teamChatId="c1" />);
+    await user.keyboard('n');
+    expect(chTrail).toHaveBeenCalledWith('home new event (keyboard)');
+  });
+});
+
+describe('Home · the phone, the page’s own contracts', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    document.addEventListener('click', stopNavigation, true);
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+    document.removeEventListener('click', stopNavigation, true);
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('21901 at 820px and below Home is the phone Home, in its own order, and none of the desktop page', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const main = document.querySelector('main.ch-hm')!;
+    expect(main.getAttribute('aria-label')).toBe('Home');
+    const headings = [...main.querySelectorAll('h2')].map((h) => h.textContent);
+    expect(headings.filter((h) => ['Today', 'This week', 'Latest rounds'].includes(h!))).toEqual(['Today', 'This week', 'Latest rounds']);
+    expect(main.querySelector('.ch-hm-form')).not.toBeNull();
+    expect(document.querySelector('.ch-h-main')).toBeNull();
+    expect(screen.queryByRole('table', { name: 'Leaderboard' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Message team/ })).toBeNull();
+  });
+
+  it('20103 links out of the phone Home open what they name', async () => {
+    const user = userEvent.setup();
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    // A week day opens Calendar's day view.
+    const day = document.querySelector('.ch-hm-week li.is-today a')!;
+    expect(day.getAttribute('href')).toBe('/golf/dashboard/calendar?view=day&date=2026-10-14');
+    // A round opens its card, which links to Messages and to the player's stats (CH-2701).
+    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    expect(within(sheet).getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=theo');
+    expect(within(sheet).getByRole('link', { name: 'Player stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+  });
+
+  it('20103 an empty day offers Plan, which opens the editor', () => {
+    const quietDay = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, today: [] } };
+    wrap(<CoachHome data={quietDay} now={PREVIEW_HOME_NOW} />);
+    expect(screen.getByRole('link', { name: 'Plan' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+  });
+
+  it('20301 the phone’s Up next line keeps time without a reload', () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    vi.setSystemTime(new Date(PREVIEW_HOME_NOW));
+    wrap(<CoachHome data={PREVIEW_HOME} />);
+    const when = () => document.querySelector('a.ch-hm-next .ch-hm-next__when')!.textContent;
+    expect(when()).toBe('In 50 min');
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(when()).toBe('In 49 min');
+    // The tee time (3:30 PM) arrives.
+    act(() => {
+      vi.advanceTimersByTime(49 * 60_000);
+    });
+    expect(when()).toBe('Happening now');
+  });
+
+  it('21703 on the phone a quick event type ticks, Add event gives the light tap, and a round opens with a tick', async () => {
+    const user = userEvent.setup();
+    const none = wrap(<CoachHome data={PREVIEW_HOME_NO_EVENTS} now={PREVIEW_HOME_NOW} />);
+    await user.click(screen.getByRole('link', { name: 'Qualifier' }));
+    expect(hapticSpy.mock.calls).toEqual([['select']]);
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('link', { name: 'Add event' }));
+    expect(hapticSpy.mock.calls).toEqual([['press']]);
+    none.unmount();
+    hapticSpy.mockClear();
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    await user.click(screen.getByRole('button', { name: /Sofia Alvarez/ }));
+    expect(hapticSpy.mock.calls).toEqual([['select']]);
+  });
+
+  it('22301 a phone section that crashes is reported under its own surface; opening Up next or a round leaves a breadcrumb', async () => {
+    const user = userEvent.setup();
+    const view = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    await user.click(document.querySelector('a.ch-hm-next')!);
+    expect(chTrail).toHaveBeenCalledWith('home open next event');
+    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
+    expect(chTrail).toHaveBeenCalledWith('home open round');
+    view.unmount();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const p = PREVIEW_HOME.phone;
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...p, next: { ...p.next!, type: 'nope' as never }, today: null as never, form: { ...p.form!, line: null as never } } }} now={PREVIEW_HOME_NOW} />);
+    for (const surface of ['home.upNext', 'home.today', 'home.form']) {
+      expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
+    }
+  });
+});
+
+describe('Home · this file', () => {
+  it('22401 the tests name every Home catalog code of kinds 0 to 5 that is not preview, and every Bridge ID this page proves', () => {
+    const root = process.cwd();
+    const all = ['home.test.tsx', 'player-home.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8')).join('\n');
+    const titles = all.split('\n').filter((l) => /^\s*(it|describe)(\.each\(.*\))?\(/.test(l));
+    const catalog = readFileSync(join(root, 'docs/clubhouse/catalog/home.md'), 'utf8');
+    const forced = [...catalog.matchAll(/^\|\s*(CH-2[0-5]\d\d)\s*\|.*$/gm)].filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim())).map((m) => m[1]!);
+    // A floor, so an unreadable catalog can't pass by finding nothing (2201 to 2217, 2301 to 2313 and 2401).
+    expect(forced.length).toBeGreaterThanOrEqual(31);
+    expect(forced.filter((c) => !titles.some((l) => l.includes(c)))).toEqual([]);
+    const bridge = JSON.parse(readFileSync(join(root, 'config/clubhouse/bridge-contracts.json'), 'utf8')) as Array<{ id: number; page: string; chCode?: string; status: string }>;
+    const unnamed = bridge.filter((r) => r.page === 'P002' && !r.chCode && r.status === 'implemented').filter((r) => !titles.some((l) => l.includes(String(r.id))));
+    expect(unnamed.map((r) => r.id)).toEqual([]);
   });
 });

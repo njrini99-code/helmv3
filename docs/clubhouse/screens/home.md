@@ -1,7 +1,8 @@
 # Home checklist
 
 Reference: design/handoff/Coach Home v3.html, coach-home-v3.jsx, screenshots/home-01-top.jpg, home-02-leaderboard.jpg
-Route: /golf/dashboard (coach)   Surface tag: `home.<week|latestRound|leaderboard>`
+Route: /golf/dashboard (coach and player)   Surface tag: `home.<week|latestRound|leaderboard|upNext|today|form|game>`
+Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home - Mobile.html (phone spec `phone/home-player.md`)
 
 ## spec
 - [x] Desktop reference files and screenshots are named above

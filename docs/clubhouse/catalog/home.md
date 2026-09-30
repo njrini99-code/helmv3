@@ -1,8 +1,10 @@
 # Home catalog (2xxx)
 
-Route `/golf/dashboard` (coach) · code `src/clubhouse/screens/home/`, loader
-`src/clubhouse/data/home.ts` · tests `src/clubhouse/__tests__/home.test.tsx` · preview
-`/clubhouse-preview/home` (`?state=empty|failed|loading|error`).
+Route `/golf/dashboard` (coach and player) · code `src/clubhouse/screens/home/`, loaders
+`src/clubhouse/data/home.ts` (coach) and `src/clubhouse/data/player-home.ts` (player) · tests
+`src/clubhouse/__tests__/home.test.tsx` and `player-home.test.tsx` · preview
+`/clubhouse-preview/home` (`?state=empty|failed|loading|error`) and `/clubhouse-preview/home-player`
+(`?state=empty|noevents|failed|loading`).
 
 Home only reads. It has no saves, so no error toasts (20xx), validation (21xx)
 or confirmations (25xx). Offline, slow and full-page errors are the shell's

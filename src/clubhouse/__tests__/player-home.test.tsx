@@ -1,9 +1,13 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/** Player Home: the player's numbered states in docs/clubhouse/catalog/home.md, found by their number. */
+/**
+ * Player Home: the player's numbered states in docs/clubhouse/catalog/home.md, found by their number,
+ * and the page's own contracts (docs/clubhouse/pages/P002-home/CONTRACT.md), found by their five-digit Bridge ID.
+ * Coach Home's are in home.test.tsx, which also tests the route that hands each role its Home.
+ */
 
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
@@ -19,6 +23,8 @@ import { briefFor, legRows, loadPlayerHome, type ChPlayerHome } from '../data/pl
 import type { ChRound } from '../data/season';
 import { PlayerHome, PlayerHomeNoTeam, isPlayerFirstRun } from '../screens/home/PlayerHome';
 import { scoringNote } from '../screens/home/PlayerGame';
+import { Countdown } from '../screens/home/Countdown';
+import { chReport, chTrail } from '../lib/track';
 import { PhoneChromeProvider } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
@@ -74,11 +80,17 @@ beforeEach(() => {
   hapticSpy.mockClear();
   logServer.mockClear();
   router.push.mockClear();
+  router.refresh.mockClear();
+  vi.mocked(chReport).mockClear();
+  vi.mocked(chTrail).mockClear();
   tables.current = {};
 });
 
+/** Links are followed by the browser; a test only reads where they point. */
+const stopNavigation = (e: Event) => e.preventDefault();
+
 describe('Player Home · desktop (Player - Home.html)', () => {
-  it('the day, the brief, Message coach to the coach’s thread; Post a round waits for round entry', () => {
+  it('20102 20103 the day, the brief, Message coach to the coach’s thread; Post a round waits for round entry', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
     expect(screen.getByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeTruthy();
@@ -87,15 +99,18 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(screen.queryByRole('link', { name: 'Post a round' })).toBeNull();
   });
 
-  it('Up next sits in the week with a countdown to the tee time', () => {
+  it('20103 21807 Up next sits in the week with a countdown to the tee time', () => {
     show();
     const next = screen.getByRole('link', { name: /Up next · Qualifier/ });
     expect(next.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-16&event=q1');
     // 14 Oct 18:40Z to 16 Oct 12:42Z: 1 day, 18 hours, 2 minutes.
-    expect(within(next).getByRole('timer', { name: 'Starts in 1 days, 18 hours and 2 minutes' })).toBeTruthy();
+    const timer = within(next).getByRole('timer', { name: 'Starts in 1 day, 18 hours and 2 minutes' });
+    // The digits, the ticking seconds included, are hidden from a screen reader: it hears the timer's name once.
+    expect(timer.querySelectorAll('[aria-hidden="true"]')).toHaveLength(4);
+    expect([...timer.children].every((c) => c.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
-  it('My latest round: the course, a flag not an avatar, and My stats', async () => {
+  it('20103 My latest round: the course, a flag not an avatar, and My stats', async () => {
     const user = userEvent.setup();
     show();
     expect(screen.getByRole('heading', { level: 2, name: 'My latest round' })).toBeTruthy();
@@ -107,7 +122,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(await screen.findByText('Pine Needles')).toBeTruthy();
   });
 
-  it('Scoring: last 10 by default, the figures follow the window, the note reads the rounds', async () => {
+  it('21703 Scoring: last 10 by default, the figures follow the window with a tick, the note reads the rounds', async () => {
     const user = userEvent.setup();
     show();
     const figs = () => [...document.querySelectorAll('.ch-ph-figs dd:not(.ch-ph-figs__m)')].map((d) => d.textContent);
@@ -179,7 +194,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
-  it('the hero: Up next with its countdown, and Message coach', () => {
+  it('20102 20103 21901 the hero: Up next with its countdown, and Message coach', () => {
     show();
     const next = screen.getByRole('link', { name: /Pinehurst No\. 2/ });
     expect(within(next).getByRole('timer')).toBeTruthy();
@@ -198,7 +213,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     expect(screen.queryByRole('link', { name: 'Plan' })).toBeNull();
   });
 
-  it('My latest round pages inline, with a selection tick', async () => {
+  it('21703 My latest round pages inline, with a selection tick', async () => {
     const user = userEvent.setup();
     show();
     const sec = screen.getByRole('heading', { level: 2, name: 'My latest round' }).closest('section')!;
@@ -213,7 +228,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
 });
 
 describe('Player Home · the loader', () => {
-  it('reads only the player’s own rounds, names no other invitee, and finds the coach', async () => {
+  it('20803 20805 reads only the player’s own rounds, names no other invitee, and finds the coach', async () => {
     const roundsQueries: Array<Array<[string, unknown[]]>> = [];
     tables.current = {
       golf_team_settings: { data: { timezone: 'America/New_York' } },
@@ -242,7 +257,7 @@ describe('Player Home · the loader', () => {
     expect(data.legs!.rows.find((l) => l.key === 'tee')!.d1).toBeNull();
   });
 
-  it('a player’s week names no one: today’s event reads a count, never teammates’ names', async () => {
+  it('20804 a player’s week names no one: today’s event reads a count, never teammates’ names', async () => {
     const d = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     tables.current = {
       golf_team_settings: { data: { timezone: 'America/New_York' } },
@@ -291,6 +306,249 @@ describe('Player Home · the loader', () => {
   it('scoringNote: the score four in five rounds meet', () => {
     const pts = [70, 71, 72, 69, 75].map((score, i) => ({ id: `${i}`, label: '', score, par: 72 }));
     expect(scoringNote(pts)).toBe('Four of your last five are 72 or better.');
+  });
+});
+
+type Filters = Array<[string, unknown[]]>;
+const player = { teamId: 't1', playerId: 'p1', firstName: 'Theo' };
+
+describe('Player Home · what the loader reads and whom it names', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('20803 the tables read are exactly the player’s own and the team’s calendar: no roster, and every round id is theirs', async () => {
+    const seen: Array<{ table: string; filters: Filters }> = [];
+    const answers: Record<string, object> = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: { data: [] },
+      golf_rounds: { data: [round(0), round(1)] },
+      golf_players: { data: { handicap_index: 2.1, handicap: null } },
+      golf_teams: { data: { gender: 'men', created_by: 'c1', organization_id: 'o1' } },
+      golf_coaches: { data: [{ id: 'c1', user_id: 'u1' }] },
+    };
+    // Any table not listed still answers (empty) and is written down, so a new read cannot slip by.
+    tables.current = new Proxy({} as import('./supabase-fake').ChFakeTables, {
+      get: (_t, table: string) => (filters: Filters) => {
+        seen.push({ table, filters: [...filters] });
+        return answers[table] ?? { data: [] };
+      },
+    });
+    await loadPlayerHome(player);
+    expect([...new Set(seen.map((s) => s.table))].sort()).toEqual(
+      ['golf_coaches', 'golf_events', 'golf_holes', 'golf_pga_standards', 'golf_players', 'golf_round_stats_cache', 'golf_rounds', 'golf_team_settings', 'golf_teams'].sort(),
+    );
+    const filtersOf = (table: string) => seen.filter((s) => s.table === table).flatMap((s) => s.filters);
+    expect(filtersOf('golf_rounds')).toContainEqual(['in', ['player_id', ['p1']]]);
+    expect(filtersOf('golf_players')).toContainEqual(['eq', ['id', 'p1']]);
+    expect(filtersOf('golf_holes')).toContainEqual(['in', ['round_id', ['r0', 'r1']]]);
+    expect(filtersOf('golf_round_stats_cache')).toContainEqual(['in', ['round_id', ['r0', 'r1']]]);
+    expect(filtersOf('golf_coaches')).toContainEqual(['eq', ['organization_id', 'o1']]);
+  });
+
+  it('20804 a player’s payload holds no teammate’s name or id, and a competition later in the week reads a count', async () => {
+    // Monday 12 October, noon in New York.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-12T16:00:00Z'));
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: {
+        data: [
+          { id: 'e1', title: 'Putting ladder', event_type: 'practice', start_time: '2026-10-12T21:30:00Z', end_time: '2026-10-12T22:30:00Z', all_day: false, location: 'Green 2' },
+          { id: 'e2', title: 'Pinehurst qualifier', event_type: 'qualifier', start_time: '2026-10-15T12:42:00Z', end_time: null, all_day: false, location: null },
+        ],
+      },
+      golf_event_attendance: {
+        data: [
+          { id: 'x1', event_id: 'e1', player_id: 'p-priya', status: 'accepted' },
+          { id: 'x2', event_id: 'e1', player_id: 'p-ava', status: 'pending' },
+          { id: 'x3', event_id: 'e2', player_id: 'p-priya', status: 'accepted' },
+          { id: 'x4', event_id: 'e2', player_id: 'p-ava', status: 'pending' },
+        ],
+      },
+      golf_team_members: { data: [{ player: { id: 'p-priya', first_name: 'Priya', last_name: 'Natarajan', graduation_year: 2027 } }] },
+      golf_rounds: { data: [] },
+    };
+    const data = await loadPlayerHome(player);
+    expect(data.week.agenda.map((r) => r.detail)).toEqual(['Green 2 · 2 players', 'First tee 8:42 · 1 of 2 confirmed']);
+    expect(data.today[0]!.invitees).toEqual([]);
+    expect(data.next!.invitees).toEqual([]);
+    expect(JSON.stringify(data)).not.toMatch(/p-priya|p-ava|priya|natarajan/i);
+  });
+
+  it('20805 Message coach goes to the coach who created the team, else a coach with an account, else plain Messages', async () => {
+    const coachesRead: Filters[] = [];
+    const run = async (team: object, coaches: { data?: unknown; error?: unknown }) => {
+      tables.current = {
+        golf_team_settings: { data: { timezone: 'America/New_York' } },
+        golf_events: { data: [] },
+        golf_rounds: { data: [] },
+        golf_teams: { data: team },
+        golf_coaches: (filters) => {
+          coachesRead.push(filters);
+          return coaches;
+        },
+      };
+      return loadPlayerHome(player);
+    };
+    const two = { data: [{ id: 'c-a', user_id: 'u-a' }, { id: 'c-b', user_id: 'u-b' }] };
+    const team = { gender: 'men', created_by: 'c-b', organization_id: 'o1' };
+    expect((await run(team, two)).coachUserId).toBe('u-b');
+    // Only the team's own organisation's coaches, and only ones with an account.
+    expect(coachesRead[0]).toContainEqual(['eq', ['organization_id', 'o1']]);
+    expect(coachesRead[0]).toContainEqual(['not', ['user_id', 'is', null]]);
+    // The creating coach has no account (or has left): the organisation's first.
+    expect((await run({ ...team, created_by: 'c-gone' }, two)).coachUserId).toBe('u-a');
+    // No organisation, no coach with an account, or coaches that don't load: nobody is named.
+    expect((await run({ ...team, organization_id: null }, two)).coachUserId).toBeNull();
+    expect((await run(team, { data: [] })).coachUserId).toBeNull();
+    logServer.mockClear();
+    expect((await run(team, { error: { message: 'boom' } })).coachUserId).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('home', 'coaches', expect.anything());
+  });
+
+  it('20805 Message coach opens the coach’s thread (?user=), or Messages itself when no coach is known', () => {
+    const view = show();
+    expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=coach-maya');
+    view.unmount();
+    show(home({ coachUserId: null }));
+    expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages');
+  });
+
+  it('22101 a failed read never throws: the page loads, each section says it failed, and every read is logged', async () => {
+    const boom = { error: { message: 'boom' } };
+    tables.current = { golf_team_settings: boom, golf_events: boom, golf_rounds: boom, golf_players: boom, golf_teams: boom };
+    const gone = await loadPlayerHome(player);
+    expect(gone.week.error).toBe(true);
+    expect(gone.latest.error).toBe(true);
+    expect(gone.scoring.error).toBe(true);
+    expect(gone.legs).toBeNull();
+    expect(gone.brief).toBeNull();
+    expect(gone.coachUserId).toBeNull();
+    expect(gone.handicap).toBeNull();
+    for (const read of ['timezone', 'events', 'rounds', 'player', 'team']) expect(logServer).toHaveBeenCalledWith('home', read, expect.anything());
+
+    // The rounds load; the hole-by-hole scores, the round cache, the D1 benchmarks and the coaches do not.
+    logServer.mockClear();
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: { data: [] },
+      golf_rounds: { data: [round(0), round(1), round(2)] },
+      golf_teams: { data: { gender: 'men', created_by: 'c1', organization_id: 'o1' } },
+      golf_holes: boom,
+      golf_round_stats_cache: boom,
+      golf_pga_standards: boom,
+      golf_coaches: boom,
+    };
+    const part = await loadPlayerHome(player);
+    expect(part.latest).toMatchObject({ error: false, holesError: true });
+    expect(part.legs).toMatchObject({ cacheError: true, d1Error: true });
+    expect(part.legs!.rows).toHaveLength(4);
+    expect(part.scoring.points).toHaveLength(3);
+    expect(part.coachUserId).toBeNull();
+    for (const read of ['holes', 'roundCache', 'd1Benchmarks', 'coaches']) expect(logServer).toHaveBeenCalledWith('home', read, expect.anything());
+  });
+});
+
+describe('Player Home · the page’s own contracts (desktop)', () => {
+  beforeEach(() => {
+    document.addEventListener('click', stopNavigation, true);
+  });
+  afterEach(() => {
+    document.removeEventListener('click', stopNavigation, true);
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('20102 Player Home opens with its header, the week beside My latest round, and Scoring and the parts of the game', () => {
+    show();
+    expect(screen.getByRole('heading', { level: 1, name: PREVIEW_PLAYER_HOME.greeting })).toBeTruthy();
+    expect(document.body.textContent).toContain(PREVIEW_PLAYER_HOME.todayLabel);
+    expect(screen.getByText(PREVIEW_PLAYER_HOME.brief!)).toBeTruthy();
+    const headings = [...document.querySelectorAll('h2')].map((h) => h.textContent);
+    expect(headings).toEqual(['This week', 'My latest round', 'Scoring', 'By part of the game']);
+    // The phone Home is not drawn on a wide canvas.
+    expect(document.querySelector('.ch-hm')).toBeNull();
+  });
+
+  it('20806 Player Home draws none of the coach’s controls or figures, and N does nothing', async () => {
+    const user = userEvent.setup();
+    show();
+    for (const name of [/Message team/, /New event/, 'Plan', 'Add event', 'Full roster', 'Player stats']) expect(screen.queryByRole('link', { name })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Leaderboard' })).toBeNull();
+    expect(screen.queryByRole('table', { name: 'Leaderboard' })).toBeNull();
+    // No link to another player's stats or thread.
+    expect(document.querySelector('a[href*="player="]')).toBeNull();
+    await user.keyboard('n');
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('21807 the timer’s name says one day, hour or minute in the singular', () => {
+    wrap(<Countdown to="2026-10-14T19:41:30Z" frozen="2026-10-14T18:40:00Z" />);
+    expect(screen.getByRole('timer', { name: 'Starts in 0 days, 1 hour and 1 minute' })).toBeTruthy();
+  });
+
+  it('20301 the countdown ticks every second and is gone once the event has started', () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
+    wrap(<Countdown to="2026-10-14T18:41:30Z" />);
+    const digits = () => [...screen.getByRole('timer').querySelectorAll('b')].map((b) => b.textContent).join(':');
+    expect(digits()).toBe('00:00:01:30');
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(digits()).toBe('00:00:01:29');
+    act(() => {
+      vi.advanceTimersByTime(89_000);
+    });
+    expect(screen.queryByRole('timer')).toBeNull();
+  });
+
+  it('22301 the player’s sections are reported under their own surface, and Coach Home’s controls are not here', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    show(home({ scoring: { points: null as never, error: false }, latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: null as never } }));
+    for (const surface of ['home.game', 'home.latestRound']) {
+      expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
+    }
+  });
+});
+
+describe('Player Home · the phone, the page’s own contracts', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    document.addEventListener('click', stopNavigation, true);
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+    document.removeEventListener('click', stopNavigation, true);
+    vi.restoreAllMocks();
+  });
+
+  it('21901 at 820px and below Player Home is the phone Home, in its own order, and none of the desktop page', () => {
+    show();
+    const main = document.querySelector('main.ch-hm')!;
+    expect(main.getAttribute('aria-label')).toBe('Home');
+    const headings = [...main.querySelectorAll('h2')].map((h) => h.textContent);
+    expect(headings.filter((h) => ['This week', 'Today', 'My latest round', 'Scoring', 'By part of the game'].includes(h!))).toEqual(['This week', 'Today', 'My latest round', 'Scoring', 'By part of the game']);
+    expect(document.querySelector('.ch-h-main')).toBeNull();
+  });
+
+  it('20103 a week day opens Calendar’s day view, and My stats opens the player’s stats', () => {
+    show();
+    expect(document.querySelector('.ch-hm-week li.is-today a')!.getAttribute('href')).toBe('/golf/dashboard/calendar?view=day&date=2026-10-14');
+    expect(screen.getByRole('link', { name: /My stats/ }).getAttribute('href')).toBe('/golf/dashboard/stats');
+  });
+
+  it('20806 the phone draws none of the coach’s controls either: no Plan, no Add event, no quick event types', () => {
+    show(home({ next: null, today: [] }));
+    for (const name of ['Plan', 'Add event', 'Practice', 'Qualifier', 'Tournament', 'Meeting']) expect(screen.queryByRole('link', { name })).toBeNull();
+    expect(code('CH-2309')).not.toBeNull();
+  });
+
+  it('21703 on the phone, Message coach gives the light tap', async () => {
+    const user = userEvent.setup();
+    show();
+    await user.click(screen.getByRole('link', { name: 'Message coach' }));
+    expect(hapticSpy.mock.calls).toEqual([['press']]);
   });
 });
 

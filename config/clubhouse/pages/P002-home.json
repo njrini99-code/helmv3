@@ -7,7 +7,8 @@
     "/golf/dashboard"
   ],
   "roles": [
-    "coach"
+    "coach",
+    "player"
   ],
   "semanticFeatures": [
     "team_operations",
@@ -18,23 +19,29 @@
   "status": {
     "design": "approved",
     "implementation": "in_progress",
-    "contract": "partial",
+    "contract": "complete",
     "bridge": "reserved",
     "data": "existing",
     "verification": "partial",
-    "docs": "missing"
+    "docs": "current"
   },
   "design": {
     "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
     "desktop": [
       "design/handoff/Coach - Home.html",
       "design/handoff/Coach Home v3.html",
-      "design/handoff/coach-home-v3.jsx"
+      "design/handoff/coach-home-v3.jsx",
+      "design/handoff/Player - Home.html",
+      "design/handoff/player-home.jsx",
+      "design/handoff/player-home.css"
     ],
     "phone": [
       "design/handoff/Coach - Home - Mobile.html",
       "design/handoff/m-home.jsx",
-      "design/handoff/m-home.css"
+      "design/handoff/m-home.css",
+      "design/handoff/Player - Home - Mobile.html",
+      "design/handoff/m-player-home.jsx",
+      "design/handoff/m-player-home.css"
     ]
   },
   "implementation": {
@@ -43,12 +50,263 @@
     "route": null,
     "styles": "src/clubhouse/styles/home.css",
     "tests": [
-      "src/clubhouse/__tests__/home.test.tsx"
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/player-home.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/home.md",
   "checklist": "docs/clubhouse/screens/home.md",
   "phoneSpec": "docs/clubhouse/phone/home.md",
-  "actions": [],
+  "actions": [
+    {
+      "id": "ACT-P002-OPEN-COACH-HOME",
+      "label": "Open Coach Home",
+      "component": "src/app/golf/(dashboard)/dashboard/page.tsx#GolfDashboardPage",
+      "handler": "GolfDashboardPage (the coach branch)",
+      "service": "src/clubhouse/data/home.ts#loadCoachHome",
+      "data": [
+        "golf_team_settings",
+        "golf_team_members",
+        "golf_players",
+        "golf_conversations",
+        "golf_events",
+        "golf_event_attendance",
+        "golf_rounds",
+        "golf_holes"
+      ],
+      "bridge": {
+        "ready": 20101,
+        "loading": 20201,
+        "permission": 20801,
+        "team": 20802,
+        "noTeam": 20407,
+        "firstRun": 20408,
+        "failure": 20601,
+        "loadFailed": 20618
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-OPEN-PLAYER-HOME",
+      "label": "Open Player Home",
+      "component": "src/app/golf/(dashboard)/dashboard/page.tsx#GolfDashboardPage",
+      "handler": "GolfDashboardPage (the player branch)",
+      "service": "src/clubhouse/data/player-home.ts#loadPlayerHome",
+      "data": [
+        "golf_team_settings",
+        "golf_events",
+        "golf_event_attendance",
+        "golf_rounds",
+        "golf_players",
+        "golf_teams",
+        "golf_holes",
+        "golf_round_stats_cache",
+        "golf_pga_standards",
+        "golf_coaches"
+      ],
+      "bridge": {
+        "ready": 20102,
+        "loading": 20201,
+        "permission": 20801,
+        "team": 20802,
+        "noTeam": 20413,
+        "firstRun": 20412,
+        "ownRounds": 20803,
+        "names": 20804,
+        "failure": 20615,
+        "partial": 20616
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/player-home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-MESSAGE-TEAM",
+      "label": "Message the team (coach)",
+      "component": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions",
+      "handler": "the Message team link",
+      "service": null,
+      "data": [
+        "golf_conversations"
+      ],
+      "bridge": {
+        "links": 20103,
+        "loadFailed": 20608
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-NEW-EVENT",
+      "label": "Add an event (coach): New event, or N",
+      "component": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions",
+      "handler": "the New event link and the N key handler",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "keyboard": 21801,
+        "haptic": 21702,
+        "tap": 21703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-QUICK-ADD-EVENT",
+      "label": "Plan or add the first event from an empty phone Home (coach)",
+      "component": "src/clubhouse/screens/home/HomePhone.tsx#NoEvents",
+      "handler": "the quick event types, Add event and Plan links",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "empty": 20409,
+        "tap": 21703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-OPEN-EVENT",
+      "label": "Open an event in Calendar",
+      "component": "src/clubhouse/screens/home/HomePhone.tsx#UpNext",
+      "handler": "the Up next card and each Today row",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "clock": 20301,
+        "trail": 22301
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/player-home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-OPEN-WEEK-DAY",
+      "label": "Open a day of the week in Calendar (phone)",
+      "component": "src/clubhouse/screens/home/HomePhone.tsx#WeekStrip",
+      "handler": "each day in the week strip",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "announce": 21802
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/player-home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-PAGE-ROUNDS",
+      "label": "Page through the latest rounds",
+      "component": "src/clubhouse/screens/home/LatestRound.tsx#LatestRound",
+      "handler": "the previous and next buttons",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "haptic": 21701,
+        "announce": 21804,
+        "tap": 21703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/player-home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-OPEN-ROUND",
+      "label": "Open a round's card (coach, phone)",
+      "component": "src/clubhouse/screens/home/HomePhone.tsx#RoundSheet",
+      "handler": "each row of Latest rounds",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "tap": 21703,
+        "trail": 22301,
+        "empty": 20403,
+        "loadFailed": 20603
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-OPEN-PLAYER-STATS",
+      "label": "Open a player's stats (coach)",
+      "component": "src/clubhouse/screens/home/Leaderboard.tsx",
+      "handler": "each leaderboard row, and the latest round's stats link",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "hover": 21602
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-MESSAGE-COACH",
+      "label": "Message your coach (player)",
+      "component": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome",
+      "handler": "the Message coach link",
+      "service": "src/clubhouse/data/player-home.ts#coachFor",
+      "data": [
+        "golf_teams",
+        "golf_coaches"
+      ],
+      "bridge": {
+        "permission": 20805,
+        "links": 20103,
+        "tap": 21703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/player-home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-CHOOSE-SCORING-WINDOW",
+      "label": "Choose the Scoring window: last 5, 10 or 20 rounds (player)",
+      "component": "src/clubhouse/screens/home/PlayerGame.tsx#Scoring",
+      "handler": "the Rounds shown control",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "tap": 21703,
+        "empty": 20410
+      },
+      "tests": [
+        "src/clubhouse/__tests__/player-home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-TRY-AGAIN",
+      "label": "Try again on a section that did not load",
+      "component": "src/clubhouse/ui/RefreshNotice.tsx#RefreshNotice",
+      "handler": "router.refresh",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "recovery": 21402,
+        "pending": 21401,
+        "offline": 10704,
+        "failure": 20601
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx"
+      ]
+    }
+  ],
   "held": []
 }

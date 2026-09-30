@@ -4,7 +4,7 @@ Status: approved. The owner's v2 boards are the spec (D-22): desktop `design/han
 
 ## What it reads
 
-The player's own rounds only (a player is compared against D1, never against teammates, as on Stats). The week is the team's calendar through the loader Coach Home uses (`loadHomeWeek`), without who else is invited. The coach for Message coach is the team's creator when they coach in its organisation, otherwise the organisation's first coach.
+The player's own rounds only (a player is compared against D1, never against teammates, as on Stats). The week is the team's calendar through the loader Coach Home uses (`loadHomeWeek`), without who else is invited. The coach for Message coach is the coach who created the team when they have an account, otherwise a coach of the organisation who has one (the query sets no order, so which one is not fixed).
 
 ## Layout
 

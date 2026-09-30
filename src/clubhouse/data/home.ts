@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
@@ -250,7 +251,8 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
 
 /**
  * The team's timezone (CH-2210: Eastern, the product default, when it doesn't
- * load), the time-of-day greeting in it, and today's long date.
+ * load or isn't a real zone), the time-of-day greeting in it, and today's long
+ * date.
  */
 export async function homeClock(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -259,7 +261,9 @@ export async function homeClock(
 ): Promise<{ tz: string; greeting: string; todayLabel: string }> {
   const { data: settings, error: settingsError } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
   if (settingsError) log('timezone', settingsError);
-  const tz = settings?.timezone || 'America/New_York';
+  // A stored value that isn't a real IANA zone would throw in every Intl call below; read it as missing instead.
+  const tz = getValidTimezone(settings?.timezone);
+  if (settings?.timezone && tz !== settings.timezone) log('timezone', new Error(`"${settings.timezone}" is not a timezone`));
   let greeting = 'Welcome back';
   try {
     greeting = getGreeting(timeOfDayForHour(getCurrentDecimalHourInTz(tz)));
