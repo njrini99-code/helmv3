@@ -66,13 +66,13 @@ Starting the next session:
 <!-- clubhouse:screens:start -->
 | Screen | Route | spec | desktop | wired | states | error-tracking | phone-spec | phone | motion | accessibility | performance | verified |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | done | todo | doing | doing | doing | todo |
+| Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | done | doing | doing | doing | doing | todo |
 | Home | /golf/dashboard | done | doing | doing | doing | doing | doing | todo | todo | doing | doing | todo |
 | Roster | /golf/dashboard/roster | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Stats (team) | /golf/dashboard/stats | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Stats (player) | /golf/dashboard/stats?player= (coach), /golf/dashboard/stats (player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
-| Messages | /golf/dashboard/messages (coach and player) | done | done | done | doing | doing | done | todo | doing | doing | doing | todo |
+| Messages | /golf/dashboard/messages (coach and player) | done | done | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Settings | /golf/dashboard/settings (coach and player) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
 | CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
@@ -200,3 +200,4 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - 2026-09-29 · Stats (team) · old link: `/stats/team` opens the rebuilt Team stats for coaches. Compared the design project's `Stats.html`, `stats.jsx`, `stats.css`, `cal.css`, `depth.css`, `sidebar.css` and the colour and elevation tokens with `design/handoff/`: identical apart from the Qualifiers nav item (not built, owner). 
 - 2026-09-29 · Foundation, Messages · phone-spec: the owner's `Messages Mobile.html` was served over http and every board and state was rendered at 390 × 844 @2x (`messages-00..22`, plus `messages-90`, derived without the Safari bar). This was redone after ccbd33465 changed the avatars. The preview was captured at 390px for coach and player (`messages-preview-*`) on a dev server on :3104, stopped afterwards. No page errors. Wrote `phone/foundation.md` and `phone/messages.md` as approved specs. The gate stays `doing` until Q-40 to Q-64 are answered.
 - 2026-09-29 · Foundation, Messages · phone-spec done: the owner answered Q-40 to Q-64 (D-40 to D-49). The specs cite the decisions, each checklist's third box is ticked, and the doctrine now allows red for destructive actions (D-42). `clubhouse:check` exit 0.
+- 2026-09-29 · Foundation, Messages · phone built (doing): the phone shell (D-40 to D-43) and Messages as a pushed stack (D-44 to D-49), with `getGolfConversationFiles` (participant check, RLS client, metadata only; security review found no Critical or High issue, and its one Medium, deleted files taking slots under the cap, is fixed). typecheck 0, eslint 0 errors, `npx vitest run src/clubhouse` 295/295 exit 0, the files action test 5/5, `clubhouse:check` 0, `clubhouse:a11y` on :3104 exit 0 (111 pages, the two known Calendar findings), `npm run build` 0. Left open: sheets don't drag to dismiss yet (a `Modal` gap) and the Bell is a popover on the phone; not yet checked on a real iPhone through `npm run ios:dev`.

@@ -64,10 +64,10 @@ they return.
 - [x] Every design/data gap is answered as an owner decision in `PROGRESS.md` (`MOBILE.md` step 1). Q-48 to Q-64 were answered by the owner on 2026-09-29, recorded as D-44 to D-49.
 
 ## phone
-- [ ] Built at 390px and 430px, respecting the safe areas
-- [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
-- [ ] Sheets are used instead of popovers, and they drag to dismiss
-- [ ] The bottom tab bar and toasts don't overlap content
+- [x] Built at 390px and 430px, respecting the safe areas (`MessagesPhone.tsx` on the same container, hooks and actions: Inbox, Thread, Details, New message and the announcement screens, per `phone/messages.md` and D-44 to D-49. Captures next to the design's: scratchpad `messages-mobile/built/built-{390,430}-*` against `messages-mobile/messages-00..22`)
+- [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent (a hit-test probe at 390px (every control drawn under 44px must take a tap 21px from its centre) over the Inbox, thread, actions sheet, Details, Add sheet, New message (coach and player), announcement form and announcement: 0 misses on 2026-09-29. The desktop bubble's hover tools are a long press or the "Message actions" button on the phone, CH-7804)
+- [ ] Sheets are used instead of popovers, and they drag to dismiss (the actions, Add members, Edit, Delete and Leave sheets are bottom sheets; they don't drag to dismiss yet, a `Modal` foundation gap)
+- [x] The bottom tab bar and toasts don't overlap content (the Inbox scrolled to its end clears the tab bar, `built-390-02-inbox-scrolled`; pushed screens hide the tab bar and toasts sit above the composer)
 - [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
 
 ## motion
