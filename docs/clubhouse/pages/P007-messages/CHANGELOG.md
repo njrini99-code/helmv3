@@ -2,6 +2,21 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Mute is observed like every other messaging action (swap audit F-17)
+
+```text
+PR/commit:      agent/clubhouse (release train #2110)
+Design package: none (swap audit fix, no visual change)
+Contract IDs:   none
+Actions:        `getGolfConversationMute`, `setGolfConversationMute` wrapped with `withAdminObserved`
+Data impact:    Registered under the `messaging` feature in `lib/admin/feature-registry.ts`. No behaviour or schema change.
+Held items:     none
+```
+
+- **Issue.** The mute actions were the only golf message actions not wrapped for the admin coverage contract (the tripwire failed in `test:all`).
+- **Fix.** Both are wrapped and registered; their signatures and results are unchanged.
+- **Checked.** `src/lib/admin/__tests__` 773/773.
+
 ## 2026-09-30 — Right click opens reactions (Clickables gap 23)
 
 ```text

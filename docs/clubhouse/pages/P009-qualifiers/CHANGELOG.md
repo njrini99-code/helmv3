@@ -2,6 +2,21 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Manage selections has its own error and loading states (swap audit F-18)
+
+```text
+PR/commit:      agent/clubhouse (release train #2110)
+Design package: none (swap audit fix, no visual change)
+Contract IDs:   none
+Actions:        none
+Data impact:    `qualifiers/[id]/selection/error.tsx` and `loading.tsx` (new). No schema change.
+Held items:     none
+```
+
+- **Issue.** The selection route had no error boundary or loading skeleton of its own (the route-state guard failed in `test:all`).
+- **Fix.** `RouteErrorBoundary` for the route, and the Clubhouse qualifier skeleton while it loads (nothing outside Clubhouse, where the address redirects).
+- **Checked.** `route-state-boundaries.test.ts` 5/5.
+
 ## 2026-09-30 — V2 page docs (contracts proven by tests); Retry now finishes the job
 
 ```text

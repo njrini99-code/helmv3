@@ -2,6 +2,21 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Attendance and task counts read every row (swap audit F-21)
+
+```text
+PR/commit:      agent/clubhouse (release train #2110)
+Design package: none (swap audit fix, no visual change)
+Contract IDs:   none (behaviour of existing counts)
+Actions:        none
+Data impact:    `attendanceFor` and `assignmentsFor` in `data/hub.ts` page with `fetchAllRowsResult` ordered by id. No schema change.
+Held items:     none
+```
+
+- **Issue.** The reads asked for `.limit(2000)` and `.limit(5000)`, but PostgREST returns at most 1000 rows, so a large team's RSVP lists and task done/total counts were cut short with no error. CI's row-cap rule caught it on #2110.
+- **Fix.** Both reads page through every row. A failed page still returns the existing error state.
+- **Checked.** `hub-paged-reads.test.ts` 2/2 (2500 attendance rows, 1800 assignments); hub 129/129; `check-row-cap-limits`, `audit:paginated-reads` and `audit:supabase-errors` pass.
+
 ## 2026-09-30 — Files that didn't attach, only files players can open, and a traveler's class during a trip (Q-82, Q-83, Q-84)
 
 ```text
