@@ -398,7 +398,7 @@ export function GameDetail({
           ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${s.firstPuttDistanceAvg.toFixed(1)} ft`, 'Average start', undefined],
         ]}
       >
-        <Panel title="Make rate by distance" wide note="Green line is the player, dashed champagne is D1. Each band needs 10 or more putts to grade.">
+        <Panel title="Make rate by distance" wide note={`Green line is the player, dashed champagne is D1. Each band needs 10 or more putts to grade.${shotBands ? ' Counts are putts logged with a distance.' : ''}`}>
           <MakeCurve bands={puttBands} />
         </Panel>
         <Panel title="How putts miss" wide>

@@ -107,7 +107,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const heroFigs: Array<[string, string, string, string?, ReactNode?]> = [
     ['Scoring avg', formatFixed(w.avg), coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
     ['Handicap', formatHcp(data.handicap), 'Index'],
-    ['SG / round', w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss', data.sgChange.delta != null || data.sgChange.context ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : undefined],
+    ['SG / round', w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss', w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : undefined],
     ['Rounds', String(data.season.rounds), 'This season'],
   ];
   const pickTab = (t: Tab) => {

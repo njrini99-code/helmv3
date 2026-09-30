@@ -49,7 +49,7 @@ Data impact:    none (reads only; no migration)
 ### Make rate by distance reaches 25+ feet
 
 - **Issue.** The curve stopped at 20 feet because the shot stats have rates past 20 feet but no counts.
-- **Fix.** The curve draws the window's putts in the bands Team stats grades (0 to 3, 3 to 5, 5 to 10, 10 to 15, 15 to 25, 25+), counted exactly from `golf_shots` (`loadPutts`, shared with Team stats) with each band's D1 mark from the same distances. If that read fails, or there are no putts, it falls back to the old five bands.
+- **Fix.** The curve draws the window's putts in the bands Team stats grades (0 to 3, 3 to 5, 5 to 10, 10 to 15, 15 to 25, 25+), counted exactly from `golf_shots` (`loadPutts`, shared with Team stats) with each band's D1 mark from the same distances. Its note says the counts are putts logged with a distance (the Putting section's own total counts every putt). If that read fails, or there are no putts, it falls back to the old five bands.
 - **Checked.** strokes-gained.test (loader bands and the failed read; the curve's label); mutation caught.
 
 ### Bars scaled to the data

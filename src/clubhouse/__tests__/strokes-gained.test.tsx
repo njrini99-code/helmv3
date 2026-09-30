@@ -526,6 +526,12 @@ describe('player profile · desktop', () => {
     expect(document.querySelector('.ch-pf-hero__figs .ch-delta')).toBeNull();
   });
 
+  it('no strokes gained means no change chip under the dash, whatever the previous window says', () => {
+    showPlayer(player({ win: { ...PREVIEW_PLAYER.win, sgPerRound: null, sgRounds: 0 } }));
+    expect(document.querySelector('.ch-pf-hero__figs .ch-delta')).toBeNull();
+    expect(document.querySelector('.ch-pf-hero__figs')!.textContent).not.toMatch(/previous/);
+  });
+
   it('the season window has no chip and no claim about earlier rounds', () => {
     showPlayer(player({ window: 'season', sgChange: { delta: null, context: '' } }));
     expect(code('CH-5310')).toBeNull();
@@ -664,6 +670,8 @@ describe('make rate by distance (Game detail)', () => {
     expect(curve.getAttribute('aria-label')).toContain('15–25 feet 11%');
     expect(curve.textContent).toContain('34 putts');
     expect(curve.textContent).toContain('25+ ft');
+    // The Putting section's own total counts every putt; the curve counts the ones logged with a distance, and says so.
+    expect(curve.closest('.ch-gm-p')!.querySelector('.ch-gm-p__n')!.textContent).toContain('Counts are putts logged with a distance.');
   });
 
   it('without the window’s putts the curve stops where the shot stats do, at 20 feet', async () => {

@@ -296,6 +296,10 @@ export const PREVIEW_PLAYER_EARLY: ChPlayerProfile = {
   season: { ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
   win: { ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
   rounds: PREVIEW_PLAYER.rounds.slice(0, 2),
+  // No strokes gained yet: no change to show, and no figures in the comparison table.
+  sgChange: { delta: null, context: '' },
+  puttBands: null,
+  comparisons: PREVIEW_PLAYER.comparisons.map((c) => (c.sg ? { ...c, you: null, team: null } : c)),
   stats: null,
   focusAreas: [],
   goals: [],
