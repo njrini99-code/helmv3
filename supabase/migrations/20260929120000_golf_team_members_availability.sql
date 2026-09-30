@@ -1,3 +1,6 @@
+-- STATUS: WRITTEN — HOLD — NOT APPLIED
+-- Held data plan: docs/clubhouse/held/data/roster-availability.md
+--
 -- Clubhouse Roster, owner decision on Q-1 (2026-09-29): "Inactive" in the
 -- design means injured or away but still on the team. `status = 'inactive'`
 -- already means something else: the member loses RLS access to team data
