@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   files: { data: [] as unknown[], error: null as unknown },
   attachmentReads: 0,
   notFilters: [] as unknown[][],
+  eqFilters: [] as unknown[][],
   logServerError: vi.fn(async () => undefined),
 }));
 
@@ -37,7 +38,7 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'golf_message_attachments') {
         mocks.attachmentReads += 1;
         const chain = {
-          eq: () => chain,
+          eq: (...args: unknown[]) => (mocks.eqFilters.push(args), chain),
           not: (...args: unknown[]) => (mocks.notFilters.push(args), chain),
           order: () => chain,
           limit: async () => mocks.files,
@@ -69,6 +70,7 @@ describe('getGolfConversationFiles', () => {
     mocks.files = { data: [], error: null };
     mocks.attachmentReads = 0;
     mocks.notFilters = [];
+    mocks.eqFilters = [];
   });
 
   it('refuses someone who is not in the conversation, before reading any file', async () => {
@@ -77,6 +79,11 @@ describe('getGolfConversationFiles', () => {
     expect(res.error).toMatch(/not a participant/i);
     expect(res.files).toBeUndefined();
     expect(mocks.attachmentReads).toBe(0);
+  });
+
+  it('reads only the conversation asked for, for a caller in more than one', async () => {
+    await getGolfConversationFiles('c-A');
+    expect(mocks.eqFilters).toEqual([['message.conversation_id', 'c-A']]);
   });
 
   it('refuses a signed-out caller', async () => {

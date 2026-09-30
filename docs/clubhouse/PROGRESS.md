@@ -187,6 +187,7 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 
   Add member has existing actions that desktop doesn't use yet (Q-61).
 - Phone shell (2026-09-29): `m.css` styles a More screen (`.m-me`, `.m-more`) that no board draws (Q-43). The design has no player tab bar (Q-40). The top-bar glass `rgb(247 245 239 / .9)` and the phone avatar colours have no `--ch-*` token yet; they go into the design system first (Q-45).
+- 2026-09-29 (owner): After Clubhouse: forward-only migration to revoke `anon` grants on `golf_message_attachments` and exclude deleted messages from the attachment SELECT policy (security review of D-48). Not applied; the owner decides on apply.
 
 ## Verification log
 
