@@ -46,10 +46,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 58 | 6 | 32 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 47 | 15 | 2 | 2 |
+| `INCIDENT` | 48 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 24 | 1 | 8 | 5 |
-| `UNKNOWN` | 327 | 12 | 64 | 83 |
+| `UNKNOWN` | 329 | 12 | 64 | 81 |
 
 ## Files
 
@@ -512,6 +512,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |
@@ -673,7 +674,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CLICKABLES.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
@@ -745,7 +746,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/PAGE.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P005-stats-player/PARITY.md` | current | - | - | - | 1 |
+| `docs/clubhouse/pages/P005-stats-player/PARITY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
@@ -873,6 +874,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | - |
 | `docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md` | current | - | - | - | - |
 | `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | - |
+| `docs/operations/2026-09-30-sg-conventions-research.md` | current | - | - | - | - |
+| `docs/operations/2026-09-30-sg-penalty-and-shot-end-before-after.md` | current | - | - | - | - |
 | `docs/operations/APPLY_PATH.md` | current | - | - | - | - |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 |
