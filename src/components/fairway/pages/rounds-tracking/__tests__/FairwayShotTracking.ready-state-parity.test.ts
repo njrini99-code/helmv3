@@ -29,7 +29,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(new URL('../FairwayShotTracking.tsx', import.meta.url), 'utf8');
+// The screen's logic moved unchanged into useShotTracking (shared with Clubhouse); these assertions read it there.
+const source = readFileSync(new URL('../../../../../hooks/golf/use-shot-tracking.ts', import.meta.url), 'utf8');
 
 function slice(fromMarker: string, toMarker: string): string {
   const from = source.indexOf(fromMarker);
