@@ -371,7 +371,11 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
       />
       <AddCourseSheet
         open={adding}
-        onClose={() => setAdding(false)}
+        // Add a course is opened from the course picker; closing it goes back there, as on the board.
+        onClose={() => {
+          setAdding(false);
+          setPicker({ course: null });
+        }}
         onDone={(pick, holes: ChSetupHole[], count, saveCourse) => {
           setAdding(false);
           setHolesLoad({ state: 'idle' });

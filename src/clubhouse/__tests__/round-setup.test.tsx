@@ -258,6 +258,16 @@ describe('Round setup: details and starting', () => {
     expect(code('CH-11211')).toHaveTextContent("Your qualifiers didn't load");
   });
 
+  it('closing Add a course goes back to the course picker it was opened from, as on the board', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: /Browse courses/ }));
+    await user.click(await screen.findByRole('button', { name: /Add a course/ }));
+    const sheet = code('CH-11511')!;
+    await user.click(within(sheet).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sheet.closest('dialog')?.hasAttribute('open') ?? false).toBe(false));
+    expect(await screen.findByRole('button', { name: /Add a course/ })).toBeInTheDocument();
+  });
+
   it('110110 CH-11511 a course typed in by hand becomes the round’s, saved when asked', async () => {
     const { user, ports } = setup();
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
