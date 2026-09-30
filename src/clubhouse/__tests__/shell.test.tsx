@@ -45,6 +45,8 @@ import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { badgeCount, Sidebar } from '../shell/Sidebar';
 import { CH_NAV_PLAYER } from '../shell/nav';
 import { TabBar } from '../shell/TabBar';
+import { TopBar } from '../shell/TopBar';
+import { ClubhouseMarker } from '../shell/context';
 import { PhoneScreen } from '../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory, usePhoneTabsHidden } from '../shell/phone-chrome';
 import { PhoneBar } from '../ui/PhoneBar';
@@ -404,6 +406,30 @@ describe('Shell · navigation and accessibility', () => {
     await expectCode('CH-1802');
     expect(within(code('CH-1802') as HTMLElement).getByRole('link', { name: 'Messages 3 new' })).toBeTruthy();
     badgeState.messages = 0;
+  });
+
+  it("a coach's gear on CoachHelm and Team Hub opens that page's Settings section; elsewhere, and for a player, plain Settings", () => {
+    const gear = () => screen.getByTitle(/settings$/i);
+    const show = (pathname: string, role: 'coach' | 'player') =>
+      wrap(
+        <ClubhouseMarker role={role}>
+          <TopBar item={undefined} pathname={pathname} />
+        </ClubhouseMarker>,
+      );
+    let view = show('/golf/dashboard/coachhelm', 'coach');
+    expect(gear().getAttribute('aria-label')).toBe('CoachHelm settings');
+    expect(gear().getAttribute('href')).toBe('/golf/dashboard/settings?section=coachhelm');
+    view.unmount();
+    view = show('/golf/dashboard/team-hub', 'coach');
+    expect(gear().getAttribute('aria-label')).toBe('Team Hub settings');
+    expect(gear().getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
+    view.unmount();
+    view = show('/golf/dashboard/team-hub', 'player');
+    expect(gear().getAttribute('href')).toBe('/golf/dashboard/settings');
+    view.unmount();
+    show('/golf/dashboard/calendar', 'coach');
+    expect(gear().getAttribute('aria-label')).toBe('Settings');
+    expect(gear().getAttribute('href')).toBe('/golf/dashboard/settings');
   });
 
   it('CH-1802 the v2 More sheet: who you are (to Settings), the next event under Calendar, then Settings, Help and Sign out', async () => {

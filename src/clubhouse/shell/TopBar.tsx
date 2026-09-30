@@ -7,6 +7,13 @@ import type { ChNavItem } from './nav';
 import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
 import { usePhoneChromeState } from './phone-chrome';
+import { useClubhouseRole } from './context';
+
+/** The board's page gears: on CoachHelm and Team Hub a coach's gear opens that page's Settings section (?section=). */
+const PAGE_SETTINGS: ReadonlyArray<{ path: string; section: string; label: string }> = [
+  { path: '/golf/dashboard/coachhelm', section: 'coachhelm', label: 'CoachHelm settings' },
+  { path: '/golf/dashboard/team-hub', section: 'team', label: 'Team Hub settings' },
+];
 
 /**
  * Sticky glass bar over the canvas: breadcrumbs, the notifications bell (the
@@ -22,6 +29,8 @@ import { usePhoneChromeState } from './phone-chrome';
 export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | undefined; pathname: string; teamName?: string | null }) {
   const pageTrail = useCrumbTrail();
   const { pageTop, rootTitle, immersive, setSlot } = usePhoneChromeState();
+  const role = useClubhouseRole();
+  const pageSettings = role === 'coach' ? PAGE_SETTINGS.find((p) => pathname === p.path || pathname.startsWith(`${p.path}/`)) : undefined;
   const crumbs =
     pageTrail ??
     (pathname.startsWith('/golf/dashboard/settings')
@@ -50,11 +59,11 @@ export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | 
       <div className="ch-topbar__actions">
         <Bell />
         <Link
-          href="/golf/dashboard/settings"
+          href={pageSettings ? `/golf/dashboard/settings?section=${pageSettings.section}` : '/golf/dashboard/settings'}
           className={'ch-btn ch-btn--ghost ch-iconbtn ch-topbar__settings' + (pathname.startsWith('/golf/dashboard/settings') ? ' is-on' : '')}
-          aria-label="Settings"
+          aria-label={pageSettings?.label ?? 'Settings'}
           aria-current={pathname.startsWith('/golf/dashboard/settings') ? 'page' : undefined}
-          title="Settings"
+          title={pageSettings?.label ?? 'Settings'}
         >
           <Icon icon={Settings} size={16} />
         </Link>

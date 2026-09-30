@@ -57,7 +57,7 @@ in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 | --- | --- | --- |
 | `shell/ClubhouseFrame.tsx` | The frame; skip link; motion-off marker | 10102, 11801, 11608 |
 | `shell/Sidebar.tsx`, `NextEventCard.tsx` | Navigation by v2 section, badges, next event | 10802, 10404, 10608, 10609, 11803 |
-| `shell/TopBar.tsx`, `crumbs.tsx` | Breadcrumb, bell, settings; the phone title or a page's back link | 11810 |
+| `shell/TopBar.tsx`, `crumbs.tsx` | Breadcrumb, bell, settings (a coach on CoachHelm or Team Hub gets that page's section: `settings?section=coachhelm` or `team`); the phone title or a page's back link | 11810 |
 | `shell/Bell.tsx` | The bell: popover, phone sheet, filter, mark all read | 10201, 10301, 10402, 10403, 10601, 10602, 11301, 11805, 11811, 11612 |
 | `shell/TabBar.tsx` | Phone tabs and the More sheet | 11808, 11802, 11602, 11901, 11701, 11704 |
 | `shell/OfflineBanner.tsx` | The offline banner | 10701, 11605, 11706 |
