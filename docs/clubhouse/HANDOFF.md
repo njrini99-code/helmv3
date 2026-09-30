@@ -20,7 +20,7 @@ data gaps, verification log).
     qualifier write-integrity test
   - `knowledge:check` 0
   - `docs:check` 0
-  - `npm run build`: see the verification log line for this merge.
+  - `npm run build` was not run on the merged head: it was started and then stopped when the owner called the stopping point. Run it first next session (`NODE_OPTIONS=--max-old-space-size=8192 npm run build`).
 
 ## The process from here: Foundation V2 (owner, D-60 to D-62)
 
