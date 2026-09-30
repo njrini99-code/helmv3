@@ -10,6 +10,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { CH_ROUTE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
 import { keepSaved } from './live';
 import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from './model';
@@ -20,6 +21,7 @@ import { TeamSection } from './Team';
 import { GolfSection } from './Golf';
 import { CoachHelmSection } from './CoachHelm';
 import { PreferencesSection } from './Preferences';
+import { SettingsPhone } from './phone/SettingsPhone';
 import '../../styles/settings.css';
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
@@ -37,6 +39,10 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
  * URL (`?section=`) so every section is linkable, and the old
  * /settings/notifications and /settings/coaching-intelligence links land on
  * theirs. Moving away with unsaved edits asks first.
+ *
+ * On a phone (820px or less) it is a different screen, not this page reflowed:
+ * a grouped list that pushes to each section (phone/SettingsPhone, owner
+ * design docs/clubhouse/phone/settings.md), over the same data and writes.
  */
 export function SettingsView({
   data: served,
@@ -52,6 +58,7 @@ export function SettingsView({
   onDeleted: () => void;
 }) {
   const reduced = useChReducedMotion();
+  const phone = useChPhone();
   // The page's copy of the data: what the server rendered, plus what has been saved since (81204).
   // A section reads it when it opens; a fresh server read (after a refresh) replaces it.
   const [data, setData] = useState(served);
@@ -86,6 +93,15 @@ export function SettingsView({
   };
   const go = (next: ChSettingsSection) => (dirty ? setAsk(next) : show(next));
   const current = sections.find((s) => s.id === section) ?? sections[0]!;
+
+  if (phone) {
+    return (
+      <DirtyContext.Provider value={report}>
+        <SettingsPhone data={data} writes={writes} device={device} initialSection={initialSection} onDeleted={onDeleted} />
+        {guard}
+      </DirtyContext.Provider>
+    );
+  }
 
   return (
     <DirtyContext.Provider value={report}>

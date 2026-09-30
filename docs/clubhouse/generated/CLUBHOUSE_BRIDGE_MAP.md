@@ -72,7 +72,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P005 | 4 | 2 | 2 | 5 | 1 | 13 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 57 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 24 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
-| P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
+| P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 123 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
 | P010 | 2 | 6 |  | 14 | 9 | 22 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 76 |
 | P011 | 13 | 7 |  | 13 | 10 | 25 | 3 | 5 | 2 |  | 17 | 2 | 1 | 3 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 134 |
@@ -667,6 +667,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81103 | CH-8503 | 11 Destructive | `MAKE_A_NEW_INVITE_CODE` | implemented | Make a new invite code |
 | 81104 | CH-8504 | 11 Destructive | `RESET_COACHHELM_UPDATES` | implemented | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | 11 Destructive | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | implemented | Turn off CoachHelm on your dashboards |
+| 81106 | CH-8509 | 11 Destructive | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | implemented | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes |
+| 81107 | CH-8510 | 11 Destructive | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | implemented | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
 | 81201 | CH-8506 | 12 State preservation | `FOLLOWING_A_LINK_OFF_SETTINGS_WITH_UNSAVED` | implemented | Following a link off Settings with unsaved changes |
 | 81202 | CH-8507 | 12 State preservation | `SWITCHING_SECTION_WITH_UNSAVED_CHANGES` | implemented | Switching section with unsaved changes |
 | 81203 | CH-8508 | 12 State preservation | `CLOSING_OR_RELOADING_THE_TAB_WITH_UNSAVED` | implemented | Closing or reloading the tab with unsaved changes |
@@ -694,14 +696,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81706 | CH-8706 | 17 Haptic | `PRESSING_A_PRIMARY_BUTTON` | reserved | Pressing a primary button (Save changes) |
 | 81707 | CH-8707 | 17 Haptic | `TURNING_HAPTICS_BACK_ON` | reserved | Turning Haptics back on |
 | 81708 |  | 17 Haptic | `DISCARD_WARNS` | implemented | Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70). |
-| 81801 | CH-8801 | 18 Accessibility | `THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK` | reserved | The section list is a navigation landmark; the open section is marked current |
+| 81801 | CH-8801 | 18 Accessibility | `THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK` | reserved | The section list is a navigation landmark; the open section is marked current. On the phone the list is the landmark and an open section names itself in the bar ("Back to Settings" and the heading) |
 | 81802 | CH-8802 | 18 Accessibility | `EVERY_SWITCH_HAS_A_NAME_A_SCREEN` | reserved | Every switch has a name a screen reader reads (for example "Messages by email") |
 | 81803 | CH-8803 | 18 Accessibility | `SAVE_STATUS_CHANGES_ARE_ANNOUNCED` | reserved | Save status changes are announced |
 | 81804 | CH-8804 | 18 Accessibility | `ERRORS_ARE_ANNOUNCED` | reserved | Errors are announced |
-| 81805 | CH-8805 | 18 Accessibility | `THE_NOTIFICATION_GRIDS_ARE_TABLES` | reserved | The notification grids are tables |
+| 81805 | CH-8805 | 18 Accessibility | `THE_NOTIFICATION_GRIDS_ARE_TABLES` | reserved | The notification grids are tables. On the phone there is no grid: each kind is a button that names what is on, and its sheet has named switches |
 | 81806 | CH-8806 | 18 Accessibility | `DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS` | reserved | Dialogs trap focus, Esc closes, focus returns to the button |
 | 81807 | CH-8807 | 18 Accessibility | `EVERY_FIELD_HAS_A_LABEL_AND_ITS` | reserved | Every field has a label, and its help or error is read with it |
-| 81901 |  | 19 Responsive layout | `PHONE_LAYOUT` | reserved | At a canvas of 860px or less the rail becomes a scrolling strip above the section, and at 560px or less form grids stack and the notification switches keep 48px columns; the native phone design (a grouped list that pushes to each section, docs/clubhouse/phone/settings.md) is a draft awaiting the owner and is not built. |
+| 81901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px or less Settings is the native phone screen (docs/clubhouse/phone/settings.md): a grouped list that pushes each section as a history entry with the tab bar kept, edit cards as full-height sheets, choices as bottom sheets and destructive choices as action sheets; on a wider canvas the rail becomes a scrolling strip at 860px and form grids stack at 560px. |
 | 82001 |  | 20 Keyboard / input | `ENTER_SUBMITS_TWO_FORMS` | implemented | Enter in the New email field sends the confirmation and Enter in the invite code field asks to join; every other card saves only with its Save button. |
 | 82101 |  | 21 Performance | `LOADER_NEVER_FAILS_THE_PAGE` | implemented | The server loader reads everything the page shows before first paint, in parallel batches; a read that returns an error or throws becomes that section's failed flag and a chLogServer line, and never fails the page. |
 | 82301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | Every client failure is reported through chReport with surface settings (form saves, by action name), settings.notifications, settings.routing or settings.coachhelm (switches and autosave), settings.profile, settings.invite or settings.session (cards) or settings.<section> (a crash, high severity); server reads log through chLogServer('settings', read, error, area); each intent leaves a chTrail breadcrumb. |

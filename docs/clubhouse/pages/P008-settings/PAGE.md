@@ -83,7 +83,7 @@ Reference:        design/handoff/design-system/components (Surface, Inset, Popov
                   Switch, Segmented); the layout was chosen by the owner on 2026-09-29 (D-18): one page, a section
                   rail, the open section a flat green tint. The manifest also lists design/handoff/sidebar.css and
                   depth.css.
-Phone spec:       docs/clubhouse/phone/settings.md (draft, awaiting owner approval)
+Phone spec:       docs/clubhouse/phone/settings.md (approved by the owner 2026-09-30; built)
 Status:           draft (built to D-18; the owner has not reviewed the built screen)
 ```
 
@@ -116,7 +116,7 @@ Data:            users.notification_preferences; golf_coaches; golf_players; gol
 
 ```text
 Design:         draft (no handoff screen; owner review of the built screen open)
-Implementation: in_progress (desktop built; the phone design is a draft and is not built)
+Implementation: in_progress (desktop and phone built; owner review of both open)
 Contract:       complete (CONTRACT.md: all 25 categories answered)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
 Data:           existing (no held plans)

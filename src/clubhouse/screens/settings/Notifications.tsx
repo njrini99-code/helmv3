@@ -3,19 +3,17 @@
 import { BellOff, Moon, RotateCcw, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { DELIVERY_NOTIFICATION_GROUPS } from '@/lib/coachhelm/v3/notifications/types';
-import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
+import type { ChannelPref, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { useToast } from '../../ui/Toast';
-import { haptic } from '../../lib/haptics';
-import { chReport, chTrail } from '../../lib/track';
 import { channelsFor, DEFAULT_CHANNELS, ROUTING_GROUPS, ROUTING_LABEL, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from './model';
-import { Card, ReadFailed, Row, SettingSwitch, useInstantSave } from './parts';
+import { useDelivery, usePushToggle, useRouting } from './hooks';
+import { Card, ReadFailed, Row, SettingSwitch } from './parts';
 
 /** Recruiting and profile-view emails don't apply to GolfHelm coaches or players (as in the current app). */
-const GROUPS = DELIVERY_NOTIFICATION_GROUPS.filter((g) => g.id !== 'pipeline' && g.id !== 'profile_views');
+export const DELIVERY_GROUPS = DELIVERY_NOTIFICATION_GROUPS.filter((g) => g.id !== 'pipeline' && g.id !== 'profile_views');
 
 export function NotificationsSection({ data, writes, device }: { data: ChSettingsData; writes: ChSettingsWrites; device: ChDevice }) {
   return (
@@ -36,44 +34,15 @@ export function NotificationsSection({ data, writes, device }: { data: ChSetting
 }
 
 function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string, boolean>; writes: ChSettingsWrites; device: ChDevice; digest: ChSettingsData['digest'] }) {
-  const [p, setP] = useState(prefs);
-  const [dg, setDg] = useState(digest && !digest.error ? digest.value : false);
-  const save = useInstantSave('notifications');
-  const toast = useToast();
-  const quiet = !!p.quiet_mode;
-  const flip = (key: string, label: string) => (v: boolean) =>
-    void save.run({
-      key,
-      apply: () => setP((x) => ({ ...x, [key]: v })),
-      rollback: () => setP((x) => ({ ...x, [key]: !v })),
-      write: () => writes.setDelivery(key, v),
-      failed: `Couldn't change ${label}`,
-      code: 'CH-8005',
-    });
-
+  const { p, dg, quiet, pending, flip, flipDigest } = useDelivery(prefs, digest, writes);
   const push = device.push;
   const onDevice = push.status === 'subscribed';
-  const togglePush = async (v: boolean) => {
-    chTrail(`settings device push ${v ? 'on' : 'off'}`);
-    try {
-      const r = v ? await push.subscribe() : await push.unsubscribe();
-      // The switch already ticked (selection, D-70); only a failure adds a haptic.
-      if (!r.ok) {
-        haptic('error');
-        if (r.error) chReport(new Error(r.error), { surface: 'settings.notifications', action: 'devicePush', severity: 'low' });
-        toast({ tone: 'error', title: v ? "Couldn't turn on push here" : "Couldn't turn off push here", body: r.error && r.error.length < 90 ? r.error : 'Try again in a moment.', code: 'CH-8007' });
-      }
-    } catch (err) {
-      haptic('error');
-      chReport(err, { surface: 'settings.notifications', action: 'devicePush' });
-      toast({ tone: 'error', title: "Couldn't change push on this device", body: 'Try again in a moment.', code: 'CH-8007' });
-    }
-  };
+  const togglePush = usePushToggle(push);
 
   return (
     <Card id="set-delivery" title="Email and push" description="Which updates reach you, and how. Changes save as you make them.">
       <Row label={<><Icon icon={Moon} size={15} /> Quiet mode</>} help="Pauses everything except messages from your team.">
-        <SettingSwitch label="Quiet mode" hideLabel checked={quiet} busy={save.pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
+        <SettingSwitch label="Quiet mode" hideLabel checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Row>
       {push.status !== 'unsupported' && (
         <Row
@@ -90,7 +59,7 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
           <span role="columnheader">Email</span>
           <span role="columnheader">Push</span>
         </div>
-        {GROUPS.map((g) => {
+        {DELIVERY_GROUPS.map((g) => {
           const silenced = quiet && !g.quietExempt;
           return (
             <div key={g.id} className={'ch-set-matrix__row' + (silenced ? ' is-dim' : '')} role="row">
@@ -99,11 +68,11 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
                 <span>{silenced ? 'Paused by quiet mode' : g.description}</span>
               </span>
               <span role="cell">
-                <SettingSwitch label={`${g.label} by email`} hideLabel checked={!!p[g.emailKey]} disabled={silenced} busy={save.pending.has(g.emailKey)} onChange={flip(g.emailKey, `${g.label.toLowerCase()} email`)} />
+                <SettingSwitch label={`${g.label} by email`} hideLabel checked={!!p[g.emailKey]} disabled={silenced} busy={pending.has(g.emailKey)} onChange={flip(g.emailKey, `${g.label.toLowerCase()} email`)} />
               </span>
               <span role="cell">
                 {g.pushKey ? (
-                  <SettingSwitch label={`${g.label} by push`} hideLabel checked={!!p[g.pushKey]} disabled={silenced} busy={save.pending.has(g.pushKey)} onChange={flip(g.pushKey, `${g.label.toLowerCase()} push`)} />
+                  <SettingSwitch label={`${g.label} by push`} hideLabel checked={!!p[g.pushKey]} disabled={silenced} busy={pending.has(g.pushKey)} onChange={flip(g.pushKey, `${g.label.toLowerCase()} push`)} />
                 ) : (
                   <span className="ch-set-na">Email only</span>
                 )}
@@ -124,10 +93,8 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
               label="Weekly team email"
               hideLabel
               checked={dg}
-              busy={save.pending.has('digest')}
-              onChange={(v) =>
-                void save.run({ key: 'digest', apply: () => setDg(v), rollback: () => setDg(!v), write: () => writes.setDigest(v), failed: "Couldn't change the weekly email", code: 'CH-8006' })
-              }
+              busy={pending.has('digest')}
+              onChange={flipDigest}
             />
           </Row>
         ))}
@@ -142,28 +109,8 @@ const CHANNELS: Array<{ key: keyof ChannelPref; label: string }> = [
 ];
 
 function RoutingCard({ initial, writes }: { initial: { prefs: PrefsByCategory; quiet: boolean }; writes: ChSettingsWrites }) {
-  const [prefs, setPrefs] = useState(initial.prefs);
-  const [quiet, setQuiet] = useState(initial.quiet);
+  const { prefs, quiet, pending, bulkBusy, cellBusy, all, setCell, bulk, flipQuiet } = useRouting(initial, writes);
   const [confirmReset, setConfirmReset] = useState(false);
-  const save = useInstantSave('routing');
-  const bulkBusy = save.pending.has('bulk');
-  const cellBusy = [...save.pending].some((k) => k.startsWith('cell:'));
-
-  const setCell = (c: NotificationCategory, ch: keyof ChannelPref, v: boolean) =>
-    void save.run({
-      key: `cell:${c}:${ch}`,
-      apply: () => setPrefs((x) => ({ ...x, [c]: { ...channelsFor(x, c), [ch]: v } })),
-      rollback: () => setPrefs((x) => ({ ...x, [c]: { ...channelsFor(x, c), [ch]: !v } })),
-      write: () => writes.setRoutingCell(c, ch, v),
-      failed: `Couldn't change ${ROUTING_LABEL[c].toLowerCase()}`,
-      code: 'CH-8008',
-    });
-
-  const all = ROUTING_GROUPS.flatMap((g) => g.categories);
-  const bulk = (next: PrefsByCategory, failed: string) => {
-    const before = prefs;
-    return save.run({ key: 'bulk', apply: () => setPrefs(next), rollback: () => setPrefs(before), write: () => writes.setRoutingAll(next), failed, code: 'CH-8009' });
-  };
   const muted = (ch: 'push' | 'email') => Object.fromEntries(all.map((c) => [c, { ...channelsFor(prefs, c), [ch]: false }])) as PrefsByCategory;
 
   return (
@@ -190,8 +137,8 @@ function RoutingCard({ initial, writes }: { initial: { prefs: PrefsByCategory; q
           label="Quiet mode for CoachHelm"
           hideLabel
           checked={quiet}
-          busy={save.pending.has('quiet')}
-          onChange={(v) => void save.run({ key: 'quiet', apply: () => setQuiet(v), rollback: () => setQuiet(!v), write: () => writes.setRoutingQuiet(v), failed: "Couldn't change quiet mode", code: 'CH-8010' })}
+          busy={pending.has('quiet')}
+          onChange={flipQuiet}
         />
       </Row>
       <div className="ch-set-matrix is-3" role="table" aria-label="CoachHelm updates by channel">
@@ -225,7 +172,7 @@ function RoutingCard({ initial, writes }: { initial: { prefs: PrefsByCategory; q
                         hideLabel
                         checked={ch[x.key]}
                         disabled={silenced || bulkBusy}
-                        busy={save.pending.has(`cell:${c}:${x.key}`)}
+                        busy={pending.has(`cell:${c}:${x.key}`)}
                         onChange={(v) => setCell(c, x.key, v)}
                       />
                     </span>

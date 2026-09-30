@@ -1077,3 +1077,28 @@
     display: none;
   }
 }
+
+/* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
+@media (max-width: 820px) {
+  /* The tab strip scrolls sideways, which would clip a hit area: the tabs grow instead. */
+  .ch-hb-tabs button {
+    min-width: 44px;
+    height: 44px;
+  }
+  .ch-hb-rsvp__b {
+    min-height: 44px;
+    justify-content: center;
+  }
+  .ch-hb-rsvp__a button,
+  .ch-hb-iconbtn,
+  .ch-hb-check {
+    position: relative;
+  }
+  .ch-hb-rsvp__a button::after,
+  .ch-hb-iconbtn::after,
+  .ch-hb-check::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}

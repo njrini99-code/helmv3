@@ -1482,3 +1482,15 @@ button.ch-rt-strip__h.is-done:hover {
   opacity: 0.55;
   cursor: default;
 }
+
+/* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
+@media (max-width: 820px) {
+  .ch-rt-pill {
+    position: relative;
+  }
+  .ch-rt-pill::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}

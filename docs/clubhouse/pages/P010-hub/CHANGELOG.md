@@ -2,6 +2,36 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Phone tap targets
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+- **Issue.** On the phone the section tabs (40px tall, about 36px wide), the event rows (35px), Going / Maybe / Can't (30px), the icon buttons (32px) and the task tick (24px) were under Apple's 44pt minimum.
+- **Fix.** The tabs are 44 tall and at least 44 wide (the strip scrolls sideways, which would clip an invisible hit area); the event rows are at least 44 tall; the reply buttons, icon buttons and tick get an invisible 44 x 44 hit area (`hub.css`).
+- **Checked.** scripts/clubhouse/native.mjs at 390 and 430px (real hit testing with elementFromPoint).
+
+## 2026-09-30 — Plan a trip in four steps, and a travelers audience (Clickables gaps 8 and 22); Untick a done task (Clickables gap 18)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Plan a trip in four steps, and a travelers audience (Clickables gaps 8 and 22)
+
+- **Issue.** Plan a trip was one form, with no link to the calendar event or who travels; New announcement could not reach a trip's travelers.
+- **Fix.** Four steps (Event, Travelers, Logistics, Itinerary) with Back and Next; the event fills name, place and day, its invitees are the travelers (written with explicit adds and removes); Publish saves the trip once, so a Retry writes only the travelers. New announcement offers "<trip> travelers · N". New states CH-10210, CH-10211, CH-10312, CH-10313. The class-clash line is not built (Q-84).
+- **Checked.** hub 101/101, 6 of 6 mutations caught.
+
+### Untick a done task (Clickables gap 18)
+
+- **Issue.** A player who ticked a task by accident could not undo it.
+- **Fix.** A tick on a done task opens it again through the new `uncompleteTask` (their own assignment back to pending, as the live RLS policy allows). Optimistic; a refusal leaves it done with CH-10011 and Retry.
+- **Checked.** hub 96/96, 2 of 2 mutations caught; uncomplete-task 3/3.
+
 ## 2026-09-30 — Attach from Documents, and Edit an announcement (Clickables gaps 5 and 11)
 
 ```text

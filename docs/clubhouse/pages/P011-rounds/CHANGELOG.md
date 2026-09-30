@@ -3,6 +3,42 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions). Every entry is
 dated 2026-09-30: the tracker and git show no earlier Rounds work.
 
+## 2026-09-30 — Phone tap targets
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+- **Issue.** The review's previous and next hole (30px), the unfinished round's discard (38px), the shot screen's pills (36px) and setup's Back (34px) were under 44pt on the phone.
+- **Fix.** Each gets an invisible 44 x 44 hit area without changing how it is drawn (`rounds.css`, `rounds-track.css`, `rounds-setup.css`). Left as they are: the nine-across hole strip and the scorecard's hole cells (nine 44pt columns do not fit in 390pt, and the whole column picks the hole).
+- **Checked.** scripts/clubhouse/native.mjs at 390 and 430px.
+
+## 2026-09-30 — Round entry states (Q-81); A tap on a score picks the hole (Clickables gap 7); Cancel on Add a course (Clickables gap 24)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Round entry states (Q-81)
+
+- **Issue.** The live round flow has four states the /rounds boards do not draw: a saved round to recover, a round already in progress on the same course and day, a reload, and a qualifier that closed during the round.
+- **Fix.** RecoveryDialog, InProgressConflictDialog, ReloadBanner and RoundErrorBanner, SaveAsPracticeSheet and the Save for later / Discard failure toasts, as Clubhouse components; Discard now asks first everywhere. Engine wiring waits on #2104 (stacked, Q-81). Preview /clubhouse-preview/entry.
+- **Checked.** round-entry 38/38, 57 mutations killed. Not viewed in a browser.
+
+### A tap on a score picks the hole (Clickables gap 7)
+
+- **Issue.** In the round review's card only the hole number picked a hole.
+- **Fix.** A tap on a score picks that hole too, with the select haptic (pointer only; the hole number stays the keyboard control; Tot picks nothing).
+- **Checked.** round-review 31/31, the mutation caught.
+
+### Cancel on Add a course (Clickables gap 24)
+
+- **Issue.** Closing Add a course dropped the coach out of the course picker.
+- **Fix.** Cancel goes back to the picker it was opened from, as on the board (preview only until #2104).
+- **Checked.** round-setup 20/20, the mutation caught.
+
 ## 2026-09-30 — V2 page docs and the contract pass (docs only)
 
 ```text

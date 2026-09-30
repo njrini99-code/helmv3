@@ -2,6 +2,30 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Phone tap targets
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+- **Issue.** The player rows in the phone list were 38px tall.
+- **Fix.** They are at least 44 tall (`coachhelm.css`).
+- **Checked.** scripts/clubhouse/native.mjs at 390 and 430px.
+
+## 2026-09-30 — Assign as focus on a strength (Clickables gap 12)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Assign as focus on a strength (Clickables gap 12)
+
+- **Issue.** Assign was hidden on a strength, though the board draws it on Theo's card; contract 130806 had been written from the code, not the board.
+- **Fix.** CoachHelm offers Assign as focus on a strength (a keep-doing focus); 130806 is reworded (Q-80, kept by the owner).
+- **Checked.** coachhelm 112/112; the old hide fails the reworded test.
+
 ## 2026-09-30 — CoachHelm for coach and player, and the V2 page docs
 
 ```text

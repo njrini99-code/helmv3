@@ -198,6 +198,8 @@ Five confirms: Delete account (the person types delete), Leave team, Make a new 
 | 81103 | CH-8503 | `MAKE_A_NEW_INVITE_CODE` | Make a new invite code |
 | 81104 | CH-8504 | `RESET_COACHHELM_UPDATES` | Reset CoachHelm updates (player) |
 | 81105 | CH-8505 | `TURN_OFF_COACHHELM_ON_YOUR_DASHBOARDS` | Turn off CoachHelm on your dashboards |
+| 81106 | CH-8509 | `PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED` | Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes |
+| 81107 | CH-8510 | `PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS` | Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet |
 
 ## 12 — State preservation
 
@@ -294,11 +296,11 @@ Settings' own (81801 to 81807): the rail is a navigation with the open section m
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 81801 | CH-8801 | `THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK` | The section list is a navigation landmark; the open section is marked current |
+| 81801 | CH-8801 | `THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK` | The section list is a navigation landmark; the open section is marked current. On the phone the list is the landmark and an open section names itself in the bar ("Back to Settings" and the heading) |
 | 81802 | CH-8802 | `EVERY_SWITCH_HAS_A_NAME_A_SCREEN` | Every switch has a name a screen reader reads (for example "Messages by email") |
 | 81803 | CH-8803 | `SAVE_STATUS_CHANGES_ARE_ANNOUNCED` | Save status changes are announced |
 | 81804 | CH-8804 | `ERRORS_ARE_ANNOUNCED` | Errors are announced |
-| 81805 | CH-8805 | `THE_NOTIFICATION_GRIDS_ARE_TABLES` | The notification grids are tables |
+| 81805 | CH-8805 | `THE_NOTIFICATION_GRIDS_ARE_TABLES` | The notification grids are tables. On the phone there is no grid: each kind is a button that names what is on, and its sheet has named switches |
 | 81806 | CH-8806 | `DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS` | Dialogs trap focus, Esc closes, focus returns to the button |
 | 81807 | CH-8807 | `EVERY_FIELD_HAS_A_LABEL_AND_ITS` | Every field has a label, and its help or error is read with it |
 
@@ -308,11 +310,11 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-180
 
 Status: DEFINED
 
-Below an 860px canvas the rail becomes a scrolling strip above the section, and below 560px form grids stack (81901). That is the desktop layout reflowed. The phone design (docs/clubhouse/phone/settings.md) is a draft awaiting the owner and is not built, so this category is defined but reserved.
+At 820px or less Settings is the native phone screen (81901; owner-approved 2026-09-30, docs/clubhouse/phone/settings.md): a grouped list that pushes each section as a history entry with the tab bar kept, edit cards as full-height sheets, choices as bottom sheets and destructive choices as action sheets, over the same data, writes and catalog numbers. On a wider canvas the rail becomes a scrolling strip below 860px and form grids stack below 560px.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 81901 | — | `PHONE_LAYOUT` | At a canvas of 860px or less the rail becomes a scrolling strip above the section, and at 560px or less form grids stack and the notification switches keep 48px columns; the native phone design (a grouped list that pushes to each section, docs/clubhouse/phone/settings.md) is a draft awaiting the owner and is not built. |
+| 81901 | — | `PHONE_LAYOUT` | At 820px or less Settings is the native phone screen (docs/clubhouse/phone/settings.md): a grouped list that pushes each section as a history entry with the tab bar kept, edit cards as full-height sheets, choices as bottom sheets and destructive choices as action sheets; on a wider canvas the rail becomes a scrolling strip at 860px and form grids stack at 560px. |
 
 From the shell (P001): 11901 PHONE_CHROME.
 

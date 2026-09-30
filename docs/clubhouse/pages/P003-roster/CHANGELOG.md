@@ -2,6 +2,25 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Schedule 1:1 on desktop (Clickables gap 4); View insights in the row menu (Clickables gap 16)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Schedule 1:1 on desktop (Clickables gap 4)
+
+- **Issue.** The desktop Roster panel had no way to plan a 1:1, which the phone had.
+- **Fix.** Schedule 1:1 opens Calendar's editor with only that player invited (`calendar?new=1&with=<id>`, D-52).
+- **Checked.** roster + stats-player 124/124, 2 of 2 mutations caught.
+
+### View insights in the row menu (Clickables gap 16)
+
+- **Issue.** The List view's row menu had no way to CoachHelm's read of a player.
+- **Fix.** The menu starts with View insights, which opens CoachHelm on that player (an id not on the board opens the most pressing player).
+- **Checked.** roster + coachhelm 178/178, 2 of 2 mutations caught.
+
 ## 2026-09-30 — V2 page docs (copied from Messages); eight fixes found while writing them
 
 ```text

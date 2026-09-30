@@ -2,6 +2,61 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Phone sheets and the keyboard; Phone tap targets reach 44 x 44; Quick second taps; Native-feel and phone-width scans; Old addresses open the rebuilt screens; The bell on phone tab roots (Clickables gap 1); Team Hub count for players (Clickables gap 3); The gear opens the page's own settings (Clickables gap 20)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Phone sheets and the keyboard
+
+- **Issue.** On the phone the keyboard covered the lower fields and the Save button of every bottom sheet with a text field (New event, Plan a trip, New announcement, notes, Add a course). The app never resizes for the keyboard, and only Messages and the Settings sheets lifted themselves.
+- **Fix.** Every sheet (`.ch-modal`) now sits on top of the keyboard while it is open, shrinks to the space above it and scrolls its body, so the focused field and the footer stay visible (`controls.css`, `--keyboard-height`).
+- **Checked.** Not yet seen on an iPhone; the keyboard only exists in the native shell.
+
+### Phone tap targets reach 44 x 44
+
+- **Issue.** The native-feel scan found controls under Apple's 44pt minimum on the phone: segmented controls drawn at 26px, small buttons at 30px, pills at 36px, 40px icon buttons and short text links (Team stats, Add, Message).
+- **Fix.** On the phone each of these controls gets an invisible hit area that reaches 44 x 44 around it, without changing how it is drawn (`controls.css`, zero specificity so a page's own hit area wins).
+- **Checked.** scripts/clubhouse/native.mjs at 390 and 430px.
+
+### Quick second taps
+
+- **Issue.** A fast second tap on a control (a score stepper, a toggle) could be read by iOS as a double-tap zoom.
+- **Fix.** Buttons, links, tabs, switches, labels and selects use `touch-action: manipulation` and no long-press link preview; pinch zoom still works everywhere (`base.css`).
+- **Checked.** Code change; not yet seen on an iPhone.
+
+### Native-feel and phone-width scans
+
+- **Issue.** The accessibility scan ran only at 1280 and 390px, never checked sideways scrolling, and stopped the whole run when one tap failed.
+- **Fix.** New `scripts/clubhouse/native.mjs` (tap targets under 44, text fields under 16px that iOS zooms into, sideways scroll, at 390 and 430px); `a11y.mjs` takes `CH_WIDTHS`, fails a phone page that scrolls sideways, and reports a failed tap instead of crashing.
+- **Checked.** First run: no sideways scroll and no zoom-on-focus field on any screen.
+
+### Old addresses open the rebuilt screens
+
+- **Issue.** With Clubhouse on, notifications and bookmarks to /tasks, /announcements, /documents, /travel, /roster/[id] and /rounds/[id]/review opened Fairway pages inside Clubhouse.
+- **Fix.** Each route's layout sends the viewer to the rebuilt screen (Team Hub tabs, the player's Stats profile, /rounds/[id]) through `routes/alias.ts`, only when that screen is rebuilt for their role; flag off, nothing changes.
+- **Checked.** alias 4/4, the mutation caught. Not run: a signed-in browser check.
+
+### The bell on phone tab roots (Clickables gap 1)
+
+- **Issue.** Tab roots that draw their own title (CoachHelm, the player's Rounds and Team Hub) hid the bell, so a player had no bell on three of four tabs.
+- **Fix.** `PhoneTop start` with no action puts the top bar in a `start` mode: the page title and the bell.
+- **Checked.** shell.test 47/47, 4 of 4 mutations caught; seen at 390.
+
+### Team Hub count for players (Clickables gap 3)
+
+- **Issue.** A player's Team Hub item had no count.
+- **Fix.** The sidebar and phone tab carry the current app's Team Hub count (unread announcements, tasks and trips), nothing when there are none.
+- **Checked.** shell.test 48/48, 3 of 3 mutations caught.
+
+### The gear opens the page's own settings (Clickables gap 20)
+
+- **Issue.** The coach's top-bar gear on CoachHelm and Team Hub opened the Settings home.
+- **Fix.** There it reads CoachHelm settings or Team Hub settings and opens that section (?section=coachhelm, ?section=team); elsewhere and for players it stays Settings.
+- **Checked.** shell 49/49, 2 of 2 mutations caught.
+
 ## 2026-09-30 — V2 page docs; every hand contract proven by a test
 
 ```text

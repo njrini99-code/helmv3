@@ -2,6 +2,51 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The phone Settings, to the owner-approved design
+
+```text
+Design package: docs/clubhouse/phone/settings.md (approved by the owner 2026-09-30; mockups linked in its Status line)
+PR/commit:      agent/clubhouse (this change, not committed when written)
+Contract IDs:   81901 PHONE_LAYOUT reserved -> implemented; new catalog codes CH-8509 and CH-8510
+Actions:        none new (every phone control calls an existing write)
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- At 820px or less Settings is a different screen, not the page reflowed: a grouped list that pushes to each section
+  (a history entry, the tab bar stays), edit cards as full-height sheets, choices as bottom sheets, destructive choices
+  as iOS action sheets, the priorities with a hold-and-drag reorder handle, and a phone skeleton. `phone/` holds it;
+  `SettingsView` picks it with `useChPhone`. Same data, writes, loaders and `useAction` paths.
+- The behaviour a desktop card and a phone screen both need moved out of the cards into `hooks.ts` (`useDelivery`,
+  `useRouting`, `useCoachHelmPower`, `useInvite`, `useMembership`, `usePushToggle`, `useAvatarUpload`,
+  `useReportProblem`, `useSignOut`, `useDeleteAccount`, `useDevicePrefs`, and the `SAVE_COPY` toasts) and
+  `usePhilosophy` is exported, so a save has one set of copy, numbers and rollback on both. No desktop behaviour changed
+  (the 113 desktop tests pass unchanged).
+- New catalog rows: CH-8509 (the discard question when an edit sheet closes with changes) and CH-8510 (the typed follow-up
+  sheet for Delete account); the "How" cells of the rows that differ on the phone; the phone paragraph at the top.
+- Scoring choices on the phone save one at a time as they are picked. An edit sheet with changes reports as unsaved,
+  so the page's guard (closing the tab, a link off the page) covers the phone too. The old addresses
+  (`/settings/notifications`, `/settings/coaching-intelligence`) open their section pushed on the phone.
+
+### Where it differs from the mockups
+
+Real values for the placeholders; a coach's single Full name field; an Account section that holds Email, Password and
+Delete; the quiet-mode footnote says what the router does; the desktop controls the mockups do not draw are rows in the
+same style; Mute push, Mute email, Reset and Copy code are not built. The full list is in DESIGN.md.
+
+### Why
+
+The owner approved the phone design on 2026-09-30. The desktop page reflowed was never the phone design (81901 said
+so while the design was a draft).
+
+### Verification
+
+- `settings.test.tsx` 169 cases (56 new, each titled 81901), with `settings-server.test.tsx` and `logic.test.ts`
+  251/251; typecheck:fast exit 0; eslint on the changed Settings files exit 0.
+- 67 mutations of the code the new tests guard, all killed. Not viewed in a browser or on a device (VERIFY.md).
+
 ## 2026-09-30 — V2 page docs; every contract answered; ten fixes
 
 ```text

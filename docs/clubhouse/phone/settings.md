@@ -21,3 +21,11 @@ Delete account, Leave team, New invite code and Turn off CoachHelm use an action
 
 ## Haptics
 Selection on switches and pickers, commit on a completed save, error on a failed save, warning before a destructive action.
+
+## Build status (2026-09-30)
+
+Built: `src/clubhouse/screens/settings/phone/` (the list, every section, the sheets and the reorder), picked by
+`SettingsView` with `useChPhone`; tests are the "Settings · phone" group in `settings.test.tsx` (contract 81901). Where
+the built screen differs from the mockups (real values, a coach's single name field, the Account section, the
+quiet-mode wording, and what was added or left out) is listed in `docs/clubhouse/pages/P008-settings/DESIGN.md`. Not yet
+viewed at 390px in a browser or on a device.

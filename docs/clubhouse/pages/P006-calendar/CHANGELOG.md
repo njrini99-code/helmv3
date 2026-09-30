@@ -2,6 +2,25 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Duplicate, Print and the jump panel's Close (Clickables gaps 9, 15, 21); Compare schedules on a class (Clickables gap 17)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Duplicate, Print and the jump panel's Close (Clickables gaps 9, 15, 21)
+
+- **Issue.** The board draws Duplicate, Print and a Close on the jump panel; none existed.
+- **Fix.** Event actions › Duplicate (coach) opens New event seeded from the event and publishes a new one; More › Print week (day, month or agenda by view) prints the view with the shell dropped; the jump panel has its own Close.
+- **Checked.** calendar 74/74, 5 of 5 mutations caught.
+
+### Compare schedules on a class (Clickables gap 17)
+
+- **Issue.** A coach looking at a player's class had no way to set it against the team's schedule.
+- **Fix.** A class's detail ends with Compare schedules: New event on the class's day with only its player invited, so Find a time compares the two.
+- **Checked.** calendar 75/75, the mutation caught.
+
 ## 2026-09-30 — The editor keeps what was typed through a page re-read
 
 ```text

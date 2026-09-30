@@ -2,6 +2,19 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Schedule 1:1 in the hero (Clickables gap 4)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Schedule 1:1 in the hero (Clickables gap 4)
+
+- **Issue.** A coach on a player's Stats profile had no way to plan a 1:1.
+- **Fix.** Schedule 1:1 opens Calendar's editor with only that player invited (D-52).
+- **Checked.** roster + stats-player 124/124, 2 of 2 mutations caught.
+
 ## 2026-09-30 — Tabs from the keyboard; a one-round trend; the profile skeleton
 
 ```text

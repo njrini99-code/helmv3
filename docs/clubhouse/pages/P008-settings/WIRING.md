@@ -14,19 +14,27 @@ Clubhouse route adapter: src/clubhouse/routes/settings.tsx (session, team; a mis
 Server loader:           src/clubhouse/data/settings.ts loadSettings (every read in one server pass, each with its own
                          error flag; each failed read logs through chLogServer('settings', …) and never fails the page)
 Screen:                  src/clubhouse/screens/settings/Settings.tsx (live container: the writes, this device's push, the
-                         native flag) -> SettingsView.tsx (header, rail, the open section, the page's copy of the data)
-Skeleton:                src/clubhouse/screens/settings/SettingsSkeleton.tsx (CH-8401), from settings/loading.tsx and the
-                         loading files of the two old links
+                         native flag) -> SettingsView.tsx (header, rail, the open section, the page's copy of the data);
+                         at 820px or less (useChPhone) SettingsView renders phone/SettingsPhone.tsx over the same data,
+                         writes and device (81901)
+Skeleton:                src/clubhouse/screens/settings/SettingsSkeleton.tsx (CH-8401; a phone version of the list is
+                         switched in CSS), from settings/loading.tsx and the loading files of the two old links
 ```
 
 ## End-to-end graph
 
 ```text
-UI (SettingsView rail; AccountSection, NotificationsSection, TeamSection, GolfSection, CoachHelmSection, PreferencesSection)
+UI (SettingsView rail; AccountSection, NotificationsSection, TeamSection, GolfSection, CoachHelmSection, PreferencesSection;
+    on the phone SettingsPhone and AccountPhone, NotificationsPhone, TeamPhone, GolfPhone, CoachHelmPhone, PreferencesPhone)
 ↓
 Action: the cards' handlers. Forms and dialogs go through useSaveAction (useAction, with the work that follows a landed save
         inside the action so the toast's Retry finishes it); switches, segments and pickers through useInstantSave; the
         CoachHelm settings through usePhilosophy's ordered queue
+↓
+Shared behaviour: screens/settings/hooks.ts (useDelivery, useRouting, useCoachHelmPower, useInvite, useMembership,
+                  usePushToggle, useAvatarUpload, useReportProblem, useSignOut, useDeleteAccount, useDevicePrefs and the
+                  SAVE_COPY toasts) is what a desktop card and a phone screen both call, so a save has one set of copy,
+                  numbers and rollback
 ↓
 Client controller: keepSaved (SettingsView) wraps the writes so a landed write also patches the page's copy of the data;
                    useAction and useInstantSave add the offline refusal (CH-1903), the slow notice (CH-1902), chReport,
@@ -90,6 +98,32 @@ push on this device, sign out, copy and Report a problem check nothing first.
 | ACT-P008-DELETE-ACCOUNT | Session › Delete account | `del.run` (`settings.deleteAccount`) | `DELETE /api/account/delete`, then `cleanupAfterDelete` | the account and its rows | confirm 81101 · lands 80903 · fails 80623 · Retry 81402 |
 | ACT-P008-RETRY-READ | A notice's Try again | `onRetry` (`router.refresh`) | none | none | reads the page again 81401 |
 
+### On the phone
+
+Same actions, same writes and hooks, other controls. Nothing on the phone writes anything new.
+
+| Desktop control | Phone control | Note |
+| --- | --- | --- |
+| Section rail | List rows; a section is a history entry (`usePhoneStackHistory`, CH-1906) | `?section=` opens it pushed |
+| Profile › Save changes | Profile sheet › Save (off until changed) | closes on success; asks before closing with changes (CH-8509) |
+| Email › Send confirmation | Change email sheet › Send, Enter | Account shows the "check your inbox" note |
+| Password › Update password | Password sheet › Update | |
+| Email and push, quiet mode | A kind row opens a sheet of Email and Push switches; Quiet mode is a switch row | `useDelivery` |
+| CoachHelm updates switches | A kind (Rounds and reviews, Goals, Insights) opens a sheet of In app, Push and Email | one `setRoutingAll` per flip (`useRouting.setGroup`) |
+| Mute push, Mute email, Reset | none | not in the design |
+| Copy code, Copy link, Share | Share (the share sheet, else copies the link) | |
+| Make a new code | New code › action sheet (CH-8503) | |
+| Scoring and format › Save changes | Three picker rows, each saving as it is picked, one at a time | `useInstantSave('scoring')`, `saveScoring` |
+| Event reminders › Save changes | Send reminders saves as it flips; each time is a slider sheet with Save | `saveReminders` |
+| Team details › Save changes | Team details sheet (name, season, school) | |
+| Golf details › Save changes | Golf details sheet | |
+| Leave team | Leave team › action sheet (CH-8502) | |
+| Join a team form | Join a team sheet | |
+| CoachHelm switches | Switch rows; turning dashboards off asks in an action sheet (CH-8505) | `useCoachHelmPower` |
+| Priority up and down buttons | Touch-and-hold drag, saved once on drop; the handle takes the arrow keys | `phone/Reorder.tsx` |
+| CoachHelm sliders, segments | Slider rows and picker rows | `usePhilosophy`, the same ordered queue |
+| Delete account › typed confirm | Action sheet (CH-8501), then the typed sheet (CH-8510) | |
+
 ## Components
 
 | Path | Purpose | States |
@@ -106,7 +140,18 @@ push on this device, sign out, copy and Report a problem check nothing first.
 | `screens/settings/live.ts` | `keepSaved`: a landed write also patches the page's copy of the data | 81204 |
 | `screens/settings/model.ts` | Types, `SECTIONS`, `parseSection`, the validators, labels | 80501 to 80515, 80801 |
 | `screens/settings/writes.ts` | `createLiveWrites`, `afterDeleteHref`, `changed` (an update that changed no row is a failure) | 80806, 80807, 80808, 80903 |
-| `screens/settings/SettingsSkeleton.tsx` | Route skeleton | 80201 |
+| `screens/settings/SettingsSkeleton.tsx` | Route skeleton, with a phone version of the list | 80201 |
+| `screens/settings/hooks.ts` | The behaviour a desktop card and a phone screen share (see the graph), and `SAVE_COPY` | CH-8001 to CH-8025 (the toasts), 81302, 81402 |
+| `screens/settings/phone/SettingsPhone.tsx` | The phone list and its pushed sections, the top bar, the history entries, the hosted Profile, Email and Password sheets | 81901, CH-1906 |
+| `screens/settings/phone/ui.tsx` | `Group`, `NavRow`, `LinkRow`, `ActionRow`, `SwitchRow`, `SliderRow`, `PickerRow`, `FieldRow`, `Problem` | 81901 |
+| `screens/settings/phone/sheets.tsx` | `FormSheet` (Cancel, title, Save), `ListSheet` (title, Done), `PickerSheet`, `ActionSheet`, `useSheetDraft`; on the native dialog with `useSheetDrag` | 81901, CH-8509, CH-1611 |
+| `screens/settings/phone/AccountPhone.tsx` | Account, and the Profile, Email, Password and typed-delete sheets | CH-8001 to CH-8004, CH-8023, CH-8101 to CH-8107, CH-8201, CH-8304, CH-8501, CH-8510 |
+| `screens/settings/phone/NotificationsPhone.tsx` | The kind rows and their sheets | CH-8005 to CH-8008, CH-8010, CH-8202 to CH-8204 |
+| `screens/settings/phone/TeamPhone.tsx` | Invite card, Team details, scoring pickers, reminders | CH-8011 to CH-8015, CH-8013, CH-8108 to CH-8111, CH-8205 to CH-8208, CH-8301, CH-8503 |
+| `screens/settings/phone/GolfPhone.tsx` | Golf details sheet, Team (leave) or Join a team | CH-8016 to CH-8019, CH-8112 to CH-8115, CH-8209, CH-8210, CH-8302, CH-8303, CH-8502 |
+| `screens/settings/phone/CoachHelmPhone.tsx` | The power switches and every CoachHelm setting as rows | CH-8020 to CH-8022, CH-8211, CH-8405, CH-8505 |
+| `screens/settings/phone/Reorder.tsx` | The priority ranker with the reorder handle | CH-8606, CH-8701 |
+| `screens/settings/phone/PreferencesPhone.tsx` | Animations, Haptics (app) | CH-8608, CH-8707 |
 
 ## Hooks
 
@@ -116,6 +161,7 @@ push on this device, sign out, copy and Report a problem check nothing first.
 | `src/hooks/golf/use-appearance-preferences.ts` (`useAppearancePreferences`) | shared | Preferences.tsx |
 | `src/lib/utils/haptics-pref.ts` | shared | Preferences.tsx |
 | `src/clubhouse/lib/use-action.ts`, `haptics.ts`, `track.ts`, `reduced-motion.ts`, `motion.ts` | Clubhouse | throughout |
+| `src/clubhouse/lib/use-phone.ts` (`useChPhone`), `sheet-drag.ts` (`useSheetDrag`), `shell/phone-chrome.tsx` (`PhoneTop`, `usePhoneStackHistory`, `useBackFromMore`) | Clubhouse | SettingsView, phone/ |
 
 ## Services / server actions
 

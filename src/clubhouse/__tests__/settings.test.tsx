@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 
 /**
@@ -17,11 +17,14 @@ const track = vi.hoisted(() => ({ report: vi.fn(), trail: vi.fn() }));
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: track.report, chTrail: track.trail, chTagSession: vi.fn() }));
 vi.mock('@sentry/nextjs', () => ({ getFeedback: () => undefined, addBreadcrumb: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 import { ToastProvider } from '../ui/Toast';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { SettingsView } from '../screens/settings/SettingsView';
 import { SettingsSkeleton } from '../screens/settings/SettingsSkeleton';
-import { parseSection, SECTIONS, type ChCoachHelmSettings, type ChDevice, type ChResult, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../screens/settings/model';
+import { parseSection, PRIORITY_LABEL, SECTIONS, type ChCoachHelmSettings, type ChDevice, type ChResult, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../screens/settings/model';
 import { coachData, failedRead, playerData } from '../preview/fixtures-settings';
 import './dialog-polyfill';
 
@@ -1111,6 +1114,972 @@ describe('Settings · what is reported', () => {
     await expectCode('CH-8212');
     spy.mockRestore();
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'settings.notifications', severity: 'high' }));
+  });
+});
+
+// ── The phone (docs/clubhouse/phone/settings.md, owner-approved 2026-09-30) ──
+
+describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({
+      matches: q === '(max-width: 820px)',
+      media: q,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as never;
+    window.history.replaceState(null, '', '/golf/dashboard/settings');
+    router.back.mockClear();
+    localStorage.clear();
+  });
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+    window.history.replaceState(null, '', '/');
+  });
+
+  /** The shell's phone top bar, where the page's PhoneTop renders. */
+  function SlotHost() {
+    const { setSlot } = usePhoneChromeState();
+    return <div ref={setSlot} data-testid="phone-top" />;
+  }
+  function phone(opts: { data?: ChSettingsData; writes?: Partial<ChSettingsWrites>; device?: ChDevice; onDeleted?: () => void; initialSection?: ChSettingsSection } = {}) {
+    const writes = makeWrites(opts.writes);
+    const onDeleted = opts.onDeleted ?? vi.fn();
+    const user = userEvent.setup();
+    const utils = render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <SettingsView data={opts.data ?? coachData()} writes={writes} device={opts.device ?? makeDevice()} initialSection={opts.initialSection ?? 'account'} onDeleted={onDeleted} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    return { ...utils, writes, user, onDeleted };
+  }
+  const top = () => within(screen.getByTestId('phone-top'));
+  const list = () => screen.getByRole('navigation', { name: 'Settings sections' });
+  const openRow = async (user: User, name: RegExp) => {
+    await user.click(within(list()).getByRole('button', { name }));
+    await screen.findByRole('button', { name: 'Back to Settings' });
+  };
+  /** A sheet by its catalog number, when it is open (a closed one keeps its dialog in the page). */
+  const sheetOf = (c: string) => {
+    const d = code(c);
+    return d?.hasAttribute('open') ? (d as HTMLElement) : null;
+  };
+  /** Waits for a sheet to open, by its catalog number. */
+  const openSheet = (c: string) =>
+    waitFor(() => {
+      const d = sheetOf(c);
+      if (!d) throw new Error(`${c} is not open`);
+      return d;
+    });
+  const dialog = (name: string) => screen.getByRole('dialog', { name });
+  /** A finger down at y=100 on `handle`, dragged `to` px down, held a moment so the release is not a flick, then let go. */
+  const dragSheet = async (handle: HTMLElement, to: number) => {
+    act(() => {
+      handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+      window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + to }));
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    act(() => {
+      window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + to }));
+      window.dispatchEvent(new MouseEvent('pointerup', { clientY: 100 + to }));
+    });
+  };
+
+  it('81901 the coach root: a large title, the identity row, the sections with their summaries, help, and Sign out', () => {
+    phone();
+    expect(top().getByRole('heading', { level: 1, name: 'Settings' })).toBeTruthy();
+    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Maya Reyes Head coach · Varsity' })).toBeTruthy();
+    const rows = within(list()).getAllByRole('button');
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Notifications', 'Team', 'CoachHelm', 'Preferences']);
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Email, Push', 'Scoring, invites', 'Priorities, alerts', 'Motion, haptics']);
+    expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
+    expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+    // Not the desktop page reflowed: no section rail.
+    expect(document.querySelector('.ch-set-rail')).toBeNull();
+  });
+
+  it('81901 the player root has Golf profile in place of Team and CoachHelm, and the handicap on the identity row', () => {
+    phone({ data: playerData(true) });
+    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP 2.4' })).toBeTruthy();
+    const rows = within(list()).getAllByRole('button');
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Golf profile', 'Notifications', 'Preferences']);
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Handicap, team', 'Push, CoachHelm', 'Motion, haptics']);
+  });
+
+  it('81901 CH-8801 a row pushes its section, the bar reads "Settings", and Back and the edge swipe pop it (CH-1906)', async () => {
+    const { user } = phone();
+    await openRow(user, /^Notifications/);
+    expect(await screen.findByText(/Which updates reach you/)).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Settings sections' })).toBeNull();
+    expect(top().getByRole('heading', { level: 1, name: 'Notifications' })).toBeTruthy();
+    expect((window.history.state as { chPhone?: number } | null)?.chPhone).toBe(1);
+    await user.click(top().getByRole('button', { name: 'Back to Settings' }));
+    await screen.findByRole('navigation', { name: 'Settings sections' });
+    await openRow(user, /^Team/);
+    // The browser's back (the iOS edge swipe) pops the same screen.
+    act(() => window.history.back());
+    expect(await top().findByRole('button', { name: 'Back to More' })).toBeTruthy();
+    await screen.findByRole('navigation', { name: 'Settings sections' });
+  });
+
+  it('81901 a section named in the URL opens pushed, and the list is what Back returns to', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/settings?section=coachhelm');
+    const { user } = phone();
+    expect(await screen.findByRole('list', { name: 'Priorities, most important first' })).toBeTruthy();
+    await user.click(top().getByRole('button', { name: 'Back to Settings' }));
+    await screen.findByRole('navigation', { name: 'Settings sections' });
+  });
+
+  it('81901 80102 an old address opens its section pushed: /settings/notifications passes its section with no query, and the bare page still opens on the list', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/settings/notifications');
+    const first = phone({ initialSection: 'notifications' });
+    expect(await screen.findByText(/Which updates reach you/)).toBeTruthy();
+    expect(top().getByRole('button', { name: 'Back to Settings' })).toBeTruthy();
+    first.unmount();
+    // The route's default section (Account) is not a request for it.
+    window.history.replaceState(null, '', '/golf/dashboard/settings');
+    phone({ initialSection: 'account' });
+    expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
+    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+  });
+
+  it('81901 CH-8008 a kind of update says what is on, and its sheet changes every category in it with one write (player)', async () => {
+    const setRoutingAll = vi.fn((_prefs: PrefsByCategory) => okw());
+    const { user } = phone({ data: playerData(true), writes: { setRoutingAll } });
+    await openRow(user, /^Notifications/);
+    const updates = await screen.findByRole('region', { name: 'CoachHelm updates' });
+    const kinds = within(updates).getAllByRole('button');
+    // Round reviews and goals your coach assigned are on for push; the rest of each kind isn't: "(some)".
+    expect(kinds.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['In app, Push (some)', 'In app, Push (some), Email (some)', 'In app']);
+    await user.click(within(updates).getByRole('button', { name: /^Insights/ }));
+    const sheet = dialog('Insights');
+    expect(within(sheet).getByRole('switch', { name: 'In app' })).toBeChecked();
+    expect(within(sheet).getByRole('switch', { name: 'Push' })).not.toBeChecked();
+    hapticSpy.mockClear();
+    await user.click(within(sheet).getByRole('switch', { name: 'Push' }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    await waitFor(() => expect(setRoutingAll).toHaveBeenCalledTimes(1));
+    const sent = setRoutingAll.mock.calls[0]![0] as PrefsByCategory;
+    expect(['new_insight', 'composite_insight', 'coach_commented'].map((c) => sent[c as keyof PrefsByCategory]?.push)).toEqual([true, true, true]);
+    // What was already set is sent back as it was.
+    expect(sent.coach_assigned_goal).toEqual({ push: true, email: true, in_app: true });
+    expect(within(dialog('Insights')).getByRole('switch', { name: 'Push' })).toBeChecked();
+    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(within(updates).getByRole('button', { name: /^Insights/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('In app, Push'));
+  });
+
+  it('81901 CH-8005 CH-8203 a switch in a kind sheet that fails flips back and says so; a failed read says so with Try again', async () => {
+    const setDelivery = vi.fn(() => fail());
+    const { user, writes } = phone({ writes: { setDelivery } });
+    await openRow(user, /^Notifications/);
+    const mail = await screen.findByRole('region', { name: 'Email and push' });
+    expect(within(mail).getByRole('button', { name: /^Messages/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email, Push');
+    expect(within(mail).getByRole('button', { name: /^Events & reminders/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Email');
+    await user.click(within(mail).getByRole('button', { name: /^Messages/ }));
+    const sheet = dialog('Messages');
+    expect(within(sheet).getByRole('switch', { name: 'Push' })).toBeChecked();
+    await user.click(within(sheet).getByRole('switch', { name: 'Push' }));
+    await expectCode('CH-8005', /Couldn't change messages push/);
+    expect(setDelivery).toHaveBeenCalledWith('push_messages', false);
+    await waitFor(() => expect(within(dialog('Messages')).getByRole('switch', { name: 'Push' })).toBeChecked());
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(writes.refresh).not.toHaveBeenCalled();
+  });
+
+  it('81901 CH-8202 CH-8203 a section whose read failed says so in its place, with Try again', async () => {
+    const { user, writes } = phone({ data: { ...playerData(true), delivery: failedRead, playerRouting: failedRead } });
+    await openRow(user, /^Notifications/);
+    await expectCode('CH-8202', /email and push settings didn't load/);
+    await expectCode('CH-8203', /CoachHelm update settings didn't load/);
+    expect(screen.queryByRole('switch', { name: 'Push' })).toBeNull();
+    await user.click(within(code('CH-8202') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(writes.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('81901 CH-8201 a profile that did not load opens Account from the identity row, with the notice and no edit sheet', async () => {
+    const { user } = phone({ data: { ...coachData(), profile: failedRead } });
+    await user.click(screen.getByRole('button', { name: /^maya\.reyes@unc\.edu/ }));
+    await expectCode('CH-8201', /profile didn't load/);
+    expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull();
+  });
+
+  it('81901 CH-8204 the weekly team email that did not load is disabled with its reason; push on this device keeps its blocked reason', async () => {
+    const { user } = phone({ data: { ...coachData(), digest: failedRead }, device: makeDevice({ status: 'denied' }) });
+    await openRow(user, /^Notifications/);
+    await expectCode('CH-8204', /didn't load/);
+    expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
+    expect(screen.getByRole('switch', { name: 'Push on this device' })).toBeDisabled();
+    expect(screen.getByText(/blocked for GolfHelm/)).toBeTruthy();
+  });
+
+  it('81901 CH-8010 quiet mode pauses the kinds it silences, and the sheet says so instead of offering switches', async () => {
+    const { user, writes } = phone({ data: playerData(true) });
+    await openRow(user, /^Notifications/);
+    const updates = await screen.findByRole('region', { name: 'CoachHelm updates' });
+    await user.click(within(updates).getByRole('switch', { name: 'Quiet mode for CoachHelm' }));
+    await waitFor(() => expect(writes.setRoutingQuiet).toHaveBeenCalledWith(true));
+    expect(within(updates).getByRole('button', { name: /^Insights/ }).querySelector('.ch-setm-row__v')?.textContent).toBe('Paused');
+    // Round reviews and goals your coach assigns are always delivered.
+    expect(within(updates).getByRole('button', { name: /^Goals/ }).querySelector('.ch-setm-row__v')?.textContent).not.toBe('Paused');
+    expect(within(updates).getByText(/always delivered/)).toBeTruthy();
+    await user.click(within(updates).getByRole('button', { name: /^Insights/ }));
+    const sheet = dialog('Insights');
+    expect(within(sheet).getByRole('switch', { name: 'Push' })).toBeDisabled();
+    expect(within(sheet).getByText(/Paused by quiet mode/)).toBeTruthy();
+  });
+
+  describe('the priority ranker', () => {
+    const list = () => screen.getByRole('list', { name: 'Priorities, most important first' });
+    const labels = () => within(list()).getAllByRole('listitem').map((li) => li.querySelector('.ch-setm-rank__txt > span')?.textContent);
+    const keyOf = (label: string) => Object.entries(PRIORITY_LABEL).find(([, v]) => v.label === label)![0];
+    const savedOrder = (fn: ReturnType<typeof vi.fn>, n: number) => {
+      const patch = fn.mock.calls[n]![1] as Record<string, number>;
+      return Object.keys(patch).sort((a, b) => patch[a]! - patch[b]!);
+    };
+
+    it('81901 CH-8701 holding a row and dragging it moves it a step at a time with a tick each, and saves once, on drop', async () => {
+      const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
+      const { user } = phone({ writes: { savePhilosophy } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      const [a, b, c, d, e] = labels() as string[];
+      const first = within(list()).getAllByRole('listitem')[0]!;
+      hapticSpy.mockClear();
+      act(() => {
+        first.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+      });
+      // Touch and hold: nothing lifts until the hold is over.
+      await new Promise((r) => setTimeout(r, 120));
+      expect(first.className).not.toContain('is-held');
+      await waitFor(() => expect(first.className).toContain('is-held'));
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + 57 }));
+      });
+      expect(labels()).toEqual([b, a, c, d, e]);
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + 57 * 2 }));
+      });
+      expect(labels()).toEqual([b, c, a, d, e]);
+      expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(2);
+      // Still in the hand: nothing is saved yet.
+      expect(savePhilosophy).not.toHaveBeenCalled();
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointerup', { clientY: 100 + 57 * 2 }));
+      });
+      await waitFor(() => expect(savePhilosophy).toHaveBeenCalledTimes(1));
+      expect(savedOrder(savePhilosophy, 0)).toEqual([b, c, a, d, e].map((l) => keyOf(l!)));
+      expect(within(list()).getAllByRole('listitem')[2]!.className).not.toContain('is-held');
+    });
+
+    it('81901 a finger that moves before the hold is over is scrolling: the row does not lift', async () => {
+      const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
+      const { user } = phone({ writes: { savePhilosophy } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      const before = labels();
+      const first = within(list()).getAllByRole('listitem')[0]!;
+      act(() => {
+        first.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 130 }));
+      });
+      await new Promise((r) => setTimeout(r, 320));
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 260 }));
+        window.dispatchEvent(new MouseEvent('pointerup', { clientY: 260 }));
+      });
+      expect(first.className).not.toContain('is-held');
+      expect(labels()).toEqual(before);
+      expect(savePhilosophy).not.toHaveBeenCalled();
+    });
+
+    it('81901 the handle takes the arrow keys, and each move saves and ticks (with a keyboard or VoiceOver)', async () => {
+      const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
+      const { user } = phone({ writes: { savePhilosophy } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      const [a, b, c, d, e] = labels() as string[];
+      hapticSpy.mockClear();
+      screen.getByRole('button', { name: `Reorder ${b}` }).focus();
+      await user.keyboard('{ArrowUp}');
+      expect(labels()).toEqual([b, a, c, d, e]);
+      await waitFor(() => expect(savePhilosophy).toHaveBeenCalledTimes(1));
+      expect(savedOrder(savePhilosophy, 0)).toEqual([b, a, c, d, e].map((l) => keyOf(l!)));
+      expect(hapticSpy).toHaveBeenCalledWith('select');
+      // The top row can't go higher: no write.
+      screen.getByRole('button', { name: `Reorder ${b}` }).focus();
+      await user.keyboard('{ArrowUp}');
+      expect(savePhilosophy).toHaveBeenCalledTimes(1);
+      await user.click(screen.getByRole('button', { name: `Move ${c} down` }));
+      expect(labels()).toEqual([b, a, d, c, e]);
+    });
+
+    it('81901 CH-8022 CH-8405 a reorder that fails to save goes back, and the status line says so', async () => {
+      const { user } = phone({ writes: { savePhilosophy: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      const before = labels();
+      screen.getByRole('button', { name: `Reorder ${before[1]}` }).focus();
+      await user.keyboard('{ArrowUp}');
+      await expectCode('CH-8022', /Couldn't save that CoachHelm setting/);
+      expect(labels()).toEqual(before);
+      expect(code('CH-8405')!.textContent).toMatch(/didn't save/);
+    });
+  });
+
+  describe('edit sheets and the discard question', () => {
+    const openProfile = async (user: User) => {
+      await user.click(screen.getByRole('button', { name: /^Maya Reyes/ }));
+      return dialog('Profile');
+    };
+
+    it('81901 CH-8509 the profile sheet keeps Save off until something changes, and closing with changes asks first', async () => {
+      const { user, writes } = phone();
+      const sheet = await openProfile(user);
+      const save = within(sheet).getByRole('button', { name: 'Save' });
+      expect(save).toBeDisabled();
+      expect(within(sheet).queryByLabelText('First name')).toBeNull();
+      await user.type(within(sheet).getByLabelText('Full name'), ' Jr');
+      expect(save).toBeEnabled();
+      // Cancel with changes: an action sheet with the destructive choice, and it warns as it opens.
+      hapticSpy.mockClear();
+      await user.click(within(sheet).getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(sheetOf('CH-8509')).not.toBeNull());
+      const ask = sheetOf('CH-8509')!;
+      expect(ask.getAttribute('role')).toBe('alertdialog');
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      expect(within(ask).getByRole('button', { name: 'Discard changes' })).toBeTruthy();
+      // Keep editing: still there, still as typed.
+      await user.click(within(ask).getByRole('button', { name: 'Keep editing' }));
+      await waitFor(() => expect(sheetOf('CH-8509')).toBeNull());
+      expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
+      // Swiping the sheet down asks too, and puts the sheet back where it was.
+      await dragSheet(sheet.querySelector('.ch-setm-bar') as HTMLElement, 120);
+      await waitFor(() => expect(sheetOf('CH-8509')).not.toBeNull());
+      expect((sheet.closest('dialog') as HTMLElement).style.translate).toBe('');
+      // Discard: closed, nothing sent, and it opens again as saved.
+      await user.click(within(sheetOf('CH-8509')!).getByRole('button', { name: 'Discard changes' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+      expect(writes.saveProfile).not.toHaveBeenCalled();
+      await openProfile(user);
+      expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes');
+      expect(within(dialog('Profile')).getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    it('81901 a sheet with nothing changed closes at once, without asking', async () => {
+      const { user } = phone();
+      const sheet = await openProfile(user);
+      await user.click(within(sheet).getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+      expect(sheetOf('CH-8509')).toBeNull();
+    });
+
+    it('81901 CH-8702 Save sends the name, closes the sheet with the success pattern and asks for a fresh read (player: first and last name)', async () => {
+      const { user, writes } = phone({ data: playerData(true) });
+      await user.click(screen.getByRole('button', { name: /^Jonah Okafor/ }));
+      const sheet = dialog('Profile');
+      expect(within(sheet).queryByLabelText('Full name')).toBeNull();
+      await user.clear(within(sheet).getByLabelText('First name'));
+      await user.type(within(sheet).getByLabelText('First name'), 'Jon');
+      hapticSpy.mockClear();
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(writes.saveProfile).toHaveBeenCalledWith(expect.objectContaining({ firstName: 'Jon', lastName: 'Okafor' })));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+      expect(hapticSpy).toHaveBeenCalledWith('success');
+      expect(writes.refresh).toHaveBeenCalled();
+      expect(screen.getByText('Profile saved')).toBeTruthy();
+    });
+
+    it('81901 CH-8001 CH-8102 a save that fails keeps the sheet open with what was typed; a cleared name keeps Save off', async () => {
+      const { user } = phone({ data: playerData(true), writes: { saveProfile: vi.fn(() => fail()) } });
+      await user.click(screen.getByRole('button', { name: /^Jonah Okafor/ }));
+      const sheet = dialog('Profile');
+      await user.clear(within(sheet).getByLabelText('First name'));
+      await expectCode('CH-8102', /first and last name/);
+      expect(within(sheet).getByRole('button', { name: 'Save' })).toBeDisabled();
+      await user.type(within(sheet).getByLabelText('First name'), 'Jon');
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      await expectCode('CH-8001', /Couldn't save your profile/);
+      expect(within(dialog('Profile')).getByLabelText('First name')).toHaveValue('Jon');
+    });
+
+    it('81901 CH-8402 a sheet that is saving reads "Saving…", cannot be sent twice, and stays open until the save lands', async () => {
+      let resolve: (v: ChResult) => void = () => {};
+      const saveProfile = vi.fn(() => new Promise<ChResult>((r) => (resolve = r)));
+      const { user } = phone({ writes: { saveProfile } });
+      const sheet = await openProfile(user);
+      await user.type(within(sheet).getByLabelText('Full name'), ' Jr');
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      expect(within(sheet).getByRole('button', { name: 'Saving…' })).toBeDisabled();
+      expect(code('CH-8402')).not.toBeNull();
+      // Nothing closes it meanwhile: not Cancel, not a swipe (which springs back), and no discard question.
+      await user.click(within(sheet).getByRole('button', { name: 'Cancel' }));
+      await dragSheet(sheet.querySelector('.ch-setm-bar') as HTMLElement, 120);
+      expect(sheet.hasAttribute('open')).toBe(true);
+      expect(sheet.style.translate).toBe('');
+      expect(sheetOf('CH-8509')).toBeNull();
+      expect(saveProfile).toHaveBeenCalledTimes(1);
+      await act(async () => resolve({ success: true }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull());
+    });
+
+    it('81901 CH-1903 a sheet saved while offline is refused at once, and keeps what was typed', async () => {
+      const restore = goOffline();
+      try {
+        const { user, writes } = phone();
+        const sheet = await openProfile(user);
+        await user.type(within(sheet).getByLabelText('Full name'), ' Jr');
+        await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+        await expectCode('CH-1903', /offline/);
+        expect(writes.saveProfile).not.toHaveBeenCalled();
+        expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
+      } finally {
+        restore();
+      }
+    });
+
+    it('81901 CH-8404 a photo that is uploading dims the coin and reads "Uploading…" until it lands', async () => {
+      let resolve: (v: ChResult<{ url: string }>) => void = () => {};
+      const uploadAvatar = vi.fn(() => new Promise<ChResult<{ url: string }>>((r) => (resolve = r)));
+      const { user } = phone({ writes: { uploadAvatar } });
+      const sheet = await openProfile(user);
+      const input = sheet.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [new File(['x'], 'me.png', { type: 'image/png' })] } });
+      });
+      expect(within(sheet).getByRole('button', { name: 'Uploading…' })).toBeDisabled();
+      expect(sheet.querySelector('.ch-setm-coin')!.className).toContain('is-busy');
+      await act(async () => resolve({ success: true, data: { url: 'https://x.test/me.png' } }));
+      await waitFor(() => expect(within(sheet).getByRole('button', { name: 'Replace photo' })).toBeEnabled());
+      // A new photo is an edit like any other: Save turns on.
+      expect(within(sheet).getByRole('button', { name: 'Save' })).toBeEnabled();
+    });
+
+    it('81901 CH-8002 CH-8304 a photo the upload refuses says why; with no photo the sheet shows the initials coin', async () => {
+      const { user } = phone({ writes: { uploadAvatar: vi.fn(() => Promise.resolve({ success: false, error: 'Photos must be under 2 MB.' })) } });
+      const sheet = await openProfile(user);
+      expect(code('CH-8304')!.textContent).toBe('MR');
+      const input = sheet.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [new File(['x'], 'big.png', { type: 'image/png' })] } });
+      });
+      await expectCode('CH-8002', /under 2 MB/);
+    });
+
+    it('81901 CH-8506 CH-8508 a sheet with unsaved changes guards the page: closing the tab asks, a link off the page asks, and neither once it is discarded', async () => {
+      const { user } = phone();
+      const sheet = await openProfile(user);
+      expect(document.documentElement.dataset.chGuard).toBeUndefined();
+      await user.type(within(sheet).getByLabelText('Full name'), ' Jr');
+      const before = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(before);
+      expect(before.defaultPrevented).toBe(true);
+      expect(document.documentElement.dataset.chGuard).toBe('CH-8508');
+      const a = document.createElement('a');
+      a.href = '/golf/dashboard/roster';
+      a.textContent = 'Roster';
+      document.body.appendChild(a);
+      await user.click(a);
+      await expectCode('CH-8506', /Leave without saving/);
+      a.remove();
+      await user.click(within(code('CH-8506') as HTMLElement).getByRole('button', { name: 'Keep editing' }));
+      // Discarding the edits takes the guard off.
+      await user.click(within(sheet).getByRole('button', { name: 'Cancel' }));
+      await user.click(within(await openSheet('CH-8509')).getByRole('button', { name: 'Discard changes' }));
+      await waitFor(() => expect(document.documentElement.dataset.chGuard).toBeUndefined());
+    });
+
+    it("81901 Change on the profile sheet's Email row opens Change email over it, and closing that returns to the profile", async () => {
+      const { user } = phone();
+      const sheet = await openProfile(user);
+      await user.type(within(sheet).getByLabelText('Full name'), ' Jr');
+      await user.click(within(sheet).getByRole('button', { name: /^maya\.reyes@unc\.edu Change/ }));
+      const email = dialog('Change email');
+      expect(email.hasAttribute('open')).toBe(true);
+      await user.click(within(email).getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Change email' })).toBeNull());
+      // The profile is where it was, with what was typed.
+      expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
+    });
+
+    it('81901 CH-8003 CH-8103 82001 Change email: a wrong address is named, Enter sends the confirmation, and Account says to check the inbox', async () => {
+      const { user, writes } = phone();
+      await openRow(user, /^Account/);
+      await user.click(await screen.findByRole('button', { name: /^Email maya\.reyes@unc\.edu/ }));
+      const sheet = dialog('Change email');
+      expect(within(sheet).getByRole('button', { name: 'Send' })).toBeDisabled();
+      await user.type(within(sheet).getByLabelText('New email'), 'nope{Enter}');
+      await expectCode('CH-8103', /valid email/);
+      expect(writes.changeEmail).not.toHaveBeenCalled();
+      await user.clear(within(sheet).getByLabelText('New email'));
+      await user.type(within(sheet).getByLabelText('New email'), 'new@unc.edu{Enter}');
+      await waitFor(() => expect(writes.changeEmail).toHaveBeenCalledWith('new@unc.edu'));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Change email' })).toBeNull());
+      expect(screen.getByText(/Check new@unc\.edu/)).toBeTruthy();
+    });
+
+    it('81901 CH-8004 CH-8107 Change password: a mismatch warns and sends nothing; a wrong current password says so', async () => {
+      const { user, writes } = phone({ writes: { changePassword: vi.fn(() => fail('Your current password is incorrect.')) } });
+      await openRow(user, /^Account/);
+      await user.click(await screen.findByRole('button', { name: /^Password/ }));
+      const sheet = dialog('Password');
+      await user.type(within(sheet).getByLabelText('Current password'), 'old-pass');
+      await user.type(within(sheet).getByLabelText('New password'), 'new-password');
+      await user.type(within(sheet).getByLabelText('Confirm new password'), 'other-password');
+      hapticSpy.mockClear();
+      await user.click(within(sheet).getByRole('button', { name: 'Update' }));
+      await expectCode('CH-8107', /don't match/);
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      expect(writes.changePassword).not.toHaveBeenCalled();
+      await user.clear(within(sheet).getByLabelText('Confirm new password'));
+      await user.type(within(sheet).getByLabelText('Confirm new password'), 'new-password');
+      await user.click(within(sheet).getByRole('button', { name: 'Update' }));
+      await expectCode('CH-8004', /incorrect/);
+      expect(writes.changePassword).toHaveBeenCalledWith('old-pass', 'new-password');
+    });
+
+    it('81901 CH-8016 CH-8112 golf details open in a sheet from any row, and a handicap out of range keeps Save off (player)', async () => {
+      const { user, writes } = phone({ data: playerData(true) });
+      await openRow(user, /^Golf profile/);
+      const group = await screen.findByRole('region', { name: 'Golf details' });
+      expect(within(group).getByRole('button', { name: /^Handicap 2\.4/ })).toBeTruthy();
+      expect(within(group).getByRole('button', { name: /^Phone Not set/ })).toBeTruthy();
+      await user.click(within(group).getByRole('button', { name: /^Hometown/ }));
+      const sheet = dialog('Golf details');
+      await user.clear(within(sheet).getByLabelText('Handicap'));
+      await user.type(within(sheet).getByLabelText('Handicap'), '99');
+      await expectCode('CH-8112', /between −10 and 54/);
+      expect(within(sheet).getByRole('button', { name: 'Save' })).toBeDisabled();
+      await user.clear(within(sheet).getByLabelText('Handicap'));
+      await user.type(within(sheet).getByLabelText('Handicap'), '3.1');
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(writes.saveGolf).toHaveBeenCalledWith(expect.objectContaining({ handicap: '3.1', hometown: 'Charlotte' })));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Golf details' })).toBeNull());
+    });
+  });
+
+  describe('destructive choices are action sheets', () => {
+    it('81901 CH-8501 CH-8510 CH-8704 Delete account asks in an action sheet, then for "delete" typed, and only then deletes', async () => {
+      const onDeleted = vi.fn();
+      const { user, writes } = phone({ onDeleted });
+      await openRow(user, /^Account/);
+      hapticSpy.mockClear();
+      await user.click(await screen.findByRole('button', { name: 'Delete account' }));
+      await waitFor(() => expect(sheetOf('CH-8501')).not.toBeNull());
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      const ask = sheetOf('CH-8501')!;
+      expect(ask.getAttribute('role')).toBe('alertdialog');
+      expect(within(ask).getByText('Delete your account?')).toBeTruthy();
+      // Cancel: nothing further.
+      await user.click(within(ask).getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(sheetOf('CH-8501')).toBeNull());
+      expect(sheetOf('CH-8510')).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Delete account' }));
+      await user.click(within(await openSheet('CH-8501')).getByRole('button', { name: 'Delete account' }));
+      // The follow-up sheet: Delete stays off until "delete" is typed.
+      await waitFor(() => expect(sheetOf('CH-8510')).not.toBeNull());
+      const typed = sheetOf('CH-8510')!;
+      expect(within(typed).getByRole('button', { name: 'Delete' })).toBeDisabled();
+      await user.type(within(typed).getByLabelText('Type delete to confirm'), 'dele');
+      expect(within(typed).getByRole('button', { name: 'Delete' })).toBeDisabled();
+      await user.type(within(typed).getByLabelText('Type delete to confirm'), 'te');
+      expect(writes.deleteAccount).not.toHaveBeenCalled();
+      await user.click(within(typed).getByRole('button', { name: 'Delete' }));
+      await waitFor(() => expect(writes.deleteAccount).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(onDeleted).toHaveBeenCalledTimes(1));
+    });
+
+    it('81901 CH-8023 a delete that fails says why and leaves the typed sheet open', async () => {
+      const { user } = phone({ writes: { deleteAccount: vi.fn(() => fail('Your account has recorded data that must be reassigned by an admin.')) } });
+      await openRow(user, /^Account/);
+      await user.click(await screen.findByRole('button', { name: 'Delete account' }));
+      await user.click(within(await openSheet('CH-8501')).getByRole('button', { name: 'Delete account' }));
+      const typed = await openSheet('CH-8510');
+      await user.type(within(typed).getByLabelText('Type delete to confirm'), 'delete');
+      await user.click(within(typed).getByRole('button', { name: 'Delete' }));
+      await expectCode('CH-8023', /reassigned by an admin/);
+      expect(sheetOf('CH-8510')).not.toBeNull();
+    });
+
+    it('81901 CH-8502 Leave team asks first, and Cancel leaves the team as it was (player)', async () => {
+      const { user, writes } = phone({ data: playerData(true) });
+      await openRow(user, /^Golf profile/);
+      hapticSpy.mockClear();
+      await user.click(await screen.findByRole('button', { name: 'Leave team' }));
+      await waitFor(() => expect(sheetOf('CH-8502')).not.toBeNull());
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      const ask = sheetOf('CH-8502')!;
+      expect(within(ask).getByText('Leave Varsity?')).toBeTruthy();
+      await user.click(within(ask).getByRole('button', { name: 'Cancel' }));
+      expect(writes.leaveTeam).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: 'Leave team' }));
+      await user.click(within(await openSheet('CH-8502')).getByRole('button', { name: 'Leave team' }));
+      await waitFor(() => expect(writes.leaveTeam).toHaveBeenCalledTimes(1));
+      expect(writes.refresh).toHaveBeenCalled();
+    });
+
+    it('81901 CH-8017 leaving that fails says so, with Retry', async () => {
+      const { user } = phone({ data: playerData(true), writes: { leaveTeam: vi.fn(() => fail()) } });
+      await openRow(user, /^Golf profile/);
+      await user.click(await screen.findByRole('button', { name: 'Leave team' }));
+      await user.click(within(await openSheet('CH-8502')).getByRole('button', { name: 'Leave team' }));
+      await expectCode('CH-8017', /leave the team/);
+    });
+
+    it('81901 CH-8503 New code asks first; Cancel keeps the code, Replace makes a new one', async () => {
+      const { user, writes } = phone();
+      await openRow(user, /^Team/);
+      const invite = await screen.findByRole('region', { name: 'Invite players' });
+      expect(within(invite).getByText('K7M2Q9XA')).toBeTruthy();
+      hapticSpy.mockClear();
+      await user.click(within(invite).getByRole('button', { name: 'New code' }));
+      await waitFor(() => expect(sheetOf('CH-8503')).not.toBeNull());
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      const ask = sheetOf('CH-8503')!;
+      expect(within(ask).getByText(/K7M2Q9XA stops working right away/)).toBeTruthy();
+      await user.click(within(ask).getByRole('button', { name: 'Cancel' }));
+      expect(writes.regenerateCode).not.toHaveBeenCalled();
+      await user.click(within(invite).getByRole('button', { name: 'New code' }));
+      await user.click(within(await openSheet('CH-8503')).getByRole('button', { name: 'Replace code' }));
+      await waitFor(() => expect(writes.regenerateCode).toHaveBeenCalledTimes(1));
+      expect(await within(invite).findByText('R4T8W2PL')).toBeTruthy();
+    });
+
+    it('81901 CH-8012 a new code that fails leaves the old one on screen', async () => {
+      const { user } = phone({ writes: { regenerateCode: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) } });
+      await openRow(user, /^Team/);
+      const invite = await screen.findByRole('region', { name: 'Invite players' });
+      await user.click(within(invite).getByRole('button', { name: 'New code' }));
+      await user.click(within(await openSheet('CH-8503')).getByRole('button', { name: 'Replace code' }));
+      await expectCode('CH-8012', /invite code/);
+      expect(within(invite).getByText('K7M2Q9XA')).toBeTruthy();
+    });
+
+    it('81901 CH-8505 Turn off CoachHelm asks first; Cancel leaves the switch on', async () => {
+      const { user, writes } = phone();
+      await openRow(user, /^CoachHelm/);
+      const power = await screen.findByRole('region', { name: 'CoachHelm' });
+      const dash = within(power).getByRole('switch', { name: 'CoachHelm on your dashboards' });
+      hapticSpy.mockClear();
+      await user.click(dash);
+      await waitFor(() => expect(sheetOf('CH-8505')).not.toBeNull());
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      const ask = sheetOf('CH-8505')!;
+      expect(writes.setCoachHelmCoach).not.toHaveBeenCalled();
+      await user.click(within(ask).getByRole('button', { name: 'Cancel' }));
+      expect(dash).toBeChecked();
+      expect(writes.setCoachHelmCoach).not.toHaveBeenCalled();
+      await user.click(dash);
+      await user.click(within(await openSheet('CH-8505')).getByRole('button', { name: 'Turn off CoachHelm' }));
+      await waitFor(() => expect(writes.setCoachHelmCoach).toHaveBeenCalledWith({ enabled: false }));
+      await waitFor(() => expect(within(power).getByRole('switch', { name: 'CoachHelm on your dashboards' })).not.toBeChecked());
+      // Turning it back on needs no question.
+      await user.click(within(power).getByRole('switch', { name: 'CoachHelm on your dashboards' }));
+      await waitFor(() => expect(writes.setCoachHelmCoach).toHaveBeenCalledWith({ enabled: true }));
+    });
+  });
+
+  describe('Team', () => {
+    it('81901 CH-8014 a choice opens a bottom sheet of options and saves as it is picked, with a tick', async () => {
+      const { user, writes } = phone();
+      await openRow(user, /^Team/);
+      const scoring = await screen.findByRole('region', { name: 'Scoring and format' });
+      expect(within(scoring).getByRole('button', { name: /^Handicap system USGA Handicap/ })).toBeTruthy();
+      await user.click(within(scoring).getByRole('button', { name: /^Handicap system/ }));
+      const sheet = dialog('Handicap system');
+      expect(within(sheet).getByRole('radio', { name: 'USGA Handicap' })).toHaveAttribute('aria-checked', 'true');
+      hapticSpy.mockClear();
+      await user.click(within(sheet).getByRole('radio', { name: 'World Handicap System' }));
+      expect(hapticSpy).toHaveBeenCalledWith('select');
+      await waitFor(() => expect(writes.saveScoring).toHaveBeenCalledWith({ scoringFormat: 'stroke_play', handicapSystem: 'world', defaultTees: 'blue', timezone: 'America/New_York' }));
+      expect(within(scoring).getByRole('button', { name: /^Handicap system World Handicap System/ })).toBeTruthy();
+      // The timezone lives in Team details and saves with the same record, on top of the choice just made.
+      const details = screen.getByRole('region', { name: 'Team details' });
+      await waitFor(() => expect(within(details).getByRole('button', { name: /^Team timezone/ })).toBeEnabled());
+      await user.click(within(details).getByRole('button', { name: /^Team timezone/ }));
+      await user.click(within(dialog('Team timezone')).getByRole('radio', { name: 'Pacific (PT)' }));
+      await waitFor(() => expect(writes.saveScoring).toHaveBeenLastCalledWith({ scoringFormat: 'stroke_play', handicapSystem: 'world', defaultTees: 'blue', timezone: 'America/Los_Angeles' }));
+    });
+
+    it('81901 CH-8014 while a scoring choice is saving, the other choices wait, so none is sent on top of one that has not landed', async () => {
+      let resolve: (v: ChResult) => void = () => {};
+      const saveScoring = vi.fn(() => new Promise<ChResult>((r) => (resolve = r)));
+      const { user } = phone({ writes: { saveScoring } });
+      await openRow(user, /^Team/);
+      const scoring = await screen.findByRole('region', { name: 'Scoring and format' });
+      await user.click(within(scoring).getByRole('button', { name: /^Default tees/ }));
+      await user.click(within(dialog('Default tees')).getByRole('radio', { name: 'Gold' }));
+      await waitFor(() => expect(saveScoring).toHaveBeenCalledTimes(1));
+      for (const name of [/^Scoring format/, /^Handicap system/, /^Default tees/]) expect(within(scoring).getByRole('button', { name })).toBeDisabled();
+      expect(within(screen.getByRole('region', { name: 'Team details' })).getByRole('button', { name: /^Team timezone/ })).toBeDisabled();
+      await act(async () => resolve({ success: true }));
+      await waitFor(() => expect(within(scoring).getByRole('button', { name: /^Scoring format/ })).toBeEnabled());
+      expect(within(scoring).getByRole('button', { name: /^Default tees Gold/ })).toBeTruthy();
+    });
+
+    it('81901 CH-8014 81302 a choice that fails to save goes back and says so', async () => {
+      const { user } = phone({ writes: { saveScoring: vi.fn(() => fail()) } });
+      await openRow(user, /^Team/);
+      const scoring = await screen.findByRole('region', { name: 'Scoring and format' });
+      await user.click(within(scoring).getByRole('button', { name: /^Default tees/ }));
+      await user.click(within(dialog('Default tees')).getByRole('radio', { name: 'Gold' }));
+      await expectCode('CH-8014', /Couldn't save scoring settings/);
+      await waitFor(() => expect(within(scoring).getByRole('button', { name: /^Default tees Blue/ })).toBeTruthy());
+    });
+
+    it('81901 CH-8011 CH-8108 Team name opens the details sheet with the season and school; a cleared name keeps Save off', async () => {
+      const { user, writes } = phone();
+      await openRow(user, /^Team/);
+      const details = await screen.findByRole('region', { name: 'Team details' });
+      await user.click(within(details).getByRole('button', { name: /^Team name Varsity/ }));
+      const sheet = dialog('Team details');
+      expect(within(sheet).getByLabelText('Season')).toHaveValue('2026–27');
+      expect(within(sheet).getByLabelText('Conference')).toHaveValue('ACC');
+      expect(within(sheet).getByRole('button', { name: 'Save' })).toBeDisabled();
+      await user.clear(within(sheet).getByLabelText('Team name'));
+      await expectCode('CH-8108', /needs a name/);
+      expect(within(sheet).getByRole('button', { name: 'Save' })).toBeDisabled();
+      await user.type(within(sheet).getByLabelText('Team name'), 'Varsity A');
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(writes.saveTeam).toHaveBeenCalledWith(expect.objectContaining({ name: 'Varsity A', season: '2026–27' })));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Team details' })).toBeNull());
+    });
+
+    it('81901 CH-8015 CH-8111 a reminder time is a slider in a sheet; a first reminder that is not before the final one is refused', async () => {
+      const data = { ...coachData(), reminders: ok({ enabled: true, earlyHours: 24, lateMinutes: 60 }) };
+      const { user, writes } = phone({ data });
+      await openRow(user, /^Team/);
+      const group = await screen.findByRole('region', { name: 'Event reminders' });
+      expect(within(group).getByRole('button', { name: /^First reminder 1 day before/ })).toBeTruthy();
+      expect(within(group).getByRole('button', { name: /^Final reminder 1 hour before/ })).toBeTruthy();
+      await user.click(within(group).getByRole('button', { name: /^First reminder/ }));
+      const sheet = dialog('First reminder');
+      expect(within(sheet).getByRole('button', { name: 'Save' })).toBeDisabled();
+      fireEvent.change(within(sheet).getByRole('slider', { name: 'First reminder' }), { target: { value: '48' } });
+      expect(within(sheet).getByRole('button', { name: 'Save' })).toBeEnabled();
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(writes.saveReminders).toHaveBeenCalledWith({ enabled: true, earlyHours: 48, lateMinutes: 60 }));
+      await waitFor(() => expect(within(group).getByRole('button', { name: /^First reminder 2 days before/ })).toBeTruthy());
+      // With the first reminder 2 hours out, a final reminder 4 hours out would come before it.
+      await user.click(within(group).getByRole('button', { name: /^First reminder/ }));
+      fireEvent.change(within(dialog('First reminder')).getByRole('slider', { name: 'First reminder' }), { target: { value: '2' } });
+      await user.click(within(dialog('First reminder')).getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(within(group).getByRole('button', { name: /^First reminder 2 hours before/ })).toBeTruthy());
+      await user.click(within(group).getByRole('button', { name: /^Final reminder/ }));
+      fireEvent.change(within(dialog('Final reminder')).getByRole('slider', { name: 'Final reminder' }), { target: { value: '240' } });
+      await expectCode('CH-8111', /first reminder has to come before the final one/);
+      expect(within(dialog('Final reminder')).getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    it('81901 CH-8015 Send reminders saves as it flips and goes back if the save fails; the times appear only while it is on', async () => {
+      const saveReminders = vi.fn(() => fail());
+      const { user } = phone({ writes: { saveReminders } });
+      await openRow(user, /^Team/);
+      const group = await screen.findByRole('region', { name: 'Event reminders' });
+      expect(within(group).getByRole('button', { name: /^First reminder/ })).toBeTruthy();
+      await user.click(within(group).getByRole('switch', { name: 'Send reminders' }));
+      await expectCode('CH-8015', /reminder schedule/);
+      expect(saveReminders).toHaveBeenCalledWith({ enabled: false, earlyHours: 24, lateMinutes: 60 });
+      await waitFor(() => expect(within(group).getByRole('switch', { name: 'Send reminders' })).toBeChecked());
+    });
+
+    it('81901 CH-8301 a coach with no team sees why Team is empty', async () => {
+      const { user } = phone({ data: { ...coachData(), teamId: null, teamName: null, team: null, joinCode: null, scoring: null, reminders: null } });
+      await openRow(user, /^Team/);
+      await expectCode('CH-8301', /aren't on a team yet/);
+    });
+
+    it('81901 CH-8205 CH-8207 CH-8206 CH-8208 a read that failed is named in its place, and the rest of Team still works', async () => {
+      const { user } = phone({ data: { ...coachData(), team: failedRead, scoring: failedRead, joinCode: failedRead, reminders: failedRead } });
+      await openRow(user, /^Team/);
+      await expectCode('CH-8205', /Team details didn't load/);
+      await expectCode('CH-8206', /invite code didn't load/);
+      await expectCode('CH-8207', /Scoring settings didn't load/);
+      await expectCode('CH-8208', /Event reminders didn't load/);
+      expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+    });
+
+    it('81901 CH-8013 CH-8705 Share opens the share sheet; without one it copies the join link, and says how to do it by hand when copying fails', async () => {
+      const share = vi.fn(() => Promise.resolve());
+      Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+      const first = phone();
+      await openRow(first.user, /^Team/);
+      await first.user.click(await screen.findByRole('button', { name: 'Share' }));
+      expect(share).toHaveBeenCalledWith(expect.objectContaining({ text: 'Join with code K7M2Q9XA', url: expect.stringContaining('/golf/join/K7M2Q9XA') }));
+      first.unmount();
+      delete (navigator as unknown as Record<string, unknown>).share;
+
+      const second = phone();
+      const writeText = vi.fn(() => Promise.resolve());
+      // After setup: user-event installs its own clipboard when it starts.
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+      await openRow(second.user, /^Team/);
+      hapticSpy.mockClear();
+      await second.user.click(await screen.findByRole('button', { name: 'Share' }));
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/golf/join/K7M2Q9XA')));
+      expect(hapticSpy).toHaveBeenCalledWith('success');
+      writeText.mockImplementationOnce(() => Promise.reject(new Error('denied')));
+      await second.user.click(screen.getByRole('button', { name: 'Share' }));
+      await expectCode('CH-8013', /Couldn't copy/);
+    });
+  });
+
+  describe('CoachHelm', () => {
+    it('81901 CH-8405 CH-8022 every desktop control is a row: switches, pickers that save as they are picked, and sliders at full width', async () => {
+      const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
+      const { user } = phone({ writes: { savePhilosophy } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      expect(code('CH-8405')!.textContent).toBe('Changes save as you make them');
+      // Sensitivity is a picker row.
+      await user.click(screen.getByRole('button', { name: /^Alert sensitivity/ }));
+      await user.click(within(dialog('Alert sensitivity')).getByRole('radio', { name: 'More alerts' }));
+      await waitFor(() => expect(savePhilosophy).toHaveBeenCalledWith('ph1', { alertSensitivity: 'aggressive' }));
+      await waitFor(() => expect(code('CH-8405')!.textContent).toBe('All changes saved'));
+      // An alert is a switch row; a slider row holds its label, value and slider.
+      await user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
+      await waitFor(() => expect(savePhilosophy).toHaveBeenCalledWith('ph1', { alertPlateau: true }));
+      const rounds = screen.getByRole('slider', { name: 'Minimum rounds' });
+      expect(rounds.closest('.ch-setm-row')?.className).toContain('is-slider');
+      expect(screen.getByText('Rounds a player needs before CoachHelm says anything about them.')).toBeTruthy();
+      // Alerts, thresholds, windows and display are all here.
+      for (const name of ['Decline threshold', 'Pressure gap', 'Bubble zone', 'Minimum confidence', 'Hole ranking', 'Pattern lookback']) expect(screen.getByRole('slider', { name })).toBeTruthy();
+      for (const name of [/^Alert delivery/, /^Stats comparison/, /^Insight detail/]) expect(screen.getByRole('button', { name })).toBeTruthy();
+      for (const name of ['Show strokes gained', 'Show advanced statistics', 'Insights', 'Predictions', 'Patterns']) expect(screen.getByRole('switch', { name })).toBeTruthy();
+    });
+
+    it('81901 CH-8021 an assistant coach sees the team switch locked, with the reason; the head coach can change it', async () => {
+      const first = phone({ data: assistantData() });
+      // An assistant coach is "Coach", not "Head coach".
+      expect(screen.getByRole('button', { name: 'Maya Reyes Coach · Varsity' })).toBeTruthy();
+      await openRow(first.user, /^CoachHelm/);
+      const power = await screen.findByRole('region', { name: 'CoachHelm' });
+      expect(within(power).getByRole('switch', { name: 'CoachHelm for the whole team' })).toBeDisabled();
+      expect(within(power).getByText('Only the head coach can change this.')).toBeTruthy();
+      first.unmount();
+
+      const head = phone({ writes: { setCoachHelmTeam: vi.fn(() => fail()) } });
+      await openRow(head.user, /^CoachHelm/);
+      await head.user.click(await screen.findByRole('switch', { name: 'CoachHelm for the whole team' }));
+      await expectCode('CH-8021', /for the team/);
+    });
+
+    it('81901 CH-8211 a CoachHelm read that failed says so with Try again, and shows none of the controls', async () => {
+      const { user, writes } = phone({ data: { ...coachData(), coachhelm: failedRead } });
+      await openRow(user, /^CoachHelm/);
+      await expectCode('CH-8211', /CoachHelm settings didn't load/);
+      expect(screen.queryByRole('list', { name: 'Priorities, most important first' })).toBeNull();
+      await user.click(within(code('CH-8211') as HTMLElement).getByRole('button', { name: 'Try again' }));
+      expect(writes.refresh).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('a player without a team', () => {
+    it('81901 CH-8302 CH-8018 82001 Join a team is a sheet: the code is upper-cased, Enter asks, and a refused code says why', async () => {
+      const { user, writes } = phone({ data: playerData(false, false), writes: { requestJoin: vi.fn(() => fail('That code does not match a team.')) } });
+      await openRow(user, /^Golf profile/);
+      await expectCode('CH-8302');
+      await user.click(await screen.findByRole('button', { name: /^Invite code/ }));
+      const sheet = dialog('Join a team');
+      expect(within(sheet).getByRole('button', { name: 'Send' })).toBeDisabled();
+      await user.type(within(sheet).getByLabelText('Invite code'), 'abc123{Enter}');
+      await waitFor(() => expect(writes.requestJoin).toHaveBeenCalledWith('ABC123', ''));
+      await expectCode('CH-8018', /does not match a team/);
+    });
+
+    it('81901 CH-8303 CH-8019 a request that is waiting shows its date and can be cancelled', async () => {
+      const { user, writes } = phone({ data: playerData(false, true) });
+      await openRow(user, /^Golf profile/);
+      await expectCode('CH-8303', /Waiting on Wake Forest Golf/);
+      expect(within(code('CH-8303') as HTMLElement).getByText(/^Sent /)).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /^Invite code/ })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(writes.cancelRequest).toHaveBeenCalledWith('rq1'));
+      await waitFor(() => expect(code('CH-8303')).toBeNull());
+    });
+
+    it('81901 CH-8209 CH-8210 golf details and membership reads that failed are named in their place', async () => {
+      const { user } = phone({ data: { ...playerData(true), golf: failedRead, membership: failedRead } });
+      await openRow(user, /^Golf profile/);
+      await expectCode('CH-8209', /golf details didn't load/);
+      await expectCode('CH-8210', /team membership didn't load/);
+    });
+  });
+
+  it('81901 CH-1903 a switch flipped while offline is refused at once and never sent', async () => {
+    const restore = goOffline();
+    try {
+      const { user, writes } = phone();
+      await openRow(user, /^Notifications/);
+      await user.click(await screen.findByRole('switch', { name: 'Quiet mode' }));
+      await expectCode('CH-1903', /offline/);
+      expect(writes.setDelivery).not.toHaveBeenCalled();
+      expect(screen.getByRole('switch', { name: 'Quiet mode' })).not.toBeChecked();
+    } finally {
+      restore();
+    }
+  });
+
+  it('81901 CH-8403 a switch that is saving holds its position and cannot be flipped again', async () => {
+    let resolve: (v: ChResult) => void = () => {};
+    const setDelivery = vi.fn(() => new Promise<ChResult>((r) => (resolve = r)));
+    const { user } = phone({ writes: { setDelivery } });
+    await openRow(user, /^Notifications/);
+    await user.click(await screen.findByRole('switch', { name: 'Quiet mode' }));
+    expect(screen.getByRole('switch', { name: 'Quiet mode' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Quiet mode' })).toBeDisabled();
+    expect(code('CH-8403')).not.toBeNull();
+    await act(async () => resolve({ success: true }));
+    await waitFor(() => expect(code('CH-8403')).toBeNull());
+  });
+
+  it('81901 CH-8608 Preferences keeps Animations and, in the app, Haptics on this device', async () => {
+    const { user } = phone();
+    await openRow(user, /^Preferences/);
+    await user.click(await screen.findByRole('switch', { name: 'Animations' }));
+    expect(JSON.parse(localStorage.getItem('golf_appearance_preferences') ?? '{}').show_animations).toBe(false);
+    expect(screen.getByRole('switch', { name: 'Haptics' })).toBeChecked();
+  });
+
+  it('81901 CH-8024 CH-8025 Sign out that fails says so, and Report a problem falls back to email', async () => {
+    const { user, writes } = phone({ writes: { signOut: vi.fn(() => Promise.reject(new Error('network'))) } });
+    await user.click(screen.getByRole('button', { name: 'Report a problem' }));
+    await expectCode('CH-8025', /Opening email/);
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+    await expectCode('CH-8024', /sign you out/);
+    expect(writes.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('81901 CH-8401 the loading skeleton has a phone version of the list, switched in CSS', () => {
+    render(<SettingsSkeleton />);
+    const skel = document.querySelector('.ch-setm-skel');
+    expect(skel).not.toBeNull();
+    expect(skel!.querySelectorAll('.ch-setm-row')).toHaveLength(5);
+    expect(document.querySelector('.ch-set-skel-desk')).not.toBeNull();
+  });
+
+  it('81901 CH-8212 a section that crashes is named, and the list and tab bar still work', async () => {
+    const boom = { ...coachData(), delivery: { value: null as unknown as Record<string, boolean>, error: false as const } };
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { user } = phone({ data: boom });
+    await openRow(user, /^Notifications/);
+    await expectCode('CH-8212', /Notifications couldn.t be shown/);
+    spy.mockRestore();
+    await user.click(top().getByRole('button', { name: 'Back to Settings' }));
+    await screen.findByRole('navigation', { name: 'Settings sections' });
   });
 });
 

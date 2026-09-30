@@ -6340,6 +6340,28 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 81106,
+    "page": "P008",
+    "category": 11,
+    "item": 6,
+    "name": "PHONE_CLOSING_AN_EDIT_SHEET_WITH_UNSAVED",
+    "chCode": "CH-8509",
+    "meaning": "Phone: closing an edit sheet (Cancel, swiping it down, Esc, tapping outside) with unsaved changes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 81107,
+    "page": "P008",
+    "category": 11,
+    "item": 7,
+    "name": "PHONE_DELETE_ACCOUNT_AFTER_DELETE_ACCOUNT_IS",
+    "chCode": "CH-8510",
+    "meaning": "Phone: Delete account, after Delete account is chosen in the CH-8501 action sheet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 81201,
     "page": "P008",
     "category": 12,
@@ -6659,7 +6681,7 @@
     "item": 1,
     "name": "THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK",
     "chCode": "CH-8801",
-    "meaning": "The section list is a navigation landmark; the open section is marked current",
+    "meaning": "The section list is a navigation landmark; the open section is marked current. On the phone the list is the landmark and an open section names itself in the bar (\"Back to Settings\" and the heading)",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -6703,7 +6725,7 @@
     "item": 5,
     "name": "THE_NOTIFICATION_GRIDS_ARE_TABLES",
     "chCode": "CH-8805",
-    "meaning": "The notification grids are tables",
+    "meaning": "The notification grids are tables. On the phone there is no grid: each kind is a button that names what is on, and its sheet has named switches",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -6735,9 +6757,12 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_LAYOUT",
-    "meaning": "At a canvas of 860px or less the rail becomes a scrolling strip above the section, and at 560px or less form grids stack and the notification switches keep 48px columns; the native phone design (a grouped list that pushes to each section, docs/clubhouse/phone/settings.md) is a draft awaiting the owner and is not built.",
-    "status": "reserved",
-    "where": "src/clubhouse/styles/settings.css (@container 860px, 560px)"
+    "meaning": "At 820px or less Settings is the native phone screen (docs/clubhouse/phone/settings.md): a grouped list that pushes each section as a history entry with the tab bar kept, edit cards as full-height sheets, choices as bottom sheets and destructive choices as action sheets; on a wider canvas the rail becomes a scrolling strip at 860px and form grids stack at 560px.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/phone/SettingsPhone.tsx; src/clubhouse/screens/settings/SettingsView.tsx#useChPhone; src/clubhouse/styles/settings.css (@media 820px and @container 860px, 560px)",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
   },
   {
     "id": 82001,

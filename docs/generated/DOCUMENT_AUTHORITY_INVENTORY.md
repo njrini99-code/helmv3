@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 26 | 3 | 7 | 4 |
+| `GENERATED_TRUTH` | 25 | 3 | 7 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 302 | 12 | 62 | 83 |
+| `UNKNOWN` | 304 | 12 | 62 | 85 |
 
 ## Files
 
@@ -276,7 +276,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
-| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | generated | - | - | - | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | - |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
@@ -687,6 +686,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/catalog/shell.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/03_DIRECTORY_AND_REGISTRY_ARCHITECTURE.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/04_PAGE_CONTRACT_AND_BRIDGE_SPEC.md` | current | - | - | yes | - |
@@ -710,7 +710,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/PAGE.md` | current | - | - | yes | - |
@@ -746,6 +746,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P006-calendar/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/PAGE.md` | current | - | - | yes | - |
@@ -797,7 +798,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/rounds.md` | current | - | - | yes | - |
-| `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/settings.md` | current | - | - | - | 1 |
 | `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/team-hub.md` | current | - | - | - | - |

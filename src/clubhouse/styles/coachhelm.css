@@ -757,3 +757,10 @@
     flex-wrap: wrap;
   }
 }
+
+/* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
+@media (max-width: 820px) {
+  .ch-hl-pl {
+    min-height: 44px;
+  }
+}

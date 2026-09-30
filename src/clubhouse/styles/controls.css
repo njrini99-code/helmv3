@@ -377,6 +377,26 @@
       animation-name: ch-fade;
     }
   }
+  /* Every control's hit area reaches 44 x 44 on the phone without changing how it is drawn (a 26px
+     segment, a 30px small button, a 36px pill). Zero specificity, so a page's own hit area wins. */
+  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg) {
+    position: relative;
+  }
+  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg)::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+  /* The keyboard never resizes the WebView: an open sheet sits on top of the keyboard, shrinks to the
+     space left above it, and scrolls its body, so the focused field and the footer's Save stay visible. */
+  body.keyboard-open .ch-modal {
+    margin-bottom: var(--keyboard-height, 0px);
+    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
+  }
+  body.keyboard-open .ch-modal__panel {
+    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
+    padding-bottom: 0;
+  }
   .ch-modal__foot .ch-btn {
     flex: 1;
     height: 44px;

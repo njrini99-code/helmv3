@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global document -- the sideways check runs inside the page (tab.evaluate) */
 /**
  * Accessibility scan of every Clubhouse preview screen and state with axe-core
  * (WCAG 2.1 and 2.2 AA, contrast included). Needs the dev server:
@@ -176,7 +177,9 @@ async function main() {
   const browser = await chromium.launch();
   let failed = 0;
   let scanned = 0;
-  for (const width of [1280, 390]) {
+  // CH_WIDTHS=390,430 runs the phone pass at both iPhone widths.
+  const widths = (process.env.CH_WIDTHS ?? '1280,390').split(',').map(Number);
+  for (const width of widths) {
     const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 800 }, reducedMotion: 'reduce' });
     for (const [page, path, open] of pages) {
       const tab = await ctx.newPage();
@@ -186,13 +189,25 @@ async function main() {
         await tab.close();
         continue;
       }
-      for (const step of [opener ?? []].flat()) {
-        await tab.click(step);
-        await tab.waitForTimeout(400);
-      }
-      if (!opener) await tab.waitForTimeout(400);
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
       const label = `${page.padEnd(12)} ${width}px ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
+      let stuck = null;
+      for (const step of [opener ?? []].flat()) {
+        try {
+          await tab.click(step, { timeout: 10_000 });
+        } catch {
+          stuck = step;
+          break;
+        }
+        await tab.waitForTimeout(400);
+      }
+      if (stuck) {
+        failed++;
+        console.log(`FAIL ${label}\n     could not tap ${stuck}`);
+        await tab.close();
+        continue;
+      }
+      if (!opener) await tab.waitForTimeout(400);
       let res;
       try {
         res = await new AxeBuilder({ page: tab }).include('.ch-root').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
@@ -203,6 +218,14 @@ async function main() {
         continue;
       }
       scanned++;
+      // A phone page must never scroll sideways.
+      if (width < 600) {
+        const wide = await tab.evaluate(() => document.documentElement.scrollWidth);
+        if (wide > width) {
+          failed++;
+          console.log(`FAIL ${label}\n     scrolls sideways: ${wide}px wide at ${width}px`);
+        }
+      }
       const blocking = res.violations.filter((v) => !isKnown(page, width, v.id));
       if (res.violations.length === 0) console.log(`ok   ${label}`);
       else {

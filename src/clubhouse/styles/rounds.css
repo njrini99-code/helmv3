@@ -1303,3 +1303,17 @@ a.ch-rd-sc:focus-visible {
     padding: 0 16px 14px;
   }
 }
+
+/* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
+@media (max-width: 820px) {
+  .ch-rv-step button,
+  .ch-rd-unf__discard {
+    position: relative;
+  }
+  .ch-rv-step button::after,
+  .ch-rd-unf__discard::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}

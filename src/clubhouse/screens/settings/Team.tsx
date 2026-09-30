@@ -1,16 +1,13 @@
 'use client';
 
 import { Copy, Link2, RefreshCw, Share2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { Slider } from '../../ui/Slider';
-import { useToast } from '../../ui/Toast';
 import { EmptyState } from '../../ui/States';
-import { haptic } from '../../lib/haptics';
-import { chReport, chTrail } from '../../lib/track';
 import {
   HANDICAP_OPTIONS,
   hoursLabel,
@@ -25,6 +22,7 @@ import {
   type ChSettingsWrites,
   type ChTeamInfo,
 } from './model';
+import { SAVE_COPY, useInvite } from './hooks';
 import { Card, Field, ReadFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function TeamSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
@@ -48,7 +46,7 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
 function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites }) {
   const f = useDraft(team);
   useReportDirty('team', f.dirty);
-  const save = useSaveAction('settings.saveTeam', writes.saveTeam, { done: 'Team details saved', failed: "Couldn't save team details", code: 'CH-8011' }, (_r, saved) => {
+  const save = useSaveAction('settings.saveTeam', writes.saveTeam, SAVE_COPY.team, (_r, saved) => {
     f.commit(saved);
     writes.refresh();
   });
@@ -92,40 +90,8 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
 }
 
 function InviteCard({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
-  const [code, setCode] = useState(initial);
+  const { code, canShare, regen, copy, share } = useInvite(initial, writes);
   const [confirm, setConfirm] = useState(false);
-  // Read after mount: the server has no navigator, and a mismatch would break hydration.
-  const [canShare, setCanShare] = useState(false);
-  useEffect(() => setCanShare(typeof navigator.share === 'function'), []);
-  const toast = useToast();
-  const regen = useSaveAction('settings.regenerateCode', writes.regenerateCode, { done: 'New invite code ready', failed: "Couldn't make a new invite code", code: 'CH-8012' }, (r) => {
-    if (r.data?.joinCode) setCode(r.data.joinCode);
-  });
-  const link = typeof window === 'undefined' ? `/golf/join/${code}` : `${window.location.origin}/golf/join/${code}`;
-  const copy = async (what: 'code' | 'link') => {
-    chTrail(`settings copy invite ${what}`);
-    try {
-      await navigator.clipboard.writeText(what === 'code' ? code : link);
-      haptic('success');
-      toast({ title: what === 'code' ? 'Invite code copied' : 'Invite link copied' });
-    } catch (err) {
-      haptic('error');
-      chReport(err, { surface: 'settings.invite', action: 'copy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn't copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
-    }
-  };
-  const share = async () => {
-    chTrail('settings share invite');
-    try {
-      await navigator.share({ title: 'Join our team on GolfHelm', text: `Join with code ${code}`, url: link });
-    } catch (err) {
-      // Closing the share sheet rejects with AbortError; that isn't a failure.
-      if (!(err instanceof DOMException && err.name === 'AbortError')) {
-        chReport(err, { surface: 'settings.invite', action: 'share', severity: 'low' });
-        void copy('link');
-      }
-    }
-  };
   return (
     <Card id="set-invite" title="Invite players" description="Players join with this code, then you approve them from Roster.">
       <Row label="Invite code" help="Share it, or send the join link.">
@@ -179,7 +145,7 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
   );
 }
 
-const TEES = [
+export const TEES = [
   { value: 'black', label: 'Black' },
   { value: 'blue', label: 'Blue' },
   { value: 'white', label: 'White' },
@@ -189,7 +155,7 @@ const TEES = [
 function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettingsWrites }) {
   const f = useDraft(scoring);
   useReportDirty('scoring', f.dirty);
-  const save = useSaveAction('settings.saveScoring', writes.saveScoring, { done: 'Scoring settings saved', failed: "Couldn't save scoring settings", code: 'CH-8014' }, (_r, saved) => f.commit(saved));
+  const save = useSaveAction('settings.saveScoring', writes.saveScoring, SAVE_COPY.scoring, (_r, saved) => f.commit(saved));
   return (
     <Card
       id="set-scoring"
@@ -233,7 +199,7 @@ function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettin
 function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: ChSettingsWrites }) {
   const f = useDraft(reminders);
   useReportDirty('reminders', f.dirty);
-  const save = useSaveAction('settings.saveReminders', writes.saveReminders, { done: 'Reminder schedule saved', failed: "Couldn't save the reminder schedule", code: 'CH-8015' }, (_r, saved) => f.commit(saved));
+  const save = useSaveAction('settings.saveReminders', writes.saveReminders, SAVE_COPY.reminders, (_r, saved) => f.commit(saved));
   const invalid = remindersProblem(f.draft);
   return (
     <Card

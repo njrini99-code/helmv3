@@ -2,6 +2,19 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Right click opens reactions (Clickables gap 23)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Right click opens reactions (Clickables gap 23)
+
+- **Issue.** On desktop a right click on a message did nothing.
+- **Fix.** It opens the message's reaction bar, as the React button does; the phone keeps its long press.
+- **Checked.** messages 64/64, the mutation caught.
+
 ## 2026-09-30 — Clickables 10, 13, 14: Schedule invite, desktop Files, attach in New message
 
 ```text

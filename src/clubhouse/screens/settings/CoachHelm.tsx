@@ -14,9 +14,10 @@ import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { moveOrder, orderToPriorities, PRIORITY_LABEL, priorityOrder, type ChCoachHelmSettings, type ChSettingsData, type ChSettingsWrites, type PriorityKey } from './model';
-import { Card, ReadFailed, Row, SettingSwitch, useInstantSave } from './parts';
+import { useCoachHelmPower } from './hooks';
+import { Card, ReadFailed, Row, SettingSwitch } from './parts';
 
-type Phil = CoachPhilosophy & { id: string | null };
+export type Phil = CoachPhilosophy & { id: string | null };
 
 export function CoachHelmSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.coachhelm) return null;
@@ -31,7 +32,7 @@ export function CoachHelmSection({ data, writes }: { data: ChSettingsData; write
  * the last move; everything else saves at once. A failed save puts that
  * field back and says so.
  */
-function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
+export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
   const [p, setP] = useState(initial);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const idRef = useRef(initial.id);
@@ -319,15 +320,8 @@ function Priorities({ p, onChange }: { p: Phil; onChange: (order: PriorityKey[])
 }
 
 function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: ChSettingsWrites }) {
-  const [coach, setCoach] = useState(initial.coach);
-  const [team, setTeam] = useState(initial.team);
+  const { coach, team, pending, setC, setTeamOn } = useCoachHelmPower(initial, writes);
   const [confirmOff, setConfirmOff] = useState(false);
-  const save = useInstantSave('coachhelm');
-  const setC = (patch: Partial<ChCoachHelmSettings['coach']>, failed: string) => {
-    // Only the switch that failed goes back; another one flipped meanwhile keeps its position (81302).
-    const before = Object.fromEntries(Object.keys(patch).map((k) => [k, coach[k as keyof typeof coach]])) as Partial<typeof coach>;
-    return save.run({ key: Object.keys(patch).join(','), apply: () => setCoach((c) => ({ ...c, ...patch })), rollback: () => setCoach((c) => ({ ...c, ...before })), write: () => writes.setCoachHelmCoach(patch), failed, code: 'CH-8020' });
-  };
   return (
     <Card id="set-power" title="CoachHelm" description="The AI coaching assistant on your dashboards." aside={<Icon icon={Sparkles} size={17} />}>
       {team && (
@@ -341,17 +335,8 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
             hideLabel
             checked={team.enabled}
             disabled={!team.isHeadCoach}
-            busy={save.pending.has('team')}
-            onChange={(v) =>
-              void save.run({
-                key: 'team',
-                apply: () => setTeam((t) => (t ? { ...t, enabled: v } : t)),
-                rollback: () => setTeam((t) => (t ? { ...t, enabled: !v } : t)),
-                write: () => writes.setCoachHelmTeam(v),
-                failed: "Couldn't change CoachHelm for the team",
-                code: 'CH-8021',
-              })
-            }
+            busy={pending.has('team')}
+            onChange={setTeamOn}
           />
         </Row>
       )}
@@ -360,20 +345,20 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
           label="CoachHelm on your dashboards"
           hideLabel
           checked={coach.enabled}
-          busy={save.pending.has('enabled')}
+          busy={pending.has('enabled')}
           onChange={(v) => (v ? void setC({ enabled: true }, "Couldn't turn CoachHelm on") : setConfirmOff(true))}
         />
       </Row>
       {coach.enabled && (
         <>
           <Row label="Insights" help="Coaching notes on what changed and why.">
-            <SettingSwitch label="Insights" hideLabel checked={coach.showInsights} busy={save.pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn't change insights")} />
+            <SettingSwitch label="Insights" hideLabel checked={coach.showInsights} busy={pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn't change insights")} />
           </Row>
           <Row label="Predictions" help="Where each player's scoring is heading.">
-            <SettingSwitch label="Predictions" hideLabel checked={coach.showPredictions} busy={save.pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn't change predictions")} />
+            <SettingSwitch label="Predictions" hideLabel checked={coach.showPredictions} busy={pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn't change predictions")} />
           </Row>
           <Row label="Patterns" help="Leaks and habits that repeat across rounds.">
-            <SettingSwitch label="Patterns" hideLabel checked={coach.showPatterns} busy={save.pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn't change patterns")} />
+            <SettingSwitch label="Patterns" hideLabel checked={coach.showPatterns} busy={pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn't change patterns")} />
           </Row>
         </>
       )}

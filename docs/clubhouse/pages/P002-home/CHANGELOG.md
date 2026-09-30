@@ -2,6 +2,25 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Latest round opens its review (Clickables); Latest rounds links to Team stats (Clickables gap 6)
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+### Latest round opens its review (Clickables)
+
+- **Issue.** Home's latest round linked to Stats, though the round review now exists.
+- **Fix.** Open recap (desktop), Round recap (coach phone) and the player's phone card open the round's review, falling back to Stats when the review is not rebuilt for the viewer.
+- **Checked.** home and player-home 94/94, 3 of 4 mutations caught (the fourth is equivalent today).
+
+### Latest rounds links to Team stats (Clickables gap 6)
+
+- **Issue.** The coach phone Home's Latest rounds header had no way on (the board's "All").
+- **Fix.** It links to Team stats, only when rounds are listed (a coach has no rounds library, Q-79).
+- **Checked.** home 58/58, 2 of 2 mutations caught.
+
 ## 2026-09-30 — Page docs; every contract proven by a test; two fixes
 
 ```text

@@ -24,14 +24,34 @@ Date:       2026-09-30
 
 | Test | Contract | Result |
 | --- | --- | --- |
-| `src/clubhouse/__tests__/settings.test.tsx` (113 cases) | every catalog row of kinds 0 to 5 (80xx to 85xx), CH-8608, CH-8701 to CH-8705, CH-8707, CH-8801 to CH-8805, CH-8807, and the hand contracts 80101, 80102, 80701, 80801, 80804, 80805, 80901 to 80903, 81002, 81003, 81204 to 81206, 81302, 81401, 81402, 81501, 81708, 82001, 82301, 82401 | pass (157/157 with the file below, 2026-09-30) |
+| `src/clubhouse/__tests__/settings.test.tsx` (169 cases: 113 for the desktop page, 56 for the phone) | every catalog row of kinds 0 to 5 (80xx to 85xx, including CH-8509 and CH-8510), CH-8608, CH-8701 to CH-8705, CH-8707, CH-8801 to CH-8805, CH-8807, and the hand contracts 80101, 80102, 80701, 80801, 80804, 80805, 80901 to 80903, 81002, 81003, 81204 to 81206, 81302, 81401, 81402, 81501, 81708, 81901, 82001, 82301, 82401 | pass (251/251 with `settings-server.test.tsx` and `logic.test.ts`, 2026-09-30) |
 | `src/clubhouse/__tests__/settings-server.test.tsx` (44 cases) | the loader (82101, 80804), the route and the three addresses (80101, 80102, 80405, 80801 to 80803), the three loading files (CH-8401), the live writes (80806 to 80808, 80903, CH-8002) | pass |
 | `src/clubhouse/__tests__/logic.test.ts` (settings model) | section parsing and the validators | pass |
 | `src/clubhouse/__tests__/native.test.tsx` | sign-out order (push teardown, active team, session) | pass |
 | `npx vitest run src/clubhouse` | everything above and the other pages as they stood | 553/553 |
 | `dashboard/settings/notifications` page test (3 cases) | the Fairway page for the old link | pass |
 
-Mutation checks: every test added or retitled in this pass was checked against a broken copy of the code it guards.
+Phone tests ("Settings · phone", 56 cases, each titled 81901): the coach and player lists and their summaries; a row
+pushing its section, Back and the edge swipe popping it, and a section named in the URL; a kind's summary and its
+sheet's one-write switches, a failed switch flipping back, the reads that failed, the weekly email and blocked push,
+quiet mode; the priority ranker (hold and drag with a tick per step and one save on drop, a scroll that does not lift,
+the arrow keys, a failed save going back); the profile sheet (Save off until changed, the discard question by Cancel and
+by a swipe, a swipe that is refused springing back, Save closing it, a failed save, the photo, saving, offline);
+Change email, Change password, golf details; each destructive action sheet (delete with its typed follow-up, leave a
+team, a new invite code, turn off CoachHelm) with Cancel leaving everything alone; scoring pickers (one save at a time),
+team details, reminders and CH-8111; Share and copy; every CoachHelm control; the head-coach lock; join a team; the
+phone skeleton, a crashing section, Preferences, Sign out and Report a problem; an old address (`/settings/notifications`)
+opening its section; and the unsaved-changes guard while a sheet holds edits (CH-8506, CH-8508).
+
+Mutation checks (phone, 2026-09-30): the 56 phone tests were each checked against a broken copy of the code they guard.
+67 mutations were applied in groups, one group at a time (baseline first; every group's failing tests were compared with
+the ones it should break; the two that share a test were each rerun alone), and all 67 made their test fail: for example, a swipe that no longer springs back fails the discard test; a
+pick that sends the state from before fails the scoring test; a switch that drops `busy` fails CH-8403; skipping the
+action sheet before Delete fails the delete flow. Two more (a failed write's callback, the props a saved value comes
+back through) changed nothing observable and were replaced by mutations that do: `useSaveAction` running its callback
+on failure, and the busy guard on the scoring pickers.
+
+Mutation checks (desktop, earlier pass): every test added or retitled in this pass was checked against a broken copy of the code it guards.
 107 mutations were applied one at a time in an isolated copy of the tree (baseline 157/157 first), and all 107 made a
 test fail (for example, `keepSaved` removed from `SettingsView` fails the four 81204 cases; the old whole-object
 rollback fails 81302; the Fairway skeleton back in the two loading files fails CH-8401; rethrowing the team CoachHelm
@@ -50,10 +70,13 @@ Result:    built to D-18 and logged 2026-09-29 in PROGRESS.md. Not re-checked af
 
 ### Phone
 ```text
-Viewport:     not built. The container queries reflow the desktop layout at 860px and 560px; that was not viewed in this pass.
-Device/shell: not tried on an iPhone (npm run ios:dev, owner)
-Reference:    docs/clubhouse/phone/settings.md (a draft awaiting the owner)
-Result:       the phone gate is open
+Viewport:     built to the owner-approved design; not viewed in a browser at 390px (no dev server was run in the pass
+              that built it). The tests run in jsdom, which has no layout, so nothing about spacing, the 52px rows,
+              the sheets' heights or the drag is observed.
+Device/shell: not tried on an iPhone (npm run ios:dev, owner): the touch hold and drag, the haptics, the keyboard lift
+              of a sheet and the safe areas are unobserved.
+Reference:    docs/clubhouse/phone/settings.md and its mockups (approved 2026-09-30)
+Result:       the phone gate is open until the browser pass and the device pass
 ```
 
 ## Forced states
@@ -102,7 +125,9 @@ Notes:             first-load JS and LCP are open (CH-1954)
 
 ## Open verification gaps
 
-- Owner review of the built desktop screen; approval and build of the phone design; the iPhone pass.
+- Owner review of the built desktop screen; the browser pass of the phone at 390px (every screen and sheet against the
+  mockups) and the iPhone pass; a check that the reorder drag does not scroll the page under the finger on iOS.
+- The phone's `clubhouse:a11y` run (axe) and a VoiceOver pass of the sheets and the reorder list.
 - A browser pass with a real coach account (head and assistant) and a real player account, forcing the live writes.
 - `clubhouse:a11y` rerun after the v2 changes; the keyboard walk; LCP and layout shift.
 - Fixed 2026-09-30 (each has a test that fails without the fix): saved values snapped back after leaving a section
@@ -114,6 +139,9 @@ Notes:             first-load JS and LCP are open (CH-1954)
   changed (80808; how the database answers is not observed live); a failed team CoachHelm access check made a head
   coach see the switch disabled with "Only the head coach can change this." (80804).
 - Found and not fixed:
+  - Phone: the browser's Back or the iOS edge swipe while a section-level sheet (Team details, Golf details, a reminder
+    time, Join a team) holds edits pops the section behind it and drops the sheet without the discard question. The page
+    guard (CH-8508, CH-8506) covers closing the tab and links, not history entries; the sheets are not history entries.
   - A refused instant save (a switch or CoachHelm autosave) always says "Check your connection", because it never shows
     the server's reason; a refusal that arrives as an error (an upsert against a policy, "violates row-level
     security") reads the same way on a form save.

@@ -19,6 +19,19 @@
 .ch-root *::after {
   box-sizing: border-box;
 }
+/* Controls answer a quick second tap (a score stepper, a toggle) instead of iOS reading it as a
+   double-tap zoom; pinch zoom still works everywhere. Long-press doesn't pop the link preview. */
+.ch-root button,
+.ch-root a,
+.ch-root [role='button'],
+.ch-root [role='tab'],
+.ch-root [role='switch'],
+.ch-root label,
+.ch-root select,
+.ch-root summary {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
 .ch-root ::selection {
   background: var(--ch-green-100);
   color: var(--ch-ink-900);

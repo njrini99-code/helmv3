@@ -102,6 +102,9 @@ export interface ChSettingsData {
   coachhelm: Section<ChCoachHelmSettings> | null;
 }
 
+/** A player's team and pending join requests (a read that worked). */
+export type ChMembership = Extract<NonNullable<ChSettingsData['membership']>, { error: false }>['value'];
+
 // ── Notification labels (the current app's, verbatim) ──
 
 export const ROUTING_LABEL: Record<NotificationCategory, string> = {

@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { golfDetailsProblem, type ChGolfDetails, type ChSettingsData, type ChSettingsWrites } from './model';
+import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
+import { SAVE_COPY, useMembership } from './hooks';
 import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function GolfSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
@@ -20,7 +21,7 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
 function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSettingsWrites }) {
   const f = useDraft(details);
   useReportDirty('golf', f.dirty);
-  const save = useSaveAction('settings.saveGolf', writes.saveGolf, { done: 'Golf details saved', failed: "Couldn't save your golf details", code: 'CH-8016' }, (_r, saved) => f.commit(saved));
+  const save = useSaveAction('settings.saveGolf', writes.saveGolf, SAVE_COPY.golf, (_r, saved) => f.commit(saved));
   const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => f.setDraft((d) => ({ ...d, [k]: e.target.value }));
   return (
     <Card
@@ -50,25 +51,17 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
   );
 }
 
-type Membership = NonNullable<ChSettingsData['membership']> extends infer S ? (S extends { value: infer V } ? NonNullable<V> : never) : never;
-
-function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites }) {
-  const [requests, setRequests] = useState(m.requests);
+function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrites }) {
   const [code, setCode] = useState('');
   const [note, setNote] = useState('');
   const [leaving, setLeaving] = useState(false);
   useReportDirty('join', code.trim() !== '');
-  const leave = useSaveAction('settings.leaveTeam', writes.leaveTeam, { done: 'You left the team', failed: "Couldn't leave the team", code: 'CH-8017' }, () => {
-    setLeaving(false);
-    writes.refresh();
-  });
-  const join = useSaveAction('settings.requestJoin', writes.requestJoin, { done: 'Request sent to the coaches', failed: "Couldn't send your request", hint: 'Check the code with your coach.', code: 'CH-8018' }, () => {
-    setCode('');
-    setNote('');
-    writes.refresh();
-  });
-  const cancel = useSaveAction('settings.cancelRequest', writes.cancelRequest, { done: 'Request cancelled', failed: "Couldn't cancel the request", code: 'CH-8019' }, (_r, id) => {
-    setRequests((x) => x.filter((y) => y.id !== id));
+  const { requests, leave, join, cancel } = useMembership(m, writes, {
+    onLeft: () => setLeaving(false),
+    onJoined: () => {
+      setCode('');
+      setNote('');
+    },
   });
 
   if (m.team) {

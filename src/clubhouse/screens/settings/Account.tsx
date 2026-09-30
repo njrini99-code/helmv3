@@ -1,6 +1,5 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
 import { Camera, ExternalLink, KeyRound, LifeBuoy, LogOut, Trash2, UserRound } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Avatar } from '../../ui/Avatar';
@@ -8,10 +7,10 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
-import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
-import { chReport, chTrail } from '../../lib/track';
+import { chTrail } from '../../lib/track';
 import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
+import { SAVE_COPY, useAvatarUpload, useDeleteAccount, useReportProblem, useSignOut } from './hooks';
 import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
@@ -31,35 +30,14 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
   const f = useDraft<ChProfileInput>(profile);
   useReportDirty('profile', f.dirty);
   const file = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const toast = useToast();
-  const save = useSaveAction('settings.saveProfile', writes.saveProfile, { done: 'Profile saved', failed: "Couldn't save your profile", code: 'CH-8001' }, (_r, saved) => {
+  const { upload, uploading } = useAvatarUpload(writes, (url) => f.setDraft((d) => ({ ...d, avatarUrl: url })));
+  const save = useSaveAction('settings.saveProfile', writes.saveProfile, SAVE_COPY.profile, (_r, saved) => {
     f.commit(saved);
     writes.refresh();
   });
   // The coin keeps the saved initials while the name field is being edited or is empty.
   const name = (coach ? f.draft.fullName : `${f.draft.firstName} ${f.draft.lastName}`).trim() || profile.fullName;
   const invalid = profileProblem(data.role, f.draft);
-
-  const upload = async (picked: File) => {
-    setUploading(true);
-    chTrail('settings avatar upload');
-    try {
-      const r = await writes.uploadAvatar(picked);
-      if (r.success && r.data) f.setDraft((d) => ({ ...d, avatarUrl: r.data!.url }));
-      else {
-        haptic('error');
-        chReport(new Error(r.error || 'avatar upload failed'), { surface: 'settings.profile', action: 'uploadAvatar', severity: 'low' });
-        toast({ tone: 'error', title: "Couldn't upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Check your connection and try again.', code: 'CH-8002' });
-      }
-    } catch (err) {
-      haptic('error');
-      chReport(err, { surface: 'settings.profile', action: 'uploadAvatar' });
-      toast({ tone: 'error', title: "Couldn't upload that photo", body: 'Check your connection and try again.', code: 'CH-8002' });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   return (
     <Card
@@ -134,7 +112,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
   const send = useSaveAction(
     'settings.changeEmail',
     writes.changeEmail,
-    (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn't start the email change", code: 'CH-8003' }),
+    SAVE_COPY.email,
     (_r, v) => {
       setSentTo(v);
       setNext('');
@@ -185,7 +163,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
   const [confirm, setConfirm] = useState('');
   const [tried, setTried] = useState(false);
   useReportDirty('password', !!(cur || next || confirm));
-  const change = useSaveAction('settings.changePassword', writes.changePassword, { done: 'Password updated', failed: "Couldn't update your password", code: 'CH-8004' }, () => {
+  const change = useSaveAction('settings.changePassword', writes.changePassword, SAVE_COPY.password, () => {
     setCur('');
     setNext('');
     setConfirm('');
@@ -235,30 +213,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
 }
 
 function HelpCard() {
-  const toast = useToast();
-  const [opening, setOpening] = useState(false);
-  const report = async () => {
-    if (opening) return;
-    setOpening(true);
-    chTrail('settings report a problem');
-    const mail = () => {
-      toast({ title: 'Opening email', body: "The in-app report form isn't available right now.", code: 'CH-8025' });
-      window.location.href = 'mailto:admin@helmsportslabs.com?subject=Problem%20report';
-    };
-    try {
-      const dialog = await Sentry.getFeedback?.()?.createForm();
-      if (!dialog) mail();
-      else {
-        dialog.appendToDom();
-        dialog.open();
-      }
-    } catch {
-      // The feedback widget is optional (blocked, offline, not loaded): email is the fallback, not an error.
-      mail();
-    } finally {
-      setOpening(false);
-    }
-  };
+  const { report, opening } = useReportProblem();
   return (
     <Card id="set-help" title="Help and legal">
       <div className="ch-set-links">
@@ -287,11 +242,10 @@ function HelpCard() {
 }
 
 function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDeleted: () => void }) {
-  const [signingOut, setSigningOut] = useState(false);
+  const { signOut, signingOut } = useSignOut(writes);
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
-  const toast = useToast();
-  const del = useSaveAction('settings.deleteAccount', writes.deleteAccount, { done: 'Your account was deleted', failed: "Couldn't delete your account", code: 'CH-8023' }, () => {
+  const del = useDeleteAccount(writes, () => {
     setConfirming(false);
     onDeleted();
   });
@@ -307,18 +261,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
             size="sm"
             leftIcon={LogOut}
             disabled={signingOut}
-            onClick={async () => {
-              setSigningOut(true);
-              chTrail('settings sign out');
-              try {
-                await writes.signOut();
-              } catch (err) {
-                chReport(err, { surface: 'settings.session', action: 'signOut' });
-                haptic('error');
-                toast({ tone: 'error', title: "Couldn't sign you out", body: 'Check your connection and try again.', code: 'CH-8024' });
-                setSigningOut(false);
-              }
-            }}
+            onClick={() => void signOut()}
           >
             {signingOut ? 'Signing out…' : 'Sign out'}
           </Button>
