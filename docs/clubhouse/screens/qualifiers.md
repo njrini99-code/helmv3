@@ -117,7 +117,7 @@ Missing actions:
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
-- [ ] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (open: Q-5 to Q-20)
+- [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (D-30 to D-33; Q-16, the phone frame, belongs to phone-spec)
 
 ## desktop
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
