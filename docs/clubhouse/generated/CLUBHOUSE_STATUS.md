@@ -9,7 +9,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 19 of 25 categories have catalog contracts
-- Bridge: reserved; 64 IDs, 38 on an element or in code, 26 reserved
+- Bridge: reserved; 65 IDs, 39 on an element or in code, 26 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current
@@ -18,11 +18,11 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 
 - Design: approved
 - Implementation: in_progress
-- Contract: partial; 7 of 25 categories have catalog contracts
-- Bridge: reserved; 42 IDs, 31 on an element or in code, 11 reserved
+- Contract: complete; 14 of 25 categories have catalog contracts
+- Bridge: reserved; 60 IDs, 49 on an element or in code, 11 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
-- Docs: missing
+- Docs: current
 
 ## P003 Roster
 
@@ -88,11 +88,11 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 
 - Design: approved
 - Implementation: in_progress
-- Contract: partial; 13 of 25 categories have catalog contracts
-- Bridge: reserved; 77 IDs, 70 on an element or in code, 7 reserved
+- Contract: complete; 23 of 25 categories have catalog contracts
+- Bridge: reserved; 122 IDs, 115 on an element or in code, 7 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
-- Docs: missing
+- Docs: current
 
 ## P010 Team Hub
 
@@ -100,6 +100,16 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Implementation: in_progress
 - Contract: partial; 7 of 25 categories have catalog contracts
 - Bridge: reserved; 44 IDs, 43 on an element or in code, 1 reserved
+- Data: existing; 0 held plan(s)
+- Verification: partial
+- Docs: missing
+
+## P011 Rounds
+
+- Design: approved
+- Implementation: in_progress
+- Contract: partial; 7 of 25 categories have catalog contracts
+- Bridge: reserved; 17 IDs, 11 on an element or in code, 6 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: missing

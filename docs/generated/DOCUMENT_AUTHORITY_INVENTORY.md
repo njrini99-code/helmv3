@@ -42,14 +42,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 41 | 5 | 18 | 74 |
+| `PLAN` | 42 | 5 | 18 | 75 |
 | `AUDIT_SNAPSHOT` | 58 | 6 | 32 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 216 | 12 | 48 | 79 |
+| `UNKNOWN` | 250 | 12 | 53 | 83 |
 
 ## Files
 
@@ -340,6 +340,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 18 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 4 |
+| `docs/clubhouse/ROUNDS_PLAN.md` | current | - | - | - | 1 |
 | `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
@@ -670,10 +671,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 2 |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/hub.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/roster.md` | current | - | - | - | - |
@@ -704,13 +706,44 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P001-shell/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/WIRING.md` | current | - | - | - | 2 |
+| `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P002-home/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P003-roster/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P008-settings/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P009-qualifiers/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/foundation.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/home-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
@@ -718,6 +751,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/team-hub.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/home.md` | current | - | - | - | - |
@@ -727,6 +761,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/screens/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/team-hub.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/DESIGN.md` | current | - | - | - | - |

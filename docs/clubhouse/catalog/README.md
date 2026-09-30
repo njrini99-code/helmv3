@@ -27,7 +27,8 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 8 | Settings |
 | 09 | Qualifiers (list, detail, create and edit; coach and player) |
 | 10 | Team Hub (coach and player) |
-| 10, 11, … | Pages after these, in the order their catalogs are started |
+| 11 | Rounds (player: library; review and round entry to come) |
+| 12, 13, … | Pages after these, in the order their catalogs are started |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |

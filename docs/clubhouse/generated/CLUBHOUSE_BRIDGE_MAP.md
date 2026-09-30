@@ -65,16 +65,17 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 2 | 1 | 1 | 4 |  | 9 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 11 | 1 | 1 | 1 | 3 | 1 | 1 |  | 64 |
-| P002 |  | 1 |  | 13 |  | 17 |  |  |  |  |  |  |  | 1 |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 42 |
+| P001 | 2 | 1 | 1 | 4 |  | 10 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 11 | 1 | 1 | 1 | 3 | 1 | 1 |  | 65 |
+| P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P004 |  | 1 | 1 | 9 |  | 11 | 2 |  |  |  |  |  |  |  |  | 2 | 3 | 5 |  |  |  |  |  |  |  | 34 |
 | P005 |  |  | 2 | 5 | 1 | 10 |  | 2 |  |  |  |  |  |  |  | 2 | 2 | 7 |  |  |  |  |  |  |  | 31 |
 | P006 |  | 5 | 1 | 8 | 4 | 24 |  |  |  |  | 2 | 1 |  |  |  | 3 | 3 | 4 |  |  |  |  |  |  |  | 55 |
 | P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 89 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
-| P009 |  | 5 | 3 | 12 | 12 | 28 | 1 | 2 |  | 1 | 4 | 1 |  |  |  | 2 | 3 | 3 |  |  |  |  |  |  |  | 77 |
+| P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
 | P010 |  | 4 |  | 9 | 8 | 16 |  |  |  |  | 3 |  |  |  |  |  | 2 | 2 |  |  |  |  |  |  |  | 44 |
+| P011 |  | 1 |  | 4 |  | 4 |  |  |  |  | 1 |  |  |  |  | 1 | 3 | 3 |  |  |  |  |  |  |  | 17 |
 
 ## P001 Shell
 
@@ -97,6 +98,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10607 | CH-1206 | 06 Server / system error | `ANYTHING_ELSE_CRASHED_THE_PAGE` | implemented | Anything else crashed the page |
 | 10608 | CH-1207 | 06 Server / system error | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | implemented | The sidebar's next event doesn't load |
 | 10609 | CH-1208 | 06 Server / system error | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | implemented | The Roster badge's join requests don't load |
+| 10610 | CH-1002 | 06 Server / system error | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | implemented | Signing out from the phone's More sheet fails |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
@@ -149,7 +151,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
+| 20101 |  | 01 Default / core UI | `COACH_HOME_READY` | implemented | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
+| 20102 |  | 01 Default / core UI | `PLAYER_HOME_READY` | implemented | Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
+| 20103 |  | 01 Default / core UI | `LINKS_OPEN_WHAT_THEY_NAME` | implemented | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 | 20201 | CH-2401 | 02 Initial loading / skeleton | `HOME_IS_LOADING` | implemented | Home is loading |
+| 20301 |  | 03 Background loading / refresh | `CLOCK_KEEPS_TIME` | implemented | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload. |
 | 20401 | CH-2301 | 04 Empty | `NOTHING_IS_ON_THE_CALENDAR_TODAY` | implemented | Nothing is on the calendar today |
 | 20402 | CH-2302 | 04 Empty | `NO_ROUNDS_THIS_SEASON` | implemented | No rounds this season |
 | 20403 | CH-2303 | 04 Empty | `THE_NEWEST_ROUND_WAS_POSTED_AS_A` | implemented | The newest round was posted as a total |
@@ -180,17 +186,31 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20615 | CH-2215 | 06 Server / system error | `A_PLAYERS_OWN_ROUNDS_DONT_LOAD` | implemented | A player's own rounds don't load (player Home) |
 | 20616 | CH-2216 | 06 Server / system error | `SCRAMBLING_AND_THREE_PUTTS_DONT_LOAD` | implemented | Scrambling and three-putts don't load (player Home) |
 | 20617 | CH-2217 | 06 Server / system error | `THE_PLAYERS_SCORING_OR_PARTS_OF_THE` | implemented | The player's scoring or parts of the game crash while drawing |
+| 20618 |  | 06 Server / system error | `UNKNOWN_TIMEZONE_READS_AS_EASTERN` | implemented | A stored team timezone that is not a real zone reads like a missing one: the date, greeting and week are read in Eastern time, the bad value is logged as clubhouse.home.timezone, and Home still opens instead of failing the page. |
+| 20801 |  | 08 Permission / authorization | `ROLE_PICKS_THE_HOME` | implemented | /golf/dashboard hands a coach with the Clubhouse flag on Coach Home and a player with it on Player Home, and everyone else the existing GolfHelm dashboard; a session holding both profiles is treated as a coach, no session is sent to sign in, and a session with neither profile to sign up. |
+| 20802 |  | 08 Permission / authorization | `TEAM_COMES_FROM_THE_SESSION` | implemented | The team Home reads is the coach's active team or the player's own active membership, taken from the session and never from the address; with no team nothing is read and the no-team page shows (CH-2307, CH-2313), and a player membership read that fails is the error page with Try again, never the no-team page. |
+| 20803 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_OWN_ROUNDS` | implemented | Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates. |
+| 20804 |  | 08 Permission / authorization | `PLAYER_WEEK_NAMES_NO_ONE` | implemented | A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 confirmed), and no teammate's name or id is in what the page receives. |
+| 20805 |  | 08 Permission / authorization | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | implemented | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
+| 20806 |  | 08 Permission / authorization | `CONTROLS_STAY_WITH_THEIR_ROLE` | implemented | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown. |
 | 21401 | CH-2402 | 14 Retry / recovery | `TRY_AGAIN_WAS_PRESSED_ON_A_SECTION` | reserved | Try again was pressed on a section |
+| 21402 |  | 14 Retry / recovery | `TRY_AGAIN_ASKS_THE_SERVER_AGAIN` | implemented | Try again on a section that did not load asks the server for the whole page again (router.refresh) and, offline, says so and asks nothing; a section that crashed only draws itself again and does not ask the server. |
 | 21601 | CH-2601 | 16 Micro animation | `PAGING_THE_LATEST_ROUND` | reserved | Paging the latest round |
 | 21602 | CH-2602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | reserved | Hovering or pressing a leaderboard row |
 | 21701 | CH-2701 | 17 Haptic | `PAGING_THE_LATEST_ROUND_2` | reserved | Paging the latest round |
 | 21702 | CH-2702 | 17 Haptic | `NEW_EVENT` | reserved | New event (button or the N key) |
+| 21703 |  | 17 Haptic | `TAPS_FOLLOW_THE_GRAMMAR` | implemented | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
 | 21801 | CH-2801 | 18 Accessibility | `N_OPENS_A_NEW_EVENT_FROM_ANYWHERE` | reserved | N opens a new event from anywhere on Home, but never while typing or inside a dialog |
 | 21802 | CH-2802 | 18 Accessibility | `EACH_DAY_IN_THE_WEEK_STRIP_IS` | reserved | Each day in the week strip is read as words ("Tuesday 14, 4 events", "competition, 1 event"); today is marked |
 | 21803 | CH-2803 | 18 Accessibility | `THE_LEADERBOARD_AND_BOTH_NINES_OF_THE` | reserved | The leaderboard and both nines of the scorecard are tables: every value sits in a cell under a column header |
 | 21804 | CH-2804 | 18 Accessibility | `THE_ROUND_PAGER_ANNOUNCES_2_OF_3` | reserved | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") |
 | 21805 | CH-2805 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 21806 | CH-2806 | 18 Accessibility | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | reserved | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
+| 21807 |  | 18 Accessibility | `COUNTDOWN_IS_A_NAMED_TIMER` | implemented | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
+| 21901 |  | 19 Responsive layout | `PHONE_HOME` | implemented | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, My latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
+| 22101 |  | 21 Performance | `LOADERS_NEVER_THROW` | implemented | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', <read>) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
+| 22301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', <read>), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
+| 22401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/home.test.tsx and player-home.test.tsx name in a test title every Home catalog code of kinds 0 to 5 that is not marked preview, and each hand contract on this page. |
 
 ## P003 Roster
 
@@ -616,6 +636,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
+| 90101 |  | 01 Default / core UI | `LIST_READY` | implemented | The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier. |
+| 90102 |  | 01 Default / core UI | `DETAIL_READY` | implemented | A qualifier opens with its status pill and name, six facts (dates, entry deadline, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
+| 90103 |  | 01 Default / core UI | `FORM_READY` | implemented | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
+| 90104 |  | 01 Default / core UI | `SELECTION_READY` | implemented | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
+| 90105 |  | 01 Default / core UI | `ADDRESSES_RENDER_IN_PLACE` | implemented | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers and /my-qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. |
+| 90106 |  | 01 Default / core UI | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | implemented | /my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there). |
+| 90107 |  | 01 Default / core UI | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | implemented | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
 | 90201 | CH-09401 | 02 Initial loading / skeleton | `THE_LIST_IS_LOADING` | implemented | The list is loading |
 | 90202 | CH-09402 | 02 Initial loading / skeleton | `A_QUALIFIER_IS_LOADING` | implemented | A qualifier is loading |
 | 90203 | CH-09403 | 02 Initial loading / skeleton | `THE_FORM_IS_LOADING` | implemented | The form is loading |
@@ -624,6 +651,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90301 | CH-09404 | 03 Background loading / refresh | `A_CREATE_OR_SAVE_IS_IN_FLIGHT` | implemented | A create or save is in flight |
 | 90302 | CH-09405 | 03 Background loading / refresh | `A_CLOSE_IS_IN_FLIGHT` | implemented | A close is in flight |
 | 90303 | CH-09406 | 03 Background loading / refresh | `A_REOPEN_IS_IN_FLIGHT` | implemented | A reopen is in flight |
+| 90304 |  | 03 Background loading / refresh | `LIVE_STANDINGS_REFRESH` | implemented | While a qualifier is live the page listens for its signed rounds and, after 800ms of quiet, has the server read the page again once; an upcoming or closed qualifier is not listened to, and a dropped feed is reported at low severity, never shown. |
 | 90401 | CH-09301 | 04 Empty | `THE_TEAM_HAS_NO_QUALIFIERS` | implemented | The team has no qualifiers |
 | 90402 | CH-09302 | 04 Empty | `SEARCH_OR_FILTER_MATCHES_NOTHING` | implemented | Search or filter matches nothing |
 | 90403 | CH-09303 | 04 Empty | `NOTHING_HAS_CONCLUDED_YET` | implemented | Nothing has concluded yet |
@@ -648,6 +676,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90510 | CH-09110 | 05 Validation | `ANY_OF_THE_ABOVE_ON_SUBMIT` | implemented | Any of the above on submit |
 | 90511 | CH-09111 | 05 Validation | `A_COACHS_PICK_WITH_NO_REASON` | implemented | A coach's pick with no reason |
 | 90512 | CH-09112 | 05 Validation | `SAVE_PICK_WITH_NO_PLAYER_CHOSEN` | implemented | Save pick with no player chosen |
+| 90513 |  | 05 Validation | `LOCKED_ENTRANTS_STAY` | implemented | In the edit form a player who has a round in the qualifier, or a place in its squad, stays entered: their box is ticked and disabled and says why. |
+| 90514 |  | 05 Validation | `SQUAD_FIXED_ONCE_CONFIRMED` | implemented | Once the squad is confirmed, squad size and coach's picks are read-only in the edit form, which says the size is fixed, and a save sends no squad change. |
 | 90601 | CH-09001 | 06 Server / system error | `CREATING_A_QUALIFIER_FAILS` | implemented | Creating a qualifier fails |
 | 90602 | CH-09002 | 06 Server / system error | `SAVING_AN_EDIT_FAILS` | implemented | Saving an edit fails |
 | 90603 | CH-09003 | 06 Server / system error | `CLOSING_A_QUALIFIER_FAILS` | implemented | Closing a qualifier fails |
@@ -677,14 +707,34 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90627 | CH-09218 | 06 Server / system error | `MANAGE_SELECTIONS_DOESNT_LOAD` | implemented | Manage selections doesn't load |
 | 90628 | CH-09219 | 06 Server / system error | `MANAGE_SELECTIONS_CRASHES` | implemented | Manage selections crashes |
 | 90701 | CH-09903 | 07 Network / offline | `THE_SQUAD_IS_CONFIRMED` | implemented | The squad is confirmed (Manage selections) |
+| 90702 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
 | 90801 | CH-09310 | 08 Permission / authorization | `THE_QUALIFIER_ISNT_ON_THE_VIEWERS_TEAM` | implemented | The qualifier isn't on the viewer's team, or doesn't exist |
 | 90802 | CH-09311 | 08 Permission / authorization | `A_PLAYER_OPENS_NEW_OR_EDIT` | implemented | A player opens /new, /edit or /selection |
+| 90803 |  | 08 Permission / authorization | `COACH_ADDRESSES_READ_NOTHING_FOR_A_PLAYER` | implemented | For a player, /qualifiers/new, /qualifiers/[id]/edit and /qualifiers/[id]/selection stop at the coach-only page (CH-09311) before any loader runs, so nothing of the qualifier is read for them. |
+| 90804 |  | 08 Permission / authorization | `SIGNED_OUT_OR_TEAMLESS_READS_NOTHING` | implemented | A signed-out visitor gets an empty page and someone with no team gets the no-team page (CH-09309) on every address, and neither reads a qualifier. |
+| 90805 |  | 08 Permission / authorization | `TEAM_OWNERSHIP_IN_THE_LOADERS` | implemented | The list reads only the viewer's team and never a test qualifier, and the detail, form and Manage selections loaders answer a qualifier on another team, or none, with not found (CH-09310), so its data reaches no one outside the team. |
+| 90806 |  | 08 Permission / authorization | `PLAYER_OPENS_OWN_ROUNDS_ONLY` | implemented | A player can open scorecards only for their own rounds (the row button on desktop, the rounds sheet on the phone), and the loader sends their browser only their own holes, never a teammate's. |
+| 90807 |  | 08 Permission / authorization | `PICK_REASONING_IS_COACH_ONLY` | implemented | A coach's reason for a pick is read only for a coach and is never in a player's data or on a player's screen: a player sees who was picked, not why. |
+| 90808 |  | 08 Permission / authorization | `COACH_CONTROLS_HIDDEN_FROM_PLAYERS` | implemented | A player is never shown a coach control: not Create qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812). |
+| 90809 |  | 08 Permission / authorization | `SELECTION_REFUSALS_IN_COACH_WORDS` | implemented | A refusal from the selection actions (not this team's coach, the squad moved on, picks not open, every pick taken, no reason, player not on the team, roster unchecked, nothing to confirm, qualifier missing) reaches the coach as a sentence saying what to do, and an unrecognised one falls back to the toast's own hint. |
+| 90810 |  | 08 Permission / authorization | `SELECTION_ACTIONS_RECHECK_THE_COACH` | implemented | Start selecting, saving or removing a pick and confirming the squad each check on the server that the caller coaches the qualifier's own team (Unauthorized, Qualifier not found, Not a coach of this team) before the service runs, and a pick must also be a player on that team. |
+| 90811 |  | 08 Permission / authorization | `SETUP_ACTIONS_RECHECK_THE_COACH` | implemented | The squad-size and entrants actions behind Edit check that the caller coaches the qualifier's team before any write, and refuse a signed-out caller and a malformed id. |
+| 90812 |  | 08 Permission / authorization | `STATUS_ACTION_RECHECKS_THE_COACH` | implemented | Close and Reopen check on the server that the caller's organisation owns the qualifier's team, so a player or another organisation's coach is refused as Unauthorized before anything is updated. |
+| 90901 |  | 09 Success | `CHANGE_LANDED` | implemented | A write that lands (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) says what landed in a toast and fires the success haptic. |
+| 90902 |  | 09 Success | `QUALIFIER_OPENS_AFTER_A_CREATE_SAVE_OR_CONFIRM` | implemented | A landed create opens the new qualifier and a landed save or confirm returns to the qualifier, while close, reopen, start selecting, save a pick and remove a pick leave the coach where they are. |
 | 91001 | CH-09901 | 10 Warning | `THE_QUALIFIER_IS_CLOSED` | implemented | The qualifier is closed |
 | 91101 | CH-09501 | 11 Destructive | `CLOSE_QUALIFIER` | implemented | Close qualifier |
 | 91102 | CH-09503 | 11 Destructive | `START_SELECTING` | implemented | Start selecting |
 | 91103 | CH-09504 | 11 Destructive | `REMOVE_A_COACHS_PICK` | implemented | Remove a coach's pick |
 | 91104 | CH-09505 | 11 Destructive | `CONFIRM_THE_SQUAD` | implemented | Confirm the squad |
 | 91201 | CH-09502 | 12 State preservation | `CANCEL_OR_BACK_WITH_UNSAVED_CHANGES_IN` | implemented | Cancel or Back with unsaved changes in the form |
+| 91202 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A create or save that fails keeps every field as typed, and a save that lands only in part keeps saying what saved and what did not until the next save (CH-09902). |
+| 91203 |  | 12 State preservation | `PICK_KEPT_ON_FAILURE` | implemented | A pick the server refuses keeps the dialog open with the chosen player and the reason, so nothing has to be typed again. |
+| 91204 |  | 12 State preservation | `OPEN_SCORECARDS_SURVIVE_A_REFRESH` | implemented | Scorecards a coach has open stay open when the standings are read again. |
+| 91301 |  | 13 Optimistic UI | `WRITES_WAIT_FOR_THE_SERVER` | implemented | Nothing is optimistic: the status pill, the picks and the steps change only after the server says the write landed, and a refused write changes nothing on the page. |
+| 91401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything a landed write does follows: the status changes, the question closes, and the page opens the qualifier or reads again. |
+| 91402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a section that did not load has the server read the whole page again (router.refresh), except the course picker, which re-reads only its own list, and the edit form's round courses, which offer none so a re-read cannot drop the coach's changes. |
+| 91501 |  | 15 Data freshness / sync | `WRITES_RE_READ_THE_PAGE` | implemented | A landed close, reopen, save, start selecting, save a pick, remove a pick or confirm has the server read the page again so it shows the server's state (a create opens the new qualifier instead), and a write that fails re-reads nothing. |
 | 91601 | CH-09601 | 16 Micro animation | `PRESSING_A_CARD_THE_HERO_OR_A` | reserved | Pressing a card, the hero or a status pill |
 | 91602 | CH-09602 | 16 Micro animation | `OPENING_A_LEADERBOARD_ROW` | reserved | Opening a leaderboard row |
 | 91701 | CH-09701 | 17 Haptic | `A_STATUS_PILL_A_LEADERBOARD_ROW_A` | reserved | A status pill, a leaderboard row, a player checkbox, a course, a tee, or a player in the pick dialog |
@@ -693,6 +743,21 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 91801 | CH-09801 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 91802 | CH-09802 | 18 Accessibility | `THE_LEADERBOARD_AND_ROUND_BY_ROUND_ARE` | reserved | The leaderboard and round-by-round are tables (rows, column headers, a row header per player); each row's scorecards open from a button with aria-expanded, and each scorecard is a table with a caption |
 | 91803 | CH-09803 | 18 Accessibility | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | implemented | A live update to the standings is announced |
+| 91804 |  | 18 Accessibility | `FIELD_PROBLEMS_ARE_ALERTS` | implemented | Each problem in the form or the pick dialog is an alert tied to its field by aria-describedby, the field is marked aria-invalid, and a field with no problem is not. |
+| 91901 |  | 19 Responsive layout | `PHONE_DETAIL` | implemented | At 820px and below a qualifier is one column: three facts (rounds in, spots, deadline), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
+| 91902 |  | 19 Responsive layout | `PHONE_FORM` | implemented | On the phone the form's Cancel and Create (Save when editing) sit in the top bar and the tab bar steps aside; Create runs the same checks as the page's button, and Cancel asks before discarding changes. |
+| 91903 |  | 19 Responsive layout | `PHONE_SELECTION` | implemented | On the phone Manage selections has its own top bar (Selections, with a way back to the qualifier) and the one primary action in a foot at the bottom of the page. |
+| 91904 |  | 19 Responsive layout | `PHONE_LIST` | implemented | On the phone the list's top bar reads ‹ More and the title (Qualifiers, or My qualifiers on a player's own list); the list itself is the desktop list with phone CSS. |
+| 92001 |  | 20 Keyboard / input | `FIRST_PROBLEM_TAKES_FOCUS` | implemented | When Create or Save finds problems nothing is sent and focus moves to the first problem in reading order (name, dates, rounds, the one-round confirmation, players, squad, picks), not the last. |
+| 92002 |  | 20 Keyboard / input | `ENTER_SUBMITS_THE_FORM` | implemented | Enter in a field of the form submits it, and a form with a problem shows the problem instead of sending. |
+| 92003 |  | 20 Keyboard / input | `SCORECARDS_OPEN_FROM_THE_KEYBOARD` | implemented | A leaderboard row's scorecards open from a button that takes Enter and Space and says whether it is expanded; the row itself is not a tab stop. |
+| 92101 |  | 21 Performance | `ONE_PASS_LOADERS` | implemented | The list, the detail and the form are each read on the server in one pass, every table once, and arrive whole, so nothing is fetched after first paint except a live qualifier's re-read and the course picker's lookups. |
+| 92102 |  | 21 Performance | `PICKER_SEARCH_IS_DEBOUNCED` | implemented | The course picker looks courses up when it opens and once, 250ms after typing stops, not on every key. |
+| 92301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', <read>). |
+| 92302 |  | 23 Logging / observability | `HELD_SETUP_ACTIONS_REFUSE_OFF` | implemented | The squad-size and entrants actions refuse before any read unless the Clubhouse UI is on for the caller (D-61). |
+| 92303 |  | 23 Logging / observability | `SELECTION_REFUSAL_KEPT_FOR_THE_TRAIL` | implemented | The selection actions' own refusal text, cut at 200 characters, goes to a chTrail breadcrumb ('qualifiers selection refused') and not to the coach, so Sentry keeps what the server said. |
+| 92304 |  | 23 Logging / observability | `INTENTS_LEAVE_BREADCRUMBS` | implemented | Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action qualifiers.<name>). |
+| 92401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/qualifiers.test.tsx names every catalog code of kinds 0 to 5 it forces and every hand contract it proves by its Bridge ID in a test title, and the server actions behind Manage selections, Close and Edit have their own test files. |
 
 ## P010 Team Hub
 
@@ -742,6 +807,28 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 101702 | CH-10702 | 17 Haptic | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | implemented | Delete (before the question), a form sent with a mistake |
 | 101801 | CH-10801 | 18 Accessibility | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | implemented | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |
 | 101802 | CH-10802 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
+
+## P011 Rounds
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 110201 | CH-11401 | 02 Initial loading / skeleton | `THE_PAGE_IS_ON_ITS_WAY` | implemented | The page is on its way |
+| 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
+| 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
+| 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
+| 110404 | CH-11304 | 04 Empty | `NO_ROUND_IN_PROGRESS` | implemented | No round in progress |
+| 110601 | CH-11001 | 06 Server / system error | `DISCARDING_AN_UNFINISHED_ROUND_FAILS` | implemented | Discarding an unfinished round fails |
+| 110602 | CH-11201 | 06 Server / system error | `THE_POSTED_ROUNDS_DONT_LOAD` | implemented | The posted rounds don't load |
+| 110603 | CH-11202 | 06 Server / system error | `THE_ROUND_IN_PROGRESS_CHECK_FAILS` | implemented | The round-in-progress check fails |
+| 110604 | CH-11203 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
+| 111101 | CH-11501 | 11 Destructive | `DISCARD_ON_AN_UNFINISHED_ROUND` | implemented | Discard on an unfinished round |
+| 111601 | CH-11601 | 16 Micro animation | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | reserved | Hovering a round that opens its review |
+| 111701 | CH-11701 | 17 Haptic | `DISCARD_IS_TAPPED` | implemented | Discard is tapped |
+| 111702 | CH-11702 | 17 Haptic | `A_ROUND_IS_OPENED` | reserved | A round is opened |
+| 111703 | CH-11703 | 17 Haptic | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | reserved | Continue, Submit or Start a round is tapped |
+| 111801 | CH-11801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_BOOK` | reserved | A screen reader moves through the book |
+| 111802 | CH-11802 | 18 Accessibility | `THE_IN_PROGRESS_CARDS_HOLE_STRIP` | reserved | The in-progress card's hole strip |
+| 111803 | CH-11803 | 18 Accessibility | `THE_SEASON_RIBBON` | reserved | The season ribbon |
 
 ## Tombstones
 

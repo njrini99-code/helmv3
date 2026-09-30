@@ -3,6 +3,9 @@ import { ClubhouseFrame } from '@/clubhouse/shell/ClubhouseFrame';
 import { CoachHome } from '@/clubhouse/screens/home/CoachHome';
 import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
 import { PreviewHub } from '@/clubhouse/preview/PreviewHub';
+import { PreviewRounds } from '@/clubhouse/preview/PreviewRounds';
+import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_ROUNDS_IDLE, PREVIEW_ROUNDS_MANY, PREVIEW_ROUNDS_NO_SEASON, PREVIEW_ROUNDS_UNFINISHED_FAILED } from '@/clubhouse/preview/fixtures-rounds';
+import '@/clubhouse/styles/rounds.css';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '@/clubhouse/preview/fixtures-hub';
 import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS } from '@/clubhouse/preview/fixtures-player-home';
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
@@ -54,6 +57,7 @@ import {
  *   /clubhouse-preview/home   ?state=empty | noevents | failed | loading | error   (empty is the first-run page)
  *   /clubhouse-preview/home-player ?state=empty | noevents | failed | loading   (Theo; empty is the first-run page)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
+ *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
@@ -133,6 +137,24 @@ export default async function ClubhousePreview({
     'hub-player': {
       path: '/golf/dashboard/team-hub',
       node: <PreviewHub data={state === 'empty' ? PREVIEW_HUB_PLAYER_EMPTY : state === 'failed' ? PREVIEW_HUB_PLAYER_FAILED : PREVIEW_HUB_PLAYER} state={state} tab={tab} />,
+    },
+    rounds: {
+      path: '/golf/dashboard/rounds',
+      node: (
+        <PreviewRounds
+          state={state}
+          data={
+            {
+              idle: PREVIEW_ROUNDS_IDLE,
+              many: PREVIEW_ROUNDS_MANY,
+              empty: PREVIEW_ROUNDS_EMPTY,
+              noseason: PREVIEW_ROUNDS_NO_SEASON,
+              failed: PREVIEW_ROUNDS_FAILED,
+              'unfinished-failed': PREVIEW_ROUNDS_UNFINISHED_FAILED,
+            }[state ?? ''] ?? PREVIEW_ROUNDS
+          }
+        />
+      ),
     },
     roster: {
       path: '/golf/dashboard/roster',
@@ -239,7 +261,7 @@ export default async function ClubhousePreview({
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const user = screen === 'home-player' || screen === 'hub-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const user = screen === 'home-player' || screen === 'hub-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'rounds' || screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
 
   return (
     <PreviewBell state={bell}>

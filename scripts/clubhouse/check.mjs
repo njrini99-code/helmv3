@@ -199,6 +199,7 @@ const CATALOG_PAGE = {
   settings: '8',
   qualifiers: '09',
   hub: '10',
+  rounds: '11',
 };
 /** Kinds whose rows must exist in code and in a test: toasts, validation, didn't load, empty, loading, confirm. */
 const ENFORCED_KINDS = new Set(['0', '1', '2', '3', '4', '5']);

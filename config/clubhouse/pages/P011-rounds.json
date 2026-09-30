@@ -1,0 +1,56 @@
+{
+  "id": "P011",
+  "name": "Rounds",
+  "slug": "rounds",
+  "bridgeNamespace": 11,
+  "routes": [
+    "/golf/dashboard/rounds"
+  ],
+  "roles": [
+    "player"
+  ],
+  "semanticFeatures": [
+    "golf_round_lifecycle"
+  ],
+  "progressRow": "Rounds",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md)",
+    "desktop": [
+      "design/handoff/Player - Rounds.html",
+      "design/handoff/rounds-flow.jsx",
+      "design/handoff/rounds-course.jsx",
+      "design/handoff/rounds-track.jsx",
+      "design/handoff/rounds-review.jsx",
+      "design/handoff/rounds-flow.css",
+      "design/handoff/rounds-track.css",
+      "design/handoff/rounds-data.js"
+    ],
+    "phone": [
+      "design/handoff/Player - Rounds - Mobile.html",
+      "design/handoff/rounds-flow.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/rounds",
+    "loader": "src/clubhouse/data/rounds.ts",
+    "route": "src/clubhouse/routes/rounds.tsx",
+    "styles": "src/clubhouse/styles/rounds.css",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/rounds.md",
+  "checklist": "docs/clubhouse/screens/rounds.md",
+  "phoneSpec": "docs/clubhouse/phone/rounds.md",
+  "actions": [],
+  "held": []
+}
