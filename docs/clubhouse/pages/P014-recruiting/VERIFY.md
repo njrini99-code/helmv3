@@ -19,7 +19,7 @@ Date:       2026-09-30
 | Lint | `npx eslint` on the Recruiting screens, loader, route, preview, tests, nav, the preview page, the recruiting page and loading files, `a11y.mjs` and `check.mjs` | exit 0, 0 errors; 9 warnings that are not this page's (`jsx-a11y/aria-role` on the existing `role="player"` marker props in `shell.test.tsx` and the preview page) |
 | Registry sync, then Clubhouse check | `node scripts/clubhouse/registry.mjs sync` and `node scripts/clubhouse/check.mjs` in a copy of the working tree (the real tree is not synced: the coordinator syncs) | exit 0: 14 pages, 1145 Bridge IDs (53 of them P014), tracker valid; P014's CONTRACT.md passes `checkContract` with all 25 categories |
 | Clubhouse check, real tree | `node scripts/clubhouse/check.mjs` | exit 1 until the coordinator runs `registry.mjs sync`: 182 findings, every one of them "not in bridge-contracts.json / run sync / generated doc is stale" (P014's 53 IDs and its manifest's references to them, and P005's). No other finding |
-| Knowledge check | `npm run -s docs:check` | see "Knowledge check" below |
+| Knowledge check | `npm run -s docs:check` | exit 0 (see "Knowledge check" below) |
 | Build | `npm run build` | not run in this pass (see "Open verification gaps") |
 
 ## Automated tests
@@ -112,11 +112,12 @@ Animation:         v2 tokens only (clubhouse:check bans literal durations)
 
 ## Knowledge check
 
-`npm run docs:check` was run before the commit: it stopped at `knowledge:check` on the document inventory, because the
-new files (`design/handoff/recruiting/`, the catalog and page docs) were untracked and so counted as dead references
-from `memory/features/recruiting.md` (6 dead refs in CURRENT_FEATURE). The rerun after the commit is in the final
-report. The schema-drift check flagged `golf_clubhouse_ui` in `memory/features/recruiting.md`; the name was taken out
-of that doc (the flag is now "the Clubhouse flag"). `memory/features/qualifiers.md` also names it.
+`npm run -s docs:check` exit 0 after the commits (2026-09-30). On the way it failed three times, each for a reason this
+change caused and fixed: the new files were untracked when first run, so `memory/features/recruiting.md`'s links to
+them counted as dead references (they resolved once committed); the schema-drift check flagged `golf_clubhouse_ui` in
+that doc (taken out: it says "the Clubhouse flag"); and the document inventory, the feature map and the world model
+needed regenerating for the new docs and the registry entry (`knowledge:doc-inventory`, `knowledge:feature-map`,
+`knowledge:world-model`, committed separately from the feature).
 
 ## Open verification gaps
 
