@@ -139,6 +139,16 @@ export const CH_A11Y_PAGES = [
   ['classes', '/clubhouse-preview/classes?state=partial'],
   ['classes', '/clubhouse-preview/classes?state=noteam'],
   ['classes', '/clubhouse-preview/classes?state=loading'],
+  ['coachhelm', '/clubhouse-preview/coachhelm'],
+  ['coachhelm', '/clubhouse-preview/coachhelm?state=assigned'],
+  ['coachhelm', '/clubhouse-preview/coachhelm?state=empty'],
+  ['coachhelm', '/clubhouse-preview/coachhelm?state=failed'],
+  ['coachhelm', '/clubhouse-preview/coachhelm?state=off'],
+  ['coachhelm', '/clubhouse-preview/coachhelm?state=loading'],
+  ['coachhelm', '/clubhouse-preview/coachhelm-player'],
+  ['coachhelm', '/clubhouse-preview/coachhelm-player?state=empty'],
+  ['coachhelm', '/clubhouse-preview/coachhelm-player?state=norounds'],
+  ['coachhelm', '/clubhouse-preview/coachhelm-player?state=failed'],
 ];
 
 /**

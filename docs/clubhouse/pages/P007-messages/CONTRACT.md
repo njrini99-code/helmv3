@@ -66,6 +66,7 @@ First-run (70401, no conversations) and filtered (70402 to 70404) are distinct, 
 | 70406 | CH-7306 | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | Nothing has been shared in the conversation (phone Details) |
 | 70407 | CH-7307 | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | `SIGNED_IN_WITH_NO_TEAM` | Signed in with no team (coach or player) |
+| 70409 | CH-7309 | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | Nothing at all yet: no conversation and no announcement (D-71) |
 
 ## 05 — Validation
 

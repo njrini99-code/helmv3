@@ -1,0 +1,52 @@
+{
+  "id": "P012",
+  "name": "Classes",
+  "slug": "classes",
+  "bridgeNamespace": 12,
+  "routes": [
+    "/golf/dashboard/classes"
+  ],
+  "roles": [
+    "player"
+  ],
+  "semanticFeatures": [
+    "calendar_events"
+  ],
+  "progressRow": "Classes",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md)",
+    "desktop": [
+      "design/handoff/Player - Classes.html",
+      "design/handoff/classes.jsx",
+      "design/handoff/classes.css",
+      "design/handoff/gh-states.jsx"
+    ],
+    "phone": [
+      "design/handoff/Player - Classes - Mobile.html",
+      "design/handoff/classes.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/classes",
+    "loader": "src/clubhouse/data/classes.ts",
+    "route": "src/clubhouse/routes/classes.tsx",
+    "styles": "src/clubhouse/styles/classes.css",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/classes.md",
+  "checklist": "docs/clubhouse/screens/classes.md",
+  "phoneSpec": "docs/clubhouse/phone/classes.md",
+  "actions": [],
+  "held": []
+}

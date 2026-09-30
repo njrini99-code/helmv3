@@ -23,7 +23,7 @@ The route's loading state is the Stats skeleton (40201, CH-4401), in Team stats'
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 40201 | CH-4401 | `STATS_IS_LOADING` | Stats is loading (team or player) |
+| 40201 | CH-4401 | `STATS_IS_LOADING` | Team stats are loading (a player's profile is CH-5403) |
 
 From the shell (P001): 10201 CH-1401.
 
@@ -54,6 +54,7 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 40407 | CH-4307 | `NO_SEASON_BESTS_YET` | No season bests yet |
 | 40408 | CH-4308 | `A_PLAYER_HAS_TOO_FEW_ROUNDS_FOR` | A player has too few rounds for strokes gained |
 | 40409 | CH-4309 | `A_COACH_OR_PLAYER_WITH_NO_TEAM` | A coach or player with no team |
+| 40410 | CH-4310 | `NO_COUNTABLE_ROUND_ALL_SEASON` | No countable round all season (D-71) |
 
 ## 05 — Validation
 

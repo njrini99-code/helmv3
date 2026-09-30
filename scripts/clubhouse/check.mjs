@@ -5,7 +5,8 @@
  * Two jobs:
  *   1. Keep src/clubhouse/ a fresh tree: no Fairway imports, tokens, scope
  *      classes or haptics module; CSS scoped to .ch-* / [data-ui]; only
- *      --ch-* custom properties.
+ *      --ch-* custom properties; each page stylesheet anchors only its
+ *      own classes (css-owners.mjs).
  *   2. Hold the design doctrine the compiler can't: red only for under par,
  *      no emoji, no exclamation marks in copy, no tracked uppercase, no
  *      count-ups, no staggers but the first-paint reveal (.ch-reveal in
@@ -20,6 +21,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runRegistryCheck } from './registry.mjs';
+import { checkClassOwners } from './css-owners.mjs';
 
 const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
@@ -200,6 +202,8 @@ const CATALOG_PAGE = {
   qualifiers: '09',
   hub: '10',
   rounds: '11',
+  classes: '12',
+  coachhelm: '13',
 };
 /** Kinds whose rows must exist in code and in a test: toasts, validation, didn't load, empty, loading, confirm. */
 const ENFORCED_KINDS = new Set(['0', '1', '2', '3', '4', '5']);
@@ -321,6 +325,9 @@ function main() {
   const files = walk(join(root, 'src/clubhouse')).filter((f) => /\.(tsx?|css)$/.test(f));
   const violations = [];
   for (const f of files) violations.push(...checkSource(relative(root, f), readFileSync(f, 'utf8')));
+  const styles = join(root, 'src/clubhouse/styles');
+  if (existsSync(styles))
+    violations.push(...checkClassOwners(Object.fromEntries(readdirSync(styles).filter((n) => n.endsWith('.css')).map((n) => [n, readFileSync(join(styles, n), 'utf8')]))));
   const progress = join(root, 'docs/clubhouse/PROGRESS.md');
   if (!existsSync(progress)) violations.push('docs/clubhouse/PROGRESS.md is missing');
   else violations.push(...checkProgress(readFileSync(progress, 'utf8'), existsSync, root));

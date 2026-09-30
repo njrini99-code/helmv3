@@ -72,6 +72,7 @@ First-run and filtered empties are distinct, and a failed read is never shown as
 | 60406 | CH-6306 | `NOTHING_NEEDS_ATTENTION_THIS_WEEK` | Nothing needs attention this week |
 | 60407 | CH-6307 | `SIGNED_IN_WITH_NO_TEAM` | Signed in with no team (coach or player) |
 | 60408 | CH-6308 | `A_DAY_WITH_NOTHING_ON_IT` | A day with nothing on it (phone Day view) |
+| 60409 | CH-6309 | `A_COACH_WHOSE_TEAM_HAS_NEVER_SCHEDULED` | A coach whose team has never scheduled anything (D-71) |
 
 ## 05 — Validation
 

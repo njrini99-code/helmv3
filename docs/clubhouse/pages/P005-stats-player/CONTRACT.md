@@ -23,6 +23,11 @@ Status: DEFINED
 
 The route's loading state is the Stats skeleton (CH-4401, Bridge 40201 on Team stats), inside the Clubhouse shell only, with the shell's timing: nothing for 150ms, then a fade (11609). It is Team stats' shape: a loading.tsx does not receive the address, so it cannot tell a profile from the team, and a profile's first paint (a taller hero) moves what the skeleton drew. Each tab loads with the page, so there is no per-tab skeleton.
 
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 50201 | CH-5403 | `A_PLAYERS_STATS_ARE_LOADING_THEIR_OWN` | A player's stats are loading: their own, or a coach's `?player=` |
+| 50202 | CH-5404 | `A_PLAYERS_ANSWER_TO_A_PROPOSED_FOCUS` | A player's answer to a proposed focus area is being sent |
+
 From the shell (P001): 10201 CH-1401.
 
 ## 03 — Background loading / refresh
@@ -79,6 +84,8 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50609 | CH-5208 | `D1_BENCHMARKS_DONT_LOAD` | D1 benchmarks don't load, or the team's own row (its men's or women's tour) doesn't |
 | 50610 | CH-5002 | `SHARING_A_PLAYERS_STATS_FROM_THE_PHONE` | Sharing a player's stats from the phone fails (the browser blocks the clipboard) |
 | 50611 | — | `PROFILE_READ_FAILURE_RAISES_ROUTE_ERROR` | When the player row or the roster membership read fails, the loader logs it and throws, so the route error view (with Try again) shows; a profile is never reported as That player isn't on your team unless a read that worked found nobody. |
+| 50612 | CH-5003 | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | A player's Accept of a proposed focus area fails |
+| 50613 | CH-5004 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails |
 
 ## 07 — Network / offline
 

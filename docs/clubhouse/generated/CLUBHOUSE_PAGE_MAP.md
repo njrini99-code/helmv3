@@ -17,5 +17,7 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 | P009 | Qualifiers | `/golf/dashboard/qualifiers`<br>`/golf/dashboard/qualifiers/new`<br>`/golf/dashboard/qualifiers/[id]`<br>`/golf/dashboard/qualifiers/[id]/edit`<br>`/golf/dashboard/qualifiers/[id]/selection`<br>`/golf/dashboard/my-qualifiers` | coach, player | qualifiers | approved | in_progress | complete | reserved | existing | partial | current |
 | P010 | Team Hub | `/golf/dashboard/team-hub` | coach, player | player_hub, team_communications, team_operations | approved | in_progress | complete | reserved | existing | partial | current |
 | P011 | Rounds | `/golf/dashboard/rounds`<br>`/golf/dashboard/rounds/[id]` | coach, player | golf_round_lifecycle | approved | in_progress | partial | reserved | existing | partial | missing |
+| P012 | Classes | `/golf/dashboard/classes` | player | calendar_events | approved | in_progress | partial | reserved | existing | partial | missing |
+| P013 | CoachHelm | `/golf/dashboard/coachhelm` | coach, player | coachhelm_ai, player_coachhelm_development, coach_intelligence_triage | approved | in_progress | partial | reserved | existing | partial | missing |
 
 Pages not designed yet have no ID (D-60). The v2 design (`design/handoff/VERSIONS.md`) adds CoachHelm, Team Hub, player Home, Rounds and Classes; they are registered when their build starts (D-67).

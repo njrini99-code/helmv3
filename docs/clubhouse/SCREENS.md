@@ -27,6 +27,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link; opens the CoachHelm section
 - [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks with completion, shared documents, this week's RSVPs (`TeamHub` coach view, 2026-09-30; the Fairway page is player-only)
 - [ ] **Announcements** `/announcements` — Team news with read acknowledgements (Clubhouse has them inside Messages)
+- [x] **CoachHelm** `/coachhelm` — The program pulse, each player's top signal, and Assign as focus or Dismiss (`CoachHelm`, 2026-09-30; spec `phone/coachhelm.md`; the coach's Brief below is a different screen)
 - [ ] **CoachHelm Brief** `/intelligence` — AI coaching brief: signals, patterns, predictions and focus areas across the team
 - [ ] **Ask CoachHelm** `/coachhelm/chat` — Chat with the AI about the program, grounded in rounds and schedule
 - [ ] **Genome compare** `/coachhelm/genome/compare` — Two players' skill profiles side by side, biggest differences ranked
@@ -53,7 +54,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link; opens the CoachHelm section
 - [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks with completion, shared documents, this week's RSVPs (`TeamHub` coach view, 2026-09-30; the Fairway page is player-only)
 - [x] **Home** `/` — Their day: next event with a countdown, the latest round, scoring and the parts of the game (`PlayerHome`, 2026-09-30; spec `design/handoff/Player - Home.html`, phone `phone/home-player.md`)
-- [ ] **CoachHelm** `/coachhelm` — Their AI coach: Game, Plan (development), Profile and Standing views
+- [x] **CoachHelm** `/coachhelm` — Their AI coach: one thing to work on this week, then the other things worth knowing and what is working (`CoachHelm`, 2026-09-30; spec `phone/coachhelm.md`; the Fairway page's Plan, Profile and Standing views are not part of the board and are not built)
 - [x] **My rounds** `/rounds` — Their round history and each round's detail (with `/rounds/[id]`)
 - [ ] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring during a round (with `/rounds/continue/[id]`, `/rounds/recover`)
 - [ ] **Round review** `/rounds/[id]/review` — AI analysis of a round they played
@@ -63,5 +64,5 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Roster** `/roster` — Their teammates
 - [ ] **Team info** `/team` — Team details
 - [ ] **Announcements** `/announcements` — Team news from the coaches (Clubhouse has them inside Messages)
-- [ ] **Classes** `/classes` — Their class schedule by term, synced to the calendar so coaches see when they're busy
+- [x] **Classes** `/classes` — Their class schedule by term, synced to the calendar so coaches see when they're busy (`Classes`, 2026-09-30; spec `phone/classes.md`, boards `Player - Classes.html` and its Mobile board)
 - [ ] **Courses** `/courses` — Course library and tee sets

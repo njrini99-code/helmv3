@@ -110,6 +110,7 @@ const SETTINGS_ROUTES = ['/golf/dashboard/settings', '/golf/dashboard/settings/n
 export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
   coach: [
     '/golf/dashboard',
+    '/golf/dashboard/coachhelm',
     '/golf/dashboard/calendar',
     '/golf/dashboard/messages',
     '/golf/dashboard/roster',
@@ -119,7 +120,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/team-hub',
     ...SETTINGS_ROUTES,
   ],
-  player: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/rounds', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
+  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/rounds', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
 };
 
 /**
