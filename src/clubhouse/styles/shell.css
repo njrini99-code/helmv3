@@ -816,6 +816,16 @@ button.ch-more__row[disabled] {
   .ch-topbar[data-phone='page'] .ch-topbar__pslot {
     display: contents;
   }
+  /* A tab root that draws its own title (PhoneTop start, no action): its title, and the bell stays. */
+  .ch-topbar[data-phone='start'] {
+    padding-left: 16px;
+  }
+  .ch-topbar[data-phone='start'] .ch-topbar__ptitle {
+    display: none;
+  }
+  .ch-topbar[data-phone='start'] .ch-topbar__pslot {
+    display: contents;
+  }
   .ch-topbar .ch-iconbtn {
     width: 44px;
     height: 44px;

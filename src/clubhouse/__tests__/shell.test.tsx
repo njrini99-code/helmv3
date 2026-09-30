@@ -674,6 +674,29 @@ describe('Shell · phone chrome', () => {
     await userEvent.setup().click(link);
     expect(back).toHaveBeenCalled();
   });
+
+  it('CH-1810 a tab root that draws its own title (PhoneTop start) keeps the bell; one with an action is a page top', async () => {
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <PhoneTop start title="CoachHelm" />
+      </ClubhouseFrame>,
+    );
+    const bar = document.querySelector('.ch-topbar')!;
+    await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('start'));
+    expect(bar.querySelector('.ch-topbar__actions .ch-bell, .ch-topbar__actions [aria-label^="Notifications"]')).not.toBeNull();
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <PhoneTop start title="Roster" action={<button type="button">Invite</button>} />
+      </ClubhouseFrame>,
+    );
+    await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('page'));
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <p>Roster</p>
+      </ClubhouseFrame>,
+    );
+    await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('root'));
+  });
 });
 
 describe('Shell · phone form', () => {

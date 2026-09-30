@@ -21,7 +21,7 @@ import { usePhoneChromeState } from './phone-chrome';
  */
 export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | undefined; pathname: string; teamName?: string | null }) {
   const pageTrail = useCrumbTrail();
-  const { pageTop, immersive, setSlot } = usePhoneChromeState();
+  const { pageTop, rootTitle, immersive, setSlot } = usePhoneChromeState();
   const crumbs =
     pageTrail ??
     (pathname.startsWith('/golf/dashboard/settings')
@@ -30,7 +30,7 @@ export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | 
         ? ['Home']
         : ([item.section, item.label].filter(Boolean) as string[]));
   return (
-    <header className="ch-topbar" data-phone={pageTop ? 'page' : 'root'} inert={immersive || undefined}>
+    <header className="ch-topbar" data-phone={rootTitle ? 'start' : pageTop ? 'page' : 'root'} inert={immersive || undefined}>
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">
         {crumbs.map((c, i) => (
           <span key={c} className="ch-topbar__crumb">

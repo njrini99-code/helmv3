@@ -27,6 +27,9 @@ interface Ctx {
   setSlot: (el: HTMLElement | null) => void;
   pageTop: number;
   setPageTop: (fn: (n: number) => number) => void;
+  /** Of those, the tab roots' own titles (`start`, no action): the bell stays beside them. */
+  rootTop: number;
+  setRootTop: (fn: (n: number) => number) => void;
   immersive: number;
   setImmersive: (fn: (n: number) => number) => void;
   noTabs: number;
@@ -40,6 +43,8 @@ const PhoneChromeCtx = createContext<Ctx>({
   setSlot: () => {},
   pageTop: 0,
   setPageTop: () => {},
+  rootTop: 0,
+  setRootTop: () => {},
   immersive: 0,
   setImmersive: () => {},
   noTabs: 0,
@@ -51,20 +56,21 @@ const PhoneChromeCtx = createContext<Ctx>({
 export function PhoneChromeProvider({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [pageTop, setPageTop] = useState(0);
+  const [rootTop, setRootTop] = useState(0);
   const [immersive, setImmersive] = useState(0);
   const [noTabs, setNoTabs] = useState(0);
   const [hero, setHero] = useState(0);
   const value = useMemo(
-    () => ({ slot, setSlot, pageTop, setPageTop, immersive, setImmersive, noTabs, setNoTabs, hero, setHero }),
-    [slot, pageTop, immersive, noTabs, hero],
+    () => ({ slot, setSlot, pageTop, setPageTop, rootTop, setRootTop, immersive, setImmersive, noTabs, setNoTabs, hero, setHero }),
+    [slot, pageTop, rootTop, immersive, noTabs, hero],
   );
   return <PhoneChromeCtx.Provider value={value}>{children}</PhoneChromeCtx.Provider>;
 }
 
 /** For the shell: whether a page supplies the top bar, whether a pushed screen covers the page, and where the page's top bar goes. */
-export function usePhoneChromeState(): { pageTop: boolean; immersive: boolean; noTabs: boolean; hero: boolean; setSlot: (el: HTMLElement | null) => void } {
-  const { pageTop, immersive, noTabs, hero, setSlot } = useContext(PhoneChromeCtx);
-  return { pageTop: pageTop > 0, immersive: immersive > 0, noTabs: noTabs > 0, hero: hero > 0, setSlot };
+export function usePhoneChromeState(): { pageTop: boolean; rootTitle: boolean; immersive: boolean; noTabs: boolean; hero: boolean; setSlot: (el: HTMLElement | null) => void } {
+  const { pageTop, rootTop, immersive, noTabs, hero, setSlot } = useContext(PhoneChromeCtx);
+  return { pageTop: pageTop > 0, rootTitle: pageTop > 0 && rootTop >= pageTop, immersive: immersive > 0, noTabs: noTabs > 0, hero: hero > 0, setSlot };
 }
 
 /** While `on`, the phone top bar is the green hero's bar (the v2 phone Home): the team and the bell, on green. */
@@ -102,11 +108,17 @@ export function usePhoneImmersive(open: boolean): void {
  * ("‹ More"), a centred title, and at most one action. Shown below 820px only.
  */
 export function PhoneTop(props: ChPhoneBarParts) {
-  const { slot, setPageTop } = useContext(PhoneChromeCtx);
+  const { slot, setPageTop, setRootTop } = useContext(PhoneChromeCtx);
+  // A tab root's own title (`start`, no action) is still a tab root: the bell stays (CLICKABLES gap 1).
+  const root = !!props.start && !props.action;
   useEffect(() => {
     setPageTop((n) => n + 1);
-    return () => setPageTop((n) => n - 1);
-  }, [setPageTop]);
+    if (root) setRootTop((n) => n + 1);
+    return () => {
+      setPageTop((n) => n - 1);
+      if (root) setRootTop((n) => n - 1);
+    };
+  }, [setPageTop, setRootTop, root]);
   return slot ? createPortal(<PhoneBarParts {...props} />, slot) : null;
 }
 
