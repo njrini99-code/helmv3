@@ -1201,6 +1201,7 @@
 }
 .ch-ph-chart {
   display: block;
+  align-self: center;
   width: 100%;
   height: auto;
   overflow: visible;

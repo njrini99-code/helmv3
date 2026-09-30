@@ -266,7 +266,9 @@ export function Updates({ data }: { data: ChTeamHub['updates'] }) {
                   <UpdateBody n={n} />
                 </Link>
               ) : (
-                <UpdateBody n={n} />
+                <div className="ch-hb-feed__row">
+                  <UpdateBody n={n} />
+                </div>
               )}
             </li>
           ))}

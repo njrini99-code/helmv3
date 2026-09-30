@@ -51,7 +51,10 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
       <div className="ch-ph-game__h">
         <div>
           <h2 id="ch-ph-scoring">Scoring</h2>
-          <span>Gross · countable 18-hole rounds</span>
+          <span>
+            Gross · countable 18-hole rounds
+            {!phone && shown.length >= 2 && !data.scoring.error ? ` · dashed line, your mean ${formatFixed(shown.reduce((a, p) => a + p.score, 0) / shown.length)}` : ''}
+          </span>
         </div>
         {all.length > 5 && (
           <Segmented<`${Span}`>
@@ -112,7 +115,8 @@ export function scoringNote(points: ChScoringPoint[]): string {
 function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolean }) {
   const uid = useId().replace(/:/g, '');
   const W = phone ? 340 : 760;
-  const H = phone ? 196 : 250;
+  // Desktop draws taller so the line fills the space beside the four figures.
+  const H = phone ? 196 : 340;
   const L = phone ? 24 : 34;
   const R = phone ? 34 : 20;
   const T = phone ? 24 : 44;
@@ -172,9 +176,12 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
         </>
       )}
       <line x1={L} x2={W - R} y1={y(mean)} y2={y(mean)} className="ch-ph-chart__mean" />
-      <text x={phone ? W - R + 6 : L + 6} y={phone ? y(mean) + 4 : y(mean) + 16} className="ch-ph-chart__ann">
-        {phone ? 'Avg' : `your mean ${formatFixed(mean)}`}
-      </text>
+      {/* Desktop names the mean in the caption, where it can't sit on a point's label. */}
+      {phone && (
+        <text x={W - R + 6} y={y(mean) + 4} className="ch-ph-chart__ann">
+          Avg
+        </text>
+      )}
       <path d={`${d} L${x(last).toFixed(1)},${H - B} L${x(0).toFixed(1)},${H - B} Z`} fill={`url(#${uid}f)`} />
       <path d={d} className="ch-ph-chart__halo" />
       <path d={d} className="ch-ph-chart__line" />
@@ -192,7 +199,8 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
         <g transform={`translate(${x(bi).toFixed(1)},${(y(best) - (labelled ? 14 : 4)).toFixed(1)})`} className="ch-ph-pinflag">
           <line y1="-6" y2="-34" />
           <path d="M0,-34 L16,-29 L0,-24 Z" />
-          <text x="20" y="-26" className="ch-ph-chart__ann">
+          {/* Near the right edge the label reads to the left of the pole, inside the chart. */}
+          <text x={x(bi) > W - 160 ? -6 : 20} y="-26" textAnchor={x(bi) > W - 160 ? 'end' : 'start'} className="ch-ph-chart__ann">
             season low · {best}
           </text>
         </g>

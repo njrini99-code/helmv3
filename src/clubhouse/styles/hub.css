@@ -487,7 +487,7 @@
   border-top: 1px solid rgb(28 25 18 / 0.06);
 }
 .ch-hb-feed li > a,
-.ch-hb-feed li > .ch-hb-feed__b:first-child {
+.ch-hb-feed li > .ch-hb-feed__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
