@@ -1,8 +1,9 @@
 # Stats (team) catalog (4xxx)
 
-Route `/golf/dashboard/stats` (coach, no `?player`) · code `src/clubhouse/screens/stats/StatsTeam.tsx`,
-loader `src/clubhouse/data/stats-team.ts` · tests `src/clubhouse/__tests__/stats-team.test.tsx` ·
-preview `/clubhouse-preview/stats` (`?state=empty|failed|partial|loading`).
+Route `/golf/dashboard/stats` (coach, no `?player`) · code `src/clubhouse/screens/stats/StatsTeam.tsx` (server)
+and `StatsTeamIslands.tsx` (the client islands), loader `src/clubhouse/data/stats-team.ts` · tests
+`src/clubhouse/__tests__/stats-team.test.tsx` · preview `/clubhouse-preview/stats`
+(`?state=empty|failed|partial|crash|loading`).
 
 Stats only reads, apart from the CSV export. Every section is its own
 component inside its own boundary, so a crash in one never reaches the page.
@@ -11,7 +12,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-4001 | The browser blocks the CSV export | "Couldn't export team stats" + "Your browser blocked the download. Try a desktop browser." Done: "Team stats exported" | `exportCsv`, reported low | stats-team.test › CH-4001 |
+| CH-4001 | The browser blocks the CSV export | "Couldn't export team stats" + "Your browser blocked the download. Try a desktop browser." Done: "Team stats exported" | `TeamHeadActions` export, reported low | stats-team.test › CH-4001 |
 
 ## 42xx Didn't load
 
@@ -47,7 +48,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-4401 | Stats is loading (team or player) | The page's header, five figure cards and chart frames as skeletons, each line and card sized like the loaded Team stats so nothing below moves when it lands | `StatsSkeleton`, `aria-busy` | stats-team.test › CH-4401 |
-| CH-4402 | Changing the window (Last 10, Season, Qualifiers) | The page dims slightly and is marked busy until the new window lands; the scroll position stays | `useTransition`, `.ch-st[aria-busy]` | preview |
+| CH-4402 | Changing the window (Last 10, Season, Qualifiers) | The page dims slightly and is marked busy until the new window lands; the scroll position stays | `StatsTeamFrame` (`useTransition`), `.ch-st[aria-busy]` | preview |
 
 ## 46xx Motion
 
@@ -60,8 +61,8 @@ component inside its own boundary, so a crash in one never reaches the page.
 
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-4701 | Choosing a leg, focusing a player, changing the window or lens | A selection tick | `haptic('select')`, `Segmented` | stats-team.test › CH-4701 |
-| CH-4702 | An export lands / fails | A medium tap / the OS error pattern | `exportCsv` | preview |
+| CH-4701 | Choosing a leg, focusing a player, changing the window or lens | A selection tick | `TeamCharts` `haptic('select')`, `Segmented` | stats-team.test › CH-4701 |
+| CH-4702 | An export lands / fails | A medium tap / the OS error pattern | `TeamHeadActions` export | preview |
 
 ## 48xx Accessibility
 
@@ -76,5 +77,5 @@ component inside its own boundary, so a crash in one never reaches the page.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-4901 | Changing the window (the switch, or Show the season) while offline | "Couldn't open the season: you're offline" + "Reconnect, then try again. The figures shown are still the last 10 rounds." Nothing is requested, the switch stays where it was, and the OS error pattern plays | `StatsTeam` `go`, `isOffline` | stats-team.test › CH-4901 |
-| CH-4902 | A window change takes longer than 5 seconds | "Still loading the season…" + "This is taking longer than usual. The figures shown are still the last 10 rounds.", once; the page stays dimmed and busy (CH-4402) until the new window lands | `StatsTeam`, `CH_SLOW_SAVE_AFTER` | stats-team.test › CH-4902 |
+| CH-4901 | Changing the window (the switch, or Show the season) while offline | "Couldn't open the season: you're offline" + "Reconnect, then try again. The figures shown are still the last 10 rounds." Nothing is requested, the switch stays where it was, and the OS error pattern plays | `StatsTeamFrame` `go`, `isOffline` | stats-team.test › CH-4901 |
+| CH-4902 | A window change takes longer than 5 seconds | "Still loading the season…" + "This is taking longer than usual. The figures shown are still the last 10 rounds.", once; the page stays dimmed and busy (CH-4402) until the new window lands | `StatsTeamFrame`, `CH_SLOW_SAVE_AFTER` | stats-team.test › CH-4902 |
