@@ -39,7 +39,8 @@
 -- src/lib/golf/qualifier-selection-reasons.ts is live. That reader calls the
 -- function and falls back to the column while the function doesn't exist, so
 -- it works on both sides of this apply; an older build selects the column
--- directly and would lose the note. Readers switched: the Clubhouse qualifier loader
+-- directly and would lose the note. Readers switched: the Clubhouse qualifier
+-- loader
 -- (src/clubhouse/data/qualifiers.ts) and the CoachHelm qualifying workspace
 -- loader (src/lib/coachhelm/v3/qualifying/loader.ts); the detail page's
 -- selection count selects player_id, not '*'. Anything else that selects
@@ -58,28 +59,48 @@
 --     public.golf_qualifier_selections TO anon;
 --   ALTER FUNCTION public.is_team_coach(uuid) SET search_path = public;
 --   ALTER FUNCTION public.is_team_player(uuid) SET search_path = public;
--- VERIFY: select 1 where not has_column_privilege('authenticated', 'public.golf_qualifier_selections', 'coach_reasoning', 'SELECT')
--- VERIFY:   and has_column_privilege('authenticated', 'public.golf_qualifier_selections', 'player_id', 'SELECT');
--- VERIFY: select 1 from pg_proc where oid = 'public.golf_qualifier_selection_reasons(uuid)'::regprocedure and prosecdef;
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_qualifier_entries'
--- VERIFY:   and policyname = 'golf_qualifier_entries_insert_coach' and with_check like '%golf_team_members%';
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_qualifier_entries'
--- VERIFY:   and policyname = 'golf_qualifier_entries_update_coach' and with_check like '%golf_team_members%';
--- VERIFY: select 1 from pg_proc where oid = 'helm_private.prevent_qualifier_entry_active_round_stranding()'::regprocedure and prosecdef;
--- VERIFY: select 1 where not has_table_privilege('anon', 'public.golf_qualifiers', 'SELECT')
--- VERIFY:   and not has_table_privilege('anon', 'public.golf_qualifier_entries', 'SELECT')
--- VERIFY:   and not has_table_privilege('anon', 'public.golf_qualifier_selections', 'SELECT');
--- VERIFY: select 1 from pg_proc where oid = 'public.is_team_coach(uuid)'::regprocedure and proconfig::text like '%pg_temp%';
--- VERIFY: select 1 from pg_proc where oid = 'public.is_team_player(uuid)'::regprocedure and proconfig::text like '%pg_temp%';
+-- VERIFY: select 1 where not has_column_privilege('authenticated',
+-- 'public.golf_qualifier_selections', 'coach_reasoning', 'SELECT')
+-- VERIFY:   and has_column_privilege('authenticated',
+-- 'public.golf_qualifier_selections', 'player_id', 'SELECT');
+-- VERIFY: select 1 from pg_proc where oid =
+-- 'public.golf_qualifier_selection_reasons(uuid)'::regprocedure and prosecdef;
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename =
+-- 'golf_qualifier_entries'
+-- VERIFY:   and policyname = 'golf_qualifier_entries_insert_coach' and
+-- with_check like '%golf_team_members%';
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename =
+-- 'golf_qualifier_entries'
+-- VERIFY:   and policyname = 'golf_qualifier_entries_update_coach' and
+-- with_check like '%golf_team_members%';
+-- VERIFY: select 1 from pg_proc where oid =
+-- 'helm_private.prevent_qualifier_entry_active_round_stranding()'::regprocedure
+-- and prosecdef;
+-- VERIFY: select 1 where not has_table_privilege('anon',
+-- 'public.golf_qualifiers', 'SELECT')
+-- VERIFY:   and not has_table_privilege('anon',
+-- 'public.golf_qualifier_entries', 'SELECT')
+-- VERIFY:   and not has_table_privilege('anon',
+-- 'public.golf_qualifier_selections', 'SELECT');
+-- VERIFY: select 1 from pg_proc where oid =
+-- 'public.is_team_coach(uuid)'::regprocedure and proconfig::text like
+-- '%pg_temp%';
+-- VERIFY: select 1 from pg_proc where oid =
+-- 'public.is_team_player(uuid)'::regprocedure and proconfig::text like
+-- '%pg_temp%';
 
 
 -- 1. coach_reasoning is coach-only -----------------------------------------
 
 REVOKE SELECT ON TABLE public.golf_qualifier_selections FROM authenticated;
-GRANT SELECT (qualifier_id, player_id, selection_type, selected_at, selected_by_user_id)
-  ON TABLE public.golf_qualifier_selections TO authenticated;
+GRANT SELECT (
+    qualifier_id, player_id, selection_type, selected_at, selected_by_user_id
+)
+ON TABLE public.golf_qualifier_selections TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.golf_qualifier_selection_reasons(p_qualifier_id uuid)
+CREATE OR REPLACE FUNCTION public.golf_qualifier_selection_reasons(
+    p_qualifier_id uuid
+)
 RETURNS TABLE (player_id uuid, coach_reasoning text)
 LANGUAGE sql
 STABLE
@@ -94,53 +115,69 @@ AS $$
 $$;
 
 ALTER FUNCTION public.golf_qualifier_selection_reasons(uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.golf_qualifier_selection_reasons(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_qualifier_selection_reasons(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.golf_qualifier_selection_reasons(
+    uuid
+) FROM public,
+anon;
+GRANT EXECUTE ON FUNCTION public.golf_qualifier_selection_reasons(
+    uuid
+) TO authenticated,
+service_role;
 
+-- Players get no rows; signed-in users cannot select
+-- golf_qualifier_selections.coach_reasoning directly.
 COMMENT ON FUNCTION public.golf_qualifier_selection_reasons(uuid) IS
-'D-35: a qualifier''s coach''s-pick reasons, for a coach of its team only (is_team_coach). Players get no rows. Signed-in users cannot select golf_qualifier_selections.coach_reasoning directly.';
+'D-35: coach''s-pick reasons, for coaches of the qualifier''s team only.';
 
 -- 2. An entry's player is on the qualifier's team ------------------------
 
-ALTER POLICY golf_qualifier_entries_insert_coach ON public.golf_qualifier_entries
-  WITH CHECK (EXISTS (
+ALTER POLICY golf_qualifier_entries_insert_coach
+ON public.golf_qualifier_entries
+WITH CHECK (EXISTS (
     SELECT 1
     FROM public.golf_qualifiers q
-    WHERE q.id = golf_qualifier_entries.qualifier_id
-      AND public.is_golf_team_coach(q.team_id)
-      AND EXISTS (
-        SELECT 1
-        FROM public.golf_team_members m
-        WHERE m.team_id = q.team_id
-          AND m.player_id = golf_qualifier_entries.player_id
-          AND m.status = 'active'::public.team_member_status
-      )
-  ));
+    WHERE
+        q.id = golf_qualifier_entries.qualifier_id
+        AND public.is_golf_team_coach(q.team_id)
+        AND EXISTS (
+            SELECT 1
+            FROM public.golf_team_members m
+            WHERE
+                m.team_id = q.team_id
+                AND m.player_id = golf_qualifier_entries.player_id
+                AND m.status = 'active'::public.team_member_status
+        )
+));
 
-ALTER POLICY golf_qualifier_entries_update_coach ON public.golf_qualifier_entries
-  USING (EXISTS (
+ALTER POLICY golf_qualifier_entries_update_coach
+ON public.golf_qualifier_entries
+USING (EXISTS (
     SELECT 1
     FROM public.golf_qualifiers q
-    WHERE q.id = golf_qualifier_entries.qualifier_id
-      AND public.is_golf_team_coach(q.team_id)
-  ))
-  WITH CHECK (EXISTS (
+    WHERE
+        q.id = golf_qualifier_entries.qualifier_id
+        AND public.is_golf_team_coach(q.team_id)
+))
+WITH CHECK (EXISTS (
     SELECT 1
     FROM public.golf_qualifiers q
-    WHERE q.id = golf_qualifier_entries.qualifier_id
-      AND public.is_golf_team_coach(q.team_id)
-      AND EXISTS (
-        SELECT 1
-        FROM public.golf_team_members m
-        WHERE m.team_id = q.team_id
-          AND m.player_id = golf_qualifier_entries.player_id
-          AND m.status = 'active'::public.team_member_status
-      )
-  ));
+    WHERE
+        q.id = golf_qualifier_entries.qualifier_id
+        AND public.is_golf_team_coach(q.team_id)
+        AND EXISTS (
+            SELECT 1
+            FROM public.golf_team_members m
+            WHERE
+                m.team_id = q.team_id
+                AND m.player_id = golf_qualifier_entries.player_id
+                AND m.status = 'active'::public.team_member_status
+        )
+));
 
 -- 3. The remove-with-round guard sees every round ------------------------
 
-CREATE OR REPLACE FUNCTION helm_private.prevent_qualifier_entry_active_round_stranding()
+CREATE OR REPLACE FUNCTION
+helm_private.prevent_qualifier_entry_active_round_stranding()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -159,14 +196,20 @@ BEGIN
   ) THEN
     RAISE EXCEPTION USING
       ERRCODE = '55000',
-      MESSAGE = 'This player has a saved qualifier round. Have them finish or explicitly discard it before removing their qualifier entry.';
+      MESSAGE = 'This player has a saved qualifier round. Have them finish or '
+        || 'explicitly discard it before removing their qualifier entry.';
   END IF;
   RETURN OLD;
 END;
 $$;
 
-ALTER FUNCTION helm_private.prevent_qualifier_entry_active_round_stranding() OWNER TO postgres;
-REVOKE ALL ON FUNCTION helm_private.prevent_qualifier_entry_active_round_stranding() FROM PUBLIC, anon, authenticated;
+ALTER FUNCTION helm_private.prevent_qualifier_entry_active_round_stranding()
+OWNER TO postgres;
+REVOKE ALL
+ON FUNCTION helm_private.prevent_qualifier_entry_active_round_stranding()
+FROM public,
+anon,
+authenticated;
 
 -- 4. Hardening -------------------------------------------------------------
 
