@@ -399,7 +399,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
     expect(names('Active players')).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
     expect(names('Inactive')).toEqual(['Mia Thornton']);
-    await user.click(screen.getByRole('radio', { name: 'Strokes gained' }));
+    await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
     expect(names('Active players')).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Eli Brandt', 'Jonah Okafor', 'Priya Natarajan', 'Luca Ferraro']);
     expect(hapticSpy).toHaveBeenCalledWith('select');
     await user.click(screen.getByRole('radio', { name: 'Name' }));

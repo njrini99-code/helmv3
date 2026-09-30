@@ -134,8 +134,8 @@ export function RosterPhone({
                   value={sort}
                   onChange={setSort}
                   options={[
-                    { value: 'avg', label: 'Avg', aria: 'Scoring average' },
-                    { value: 'sg', label: 'SG', aria: 'Strokes gained' },
+                    { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
+                    { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
                     { value: 'name', label: 'Name' },
                   ]}
                 />
