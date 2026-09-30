@@ -41,6 +41,30 @@ What changed in files that already existed:
   `--green-25` and `--champagne-100`, which the repo added for Qualifiers
   (75e9d5084). The repo copy stays.
 
+## Recruiting: the owner-approved boards (approved 2026-09-30, Q-87)
+
+Thirteen boards from the owner's Claude Design canvas "Clubhouse Recruiting"
+(https://claude.ai/artifact/BuCcHSQ3ps3zJxcsmraTza), copied in unchanged into
+`recruiting/` (the `.dc.html` boards and `canvas.json`). They are the current
+design for the coach's Recruiting page; there is no v2 board for it.
+
+| Board | What it shows |
+| --- | --- |
+| `Main.dc.html` | Desktop: the pipeline timeline, the prospect table and one open prospect's panel |
+| `AddProspect.dc.html` | Desktop: the add dialog over the page |
+| `Empty.dc.html` | Desktop: first run |
+| `NoMatch.dc.html` | Desktop: a search and stage that match nothing, and a new prospect with no contact, notes or documents |
+| `LoadFailed.dc.html` | Desktop: the prospects did not load |
+| `PhoneList.dc.html`, `PhoneDetail.dc.html` | Phone: the list with the compact timeline, and a prospect with Stage, Email and Call tiles |
+| `PhoneEdit.dc.html`, `PhoneStage.dc.html` | Phone: the edit sheet (Cancel, Save, Delete) and the stage picker that saves on pick |
+| `PhoneEmpty.dc.html`, `PhoneNoMatch.dc.html`, `PhoneSparse.dc.html`, `PhoneFailed.dc.html` | Phone: first run, no match, a new prospect with nothing yet, did not load |
+
+Not on any board, built from Clubhouse parts and listed as questions for the
+owner in `docs/clubhouse/pages/P014-recruiting/DESIGN.md`: the upload dialog
+(title and category), removing a document, the no-team page, and a stage that
+has no prospects. Copy that said "him" or "his" for a prospect is written
+"them" and "their", because the page cannot know a prospect's pronouns.
+
 ## v1: the first five screens, and the approved phone designs
 
 Kept because the specs, checklists, catalogs and PROGRESS cite them. Where v1

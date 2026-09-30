@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { RecruitingSkeleton } from '@/clubhouse/screens/recruiting/RecruitingSkeleton';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton, SkeletonCard } from '@/components/fairway/feedback';
 
@@ -13,7 +15,7 @@ import { Skeleton, SkeletonCard } from '@/components/fairway/feedback';
  * md:grid-cols-2 xl:grid-cols-3 prospect-card grid. Tokens only
  * (bg-canvas/Surface/border-subtle) so there is no theme jump or CLS.
  */
-export default function Loading() {
+function LegacyLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -70,4 +72,9 @@ export default function Loading() {
       </div>
     </div>
   );
+}
+
+/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<RecruitingSkeleton />} fallback={<LegacyLoading />} />;
 }

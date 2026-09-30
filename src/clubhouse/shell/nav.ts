@@ -39,6 +39,7 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
+  { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'Team' },
 ];
@@ -115,6 +116,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/calendar',
     '/golf/dashboard/messages',
     '/golf/dashboard/roster',
+    '/golf/dashboard/recruiting',
     '/golf/dashboard/stats',
     '/golf/dashboard/stats/team',
     '/golf/dashboard/qualifiers',

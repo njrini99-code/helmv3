@@ -30,7 +30,8 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 11 | Rounds (player: library; review and round entry to come) |
 | 12 | Classes (player) |
 | 13 | CoachHelm (coach and player) |
-| 14, 15, … | Pages after these, in the order their catalogs are started |
+| 14 | Recruiting (coach) |
+| 15, 16, … | Pages after these, in the order their catalogs are started |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |
@@ -77,4 +78,5 @@ its own.
 Pages: [shell](shell.md) · [home](home.md) · [roster](roster.md) ·
 [stats-team](stats-team.md) · [stats-player](stats-player.md) ·
 [calendar](calendar.md) · [messages](messages.md) · [settings](settings.md) ·
-[qualifiers](qualifiers.md) · [classes](classes.md) · [coachhelm](coachhelm.md).
+[qualifiers](qualifiers.md) · [classes](classes.md) · [coachhelm](coachhelm.md) ·
+[recruiting](recruiting.md).

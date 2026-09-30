@@ -354,7 +354,7 @@ describe('Shell · sidebar data', () => {
     const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
     expect(read()).toEqual([
       ['', ['Home', 'CoachHelm', 'Calendar', 'Team Hub', 'Messages']],
-      ['Team', ['Roster', 'Stats', 'Qualifiers']],
+      ['Team', ['Roster', 'Recruiting', 'Stats', 'Qualifiers']],
     ]);
     unmount();
     const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;

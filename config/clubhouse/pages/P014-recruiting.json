@@ -1,0 +1,241 @@
+{
+  "id": "P014",
+  "name": "Recruiting",
+  "slug": "recruiting",
+  "bridgeNamespace": 14,
+  "routes": [
+    "/golf/dashboard/recruiting"
+  ],
+  "roles": [
+    "coach"
+  ],
+  "semanticFeatures": [
+    "recruiting"
+  ],
+  "progressRow": "Recruiting",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "complete",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "owner boards, approved 2026-09-30 (design/handoff/VERSIONS.md, Recruiting)",
+    "desktop": [
+      "design/handoff/recruiting/Main.dc.html",
+      "design/handoff/recruiting/AddProspect.dc.html",
+      "design/handoff/recruiting/Empty.dc.html",
+      "design/handoff/recruiting/NoMatch.dc.html",
+      "design/handoff/recruiting/LoadFailed.dc.html"
+    ],
+    "phone": [
+      "design/handoff/recruiting/PhoneList.dc.html",
+      "design/handoff/recruiting/PhoneDetail.dc.html",
+      "design/handoff/recruiting/PhoneEdit.dc.html",
+      "design/handoff/recruiting/PhoneStage.dc.html",
+      "design/handoff/recruiting/PhoneEmpty.dc.html",
+      "design/handoff/recruiting/PhoneNoMatch.dc.html",
+      "design/handoff/recruiting/PhoneSparse.dc.html",
+      "design/handoff/recruiting/PhoneFailed.dc.html"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/recruiting",
+    "loader": "src/clubhouse/data/recruiting.ts",
+    "route": "src/clubhouse/routes/recruiting.tsx",
+    "styles": "src/clubhouse/styles/recruiting.css",
+    "tests": [
+      "src/clubhouse/__tests__/recruiting.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/recruiting.md",
+  "checklist": "docs/clubhouse/screens/recruiting.md",
+  "phoneSpec": "docs/clubhouse/phone/recruiting.md",
+  "actions": [
+    {
+      "id": "ACT-P014-ADD-PROSPECT",
+      "label": "Add a prospect (coach)",
+      "component": "src/clubhouse/screens/recruiting/ProspectForm.tsx#ProspectForm",
+      "handler": "addAction (RecruitingView)",
+      "service": "src/app/golf/actions/recruiting.ts#createRecruit",
+      "data": [
+        "golf_recruits"
+      ],
+      "bridge": {
+        "validation": 140501,
+        "success": 140901,
+        "failure": 140601,
+        "preserved": 141201,
+        "recovery": 141401,
+        "offline": 140701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-SAVE-PROSPECT",
+      "label": "Save changes to a prospect (coach)",
+      "component": "src/clubhouse/screens/recruiting/ProspectForm.tsx#ProspectForm",
+      "handler": "saveAction (RecruitingView)",
+      "service": "src/app/golf/actions/recruiting.ts#updateRecruit",
+      "data": [
+        "golf_recruits"
+      ],
+      "bridge": {
+        "validation": 140501,
+        "success": 140902,
+        "failure": 140602,
+        "preserved": 141201,
+        "recovery": 141401,
+        "offline": 140701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-MOVE-STAGE",
+      "label": "Move a prospect to another stage, saved when picked (coach)",
+      "component": "src/clubhouse/screens/recruiting/RecruitingView.tsx#RecruitingView",
+      "handler": "moveAction",
+      "service": "src/app/golf/actions/recruiting.ts#updateRecruit",
+      "data": [
+        "golf_recruits"
+      ],
+      "bridge": {
+        "optimistic": 141301,
+        "failure": 140603,
+        "recovery": 141401,
+        "offline": 140701,
+        "announce": 141803,
+        "haptic": 141701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-DELETE-PROSPECT",
+      "label": "Delete a prospect and their documents (coach)",
+      "component": "src/clubhouse/screens/recruiting/RecruitingView.tsx#RecruitingView",
+      "handler": "deleteAction",
+      "service": "src/app/golf/actions/recruiting.ts#deleteRecruit",
+      "data": [
+        "golf_recruits",
+        "golf_recruit_documents"
+      ],
+      "bridge": {
+        "confirm": 141101,
+        "loading": 140304,
+        "success": 140903,
+        "failure": 140604,
+        "recovery": 141401,
+        "offline": 140701,
+        "haptic": 141702
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-LIST-DOCUMENTS",
+      "label": "Read a prospect's documents (coach)",
+      "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
+      "handler": "fetchDocs",
+      "service": "src/app/golf/actions/recruit-documents.ts#getRecruitDocuments",
+      "data": [
+        "golf_recruit_documents"
+      ],
+      "bridge": {
+        "loading": 140202,
+        "failure": 140609,
+        "recovery": 141401
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-UPLOAD-DOCUMENT",
+      "label": "Upload a document to a prospect (coach)",
+      "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
+      "handler": "uploadAction",
+      "service": "src/app/golf/actions/recruit-documents.ts#uploadRecruitDocument",
+      "data": [
+        "golf_recruit_documents"
+      ],
+      "bridge": {
+        "validation": 140505,
+        "loading": 140302,
+        "success": 140904,
+        "failure": 140605,
+        "permission": 140802,
+        "recovery": 141401,
+        "offline": 140701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-REMOVE-DOCUMENT",
+      "label": "Remove a prospect's document (coach)",
+      "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
+      "handler": "removeAction",
+      "service": "src/app/golf/actions/recruit-documents.ts#deleteRecruitDocument",
+      "data": [
+        "golf_recruit_documents"
+      ],
+      "bridge": {
+        "confirm": 141102,
+        "loading": 140303,
+        "success": 140904,
+        "failure": 140606,
+        "permission": 140802,
+        "recovery": 141401,
+        "offline": 140701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-OPEN-DOCUMENT",
+      "label": "Open a document through a link that expires (coach)",
+      "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
+      "handler": "openAction",
+      "service": "src/app/golf/actions/recruit-documents.ts#getRecruitDocumentUrl",
+      "data": [
+        "golf_recruit_documents"
+      ],
+      "bridge": {
+        "failure": 140607,
+        "recovery": 141401,
+        "offline": 140701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P014-TRY-AGAIN",
+      "label": "Try a failed read again",
+      "component": "src/clubhouse/ui/Notices.tsx#InlineNotice",
+      "handler": "onRetry",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "loadFailed": 140608,
+        "recovery": 141401
+      },
+      "tests": [
+        "src/clubhouse/__tests__/recruiting.test.tsx"
+      ]
+    }
+  ],
+  "held": []
+}

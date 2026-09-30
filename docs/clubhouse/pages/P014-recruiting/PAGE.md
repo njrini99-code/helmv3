@@ -1,0 +1,112 @@
+# P014 — Recruiting
+
+One screen on one route: a coach's tracker of the high-school golfers they are following, from first look to
+commitment, with contact details, notes and private documents. A tracker, not a CRM: Email and Call open the mail
+and phone apps, and nothing is sent from GolfHelm. Coach-only.
+
+## Identity
+
+```text
+Page ID:            P014
+Page Name:          Recruiting
+Route:              /golf/dashboard/recruiting (coach)
+Bridge Namespace:   14 (Bridge IDs 14ccii, D-68; catalog codes CH-14xxx)
+Roles:              coach
+Implementation Root: src/clubhouse/screens/recruiting
+Manifest:           config/clubhouse/pages/P014-recruiting.json
+```
+
+## Purpose
+
+### Primary user
+
+A college golf coach who is recruiting: they keep a short list of juniors and seniors they have seen play, decide
+who to pursue, and need each one's contact details, what they thought and the documents they were sent in one
+place.
+
+### Job to be done
+
+Keep every prospect where the coach can find them, and move each one through the four stages without losing what
+was learned on the way.
+
+### Primary action
+
+Add prospect (the page's one primary action). With a prospect open, the one thing that changes most is their stage.
+
+### Secondary actions
+
+Search (name, hometown, state, email, notes); sort (recently updated, name, class year); filter by stage through the
+pipeline; edit a prospect; email or call them; upload, open and remove documents; delete a prospect.
+
+### Information hierarchy
+
+1. The pipeline: how many prospects are Watched, Recruiting, Offered and Committed, and each stage's share of the
+   list.
+2. The list: who they are (name, class, hometown), their stage, when they were last touched.
+3. The open prospect: stage, contact, notes, documents.
+
+### User should notice first
+
+The shape of the pipeline: where the list is heavy, and who is in Offered.
+
+### User should never have to think about
+
+Whether a stage change was saved (it moves at once and goes back, with a Retry, if it did not land), whether their
+documents are safe (the bucket is private and a file opens through a link that expires), or whether a player can see
+any of it (Recruiting is coach-only, scoped to the coach's active team).
+
+### Success looks like
+
+A coach adds a prospect in under a minute, moves them to a new stage in one tap, and finds them again by typing a
+hometown or a word from their notes.
+
+## Semantic features
+
+Canonical IDs from `memory/registry.yml`:
+
+```text
+- recruiting (memory/features/recruiting.md)
+```
+
+## Design authority
+
+```text
+Package:          design/handoff/recruiting/ (the owner's canvas "Clubhouse Recruiting"; VERSIONS.md, Recruiting)
+Desktop reference: design/handoff/recruiting/Main.dc.html, AddProspect.dc.html, Empty.dc.html, NoMatch.dc.html,
+                  LoadFailed.dc.html (approved 2026-09-30, Q-87)
+Phone spec:       docs/clubhouse/phone/recruiting.md (approved), from the eight Phone*.dc.html boards in the same folder
+Status:           approved (what the boards do not draw is built from Clubhouse parts and listed as open questions in
+                  DESIGN.md)
+```
+
+## Related pages
+
+### Enters from
+
+The sidebar (Team › Recruiting for a coach, after Roster, D-66), the More sheet on the phone, and the existing links
+to `/golf/dashboard/recruiting` (the Players hub in the existing app).
+
+### Exits to
+
+Team Settings from the no-team page (through `rebuiltHref`); the mail and phone apps from Email and Call
+(`mailto:`, `tel:`); a document's signed link, in the in-app browser on the iPhone and a download on the web.
+
+## Ownership
+
+```text
+Design:          the owner (Claude Design)
+Implementation:  src/clubhouse/screens/recruiting, on the existing recruiting server actions
+Data:            golf_recruits, golf_recruit_documents, and the private recruit-documents storage bucket
+```
+
+## Current status
+
+```text
+Design:         approved
+Implementation: in_progress (desktop and phone built, tested and screenshotted against the boards 2026-09-30; gates in PROGRESS.md)
+Contract:       complete (CONTRACT.md: all 25 categories answered)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
+Data:           existing (no schema change)
+Verification:   partial (VERIFY.md)
+Docs:           current
+```

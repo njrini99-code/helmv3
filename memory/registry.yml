@@ -1290,6 +1290,10 @@ features:
         - src/app/golf/(dashboard)/dashboard/recruiting/**
       components:
         - src/components/fairway/pages/recruiting/**
+        - src/clubhouse/screens/recruiting/**
+        - src/clubhouse/data/recruiting.ts
+        - src/clubhouse/data/recruiting-shape.ts
+        - src/clubhouse/routes/recruiting.tsx
       api: []
       actions:
         - src/app/golf/actions/recruiting.ts
@@ -1299,7 +1303,8 @@ features:
       db:
         - supabase/migrations/*golf_recruits*.sql
         - supabase/migrations/*recruit_documents*.sql
-      tests: []
+      tests:
+        - src/clubhouse/__tests__/recruiting.test.tsx
     integrations:
       - supabase
       - team_access_control

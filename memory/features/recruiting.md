@@ -41,6 +41,10 @@ feature.
 
 ### Components
 
+- Clubhouse (behind the Clubhouse flag, coach only): `src/clubhouse/screens/recruiting/**`
+  (`RecruitingView` holds the state and the writes; `RecruitingDesktop`,
+  `RecruitingPhone`), loader `src/clubhouse/data/recruiting.ts`, pure rules
+  `src/clubhouse/data/recruiting-shape.ts`, route `src/clubhouse/routes/recruiting.tsx`
 - `src/components/fairway/pages/recruiting/FairwayRecruitingPage.tsx`
 - `src/components/fairway/pages/recruiting/FairwayRecruitCard.tsx`
 - `src/components/fairway/pages/recruiting/FairwayRecruitFormSheet.tsx`
@@ -92,6 +96,36 @@ feature.
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+## Clubhouse surface
+
+With the Clubhouse flag on for a coach, the same route renders the Clubhouse
+screen in place (`page.tsx` still redirects a player Home first); with it off
+nothing changes. Built from the owner's approved boards
+(`design/handoff/recruiting/`, Q-87); numbered states in
+`docs/clubhouse/catalog/recruiting.md` (CH-14xxx), page docs in
+`docs/clubhouse/pages/P014-recruiting/`. It uses the same server actions and
+changes no schema.
+
+- The pipeline's counts and shares are the whole list's (largest remainder, so
+  they sum to 100) and do not follow the search; a stage there filters the
+  list. Search looks at name, hometown, state, email and notes. The stage
+  filter and the sort are still per browser (`localStorage`).
+- A stage is saved the moment it is picked: the prospect moves at once and goes
+  back, with a Retry on the toast, if the save does not land. Add, edit, delete
+  and every document write wait for the server. Retry runs the whole action
+  again, including the move and its undo.
+- Delete asks first and says that notes and documents go with the prospect; it
+  does not ask for the name. Removing a document asks too.
+- A new prospect starts at Watched (the boards' Add dialog). `createRecruit`
+  has no idempotency key, so a Retry after a lost reply can add a prospect
+  twice.
+- The upload dialog asks for a title and a category and refuses, before sending,
+  a file over 25 MB or of a type the bucket does not take. The bucket has no
+  video type, so film is for stills and documents until that changes.
+- Email and Call are `mailto:` and `tel:` links; nothing is sent from GolfHelm.
+- A prospect's documents are read when it opens; a failed read is a notice in
+  that section and the rest of the prospect still works.
+
 ## Known Risk Areas
 
 - `src/app/golf/actions/recruiting.ts` opens with `eslint-disable
@@ -111,6 +145,8 @@ feature.
 
 ## Tests To Prefer
 
+- `src/clubhouse/__tests__/recruiting.test.tsx` (the Clubhouse screen: rules,
+  loader, route and page, every write and its failure, the phone)
 - `src/components/fairway/pages/recruiting/FairwayRecruitingPage.test.tsx`
 - RLS tests whenever team scoping or the document bucket policy changes.
 

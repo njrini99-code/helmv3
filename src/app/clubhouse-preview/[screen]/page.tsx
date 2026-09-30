@@ -59,6 +59,11 @@ import {
   PREVIEW_SHELL,
 } from '@/clubhouse/preview/fixtures';
 import { PreviewCoachHelm } from '@/clubhouse/preview/PreviewCoachHelm';
+import { PreviewRecruiting } from '@/clubhouse/preview/PreviewRecruiting';
+import { RecruitingNoTeam } from '@/clubhouse/screens/recruiting/RecruitingNoTeam';
+import { RecruitingSkeleton } from '@/clubhouse/screens/recruiting/RecruitingSkeleton';
+import { PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED } from '@/clubhouse/preview/fixtures-recruiting';
+import '@/clubhouse/styles/recruiting.css';
 import { PlayerBoard } from '@/clubhouse/screens/coachhelm/PlayerBoard';
 import { CoachHelmSkeleton } from '@/clubhouse/screens/coachhelm/CoachHelmSkeleton';
 import {
@@ -104,6 +109,7 @@ import '@/clubhouse/styles/coachhelm.css';
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
  *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate   (the coach; Maya)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading   (Jonah)
+ *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  */
 export default async function ClubhousePreview({
@@ -335,6 +341,30 @@ export default async function ClubhousePreview({
           <PreviewCoachHelm
             state={state}
             data={{ assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF }[state ?? ''] ?? PREVIEW_HELM_COACH}
+          />
+        ),
+    },
+    recruiting: {
+      path: '/golf/dashboard/recruiting',
+      node:
+        state === 'loading' ? (
+          <RecruitingSkeleton />
+        ) : state === 'noteam' ? (
+          <RecruitingNoTeam />
+        ) : (
+          <PreviewRecruiting
+            state={state}
+            data={state === 'empty' ? PREVIEW_RECRUITING_EMPTY : state === 'failed' ? PREVIEW_RECRUITING_FAILED : PREVIEW_RECRUITING}
+            initial={
+              {
+                nomatch: { query: 'Tampa', stage: 'offered' as const, openId: 'p-owen' },
+                sparse: { openId: 'p-owen', detail: true },
+                detail: { openId: 'p-mason', detail: true },
+                add: { form: 'add' as const },
+                edit: { openId: 'p-mason', detail: true, form: 'edit' as const },
+                delete: { openId: 'p-mason', detail: true, asking: true },
+              }[state ?? ''] ?? {}
+            }
           />
         ),
     },

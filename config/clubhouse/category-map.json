@@ -76,6 +76,23 @@
     "CH-8402": { "category": 3, "why": "A form save in flight." },
     "CH-8404": { "category": 3, "why": "A photo upload in flight." },
     "CH-8405": { "category": 3, "why": "CoachHelm settings saving, then 'All changes saved'." },
-    "CH-8403": { "category": 13, "why": "The switch holds its new position before the save confirms: optimistic, rolled back on failure (CH-8005)." }
+    "CH-8403": { "category": 13, "why": "The switch holds its new position before the save confirms: optimistic, rolled back on failure (CH-8005)." },
+    "CH-14403": { "category": 3, "why": "A prospect save in flight: work in progress on a shown page." },
+    "CH-14404": { "category": 3, "why": "A document upload in flight." },
+    "CH-14405": { "category": 3, "why": "A document removal in flight." },
+    "CH-14406": { "category": 3, "why": "A prospect delete in flight." },
+    "CH-14902": { "category": 8, "why": "A player who opens Recruiting is sent Home: the page is the coach's, and RLS is the lock behind it." },
+    "CH-14903": { "category": 8, "why": "The server refuses a coach-only write (a document add or delete): an authorization outcome, not a failed write." },
+    "CH-14904": { "category": 1, "why": "Core behaviour: Recruiting opens on the pipeline, the list and the first prospect's panel." },
+    "CH-14905": { "category": 9, "why": "A prospect was added." },
+    "CH-14906": { "category": 9, "why": "A prospect's changes were saved." },
+    "CH-14907": { "category": 9, "why": "A prospect was deleted." },
+    "CH-14908": { "category": 9, "why": "A document was added or removed." },
+    "CH-14909": { "category": 13, "why": "A stage change holds its new place before the save confirms: optimistic, rolled back on failure (CH-14003)." },
+    "CH-14910": { "category": 12, "why": "A save that fails leaves the form open with what was typed: protects unsaved state." },
+    "CH-14911": { "category": 14, "why": "Retry on a failed write's toast, and Try again on a failed read: the recovery path." },
+    "CH-14912": { "category": 15, "why": "The server's fresh list replaces the page's copy after a write or Try again." },
+    "CH-14913": { "category": 20, "why": "Enter saves the form, Esc closes a dialog or clears the search, arrows move a stage." },
+    "CH-14914": { "category": 19, "why": "Phone layout at 820px and below." }
   }
 }

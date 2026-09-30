@@ -33,7 +33,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Genome compare** `/coachhelm/genome/compare` — Two players' skill profiles side by side, biggest differences ranked
 - [ ] **Game Fingerprint** `/players/[id]/game` — One player's deep dive: where strokes are lost and gained (printable at `/game/print`)
 - [ ] **Genome** `/players/[id]/genome` — One player's skill profile against a baseline, with a one-line verdict
-- [ ] **Recruiting HQ** `/recruiting` — Prospects from watchlist to commitment
+- [x] **Recruiting HQ** `/recruiting` — Prospects from watchlist to commitment
 - [x] **Qualifiers** `/qualifiers` — Set up and run team qualifiers that decide lineups (with `/new`, `/[id]`, `/[id]/edit`, `/[id]/selection`)
 - [ ] **Travel** `/travel` — Tournament trips: itineraries and logistics, linked from Calendar events
 - [ ] **Tasks** `/tasks` — Assign tasks to players and track completion live
