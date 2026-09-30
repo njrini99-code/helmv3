@@ -144,19 +144,23 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   };
 }
 
-/** The team's creator when they coach in its organisation, else the organisation's first coach; null when neither loads. */
+/**
+ * The user id of the coach who created the team (golf_teams.created_by is a
+ * golf_coaches.id, not a user id), else the organisation's first coach with an
+ * account; null when neither loads.
+ */
 async function coachFor(
   supabase: Awaited<ReturnType<typeof createClient>>,
   team: { created_by: string | null; organization_id: string | null } | null,
 ): Promise<string | null> {
   if (!team?.organization_id) return null;
-  const { data, error } = await supabase.from('golf_coaches').select('user_id').eq('organization_id', team.organization_id).not('user_id', 'is', null).limit(50);
+  const { data, error } = await supabase.from('golf_coaches').select('id, user_id').eq('organization_id', team.organization_id).not('user_id', 'is', null).limit(50);
   if (error) {
     log('coaches', error);
     return null;
   }
-  const ids = (data ?? []).map((c) => c.user_id).filter((id): id is string => !!id);
-  return ids.find((id) => id === team.created_by) ?? ids[0] ?? null;
+  const coaches = (data ?? []).filter((c): c is { id: string; user_id: string } => !!c.user_id);
+  return (coaches.find((c) => c.id === team.created_by) ?? coaches[0])?.user_id ?? null;
 }
 
 type Pick = { made: number; total: number } | null;

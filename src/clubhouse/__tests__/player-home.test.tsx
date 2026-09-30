@@ -223,8 +223,9 @@ describe('Player Home · the loader', () => {
         return { data: [round(0), round(1), round(2), round(3)] };
       },
       golf_players: { data: { handicap_index: 2.1, handicap: null } },
-      golf_teams: { data: { gender: 'men', created_by: 'u-head', organization_id: 'o1' } },
-      golf_coaches: { data: [{ user_id: 'u-asst' }, { user_id: 'u-head' }] },
+      // created_by is a golf_coaches.id (not a user id), as on every live team.
+      golf_teams: { data: { gender: 'men', created_by: 'c-head', organization_id: 'o1' } },
+      golf_coaches: { data: [{ id: 'c-asst', user_id: 'u-asst' }, { id: 'c-head', user_id: 'u-head' }] },
       golf_holes: { data: [] },
       golf_round_stats_cache: { data: [] },
       golf_pga_standards: { data: [{ metric_id: 'gir_pct', div1_avg_value: 60, tour: 'pga' }] },
@@ -239,6 +240,22 @@ describe('Player Home · the loader', () => {
     expect(data.latest.rounds).toHaveLength(3);
     expect(data.legs!.rows.find((l) => l.key === 'approach')!.d1).toBe(60);
     expect(data.legs!.rows.find((l) => l.key === 'tee')!.d1).toBeNull();
+  });
+
+  it('a player’s week names no one: today’s event reads a count, never teammates’ names', async () => {
+    const d = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: { data: [{ id: 'e1', title: 'Putting ladder', event_type: 'practice', start_time: `${d}T21:30:00Z`, end_time: `${d}T22:30:00Z`, all_day: false, location: 'Green 2' }] },
+      golf_event_attendance: { data: [{ id: 'x1', event_id: 'e1', player_id: 'p-priya', status: 'accepted' }, { id: 'x2', event_id: 'e1', player_id: 'p-ava', status: 'pending' }] },
+      golf_rounds: { data: [] },
+      golf_team_members: { data: [{ player: { id: 'p-priya', first_name: 'Priya', last_name: 'Natarajan', graduation_year: 2027 } }] },
+    };
+    const data = await loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Theo' });
+    const row = data.week.agenda.find((r) => r.id === 'e1')!;
+    expect(row.detail).toBe('Green 2 · 2 players');
+    expect(data.today[0]!.invitees).toEqual([]);
+    expect(JSON.stringify(data)).not.toMatch(/Priya|undefined/);
   });
 
   it('CH-2215 rounds that fail: no brief, no legs, the scoring notice', async () => {
