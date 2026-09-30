@@ -33,7 +33,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(new URL('./new-round-client.tsx', import.meta.url), 'utf8');
+const source = [
+  // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
+  readFileSync(new URL('../../../../../../lib/golf/round-session/use-new-round-session.ts', import.meta.url), 'utf8'),
+  readFileSync(new URL('./new-round-client.tsx', import.meta.url), 'utf8'),
+].join('\n');
 
 function slice(fromMarker: string, toMarker: string): string {
   const from = source.indexOf(fromMarker);
@@ -170,8 +174,17 @@ describe('New Round — future round dates (B7)', () => {
   });
 
   it('validateBeforeStart rejects a future round date before persistRoundStart runs', () => {
+    // The rules moved into validateStartForm (step 5a) so `start(form)` checks the form it is given; the screen's own
+    // gate still runs them over its state.
+    const startForm = readFileSync(new URL('../../../../../../lib/golf/round-session/start-form.ts', import.meta.url), 'utf8');
+    const rules = startForm.slice(
+      startForm.indexOf('export function validateStartForm('),
+      startForm.indexOf('export const MAX_START_HOLE_YARDS'),
+    );
+    expect(rules).toContain('validateStartForm');
+    expect(rules).toMatch(/future/i);
     const validate = slice('const validateBeforeStart = useCallback((): string | null => {', 'const persistRoundStart = useCallback(async (');
-    expect(validate).toMatch(/future/i);
+    expect(validate).toContain('validateStartForm({ setup: setupData,');
   });
 });
 
@@ -192,7 +205,8 @@ describe('New Round — one helper for round-write failures (B6)', () => {
 describe('New Round — completion surfaces provide cold-chunk feedback (B10)', () => {
   it('uses a fixed non-blocking loading status for cold chunks', () => {
     const submitDynamic = slice('const FairwayRoundSubmitOverlay = dynamic(', 'const FairwayRoundSummarySheet = dynamic(');
-    const summaryDynamic = slice('const FairwayRoundSummarySheet = dynamic(', 'type Hole = RoundHole;');
+    // `type Hole` moved with the engine (step 4b); the component now follows the last dynamic import.
+    const summaryDynamic = slice('const FairwayRoundSummarySheet = dynamic(', 'export default function NewRoundClient(');
     expect(submitDynamic).toContain('loading: () => <RoundCompletionChunkLoading />');
     expect(summaryDynamic).toContain('loading: () => <RoundCompletionChunkLoading />');
     expect(source).toMatch(/role="status"[\s\S]*pointer-events-none fixed[\s\S]*Preparing your round/);
@@ -281,7 +295,7 @@ describe('New Round — 36-hole-day conflict prompt gives Resume/Discard/Start-n
 
   it('Resume navigates to Continue Round for the conflicting round, and only Resume does', () => {
     const resume = slice('const handleConflictResume = () => {', 'const handleConflictConfirmDiscard = async () => {');
-    expect(resume).toContain('router.push(`/golf/dashboard/rounds/continue/${inProgressConflict.roundId}`)');
+    expect(resume).toContain('router.push(routesRef.current.continueRound(inProgressConflict.roundId))');
   });
 
   it('the destructive delete never runs unless discardConfirming is already true (guards the two-step confirm)', () => {
@@ -317,10 +331,10 @@ describe('New Round — 36-hole-day conflict prompt gives Resume/Discard/Start-n
   });
 
   it('handleHolesSave and startWithPreloadedConfigs each record themselves as the retry target, so Discard/Start-new never skip the save-course step', () => {
-    expect(source).toContain('lastStartRetryRef.current = () => handleHolesSave(configuredHoles);');
+    expect(source).toContain('lastStartRetryRef.current = () => handleHolesSave(configuredHoles, form, fromStart);');
     expect(source).toContain('lastStartRetryRef.current = () => startWithPreloadedConfigs(configs);');
     // Both retry targets must still reach the save-course / cloud-catalog step.
-    const holesSave = slice('const handleHolesSave = async (configuredHoles: HoleConfig[]) => {', 'const buildPartialRoundData = useCallback(');
+    const holesSave = slice('const handleHolesSave = async (configuredHoles: HoleConfig[], form: NewRoundStartForm', 'const buildPartialRoundData = useCallback(');
     expect(holesSave).toContain('savePlayerCourse(');
     const preloaded = slice('const startWithPreloadedConfigs = useCallback(async (', 'const handleSetupSubmit = async (');
     expect(preloaded).toContain('contributeCourseFromRound(');
