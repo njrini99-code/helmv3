@@ -132,6 +132,7 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
 | CoachHelm | /golf/dashboard/coachhelm (coach and player; boards `Coach - CoachHelm.html`, `Player - CoachHelm.html`, phone) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Rounds | /golf/dashboard/rounds with /new, /[id], /[id]/review (player; review also coach; plan `ROUNDS_PLAN.md`, Q-72) | done | doing | doing | doing | doing | done | todo | todo | todo | todo | todo |
 | Classes | /golf/dashboard/classes (player; boards `Player - Classes.html`, phone) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Recruiting | /golf/dashboard/recruiting (coach; boards in the Clubhouse Recruiting canvas, Q-87) | done | doing | doing | doing | doing | done | doing | doing | doing | todo | todo |
 | Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role; built: Home, Stats, Calendar, Messages, Qualifiers, Team Hub, Settings; next: Rounds, CoachHelm, Classes) | doing | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 <!-- clubhouse:screens:end -->
