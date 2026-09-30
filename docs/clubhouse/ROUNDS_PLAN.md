@@ -54,6 +54,10 @@ Round entry is two engines and one tracking screen, all Fairway-rendered today:
   - `typecheck:fast`, and `npm run build`;
   - a fresh-context `code-reviewer` on the move diff;
   - the move commit touches no Clubhouse file.
+- Progress (2026-09-30, Q-78):
+  - 4a done: the new-round logic became `useNewRoundSession` in the same file, byte for byte (lines 178 to 2790; the render helpers from `recoveryDialog` on stay in the component, as do the `ExitRoundModal` and `SubmitOverlay` aliases).
+  - 4b done: the hook lives in `src/lib/golf/round-session/use-new-round-session.ts` (2,718 lines, identical to 4a's), with the setup form type, `decidePostHoleCompleteAction` and its type; the client imports it and re-exports the decision for its tests. The new file imports nothing from Fairway. Ten source-text test files read the engine file and the client joined, engine first; one slice end marker moved with `type Hole`. Engine baseline 469/469 before and after each step.
+  - Next, 4c: `showToast`, `hideMobileNav`, `showMobileNav` and `haptic` become ports; then `start(form)` for the Clubhouse setup, separately.
 - Pre-move findings (2026-09-30, `new-round-client.tsx`, 3,272 lines; logic ends at the `return (` on line 3065):
   - The `if (step === 'tracking')` at line 1355 is a mis-indented early return inside the local-save effect, not a hook boundary. The move keeps it byte for byte and does not re-indent.
   - `persistRoundStart` reads `setupData`, `selectedQualifierId` and `selectedRoundNumber` from state. The Clubhouse setup submits a whole `ChSetupForm`, so the hook's start takes the form as an argument (`start(form)`) and the legacy caller passes its state. Setting state and then starting would read a stale closure.
