@@ -53,9 +53,12 @@ Your decisions, oldest first (each has the reversible choice already made): Q-65
 questions". The ones that block something: Q-75a (Classes "Delete all"), Q-76 (rebuild the CoachHelm
 drills), Q-78 (the round engine move, which makes #2102 touch the live Fairway round flow).
 
-Not verified yet: no iPhone pass (`npm run ios:dev`), no real-account pass on any page, no `npm run build`
-of tonight's route changes (the classes page split, the coachhelm page signature). Held migrations are
-unchanged (`supabase/migrations/HELD.md`).
+Not verified yet: no iPhone pass (`npm run ios:dev`), no real-account pass on any page, and no complete
+`next build`. A local build compiled successfully (webpack, 2.1 min) with tonight's route changes and the engine
+move, then was stopped in its TypeScript pass when swap reached 8.5 GB on this 16 GB laptop; `typecheck:fast`
+is clean. CI's build, `tsc` and full test suite skip on a draft PR (the aggregates fail by design) and run only
+when #2102 is marked ready for review, which is your call. Held migrations are unchanged
+(`supabase/migrations/HELD.md`).
 
 ## Where we left off (2026-09-29)
 
