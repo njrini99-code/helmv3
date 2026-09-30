@@ -19,6 +19,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
 
 type Sport = 'baseball' | 'golf';
 
@@ -394,6 +395,11 @@ export async function createConversation({
       await logServerError('[createConversation] Missing teamId for golf conversation', { action: 'messages.createConversation' });
       throw new Error('Team ID is required for golf conversations');
     }
+    // This file is 'use server', so createConversation and
+    // createGolfConversation are endpoints in their own right, reachable
+    // without the golf wrapper's audience check. RLS lets a conversation's
+    // creator add any user id, so the check lives here too, before any write.
+    await assertGolfConversationAudience(user.id, participantUserIds, teamId);
     insertData.team_id = teamId;
   }
 

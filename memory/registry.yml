@@ -1062,6 +1062,7 @@ features:
         - src/app/golf/actions/unified-notifications-model.ts
       services:
         - src/lib/supabase/**
+        - src/lib/golf/conversation-audience.ts
         # `src/hooks/**` appears NOWHERE else in this registry, so every golf
         # hook resolved to no feature at all — `knowledge:map` returned an empty
         # impactedFeatures for the hook that owns the entire conversation rail.

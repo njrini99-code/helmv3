@@ -446,7 +446,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'createStaffInvite',
         'previewStaffInvite',
         'redeemStaffInvite',
-        'joinTeamAsAssistantCoach',
         'listTeamCoachingStaff',
         'listPendingAssistantCoaches',
         'approvePendingAssistantCoach',

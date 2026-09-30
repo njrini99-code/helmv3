@@ -146,16 +146,6 @@ async function resolveTeamRole(
   return 'none';
 }
 
-// Verify the authenticated user belongs to the team that owns the document.
-// Thin wrapper over resolveTeamRole for callers that only need a boolean.
-async function verifyTeamAccess(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  teamId: string
-): Promise<boolean> {
-  return (await resolveTeamRole(supabase, userId, teamId)) !== 'none';
-}
-
 /**
  * Resolve display names/emails for a set of `uploaded_by` user ids.
  *
@@ -331,6 +321,11 @@ async function createDocumentImpl(
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error('Not authenticated');
+
+    // Coach-only, before the storage write (Q-74): `teamId` is caller-supplied
+    // and goes straight into the storage path.
+    const role = await resolveTeamRole(supabase, user.id, teamId);
+    if (role !== 'coach') return { data: null, error: 'Only a coach on this team can upload documents' };
 
     // Upload file to storage
     const fileExt = file.name.split('.').pop();
@@ -561,8 +556,10 @@ async function updateDocumentImpl(
 
     if (docError || !doc) return { data: null, error: 'Document not found' };
 
-    const hasAccess = await verifyTeamAccess(supabase, user.id, doc.team_id);
-    if (!hasAccess) return { data: null, error: 'Not authorized to modify this document' };
+    // Coach-only, like delete and upload (Q-74): any team member used to pass,
+    // so a player could retitle a document or flip its player visibility.
+    const role = await resolveTeamRole(supabase, user.id, doc.team_id);
+    if (role !== 'coach') return { data: null, error: 'Only a coach on this team can edit documents' };
 
     const updatePayload: {
       title?: string;
@@ -633,9 +630,15 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
 
     if (fetchError) throw fetchError;
 
-    // Verify user has access to this document's team
-    const hasAccess = await verifyTeamAccess(supabase, user.id, _document.team_id);
-    if (!hasAccess) return { success: false, error: 'Not authorized to delete this document' };
+    // Coach-only, scoped to the document's own team (Q-74). Any active team
+    // member used to pass here, but row-level security only lets a coach
+    // staffed on the team delete the row or its storage objects, so a player's
+    // delete removed nothing and still reported success. Refuse up front, with
+    // the reason, before anything is touched.
+    const role = await resolveTeamRole(supabase, user.id, _document.team_id);
+    if (role !== 'coach') {
+      return { success: false, error: 'Only a coach on this team can delete documents' };
+    }
 
     // Get all versions for cleanup
     const { data: versionsData } = await supabase
@@ -658,13 +661,19 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
       });
     }
 
-    // Delete document (cascade will delete versions)
-    const { error: deleteError } = await supabase
+    // Delete document (cascade will delete versions). Select the deleted row
+    // back: a DELETE that matches no row (row-level security filtering it, or a
+    // concurrent delete) returns error:null, which would read as success.
+    const { data: deleted, error: deleteError } = await supabase
       .from('golf_documents')
       .delete()
-      .eq('id', documentId);
+      .eq('id', documentId)
+      .select('id');
 
     if (deleteError) throw deleteError;
+    if (!deleted || deleted.length === 0) {
+      return { success: false, error: 'Document not found or not permitted' };
+    }
 
     revalidatePath('/golf/dashboard/documents');
     return { success: true, error: null };
@@ -824,14 +833,19 @@ async function getDocumentVersionsImpl(documentId: string): Promise<{ data: Docu
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id')
+      .select('team_id, is_public')
       .eq('id', documentId)
       .single();
 
     if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
 
-    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
-    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+    // Same rule as getDocument: a player reads only a document shared with
+    // players. Team membership alone let a player open the versions, preview
+    // or text of a coach-only document by id.
+    const role = await resolveTeamRole(supabase, user.id, docCheck.team_id);
+    if (role === 'none' || (role !== 'coach' && docCheck.is_public !== true)) {
+      return { data: null, error: 'Not authorized to access this document' };
+    }
 
     const { data: rawData, error } = await supabase
       .from('golf_document_versions' as any)
@@ -893,6 +907,18 @@ async function revertToVersionImpl(
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error('Not authenticated');
+
+    // Coach-only, checked before anything is read or written. This action had
+    // no team check at all: signed-in was the only gate, and RLS was the only
+    // thing between any account and another team's document history.
+    const { data: target, error: targetError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+    if (targetError || !target) return { success: false, error: 'Document not found' };
+    const role = await resolveTeamRole(supabase, user.id, target.team_id);
+    if (role !== 'coach') return { success: false, error: 'Only a coach on this team can restore a version' };
 
     // Get the version to revert to by ID
     const { data: versionData, error: versionError } = await supabase
@@ -994,14 +1020,19 @@ async function compareVersionsImpl(
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id')
+      .select('team_id, is_public')
       .eq('id', documentId)
       .single();
 
     if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
 
-    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
-    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+    // Same rule as getDocument: a player reads only a document shared with
+    // players. Team membership alone let a player open the versions, preview
+    // or text of a coach-only document by id.
+    const role = await resolveTeamRole(supabase, user.id, docCheck.team_id);
+    if (role === 'none' || (role !== 'coach' && docCheck.is_public !== true)) {
+      return { data: null, error: 'Not authorized to access this document' };
+    }
 
     const { data: versionsData, error } = await supabase
       .from('golf_document_versions' as any)
@@ -1077,14 +1108,19 @@ async function getPreviewUrlImpl(
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id')
+      .select('team_id, is_public')
       .eq('id', documentId)
       .single();
 
     if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
 
-    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
-    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+    // Same rule as getDocument: a player reads only a document shared with
+    // players. Team membership alone let a player open the versions, preview
+    // or text of a coach-only document by id.
+    const role = await resolveTeamRole(supabase, user.id, docCheck.team_id);
+    if (role === 'none' || (role !== 'coach' && docCheck.is_public !== true)) {
+      return { data: null, error: 'Not authorized to access this document' };
+    }
 
     if (versionNumber) {
       // Get specific version
@@ -1221,6 +1257,16 @@ async function uploadGolfDocumentImpl(
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error('Not authenticated');
+
+    // Coach-only, scoped to the caller-supplied team (Q-74). `teamId` goes
+    // straight into the storage path and signed-in was the only gate, so the
+    // storage policy was the only thing standing between any user and another
+    // team's folder. Check the role before the storage write, as
+    // uploadNewVersion does.
+    const role = await resolveTeamRole(supabase, user.id, teamId);
+    if (role !== 'coach') {
+      return { success: false, error: 'Only a coach on this team can upload documents' };
+    }
 
     // Upload file to storage
     const fileExt = file.name.split('.').pop();
@@ -1502,8 +1548,9 @@ async function deleteVersionImpl(
 
     if (docAccessError || !doc) return { success: false, error: 'Document not found' };
 
-    const hasAccess = await verifyTeamAccess(supabase, user.id, doc.team_id);
-    if (!hasAccess) return { success: false, error: 'Not authorized to delete this version' };
+    // Coach-only, like deleting the whole document (Q-74).
+    const role = await resolveTeamRole(supabase, user.id, doc.team_id);
+    if (role !== 'coach') return { success: false, error: 'Only a coach on this team can delete versions' };
 
     // Get the version to delete by ID
     const { data: versionData, error: fetchError } = await supabase
@@ -1591,14 +1638,19 @@ async function getTextFileContentImpl(
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id')
+      .select('team_id, is_public')
       .eq('id', documentId)
       .single();
 
     if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
 
-    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
-    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+    // Same rule as getDocument: a player reads only a document shared with
+    // players. Team membership alone let a player open the versions, preview
+    // or text of a coach-only document by id.
+    const role = await resolveTeamRole(supabase, user.id, docCheck.team_id);
+    if (role === 'none' || (role !== 'coach' && docCheck.is_public !== true)) {
+      return { data: null, error: 'Not authorized to access this document' };
+    }
 
     let storagePath: string;
 

@@ -1820,6 +1820,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/conversation-audience.ts",
+        "pattern": "src/lib/golf/conversation-audience.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/golf/nav-registry.ts",
         "pattern": "src/lib/golf/nav-registry.ts",
         "category": "services"
@@ -7984,6 +7989,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/auth.ts",
           "anchor": "src/lib/admin/super-admin-shared"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/auth.ts",
+          "anchor": "src/lib/supabase/admin"
         },
         {
           "kind": "import_graph",
@@ -21283,6 +21293,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/unified-notifications.ts",
           "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/conversation-audience.ts",
+          "anchor": "src/lib/supabase/admin"
         }
       ]
     },
@@ -21600,6 +21615,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/golf/client-resource-cache.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "services:src/lib/golf/conversation-audience.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/conversation-audience.ts"
         }
       ]
     },

@@ -82,36 +82,9 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerException: vi.fn(async () => undefined),
 }));
 
-/**
- * The assistant JOIN is stubbed here on purpose.
- *
- * This file tests the GATE — which code opens signup, and what role that code
- * is allowed to produce. The join itself (coach upsert, a staff row per team in
- * the program, the notification, the failure paths) is covered directly in
- * `assistant-join.test.ts` against its own admin-client fakes.
- *
- * Without this stub the case below fails with "We could not find the team for
- * that code" — the admin mock in this file exposes only a read chain
- * (select/eq/limit/maybeSingle), not the upserts the real join performs. That
- * error is a gap in these fakes, not a broken signup: production error_logs
- * carry zero occurrences of that string.
- */
-// Typed with the real signature — an argless `vi.fn` infers `calls[0]` as the
-// empty tuple, so reading `[1]` (the join code) is a compile error.
-const joinTeamAsAssistantCoach = vi.fn(
-  async (
-    _userId: string,
-    _teamJoinCode: string,
-    _fullName: string | undefined,
-    _email: string,
-  ): Promise<{ success: boolean; error?: string }> => ({ success: true }),
-);
 vi.mock('@/app/golf/actions/teams', () => ({
-  joinTeamAsAssistantCoach: (...args: unknown[]) =>
-    joinTeamAsAssistantCoach(...(args as [string, string, string | undefined, string])),
   redeemStaffInvite: vi.fn(async () => ({ success: true })),
 }));
-
 vi.mock('@/lib/analytics/posthog-server', () => ({ captureServer: vi.fn(async () => undefined) }));
 vi.mock('@/lib/demo/config.server', () => ({ isDemoCoachEmail: () => false }));
 
@@ -170,32 +143,32 @@ describe('signupAction — server-side access-code gate (B8-1)', () => {
     expect(signUp).toHaveBeenCalledTimes(1);
   });
 
-  // (b2) A TEAM CODE OUTRANKS THE ROLE THE BROWSER SENT.
+  // (b2) A TEAM CODE SIGNS UP PLAYERS ONLY (owner decision 2026-09-30).
   //
-  // This case used to assert the opposite — that a coach holding a VALID team
-  // code still landed on '/golf/coach' — and that is precisely the bug. That
-  // path is new-program onboarding: it inserts a fresh organization and team and
-  // re-points organization_id at them, which is how assistants at UNCW and
-  // Shenandoah got a duplicate program, and how one hit "An organization named
-  // 'Guilford College' already exists" as a dead end at the last step of signup.
-  //
-  // `role` comes from the client. The form derives 'assistant_request' from the
-  // resolved scope, but a stale bundle — anyone still holding the pre-deploy
-  // JS — posts role:'coach' with a roster code. So the SERVER decides: holding a
-  // team code means joining THAT program, never creating a new one.
-  it('routes a coach holding a TEAM CODE into the assistant join, never the wizard', async () => {
-    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
-    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+  // The team code is shared with the whole roster, so it can never mint a coach:
+  // not new-program onboarding (the duplicate-program bug at UNCW and
+  // Shenandoah), and not an assistant either (any player could self-promote and
+  // read teammates' data). `role` comes from the client, so the server refuses
+  // it, and does so before auth.signUp so no stranded account is left behind.
+  it.each(['coach', 'assistant_request'])(
+    'refuses role %s on a TEAM CODE before creating any account',
+    async (role) => {
+      maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+      cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
 
-    const result = await signupAction('coach@example.com', STRONG_PASSWORD, 'coach', 'New', 'Coach');
+      const result = await signupAction(
+        'coach@example.com',
+        STRONG_PASSWORD,
+        role as Parameters<typeof signupAction>[2],
+        'New',
+        'Coach',
+      );
 
-    expect(result).toEqual({ success: true, redirectTo: '/golf/dashboard' });
-    // Never the duplicate-program door.
-    expect(result.redirectTo).not.toBe('/golf/coach');
-    // And it joined the team the CODE names — taken from the gate, not the form.
-    expect(joinTeamAsAssistantCoach).toHaveBeenCalledTimes(1);
-    expect(joinTeamAsAssistantCoach.mock.calls[0]?.[1]).toBe('K7PQX4MN');
-  });
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/staff invite code/);
+      expect(signUp).not.toHaveBeenCalled();
+    },
+  );
 
   // (b3) the GLOBAL access code is not a team, so there is nothing to join.
   it('does not carry a join code when the global access code was used', async () => {

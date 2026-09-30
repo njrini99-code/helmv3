@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
+import { validatePassword } from '@/lib/auth/password-validation';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { cn } from '@/lib/utils';
 import {
@@ -52,12 +53,11 @@ export default function ResetPasswordPage() {
 
     async function establishRecoverySession() {
       try {
-        const { data: existing } = await supabase.auth.getSession();
-        if (existing.session) {
-          if (!cancelled) setRecoveryState('ready');
-          return;
-        }
-
+        // The LINK is the authorization, never an existing session. Accepting
+        // "already signed in" as ready let anyone at a signed-in device (a
+        // shared laptop, a borrowed phone) change that account's password
+        // without the old one. The link is verified even when a session
+        // exists, which replaces that session with the recovering user's.
         const url = new URL(window.location.href);
         const code = url.searchParams.get('code');
         const tokenHash = url.searchParams.get('token_hash');
@@ -110,8 +110,11 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Use at least 8 characters.');
+    // The same rules signup enforces, so a reset cannot set a password that
+    // signup would have refused.
+    const strength = validatePassword(password);
+    if (!strength.valid) {
+      setError(strength.feedback[0] || 'Password does not meet security requirements');
       setErrorNonce((n) => n + 1);
       setLoading(false);
       return;
