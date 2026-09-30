@@ -122,3 +122,7 @@ None.
   copied from Team stats stays short.
 - A grid row, a Season best and a phone row link to `/golf/dashboard/stats?player=<golf_players.id>` and keep
   the window; what happens there is P005's contract.
+- Strokes gained (2026-09-30): `loadTeamStats` adds `tour`, `sgChange`, `sgRounds`, `team.sgMean`/`scoreMean` and
+  each player's `sgMean`/`scoreMean`, and a first figure ("Team SG per round") in `figures`; the shared
+  baseline label, bar scale and tint are `src/clubhouse/lib/sg.ts`. `loadPutts`, the putting bands and
+  `sgChange` moved to `stats-common.ts` so the player profile reads the same bands. No new table or column.

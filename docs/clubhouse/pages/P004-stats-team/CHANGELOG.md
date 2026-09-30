@@ -2,6 +2,38 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Strokes gained on Team stats: a headline, the window mean, bars that mean what they show
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (catalog CH-4311, CH-4312)
+Data impact:    none (reads only; no migration)
+```
+
+### One baseline label
+
+- **Issue.** Stored strokes gained is measured against the Tour (Broadie expected strokes; the women's curve is the men's scaled by 1.083), but each screen worded it its own way ("the women's baseline", nothing at all, and "vs D1" on Home and the phone profile).
+- **Fix.** One helper, `lib/sg.ts` `sgBaseline(tour)`: "vs Tour" or "vs the women's Tour baseline" for a caption, "the Tour baseline" inside a sentence; an unknown tour claims none (CH-4210). The trend header, the leg note and the new headline use it.
+- **Checked.** strokes-gained.test (57 cases); 2 mutations caught (men's label reading D1, women's reading Tour).
+
+### Team SG per round, the headline (CH-4311, CH-4312)
+
+- **Issue.** The page's first row had no strokes gained figure, though it is the number the owner reads first.
+- **Fix.** A sixth card leads the row: the window's mean per round over its rounds with strokes gained, signed, green for a gain and amber for a loss, with its change against the previous 10 and "vs Tour · N rounds with shots" under it. No rounds with shots reads "—" and "Needs rounds with shots" (CH-4311); last 10 with nothing to compare reads "No earlier rounds", or "Too few earlier rounds with shots" when there are one or two (CH-4312). Season and Qualifiers have no previous window by design and claim nothing. The row is six columns (`--ch-fg-n`) and the loading skeleton draws six cards as tall as the loaded ones.
+- **Checked.** strokes-gained.test; mutations caught: headline taken from the newest round, headline renamed, previous window ignored.
+
+### The leg cards, the player list and the notes read the window, not the last week
+
+- **Issue.** Each leg card's headline was the latest week's value, the SG-lens player list was sorted by (and showed) the last week, and the trend note said "The team has gained 1.0 a round from Aug 30 to Oct 12", a level where a change was meant.
+- **Fix.** The card headline is the window's mean (`legTotals`); the list beside the trend shows and sorts by each player's window mean (`sgMean`, `scoreMean`, three rounds with strokes gained as in the grid), and says so in its caption; the note reads "The team's strokes gained are up about 1.0 a round since Aug 30, a weekly average from −1.0 to 0.0" (flat under 0.15).
+- **Checked.** strokes-gained.test; mutations caught: card headline back to the last week, sort back to the last week, list value back to the last week, note back to a level.
+
+### Bars scaled to the data
+
+- **Issue.** The phone's leg bars were clamped at 1.4 and the grid's tint at 1.2, so against the Tour (approach about −2.7, putting about −1.9 for a college team) every big leg drew the same full bar.
+- **Fix.** `sgScale` is the largest value shown, rounded up to a whole stroke, never under 1; bars are symmetric about zero and a bar's length is its value. The phone's Strokes gained by leg panel also draws the team total on the same scale. Colour stays gain green and loss amber.
+- **Checked.** strokes-gained.test (a −2.6 leg is 43% of the track on a scale of 3); mutations caught: a fixed 1.4 in the bars, a fixed 1.2 in the grid, no rounding up, a clamp in the share.
+
 ## 2026-09-30 — Page docs, permission proven, the export's names written as text
 
 ```text

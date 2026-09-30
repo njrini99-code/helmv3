@@ -150,6 +150,15 @@ Animation:         the shell's tokens only
 Notes:             first-load JS and LCP (CH-1954) are open
 ```
 
+## Strokes gained on the review (2026-09-30)
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npx vitest run src/clubhouse/__tests__/strokes-gained.test.tsx src/clubhouse/__tests__/round-review.test.tsx` | pass; the loader test answers with strokes gained only when the select names the columns |
+| Clubhouse | `npm run -s clubhouse:check` | clean |
+| Axe | `node scripts/clubhouse/a11y.mjs rounds` (includes `/clubhouse-preview/round?state=nosg`) | clean |
+| Native-feel | `native.mjs rounds` | the hole-number buttons (30 x 28) are the known exception; nothing new |
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev`, a browser pass with a real player and a real coach account (the library, the

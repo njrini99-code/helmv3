@@ -163,6 +163,14 @@ D-22 (phone), D-26 (season), D-31 (a closed qualifier is closed), D-42 (red mean
 D-64 (motion), D-66 (navigation), D-67 (build order), D-70 (haptics), D-71 (page empty state); Q-72 is open, and
 the page is built on its recommendations (a to h).
 
+## Strokes gained on the review (2026-09-30)
+
+A Strokes gained card under the five figures: the total large on the right, the four legs as bars either
+side of zero (gain green, loss amber) on a scale the round sets, and what it is measured against ("vs Tour";
+a women's team the women's Tour baseline). A nine-hole round says so. A round posted without shots has no
+strokes gained and reads one line instead of a card of dashes (CH-11313). Not built: strokes gained by lie
+and distance, or per hole (owner decisions pending).
+
 ## Explicit non-goals
 
 A coach Rounds library (v2 has none), the offline recovery page (`/rounds/recover`, legacy until a board exists),

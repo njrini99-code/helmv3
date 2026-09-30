@@ -103,7 +103,8 @@ There are no realtime hooks: the page is read once per render, and again after a
 Tables:   golf_teams (gender), golf_players (id, names, graduation_year, hometown, state, handicap),
           golf_team_members (the roster check: this team, this player, active or inactive; for a coach also
           the active team), golf_rounds (the player's season, and for a coach the active team's),
-          golf_round_stats_cache, golf_pga_standards, golf_player_focus_areas (active and proposed, 20),
+          golf_round_stats_cache, golf_pga_standards, golf_shots (putt distance and result, for the make-rate
+          bands), golf_player_focus_areas (active and proposed, 20),
           golf_goals (20); shot-level tables through getDetailedStats
 RPCs:     none from this page (getDetailedStats checks access through the verify_coach_owns_player RPC)
 Storage:  none
@@ -130,3 +131,7 @@ None.
   build; a change to `?player=`, `?tab=` or `?window=` breaks them (D-53, Messages' 70102).
 - `loadPlayerProfile` throws on a failed player or membership read: the stats route has no catch, so the
   route error view is what shows.
+- Strokes gained (2026-09-30): `loadPlayerProfile` adds `tour`, `sgChange`, `puttBands` (via `loadPutts` and
+  `bandPutts` in `stats-common.ts`, shared with Team stats), each round's `sgLegs` and the strokes gained rows
+  of `comparisons` (`sg: true`; a player's `team` is always null). `lib/sg.ts` holds the baseline label, the bar
+  scale and the tint. No new table or column.

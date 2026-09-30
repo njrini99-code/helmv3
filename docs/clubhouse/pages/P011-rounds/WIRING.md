@@ -180,3 +180,6 @@ approved (Q-72f).
 - A Clubhouse player can review and discard rounds but cannot start or continue one (`/rounds/new` and
   `/rounds/continue/[id]` are not rebuilt: the shell draws its not-rebuilt notice), so turning the flag on for
   players before the engine move would take away their way to start a round (an owner decision, not made here).
+- Strokes gained on the review (2026-09-30): `loadRoundReview` also selects the round's five
+  `strokes_gained_*` columns and reads `golf_teams.gender` for the viewer's team (a player viewer carries an
+  optional `teamId` from the route); `toReview` shapes `strokesGained` and `tour`. No new table or column.

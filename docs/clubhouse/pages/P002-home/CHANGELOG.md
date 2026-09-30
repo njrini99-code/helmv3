@@ -2,6 +2,17 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The player's strokes gained says vs Tour, not vs D1
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+- **Issue.** The player Home said "Per round vs D1" and "strokes gained vs D1". Stored strokes gained is measured against the Tour; there is no D1 value (Q-88). The figure is the season's, and the legs' header said "Last 10 rounds".
+- **Fix.** "Season, per round vs Tour" and "Last 10 rounds · strokes gained this season vs Tour · D1 marks the stats" (the women's Tour baseline for a women's team; `ChPlayerHome.tour`).
+- **Checked.** strokes-gained.test (2 cases), mutations caught for the label.
+
 ## 2026-09-30 — Latest round opens its review (Clickables); Latest rounds links to Team stats (Clickables gap 6)
 
 ```text

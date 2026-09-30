@@ -2,6 +2,62 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Strokes gained on the player profile: legs and total on the phone, legs in the Rounds table, comparison rows, change chips, and a banner that counts rounds with shots
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (catalog CH-5308, CH-5309, CH-5310)
+Data impact:    none (reads only; no migration)
+```
+
+### The baseline is the Tour, and every figure says so
+
+- **Issue.** The phone's SG / round figure said "vs D1" and the desktop hero only "Per round"; there is no D1 strokes gained (Q-88).
+- **Fix.** The hero reads "Per round vs Tour", the phone "vs Tour", the leg card and the comparison table "strokes gained vs Tour" (the women's Tour baseline for a women's team), all from `sgBaseline`. The profile loader returns `tour`.
+- **Checked.** strokes-gained.test; mutations caught for both labels.
+
+### Phone: strokes gained by leg and in total, and on every round (CH-5309)
+
+- **Issue.** The phone profile showed only one SG number; the four legs were desktop-only and its rounds list had no strokes gained.
+- **Fix.** A Strokes gained panel after the figures: the four legs and the total, the window's mean, bars on the data's own scale, a note on which legs lose strokes. Each round in the list carries its strokes gained (a dash when it has none). Nothing yet reads "No strokes gained in this window." (CH-5309).
+- **Checked.** strokes-gained.test; mutations caught: the total dropped, the round's SG dropped.
+
+### Desktop Rounds tab: each round's four legs next to its total
+
+- **Issue.** The table had the total only.
+- **Fix.** SG total plus SG off the tee, approach, around green and putting, each signed and green or amber (`ChProfileRound.sgLegs`).
+- **Checked.** strokes-gained.test; mutation caught (legs removed).
+
+### The comparison table has strokes gained (coach: against the team)
+
+- **Issue.** The table had scoring, fairways, greens, putts and scrambling only.
+- **Fix.** SG total and the four legs lead it. For a coach the team column is the pooled mean per round of the active team over the same window (three rounds with shots needed). A player's own table shows their figure against the Tour with no team and no D1 (there is none): the profile's rule is that a player is never compared with teammates (P005 PAGE.md), so the team reference asked for on a player's own view is not built (proposed Q-91).
+- **Checked.** strokes-gained.test; a mutation that lets a player's view pool teammates' rounds is caught.
+
+### Change against the previous 10 (CH-5310)
+
+- **Issue.** Nothing said whether strokes gained was rising or falling.
+- **Fix.** A chip under the hero's SG / round (and the phone figure): green up, amber down, grey flat, with "vs. previous 10". With nothing to compare it says "No earlier rounds", or "Too few earlier rounds with shots" for one or two; Season and Qualifiers claim nothing.
+- **Checked.** strokes-gained.test (loader: a delta, none, too few, season); mutations caught (chip removed, previous window ignored).
+
+### The early-read banner counts rounds with shots (CH-5308)
+
+- **Issue.** The banner keyed on the 18-hole round count, so a player with three rounds but fewer than three with shots saw a silent dash.
+- **Fix.** Fewer than three rounds keeps CH-5305; three or more rounds with fewer than three with shots shows CH-5308: "Strokes gained needs three rounds posted with shots. Jonah has 1 of 5 rounds with shots in this window…", on desktop and the phone.
+- **Checked.** strokes-gained.test; mutations caught on both views.
+
+### Make rate by distance reaches 25+ feet
+
+- **Issue.** The curve stopped at 20 feet because the shot stats have rates past 20 feet but no counts.
+- **Fix.** The curve draws the window's putts in the bands Team stats grades (0 to 3, 3 to 5, 5 to 10, 10 to 15, 15 to 25, 25+), counted exactly from `golf_shots` (`loadPutts`, shared with Team stats) with each band's D1 mark from the same distances. If that read fails, or there are no putts, it falls back to the old five bands.
+- **Checked.** strokes-gained.test (loader bands and the failed read; the curve's label); mutation caught.
+
+### Bars scaled to the data
+
+- **Issue.** The leg route clamped at ±1.4.
+- **Fix.** It scales to the largest leg, rounded up to a whole stroke, at least 1 (`sgScale`).
+- **Checked.** strokes-gained.test (a −2.6 leg is 2.6 of 3 of the half height); mutations caught.
+
 ## 2026-09-30 — Schedule 1:1 in the hero (Clickables gap 4)
 
 ```text

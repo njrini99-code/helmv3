@@ -51,7 +51,10 @@ view), and the charts in `charts.tsx` (`FigureCards`, `FieldTable`, `LegRoute`, 
 
 ### Modified Clubhouse components
 
-None for this page beyond the foundation's v2 changes (motion, haptics, page empty state).
+`charts.tsx` gains `SgBars` (the phone's legs and total), `SgChangeChip` (the change against the previous 10),
+the `FieldTable`'s strokes gained rows and `FigureCards`' note and tone; `StatsPlayerPhone` a Strokes gained
+panel; `GameDetail` takes the window's putt bands. Otherwise the foundation's v2 changes only (motion,
+haptics, page empty state).
 
 ## Actions affected
 
@@ -105,12 +108,23 @@ Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 
 - D1 is shown only where `golf_pga_standards` has the metric (greens in regulation, the approach
   proximity and scrambling bands, the putting make-rate bands and a few scoring rates). The prototype's
-  prediction card, its "vs tour" figures and D1 marks for fairways and putts per round have no source and
+  prediction card, its "vs tour" figures for stats other than strokes gained (which has a Tour baseline) and D1 marks for fairways and putts per round have no source and
   are left out.
 - The scoring chart has no Season best marker and no par meta; both wait for season-best and course-par
   data per window.
 - Strokes gained by leg is the design system's StrokesGainedRoute, and the Rounds count is its tab pill.
 - On the phone, the board's trend phrase ("Down 1.2") is the signed change, labelled "Newer rounds".
+
+### Strokes gained (2026-09-30)
+
+- Stored strokes gained is measured against the Tour and there is no D1 value: every figure says "vs Tour"
+  ("vs the women's Tour baseline" for a women's team; `lib/sg.ts`).
+- The hero's SG / round and the phone's figure carry a change chip against the previous 10 rounds.
+- The phone has a Strokes gained panel (four legs and the total, on a scale the data sets); the Rounds tab
+  has each round's four legs; the comparison table leads with strokes gained (a coach sees the team's pooled
+  mean; a player sees no teammate's numbers).
+- The banner says when rounds exist but too few have shots (CH-5308).
+- The make-rate curve uses the same putt bands as Team stats.
 
 ## Existing backend capabilities used
 

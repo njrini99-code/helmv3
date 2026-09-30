@@ -132,9 +132,22 @@ D-23 (the old address renders this page in place), D-24 (a crash on the server r
 section), D-25 (animation features load lazily), D-26 (four copy choices kept), D-66 (Stats is a coach
 tab), D-70 (haptics), D-71 (page empty state), Q-68 (phone gaps, built on the recommendation).
 
+## Strokes gained (2026-09-30)
+
+- The figure row leads with **Team SG per round**: the window's mean per round, signed, with a change chip
+  against the previous 10 and "vs Tour" under it (a women's team: "vs the women's Tour baseline"). Six
+  cards in six columns; the skeleton draws six.
+- Every strokes gained headline is the window's mean, not the latest week: the four leg cards, the team
+  and player figures beside the trend. The trend's dashed line and the chart are weekly; the caption says
+  the names show the window average.
+- Bars (the phone's legs and total, the grid's tint) are scaled to the data: the largest value shown, rounded
+  up to a whole stroke, at least 1, symmetric about zero. Gains green, losses amber.
+- The notes read a change as a change ("up about 1.0 a round since Aug 30").
+- Stored strokes gained has no D1 value (`golf_pga_standards` has none); it is always labelled against the Tour.
+
 ## Explicit non-goals
 
-The team stat sheet (the owner removed it), the prediction card, "vs. tour" figures, a Season best
+The team stat sheet (the owner removed it), the prediction card, "vs. tour" figures for anything but strokes gained (which is stored against the Tour), a Season best
 marker on the Scoring lens, handicap on the phone rows, Season bests and Export on the phone.
 
 ## Fresh-build confirmation

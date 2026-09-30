@@ -111,6 +111,16 @@ Notes:             client code 17.7 to 11.8 KB minified after the server/island 
                    first-load JS with domMax and LCP after the v2 reveal are open (D-27, CH-1954)
 ```
 
+## Strokes gained pass (2026-09-30)
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npx vitest run src/clubhouse/__tests__/strokes-gained.test.tsx src/clubhouse/__tests__/stats-team.test.tsx` | 57 + 43 cases pass; 25 mutations of the new behaviour, 25 caught |
+| Clubhouse | `npm run -s clubhouse:check` | clean (registry synced: 6 new Bridge IDs across P004, P005, P011) |
+| Native-feel | `CH_BASE=http://localhost:3107 node scripts/clubhouse/native.mjs stats-team` | clean at 390 and 430px |
+| Axe | `node scripts/clubhouse/a11y.mjs stats-team` | clean, 12 pages (1280 and 390px) |
+| Look | the preview at 1280 and 390px, read by eye | six cards in a row, the phone panel's bars and total row draw as built |
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390 and 430.

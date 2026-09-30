@@ -3,6 +3,18 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions). Every entry is
 dated 2026-09-30: the tracker and git show no earlier Rounds work.
 
+## 2026-09-30 — Strokes gained on a round's review (CH-11313)
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (catalog CH-11313)
+Data impact:    none (reads columns that already exist; no migration)
+```
+
+- **Issue.** The review showed the score, the card and the shots but not the round's strokes gained, though `golf_rounds` stores the total and the four legs.
+- **Fix.** The loader selects `strokes_gained_total`, `_tee`, `_approach`, `_around_green` and `_putting`, and the player's team gender (a `teamId` on the player viewer, the coach's own team) for the baseline. A Strokes gained card sits under the figures, on desktop and the phone: the total, then a bar per leg either side of zero on a scale the round sets (its largest value rounded up, at least 1), "vs Tour" (the women's Tour baseline for a women's team), "9 holes" first for a nine-hole round. A round with none reads one line, "No strokes gained for this round. It is worked out from shots tracked hole by hole." (CH-11313); a leg with no value is a dash.
+- **Checked.** strokes-gained.test (the loader only shapes strokes gained when the select names the columns, the card, the no-strokes-gained line, the women's and nine-hole labels); mutations caught: a dropped column, the card always hidden.
+
 ## 2026-09-30 — Phone tap targets
 
 ```text

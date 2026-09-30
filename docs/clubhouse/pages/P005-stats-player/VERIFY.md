@@ -114,6 +114,16 @@ Animation:         v2 tokens only
 Notes:             first-load JS and LCP after the v2 reveal are open (D-27, CH-1954)
 ```
 
+## Strokes gained pass (2026-09-30)
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npx vitest run src/clubhouse/__tests__/strokes-gained.test.tsx src/clubhouse/__tests__/stats-player.test.tsx` | 57 + 60 cases pass; 25 mutations of the new behaviour, 25 caught |
+| Clubhouse | `npm run -s clubhouse:check` | clean |
+| Native-feel | `CH_BASE=http://localhost:3107 node scripts/clubhouse/native.mjs stats-player` | no new findings; the five Game detail chips at 36px were already reported |
+| Axe | `node scripts/clubhouse/a11y.mjs stats-player` | clean (1280 and 390px) |
+| Look | the preview at 1280 and 390px, read by eye | hero chip, phone panel and round rows draw as built |
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390 and 430.
