@@ -23,6 +23,7 @@ import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { RosterRequests } from './RosterRequests';
+import { useJoinRequests } from './useJoinRequests';
 import { RosterPeek } from './RosterPeek';
 import { formatHcp } from './format';
 import '../../styles/roster.css';
@@ -46,6 +47,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
+  const jr = useJoinRequests(data.teamName, data.requests);
 
   useEffect(() => {
     try {
@@ -173,7 +175,7 @@ export function Roster({ data }: { data: ChRoster }) {
       </header>
 
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests teamName={data.teamName} initial={data.requests} error={data.requestsError} onRetry={() => router.refresh()} />
+        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (

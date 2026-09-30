@@ -209,9 +209,9 @@ Proposed phone-only numbers are added to the catalog at build, together with
 their code and tests. `clubhouse:check` fails a catalogued number that isn't
 used yet:
 
-| Proposed | Kind | What |
+| Number | Kind | What |
 | --- | --- | --- |
-| CH-3007 | toast | Approve all: some approvals failed. It names who, and those requests stay listed |
+| CH-3007 | toast | Approve all: some approvals failed. It names who, and those requests stay listed. **Catalogued**: `useJoinRequests`, roster.test |
 | CH-3403 | loading | Approve all in flight: the footer reads "Approving" and can't be pressed again |
 | CH-3603 | motion | Profile push and pop |
 | CH-3604 | motion | Sheet rise and drag |

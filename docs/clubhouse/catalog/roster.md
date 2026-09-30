@@ -18,6 +18,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3004 | The coach's note doesn't save (on leaving the field) | "Couldn't save your note about Theo" + "Your text is still in the field. Try again in a moment." Done: "Note saved for Theo" | `useAction('roster.coachNote')` | roster.test › CH-3004 |
 | CH-3005 | The browser blocks the CSV download | "Couldn't export the roster" + "Your browser blocked the download. Try again, or use a desktop browser." Done: "Roster exported · 7 players" | `exportCsv` | roster.test › CH-3005 |
 | CH-3006 | Copying the join code or link fails | "Couldn't copy the join code" + "Select it and copy it by hand." Done: "Join code copied" | `InviteModal` | roster.test › CH-3006 |
+| CH-3007 | Approve all (phone requests sheet, D-55) leaves some requests unapproved | "Couldn't approve Owen Park and Sam Reyes" + "1 of 3 added to Varsity. Those requests may have been withdrawn. Try again, or refresh to see the latest." Those requests stay listed, and Retry re-tries only them. Done: "3 players added to Varsity" | `useJoinRequests` → `useAction('roster.approveAll')`, one request at a time | roster.test › CH-3007 |
 
 ## 31xx Validation
 

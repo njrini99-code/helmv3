@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -29,6 +29,7 @@ import { loadRoster, type ChRoster } from '../data/roster';
 import { Roster } from '../screens/roster/Roster';
 import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
 import { NOTE_MAX } from '../screens/roster/RosterPeek';
+import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
 import './dialog-polyfill';
@@ -96,6 +97,41 @@ describe('Roster · saves that fail', () => {
     await user.click(within(screen.getByRole('region', { name: 'Join requests' })).getAllByRole('button', { name: 'Approve' })[0]!);
     await expectCode('CH-3002', new RegExp(`Couldn't approve ${req.name}`));
     expect(screen.getByText(req.name)).toBeTruthy();
+  });
+
+  it('CH-3007 approve all: every failure is named, the count added is said, and Retry re-tries only those', async () => {
+    const user = userEvent.setup();
+    const three = [...PREVIEW_ROSTER.requests, { id: 'r3', name: 'Sam Reyes', meta: 'Freshman', handicap: null }];
+    actions.accept.mockImplementation((id: string) => Promise.resolve(id === 'r1' ? { success: true } : { success: false, error: 'nope' }));
+    const { result } = renderHook(() => useJoinRequests('Varsity', three), {
+      wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
+    });
+    await act(() => result.current.approveAll());
+    await expectCode('CH-3007', /Couldn't approve Owen Park and Sam Reyes/);
+    expect(code('CH-3007')!.textContent).toMatch(/1 of 3 added to Varsity/);
+    expect(result.current.reqs.map((r) => r.id)).toEqual(['r2', 'r3']);
+    expect(actions.accept.mock.calls.map((c) => c[0])).toEqual(['r1', 'r2', 'r3']);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+
+    actions.accept.mockClear();
+    actions.accept.mockResolvedValue({ success: true });
+    await user.click(within(code('CH-3007') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(screen.getByText('2 players added to Varsity')).toBeTruthy());
+    expect(actions.accept.mock.calls.map((c) => c[0])).toEqual(['r2', 'r3']);
+    expect(result.current.reqs).toEqual([]);
+    expect(hapticSpy).toHaveBeenCalledWith('commit');
+  });
+
+  it('approve all that lands says how many were added, one commit tap', async () => {
+    actions.accept.mockResolvedValue({ success: true });
+    const { result } = renderHook(() => useJoinRequests('Varsity', PREVIEW_ROSTER.requests), {
+      wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
+    });
+    await act(() => result.current.approveAll());
+    expect(screen.getByText('2 players added to Varsity')).toBeTruthy();
+    expect(result.current.reqs).toEqual([]);
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'commit')).toHaveLength(1);
+    expect(nameList(['A', 'B', 'C'])).toBe('A, B and C');
   });
 
   it('CH-3003 declining fails: the request comes back', async () => {
