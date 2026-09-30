@@ -70,19 +70,20 @@ build therefore adds phone components next to the desktop ones in
 | `RosterPhone`: the list screen | new | header, toolbar, face cards and table |
 | `RosterPhoneRow`: one player row | new | `ch-rs-face` and `ch-rs-row` |
 | `RosterProfile`: the pushed player screen | new, reusing `CoachNote` (D-56) | `RosterPeek` side panel |
-| `RosterRequestsSheet`: the join requests sheet | new view; the approve and decline logic moves out of `RosterRequests` into a shared hook so both views use it | the inline `RosterRequests` card |
+| `RequestsBanner` and `RequestsSheet` (in `RosterPhone.tsx`): the banner and the join requests sheet on `ui/Modal` | new views; the approve and decline logic lives in `useJoinRequests`, shared with the desktop card | the inline `RosterRequests` card |
+| `PlayerActions` (in `RosterPhone.tsx`): the ⋯ action sheet on `ui/Modal` | new | the desktop row `Menu` |
 | `InviteModal` | reused as is (`Modal` is already a bottom sheet under 820px) | same |
 | Remove confirm | reused `Modal` (CH-3501, CH-3402) | same |
 | `FormLine`, `Avatar`, `Segmented`, `Button`, `InlineNotice`, `EmptyState`, `SectionBoundary`, `useAction`, `haptic` | reused | same |
 
-- **The profile is a pushed screen whose state lives in the URL**
-  (`/golf/dashboard/roster?player=<id>`), as Calendar does (D-8). The iOS edge
-  swipe and the Back button then return to the list. If it were only
-  component state, as in the design's prototype, an edge swipe would leave
-  Roster altogether.
-- **The requests list is lifted into the page.** The banner's count and names
-  must follow optimistic approvals. Today `RosterRequests` keeps that list in
-  its own local state.
+- **The profile is a pushed screen that is a history entry.** The
+  foundation's `PhoneScreen` and `usePhoneStackHistory` (CH-1906) add a
+  same-URL history entry, so the iOS edge swipe and the Back button return to
+  the list. If it were only component state, as in the design's prototype, an
+  edge swipe would leave Roster altogether. A `?player=<id>` link opens the
+  profile once.
+- **The requests list is lifted into the page** (`useJoinRequests`), so the
+  banner's count and names follow optimistic approvals.
 - **Loading.** `loading.tsx` renders on the server, where `useChPhone()` is
   false. The phone skeleton (list rows) is therefore switched in with CSS
   under `@media (max-width: 820px)` inside `RosterSkeleton`, not through the
@@ -115,10 +116,17 @@ Built on the phone foundation (D-40 to D-43, merged from
 - **Other pages:** the Calendar 1:1 seed (D-52) and the Stats `tab` parameter
   (D-53).
 
-Not yet:
-- pull to refresh, which waits for a design (D-43)
-- drag to dismiss on sheets, which `ui/Modal` doesn't have
-- the browser pass at 390 × 844 and the device pass
+Verified: the browser pass at 390 × 844 against the design boards, and
+`clubhouse:a11y roster` clean (15 pages; d9b1c81fc).
+
+Open, each with its owner:
+
+| Open | Owner | Where it stands |
+| --- | --- | --- |
+| The 430px check and toasts never covering content | Merge pass (D-27) | Not yet checked; the shell pads toasts above the tab bar |
+| Sheets drag to dismiss | Foundation (Messages phone work) | Built in b4b1b6a6b (CH-1611) on `agent/clubhouse-messages-mobile`; it reaches Roster's sheets when that is merged here |
+| The iPhone pass through `npm run ios:dev` (safe areas, haptics, edge swipe) | Owner | Not run |
+| Pull to refresh | Design (D-43) | Waits for a drawing; not built |
 
 ## Screen 1: Roster list
 
@@ -244,10 +252,10 @@ used yet:
 | Number | Kind | What |
 | --- | --- | --- |
 | CH-3007 | toast | Approve all: some approvals failed. It names who, and those requests stay listed. **Catalogued**: `useJoinRequests`, roster.test |
-| CH-3403 | loading | Approve all in flight: the footer reads "Approving" and can't be pressed again |
-| CH-3603 | motion | Profile push and pop |
-| CH-3604 | motion | Sheet rise and drag |
-| CH-3806 | a11y | A row reads as one button: name, class, note, average and handicap |
+| CH-3403 | loading | Approve all in flight: the footer reads "Approving" and can't be pressed again. **Catalogued**: `RequestsSheet`, roster.test |
+| CH-3603 | motion | Profile push and pop. **Not needed**: the shell's CH-1610 (`PhoneScreen`) covers it |
+| CH-3604 | motion | Sheet rise and drag. **Not needed**: the shell's sheet numbers cover it (drag is CH-1611, b4b1b6a6b) |
+| CH-3806 | a11y | A row reads as one button: name, class, note, average and handicap. **Catalogued**: `RosterPhoneRow`, roster.test |
 
 ## Accessibility
 
@@ -284,9 +292,10 @@ becomes `.ch-well-soft`, `--shadow-sm` becomes `--ch-shadow-sm`, and so on.
 
 ## Needs from the foundation
 
-The foundation is decided (owner, 2026-09-29; D-40 onward on the Messages
-phone branch). Roster's phone build starts once it is built. From it, Roster
-needs:
+The foundation is decided (D-40 to D-43) and merged into this branch. Status
+of each need, as of 2026-09-29: 1 to 3 and 5 to 8 are in use. 4 is in use on
+`ui/Modal`, and its drag to dismiss arrives with b4b1b6a6b. From the
+foundation, Roster needs:
 
 1. **The coach tab bar** (Home, Helm, Rounds, Stats, More, ivory glass),
    with Roster under More, and the More tab active on Roster and its profile.

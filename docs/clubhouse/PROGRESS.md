@@ -60,6 +60,15 @@ Starting the next session:
    (owner, 2026-09-29). Work that needs a schema change is written as a
    migration and left unapplied. Open for the owner: marking #2102 ready for
    review, and the live pass on a Vercel preview (Q-4).
+5. Roster phone (`agent/clubhouse-roster-mobile`, d9b1c81fc and this pass):
+   phone-spec is done, and phone is doing. It is built on the foundation, and
+   D-50 to D-59 are in code. It passed the browser check at 390 and
+   `clubhouse:a11y roster`.
+   Open for the phone gate:
+   - 430px and toasts: the merge pass (D-27)
+   - drag to dismiss: foundation, b4b1b6a6b, which arrives on merge
+   - the iPhone pass: owner
+   - pull to refresh: design
 
 ## Screens
 
@@ -232,6 +241,7 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - 2026-09-29 · Roster · phone build, the parts that don't depend on the shell (the `phone` gate stays `todo` until the foundation lands and a device pass is done). Built: RosterPhone, RosterPhoneRow and RosterProfile (`useChPhone`, `?player=` in the URL), the phone skeleton, the Calendar 1:1 seed (D-52), the Stats `tab` parameter (D-53), and the Approve all loop (D-55, CH-3007). CH-3806 is catalogued. typecheck 0; eslint 0 on the changed files; `npx vitest run src/clubhouse` 295/295; clubhouse:check clean. `clubhouse:a11y` on :3106 is clean for roster (14 pages at 1280 and 390, including the phone profile and its menu), calendar (20; the known 390px week target-size remains) and stats-player (14). Preview at 390 × 844 compared with the design captures: list, inactive, SG sort, profile, About, early read, inactive profile, loading and failed. No console errors.
 - 2026-09-29 · Roster · phone build on the foundation, after merging `agent/clubhouse-messages-mobile`. The interim pieces are gone. What's built: PhoneTop (‹ More, invite action); the pushed profile as a PhoneScreen and PhoneBar with usePhoneStackHistory; the join requests banner and a Modal sheet (Approve all, CH-3403 catalogued); and the ⋯ action sheet on Modal (View stats, Remove from team behind CH-3501). Join requests gain structured class, year and age fields. Checks: typecheck:fast 0; eslint 0; test:file roster 37/37; clubhouse:check clean. Browser and a11y are not run, waiting for a server slot.
 - 2026-09-29 · Roster · phone, browser pass on :3106 (one server slot). The preview at 390 × 844 was captured and compared with the design boards: list, inactive, SG sort, requests sheet, profile, About, ⋯ sheet, early read, inactive profile, invite and loading. Back pops the pushed profile, and there are no console errors. `clubhouse:a11y roster` exit 0 (15 pages, 1280 and 390). The phone gate is `doing`: 430px, drag to dismiss (not in `ui/Modal`), toasts over content, and the device pass are still open.
+- 2026-09-29 · Roster · final tracker pass (docs only; no servers, builds or scans). Gate cells match the evidence: phone-spec done, phone doing. The desktop gates are unchanged. The phone boxes in `screens/roster.md` and the open list in `phone/roster.md` name each owner: 430px and toasts, merge pass; drag to dismiss, foundation (b4b1b6a6b, arrives on merge); iPhone pass, owner; pull to refresh, design. The catalog (CH-3007, CH-3403, CH-3806 used and tested) and `SCREENS.md` (Roster ticked for coaches) match. clubhouse:check clean.
 - 2026-09-29 · Stats (team) · old link: `/stats/team` opens the rebuilt Team stats for coaches. Compared the design project's `Stats.html`, `stats.jsx`, `stats.css`, `cal.css`, `depth.css`, `sidebar.css` and the colour and elevation tokens with `design/handoff/`: identical apart from the Qualifiers nav item (not built, owner). 
 - 2026-09-29 · Foundation, Messages · phone-spec: the owner's `Messages Mobile.html` was served over http and every board and state was rendered at 390 × 844 @2x (`messages-00..22`, plus `messages-90`, derived without the Safari bar). This was redone after ccbd33465 changed the avatars. The preview was captured at 390px for coach and player (`messages-preview-*`) on a dev server on :3104, stopped afterwards. No page errors. Wrote `phone/foundation.md` and `phone/messages.md` as approved specs. The gate stays `doing` until Q-40 to Q-64 are answered.
 - 2026-09-29 · Foundation, Messages · phone-spec done: the owner answered Q-40 to Q-64 (D-40 to D-49). The specs cite the decisions, each checklist's third box is ticked, and the doctrine now allows red for destructive actions (D-42). `clubhouse:check` exit 0.

@@ -57,11 +57,11 @@ Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/hand
 
 ## phone
 Evidence so far (2026-09-29): built on the foundation, and the preview captured at 390 × 844 (roster-34 to 44 in the session scratchpad) against the design boards roster-01 to 14. `clubhouse:a11y roster` is clean on 15 pages, at 390px and 1280px, including the requests sheet, the profile and its ⋯ sheet.
-- [ ] Built at 390px and 430px, respecting the safe areas (390 checked in the preview; 430 and the safe areas on a device still to do)
+- [ ] Built at 390px and 430px, respecting the safe areas. 390 is checked in the preview (d9b1c81fc). Open: 430px, owned by the merge pass (D-27); safe areas on a device, owned by the owner's iPhone pass.
 - [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent. Rows are 64px; buttons, the sort hit area and the "All N" link are 44px. The desktop row menu is the profile's ⋯ sheet. The axe target-size check is clean.
-- [ ] Sheets are used instead of popovers, and they drag to dismiss (sheets: yes, on `ui/Modal`; drag to dismiss: `ui/Modal` doesn't have it yet)
-- [ ] The bottom tab bar and toasts don't overlap content
-- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
+- [ ] Sheets are used instead of popovers, and they drag to dismiss. Sheets are done: the join requests, ⋯ and Invite sheets are `ui/Modal` bottom sheets. Open: drag to dismiss, owned by the foundation, built in b4b1b6a6b (CH-1611) on `agent/clubhouse-messages-mobile`, and it arrives when that is merged here.
+- [ ] The bottom tab bar and toasts don't overlap content. The tab bar is checked at 390 (the list ends above it). Open: toasts over content, owned by the merge pass (D-27).
+- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device. Open: owned by the owner (`npm run ios:dev`). Pull to refresh isn't in this checklist; it waits for a design (D-43).
 
 ## motion
 - [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
