@@ -11,6 +11,7 @@ import {
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { resolvePlayerTour } from '@/lib/golf/resolve-player-tour';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { resolveStatsDateRange, utcYearsAgo } from '@/lib/golf/stats-date-range';
 import {
@@ -921,69 +922,49 @@ async function queryDetailedStatsWithClient(
   const requestedRoundIds = explicitRoundIds(roundId);
   if (requestedRoundIds?.length === 0) return calculateStatsFromShots([], [], []);
 
-  let query = supabase
-    .from('golf_rounds')
-    .select(`
-      id,
-      round_date,
-      course_name,
-      round_type,
-      total_score,
-      score_to_par,
-      holes_played,
-      total_fairways_hit,
-      total_fairways,
-      total_gir,
-      total_gir_possible,
-      total_putts,
-      front_nine,
-      back_nine
-    `)
-    .eq('player_id', playerId)
-    .eq('is_test', false)
-    .eq('status', 'completed');
-
-  if (conditions.startDate) query = query.gte('round_date', conditions.startDate);
-  if (conditions.endDate) query = query.lte('round_date', conditions.endDate);
-  query = applyRoundTypeFilter(query, conditions.roundType);
-  if (conditions.courseName) query = query.eq('course_name', conditions.courseName);
-  if (requestedRoundIds) query = query.in('id', requestedRoundIds);
-  query = query.order('round_date', { ascending: false });
-
-  // Push the preset limit into SQL — previously we fetched every completed
-  // round and sliced in JS, which meant the shots/holes IN(round_ids) query
-  // below could fan out to hundreds of UUIDs and trip statement_timeout.
-  // For non-preset queries we still cap at DETAILED_STATS_MAX_ROUNDS so the
-  // fan-out stays bounded.
   const presetLimit = presetLimitCount(filter);
-  const sqlLimit = presetLimit ?? DETAILED_STATS_MAX_ROUNDS;
-  query = query.limit(sqlLimit);
 
-  // For non-preset queries, also count the unfiltered total so we can tell the
-  // UI when the cap silently truncated the window. Counting in parallel keeps
-  // the extra hop off the critical path. We only do this when no preset is
-  // active — preset caps are explicit user requests, not silent truncation.
-  let totalCountForFilter: number | null = null;
-  if (presetLimit === null && !requestedRoundIds) {
-    let countQuery = supabase
+  // Read EVERY round the filters match, then apply the countable-round rule, and
+  // only THEN cut to the preset ("last 5/10/20") or the DETAILED_STATS_MAX_ROUNDS
+  // ceiling. A SQL `.limit()` ahead of the countable filter made "last 5" return
+  // four rounds whenever a hole-less round sat among the newest five, and let
+  // uncountable rounds eat into the 100. Paged, because PostgREST caps a single
+  // response at 1000 rows; the (round_date, id) order keeps the page boundaries
+  // stable. A round row is ~14 small columns, so reading a player's whole history
+  // is cheap next to the shot read it gates.
+  const { data: fetchedRounds, error: roundsError } = await fetchAllRowsResult((from, to) => {
+    let query = supabase
       .from('golf_rounds')
-      .select('id', { count: 'exact', head: true })
+      .select(`
+        id,
+        round_date,
+        course_name,
+        round_type,
+        total_score,
+        score_to_par,
+        holes_played,
+        total_fairways_hit,
+        total_fairways,
+        total_gir,
+        total_gir_possible,
+        total_putts,
+        front_nine,
+        back_nine
+      `)
       .eq('player_id', playerId)
       .eq('is_test', false)
       .eq('status', 'completed');
 
-    if (conditions.startDate) countQuery = countQuery.gte('round_date', conditions.startDate);
-    if (conditions.endDate) countQuery = countQuery.lte('round_date', conditions.endDate);
-    countQuery = applyRoundTypeFilter(countQuery, conditions.roundType);
-    if (conditions.courseName) countQuery = countQuery.eq('course_name', conditions.courseName);
-
-    const { count: matchedCount, error: countError } = await countQuery;
-    if (!countError) {
-      totalCountForFilter = matchedCount ?? null;
-    }
-  }
-
-  const { data: fetchedRounds, error: roundsError } = await query;
+    if (conditions.startDate) query = query.gte('round_date', conditions.startDate);
+    if (conditions.endDate) query = query.lte('round_date', conditions.endDate);
+    query = applyRoundTypeFilter(query, conditions.roundType);
+    if (conditions.courseName) query = query.eq('course_name', conditions.courseName);
+    if (requestedRoundIds) query = query.in('id', requestedRoundIds);
+    return query
+      .order('round_date', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to);
+  }, undefined, { table: 'golf_rounds', action: 'queryDetailedStats.rounds', feature: 'stats_analytics', sport: 'golf' });
   if (roundsError) {
     await logServerError(
       `[Stats] Rounds query error: ${describeError(roundsError)}`,
@@ -994,12 +975,13 @@ async function queryDetailedStatsWithClient(
 
   // Countable rounds only (src/lib/golf/round-countable.ts). An explicit
   // round pick is the viewer's own choice and is honoured as-is.
-  const fetchedRoundRows = applyPresetLimit(
-    requestedRoundIds
-      ? fetchedRounds || []
-      : (fetchedRounds || []).filter((r) => isCountableRound(withCanonicalRoundTotal(r))),
-    filter,
-  );
+  const roundsInScope = requestedRoundIds
+    ? fetchedRounds || []
+    : (fetchedRounds || []).filter((r) => isCountableRound(withCanonicalRoundTotal(r)));
+  // The cap comes AFTER the filter: the preset count, else the 100-round ceiling
+  // that keeps the shots/holes IN(round_ids) read from fanning out past the
+  // statement budget (incident 3).
+  const fetchedRoundRows = roundsInScope.slice(0, presetLimit ?? DETAILED_STATS_MAX_ROUNDS);
   // The database query above already scopes IDs, but retain this in-process
   // allow-list. It protects the downstream holes/shots reads if a mock,
   // proxy, or future query refactor returns more rows than requested.
@@ -1008,13 +990,12 @@ async function queryDetailedStatsWithClient(
     : fetchedRoundRows;
   if (roundsData.length === 0) return calculateStatsFromShots([], [], []);
 
-  // Truncation flag: only meaningful for non-preset queries. We compare the
-  // unfiltered match count against the hard cap. If we couldn't get an exact
-  // count (rare — query error), fall back to the cap-equality heuristic.
+  // Truncation flag: only meaningful for non-preset, non-explicit queries (a
+  // preset cap or an explicit pick is the viewer's own request, not a silent
+  // cut). It compares the COUNTABLE total against the hard cap — uncountable
+  // rounds were never going to be in the window, so they cannot truncate it.
   const truncated = !requestedRoundIds && presetLimit === null
-    ? (totalCountForFilter !== null
-        ? totalCountForFilter > DETAILED_STATS_MAX_ROUNDS
-        : roundsData.length >= DETAILED_STATS_MAX_ROUNDS)
+    ? roundsInScope.length > DETAILED_STATS_MAX_ROUNDS
     : false;
 
   const roundIds = roundsData.map(r => r.id);
@@ -1023,7 +1004,7 @@ async function queryDetailedStatsWithClient(
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
       fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
-        .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save')
+        .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save, penalty_strokes')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
         .range(from, to), undefined, { table: 'golf_holes', action: 'queryDetailedStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
@@ -1086,6 +1067,8 @@ async function queryDetailedStatsWithClient(
       fairway_hit: h.fairway_hit ?? null,
       gir: h.gir ?? null,
       sand_save: h.sand_save ?? null,
+      // The one penalty count (null = 0, like the DB cache's COALESCE).
+      penalty_strokes: h.penalty_strokes ?? null,
     }));
 
     const shots: RawShot[] = (shotsData || []).map(s => {
@@ -2530,10 +2513,13 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
       golf_rounds!inner (
         player_id,
         status,
-        round_date
+        round_date,
+        is_test
       )
     `)
     .eq('golf_rounds.player_id', playerId)
+    // Test rounds (QA/demo data, OD-03) never feed a player's worst/best holes.
+    .eq('golf_rounds.is_test', false)
     .eq('golf_rounds.status', 'completed')
     .not('score', 'is', null)
     .order('round_id')
@@ -2711,7 +2697,9 @@ async function getPlayerStrengthsWeaknessesImpl(
     return null;
   }
 
-  return generateStatisticalStrengthsWeaknesses(stats);
+  // The Tour the player is compared with (owner decision Q-93): LPGA for a
+  // women's team, PGA otherwise. GolfStats carries no gender.
+  return generateStatisticalStrengthsWeaknesses(stats, await resolvePlayerTour(supabase, playerId));
   } catch (error) {
     await logServerError(
       `[Stats] getPlayerStrengthsWeaknesses failed: ${describeError(error)}`,

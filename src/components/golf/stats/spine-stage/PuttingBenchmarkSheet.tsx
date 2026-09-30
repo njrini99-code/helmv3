@@ -4,9 +4,10 @@
  * ============================================================================
  * PuttingBenchmarkSheet — DASH-12 Stats field sheet (putting)
  * ----------------------------------------------------------------------------
- * The player's make % per distance band beside the Tour and Division-1
- * averages, one row per band that has a standard. A bottom sheet on phones,
- * a right-hand panel from `md`.
+ * The player's make % per distance band beside the Tour average (PGA Tour for
+ * men's teams, LPGA Tour for women's teams), one row per band that has a
+ * standard. Tour only (owner decision Q-93): no college or division column.
+ * A bottom sheet on phones, a right-hand panel from `md`.
  *
  * Data: the leak map's putting buckets (`getPlayerLeakMaps`, every countable
  * completed round; career evidence, so it lives on the career stage only)
@@ -26,6 +27,7 @@ import {
   type PuttingBenchmarkRow,
   type PuttingTour,
 } from '@/lib/golf/benchmarks/putting';
+import { tourLabel } from '@/lib/golf/benchmarks/tour';
 import type { LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 
 export interface PuttingBenchmarkSheetProps {
@@ -38,14 +40,15 @@ export interface PuttingBenchmarkSheetProps {
   window: { from: string; to: string } | null;
 }
 
-function verdictText(verdict: PuttingBandVerdict, tourLabel: string): string {
-  switch (verdict) {
+function verdictText(row: PuttingBenchmarkRow, label: string): string {
+  switch (row.verdict) {
     case 'above_tour':
-      return `At or above ${tourLabel}`;
-    case 'between':
-      return 'Above D1';
-    case 'below_div1':
-      return 'Below D1';
+      return `At or above ${label}`;
+    case 'below_tour': {
+      const gap = Math.abs(row.gapToTour ?? 0);
+      // A sub-point gap keeps its decimal so "0 pts below" never reads as level.
+      return `${gap < 1 ? Math.round(gap * 10) / 10 : Math.round(gap)} pts below ${label}`;
+    }
     case 'small_sample':
       return `Under ${PUTTING_BENCHMARK_MIN_SAMPLE} putts`;
     case 'no_putts':
@@ -55,8 +58,7 @@ function verdictText(verdict: PuttingBandVerdict, tourLabel: string): string {
 
 const VERDICT_CLASS: Record<PuttingBandVerdict, string> = {
   above_tour: 'text-accent-ink',
-  between: 'text-text-secondary',
-  below_div1: 'text-fw-warning-text',
+  below_tour: 'text-fw-warning-text',
   small_sample: 'text-text-tertiary',
   no_putts: 'text-text-tertiary',
 };
@@ -81,13 +83,13 @@ export function puttingBenchmarkWindowLabel(
   return from === to ? `${rounds} · ${from}` : `${rounds} · ${from} to ${to}`;
 }
 
-function BenchmarkRow({ row, tourLabel }: { row: PuttingBenchmarkRow; tourLabel: string }) {
+function BenchmarkRow({ row, label }: { row: PuttingBenchmarkRow; label: string }) {
   return (
     <li
-      className="grid min-h-11 grid-cols-[4.5rem_1fr_3.25rem_3.25rem] items-center gap-x-3 border-b border-border-subtle py-2 last:border-b-0"
+      className="grid min-h-11 grid-cols-[4.5rem_1fr_3.25rem] items-center gap-x-3 border-b border-border-subtle py-2 last:border-b-0"
       aria-label={
         `${row.label}: ${row.makePct === null ? 'no putts' : `${Math.round(row.makePct)}% on ${row.sampleN} putts`}, ` +
-        `${tourLabel} ${Math.round(row.tour)}%, D1 ${Math.round(row.div1)}%. ${verdictText(row.verdict, tourLabel)}.`
+        `${label} ${Math.round(row.tour)}%. ${verdictText(row, label)}.`
       }
     >
       <span className="font-fw-sans text-body-sm font-medium text-text-primary">{row.label}</span>
@@ -96,23 +98,31 @@ function BenchmarkRow({ row, tourLabel }: { row: PuttingBenchmarkRow; tourLabel:
           {pct(row.makePct)}
           <span className="ml-1.5 font-fw-sans text-caption text-text-tertiary">n={row.sampleN}</span>
         </span>
-        <span className={cn('font-fw-sans text-caption', VERDICT_CLASS[row.verdict])}>{verdictText(row.verdict, tourLabel)}</span>
+        <span className={cn('font-fw-sans text-caption', VERDICT_CLASS[row.verdict])}>{verdictText(row, label)}</span>
       </span>
       <span className="text-right font-fw-sans text-body-sm tabular-nums text-text-secondary">{pct(row.tour)}</span>
-      <span className="text-right font-fw-sans text-body-sm tabular-nums text-text-secondary">{pct(row.div1)}</span>
     </li>
   );
+}
+
+/** Footnote naming the exact tour the averages come from. */
+function footnote(tour: PuttingTour | null): string {
+  if (tour === 'lpga') return 'LPGA Tour averages: LPGA ShotLink, 2024 season.';
+  if (tour === 'pga') return 'PGA Tour averages: PGA Tour ShotLink, 2024 season.';
+  return 'Tour averages: ShotLink, 2024 season, for your team’s tour.';
 }
 
 export function PuttingBenchmarkSheet({ buckets, roundsIncluded, tour, window }: PuttingBenchmarkSheetProps) {
   const [open, setOpen] = useState(false);
   const rows = useMemo(() => buildPuttingBenchmarkRows(buckets, tour ?? 'pga'), [buckets, tour]);
-  const tourLabel = tour === 'lpga' ? 'LPGA' : 'Tour';
+  const label = tourLabel(tour);
+  // The column header is a short word; the sentence forms above use the full name.
+  const columnLabel = tour === null ? 'Tour' : label;
 
   return (
     <>
       <Button variant="secondary" size="md" className="self-start" onClick={() => setOpen(true)} aria-haspopup="dialog">
-        Compare with {tourLabel} and D1
+        Compare with {label}
       </Button>
       <Sheet
         open={open}
@@ -129,27 +139,21 @@ export function PuttingBenchmarkSheet({ buckets, roundsIncluded, tour, window }:
           </p>
           <div>
             <div
-              className="grid grid-cols-[4.5rem_1fr_3.25rem_3.25rem] gap-x-3 border-b border-border-subtle pb-2 font-fw-sans text-microlabel font-medium uppercase text-text-tertiary"
+              className="grid grid-cols-[4.5rem_1fr_3.25rem] gap-x-3 border-b border-border-subtle pb-2 font-fw-sans text-microlabel font-medium uppercase text-text-tertiary"
               aria-hidden="true"
             >
               <span>Distance</span>
               <span>You</span>
-              <span className="text-right">{tourLabel}</span>
-              <span className="text-right">D1</span>
+              <span className="text-right">{columnLabel}</span>
             </div>
             <ul>
               {rows.map((row) => (
-                <BenchmarkRow key={row.band} row={row} tourLabel={tourLabel} />
+                <BenchmarkRow key={row.band} row={row} label={label} />
               ))}
             </ul>
           </div>
           <p className="text-caption text-text-tertiary">
-            {tour === 'lpga'
-              ? 'LPGA averages: LPGA ShotLink, 2024 season. D1 averages are college reference estimates.'
-              : tour === 'pga'
-                ? 'Tour averages: PGA Tour ShotLink, 2024 season. D1 averages are estimates from Shot Scope scratch-golfer data.'
-                : "Tour averages: 2024 ShotLink, PGA Tour or LPGA by your team. D1 averages are college reference estimates."}{' '}
-            Putts inside 3 ft have no published standard, so they are not compared.
+            {footnote(tour)} Putts inside 3 ft have no published standard, so they are not compared.
           </p>
         </Sheet.Body>
       </Sheet>

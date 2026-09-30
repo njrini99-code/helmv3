@@ -6,6 +6,7 @@ import {
   type ApproachShot,
 } from '@/lib/coachhelm/v3/engine/shot-source';
 import type { AxisTally } from '@/lib/coachhelm/v3/engine/diagnosis';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 
 // Mock ONLY the DB loader; keep bucketApproachDistance (pure) real so the
 // generator's distance-bucketing stays under test.
@@ -233,14 +234,13 @@ describe('ApproachMissGenerator', () => {
     expect(c.content).not.toContain('incurred a penalty');
   });
 
-  it("women's green-hit anchor for 50-125 is ~70%, not the men's 80% — labelled as an estimated target", () => {
+  it("a men's card compares with the approximate PGA Tour band and names no college", () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
-    const c = g.composeContent(makeAgg({ green_hit_pct: 50, attempts: 20, cohort_gender: 'womens' }));
-    expect(c.evidence.comparison_value).toBe(70);
-    expect(c.content).toContain("women's college target ~70%, estimated");
-    // A derived target is not a measured population average (N16).
-    expect(c.evidence.comparison_source).toBe('estimated_target');
-    expect(c.evidence.comparison_label).toBe("Women's college green-hit target (est.)");
+    const c = g.composeContent(makeAgg({ green_hit_pct: 50, attempts: 20 }));
+    expect(c.evidence.comparison_value).toBe(80);
+    expect(c.evidence.comparison_label).toBe('PGA Tour (approx)');
+    expect(c.evidence.comparison_source).toBe('pga_baseline');
+    expect(c.content.toLowerCase()).not.toMatch(/college|estimated target/);
   });
 });
 
@@ -256,6 +256,14 @@ describe('ApproachMissGenerator', () => {
 describe('ApproachMissGenerator.aggregate (green-hit + on-green proximity)', () => {
   beforeEach(() => {
     mockLoadApproachShots.mockReset();
+  });
+
+  it("writes no card for a women's team: the LPGA has no green-hit-by-band value (Q-88)", async () => {
+    vi.mocked(loadPlayerCohort).mockResolvedValueOnce({ gender: 'womens', level: null } as never);
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green'), shot(100, 20, 'feet', 'green'), shot(100, 40, 'yards', 'rough'),
+    ]);
+    expect(await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate()).toBeNull();
   });
 
   it('computes green-hit % over all in-bucket attempts', async () => {

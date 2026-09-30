@@ -127,7 +127,7 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     const holesPerRound = scoredRounds > 0 && n > 0 ? n / scoredRounds : PAR_HOLES_PER_ROUND[this.par];
 
     // Measured impact against the SAME target the counterfactual uses
-    // (plausible cohort level_avg → Tour), sized by the player's own holes of
+    // (the team's Tour, Q-88), sized by the player's own holes of
     // this par per round. Stored on the row even though par_scoring stays
     // floor-exempt/descriptive: backfilledStrokesImpact keeps a floor-exempt
     // row's composed value, so this is what ranks it (audit defect 1: 0 on
@@ -140,7 +140,6 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
           direction: 'lower_better',
           player_value: value,
           pga_value: standing.pga_value,
-          cohort_value: standing.level_avg,
           cohort_gender: cohort.gender,
           player_30d_scoring_avg: null,
           player_attempts_per_round: holesPerRound,

@@ -194,8 +194,8 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const cohort = await loadPlayerCohort(this.playerId);
     const attemptsPerRound = roundsPlayed > 0 ? attempts / roundsPlayed : 0;
 
-    // Measured impact on the SAME target the counterfactual gaps to (plausible
-    // cohort level_avg → gender anchor → Tour) and the SAME attempt rate, so
+    // Measured impact on the SAME target the counterfactual gaps to (the
+    // team's Tour make %, Q-88) and the SAME attempt rate, so
     // the ranked strokes_impact and the card's projection agree. It is written
     // even when the projection is below the 0.3-stroke display floor: the
     // "Closing this gap" line stays suppressed, but the row ranks on strokes
@@ -207,7 +207,6 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       direction: cfgDirection,
       player_value: normalized,
       pga_value: standing?.pga_value ?? PGA_MAKE_PCT_BY_BUCKET[this.bucket],
-      cohort_value: standing?.level_avg ?? null,
       cohort_gender: cohort.gender,
       player_30d_scoring_avg: null,
       player_attempts_per_round: attemptsPerRound,
@@ -232,12 +231,9 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const cfg = METRIC_RENDER_CONFIG[this.metricId];
     const valueDisp = `${Math.round(agg.playerValue)}%`;
     const label = BUCKET_LABEL[agg.bucket];
-    // Per-gender anchor: women's players compare to a women's-college target;
-    // men's falls through to the unchanged PGA Tour constant.
+    // The team's Tour make % (Q-88): LPGA for a women's team, PGA otherwise.
     const pgaValue =
       cohortAnchor(this.metricId, agg.cohort_gender) ?? PGA_MAKE_PCT_BY_BUCKET[agg.bucket];
-    // Women's anchor is a derived target, not a measured college average — the
-    // label and comparison_source say so (repair plan N16).
     const anchorLabel = cohortAnchorLabel(agg.cohort_gender, 'make %');
 
     const signature = `putt_distance:${agg.bucket}`;
@@ -250,9 +246,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const base =
       `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
       `you're making ${valueDisp} of putts from ${label}${gate.disclosure}${gate.report ? rateIntervalText(makeCi) : ''} ` +
-      `(${agg.cohort_gender === 'womens'
-        ? `women's college target ~${pgaValue.toFixed(0)}%, estimated`
-        : `PGA Tour ~${pgaValue.toFixed(0)}%`}).`;
+      `(${agg.cohort_gender === 'womens' ? 'LPGA' : 'PGA'} Tour ~${pgaValue.toFixed(0)}%).`;
 
     let verdict: string;
     let composedPriority: InsightPriority;

@@ -1,5 +1,14 @@
 /**
- * v3 per-gender / per-level cohort anchor tables.
+ * v3 per-gender anchor tables.
+ *
+ * TOUR ONLY (Q-88, "change it all to PGA", 2026-09-30): every anchor is the
+ * team's Tour value from `TOUR_STANDARDS` (golf_pga_standards): the PGA Tour
+ * for a men's or unknown team, the LPGA Tour for a women's team. The women's
+ * college estimates this table used to carry (sand save 38%, GIR 60%, green-hit
+ * discounted ~0.88) are gone: CoachHelm never compares with a college number.
+ * Green-hit by approach band has no Tour value for the LPGA, so a women's team
+ * gets no green-hit anchor (null) and the comparison is dropped, never guessed.
+ * The history below explains why the table exists at all.
  *
  * Replaces the men's-only hardcoded Tour constants previously duplicated in
  * each generator (putt-distance PGA_MAKE_PCT_BY_BUCKET, approach-miss
@@ -33,6 +42,7 @@
  */
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { TOUR_STANDARDS } from '@/lib/golf/benchmarks/tour';
 
 export type CohortGender = 'mens' | 'womens';
 
@@ -56,10 +66,16 @@ interface AnchorValue {
   sourceNote: string;
 }
 
-/** Anchor pair: the men's Tour value and the women's-college target. */
+/** Anchor pair: the PGA Tour value (men's) and the LPGA Tour value (women's). */
 interface GenderAnchor {
   mens: AnchorValue;
   womens: AnchorValue;
+}
+
+/** Green-hit anchors: the men's approximate Tour band value; none for women. */
+interface GreenHitAnchor {
+  mens: AnchorValue;
+  womens: null;
 }
 
 /** Women's putt-make anchors are the measured LPGA rows (LPGA_PUTT_NOTE).
@@ -69,8 +85,7 @@ interface GenderAnchor {
  *  the same sentence on every entry. */
 const LPGA_PUTT_NOTE = 'golf_pga_standards tour=lpga (LPGA ShotLink 2024), verified 2026-09-25.';
 
-const WOMENS_DERIVED_NOTE =
-  'LPGA/NCAA figure discounted to college — not a measured women\'s-college population stat.';
+const TOUR_NOTE = { pga: TOUR_STANDARDS.pga.source, lpga: TOUR_STANDARDS.lpga.source } as const;
 
 /**
  * Per-metric (gender) anchors in the metric's stored unit (percent points,
@@ -110,24 +125,24 @@ const COHORT_ANCHORS: Partial<Record<MetricId, GenderAnchor>> = {
   // see standing/gender-anchor.ts). `cohortAnchor(approach_proximity_*)` is
   // therefore null: no like-for-like proximity anchor exists here.
 
-  // Sand save % — the headline fix. Men's Tour ~50%, women's college ~38%.
+  // Scrambling and GIR: the Tour values in TOUR_STANDARDS (golf_pga_standards,
+  // read 2026-09-30). The men's rough/fairway values were 60/67 here, from an
+  // older 2026-06-06 read; the table says 58/65.
   scrambling_pct_sand: {
-    mens: { value: 50, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 38, provenance: 'derived', sourceNote: 'NCAA women\'s golf stat reports + LPGA ~45% discounted to college.' },
+    mens: { value: TOUR_STANDARDS.pga.scramblingPct.sand, provenance: 'measured', sourceNote: TOUR_NOTE.pga },
+    womens: { value: TOUR_STANDARDS.lpga.scramblingPct.sand, provenance: 'measured', sourceNote: TOUR_NOTE.lpga },
   },
   scrambling_pct_rough: {
-    mens: { value: 60, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 50, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    mens: { value: TOUR_STANDARDS.pga.scramblingPct.rough, provenance: 'measured', sourceNote: TOUR_NOTE.pga },
+    womens: { value: TOUR_STANDARDS.lpga.scramblingPct.rough, provenance: 'measured', sourceNote: TOUR_NOTE.lpga },
   },
   scrambling_pct_fairway: {
-    mens: { value: 67, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 58, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    mens: { value: TOUR_STANDARDS.pga.scramblingPct.fairway, provenance: 'measured', sourceNote: TOUR_NOTE.pga },
+    womens: { value: TOUR_STANDARDS.lpga.scramblingPct.fairway, provenance: 'measured', sourceNote: TOUR_NOTE.lpga },
   },
-
-  // GIR % — men's Tour ~66%, women's college ~60%.
   gir_pct: {
-    mens: { value: 66, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 60, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    mens: { value: TOUR_STANDARDS.pga.girPct, provenance: 'measured', sourceNote: TOUR_NOTE.pga },
+    womens: { value: TOUR_STANDARDS.lpga.girPct, provenance: 'measured', sourceNote: TOUR_NOTE.lpga },
   },
 };
 
@@ -151,25 +166,19 @@ const MENS_APPROX_TOUR_NOTE =
  * printed (provenance 'derived', NOT 'measured' — see MENS_APPROX_TOUR_NOTE);
  * women's are discounted ~0.88 (derived targets, see the header).
  */
-const GREEN_HIT_ANCHORS: Record<ApproachBucket, GenderAnchor> = {
-  '50_125ft': {
-    mens: { value: 80, provenance: 'derived', sourceNote: MENS_APPROX_TOUR_NOTE },
-    womens: { value: 70, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
-  },
-  '125_175ft': {
-    mens: { value: 65, provenance: 'derived', sourceNote: MENS_APPROX_TOUR_NOTE },
-    womens: { value: 56, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
-  },
-  '175_plus_ft': {
-    mens: { value: 50, provenance: 'derived', sourceNote: MENS_APPROX_TOUR_NOTE },
-    womens: { value: 42, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
-  },
+const GREEN_HIT_ANCHORS: Record<ApproachBucket, GreenHitAnchor> = {
+  '50_125ft': { mens: { value: 80, provenance: 'derived', sourceNote: MENS_APPROX_TOUR_NOTE }, womens: null },
+  '125_175ft': { mens: { value: 65, provenance: 'derived', sourceNote: MENS_APPROX_TOUR_NOTE }, womens: null },
+  '175_plus_ft': { mens: { value: 50, provenance: 'derived', sourceNote: MENS_APPROX_TOUR_NOTE }, womens: null },
 };
 
-/** Green-hit % anchor for an approach band, in percent points. */
-export function greenHitAnchor(bucket: ApproachBucket, gender: CohortGender): number {
+/**
+ * Green-hit % anchor for an approach band, in percent points. Null for a
+ * women's team: the LPGA publishes no green-hit-by-band value (Q-88).
+ */
+export function greenHitAnchor(bucket: ApproachBucket, gender: CohortGender): number | null {
   const a = GREEN_HIT_ANCHORS[bucket];
-  return (gender === 'womens' ? a.womens : a.mens).value;
+  return gender === 'womens' ? null : a.mens.value;
 }
 
 /**
@@ -181,38 +190,33 @@ export function greenHitAnchor(bucket: ApproachBucket, gender: CohortGender): nu
 export function greenHitAnchorProvenance(
   bucket: ApproachBucket,
   gender: CohortGender,
-): { provenance: AnchorProvenance; sourceNote: string } {
+): { provenance: AnchorProvenance; sourceNote: string } | null {
   const a = GREEN_HIT_ANCHORS[bucket];
   const entry = gender === 'womens' ? a.womens : a.mens;
-  return { provenance: entry.provenance, sourceNote: entry.sourceNote };
+  return entry ? { provenance: entry.provenance, sourceNote: entry.sourceNote } : null;
 }
 
 /**
- * Evidence `comparison_source` for a cohort anchor. Men's anchors are the
- * verified Tour values (`pga_baseline`); women's are DERIVED targets and must
- * ship as `estimated_target` so the evidence panel labels them "Estimated
- * target" rather than "PGA baseline" (repair plan N16).
+ * Evidence `comparison_source` for an anchor: always the Tour baseline. The
+ * label names which tour (see {@link cohortAnchorLabel}).
  */
-export function cohortAnchorSource(gender: CohortGender): 'pga_baseline' | 'estimated_target' {
-  return gender === 'womens' ? 'estimated_target' : 'pga_baseline';
+export function cohortAnchorSource(_gender: CohortGender): 'pga_baseline' {
+  return 'pga_baseline';
 }
 
 /**
- * Display label for a cohort anchor. `noun` names the stat ("sand save",
- * "green-hit", "make %"). Women's anchors read as an estimated target, never
- * as a measured college average — the table above discounts LPGA/NCAA
- * figures; nobody measured a women's-college population for these.
+ * Display label for an anchor. `noun` names the stat ("sand save",
+ * "green-hit", "make %"): "LPGA Tour sand save avg" for a women's team,
+ * "PGA Tour sand save avg" otherwise.
  */
 export function cohortAnchorLabel(gender: CohortGender, noun: string): string {
-  return gender === 'womens'
-    ? `Women's college ${noun} target (est.)`
-    : `PGA Tour ${noun} avg`;
+  return gender === 'womens' ? `LPGA Tour ${noun} avg` : `PGA Tour ${noun} avg`;
 }
 
 /**
  * Realistic target for a metric given the player's cohort gender, in the
  * metric's stored unit. Returns null when no anchor is defined (the caller
- * keeps using the DB pga_value). Men's anchors are the unchanged Tour values.
+ * keeps using the DB pga_value). Both genders are Tour values (Q-88).
  */
 export function cohortAnchor(
   metricId: MetricId | string,

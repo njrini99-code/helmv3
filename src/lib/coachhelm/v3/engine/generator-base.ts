@@ -618,9 +618,6 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             direction: cfg.direction,
             player_value: agg.playerValue,
             pga_value: standing.pga_value,
-            // College/division cohort target (Tour stays the ceiling fallback).
-            // Null until the cohort RPC populates level_avg → unchanged behavior.
-            cohort_value: standing.level_avg,
             player_30d_scoring_avg: baseline,
             cohort_gender: cohort.gender,
             player_attempts_per_round: attemptsPerRound,
