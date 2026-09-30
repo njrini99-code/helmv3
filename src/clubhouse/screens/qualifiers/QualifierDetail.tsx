@@ -208,7 +208,7 @@ function Facts({ data, topScore }: { data: ChQDetail; topScore: number }) {
         <div key={k}>
           <dt>{k}</dt>
           <dd>{v}</dd>
-          <span>{s || ' '}</span>
+          <dd className="ch-qf-facts__sub">{s || ' '}</dd>
         </div>
       ))}
     </dl>
@@ -396,7 +396,7 @@ function Leaderboard({ data, status }: { data: ChQDetail; status: ChQStatus }) {
                     {r.name}
                     {r.playerId === data.viewerPlayerId && <span className="ch-qf-you">You</span>}
                   </b>
-                  <small>No rounds submitted</small>
+                  <small>No rounds yet</small>
                 </span>
               </span>
               <span role="cell" className="r ch-qf-num">

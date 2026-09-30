@@ -227,6 +227,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 <textarea
                   id="qf-desc"
                   className="ch-textarea"
+                  rows={3}
                   value={v.description}
                   onChange={(e) => set('description', e.target.value)}
                   placeholder="Three 18-hole rounds counting toward a cumulative total…"
@@ -318,6 +319,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 <textarea
                   id="qf-rules"
                   className="ch-textarea"
+                  rows={3}
                   value={v.rules}
                   onChange={(e) => set('rules', e.target.value)}
                   placeholder="Lowest aggregate over all rounds. Ties broken by final-round scorecard playoff."
