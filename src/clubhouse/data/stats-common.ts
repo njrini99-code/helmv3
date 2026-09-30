@@ -67,13 +67,18 @@ export async function loadRoundCache(
   surface: string,
 ): Promise<{ byRound: Map<string, ChRoundCache>; error: boolean }> {
   const byRound = new Map<string, ChRoundCache>();
-  for (const ids of chunkIds(roundIds)) {
-    const { data, error } = await supabase
-      .from('golf_round_stats_cache')
-      .select(
-        'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts',
-      )
-      .in('round_id', ids);
+  // The chunks are independent, so they are read in parallel.
+  const results = await Promise.all(
+    chunkIds(roundIds).map((ids) =>
+      supabase
+        .from('golf_round_stats_cache')
+        .select(
+          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts',
+        )
+        .in('round_id', ids),
+    ),
+  );
+  for (const { data, error } of results) {
     if (error) {
       chLogServer(surface, 'roundCache', error);
       return { byRound, error: true };

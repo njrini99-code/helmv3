@@ -43,7 +43,7 @@ import {
  *
  *   /clubhouse-preview/home   ?state=empty | failed | loading | error
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
- *   /clubhouse-preview/stats  ?state=empty | failed | partial | loading
+ *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route
@@ -94,6 +94,9 @@ export default async function ClubhousePreview({
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />
         ) : state === 'partial' ? (
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, cacheError: true, puttsError: true, figures: PREVIEW_TEAM_STATS.figures.map((f) => (f.label === 'Scoring average' ? f : { ...f, value: null, delta: null })) }} />
+        ) : state === 'crash' ? (
+          // Malformed sections, so every SectionBoundary (CH-4204 to CH-4208) catches and reports once.
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }} />
         ) : (
           <StatsTeam data={PREVIEW_TEAM_STATS} />
         ),

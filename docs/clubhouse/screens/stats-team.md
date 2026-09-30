@@ -35,7 +35,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
 - [x] Route error: the Clubhouse error view
 - [x] Not found and no access: a coach without a team gets the no-team state; players get their own profile instead
-- [ ] Offline or slow network: the window switch says so instead of spinning forever
+- [x] Offline or slow network: the window switch says so instead of spinning forever (CH-4901 offline: nothing is requested and the switch stays put; CH-4902 slow: one notice after 5 seconds. Forced in stats-team.test and in the browser with Playwright offline and a held request)
 - [x] User errors: export failure gives a specific toast, an error haptic and a Sentry event
 - [x] The old address `/stats/team` renders this page in place for coaches, with this page's skeleton, and sends players to their own stats (D-23)
 - [x] N/A: no forms on this screen
@@ -48,7 +48,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
 - [x] No `catch` swallows an error without reporting or handling it on screen
 - [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [ ] Every failure path was forced once locally and seen in the console or Sentry
+- [x] Every failure path was forced once locally and seen in the console or Sentry (stats-team.test forces the rounds, roster, team, round cache, putts and D1 reads, each asserting its `chLogServer`, plus the five section crashes (high) and the export (low), each asserting its `chReport`. The preview's failed, partial, empty, crash and loading states were loaded in the browser with the console read. The crash state found that a section crash on the server render failed the whole page; each section now has a Suspense inside its boundary)
 
 ## phone-spec
 - [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
@@ -65,23 +65,23 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
 - [x] Press scales to 0.985 on every tappable surface
 - [x] No count-ups and no entrance staggers; data is final on mount
-- [ ] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on)
+- [x] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on). With Playwright `reducedMotion: reduce`, every Stats transition (page dim, leg cards, trend lines, grid rows, the switches) drops from 150 and 90ms to 0.01ms (the app-wide rule in globals.css). The switch pill doesn't slide, and toasts go through the hook. This page has no sheets
 - [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
 
 ## accessibility
 Verified by `stats-team.test.tsx` (CH-48xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/stats-team.md`.
-- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
+- [x] Full keyboard path, with visible focus and no traps; Esc closes overlays. Tab reaches, in reading order: the window switch (arrows move it), Export, the measure switch, each player, each leg card (Enter/Space), each grid row and each season best, then leaves the page. Every stop has a ring; grid rows use an inset ring, because an outset one is clipped by the scroller. N/A for Esc: this page has no overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent (aria-label or a view-as-table path)
 - [x] Status changes are announced (aria-live) and errors use role=alert
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [ ] No request waterfall on the server, with independent reads in parallel
-- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
-- [ ] No layout shift after first paint
+- [x] No request waterfall on the server, with independent reads in parallel. `loadTeamStats` reads the team and roster together. The season's rounds need the roster's ids; the D1 read is already in flight beside them. The round cache, the putts and D1 then load together, with each id chunk in parallel, and one cache read now serves the window, the previous window and the bests (it had been read twice)
+- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily (open: `StatsTeam` is one client tree, so the figures, putting and bests ship as client code although they are static; and the shell loads framer's `domAnimation` eagerly, not through a dynamic import)
+- [x] No layout shift after first paint (PerformanceObserver on the preview: CLS 0.0001 at 924px and 0 at 1280px on load. Choosing a lens, leg or player and scrolling adds only input-driven shifts)
 
 ## verified
-- [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
+- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

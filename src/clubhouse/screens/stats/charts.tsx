@@ -189,33 +189,42 @@ export function FieldTable({
 
 /** Putting read off rings around the cup: make rate by distance band, with the D1 rate beside it. */
 export function PuttingRings({ bands }: { bands: Array<{ label: string; made: number; attempts: number; d1: number | null }> }) {
+  // Geometry from the design system's PuttingGreen (charts/geom.jsx `green`): rings by
+  // distance, each shaded by its make rate, the pin at the centre, labels on leaders.
   const shown = bands.slice(0, 5);
-  const cx = 130;
+  const W = 360;
+  const cx = 124;
   const cy = 128;
-  const radii = [26, 52, 76, 98, 118];
-  const fills = ['#5d8f6d', '#7ea68a', '#9dbca6', '#bcd3c1', '#d6e5d9'];
+  const radii = [18, 38, 62, 92, 120];
+  const rate = (b: (typeof shown)[number]) => (b.attempts ? b.made / b.attempts : null);
   return (
-    <svg viewBox="0 0 360 256" className="ch-pg" role="img" aria-label={shown.map((b) => `${b.label}: ${b.attempts ? Math.round((b.made / b.attempts) * 100) : 0}%`).join(', ')}>
-      {[...radii].reverse().map((r, i) => (
-        <circle key={r} cx={cx} cy={cy} r={r} fill={fills[fills.length - 1 - i]} className="ch-pg-ring" />
-      ))}
-      <circle cx={cx} cy={cy} r={6} fill="#1c1b18" />
-      <line x1={cx} x2={cx} y1={cy} y2={cy - 24} stroke="#1c1b18" strokeWidth={1.5} />
-      <path d={`M${cx},${cy - 24} l12,4 l-12,4 z`} className="ch-pg-flag" />
+    <svg viewBox={`0 0 ${W} 256`} className="ch-pg" role="img" aria-label={shown.map((b) => `${b.label}: ${b.attempts ? `${Math.round((b.made / b.attempts) * 100)}%` : 'no putts'}`).join(', ')}>
+      {shown
+        .map((b, i) => ({ b, r: radii[i]!, p: rate(b) }))
+        .reverse()
+        .map(({ b, r, p }) => (
+          <g key={b.label}>
+            <circle cx={cx} cy={cy} r={r} fill="var(--ch-chart-paper)" />
+            {/* A band with no putts stays neutral, never a pale 0%. */}
+            <circle cx={cx} cy={cy} r={r} fill={p == null ? 'var(--ch-ivory-200)' : 'var(--ch-green-500)'} fillOpacity={p == null ? 1 : 0.1 + p * 0.85} className="ch-pg-ring" />
+          </g>
+        ))}
+      <circle cx={cx} cy={cy} r={4} fill="var(--ch-ink-900)" />
+      <line x1={cx} x2={cx} y1={cy} y2={cy - 30} stroke="var(--ch-ink-900)" strokeWidth={1.5} />
+      <path d={`M${cx} ${cy - 30} l14 5 -14 5z`} className="ch-pg-flag" />
       {shown.map((b, i) => {
         const pct = b.attempts ? Math.round((b.made / b.attempts) * 100) : null;
-        const ang = (-50 + i * 14) * (Math.PI / 180);
-        const rr = (radii[i] ?? 0) - 8;
-        const px = cx + Math.cos(ang) * rr;
-        const py = cy + Math.sin(ang) * rr;
-        const ly = 32 + i * 24;
+        const rm = i ? (radii[i]! + radii[i - 1]!) / 2 : radii[0]! / 2 + 3;
+        const px = cx + rm * Math.cos(-0.6);
+        const py = cy + rm * Math.sin(-0.6) - (4 - i) * 4;
+        const ly = 26 + i * 24;
         const below = pct != null && b.d1 != null && b.attempts >= 10 && pct < b.d1;
         return (
           <g key={b.label}>
-            <line x1={px} y1={py} x2={252} y2={ly - 4} className="ch-pg-leader" />
-            <circle cx={px} cy={py} r={2.5} fill="#1c1b18" />
-            <text x={258} y={ly} className="ch-pg-lbl">
-              {b.label}{' '}
+            <circle cx={px} cy={py} r={2.5} fill="var(--ch-ink-900)" />
+            <polyline points={`${px},${py} ${W - 96},${ly} ${W - 90},${ly}`} className="ch-pg-leader" />
+            <text x={W - 86} y={ly} dy=".34em" className="ch-pg-lbl">
+              <tspan className="ch-pg-band">{b.label}</tspan>{' '}
               <tspan className={`ch-pg-pct${below ? ' is-below' : ''}`}>{pct == null ? NO_DATA : `${pct}%`}</tspan>
             </text>
           </g>

@@ -20,12 +20,13 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4201 | Team rounds (or the roster) don't load | "Team rounds didn't load." + "Every figure below would be incomplete, so they're hidden." Try again. No figure is shown half-built, and Export is hidden | `StatsTeam`; logged `clubhouse.stats.rounds` / `members` | stats-team.test › CH-4201 |
 | CH-4202 | Per-round figures (greens, putts, scrambling) don't load | "Some team figures didn't load." + "Scoring is correct; greens, putts and scrambling are missing." Try again; those cards read "—" | `TeamFigures`; logged `clubhouse.stats.roundCache` | stats-team.test › CH-4202 |
 | CH-4203 | Putts don't load | "Team putting didn't load." Try again, in the putting card's place | `TeamPutting`; logged `clubhouse.stats.putts` | stats-team.test › CH-4203 |
-| CH-4204 | The figure cards crash | "Team figures couldn't be shown." + "The rest of the page is fine…" Try again | `SectionBoundary stats.team.figures` | stats-team.test › CH-4204 |
+| CH-4204 | The figure cards crash, in the browser or on the first (server) render | "Team figures couldn't be shown." + "The rest of the page is fine…" Try again | `SectionBoundary stats.team.figures`, with a `Suspense` inside it so a server-render crash is retried in the browser instead of failing the page (the same for CH-4205 to CH-4208; preview `?state=crash`) | stats-team.test › CH-4204 |
 | CH-4205 | The trend chart crashes | "The trend chart couldn't be shown." … | `SectionBoundary stats.team.trend` | stats-team.test › CH-4205 |
 | CH-4206 | The leg trends or the player grid crash | "Strokes gained by leg couldn't be shown." … | `SectionBoundary stats.team.legs` | stats-team.test › CH-4206 |
 | CH-4207 | Team putting crashes | "Team putting couldn't be shown." … | `SectionBoundary stats.team.putting` | stats-team.test › CH-4207 |
 | CH-4208 | Season bests crash | "Season bests couldn't be shown." … | `SectionBoundary stats.team.bests` | stats-team.test › CH-4208 |
 | CH-4209 | D1 benchmarks don't load | Greens and putting bands compare with the sample instead of "D1 averages 67%"; nothing claims a benchmark it doesn't have | `loadTeamStats`; logged `clubhouse.stats.d1Benchmarks` | stats-team.test › CH-4209 |
+| CH-4210 | The team's own details (name, men's or women's) don't load | The header reads "Your team"; greens and putting compare with the sample and the trend's dashed line is "the baseline", so no benchmark of the wrong tour is claimed | `loadTeamStats`; logged `clubhouse.stats.team` | stats-team.test › CH-4210 |
 
 ## 43xx Empty
 
@@ -70,3 +71,10 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4802 | The strokes gained grid is a table with a header for every value | `role="table|row|cell|columnheader"` | stats-team.test › CH-4802 |
 | CH-4803 | Loss amber on a tinted grid cell is darkened to hold 4.5:1 | `--ch-chart-loss-on-tint` | a11y scan |
 | CH-4804 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
+
+## 49xx Network and UX
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-4901 | Changing the window (the switch, or Show the season) while offline | "Couldn't open the season: you're offline" + "Reconnect, then try again. The figures shown are still the last 10 rounds." Nothing is requested, the switch stays where it was, and the OS error pattern plays | `StatsTeam` `go`, `isOffline` | stats-team.test › CH-4901 |
+| CH-4902 | A window change takes longer than 5 seconds | "Still loading the season…" + "This is taking longer than usual. The figures shown are still the last 10 rounds.", once; the page stays dimmed and busy (CH-4402) until the new window lands | `StatsTeam`, `CH_SLOW_SAVE_AFTER` | stats-team.test › CH-4902 |

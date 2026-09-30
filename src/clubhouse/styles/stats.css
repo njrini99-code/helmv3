@@ -31,6 +31,7 @@
 }
 .ch-st-head h1 {
   font: 600 38px/1.08 var(--ch-font-sans);
+  color: var(--ch-text-primary);
   letter-spacing: -0.036em;
   font-variation-settings: 'wdth' 88;
 }
@@ -69,6 +70,7 @@
 .ch-st-card__head h2 {
   margin-bottom: 3px;
   font: 600 16px/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
 }
 .ch-st-card__head span {
   display: block;
@@ -173,6 +175,7 @@
 .ch-sgt__head h2 {
   margin-bottom: 4px;
   font: 600 17px/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
 }
 .ch-sgt__head > div > span {
   font: var(--ch-type-caption);
@@ -207,7 +210,7 @@
 }
 .ch-sgt__plot {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px;
+  grid-template-columns: minmax(0, 1fr) 150px;
   gap: 8px;
   align-items: center;
   padding: 0 10px;
@@ -230,7 +233,7 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 5px 8px 8px;
+  padding: 5px 8px;
   margin-bottom: 4px;
   border-bottom: 1px solid var(--ch-border-hairline);
   font: 500 12px/1 var(--ch-font-sans);
@@ -258,6 +261,9 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
+.ch-sgt__end:focus-visible {
+  outline-offset: 0;
+}
 .ch-sgt__end:hover {
   background: var(--ch-ivory-50);
 }
@@ -276,7 +282,8 @@
   transition: stroke var(--ch-dur-quick) var(--ch-ease), stroke-width var(--ch-dur-quick) var(--ch-ease),
     stroke-opacity var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-note {
+/* Two classes, so the base reset (`.ch-root p`) doesn't take the margin. */
+.ch-sgt .ch-note {
   margin: 6px 16px 0;
   font: italic 400 14px/1.45 var(--ch-font-sans);
   color: var(--ch-green-700);
@@ -363,6 +370,10 @@ a.ch-lg__r:hover,
 .ch-lg__r.is-sel {
   background: var(--ch-ivory-50);
 }
+/* Inside the grid's scroller an outset ring would be clipped. */
+a.ch-lg__r:focus-visible {
+  outline-offset: -2px;
+}
 .ch-lg__r--h {
   padding-bottom: 8px;
   font: 500 11.5px/1 var(--ch-font-sans);
@@ -444,13 +455,15 @@ a.ch-lg__r:hover,
 .ch-yb__head h3 {
   font: 600 15px/1.25 var(--ch-font-sans);
   letter-spacing: -0.012em;
+  color: var(--ch-ink-900);
 }
 .ch-yb__meta {
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-ink-500);
   white-space: nowrap;
 }
-.ch-yb__note {
+/* Two classes, so the base reset (`.ch-root p`) doesn't take the margin. */
+.ch-yb .ch-yb__note {
   margin-top: 10px;
   font: italic 500 13px/1.45 var(--ch-font-sans);
   color: var(--ch-chart-gain);
@@ -558,28 +571,37 @@ a.ch-lg__r:hover,
   border-radius: 8px;
   background: rgb(21 90 57 / 0.07);
 }
-/* Beats `.ch-yb svg`: the rings are a fixed-size figure, left-aligned like the handoff. */
+/* Team view: the handoff's putting page keeps the design system's YardagePage depth. */
+.ch-st-grid2 .ch-yb {
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 2px rgb(28 25 18 / 0.04), 0 10px 24px -16px rgb(28 25 18 / 0.22);
+}
+/* Beats `.ch-yb svg`: the rings are a fixed-size figure (360px), left-aligned like the handoff. */
 .ch-yb .ch-pg {
   width: 100%;
-  max-width: 372px;
+  max-width: 360px;
 }
 .ch-pg-ring {
   stroke: var(--ch-chart-paper);
-  stroke-width: 2;
+  stroke-width: 1.25;
 }
 .ch-pg-flag {
   fill: var(--ch-chart-flag);
 }
 .ch-pg-leader {
+  fill: none;
   stroke: rgb(28 25 18 / 0.35);
   stroke-width: 1;
 }
 .ch-pg-lbl {
-  font: italic 500 11px var(--ch-font-sans);
+  font: 500 12px var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-pg-band {
+  font-style: italic;
   fill: var(--ch-ink-600);
 }
 .ch-pg-pct {
-  font: normal 700 11px var(--ch-font-sans);
+  font-weight: 700;
   fill: var(--ch-chart-gain);
 }
 .ch-pg-pct.is-below {

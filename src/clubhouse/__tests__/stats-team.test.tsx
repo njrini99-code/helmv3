@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
-vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+const reportSpy = vi.hoisted(() => vi.fn());
+vi.mock('../lib/track', () => ({ chReport: reportSpy, chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 const logServer = vi.hoisted(() => vi.fn());
@@ -26,17 +27,18 @@ async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
 }
-function wrap(data: ChTeamStats) {
-  return render(
+function tree(data: ChTeamStats) {
+  return (
     <LazyMotion features={domAnimation}>
       <ToastProvider>
         <div className="ch-root" data-ui="clubhouse">
           <StatsTeam data={data} />
         </div>
       </ToastProvider>
-    </LazyMotion>,
+    </LazyMotion>
   );
 }
+const wrap = (data: ChTeamStats) => render(tree(data));
 const stats = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...over });
 const empty = (over: Partial<ChTeamStats> = {}) => stats({ roundCount: 0, grid: [], players: [], putting: null, bests: [], ...over });
 
@@ -56,6 +58,7 @@ const load = () => loadTeamStats({ teamId: 't1', window: 'season' });
 
 beforeEach(() => {
   hapticSpy.mockClear();
+  reportSpy.mockClear();
   logServer.mockClear();
   router.refresh.mockClear();
   router.push.mockClear();
@@ -73,6 +76,8 @@ describe('Stats team · saves that fail', () => {
     wrap(stats());
     await user.click(screen.getByRole('button', { name: 'Export' }));
     await expectCode('CH-4001', /Couldn't export team stats/);
+    expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), { surface: 'stats.team.export', severity: 'low' });
+    expect(hapticSpy).toHaveBeenCalledWith('error');
     url.createObjectURL = prev;
   });
 });
@@ -82,6 +87,7 @@ describe('Stats team · reads that fail', () => {
     tables.current = { ...seasonTables(), golf_rounds: { error: { message: 'boom' } } };
     const data = await load();
     expect(data.roundsError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('stats', 'rounds', expect.anything());
     wrap(data);
     await expectCode('CH-4201', /Team rounds didn't load/);
     expect(screen.queryByText('Scoring average')).toBeNull();
@@ -91,12 +97,23 @@ describe('Stats team · reads that fail', () => {
     expect(router.refresh).toHaveBeenCalled();
   });
 
+  it('CH-4201 the roster does not load: the same notice, never an empty team', async () => {
+    tables.current = { ...seasonTables(), golf_team_members: { error: { message: 'boom' } } };
+    const data = await load();
+    expect(logServer).toHaveBeenCalledWith('stats', 'members', expect.anything(), 'teams');
+    expect(data.roundsError).toBe(true);
+    wrap(data);
+    await expectCode('CH-4201', /Team rounds didn't load/);
+    expect(code('CH-4301')).toBeNull();
+  });
+
   it('CH-4202 round figures do not load: scoring stays, the rest say so', async () => {
     tables.current = { ...seasonTables(), golf_round_stats_cache: { error: { message: 'boom' } } };
     const data = await load();
     expect(data.cacheError).toBe(true);
     expect(data.figures.find((f) => f.label === 'Scoring average')!.value).toBe(72);
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.value).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('stats', 'roundCache', expect.anything());
     wrap(data);
     await expectCode('CH-4202', /Some team figures didn't load/);
   });
@@ -121,6 +138,8 @@ describe('Stats team · reads that fail', () => {
       ['CH-4208', 'Season bests'],
     ] as const)
       expect(code(c)!.textContent).toMatch(new RegExp(`${label} couldn’t be shown`));
+    for (const surface of ['stats.team.figures', 'stats.team.trend', 'stats.team.legs', 'stats.team.putting', 'stats.team.bests'])
+      expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     expect(screen.getByRole('heading', { name: 'Team stats' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -132,6 +151,16 @@ describe('Stats team · reads that fail', () => {
     const data = await load();
     expect(logServer).toHaveBeenCalledWith('stats', 'd1Benchmarks', expect.anything());
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/D1/);
+  });
+
+  it("CH-4210 the team's own row does not load: no benchmark or baseline of a guessed tour", async () => {
+    tables.current = { ...seasonTables(), golf_teams: { error: { message: 'boom' } } };
+    const data = await load();
+    expect(logServer).toHaveBeenCalledWith('stats', 'team', expect.anything(), 'teams');
+    expect(data.teamName).toBe('Your team');
+    expect(data.sgBaselineNote).toBe('the baseline');
+    expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/D1/);
+    expect(data.roundCount).toBe(1);
   });
 });
 
@@ -176,6 +205,44 @@ describe('Stats team · empty', () => {
   it('CH-4308 a player without enough rounds is an early read, not a zero', () => {
     wrap(stats());
     expect(code('CH-4308')!.textContent).toBe('Early read');
+  });
+});
+
+describe('Stats team · network', () => {
+  it('CH-4901 changing the window offline requests nothing and says so', async () => {
+    const user = userEvent.setup();
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    wrap(stats({ window: 'last10' }));
+    await user.click(screen.getByRole('radio', { name: 'Season' }));
+    await expectCode('CH-4901', /Couldn't open the season: you're offline/);
+    expect(code('CH-4901')!.textContent).toMatch(/still the last 10 rounds/);
+    expect(router.push).not.toHaveBeenCalled();
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
+    online.mockRestore();
+  });
+
+  it('CH-4902 a slow window change says so once; a quick one says nothing', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const view = wrap(stats({ window: 'last10' }));
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
+      // The server answers inside five seconds: no notice.
+      view.rerender(tree(stats({ window: 'season' })));
+      vi.advanceTimersByTime(6000);
+      expect(code('CH-4902')).toBeNull();
+      // It doesn't: the notice names both windows.
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      vi.advanceTimersByTime(4900);
+      expect(code('CH-4902')).toBeNull();
+      vi.advanceTimersByTime(200);
+      await expectCode('CH-4902', /Still loading qualifier rounds…/);
+      expect(code('CH-4902')!.textContent).toMatch(/still the season/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

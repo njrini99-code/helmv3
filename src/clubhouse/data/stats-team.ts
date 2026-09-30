@@ -86,7 +86,10 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
 
   type P = { id: string; first_name: string | null; last_name: string | null };
   const players = ((membersRes.data ?? []) as Array<{ player: P | null }>).map((m) => m.player).filter((p): p is P => !!p);
-  const d1Promise = loadD1(supabase, tourForGender(teamRes.data?.gender), 'stats');
+  // CH-4210: without the team's row its tour is unknown, so no benchmark or baseline is claimed
+  // (a women's team must never be graded against the men's D1 averages).
+  const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
+  const d1Promise = tour ? loadD1(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>());
 
   const season = players.length
     ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats' })
@@ -104,10 +107,10 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   }
   if (!prevRounds.length) hasPrev = false;
 
-  const allIds = [...windowRounds, ...prevRounds].map((r) => r.id);
+  // One cache read serves the window, the previous window and the season bests: both windows
+  // are 18-hole season rounds, so they are inside `seasonFull`.
   const seasonFull = season.rounds.filter((r) => (r.holes_played ?? 18) === 18);
-  const [cache, seasonCache, putts, d1] = await Promise.all([
-    loadRoundCache(supabase, allIds, 'stats'),
+  const [cache, putts, d1] = await Promise.all([
     loadRoundCache(supabase, seasonFull.map((r) => r.id), 'stats'),
     // The whole season's putts: the window's bands, and the season's longest made putt.
     loadPutts(supabase, season.rounds.map((r) => r.id)),
@@ -191,7 +194,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
     putting = { bands, putts: windowPutts.length };
   }
 
-  const bests = seasonBests(seasonFull, players, seasonCache.byRound, putts.error ? null : { rows: putts.rows, rounds: season.rounds });
+  const bests = seasonBests(seasonFull, players, cache.byRound, putts.error ? null : { rows: putts.rows, rounds: season.rounds });
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',
@@ -209,7 +212,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
     grid,
     putting,
     bests,
-    sgBaselineNote: tourForGender(teamRes.data?.gender) === 'lpga' ? "the women's baseline" : 'the Tour baseline',
+    sgBaselineNote: tour === 'lpga' ? "the women's baseline" : tour === 'pga' ? 'the Tour baseline' : 'the baseline',
     roundsError: season.error || !!membersRes.error,
     cacheError: cache.error,
     puttsError: putts.error,
@@ -221,20 +224,25 @@ async function loadPutts(
   roundIds: string[],
 ): Promise<{ rows: Array<{ roundId: string; feet: number; made: boolean }>; error: boolean }> {
   const rows: Array<{ roundId: string; feet: number; made: boolean }> = [];
-  for (const ids of chunkIds(roundIds)) {
-    const res = await fetchAllRowsResult<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
-      (from, to) =>
-        supabase
-          .from('golf_shots')
-          .select('round_id, putt_distance_feet, putt_made')
-          .in('round_id', ids)
-          .not('putt_distance_feet', 'is', null)
-          .not('putt_made', 'is', null)
-          .order('id', { ascending: true })
-          .range(from, to),
-      undefined,
-      { table: 'golf_shots', action: 'clubhouse.stats.putts', feature: 'stats_analytics', sport: 'golf' },
-    );
+  // The chunks are independent, so they are read in parallel.
+  const results = await Promise.all(
+    chunkIds(roundIds).map((ids) =>
+      fetchAllRowsResult<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
+        (from, to) =>
+          supabase
+            .from('golf_shots')
+            .select('round_id, putt_distance_feet, putt_made')
+            .in('round_id', ids)
+            .not('putt_distance_feet', 'is', null)
+            .not('putt_made', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to),
+        undefined,
+        { table: 'golf_shots', action: 'clubhouse.stats.putts', feature: 'stats_analytics', sport: 'golf' },
+      ),
+    ),
+  );
+  for (const res of results) {
     if (res.error) {
       chLogServer('stats', 'putts', res.error, 'stats_analytics');
       return { rows: [], error: true };

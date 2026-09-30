@@ -2,7 +2,7 @@
 
 import { Download, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState, useTransition } from 'react';
+import { Suspense, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
@@ -17,10 +17,11 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
+import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
-import { WindowSwitch } from './WindowSwitch';
+import { WINDOW_WORDS, WindowSwitch } from './WindowSwitch';
 
 type Lens = 'sg' | 'score';
 
@@ -30,7 +31,29 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
   const [pending, start] = useTransition();
   const [focus, setFocus] = useState<string | null>(null);
   const [leg, setLeg] = useState<ChLeg>('Approach');
-  const go = (w: ChWindow) => start(() => router.push(w === 'last10' ? '/golf/dashboard/stats' : `/golf/dashboard/stats?window=${w}`, { scroll: false }));
+  // The window being loaded; cleared when the server answers with it.
+  const [loading, setLoading] = useState<ChWindow | null>(null);
+  useEffect(() => setLoading(null), [data.window]);
+  useEffect(() => {
+    if (!loading) return;
+    // CH-4902: a slow window change says so once instead of dimming forever.
+    const slow = window.setTimeout(
+      () => toast({ title: `Still loading ${WINDOW_WORDS[loading]}…`, body: `This is taking longer than usual. The figures shown are still ${WINDOW_WORDS[data.window]}.`, code: 'CH-4902' }),
+      CH_SLOW_SAVE_AFTER,
+    );
+    return () => window.clearTimeout(slow);
+  }, [loading, data.window, toast]);
+  const go = (w: ChWindow) => {
+    if (isOffline()) {
+      // CH-4901: nothing is requested while offline, and the switch stays where it is.
+      haptic('error');
+      toast({ tone: 'error', title: `Couldn't open ${WINDOW_WORDS[w]}: you're offline`, body: `Reconnect, then try again. The figures shown are still ${WINDOW_WORDS[data.window]}.`, code: 'CH-4901' });
+      return;
+    }
+    chTrail(`stats window ${w}`);
+    setLoading(w);
+    start(() => router.push(w === 'last10' ? '/golf/dashboard/stats' : `/golf/dashboard/stats?window=${w}`, { scroll: false }));
+  };
   const playerHref = (id: string) => `/golf/dashboard/stats?player=${id}${data.window === 'last10' ? '' : `&window=${data.window}`}`;
 
   const exportCsv = () => {
@@ -98,26 +121,26 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
       ) : (
         !data.roundsError && (
           <>
-            <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
+            <Section surface="stats.team.figures" label="Team figures" code="CH-4204">
               <TeamFigures figures={data.figures} cacheError={data.cacheError} onRetry={() => router.refresh()} />
-            </SectionBoundary>
+            </Section>
 
-            <SectionBoundary surface="stats.team.trend" label="The trend chart" code="CH-4205">
+            <Section surface="stats.team.trend" label="The trend chart" code="CH-4205">
               <TeamTrend data={data} focus={focus} setFocus={setFocus} />
-            </SectionBoundary>
+            </Section>
 
-            <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
+            <Section surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
               <LegTrends legWeeks={data.legWeeks} leg={leg} setLeg={setLeg} />
               <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} playerHref={playerHref} />
-            </SectionBoundary>
+            </Section>
 
             <div className="ch-st-grid2">
-              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
+              <Section surface="stats.team.putting" label="Team putting" code="CH-4207">
                 <TeamPutting putting={data.putting} failed={data.puttsError} onRetry={() => router.refresh()} />
-              </SectionBoundary>
-              <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
+              </Section>
+              <Section surface="stats.team.bests" label="Season bests" code="CH-4208">
                 <SeasonBests bests={data.bests} playerHref={playerHref} />
-              </SectionBoundary>
+              </Section>
             </div>
           </>
         )
@@ -130,6 +153,20 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  * Each section below is its own component so that its SectionBoundary
  * contains everything it computes: a crash in one never reaches the page.
  */
+
+/**
+ * An error boundary only catches in the browser. The Suspense inside it
+ * covers the server render: a section that throws there is left out of the
+ * HTML and rendered again in the browser, where the boundary catches it.
+ * Without it, one section's crash on first load fails the whole page.
+ */
+function Section({ surface, label, code, children }: { surface: string; label: string; code: string; children: ReactNode }) {
+  return (
+    <SectionBoundary surface={surface} label={label} code={code}>
+      <Suspense fallback={null}>{children}</Suspense>
+    </SectionBoundary>
+  );
+}
 
 function TeamFigures({ figures, cacheError, onRetry }: { figures: ChTeamStats['figures']; cacheError: boolean; onRetry: () => void }) {
   return (
@@ -184,8 +221,10 @@ function TeamPutting({ putting, failed, onRetry }: { putting: ChTeamStats['putti
         <EmptyState code="CH-4306" compact title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />
       </div>
     );
+  // The count covers only the bands the rings draw.
+  const drawn = putting.bands.slice(0, 5).reduce((a, b) => a + b.attempts, 0);
   return (
-    <YardagePage title="Team putting" meta={`Make rate by distance · ${putting.putts} putts`} note={puttingNote(putting.bands)}>
+    <YardagePage title="Team putting" meta={`Make rate by distance · ${drawn} putts`} note={puttingNote(putting.bands)}>
       <PuttingRings bands={putting.bands} />
     </YardagePage>
   );
@@ -258,6 +297,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamStats; focus: string
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
   const good = (v: number) => (isSg ? v >= 0 : v <= 72);
   const fmt = (v: number) => (isSg ? formatSigned(v) : v.toFixed(1));
+  // Players' scores read in whole strokes, as in the handoff; the team keeps its decimal.
+  const fmtEnd = (v: number) => (isSg ? formatSigned(v) : v.toFixed(0));
   const sel = lines.find((l) => l.p.id === focus);
   const tFirst = firstValue(team);
   const tLast = lastValue(team);
@@ -269,7 +310,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamStats; focus: string
       const d = b.v - a.v;
       return isSg
         ? `${sel.p.first} has ${d >= 0 ? 'gained' : 'lost'} ${Math.abs(d).toFixed(1)} strokes a round across this window.`
-        : `${sel.p.first} is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} strokes across this window, now ${b.v.toFixed(1)}.`;
+        : `${sel.p.first} is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} strokes across this window, now ${fmtEnd(b.v)}.`;
     }
     if (!tFirst || !tLast || tFirst.i === tLast.i) return 'The trend needs rounds in at least two weeks.';
     const d = tLast.v - tFirst.v;
@@ -289,7 +330,11 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamStats; focus: string
       <div className="ch-sgt__head">
         <div>
           <h2>{isSg ? 'Strokes gained · total' : 'Scoring average'}</h2>
-          <span>{isSg ? `Per round, weekly average · dashed line is ${data.sgBaselineNote}` : `Team and players · weekly average · dashed line is par 72`}</span>
+          <span>
+            {isSg
+              ? `Per round, weekly average · dashed line is ${data.sgBaselineNote}`
+              : `Team and players · par 72 · ${data.roundCount} ${data.roundCount === 1 ? 'round' : 'rounds'} · dashed line is par`}
+          </span>
         </div>
         <div className="ch-sgt__tools">
           <div className="ch-sgt__legend" aria-hidden="true">
@@ -378,7 +423,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamStats; focus: string
                 >
                   <Avatar name={p.name} size={22} />
                   <span>{p.first}</span>
-                  <b className={`ch-num ${lv == null ? '' : good(lv.v) ? 'ch-gain' : 'ch-loss'}`}>{lv ? fmt(lv.v) : NO_DATA}</b>
+                  <b className={`ch-num ${lv == null ? '' : good(lv.v) ? 'ch-gain' : 'ch-loss'}`}>{lv ? fmtEnd(lv.v) : NO_DATA}</b>
                 </button>
               );
             })}
@@ -403,8 +448,9 @@ function LegTrend({ leg, data, selected, onSelect }: { leg: ChLeg; data: Array<n
   const h = 92;
   const pad = 10;
   const vals = data.filter((v): v is number => v != null);
-  const lo = Math.min(-1, ...vals) - 0.2;
-  const hi = Math.max(1, ...vals) + 0.2;
+  // The handoff's range (−1.5 to +1), widened only when a week falls outside it.
+  const lo = Math.min(-1.5, Math.min(...vals) - 0.2);
+  const hi = Math.max(1, Math.max(...vals) + 0.2);
   const x = (i: number) => (data.length <= 1 ? w / 2 : pad + (i * (w - pad * 2)) / (data.length - 1));
   const y = (v: number) => pad + ((hi - v) / (hi - lo)) * (h - pad * 2);
   const a = firstValue(data);
@@ -420,6 +466,8 @@ function LegTrend({ leg, data, selected, onSelect }: { leg: ChLeg; data: Array<n
       </span>
       <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="ch-sgm__svg" aria-hidden="true">
         <line x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} stroke="var(--ch-champagne-500)" strokeDasharray="3 3" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+        {/* The area to the baseline spans the weeks that have a value, never the empty edges. */}
+        {d && a && b && <path d={`${d} L${x(b.i)},${y(0)} L${x(a.i)},${y(0)} Z`} fill={tone} opacity={0.08} />}
         {d && <path d={`${d}`} fill="none" stroke={tone} strokeWidth={1.75} strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
         {b && <circle cx={x(b.i)} cy={y(b.v)} r={3.5} fill="var(--ch-ivory-25)" stroke={tone} strokeWidth={1.75} vectorEffect="non-scaling-stroke" />}
       </svg>
@@ -427,6 +475,8 @@ function LegTrend({ leg, data, selected, onSelect }: { leg: ChLeg; data: Array<n
     </button>
   );
 }
+
+const GRID_WINDOW: Record<ChWindow, string> = { last10: 'last 10 rounds', season: 'this season', qualifiers: 'qualifier rounds' };
 
 function LegGrid({
   data,
@@ -453,7 +503,9 @@ function LegGrid({
       <div className="ch-sgt__head">
         <div>
           <h2>Where each player gains and loses</h2>
-          <span>Strokes gained per round by leg &middot; needs three rounds &middot; sorted by {leg.toLowerCase()}</span>
+          <span>
+            Strokes gained per round by leg &middot; {GRID_WINDOW[data.window]} &middot; needs three rounds &middot; sorted by {leg.toLowerCase()}
+          </span>
         </div>
       </div>
       {rows.length === 0 ? (
