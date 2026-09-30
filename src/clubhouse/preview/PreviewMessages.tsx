@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { MessagesView, type ChMessagesApi } from '../screens/messages/MessagesView';
+import type { ChMessagesApi } from '../screens/messages/MessagesView';
+import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
 

@@ -53,11 +53,9 @@ import { SearchField } from "../../ui/SearchField";
 import { SectionBoundary } from "../../ui/SectionBoundary";
 import { Segmented } from "../../ui/Segmented";
 import { EmptyState, Skeleton } from "../../ui/States";
-import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
 import { chReport, chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
-import { useChPhone } from "../../lib/use-phone";
 import {
   clock,
   dayLabel,
@@ -81,9 +79,10 @@ import {
   type ChFile,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
-import { fileMeta, useConversationFiles } from "./files";
+import { fileMeta, fileSize, useConversationFiles } from "./files";
+// Re-exported: MessagesPhone and older callers read it from here.
+export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
-import { MessagesPhone } from "./MessagesPhone";
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
   { key: "Like", icon: ThumbsUp },
@@ -525,14 +524,6 @@ export function Attachments({
       ))}
     </>
   );
-}
-
-export function fileSize(b: number) {
-  if (!b) return "";
-  const k = 1024;
-  const units = ["B", "KB", "MB", "GB"];
-  const i = Math.min(3, Math.floor(Math.log(b) / Math.log(k)));
-  return `${(b / k ** i).toFixed(i ? 1 : 0).replace(/\.0$/, "")} ${units[i]}`;
 }
 
 /**
@@ -1923,32 +1914,7 @@ function NewMessage({
   );
 }
 
-/* Screen */
-
-/**
- * Messages, desktop or phone. Below 820px the owner's phone design renders
- * instead (MessagesPhone: an inbox that pushes a thread, details and a new
- * message), on the same container, hooks, actions and catalog.
- */
-export function MessagesView({ api }: { api: ChMessagesApi }) {
-  const phone = useChPhone();
-  const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
-  const toast = useToast();
-  useEffect(() => {
-    if (api.selectedId && !conv && !api.convsLoading && api.convs.length) {
-      toast({
-        tone: "error",
-        title: "That conversation isn't available",
-        body: "You may have left it, or it belongs to another team.",
-        code: "CH-7015",
-      });
-      api.select(null);
-    }
-  }, [api.selectedId, api.convsLoading, api.convs.length, conv, toast]); // eslint-disable-line react-hooks/exhaustive-deps
-  return phone ? <MessagesPhone api={api} /> : <MessagesDesktop api={api} />;
-}
-
-function MessagesDesktop({ api }: { api: ChMessagesApi }) {
+export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const [details, setDetails] = useState(false);
   const [compose, setCompose] = useState(false);
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;

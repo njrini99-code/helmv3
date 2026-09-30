@@ -27,7 +27,8 @@ import { useNow } from '../../lib/use-now';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
-import { MessagesView, type ChMessagesApi } from './MessagesView';
+import type { ChMessagesApi } from './MessagesView';
+import { MessagesView } from './MessagesScreen';
 import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {

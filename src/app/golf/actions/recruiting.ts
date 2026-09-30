@@ -221,12 +221,15 @@ async function createRecruitImpl(
     if (error && requestId && error.code === '23505') {
       // The id is taken. Saved only if it is this same prospect, added earlier by this coach on this team: RLS hides any
       // other team's row from this read, so a colliding id from elsewhere comes back empty and is refused.
-      const { data: existing } = await (ctx.supabase as any)
+      // A failed read falls through to the insert's own error below: the retry is
+      // refused rather than guessed to be a duplicate.
+      const { data: existing, error: existingError } = await (ctx.supabase as any)
         .from('golf_recruits')
         .select('id, team_id, created_by, first_name, last_name')
         .eq('id', requestId)
         .maybeSingle();
       if (
+        !existingError &&
         existing &&
         existing.team_id === ctx.teamId &&
         existing.created_by === ctx.coachId &&

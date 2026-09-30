@@ -4,8 +4,17 @@ import { useEffect, useState } from "react";
 import { haptic } from "../../lib/haptics";
 import { useToast } from "../../ui/Toast";
 import { dayLabel, type ChConv, type ChFile } from "./model";
-import { fileSize, type ChMessagesApi } from "./MessagesView";
+import type { ChMessagesApi } from "./MessagesView";
 
+
+/** "2.4 MB": a file size for a row. Lives here so files.ts never imports a value from MessagesView (check:cycles). */
+export function fileSize(b: number) {
+  if (!b) return "";
+  const k = 1024;
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.min(3, Math.floor(Math.log(b) / Math.log(k)));
+  return `${(b / k ** i).toFixed(i ? 1 : 0).replace(/\.0$/, "")} ${units[i]}`;
+}
 /**
  * A conversation's shared files (D-48), read once per open conversation and
  * again on Try again. Phone and desktop Details draw their own rows from it:

@@ -125,7 +125,8 @@ describe('setQualifierEntrants', () => {
   it('adds and removes entrants, reporting both counts', async () => {
     const res = await setQualifierEntrants(Q, [p(1), p(3)]);
     expect(res).toEqual({ success: true, data: { added: 1, removed: 1 } });
-    const { data } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    const { data, error: readError } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    expect(readError).toBeNull();
     expect((data as Array<{ player_id: string }>).map((e) => e.player_id).sort()).toEqual([p(1), p(3)].sort());
   });
 
@@ -137,7 +138,8 @@ describe('setQualifierEntrants', () => {
     world({ members: [p(1), p(2)] });
     const res = await setQualifierEntrants(Q, [p(1), p(2), p(4)]);
     expect(res).toEqual({ success: false, error: 'One player isn’t on the active roster, so nothing changed.' });
-    const { data } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    const { data, error: readError } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    expect(readError).toBeNull();
     expect((data as unknown[]).length).toBe(2);
   });
 
@@ -145,7 +147,8 @@ describe('setQualifierEntrants', () => {
     world({ rounds: [{ player_id: p(2), status: 'in_progress' }] });
     const res = await setQualifierEntrants(Q, [p(1), p(3)]);
     expect(res).toEqual({ success: false, error: 'One player has a round or a squad place in this qualifier and can’t be taken out, so nothing changed.' });
-    const { data } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    const { data, error: readError } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    expect(readError).toBeNull();
     expect((data as Array<{ player_id: string }>).map((e) => e.player_id).sort()).toEqual([p(1), p(2)].sort());
   });
 
@@ -171,7 +174,8 @@ describe('setQualifierEntrants', () => {
       },
     });
     expect(await setQualifierEntrants(Q, [p(1), p(2), p(4)])).toEqual({ success: false, error: 'One player isn’t on the active roster, so nothing changed.' });
-    const { data } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    const { data, error: readError } = await fake.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    expect(readError).toBeNull();
     expect((data as unknown[]).length).toBe(2);
   });
 
@@ -187,7 +191,8 @@ describe('setQualifierEntrants', () => {
       return builder;
     }) as typeof fake.from;
     expect(await setQualifierEntrants(Q, [p(1), p(3)])).toEqual({ success: false, error: 'The new players were entered, but taking players out didn’t save. Save again to finish.' });
-    const { data } = await real('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    const { data, error: readError } = await real('golf_qualifier_entries').select('player_id').eq('qualifier_id', Q);
+    expect(readError).toBeNull();
     expect((data as Array<{ player_id: string }>).map((e) => e.player_id).sort()).toEqual([p(1), p(2), p(3)].sort());
   });
 
