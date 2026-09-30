@@ -43,8 +43,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 42 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 58 | 6 | 32 | 25 |
-| `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
+| `AUDIT_SNAPSHOT` | 59 | 6 | 32 | 25 |
+| `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 48 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
@@ -418,6 +418,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | - |
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | - |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | - |
+| `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
@@ -445,6 +446,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | yes | - | yes | - |
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | - |
+| `docs/clubhouse/RELEASE_2026-09-30.md` | current | - | - | yes | - |
 | `docs/reports/HELM_OS_TRUTH_CONVERGENCE_2026-08-30.md` | current | - | - | yes | - |
 | `docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` | current | - | - | - | - |
 
