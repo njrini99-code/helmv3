@@ -46,7 +46,7 @@ export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps
   // coaches and players, each with the permissions they already have.
   const chSession = await getGolfSessionProfile();
   if (isClubhouseFor(chSession?.coach ? 'coach' : chSession?.player ? 'player' : null)) {
-    return <ClubhouseStatsRoute player={params.player} window={params.window} />;
+    return <ClubhouseStatsRoute player={params.player} window={params.window} tab={params.tab} />;
   }
 
   // Legacy `?tab=` (the old FairwayStatsCockpit tab strip) → the Spine &

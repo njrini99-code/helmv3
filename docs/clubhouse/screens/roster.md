@@ -46,18 +46,22 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
 - [x] No `catch` swallows an error without reporting or handling it on screen
 - [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [ ] Every failure path was forced once locally and seen in the console or Sentry
+- [ ] Every failure path was forced once locally and seen in the console or Sentry. Open because it needs a dev server with each failure forced in turn; the tests force each one, but not in a browser. Owner: the merge pass (D-27).
 
 ## phone-spec
-- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
-- [ ] The owner approved it (the file says `Status: approved`)
+Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/handoff/mobile/Roster Mobile.html`, `m-roster.jsx`: list, profile, join requests sheet). The design boards were captured at 390 × 844, as was the current preview at 390px.
+- [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop. It adds a pushed profile, a requests sheet and a list with sections, and maps every element to a component and to a loader field or action.
+- [x] The owner approved it: the file says `Status: approved`. Handing over the design is the approval (D-22, `design/handoff/mobile/README.md`).
+- [x] The phone foundation it sits in is approved. The owner decided it on 2026-09-29, the lead relayed it, and it is recorded as D-40 onward on `agent/clubhouse-messages-mobile`, whose `phone/foundation.md` says `Status: approved`. It merges into this branch before the shell-dependent pieces are built.
+- [x] The owner questions from the spec are answered: Q-30 to Q-39, 2026-09-29, recorded as D-50 to D-59 in `PROGRESS.md`.
 
 ## phone
-- [ ] Built at 390px and 430px, respecting the safe areas
-- [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
-- [ ] Sheets are used instead of popovers, and they drag to dismiss
-- [ ] The bottom tab bar and toasts don't overlap content
-- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
+Evidence so far (2026-09-29): built on the foundation, and the preview captured at 390 × 844 (roster-34 to 44 in the session scratchpad) against the design boards roster-01 to 14. `clubhouse:a11y roster` is clean on 15 pages, at 390px and 1280px, including the requests sheet, the profile and its ⋯ sheet.
+- [ ] Built at 390px and 430px, respecting the safe areas. 390 is checked in the preview (d9b1c81fc). Open: 430px, owned by the merge pass (D-27); safe areas on a device, owned by the owner's iPhone pass.
+- [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent. Rows are 64px; buttons, the sort hit area and the "All N" link are 44px. The desktop row menu is the profile's ⋯ sheet. The axe target-size check is clean.
+- [ ] Sheets are used instead of popovers, and they drag to dismiss. Sheets are done: the join requests, ⋯ and Invite sheets are `ui/Modal` bottom sheets. Open: drag to dismiss, owned by the foundation, built in b4b1b6a6b (CH-1611) on `agent/clubhouse-messages-mobile`, and it arrives when that is merged here.
+- [ ] The bottom tab bar and toasts don't overlap content. The tab bar is checked at 390 (the list ends above it). Open: toasts over content, owned by the merge pass (D-27).
+- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device. Open: owned by the owner (`npm run ios:dev`). Pull to refresh isn't in this checklist; it waits for a design (D-43).
 
 ## motion
 - [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
@@ -68,18 +72,18 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 
 ## accessibility
 Verified by `roster.test.tsx` (CH-38xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/roster.md`.
-- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
+- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays. CH-3803 covers Esc, and `<dialog>` traps focus in sheets. Open because the path hasn't been walked in a browser end to end. Owner: the merge pass (D-27).
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent (aria-label or a view-as-table path)
 - [x] Status changes are announced (aria-live) and errors use role=alert
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [ ] No request waterfall on the server, with independent reads in parallel
-- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
-- [ ] No layout shift after first paint
+- [ ] No request waterfall on the server, with independent reads in parallel. `loadRoster` runs two parallel rounds: the second needs the first's player ids. Open because it hasn't been measured. Owner: the merge pass (D-27).
+- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily. Open because no bundle check has been run. Owner: the merge pass (D-27), with `npm run build`.
+- [ ] No layout shift after first paint. The skeleton matches the layout on desktop and phone. Open because no layout-shift measurement has been taken. Owner: the merge pass (D-27).
 
 ## verified
-- [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
-- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
-- [ ] Owner review of the built screen
+- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log. Logged 2026-09-29: typecheck 0, eslint 0 and `vitest src/clubhouse` 295/295 (2d4555d9b); typecheck:fast 0, test:file roster 37/37 and clubhouse:check 0 (46461e837); clubhouse:check 0 (eb8e079be).
+- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md. The preview pass at 1280 and 390 is logged (d9b1c81fc). Open because no real coach account has been used. Owner: the owner's live pass on a Vercel preview (Q-4).
+- [ ] Owner review of the built screen. Open. Owner: the owner.

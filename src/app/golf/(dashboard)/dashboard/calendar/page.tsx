@@ -49,11 +49,11 @@ interface GolfCalendarPageProps {
    * calendar event" chip) deep-links here so the specific event's detail
    * drawer auto-opens instead of landing on the general calendar hub.
    */
-  searchParams: Promise<{ event?: string; view?: string; date?: string; new?: string }>;
+  searchParams: Promise<{ event?: string; view?: string; date?: string; new?: string; with?: string }>;
 }
 
 export default async function GolfCalendarPage({ searchParams }: GolfCalendarPageProps) {
-  const { event: initialEventId, view, date, new: isNew } = await searchParams;
+  const { event: initialEventId, view, date, new: isNew, with: withPlayer } = await searchParams;
   // React.cache() dedupes getUser() + profile queries — free after layout runs them
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
@@ -61,7 +61,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   // Clubhouse Calendar (golf_clubhouse_ui): coaches and players, each with the
   // permissions they already have.
   if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) {
-    return <ClubhouseCalendarRoute view={view} date={date} event={initialEventId} isNew={isNew === '1'} />;
+    return <ClubhouseCalendarRoute view={view} date={date} event={initialEventId} isNew={isNew === '1'} withPlayer={withPlayer} />;
   }
 
   const { role, coach, player } = session;

@@ -82,6 +82,15 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
   e2e run, full build, full suite and performance (the merge pass); forced send, edit, delete and
   leave failures against a live session (the merge pass). After Clubhouse: the queued attachment
   migration (Data gaps).
+6. Roster phone (`agent/clubhouse-roster-mobile`, d9b1c81fc and this pass):
+   phone-spec is done, and phone is doing. It is built on the foundation, and
+   D-50 to D-59 are in code. It passed the browser check at 390 and
+   `clubhouse:a11y roster`.
+   Open for the phone gate:
+   - 430px and toasts: the merge pass (D-27)
+   - drag to dismiss: foundation, b4b1b6a6b, merged into `agent/clubhouse` 2026-09-29
+   - the iPhone pass: owner
+   - pull to refresh: design
 
 ## Screens
 
@@ -90,7 +99,7 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | done | doing | doing | doing | doing | doing |
 | Home | /golf/dashboard | done | doing | doing | doing | doing | doing | todo | todo | doing | doing | todo |
-| Roster | /golf/dashboard/roster | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
+| Roster | /golf/dashboard/roster | done | done | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Stats (team) | /golf/dashboard/stats | done | done | done | done | done | doing | todo | done | done | done | doing |
 | Stats (player) | /golf/dashboard/stats?player= (coach), /golf/dashboard/stats (player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
@@ -160,6 +169,16 @@ Noted by the owner 2026-09-29: these migrations go out with the deployment of th
 - D-47 (2026-09-29, owner; answers Q-54, Q-56, Q-61, Q-62): Details controls with a backend. Schedule opens the Calendar editor (`?new=1`), for coaches only, without invitees. Mute lasts until it is turned off. Add member is wired for the group's creator, on desktop and phone. The creator still can't leave their group.
 - D-48 (2026-09-29, owner; answers Q-53, Q-55, Q-57, Q-58, Q-59, Q-60, Q-63): Details controls without a backend. A new read-only action lists a conversation's files. Call, in-thread Search, Pinned, "Only coaches can post", Edit and Delete conversation are hidden until a backend exists.
 - D-49 (2026-09-29, owner; answers Q-64): No event card in a thread; every group uses the people mark; the six stored reactions only; "Admin" marks the creator only; coaches keep View stats in a player's direct details; the drawn message icon on the other person in a direct thread's Details goes back to that thread.
+- D-50 (2026-09-29, owner, Q-30): On the phone, Roster lives under More, per the foundation decision (D-40 onward): the design's five-tab ivory bar for coaches, and More stays a sheet.
+- D-51 (2026-09-29, owner, Q-31): The Roster phone profile shows real fields only (hometown, high school, class of, jersey when set, member since). No migration is written for captain, major, bio or home course. Birthday is never collected.
+- D-52 (2026-09-29, owner, Q-32): Plan 1:1 opens the Calendar new-event editor with that player invited, through a new Calendar seed `?new=1&with=<playerId>`.
+- D-53 (2026-09-29, owner, Q-33): "All N" rounds opens the player's Stats on the Rounds tab for the season (`stats?player=<id>&window=season&tab=rounds`). StatsPlayer takes a `tab` URL parameter.
+- D-54 (2026-09-29, owner, Q-34): The profile's ⋯ opens an action sheet (View stats, then Remove from team with the CH-3501 confirm). The top bar's invite button opens the existing Invite players sheet. There is still no invite by email.
+- D-55 (2026-09-29, owner, Q-35): Approve all runs the existing approve action one request at a time, through `useAction`. It names every request that failed and says how many were added.
+- D-56 (2026-09-29, owner, Q-36): On the phone, the profile keeps the coach's note after About and drops Development counts. Export, search, the status filter, the layout toggle, the Needs-a-look chips and the Handicap and Rounds sorts stay desktop only.
+- D-57 (2026-09-29, owner, Q-37): A form sparkline shows from 3 rounds, the same threshold as desktop and every other page.
+- D-58 (2026-09-29, owner, Q-38): The phone's Inactive section lists `status = inactive` members, with their form as the note, and the profile adds "Inactive" to its identity line.
+- D-59 (2026-09-29, owner, Q-39): The phone's Name sort is by last name, as on desktop.
 
 ## Open owner questions
 
@@ -167,6 +186,16 @@ Noted by the owner 2026-09-29: these migrations go out with the deployment of th
 - Q-2 Navigation: decided 2026-09-29, Practice and Events stay hidden until each has its own design.
 - Q-3 Phone specs: decided 2026-09-29 (D-22). The owner's mobile designs in `design/handoff/mobile/` are the phone specs; the drafts in `docs/clubhouse/phone/` only matter for pages without one, and still need approval.
 - Q-4 Rollout: decided 2026-09-29, the flag stays off in production; the owner does a live pass on a Vercel preview with real coach and player accounts first.
+- Q-30 Roster phone, where Roster lives: answered 2026-09-29 (D-50). Roster lives under More, per the foundation decision (D-40 onward).
+- Q-31 Roster phone, fields with no column: answered 2026-09-29 (D-51). Real fields only, no migration, and birthday is never collected.
+- Q-32 Roster phone, Plan 1:1: answered 2026-09-29 (D-52). It opens the Calendar new-event editor with that player invited, via `?new=1&with=<playerId>`.
+- Q-33 Roster phone, "All N" rounds: answered 2026-09-29 (D-53). It opens Stats on the Rounds tab for the season.
+- Q-34 Roster phone, ⋯ and invite targets: answered 2026-09-29 (D-54). ⋯ opens an action sheet, and invite opens the existing Invite players sheet.
+- Q-35 Roster phone, Approve all: answered 2026-09-29 (D-55). It loops the existing approve action, names every failure and counts the successes.
+- Q-36 Roster phone, desktop-only features: answered 2026-09-29 (D-56). The coach's note stays on the phone, and the rest stays on desktop.
+- Q-37 Roster phone, sparkline threshold: answered 2026-09-29 (D-57). 3 rounds.
+- Q-38 Roster phone, Inactive: answered 2026-09-29 (D-58). Inactive is labelled on the phone.
+- Q-39 Roster phone, name sort: answered 2026-09-29 (D-59). By last name.
 
 From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.md`, `phone/messages.md`). All answered by the owner on 2026-09-29, each by accepting or refining the recommendation; the answer is the decision named.
 
@@ -206,6 +235,16 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Roster: owner, 2026-09-29: cards show no jersey number (the handoff has none; Captain waits for a column); the layout toggle and the panel order follow the handoff (the panel sits after the cards when there is no room beside them).
 - Roster: invite-by-email has no server action. The invite sheet offers the join code, a copy button and the native share sheet for the join link.
 - Roster: "Schedule 1:1" and "View insights" wait for Calendar and CoachHelm. They are hidden until then.
+- Roster (phone), 2026-09-29, owner design `Roster Mobile.html`. The owner answered Q-30 to Q-39 (D-50 to D-59).
+  - The design's Captain chip, major, About prose, home course and birthday have no columns, and none is added (D-51). Birthday is minors' PII. The profile shows hometown, high school, class, jersey when set, and member since.
+  - Live data: no member has a jersey number, 12 of 106 players have a high school, and 90 have a hometown.
+  - The inactive row note ("Medical · wrist") needs the unapplied Q-1 availability migration.
+  - Plan 1:1: the Calendar editor couldn't be seeded with a single invitee, and a new event invited every player. It gains `with=<playerId>` (D-52).
+  - "All N" rounds: the player's Stats Rounds tab couldn't be opened from the URL. StatsPlayer gains `tab=rounds`, and `window=season` matches Roster's count (D-53).
+  - "Approve all" has no bulk action. It loops the existing one (D-55; live: 0 pending requests on any team).
+  - Invite by email still has no action. The ⋯ menu's contents aren't drawn.
+  - The join code is drawn in tracked mono. It maps to the desktop treatment (Instrument Sans).
+  - Sparkline threshold: 3 rounds, as on every page (D-57).
 
 - Stats (player), 2026-09-29 fidelity: the strokes gained by leg chart is the design system's StrokesGainedRoute (it had been bars), the Rounds count is the design system's tab pill, and a coach reads "Stats › name" in the top bar. The scoring chart's "Season best" marker and "Par 72" meta wait for season-best and course-par data per window.
 - Stats: the prototype's PredictionCard, "vs tour" figures and D1 benchmarks for fairways and putts per round have no source. They are omitted, and D1 shows only where `golf_pga_standards` has the metric.
@@ -245,6 +284,12 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - 2026-09-29 · Fidelity pass (Home, Stats team, Calendar, Messages, shell) · desktop: rendered each handoff prototype and our preview side by side at 1280px and fixed what differed. Home subline, Message team and New event, agenda invitee details, "First tee 8:42 · 5 of 6 confirmed", "No rounds 9 days", the Full roster arrow and the stats link; the notifications bell; the sidebar readiness bar; team putting rings at the handoff's size; Longest putt made; Calendar "Checked"; the Messages typing avatar. typecheck 0, vitest logic 32/32, preview states bell empty, failed and filter. No console errors.
 - 2026-09-29 · Settings · desktop: built from the design system at 1280px (coach: account, notifications, team, CoachHelm, preferences; player: account, golf profile, notifications); preview states player, noteam, failed, partial, assistant, failwrites, loading. Fixed a live bug found on the way: `push_announcements` was stripped on save and read as off (test added). typecheck 0.
 - 2026-09-29 · Settings and shell · catalog: 76 Settings and 14 shell tests, each named by its number; clubhouse:check enforces the catalog. Found and fixed on the way: every Clubhouse toast rendered outside the Clubhouse root and so had no background; the browser's own email bubble covered ours; the photo coin lost its initials while the name was empty.
+- 2026-09-29 · Roster · phone-spec, still `doing`: `phone/roster.md` rewritten from the owner's design. The three boards were rendered at 390 × 844, and 14 states were captured (sorts, inactive, long names, sheet with two and five requests, profile top and About, captain, early read, inactive). The current preview was captured at 390px (default, player open, invite, list, empty, failed, partial, loading). The gate stays `doing` because Q-31 to Q-39 are open and the decided foundation (D-40 onward) isn't on this branch yet. Later the same day, the spec was updated with the owner's foundation answers: five coach tabs with Roster under More, More still a sheet, red for destructive actions, no Safari bar, neutral phone avatars, and pull to refresh waiting for a design.
+- 2026-09-29 · Roster · phone-spec, done: the owner answered Q-30 to Q-39 (D-50 to D-59), and the foundation is decided (D-40 onward). Every phone-spec box in `screens/roster.md` is checked. clubhouse:check is clean.
+- 2026-09-29 · Roster · phone build, the parts that don't depend on the shell (the `phone` gate stays `todo` until the foundation lands and a device pass is done). Built: RosterPhone, RosterPhoneRow and RosterProfile (`useChPhone`, `?player=` in the URL), the phone skeleton, the Calendar 1:1 seed (D-52), the Stats `tab` parameter (D-53), and the Approve all loop (D-55, CH-3007). CH-3806 is catalogued. typecheck 0; eslint 0 on the changed files; `npx vitest run src/clubhouse` 295/295; clubhouse:check clean. `clubhouse:a11y` on :3106 is clean for roster (14 pages at 1280 and 390, including the phone profile and its menu), calendar (20; the known 390px week target-size remains) and stats-player (14). Preview at 390 × 844 compared with the design captures: list, inactive, SG sort, profile, About, early read, inactive profile, loading and failed. No console errors.
+- 2026-09-29 · Roster · phone build on the foundation, after merging `agent/clubhouse-messages-mobile`. The interim pieces are gone. What's built: PhoneTop (‹ More, invite action); the pushed profile as a PhoneScreen and PhoneBar with usePhoneStackHistory; the join requests banner and a Modal sheet (Approve all, CH-3403 catalogued); and the ⋯ action sheet on Modal (View stats, Remove from team behind CH-3501). Join requests gain structured class, year and age fields. Checks: typecheck:fast 0; eslint 0; test:file roster 37/37; clubhouse:check clean. Browser and a11y are not run, waiting for a server slot.
+- 2026-09-29 · Roster · phone, browser pass on :3106 (one server slot). The preview at 390 × 844 was captured and compared with the design boards: list, inactive, SG sort, requests sheet, profile, About, ⋯ sheet, early read, inactive profile, invite and loading. Back pops the pushed profile, and there are no console errors. `clubhouse:a11y roster` exit 0 (15 pages, 1280 and 390). The phone gate is `doing`: 430px, drag to dismiss (not in `ui/Modal`), toasts over content, and the device pass are still open.
+- 2026-09-29 · Roster · final tracker pass (docs only; no servers, builds or scans). Gate cells match the evidence: phone-spec done, phone doing. The desktop gates are unchanged. The phone boxes in `screens/roster.md` and the open list in `phone/roster.md` name each owner: 430px and toasts, merge pass; drag to dismiss, foundation (b4b1b6a6b, arrives on merge); iPhone pass, owner; pull to refresh, design. The catalog (CH-3007, CH-3403, CH-3806 used and tested) and `SCREENS.md` (Roster ticked for coaches) match. clubhouse:check clean.
 - 2026-09-29 · Stats (team) · old link: `/stats/team` opens the rebuilt Team stats for coaches. Compared the design project's `Stats.html`, `stats.jsx`, `stats.css`, `cal.css`, `depth.css`, `sidebar.css` and the colour and elevation tokens with `design/handoff/`: identical apart from the Qualifiers nav item (not built, owner). 
 - 2026-09-29 · Stats (team) · fidelity, states, error-tracking, motion, accessibility, performance: the handoff prototype and our preview rendered and measured box by box at 924 and 1280px against stats-team-01..05. Fixed: the trend note and putting note margins (the base reset won), the players column (150px) and Team row, the leg cards' area fill and range, the putting rings (the design system's geometry, shaded by make rate, 360px, 12px labels, the page's depth), the grid subtitle's window, whole-stroke scores in the Scoring lens, heading colour. Built: the window switch offline (CH-4901) and slow (CH-4902); no benchmark for an unknown tour (CH-4210); one round-cache read instead of two, with id chunks in parallel; a Suspense inside each section, because a crash on the server render failed the whole page. typecheck 0, eslint 0 errors, vitest src/clubhouse 286/286, clubhouse:check 0, clubhouse:a11y 0 (105 pages), build 0. Then the route skeleton was sized to the loaded page: header, first card and trend card land in place at 924 to 1600px; the trend card had dropped 40px at 1280. A server-render crash test was added. vitest 287/287, typecheck 0, eslint 0, clubhouse:check 0, clubhouse:a11y stats 26 pages 0. The design project was not compared (DesignSync unavailable in that session).
 - 2026-09-29 · Shell (every page) · error-tracking, D-24: the Suspense moved into `SectionBoundary` and the local Stats wrapper was removed. Two server-render tests (the primitive, and Team stats with five crashing sections) fail without it. Every preview (home, roster, stats, player, calendar, calendar-player, messages, messages-player, settings) was rendered before and after at 1280px: pixel-identical apart from the Messages typing dots mid-animation, with no console errors or hydration warnings. `stats?state=crash` went from 500 to 200 with all five notices. vitest src/clubhouse 288/288, typecheck 0, eslint 0, clubhouse:a11y 0 (105 pages).

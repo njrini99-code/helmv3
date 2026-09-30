@@ -19,11 +19,15 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
+import { useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { RosterRequests } from './RosterRequests';
+import { useJoinRequests } from './useJoinRequests';
+import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
+import { RosterPhone } from './RosterPhone';
 import { formatHcp } from './format';
 import '../../styles/roster.css';
 
@@ -46,6 +50,25 @@ export function Roster({ data }: { data: ChRoster }) {
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
+  const jr = useJoinRequests(data.teamName, data.requests);
+  const phone = useChPhone();
+  // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
+  // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
+  const [openId, setOpenId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!phone) return;
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get('player');
+    if (!id) return;
+    url.searchParams.delete('player');
+    window.history.replaceState(null, '', url.pathname + url.search);
+    setOpenId(id);
+  }, [phone]);
+  const openPlayer = useCallback((id: string) => {
+    chTrail('roster open player');
+    haptic('select');
+    setOpenId(id);
+  }, []);
 
   useEffect(() => {
     try {
@@ -134,6 +157,74 @@ export function Roster({ data }: { data: ChRoster }) {
     return items;
   };
 
+  const dialogs = (
+    <>
+      <InviteModal
+        open={invite}
+        onClose={() => setInvite(false)}
+        teamName={data.teamName}
+        code={data.joinCode}
+        codeFailed={data.teamError}
+        onRetry={() => router.refresh()}
+      />
+      <Modal
+        code="CH-3501"
+        open={!!removing}
+        onClose={() => setRemoving(null)}
+        width={460}
+        icon={UserMinus}
+        title="Remove player?"
+        description={removing ? `Remove ${removing.name} from ${data.teamName}? They can rejoin later with the team code.` : undefined}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRemoving(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={remove.pending}
+              feel={null}
+              onClick={async () => {
+                const p = removing;
+                if (!p) return;
+                const res = await remove.run(p);
+                if (res.success) {
+                  setPlayers((ps) => ps.filter((x) => x.id !== p.id));
+                  if (sel === p.id) setSel(null);
+                  // Their profile is gone: back to the list.
+                  if (openId === p.id) setOpenId(null);
+                  setRemoving(null);
+                }
+              }}
+            >
+              {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
+            </Button>
+          </>
+        }
+      >
+        <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
+      </Modal>
+    </>
+  );
+
+  if (phone) {
+    return (
+      <RosterPhone
+        data={data}
+        players={players}
+        jr={jr}
+        openId={openId}
+        onOpen={openPlayer}
+        onClose={() => setOpenId(null)}
+        onInvite={() => setInvite(true)}
+        onRemove={setRemoving}
+        onRetry={() => router.refresh()}
+      >
+        {dialogs}
+      </RosterPhone>
+    );
+  }
+
   return (
     <main className="ch-rs">
       <header className="ch-rs-head">
@@ -173,7 +264,7 @@ export function Roster({ data }: { data: ChRoster }) {
       </header>
 
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests teamName={data.teamName} initial={data.requests} error={data.requestsError} onRetry={() => router.refresh()} />
+        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (
@@ -295,49 +386,7 @@ export function Roster({ data }: { data: ChRoster }) {
         </>
       )}
 
-      <InviteModal
-        open={invite}
-        onClose={() => setInvite(false)}
-        teamName={data.teamName}
-        code={data.joinCode}
-        codeFailed={data.teamError}
-        onRetry={() => router.refresh()}
-      />
-      <Modal
-        code="CH-3501"
-        open={!!removing}
-        onClose={() => setRemoving(null)}
-        width={460}
-        icon={UserMinus}
-        title="Remove player?"
-        description={removing ? `Remove ${removing.name} from ${data.teamName}? They can rejoin later with the team code.` : undefined}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setRemoving(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              disabled={remove.pending}
-              feel={null}
-              onClick={async () => {
-                const p = removing;
-                if (!p) return;
-                const res = await remove.run(p);
-                if (res.success) {
-                  setPlayers((ps) => ps.filter((x) => x.id !== p.id));
-                  if (sel === p.id) setSel(null);
-                  setRemoving(null);
-                }
-              }}
-            >
-              {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
-            </Button>
-          </>
-        }
-      >
-        <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
-      </Modal>
+      {dialogs}
     </main>
   );
 }
@@ -502,18 +551,8 @@ function InviteModal({
   codeFailed: boolean;
   onRetry: () => void;
 }) {
-  const toast = useToast();
+  const copy = useCopyText();
   const link = code && typeof window !== 'undefined' ? `${window.location.origin}/golf/join/${encodeURIComponent(code)}` : null;
-  const copy = async (text: string, what: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      haptic('success');
-      toast({ title: `${what} copied` });
-    } catch {
-      haptic('error');
-      toast({ tone: 'error', title: `Couldn't copy the ${what.toLowerCase()}`, body: 'Select it and copy it by hand.', code: 'CH-3006' });
-    }
-  };
   const share = async () => {
     if (!link) return;
     try {

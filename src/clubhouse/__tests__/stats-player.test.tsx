@@ -173,6 +173,24 @@ describe('Stats player · empty', () => {
   });
 });
 
+describe('Stats player · opened from a link', () => {
+  const selected = () => screen.getByRole('tab', { selected: true }).textContent;
+
+  it("?tab=rounds opens the Rounds tab (Roster's All N, D-53)", () => {
+    wrap(<StatsPlayer data={player()} coachId="c1" initialTab="rounds" />);
+    expect(selected()).toMatch(/Rounds/);
+    expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe('tab-rounds');
+  });
+
+  it('no tab, or one that does not exist, opens Overview', () => {
+    const { unmount } = wrap(<StatsPlayer data={player()} coachId="c1" initialTab="sg" />);
+    expect(selected()).toMatch(/Overview/);
+    unmount();
+    show(player());
+    expect(selected()).toMatch(/Overview/);
+  });
+});
+
 describe('Stats player · haptics and accessibility', () => {
   it('CH-5701 changing tabs ticks; the current tab does not', async () => {
     const user = userEvent.setup();

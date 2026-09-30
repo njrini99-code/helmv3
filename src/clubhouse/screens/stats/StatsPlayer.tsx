@@ -31,6 +31,7 @@ import { GameDetail } from './GameDetail';
 import { WindowSwitch } from './WindowSwitch';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
+const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
 
 /** Form over the plotted rounds (oldest first): the newer half against the older half, in strokes. */
 export function formNote(first: string, scores: number[]): string {
@@ -43,10 +44,11 @@ export function formNote(first: string, scores: number[]): string {
   return `${first} is holding steady across these rounds.`;
 }
 
-export function StatsPlayer({ data, coachId }: { data: ChPlayerProfile; coachId: string | null }) {
+/** `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. */
+export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string }) {
   const router = useRouter();
   const reduced = useChReducedMotion();
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTab] = useState<Tab>(() => TABS.find((t) => t === initialTab) ?? 'overview');
   const [focusOpen, setFocusOpen] = useState(false);
   const [pending, start] = useTransition();
   const coach = data.viewer === 'coach';

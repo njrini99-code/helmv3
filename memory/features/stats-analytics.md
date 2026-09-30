@@ -276,3 +276,10 @@ coaches, `?player=<id>` profiles for coaches (team members only), and the player
 ignored). Windows: `?window=last10|season|qualifiers`. Shot-level detail comes from `getDetailedStats` behind its
 existing access gate; D1 benchmarks from `golf_pga_standards.div1_avg_value` (LPGA for a women's team, PGA fallback).
 Checklists: `docs/clubhouse/screens/stats-team.md`, `stats-player.md`.
+
+`?tab=overview|game|rounds|dev` opens that profile tab, for coaches and players (D-53); any other value, or none,
+opens Overview. It is read once on load (`StatsPlayer({ initialTab })`, passed through
+`ClubhouseStatsRoute({ tab })`), and switching tabs afterwards doesn't rewrite the URL. Roster's phone profile links
+"All N" to `?player=<id>&window=season&tab=rounds`. The season window counts the same countable 18-hole season rounds
+as Roster's `rounds`, so the Rounds tab's count matches the N on the link. Tests: `src/clubhouse/__tests__/stats-player.test.tsx`
+› "Stats player · opened from a link" (commit 041ef83ee).

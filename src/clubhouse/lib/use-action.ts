@@ -7,11 +7,11 @@ import { haptic } from './haptics';
 
 /** Helm server actions return either shape; useAction normalises both. */
 export type ServerResult<T = unknown> = { success?: boolean; ok?: boolean; data?: T; error?: string };
-export type ActionResult<T = unknown> = { success: true; data?: T } | { success: false; error?: string };
+export type ActionResult<T = unknown> = { success: true; data?: T } | { success: false; error?: string; data?: T };
 
-function normalise<T>(r: ServerResult<T> | null | undefined): ActionResult<T> {
+export function normalise<T>(r: ServerResult<T> | null | undefined): ActionResult<T> {
   if (r && (r.success === true || r.ok === true)) return { success: true, data: r.data };
-  return { success: false, error: r?.error };
+  return { success: false, error: r?.error, data: r?.data };
 }
 
 export interface ActionCopy {
@@ -39,11 +39,16 @@ export function isOffline(): boolean {
  * failure is an error toast that says what failed, why if the server said, and
  * offers Retry, with an error haptic. Failures are reported to Sentry with
  * the action name. Nothing fails silently, and a button can't double-submit.
+ *
+ * `refine` rewrites the copy once the result is in, for an action whose
+ * outcome decides the words (Approve all names who failed and counts who was
+ * added). A refined hint is shown as written.
  */
 export function useAction<A extends unknown[], T>(
   name: string,
   action: (...args: A) => Promise<ServerResult<T>>,
   copy: ActionCopy | ((...args: A) => ActionCopy),
+  refine?: (result: ActionResult<T>, copy: ActionCopy) => ActionCopy,
 ) {
   const toast = useToast();
   const [pending, setPending] = useState(false);
@@ -51,7 +56,7 @@ export function useAction<A extends unknown[], T>(
   const run = useCallback(
     async (...args: A): Promise<ActionResult<T>> => {
       if (pending) return { success: false, error: 'busy' };
-      const c = typeof copy === 'function' ? copy(...args) : copy;
+      let c = typeof copy === 'function' ? copy(...args) : copy;
       chTrail(`action ${name}`);
       if (isOffline()) {
         // CH-1903: nothing is sent while offline; say so instead of spinning.
@@ -71,6 +76,7 @@ export function useAction<A extends unknown[], T>(
         window.clearTimeout(slow);
         setPending(false);
       }
+      if (refine) c = refine(result, c);
       if (result.success) {
         haptic('commit');
         if (c.done) toast({ title: c.done });
@@ -81,14 +87,14 @@ export function useAction<A extends unknown[], T>(
         toast({
           tone: 'error',
           title: c.failed,
-          body: friendlyReason(result.error) ?? c.hint ?? 'Check your connection and try again.',
+          body: (refine ? c.hint : undefined) ?? friendlyReason(result.error) ?? c.hint ?? 'Check your connection and try again.',
           action: { label: 'Retry', run: () => void run(...args) },
           code: c.code,
         });
       }
       return result;
     },
-    [action, copy, name, pending, toast],
+    [action, copy, name, pending, refine, toast],
   );
 
   return { run, pending };

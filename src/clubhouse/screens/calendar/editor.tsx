@@ -39,6 +39,9 @@ export interface EditorSeed {
   event: ChCalEvent | null;
   proposal?: [number, number];
   date?: string;
+  /** A new event's type and invitees (Roster's Plan 1:1). Ids the Calendar doesn't list are dropped, never widened to the team. */
+  type?: ChCalType;
+  invite?: string[];
 }
 
 function FindTime({
@@ -215,7 +218,16 @@ export function EventEditor({
           notes: e.notes ?? '',
           invited: e.people,
         }
-      : { title: '', type: 'practice' as ChCalType, date: seed.date ?? today, win: [15.5, 17.5] as [number, number], allDay: false, loc: '', notes: '', invited: people.map((p) => p.id) };
+      : {
+          title: '',
+          type: seed.type ?? ('practice' as ChCalType),
+          date: seed.date ?? today,
+          win: [15.5, 17.5] as [number, number],
+          allDay: false,
+          loc: '',
+          notes: '',
+          invited: seed.invite ? seed.invite.filter((id) => people.some((p) => p.id === id)) : people.map((p) => p.id),
+        };
     setTitle(init.title);
     setType(init.type);
     setDate(init.date);

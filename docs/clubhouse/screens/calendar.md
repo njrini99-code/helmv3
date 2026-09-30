@@ -34,6 +34,12 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [x] Null, zero and "early read" render differently, and windows and samples are stated
 - [x] Times are resolved in the team's timezone on the server; all-day rows keep their stored date; writes send the team zone's offset for that date, so a DST change can't shift an event
 - [x] Unit tests cover week and month math, time labels, lanes, overlap detection and open times (`logic.test.ts`, "calendar model")
+- [x] Link seed from Roster's Plan 1:1 (D-52):
+  - `?new=1&with=<playerId>` opens the editor as a meeting with only that player invited.
+  - A player the Calendar doesn't list means nobody is invited, never the team.
+  - Plain `?new=1` still invites everyone.
+  - Evidence: `calendar.test.tsx` › "Calendar · seeds from other pages" (3 tests), commit 88a36e2d4.
+  - No new state, so no catalog row.
 
 ## states
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
