@@ -141,7 +141,7 @@ A link to a player who isn't on the team (70801), and an open conversation that 
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 70801 | CH-7001 | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | A link opens a player who isn't on the team |
+| 70801 | CH-7001 | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | `AN_OPEN_CONVERSATION_DISAPPEARS` | An open conversation disappears (left, or another team's) |
 
 ## 09 — Success
