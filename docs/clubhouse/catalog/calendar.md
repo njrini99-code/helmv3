@@ -20,7 +20,7 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6006 | Adding busy time fails | "Couldn't add your busy time" + "Your entry is still here. Try again." Done: "Busy time added · Film" | `BusySheet` | calendar.test › CH-6006 |
 | CH-6007 | Attaching a file fails | "Couldn't attach the file". Done: "Attached · Pairings" | `FilePicker` | calendar.test › CH-6007 |
 | CH-6008 | Removing a file fails | "Couldn't remove Local rules" + "It's still attached. Try again in a moment." The file comes back. Done: "Removed · Local rules" with Undo | `EventFiles` | calendar.test › CH-6008 |
-| CH-6009 | Undo on a removed file fails | "Couldn't put Local rules back" + "Attach it again from Documents." | `EventFiles` | calendar.test › CH-6009 |
+| CH-6009 | Undo on a removed file fails (refused, or the call throws) | "Couldn't put Local rules back" + "Attach it again from Documents." Offline, nothing is sent: "Couldn't put Local rules back: you're offline" (CH-1903) | `EventFiles` | calendar.test › CH-6009 |
 | CH-6010 | A player's reply fails (or is locked) | "Couldn't send your reply for Round review" + the lock reason or "Replies lock at the deadline or once the event starts." The choice goes back. Done: "You're going to Round review" | `PlayerReply`, optimistic | calendar.test › CH-6010 |
 | CH-6011 | Saving attendance fails | "Couldn't save attendance" + "The marks that saved are kept. Try again for the rest." Done: "6 attendance marks saved" | `Attendance` | calendar.test › CH-6011 |
 | CH-6012 | Copying an event link fails | "Couldn't copy the link" + "Your browser blocked the clipboard." Done: "Link copied" | `EventDetail` | calendar.test › CH-6012 |
@@ -59,7 +59,7 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6302 | Nothing on the team calendar today | The panel title reads "Nothing on the team calendar today" | `Summary` | calendar.test › CH-6302 |
 | CH-6303 | An event has no files | "No files yet. Attach pairings, local rules or a travel sheet from Documents." | `EventFiles` | calendar.test › CH-6303 |
 | CH-6304 | The team has no documents to attach | "Your team has no documents yet. Upload one in Documents, then attach it here." | `FilePicker` | calendar.test › CH-6304 |
-| CH-6305 | An opened event left the loaded range | "This event isn't in the loaded range anymore. It may have moved or been cancelled." + back to Today | `EventDetail` | preview |
+| CH-6305 | An opened event left the loaded range | "This event isn't in the loaded range anymore. It may have moved or been cancelled." + back to Today | `EventDetail` | calendar.test › CH-6305 |
 | CH-6306 | Nothing needs attention this week | Coach: "No overlaps and no replies waiting." Player: "You're all caught up." | `Summary` | calendar.test › CH-6306 |
 | CH-6307 | Signed in with no team (coach or player) | The page empty state: "You aren't on a team yet" + Coach: "The calendar fills in once your team is set up." Player: "Team events show here once a coach adds you to a team roster." | `CalendarNoTeam`, from the route | calendar.test › CH-6307 |
 | CH-6308 | A day with nothing on it (phone Day view) | "Nothing on this day." + Coach: "Tap + to plan something for the team." Player: "Events your coach invites you to show here." | `EmptyState` in `CalendarPhone` | calendar.test › CH-6308 |
@@ -79,7 +79,7 @@ file is optimistic with Undo, and refuses offline the same way.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6501 | Cancel event (event menu) | "Cancel Travel briefing?" + "Everyone invited is notified. Replies and attendance are kept, and the event stays on the calendar marked cancelled." + which events for a series. Keep event / Cancel event | `CancelEvent` | calendar.test › CH-6501 |
+| CH-6501 | Cancel event (event menu) | "Cancel Travel briefing?" + "Everyone invited is notified. Replies and attendance are kept, and the event stays on the calendar marked cancelled." For a series, which events; This and following and All in series delete the events, and the question says so: "…These events are removed from the calendar, and their replies and attendance with them." Keep event / Cancel event | `CancelEvent` | calendar.test › CH-6501 |
 | CH-6502 | Remove busy time | "Remove Recruiting call?" + "This block is removed from your calendar." (or every repeat) | `BusyDetail` | calendar.test › CH-6502 |
 | CH-6503 | Closing the event editor with changes | "Discard this event?" + "Nothing has been published yet. What you entered is lost." (editing: "Discard your changes?") Keep editing / Discard. Closing untouched just closes | `EventEditor` | calendar.test › CH-6503 |
 

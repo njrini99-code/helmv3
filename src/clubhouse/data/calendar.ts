@@ -53,8 +53,11 @@ export function parseView(v: string | undefined): ChCalView {
 export function parseNewType(v: string | undefined): ChCalType | undefined {
   return v === 'practice' || v === 'qualifier' || v === 'tournament' || v === 'meeting' || v === 'travel' || v === 'other' ? v : undefined;
 }
+/** A real calendar date from the URL, else `fallback`. 2026-02-30 is not one (Date.parse alone would roll it to 2 March). */
 export function parseDate(v: string | undefined, fallback: string): string {
-  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T12:00:00Z`)) ? v : fallback;
+  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return fallback;
+  const t = Date.parse(`${v}T12:00:00Z`);
+  return Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== v ? fallback : v;
 }
 
 /** Map the RSVP column (which still carries legacy values) onto four replies. */
@@ -157,7 +160,7 @@ export async function loadCalendar(input: {
   const fromIso = `${addDays(range.from, -1)}T00:00:00Z`;
   const toIso = `${addDays(range.to, 2)}T00:00:00Z`;
 
-  const [eventsRes, classesRes] = await Promise.all([
+  const [eventsRes, classesRes, busyRes] = await Promise.all([
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
@@ -171,6 +174,16 @@ export async function loadCalendar(input: {
     ),
     // RLS scopes this: a coach reads every rostered player's classes, a player only their own.
     supabase.from('golf_player_classes').select('id, player_id, instructor, days, semester, building, room').eq('team_id', input.teamId).limit(1000),
+    // The coach's own blocked time is read with the events, not after them. Only a coach's, and only their own
+    // (`coach_id`): a player never reads any (60802).
+    input.role === 'coach' && input.coachId
+      ? supabase
+          .from('golf_coach_blocked_time')
+          .select('id, title, reason, description, start_date, end_date, start_time, end_time, all_day, recurrence_rule')
+          .eq('coach_id', input.coachId)
+          .lte('start_date', range.to)
+          .limit(500)
+      : null,
   ]);
   if (eventsRes.error) chLogServer('calendar', 'events', eventsRes.error, 'calendar');
   if (classesRes.error) chLogServer('calendar', 'classes', classesRes.error, 'calendar');
@@ -223,6 +236,11 @@ export async function loadCalendar(input: {
         recurring = null;
       }
     }
+    // A player's browser gets only their own place on the invite list and their own reply: the screen never shows a
+    // teammate's, so the payload doesn't carry them either (60803). A coach gets the whole list.
+    const invitees = invited.get(r.id) ?? [];
+    const replies = rsvp.get(r.id) ?? {};
+    const me = input.role === 'player' ? input.viewerPlayerId : null;
     const base = {
       id: r.id,
       type,
@@ -230,8 +248,8 @@ export async function loadCalendar(input: {
       location: cls && klass ? [klass.building, klass.room].filter(Boolean).join(' ') || r.location : r.location,
       notes: stripClassTag(r.description),
       recurring,
-      people: invited.get(r.id) ?? [],
-      rsvp: rsvp.get(r.id) ?? {},
+      people: input.role === 'coach' ? invitees : me && invitees.includes(me) ? [me] : [],
+      rsvp: input.role === 'coach' ? replies : me && replies[me] ? { [me]: replies[me] } : {},
       owner,
       busyOnly: false,
       instructor: klass?.instructor ?? null,
@@ -260,13 +278,8 @@ export async function loadCalendar(input: {
 
   // The coach's own blocked time. Only the coach sees it; it's labelled as theirs.
   let busyError = false;
-  if (input.role === 'coach' && input.coachId) {
-    const { data: blocks, error } = await supabase
-      .from('golf_coach_blocked_time')
-      .select('id, title, reason, description, start_date, end_date, start_time, end_time, all_day, recurrence_rule')
-      .eq('coach_id', input.coachId)
-      .lte('start_date', range.to)
-      .limit(500);
+  if (busyRes) {
+    const { data: blocks, error } = busyRes;
     if (error) {
       chLogServer('calendar', 'blockedTime', error, 'calendar');
       busyError = true;

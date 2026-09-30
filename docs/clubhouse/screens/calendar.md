@@ -5,8 +5,11 @@ Route: /golf/dashboard/calendar (coach and player) · `?view=day|week|month|agen
 Surface tag: `calendar.<view|panel|detail|attendance|subscribe|saveEvent|cancelEvent|rsvp|createFeed>`
 
 Player permissions: players see team events and reply to the ones they're invited to (`respondToEvent`),
-see only their own classes (the `attributeClassEvents` rule, enforced in the loader), and get no editor,
-attendance, people filter or overlap review. Coaches see every rostered player's classes.
+see only their own classes (the loader drops any other class, and one whose owner it can't resolve), and get no editor,
+attendance, people filter, busy time or overlap review. Their browser is sent only their own place on each invite list
+and their own reply, and the calendar-app sheet offers them only My schedule (the team link is a coach's). Coaches see
+every rostered player's classes. Each gate is proved in `docs/clubhouse/pages/P006-calendar/CONTRACT.md`, category 08
+(60801 to 60808).
 
 Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGolfEvent` (soft cancel),
 `createRecurringEvent`, `editRecurringEvent`, `deleteRecurringEvent`, `respondToEvent`, `getAttendanceReport`,
@@ -52,7 +55,7 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [x] Offline or slow network: the action says so instead of spinning forever
 - [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event
 - [x] Forms: the editor validates title and time before submit, keeps every field on failure and disables while pending
-- [x] Destructive actions: cancelling asks first (with series scope), and it's a soft cancel that keeps replies and attendance
+- [x] Destructive actions: cancelling asks first (with series scope). One event is a soft cancel that keeps replies and attendance; This and following and All in series delete the events with their replies and attendance, and the question says so (61101)
 - [x] Optimistic updates roll back on failure and tell the coach (a player's reply reverts if it doesn't send)
 
 ## error-tracking
@@ -61,7 +64,7 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [x] Key intents leave a `chTrail` breadcrumb (navigate, submit, save attendance, keep overlap)
 - [x] No `catch` swallows an error without reporting or handling it on screen
 - [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [ ] Every failure path was forced once locally and seen in the console or Sentry (the preview forces the events, replies, classes and attendance failures; the mutations still need a forced failure)
+- [ ] Every failure path was forced once locally and seen in the console or Sentry (the preview forces the events, replies, classes and attendance failures; every write's failure, Retry and offline refusal is now forced in `calendar.test.tsx` (60601 to 60612, 61401, 10703, 60701); none has been seen in Sentry)
 
 ## phone-spec
 - [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (the v2 board, mapped piece by piece, 2026-09-30)
@@ -93,7 +96,7 @@ Verified by `calendar.test.tsx` (CH-68xx) and `npm run clubhouse:a11y`; states c
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [ ] No request waterfall on the server, with independent reads in parallel
+- [x] No request waterfall on the server, with independent reads in parallel (three rounds: the team; events, classes and busy time; replies. The order is asserted by `calendar.test` › 62101)
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 

@@ -32,7 +32,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5205 | Game detail crashes | "Game detail couldn't be shown." … | `SectionBoundary stats.player.game` | stats-player.test › CH-5205 |
 | CH-5206 | The rounds table crashes | "The rounds table couldn't be shown." … | `SectionBoundary stats.player.rounds` | stats-player.test › CH-5206 |
 | CH-5207 | Development crashes | "Development couldn't be shown." … | `SectionBoundary stats.player.development` | stats-player.test › CH-5207 |
-| CH-5208 | D1 benchmarks don't load | The D1 column reads "—"; no figure is compared with a benchmark it doesn't have | `loadPlayerProfile`; logged `clubhouse.stats.d1Benchmarks` | existing |
+| CH-5208 | D1 benchmarks don't load, or the team's own row (its men's or women's tour) doesn't | With no benchmark at all the profile leaves the D1 column out and each figure's context reads the sample ("10 rounds") instead of "vs. D1"; when only some benchmarks exist the rest of the column reads "—". An unknown tour reads no benchmark, so a women's team is never graded against the men's | `loadPlayerProfile`; logged `clubhouse.stats.d1Benchmarks` / `clubhouse.stats.team` | stats-player.test › CH-5208 |
 
 ## 53xx Empty
 
@@ -43,15 +43,15 @@ its own boundary, so a crash stays inside the tab.
 | CH-5303 | No focus areas | "No focus areas yet." + (coach) "Add one from a weak leg in Game detail." / (player) "Your coach adds focus areas; they show here." | `Development` | stats-player.test › CH-5303 |
 | CH-5304 | No goals | "No goals set." + who sets them | `Development` | stats-player.test › CH-5304 |
 | CH-5305 | Fewer than three rounds in the window | "Early read. Luca has 2 countable rounds in this window, so averages and trends will move a lot. Strokes gained shows once there are three." | `StatsPlayer` | stats-player.test › CH-5305 |
-| CH-5306 | A coach opens a player who isn't on their team | The page empty state (v2 medallion): "That player isn't on your team" + "They may have been removed, or the link is from another team." + Back to team stats | `NotOnTeam` (route) | stats-player.test › CH-5306 |
-| CH-5307 | A player who isn't on an active roster | The page empty state (v2 medallion): "Your stats aren't available" + "You aren't on an active team roster right now." | `NotOnTeam` (route) | stats-player.test › CH-5307 |
+| CH-5306 | A coach opens a player who isn't on their team | The page empty state (v2 medallion): "That player isn't on your team" + "They may have been removed, or the link is from another team." + Back to team stats. Also for a link whose id is not an id, and for a pending or removed member; a read that fails raises the route error view instead (Try again), never this | `NotOnTeam` (route); `loadPlayerProfile` returns null | stats-player.test › CH-5306 |
+| CH-5307 | A player who isn't on an active roster | The page empty state (v2 medallion): "Your stats aren't available" + "You aren't on an active team roster right now." Reached only when the team resolved but the roster has no row for the player when the profile is read; a player with no active team at all sees CH-4309, "You aren't on a team yet" | `NotOnTeam` (route) | stats-player.test › CH-5307 |
 
 ## 54xx Loading
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-5401 | A focus area is being proposed | The button reads "Adding" and can't be pressed again | `FocusAreaSheet` | stats-player.test › CH-5401 |
-| CH-5402 | Changing the window or the player (pager) | The page dims and is marked busy until it lands; the scroll position stays | `useTransition`, `.ch-st[aria-busy]` | preview |
+| CH-5402 | Changing the window or the player (pager) | The page dims and is marked busy until it lands; the scroll position stays | `useTransition`, `.ch-st[aria-busy]` | stats-player.test › CH-5402 |
 
 ## 56xx Motion
 
@@ -78,3 +78,10 @@ its own boundary, so a crash stays inside the tab.
 | CH-5805 | No axe violations on every tab and state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-5806 | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it | `ScrollRegion` | a11y scan |
 | CH-5807 | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing | `aria-expanded`; `aria-pressed` | stats-player.test › phone rounds |
+
+## 59xx Network and UX
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-5901 | Changing the window (the switch, on desktop or the phone) while offline | "Couldn't open the season: you're offline" + "Reconnect, then try again. The figures shown are still the last 10 rounds." Nothing is requested, the switch stays where it was, and the OS error pattern plays | `StatsPlayer` `changeWindow`, `isOffline` | stats-player.test › CH-5901 |
+| CH-5902 | A window change takes longer than 5 seconds | "Still loading the season…" + "This is taking longer than usual. The figures shown are still the last 10 rounds.", once; the page stays dimmed and busy (CH-5402) until the new window lands | `StatsPlayer`, `CH_SLOW_SAVE_AFTER` | stats-player.test › CH-5902 |

@@ -33,6 +33,9 @@ import { teamPlayerHref } from './links';
 
 type Lens = 'sg' | 'score';
 
+/** A spreadsheet reads a cell that starts with = + - @ (or a tab or a return) as a formula. Players type their own names, so the export writes them as text (40501). */
+const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
+
 /** What the trend, the leg cards and the grid read; the rest of the page stays on the server. */
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'grid' | 'sgBaselineNote' | 'roundCount'>;
 
@@ -86,7 +89,7 @@ export function TeamHeadActions({ window: current, teamName, grid }: { window: C
   const toast = useToast();
   const exportCsv = (rows: ChTeamStats['grid']) => {
     const head = ['Player', 'Rounds', ...LEGS_LIST.map((l) => `SG ${l}`), 'SG total'];
-    const lines = rows.map((g) => [g.name, g.rounds, ...g.legs.map((v) => v?.toFixed(2) ?? ''), g.total?.toFixed(2) ?? ''].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const lines = rows.map((g) => [asText(g.name), g.rounds, ...g.legs.map((v) => v?.toFixed(2) ?? ''), g.total?.toFixed(2) ?? ''].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
     try {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' }));

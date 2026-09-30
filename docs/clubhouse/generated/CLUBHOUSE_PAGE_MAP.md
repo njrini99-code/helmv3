@@ -9,13 +9,13 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 | P001 | Shell | (shell) | coach, player | ios_native_shell, team_communications | approved | in_progress | complete | reserved | existing | partial | current |
 | P002 | Home | `/golf/dashboard` | coach, player | team_operations, calendar_events, stats_analytics | approved | in_progress | complete | reserved | existing | partial | current |
 | P003 | Roster | `/golf/dashboard/roster` | coach | roster_team | approved | in_progress | complete | reserved | existing | partial | current |
-| P004 | Stats (team) | `/golf/dashboard/stats`<br>`/golf/dashboard/stats/team` | coach | stats_analytics | approved | in_progress | partial | reserved | existing | partial | missing |
-| P005 | Stats (player) | `/golf/dashboard/stats` | coach, player | stats_analytics, player_coachhelm_development | approved | in_progress | partial | reserved | existing | partial | missing |
-| P006 | Calendar | `/golf/dashboard/calendar` | coach, player | calendar_events | approved | in_progress | partial | reserved | existing | partial | missing |
+| P004 | Stats (team) | `/golf/dashboard/stats`<br>`/golf/dashboard/stats/team` | coach | stats_analytics | approved | in_progress | complete | reserved | existing | partial | current |
+| P005 | Stats (player) | `/golf/dashboard/stats` | coach, player | stats_analytics, player_coachhelm_development | approved | in_progress | complete | reserved | existing | partial | current |
+| P006 | Calendar | `/golf/dashboard/calendar` | coach, player | calendar_events | approved | in_progress | complete | reserved | existing | partial | current |
 | P007 | Messages | `/golf/dashboard/messages` | coach, player | team_communications | approved | in_progress | complete | reserved | existing | partial | current |
 | P008 | Settings | `/golf/dashboard/settings`<br>`/golf/dashboard/settings/notifications`<br>`/golf/dashboard/settings/coaching-intelligence` | coach, player | settings_preferences, auth_onboarding_join, coachhelm_ai | draft | in_progress | complete | reserved | existing | partial | current |
 | P009 | Qualifiers | `/golf/dashboard/qualifiers`<br>`/golf/dashboard/qualifiers/new`<br>`/golf/dashboard/qualifiers/[id]`<br>`/golf/dashboard/qualifiers/[id]/edit`<br>`/golf/dashboard/qualifiers/[id]/selection`<br>`/golf/dashboard/my-qualifiers` | coach, player | qualifiers | approved | in_progress | complete | reserved | existing | partial | current |
 | P010 | Team Hub | `/golf/dashboard/team-hub` | coach, player | player_hub, team_communications, team_operations | approved | in_progress | partial | reserved | existing | partial | missing |
-| P011 | Rounds | `/golf/dashboard/rounds` | player | golf_round_lifecycle | approved | in_progress | partial | reserved | existing | partial | missing |
+| P011 | Rounds | `/golf/dashboard/rounds`<br>`/golf/dashboard/rounds/[id]` | coach, player | golf_round_lifecycle | approved | in_progress | partial | reserved | existing | partial | missing |
 
 Pages not designed yet have no ID (D-60). The v2 design (`design/handoff/VERSIONS.md`) adds CoachHelm, Team Hub, player Home, Rounds and Classes; they are registered when their build starts (D-67).

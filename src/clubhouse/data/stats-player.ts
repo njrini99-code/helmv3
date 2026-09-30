@@ -93,16 +93,20 @@ export async function loadPlayerProfile(input: {
       .select('id, first_name, last_name, graduation_year, hometown, state, handicap, handicap_index')
       .eq('id', input.playerId)
       .maybeSingle(),
-    supabase.from('golf_team_members').select('status').eq('team_id', input.teamId).eq('player_id', input.playerId).maybeSingle(),
+    // Active and inactive members are on the roster; a pending or removed row is not (the same rule as Roster).
+    supabase.from('golf_team_members').select('status').eq('team_id', input.teamId).eq('player_id', input.playerId).in('status', ['active', 'inactive']).maybeSingle(),
   ]);
   if (playerRes.error) chLogServer('stats', 'player', playerRes.error);
   if (teamRes.error) chLogServer('stats', 'team', teamRes.error, 'teams');
   if (memberRes.error) chLogServer('stats', 'membership', memberRes.error, 'teams');
+  // A read that failed says nothing about the roster: the route error view offers Try again, never "not on your team" (CH-5306).
+  if (playerRes.error || memberRes.error) throw new Error('Clubhouse: the player profile read failed');
   const p = playerRes.data;
   // Not on this team (or not readable): the page shows not-found, never another team's player.
   if (!p || !memberRes.data) return null;
 
-  const tour = tourForGender(teamRes.data?.gender);
+  // CH-5208: without the team's row its tour is unknown, so no D1 benchmark is claimed (a women's team is never graded against the men's).
+  const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
 
   // Coaches compare against the active team and page through it; players see only themselves.
   let teamIds: string[] = [input.playerId];
@@ -125,7 +129,7 @@ export async function loadPlayerProfile(input: {
         return { stats: null, error: true };
       },
     ),
-    loadD1(supabase, tour, 'stats'),
+    tour ? loadD1(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>()),
     supabase
       .from('golf_player_focus_areas')
       .select('id, title, baseline_value, current_value, target_value, target_metric, status')

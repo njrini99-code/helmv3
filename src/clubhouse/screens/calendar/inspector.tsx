@@ -21,7 +21,7 @@ import {
   BookOpen,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getAttendanceReport, markAttendance, type AttendanceMark } from '@/app/golf/actions/attendance';
 import { respondToEvent } from '@/app/golf/actions/golf';
 import { readRsvpLockCode, rsvpLockMessage } from '@/hooks/useRSVP';
@@ -34,7 +34,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { PillGroup, Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { useAction } from '../../lib/use-action';
+import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import {
@@ -282,12 +282,24 @@ function Responses({ e }: { e: ChCalEvent }) {
 function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: string; now: ChNow; onDone: () => void }) {
   const current = e.rsvp[playerId] ?? 'pending';
   const [value, setValue] = useState<ChRsvp>(current);
+  // The reply the server last confirmed. The toast's Retry runs an earlier render's action, so the way back after a
+  // refusal is read from here and never from that render's closure.
+  const confirmed = useRef<ChRsvp>(current);
+  // The choice shows at once (optimistic), goes back if the server refuses, and the page re-reads when it lands. All
+  // three live in the action, so the toast's Retry that lands also shows the choice and re-reads.
   const reply = useAction(
     'calendar.rsvp',
     async (status: 'accepted' | 'tentative' | 'declined') => {
+      const chosen: ChRsvp = status === 'accepted' ? 'accepted' : status === 'tentative' ? 'maybe' : 'declined';
+      setValue(chosen);
       const r = await respondToEvent(e.id, status);
       // Lock reasons (deadline, started, cancelled) come back as codes; say which one.
-      return r.success ? r : { success: false, error: rsvpLockMessage(readRsvpLockCode(r), r.error).replace(' — ', '. ').replace(/^RSVPs/, 'Replies') };
+      const res = r.success ? r : { success: false, error: rsvpLockMessage(readRsvpLockCode(r), r.error).replace(' — ', '. ').replace(/^RSVPs/, 'Replies') };
+      if (normalise(res).success) {
+        confirmed.current = chosen;
+        onDone();
+      } else setValue(confirmed.current);
+      return res;
     },
     (status) => ({
       done: status === 'accepted' ? `You’re going to ${e.title}` : status === 'tentative' ? `Marked maybe for ${e.title}` : `Coach knows you can’t make ${e.title}`,
@@ -296,13 +308,9 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
       code: 'CH-6010',
     }),
   );
-  const pick = async (v: ChRsvp) => {
+  const pick = (v: ChRsvp) => {
     if (v === 'pending' || v === value) return;
-    const prev = value;
-    setValue(v);
-    const res = await reply.run(v === 'accepted' ? 'accepted' : v === 'maybe' ? 'tentative' : 'declined');
-    if (res.success) onDone();
-    else setValue(prev);
+    void reply.run(v === 'accepted' ? 'accepted' : v === 'maybe' ? 'tentative' : 'declined');
   };
   const started = e.date < now.date || (e.date === now.date && (e.allDay || (e.start ?? 0) <= now.hour));
   if (e.cancelled) return null;
@@ -326,7 +334,7 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
       <Segmented<ChRsvp>
         label="Your reply"
         value={value}
-        onChange={(v) => void pick(v)}
+        onChange={pick}
         options={[
           { value: 'accepted', label: 'Going' },
           { value: 'maybe', label: 'Maybe' },

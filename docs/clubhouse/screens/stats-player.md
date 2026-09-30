@@ -50,8 +50,8 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [x] Partial failure: rounds, shot detail and development each carry their own flag and inline notice with Try again; shot detail that comes back empty while rounds exist counts as a failure, not as empty
 - [x] Crash containment: every tab panel is wrapped in a `SectionBoundary` with a surface tag
 - [x] Route error: the Clubhouse error view
-- [x] Not found and no access: a player id not on the coach's team gets a "not on your team" state with a way back; a player can't view anyone else; a failed membership read raises the route error view, never "no team"
-- [ ] Offline or slow network: the window switch and focus-area save say so instead of spinning forever
+- [x] Not found and no access: a player id not on the coach's team gets a "not on your team" state with a way back; a player can't view anyone else; a failed membership read raises the route error view, never "no team". Proved in stats-player.test (50803, 50804, 50611): the player's own id is always used, ?player= is never read for a player, an id that isn't shaped like one makes no read, a pending or removed member isn't on the team, and a failed player or membership read throws (it used to render "not on your team")
+- [x] Offline or slow network: the window switch and focus-area save say so instead of spinning forever (CH-5901 offline: nothing is requested and the switch stays put; CH-5902 slow: one notice after 5 seconds; the focus-area save is the shell's CH-1903 and CH-1902 through `useAction`. Forced in stats-player.test, desktop and phone; not forced in a browser)
 - [x] User errors: adding a focus area goes through `useAction`, with a specific failure message, an error haptic and a Sentry event
 - [x] Forms: the focus-area sheet validates before submit, keeps input on failure and disables while pending
 - [x] N/A: no destructive actions on this screen
@@ -63,7 +63,7 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
 - [x] No `catch` swallows an error without reporting or handling it on screen
 - [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [ ] Every failure path was forced once locally and seen in the console or Sentry
+- [ ] Every failure path was forced once locally and seen in the console or Sentry (open, merge pass: forced in stats-player.test, which asserts each read's `chLogServer` name, each tab crash's `chReport` and the focus-area failure's; not yet seen in the console or Sentry)
 
 ## phone-spec
 - [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop

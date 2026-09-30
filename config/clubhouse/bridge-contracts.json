@@ -2144,6 +2144,32 @@
     ]
   },
   {
+    "id": 40101,
+    "page": "P004",
+    "category": 1,
+    "item": 1,
+    "name": "TEAM_STATS_READY",
+    "meaning": "Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsTeam.tsx#StatsTeam; src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 40102,
+    "page": "P004",
+    "category": 1,
+    "item": 2,
+    "name": "WINDOW_FROM_THE_ADDRESS",
+    "meaning": "?window=season or ?window=qualifiers opens that window and anything else opens Last 10; changing the switch writes the window back to /golf/dashboard/stats (Last 10 is the bare address) without moving the scroll.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-common.ts#parseWindow; src/clubhouse/screens/stats/StatsTeamIslands.tsx#StatsTeamFrame",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
     "id": 40201,
     "page": "P004",
     "category": 2,
@@ -2263,6 +2289,19 @@
     "meaning": "A coach or player with no team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40501,
+    "page": "P004",
+    "category": 5,
+    "item": 1,
+    "name": "EXPORT_CELLS_ARE_TEXT",
+    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#asText, TeamHeadActions",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
   },
   {
     "id": 40601,
@@ -2408,6 +2447,71 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 40801,
+    "page": "P004",
+    "category": 8,
+    "item": 1,
+    "name": "COACH_ONLY_TEAM_STATS",
+    "meaning": "Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team is a coach's route in the Clubhouse frame (the Fairway page sends a player back to /stats).",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES; src/app/golf/(dashboard)/dashboard/stats/team/page.tsx#TeamStatsPage",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 40802,
+    "page": "P004",
+    "category": 8,
+    "item": 2,
+    "name": "TEAM_IS_THE_COACHS_OWN",
+    "meaning": "The team is always the one resolveClubhouseTeam gives the signed-in coach, never one named in the address: the loader reads that team's row, its active roster (golf_team_members by team_id, status active) and only those players' rounds; a coach with no team gets the no-team state and nothing is read.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute; src/clubhouse/data/stats-team.ts#loadTeamStats",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 40901,
+    "page": "P004",
+    "category": 9,
+    "item": 1,
+    "name": "EXPORT_LANDED",
+    "meaning": "Export downloads the player grid as a CSV named for the team and window (for example varsity-stats-season.csv), one row per player with a round in the window, and a toast says Team stats exported with the success haptic; with nothing to export there is no button.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#TeamHeadActions",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 41201,
+    "page": "P004",
+    "category": 12,
+    "item": 1,
+    "name": "CHOICES_KEPT_ACROSS_WINDOWS",
+    "meaning": "Changing the window keeps the chosen leg and the focused player on the page while the new figures arrive.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#TeamCharts",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 41401,
+    "page": "P004",
+    "category": 14,
+    "item": 1,
+    "name": "TRY_AGAIN_REFRESHES_THE_PAGE",
+    "meaning": "Try again on a failed-read notice (team rounds, round figures, putting) asks the server for the whole page again (router.refresh), so every read is retried, not one section's.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#RetryNotice",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
     "id": 41601,
     "page": "P004",
     "category": 16,
@@ -2516,6 +2620,123 @@
     "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…\"); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 41901,
+    "page": "P004",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_VIEW",
+    "meaning": "At 820px and below Team stats is the phone view (window switch, four figures, scoring line, strokes gained by leg, players sorted by Avg or SG, team putting), never a shrunken desktop; the server renders desktop and the phone view takes over at hydration.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#StatsTeamFrame; src/clubhouse/screens/stats/StatsTeamPhone.tsx#StatsTeamPhone",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 42001,
+    "page": "P004",
+    "category": 20,
+    "item": 1,
+    "name": "KEYBOARD_PATH",
+    "meaning": "The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus.",
+    "status": "implemented",
+    "where": "src/clubhouse/ui/Segmented.tsx#Segmented; src/clubhouse/screens/stats/StatsTeamIslands.tsx#LegTrend, LegGrid",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 42101,
+    "page": "P004",
+    "category": 21,
+    "item": 1,
+    "name": "ONE_PASS_LOADER",
+    "meaning": "loadTeamStats reads the team and its roster together, starts the D1 benchmarks before the rounds come back, then reads the round figures and the putts together, once each (id chunks in parallel); every failed read is logged and flagged, never thrown.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-team.ts#loadTeamStats",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 42301,
+    "page": "P004",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A failed read is logged through chLogServer('stats', team|members|rounds|roundCache|putts|d1Benchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-team.ts; src/clubhouse/data/stats-common.ts; src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/screens/stats/StatsTeamIslands.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 42401,
+    "page": "P004",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/stats-team.test.tsx names, in a test title, every Stats team catalog code it forces (the rows whose Test column names it) and each hand contract above.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/stats-team.test.tsx (42401)",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  {
+    "id": 50101,
+    "page": "P005",
+    "category": 1,
+    "item": 1,
+    "name": "PROFILE_READY",
+    "meaning": "A profile opens on Overview for the window in the address: who (name, status, class, hometown), four hero figures, the four sections (Overview, Game detail, Rounds, Development) and the comparison table; a coach also gets Message, Add focus area, a way back to Team stats and the previous/next pager; on the phone, the phone profile.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer; src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50102,
+    "page": "P005",
+    "category": 1,
+    "item": 2,
+    "name": "TAB_AND_WINDOW_FROM_THE_ADDRESS",
+    "meaning": "?tab=overview, game, rounds or dev opens that tab and anything else opens Overview (Roster's All N uses tab=rounds); ?window=season or ?window=qualifiers opens that window and anything else opens Last 10.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer; src/clubhouse/data/stats-common.ts#parseWindow",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50103,
+    "page": "P005",
+    "category": 1,
+    "item": 3,
+    "name": "COACH_PAGES_THROUGH_THE_TEAM",
+    "meaning": "A coach pages through the active team ordered by scoring average with Previous player and Next player (N of M), wrapping from the last player to the first, and each link keeps the window.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-player.ts#loadPlayerProfile (nav); src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50104,
+    "page": "P005",
+    "category": 1,
+    "item": 4,
+    "name": "MESSAGE_OPENS_THE_PLAYERS_THREAD",
+    "meaning": "A coach's Message on a profile (the desktop button, the phone header icon) opens Messages on the direct thread with that player (?player=<golf_players.id>); a player's own profile has no Message.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer; src/clubhouse/screens/stats/StatsPlayerPhone.tsx#StatsPlayerPhone",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
   },
   {
     "id": 50301,
@@ -2700,7 +2921,7 @@
     "item": 9,
     "name": "D1_BENCHMARKS_DONT_LOAD",
     "chCode": "CH-5208",
-    "meaning": "D1 benchmarks don't load",
+    "meaning": "D1 benchmarks don't load, or the team's own row (its men's or women's tour) doesn't",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -2712,6 +2933,41 @@
     "name": "SHARING_A_PLAYERS_STATS_FROM_THE_PHONE",
     "chCode": "CH-5002",
     "meaning": "Sharing a player's stats from the phone fails (the browser blocks the clipboard)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50611,
+    "page": "P005",
+    "category": 6,
+    "item": 11,
+    "name": "PROFILE_READ_FAILURE_RAISES_ROUTE_ERROR",
+    "meaning": "When the player row or the roster membership read fails, the loader logs it and throws, so the route error view (with Try again) shows; a profile is never reported as That player isn't on your team unless a read that worked found nobody.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-player.ts#loadPlayerProfile",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50701,
+    "page": "P005",
+    "category": 7,
+    "item": 1,
+    "name": "CHANGING_THE_WINDOW_WHILE_OFFLINE",
+    "chCode": "CH-5901",
+    "meaning": "Changing the window (the switch, on desktop or the phone) while offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50702,
+    "page": "P005",
+    "category": 7,
+    "item": 2,
+    "name": "A_WINDOW_CHANGE_TAKES_LONGER_THAN_5",
+    "chCode": "CH-5902",
+    "meaning": "A window change takes longer than 5 seconds",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -2736,6 +2992,123 @@
     "meaning": "A player who isn't on an active roster",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50803,
+    "page": "P005",
+    "category": 8,
+    "item": 3,
+    "name": "PLAYER_SEES_ONLY_OWN_STATS",
+    "meaning": "A player always gets their own profile: ?player= is never read, the loader is asked for the caller's own id as a player view (only their rounds, D1 comparisons, no team average, no pager), and the page has no Message, no Add focus area and no way to the team.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute; src/clubhouse/data/stats-player.ts#loadPlayerProfile; src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50804,
+    "page": "P005",
+    "category": 8,
+    "item": 4,
+    "name": "COACH_OPENS_ROSTERED_PLAYERS_ONLY",
+    "meaning": "A coach's ?player= is read against the coach's own team from the session: a player who is active or inactive on it opens; another team's player, a pending or removed member, and an id that is not shaped like an id all open That player isn't on your team, and the last makes no read.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute; src/clubhouse/data/stats-player.ts#loadPlayerProfile",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50805,
+    "page": "P005",
+    "category": 8,
+    "item": 5,
+    "name": "SERVER_REFUSAL_IS_NOT_ZEROS",
+    "meaning": "Shot-level detail is read through getDetailedStats for the profile's own player id, which answers empty to a caller who is neither the player nor their coach; empty detail for a window that has rounds shows as Shot-level detail didn't load, never as zeros.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-player.ts#loadPlayerProfile (detailFailed)",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50806,
+    "page": "P005",
+    "category": 8,
+    "item": 6,
+    "name": "ONLY_A_COACH_PROPOSES_FOCUS_AREAS",
+    "meaning": "The Add focus area buttons and sheet exist only for a coach viewing a profile (the route hands a coach id only to a coach); a player's profile never offers them.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer; src/clubhouse/routes/stats.tsx#ClubhouseStatsRoute",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 50901,
+    "page": "P005",
+    "category": 9,
+    "item": 1,
+    "name": "FOCUS_AREA_PROPOSED",
+    "meaning": "A proposal that lands sends a focus area for this player from this coach with status proposed, names itself in a toast (Focus area proposed to the player; it starts when they accept) with the success haptic, closes the sheet and empties its fields.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#FocusAreaSheet",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 51201,
+    "page": "P005",
+    "category": 12,
+    "item": 1,
+    "name": "FOCUS_TEXT_KEPT_ON_FAILURE",
+    "meaning": "A focus area that fails to save keeps the sheet open with the area and the text the coach typed, and the toast says so.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#FocusAreaSheet",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 51202,
+    "page": "P005",
+    "category": 12,
+    "item": 2,
+    "name": "TAB_KEPT_ACROSS_WINDOWS_AND_PLAYERS",
+    "meaning": "The chosen tab stays when the window changes or the coach pages to another player.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 51401,
+    "page": "P005",
+    "category": 14,
+    "item": 1,
+    "name": "TRY_AGAIN_REFRESHES_THE_PAGE",
+    "meaning": "Try again on a failed-read notice (rounds, shot detail, development items) asks the server for the whole page again (router.refresh), so every read is retried, not one tab's.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer; src/clubhouse/screens/stats/StatsPlayerPhone.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 51501,
+    "page": "P005",
+    "category": 15,
+    "item": 1,
+    "name": "PAGE_READ_AGAIN_AFTER_A_PROPOSAL",
+    "meaning": "After a focus area is proposed the page is read again (router.refresh), so Development lists it as proposed without a reload.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#FocusAreaSheet",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
   },
   {
     "id": 51601,
@@ -2859,6 +3232,123 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 51901,
+    "page": "P005",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_PROFILE",
+    "meaning": "At 820px and below a profile is the phone view (who, three figures, Game detail one section at a time, scoring line, rounds, development), never a shrunken desktop; a coach's top bar is Player stats with Team and Share, a player's is My stats with More.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer; src/clubhouse/screens/stats/StatsPlayerPhone.tsx#StatsPlayerPhone",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 52001,
+    "page": "P005",
+    "category": 20,
+    "item": 1,
+    "name": "KEYBOARD_PATH",
+    "meaning": "The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it; each section tab is one Tab stop chosen with Enter or Space.",
+    "status": "implemented",
+    "where": "src/clubhouse/ui/Segmented.tsx#Segmented; src/clubhouse/screens/stats/StatsPlayer.tsx#FocusAreaSheet",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 52101,
+    "page": "P005",
+    "category": 21,
+    "item": 1,
+    "name": "ONE_PASS_LOADER",
+    "meaning": "loadPlayerProfile reads the team, the player and the membership together, then the rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once; a failed rounds, shot detail, benchmark, focus area or goal read is logged and flagged, never thrown.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-player.ts#loadPlayerProfile",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 52301,
+    "page": "P005",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A failed read is logged through chLogServer('stats', player|team|membership|rounds|detailedStats|d1Benchmarks|focusAreas|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/stats-player.ts; src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/lib/use-action.ts",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 52401,
+    "page": "P005",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/stats-player.test.tsx names, in a test title, every Stats player catalog code it forces (the rows whose Test column names it, and the no-team row Team stats catalogues) and each hand contract above.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/stats-player.test.tsx (52401)",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  {
+    "id": 60101,
+    "page": "P006",
+    "category": 1,
+    "item": 1,
+    "name": "CALENDAR_READY",
+    "meaning": "Calendar opens on the week that holds today, for a coach and for a player: the month, the count of team events this week and the team's zone, the week grid, and beside it the day's panel (today's events, what needs attention, where the data comes from); a coach also gets New event. On the phone the week opens as Day.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar; src/clubhouse/screens/calendar/inspector.tsx#Summary; src/clubhouse/screens/calendar/CalendarPhone.tsx#CalendarPhone",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60102,
+    "page": "P006",
+    "category": 1,
+    "item": 2,
+    "name": "ADDRESS_HOLDS_VIEW_DAY_AND_EVENT",
+    "meaning": "The address decides what is shown: ?view=day|week|month|agenda, ?date=YYYY-MM-DD and ?event=<id> are read on the server, so the right window and the open panel are there on first paint and a state can be linked. A value that is not real (an unknown view, an impossible date such as 2026-02-30) falls back to the week and to today, an event that is no longer in the loaded range says so (CH-6305), and changing the view or the day rewrites the address.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/calendar.tsx#ClubhouseCalendarRoute; src/clubhouse/data/calendar.ts#parseView, parseDate; src/app/golf/(dashboard)/dashboard/calendar/page.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60103,
+    "page": "P006",
+    "category": 1,
+    "item": 3,
+    "name": "SEEDS_FROM_OTHER_PAGES",
+    "meaning": "?new=1 opens New event once for a coach and drops itself from the address; &with=<player> makes it a meeting with only that player invited (a player the Calendar does not list invites nobody, never the team); &type= picks the new event's type from those a coach can create and ignores anything else.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar (initialNew, initialWith, initialType); src/clubhouse/screens/calendar/editor.tsx#EventEditor (seed)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60104,
+    "page": "P006",
+    "category": 1,
+    "item": 4,
+    "name": "TIMES_ARE_THE_TEAMS_ZONE",
+    "meaning": "Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour, one that runs past midnight ends at 24, and an all-day event keeps its stored dates, one entry for each day of a span.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/calendar.ts#loadCalendar, zoned",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
     "id": 60201,
     "page": "P006",
     "category": 2,
@@ -2923,6 +3413,32 @@
     "meaning": "Changing view or week, or a save in flight",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60302,
+    "page": "P006",
+    "category": 3,
+    "item": 2,
+    "name": "STEPS_INSIDE_THE_WINDOW_STAY_LOCAL",
+    "meaning": "Stepping or jumping to a day, week or month inside the loaded window changes the view in place and rewrites the address with no request; going past the window asks the server for the next one and marks the page busy while it loads (D-8).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar (go, step); src/clubhouse/data/calendar.ts#windowFor",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60303,
+    "page": "P006",
+    "category": 3,
+    "item": 3,
+    "name": "SCREEN_FOLLOWS_THE_SERVER",
+    "meaning": "When the server renders a different view or day than the one it sent before (a step past the window), the screen follows it instead of holding what was there.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar (the effect on data.view and data.anchor)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
   },
   {
     "id": 60401,
@@ -3151,7 +3667,7 @@
     "item": 9,
     "name": "UNDO_ON_A_REMOVED_FILE_FAILS",
     "chCode": "CH-6009",
-    "meaning": "Undo on a removed file fails",
+    "meaning": "Undo on a removed file fails (refused, or the call throws)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -3321,6 +3837,159 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60701,
+    "page": "P006",
+    "category": 7,
+    "item": 1,
+    "name": "FILE_REMOVAL_REFUSES_OFFLINE",
+    "meaning": "Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/extras.tsx#EventFiles (detach, Undo)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60801,
+    "page": "P006",
+    "category": 8,
+    "item": 1,
+    "name": "PLAYER_HAS_NO_PLANNING_TOOLS",
+    "meaning": "A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar (coach); src/clubhouse/screens/calendar/inspector.tsx#EventDetail; src/clubhouse/screens/calendar/extras.tsx#EventFiles",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60802,
+    "page": "P006",
+    "category": 8,
+    "item": 2,
+    "name": "PLAYER_READS_ONLY_THEIR_OWN_CLASSES",
+    "meaning": "The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/calendar.ts#loadCalendar",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60803,
+    "page": "P006",
+    "category": 8,
+    "item": 3,
+    "name": "PLAYER_GETS_ONLY_THEIR_OWN_REPLY",
+    "meaning": "A player's data carries, for each event, only their own place on the invite list and their own reply, never a teammate's id or answer, and the screen still finds what they owe from it. A coach's data carries every invitee and every reply.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/calendar.ts#loadCalendar (people, rsvp)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60804,
+    "page": "P006",
+    "category": 8,
+    "item": 4,
+    "name": "PLAYER_IS_NOT_OFFERED_THE_TEAM_LINK",
+    "meaning": "In Add to calendar app a player is offered only My schedule; the team link is a coach's, because createCalendarFeed refuses it to anyone else.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/editor.tsx#SubscribeSheet (rows)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60805,
+    "page": "P006",
+    "category": 8,
+    "item": 5,
+    "name": "ROUTE_STOPS_WITHOUT_A_SESSION_OR_TEAM",
+    "meaning": "With no session the route renders nothing (the page sends the visitor to login); a coach or player with no team gets the no-team page (CH-6307) and nothing is read; a coach is loaded as a coach with their own id and a player as that player with no coach id; a player whose team membership cannot be read throws to the route error view and is never told they have no team.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/calendar.tsx#ClubhouseCalendarRoute; src/clubhouse/routes/team.ts#resolveClubhouseTeam",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60806,
+    "page": "P006",
+    "category": 8,
+    "item": 6,
+    "name": "SERVER_ACTIONS_ARE_THE_GATE",
+    "meaning": "Every write is checked again by its server action and by row-level security, whatever the screen shows: creating, editing and cancelling an event and adding or removing busy time are for a coach, attendance for a coach on the event's team, a team calendar link for a coach, a reply for an active member of the event's team, and attaching or detaching a file for the event's team coaches. Read in this pass, not run: no test here forces a refusal.",
+    "status": "reserved",
+    "where": "src/app/golf/actions/golf.ts; recurring-events.ts; attendance.ts; calendar-feeds.ts; event-documents.ts"
+  },
+  {
+    "id": 60807,
+    "page": "P006",
+    "category": 8,
+    "item": 7,
+    "name": "REPLY_IS_FOR_INVITED_PLAYERS",
+    "meaning": "A player is offered the reply (Going, Maybe, Can't make it) only on an event whose invite list they are on that has not started and is not cancelled; once it starts the panel says replies are closed.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/inspector.tsx#EventDetail, PlayerReply",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60808,
+    "page": "P006",
+    "category": 8,
+    "item": 8,
+    "name": "BUSY_TIME_IS_THE_COACHS_OWN",
+    "meaning": "Busy time is read only for a coach and only their own rows (coach_id is the signed-in coach), and is never read for a player.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/calendar.ts#loadCalendar",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60901,
+    "page": "P006",
+    "category": 9,
+    "item": 1,
+    "name": "CHANGE_LANDED",
+    "meaning": "A change that goes through the shell's useAction and lands names itself in a toast with the success haptic: Published, Moved or Saved, Cancelled, link ready, Busy time added, Removed, Attached, the player's reply, and the attendance marks saved.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/editor.tsx; extras.tsx; inspector.tsx (useAction copy)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61001,
+    "page": "P006",
+    "category": 10,
+    "item": 1,
+    "name": "EDITOR_WARNS_OF_CLASHES",
+    "meaning": "While a coach chooses who to invite and when, the editor names who is busy at that time (\"Jonah is busy at this time.\", and \"Busy at this time\" beside each name) against classes and other team events. It is a warning and never blocks Publish.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/editor.tsx#EventEditor (clashes)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61002,
+    "page": "P006",
+    "category": 10,
+    "item": 2,
+    "name": "OVERLAPS_ARE_FLAGGED_FOR_THE_COACH",
+    "meaning": "For a coach, a timed team event whose invitee has a class or another team event at the same time is marked: its block and its row are named with \"schedule overlap\", and its panel offers Review. A player is shown none of it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/model.ts#findOverlaps; src/clubhouse/screens/calendar/Calendar.tsx#Calendar (overlaps, flagged); src/clubhouse/screens/calendar/inspector.tsx#EventDetail",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
     "id": 61101,
     "page": "P006",
     "category": 11,
@@ -3352,6 +4021,97 @@
     "meaning": "Closing the event editor with changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61202,
+    "page": "P006",
+    "category": 12,
+    "item": 2,
+    "name": "FORM_KEPT_ON_FAILURE",
+    "meaning": "A publish, save or busy-time add that fails leaves the editor or sheet open with every field as typed; nothing is cleared until the write lands.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/editor.tsx#EventEditor (save); src/clubhouse/screens/calendar/extras.tsx#BusySheet",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61203,
+    "page": "P006",
+    "category": 12,
+    "item": 3,
+    "name": "ATTENDANCE_MARKS_KEPT_ON_A_PARTIAL_SAVE",
+    "meaning": "Saving attendance saves each changed mark on its own: the marks that saved show as Saved, the ones that did not stay Unsaved, and the button offers to save what is left (\"Save attendance · 1\").",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/inspector.tsx#Attendance (save)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61301,
+    "page": "P006",
+    "category": 13,
+    "item": 1,
+    "name": "REPLY_SHOWS_AT_ONCE",
+    "meaning": "A player's reply shows as chosen the moment they tap it and goes back to the last answer the server confirmed if the write is refused (CH-6010); the page reads again when it lands.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/inspector.tsx#PlayerReply",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61302,
+    "page": "P006",
+    "category": 13,
+    "item": 2,
+    "name": "FILE_REMOVAL_SHOWS_AT_ONCE_WITH_UNDO",
+    "meaning": "Removing a file from an event takes it off the list at once and offers Undo. A refusal brings the file back (CH-6008); Undo attaches it again and reads the list again; an Undo that is refused or throws is reported and told to attach the file again from Documents (CH-6009).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/extras.tsx#EventFiles (detach)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61401,
+    "page": "P006",
+    "category": 14,
+    "item": 1,
+    "name": "RETRY_FINISHES_THE_JOB",
+    "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows: the editor or sheet closes, the panel clears, the page reads again, the new link shows in place of Create link, the new file shows, and a reply shows as chosen. This holds for publishing or saving an event, cancelling an event, creating a calendar-app link, removing busy time, adding busy time, attaching a file and a player's reply.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/editor.tsx (save, cancel, create); extras.tsx (remove, save, attach); inspector.tsx (reply)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61402,
+    "page": "P006",
+    "category": 14,
+    "item": 2,
+    "name": "TRY_AGAIN_REREADS",
+    "meaning": "Try again on a page notice (busy time, classes, timezone, replies) has the server read the page again; Try again inside a section (calendar-app links, an event's files, documents, attendance) reads only that section and leaves the rest of the page as it was.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar (refresh); the section loaders in editor.tsx, extras.tsx and inspector.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 61501,
+    "page": "P006",
+    "category": 15,
+    "item": 1,
+    "name": "CHECKED_TIME_IS_THE_SERVERS",
+    "meaning": "\"Checked 2:40 PM\" in Sources is the hour, in the team's zone, at which the server read the data; it is not the browser's clock.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/calendar.ts#loadCalendar (nowHour); src/clubhouse/screens/calendar/inspector.tsx#Summary",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
   },
   {
     "id": 61601,
@@ -3462,6 +4222,71 @@
     "meaning": "No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61901,
+    "page": "P006",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_LAYOUT",
+    "meaning": "At 820px and below Calendar is the phone build, never a shrunken desktop: Day with a week strip, Month and List; an event opens in a sheet and New event is a sheet. State, writes and dialogs are the desktop's.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/CalendarPhone.tsx#CalendarPhone; src/clubhouse/lib/use-phone.ts#useChPhone",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 62001,
+    "page": "P006",
+    "category": 20,
+    "item": 1,
+    "name": "KEYBOARD_SHORTCUTS",
+    "meaning": "On the desktop N opens New event (coach), T goes to today, the left and right arrows step a day, week or month (not in the agenda), and Esc closes the open panel. None of them fires while typing in a field or with a dialog open.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar (the keydown effect)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 62101,
+    "page": "P006",
+    "category": 21,
+    "item": 1,
+    "name": "LOADER_READS_IN_THREE_ROUNDS",
+    "meaning": "The server loader reads each table once for the whole screen, in three rounds and never per event or per player: the team's zone, name and roster; then events, class schedules and (for a coach) their busy time together; then every event's replies, one read for each 200 events. A read that fails is flagged and logged, never thrown.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/calendar.ts#loadCalendar",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 62301,
+    "page": "P006",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A read that fails in the loader is logged through chLogServer(\"calendar\", <read>) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance).",
+    "status": "implemented",
+    "where": "src/clubhouse/data/calendar.ts; src/clubhouse/lib/use-action.ts; the section loaders in editor.tsx, extras.tsx and inspector.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 62401,
+    "page": "P006",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/calendar.test.tsx names in a test title every Calendar catalog code of kinds 0 to 5 that is not marked preview, and every hand contract on this page it proves by its Bridge ID; the calendar model checks are in logic.test.ts.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/calendar.test.tsx (62401)",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
   },
   {
     "id": 70101,
@@ -7839,6 +8664,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110405,
+    "page": "P011",
+    "category": 4,
+    "item": 5,
+    "name": "A_ROUND_POSTED_AS_A_TOTAL_WITH",
+    "chCode": "CH-11305",
+    "meaning": "A round posted as a total, with no holes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110406,
+    "page": "P011",
+    "category": 4,
+    "item": 6,
+    "name": "A_HOLE_WITH_A_SCORE_BUT_NO",
+    "chCode": "CH-11306",
+    "meaning": "A hole with a score but no shots tracked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110407,
+    "page": "P011",
+    "category": 4,
+    "item": 7,
+    "name": "A_ROUND_THAT_DOESNT_EXIST_OR_ONE",
+    "chCode": "CH-11307",
+    "meaning": "A round that doesn't exist, or one this viewer may not see",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110601,
     "page": "P011",
     "category": 6,
@@ -7883,6 +8741,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110605,
+    "page": "P011",
+    "category": 6,
+    "item": 5,
+    "name": "A_REVIEWS_HOLE_BY_HOLE_CARD_DOESNT",
+    "chCode": "CH-11204",
+    "meaning": "A review's hole-by-hole card doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110606,
+    "page": "P011",
+    "category": 6,
+    "item": 6,
+    "name": "A_REVIEWS_SHOTS_DONT_LOAD",
+    "chCode": "CH-11205",
+    "meaning": "A review's shots don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110607,
+    "page": "P011",
+    "category": 6,
+    "item": 7,
+    "name": "THE_ROUND_ITSELF_DOESNT_LOAD",
+    "chCode": "CH-11206",
+    "meaning": "The round itself doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 111101,
     "page": "P011",
     "category": 11,
@@ -7923,7 +8814,7 @@
     "name": "A_ROUND_IS_OPENED",
     "chCode": "CH-11702",
     "meaning": "A round is opened",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -7934,7 +8825,18 @@
     "name": "CONTINUE_SUBMIT_OR_START_A_ROUND_IS",
     "chCode": "CH-11703",
     "meaning": "Continue, Submit or Start a round is tapped",
-    "status": "reserved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111704,
+    "page": "P011",
+    "category": 17,
+    "item": 4,
+    "name": "A_HOLE_IS_PICKED_ON_THE_REVIEWS",
+    "chCode": "CH-11704",
+    "meaning": "A hole is picked on the review's card, or stepped with the arrows",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -7945,7 +8847,7 @@
     "name": "A_SCREEN_READER_MOVES_THROUGH_THE_BOOK",
     "chCode": "CH-11801",
     "meaning": "A screen reader moves through the book",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -7956,7 +8858,7 @@
     "name": "THE_IN_PROGRESS_CARDS_HOLE_STRIP",
     "chCode": "CH-11802",
     "meaning": "The in-progress card's hole strip",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -7967,7 +8869,18 @@
     "name": "THE_SEASON_RIBBON",
     "chCode": "CH-11803",
     "meaning": "The season ribbon",
-    "status": "reserved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111804,
+    "page": "P011",
+    "category": 18,
+    "item": 4,
+    "name": "THE_REVIEWS_CARD",
+    "chCode": "CH-11804",
+    "meaning": "The review's card",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   }
 ]

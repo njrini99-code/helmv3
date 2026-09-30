@@ -48,7 +48,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-4401 | Stats is loading (team or player) | The page's header, five figure cards and chart frames as skeletons, each line and card sized like the loaded Team stats so nothing below moves when it lands | `StatsSkeleton`, `aria-busy` | stats-team.test › CH-4401 |
-| CH-4402 | Changing the window (Last 10, Season, Qualifiers) | The page dims slightly and is marked busy until the new window lands; the scroll position stays | `StatsTeamFrame` (`useTransition`), `.ch-st[aria-busy]` | preview |
+| CH-4402 | Changing the window (Last 10, Season, Qualifiers) | The page dims slightly and is marked busy until the new window lands; the scroll position stays | `StatsTeamFrame` (`useTransition`), `.ch-st[aria-busy]` | stats-team.test › CH-4402 |
 
 ## 46xx Motion
 
@@ -62,7 +62,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-4701 | Choosing a leg, focusing a player, changing the window or lens | A selection tick | `TeamCharts` `haptic('select')`, `Segmented` | stats-team.test › CH-4701 |
-| CH-4702 | An export lands / fails | The OS success pattern / the OS error pattern (D-70) | `TeamHeadActions` export | preview |
+| CH-4702 | An export lands / fails | The OS success pattern / the OS error pattern (D-70) | `TeamHeadActions` export | stats-team.test › CH-4702 |
 | CH-4703 | Sorting the phone's players by Avg or SG | A selection tick; the current sort is silent | `StatsTeamPhone` `Segmented` | stats-team.test › phone players sort |
 
 ## 48xx Accessibility

@@ -15,7 +15,7 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { isOffline, useAction } from '../../lib/use-action';
+import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { addDays, dayLabel, dayNum, dowOf, monthName, rangeLabel, type ChCalEvent } from './model';
@@ -38,11 +38,23 @@ function fileSize(b: number | null) {
 
 export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalEvent; now: ChNow; zoneLabel: string; onBack: () => void; onDeleted: () => void }) {
   const [confirm, setConfirm] = useState(false);
-  const remove = useAction('calendar.deleteBusy', () => deleteCoachBlockedTime(e.id), {
-    done: `Removed · ${e.title}`,
-    failed: `Couldn't remove ${e.title}`,
-    code: 'CH-6005',
-  });
+  // Closing the question and leaving the block's panel follow a landed remove inside the action, so the toast's Retry does them too.
+  const remove = useAction(
+    'calendar.deleteBusy',
+    async () => {
+      const res = await deleteCoachBlockedTime(e.id);
+      if (normalise(res).success) {
+        setConfirm(false);
+        onDeleted();
+      }
+      return res;
+    },
+    {
+      done: `Removed · ${e.title}`,
+      failed: `Couldn't remove ${e.title}`,
+      code: 'CH-6005',
+    },
+  );
   return (
     <div className="ch-in">
       <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onBack}>
@@ -102,13 +114,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
               variant="danger"
               feel="warning"
               disabled={remove.pending}
-              onClick={async () => {
-                const r = await remove.run();
-                if (r.success) {
-                  setConfirm(false);
-                  onDeleted();
-                }
-              }}
+              onClick={() => void remove.run()}
             >
               {remove.pending ? 'Removing…' : 'Remove'}
             </Button>
@@ -138,10 +144,11 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
     setTouched(false);
   }, [open, today]);
   const bad = !title.trim() || (!allDay && win[1] <= win[0]);
+  // Closing the sheet and re-reading (or moving to the block's day) follow a landed add inside the action, so the toast's Retry does them too.
   const save = useAction(
     'calendar.addBusy',
-    () =>
-      addCoachBlockedTime({
+    async () => {
+      const res = await addCoachBlockedTime({
         title: title.trim(),
         startDate: date,
         endDate: date,
@@ -149,7 +156,10 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         endTime: allDay ? undefined : toHHMM(win[1]),
         allDay,
         recurrenceRule: repeat === 'weekly' ? serializeRecurrenceRule({ frequency: 'weekly', weekdays: [new Date(`${date}T12:00:00Z`).getUTCDay()], until }) : undefined,
-      }),
+      });
+      if (normalise(res).success) onSaved(date);
+      return res;
+    },
     () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn't add your busy time", hint: 'Your entry is still here. Try again.', code: 'CH-6006' }),
   );
   return (
@@ -167,14 +177,13 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
           <Button
             variant="primary"
             disabled={save.pending}
-            onClick={async () => {
+            onClick={() => {
               setTouched(true);
               if (bad) {
                 haptic('warning');
                 return;
               }
-              const r = await save.run();
-              if (r.success) onSaved(date);
+              void save.run();
             }}
           >
             {save.pending ? 'Saving…' : 'Add busy time'}
@@ -279,15 +288,29 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       const r = await detachDocumentFromEvent(eventId, f.id);
       if (!r.success) throw new Error(r.error || 'detach failed');
       haptic('success');
+      // Undo puts the file back. Like every save it sends nothing offline, and a refusal or a throw says so (CH-6009).
+      const undoFailed = (why: string, err: unknown) => {
+        chReport(err instanceof Error ? err : new Error(why), { surface: 'calendar.files', action: 'calendar.undoDetach', severity: 'low' });
+        haptic('error');
+        toast({ tone: 'error', title: `Couldn't put ${f.title} back`, body: 'Attach it again from Documents.', code: 'CH-6009' });
+      };
       toast({
         title: `Removed · ${f.title}`,
         action: {
           label: 'Undo',
-          run: () =>
-            void attachDocumentToEvent(eventId, f.id, f.note ?? undefined).then((x) => {
-              if (x.success) setAttempt((a) => a + 1);
-              else toast({ tone: 'error', title: `Couldn't put ${f.title} back`, body: 'Attach it again from Documents.', code: 'CH-6009' });
-            }),
+          run: () => {
+            if (isOffline()) {
+              haptic('error');
+              toast({ tone: 'error', title: `Couldn't put ${f.title} back: you're offline`, body: 'Reconnect, then attach it again from Documents. Nothing was changed.', code: 'CH-1903' });
+              return;
+            }
+            attachDocumentToEvent(eventId, f.id, f.note ?? undefined)
+              .then((x) => {
+                if (x.success) setAttempt((a) => a + 1);
+                else undoFailed(x.error || 'undo failed', null);
+              })
+              .catch((err) => undoFailed('undo threw', err));
+          },
         },
       });
     } catch (err) {
@@ -400,11 +423,20 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
     };
   }, [open, teamId, preview, attempt]);
   const list = useMemo(() => (docs ?? []).filter((d) => d.title.toLowerCase().includes(q.trim().toLowerCase())), [docs, q]);
-  const attach = useAction('calendar.attachFile', (id: string) => attachDocumentToEvent(eventId, id), (id) => ({
-    done: `Attached · ${docs?.find((d) => d.id === id)?.title ?? 'file'}`,
-    failed: "Couldn't attach the file",
-    code: 'CH-6007',
-  }));
+  // Closing the picker and reading the event's files again follow a landed attach inside the action, so the toast's Retry does them too.
+  const attach = useAction(
+    'calendar.attachFile',
+    async (id: string) => {
+      const res = await attachDocumentToEvent(eventId, id);
+      if (normalise(res).success) onAttached();
+      return res;
+    },
+    (id) => ({
+      done: `Attached · ${docs?.find((d) => d.id === id)?.title ?? 'file'}`,
+      failed: "Couldn't attach the file",
+      code: 'CH-6007',
+    }),
+  );
   return (
     <Modal
       open={open}
@@ -421,10 +453,8 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
           <Button
             variant="primary"
             disabled={!pick || attach.pending}
-            onClick={async () => {
-              if (!pick) return;
-              const r = await attach.run(pick);
-              if (r.success) onAttached();
+            onClick={() => {
+              if (pick) void attach.run(pick);
             }}
           >
             {attach.pending ? 'Attaching…' : 'Attach'}

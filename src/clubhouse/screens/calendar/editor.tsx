@@ -15,7 +15,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { useAction } from '../../lib/use-action';
+import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
@@ -254,67 +254,76 @@ export function EventEditor({
   const minutes = Math.round((win[1] - win[0]) * 60);
   const whenLabel = `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false)} – ${fmtHour(win[1])}`}`;
 
-  const save = useAction(
-    'calendar.saveEvent',
-    async () => {
-      const startTime = allDay ? undefined : toHHMM(win[0]);
-      const endTime = allDay ? undefined : toHHMM(win[1]);
-      const tz = offsetMinutesFor(date, startTime ?? '12:00', timezone) ?? undefined;
-      if (!base) {
-        if (repeat !== 'none') {
-          const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
-          return createRecurringEvent({
-            title: title.trim(),
-            eventType: type,
-            startDate: date,
-            startTime,
-            endTime,
-            allDay,
-            location: loc.trim() || undefined,
-            description: notes.trim() || undefined,
-            recurrenceRule: serializeRecurrenceRule({ frequency: 'weekly', weekdays: repeat === 'weekdays' ? [1, 2, 3, 4, 5] : [weekday], until }),
-            attendeeIds: invited.length ? invited : undefined,
-            timezoneOffset: tz,
-          });
-        }
-        return createGolfEvent({
+  /** The write itself: one event, a repeating series, or an edit of either (with the scope a series asks for). */
+  const send = async () => {
+    const startTime = allDay ? undefined : toHHMM(win[0]);
+    const endTime = allDay ? undefined : toHHMM(win[1]);
+    const tz = offsetMinutesFor(date, startTime ?? '12:00', timezone) ?? undefined;
+    if (!base) {
+      if (repeat !== 'none') {
+        const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+        return createRecurringEvent({
           title: title.trim(),
-          eventType: type as never,
+          eventType: type,
           startDate: date,
           startTime,
           endTime,
           allDay,
           location: loc.trim() || undefined,
           description: notes.trim() || undefined,
+          recurrenceRule: serializeRecurrenceRule({ frequency: 'weekly', weekdays: repeat === 'weekdays' ? [1, 2, 3, 4, 5] : [weekday], until }),
           attendeeIds: invited.length ? invited : undefined,
           timezoneOffset: tz,
         });
       }
-      if (series && scope !== 'this') {
-        return editRecurringEvent({
-          eventId: base.id,
-          originalStartDate: base.startIso,
-          scope,
-          timezoneOffset: tz,
-          updates: { title: title.trim(), description: notes.trim() || undefined, startDate: date, endDate: date, startTime, endTime, location: loc.trim() || undefined },
-        });
-      }
-      const add = invited.filter((p) => !base.people.includes(p));
-      const remove = base.people.filter((p) => !invited.includes(p));
-      return updateGolfEvent(base.id, {
+      return createGolfEvent({
         title: title.trim(),
         eventType: type as never,
         startDate: date,
-        endDate: date,
         startTime,
         endTime,
         allDay,
-        location: loc.trim(),
-        description: notes.trim(),
-        addAttendeeIds: add.length ? add : undefined,
-        removeAttendeeIds: remove.length ? remove : undefined,
+        location: loc.trim() || undefined,
+        description: notes.trim() || undefined,
+        attendeeIds: invited.length ? invited : undefined,
         timezoneOffset: tz,
-      } as never);
+      });
+    }
+    if (series && scope !== 'this') {
+      return editRecurringEvent({
+        eventId: base.id,
+        originalStartDate: base.startIso,
+        scope,
+        timezoneOffset: tz,
+        updates: { title: title.trim(), description: notes.trim() || undefined, startDate: date, endDate: date, startTime, endTime, location: loc.trim() || undefined },
+      });
+    }
+    const add = invited.filter((p) => !base.people.includes(p));
+    const remove = base.people.filter((p) => !invited.includes(p));
+    return updateGolfEvent(base.id, {
+      title: title.trim(),
+      eventType: type as never,
+      startDate: date,
+      endDate: date,
+      startTime,
+      endTime,
+      allDay,
+      location: loc.trim(),
+      description: notes.trim(),
+      addAttendeeIds: add.length ? add : undefined,
+      removeAttendeeIds: remove.length ? remove : undefined,
+      timezoneOffset: tz,
+    } as never);
+  };
+
+  // What follows a landed save (the editor closes, the panel clears, the page re-reads or moves to the event's
+  // day) is part of the action, not of the button that started it, so the toast's Retry finishes the job too.
+  const save = useAction(
+    'calendar.saveEvent',
+    async () => {
+      const res = await send();
+      if (normalise(res).success) onSaved(date);
+      return res;
     },
     () => ({
       done: !base ? `Published · ${title.trim()}${invited.length ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
@@ -332,8 +341,7 @@ export function EventEditor({
       return;
     }
     chTrail(`calendar ${base ? 'edit' : 'create'} submit`);
-    const res = await save.run();
-    if (res.success) onSaved(date);
+    await save.run();
   };
 
   const allOn = invited.length === people.length;
@@ -589,12 +597,14 @@ export function EventEditor({
 export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | null; onClose: () => void; onDone: () => void }) {
   const [scope, setScope] = useState<Scope>('this');
   useEffect(() => setScope('this'), [event]);
+  // The close and the re-read that follow a landed cancel are part of the action, so the toast's Retry does them too.
   const cancel = useAction(
     'calendar.cancelEvent',
     async () => {
       if (!event) return { success: false, error: 'No event' };
-      if (event.seriesId && scope !== 'this') return deleteRecurringEvent(event.id, event.startIso, scope);
-      return deleteGolfEvent(event.id);
+      const res = event.seriesId && scope !== 'this' ? await deleteRecurringEvent(event.id, event.startIso, scope) : await deleteGolfEvent(event.id);
+      if (normalise(res).success) onDone();
+      return res;
     },
     () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn't cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
   );
@@ -605,7 +615,13 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       onClose={onClose}
       icon={CircleX}
       title={`Cancel ${event?.title ?? 'event'}?`}
-      description="Everyone invited is notified. Replies and attendance are kept, and the event stays on the calendar marked cancelled."
+      description={
+        // One event is a soft cancel. The series scopes go through deleteRecurringEvent, which deletes the rows, so
+        // the copy must not promise what only the soft cancel does (61101).
+        event?.seriesId && scope !== 'this'
+          ? 'Everyone invited is notified. These events are removed from the calendar, and their replies and attendance with them.'
+          : 'Everyone invited is notified. Replies and attendance are kept, and the event stays on the calendar marked cancelled.'
+      }
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -615,10 +631,7 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
             variant="danger"
             feel="warning"
             disabled={cancel.pending}
-            onClick={async () => {
-              const res = await cancel.run();
-              if (res.success) onDone();
-            }}
+            onClick={() => void cancel.run()}
           >
             {cancel.pending ? 'Cancelling…' : 'Cancel event'}
           </Button>
@@ -672,11 +685,20 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     };
   }, [open, attempt]);
 
-  const create = useAction('calendar.createFeed', (type: 'team' | 'personal') => createCalendarFeed(type), (type) => ({
-    done: type === 'team' ? 'Team schedule link ready' : 'Your schedule link ready',
-    failed: "Couldn't create the calendar link",
-    code: 'CH-6003',
-  }));
+  // Reading the links again (so the new one shows in place of Create link) is part of the action, so the toast's Retry does it too.
+  const create = useAction(
+    'calendar.createFeed',
+    async (type: 'team' | 'personal') => {
+      const res = await createCalendarFeed(type);
+      if (normalise(res).success) setAttempt((a) => a + 1);
+      return res;
+    },
+    (type) => ({
+      done: type === 'team' ? 'Team schedule link ready' : 'Your schedule link ready',
+      failed: "Couldn't create the calendar link",
+      code: 'CH-6003',
+    }),
+  );
 
   const copy = async (f: Feed) => {
     try {
@@ -690,8 +712,9 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     }
   };
 
+  // The team link is a coach's: createCalendarFeed refuses it for a player, so a player is never offered it (60804).
   const rows: Array<{ type: 'team' | 'personal'; name: string; desc: string }> = [
-    { type: 'team', name: 'Team schedule', desc: 'Every team event. Classes are never included.' },
+    ...(role === 'coach' ? [{ type: 'team' as const, name: 'Team schedule', desc: 'Every team event. Classes are never included.' }] : []),
     { type: 'personal', name: 'My schedule', desc: role === 'coach' ? 'Events you run and your busy time' : 'Events you’re invited to and your classes' },
   ];
   return (
@@ -722,10 +745,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                   <Button
                     size="sm"
                     disabled={create.pending}
-                    onClick={async () => {
-                      const res = await create.run(r.type);
-                      if (res.success) setAttempt((a) => a + 1);
-                    }}
+                    onClick={() => void create.run(r.type)}
                   >
                     Create link
                   </Button>

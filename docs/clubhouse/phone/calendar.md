@@ -23,6 +23,11 @@ The boards: Day (week strip, agenda with classes), Event detail (conflict and su
 - **New event** is the full desktop editor as a sheet, not the board's compact form: every field and its checks stay (the owner's rule for phone forms, D-33 by analogy).
 - **Workout** type: there is none (as on Home, Q-66).
 
+## Player
+
+A player has the same three views and the same sheet with their own permissions: the reply on an event they are invited to,
+their own classes, no New event and no editor, and Add to calendar app offering only My schedule (60801, 60804).
+
 ## States
 
 The failed-read notices are the desktop's (CH-6201 to CH-6203, CH-6212). A day with nothing: CH-6308. The list's empty range: CH-6301. The view crashes on its own (CH-6210), the sheet likewise (CH-6211).

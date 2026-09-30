@@ -34,9 +34,9 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Partial failure: rounds, members, cache, putts and D1 each carry their own flag and inline notice with Try again
 - [x] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
 - [x] Route error: the Clubhouse error view
-- [x] Not found and no access: a coach without a team gets the no-team state; players get their own profile instead
+- [x] Not found and no access: a coach without a team gets the no-team state; players get their own profile instead (proved in stats-team.test, 40801 and 40802: the team is the session's, never the address's, and no team figure is read for a player)
 - [x] Offline or slow network: the window switch says so instead of spinning forever (CH-4901 offline: nothing is requested and the switch stays put; CH-4902 slow: one notice after 5 seconds. Forced in stats-team.test and in the browser with Playwright offline and a held request)
-- [x] User errors: export failure gives a specific toast, an error haptic and a Sentry event
+- [x] User errors: export failure gives a specific toast, an error haptic and a Sentry event. The export writes a name that starts with = + - or @ as text (40501), so a spreadsheet never reads a player's name as a formula
 - [x] The old address `/stats/team` renders this page in place for coaches, with this page's skeleton, and sends players to their own stats (D-23)
 - [x] N/A: no forms on this screen
 - [x] N/A: no destructive actions on this screen

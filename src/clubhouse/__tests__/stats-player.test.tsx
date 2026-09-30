@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -7,7 +10,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
-vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+const reportSpy = vi.hoisted(() => vi.fn());
+const trailSpy = vi.hoisted(() => vi.fn());
+vi.mock('../lib/track', () => ({ chReport: reportSpy, chTrail: trailSpy, chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 const createFocusArea = vi.hoisted(() => vi.fn());
@@ -16,10 +21,21 @@ vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: vi.fn() }));
 vi.mock('../data/stats-team', () => ({ loadTeamStats: vi.fn() }));
 vi.mock('../data/stats-player', () => ({ loadPlayerProfile: vi.fn() }));
+// The loader tests below run the real loader (vi.importActual) on a fake Supabase and a fake shot-level read.
+const logServer = vi.hoisted(() => vi.fn());
+vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
+const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
+vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
+const detailed = vi.hoisted(() => vi.fn());
+vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed }));
 
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { ChPlayerProfile } from '../data/stats-player';
+import { loadPlayerProfile } from '../data/stats-player';
+import { loadTeamStats } from '../data/stats-team';
+import { resolveClubhouseTeam } from '../routes/team';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
-import { NotOnTeam, StatsNoTeam } from '../routes/stats';
+import { ClubhouseStatsRoute, NotOnTeam, StatsNoTeam } from '../routes/stats';
 import { ToastProvider } from '../ui/Toast';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
@@ -34,8 +50,8 @@ async function expectCode(c: string, text?: RegExp) {
 function Trail() {
   return <p data-testid="trail">{useCrumbTrail()?.join(' › ') ?? 'nav'}</p>;
 }
-function wrap(node: React.ReactNode) {
-  return render(
+function shell(node: React.ReactNode) {
+  return (
     <LazyMotion features={domAnimation}>
       <ToastProvider>
         <CrumbProvider>
@@ -45,8 +61,11 @@ function wrap(node: React.ReactNode) {
           </div>
         </CrumbProvider>
       </ToastProvider>
-    </LazyMotion>,
+    </LazyMotion>
   );
+}
+function wrap(node: React.ReactNode) {
+  return render(shell(node));
 }
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...over });
 const show = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer data={data} coachId={coachId} />);
@@ -54,12 +73,16 @@ const openTab = (user: ReturnType<typeof userEvent.setup>, name: RegExp) => user
 
 beforeEach(() => {
   hapticSpy.mockClear();
+  reportSpy.mockClear();
+  trailSpy.mockClear();
+  logServer.mockClear();
   router.refresh.mockClear();
+  router.push.mockClear();
   createFocusArea.mockReset();
 });
 
 describe('Stats player · saves', () => {
-  it('CH-5101 CH-5001 a focus area needs a name; a failed save keeps the text', async () => {
+  it('CH-5101 CH-5001 51201 a focus area needs a name; a failed save keeps the text, the sheet stays open, and the failure is reported low', async () => {
     const user = userEvent.setup();
     createFocusArea.mockResolvedValue({ success: false, error: 'nope' });
     show(player());
@@ -72,6 +95,8 @@ describe('Stats player · saves', () => {
     await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
     await expectCode('CH-5001', /Couldn't add the focus area for/);
     expect((screen.getByRole('textbox', { name: 'What to work on' }) as HTMLInputElement).value).toBe('Lag putting');
+    expect(screen.getByRole('dialog', { name: 'Add a focus area for Jonah' })).toBeTruthy();
+    expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'stats', action: 'stats.addFocusArea', severity: 'low' }));
   });
 
   it('CH-5401 adding shows its progress and cannot be pressed twice', async () => {
@@ -87,7 +112,7 @@ describe('Stats player · saves', () => {
 });
 
 describe('Stats player · reads that fail', () => {
-  it('CH-5201 rounds do not load', async () => {
+  it('CH-5201 51401 rounds do not load; Try again asks the server for the whole page again', async () => {
     const user = userEvent.setup();
     show(player({ roundsError: true }));
     await expectCode('CH-5201', /Rounds didn't load/);
@@ -109,7 +134,7 @@ describe('Stats player · reads that fail', () => {
     await expectCode('CH-5203', /Some development items didn't load/);
   });
 
-  it('CH-5204 CH-5206 CH-5207 a crash stays inside its tab', async () => {
+  it('CH-5204 CH-5206 CH-5207 52301 a crash stays inside its tab, and is reported high with its section', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
     show(player({ comparisons: null as never, focusAreas: null as never, rounds: [{ ...PREVIEW_PLAYER.rounds[0]!, course: {} as never }] }));
@@ -119,6 +144,8 @@ describe('Stats player · reads that fail', () => {
     await expectCode('CH-5206', /The rounds table couldn’t be shown/);
     await openTab(user, /Development/);
     await expectCode('CH-5207', /Development couldn’t be shown/);
+    for (const surface of ['stats.player.overview', 'stats.player.rounds', 'stats.player.development'])
+      expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     quiet.mockRestore();
   });
 
@@ -177,13 +204,13 @@ describe('Stats player · empty', () => {
 describe('Stats player · opened from a link', () => {
   const selected = () => screen.getByRole('tab', { selected: true }).textContent;
 
-  it("?tab=rounds opens the Rounds tab (Roster's All N, D-53)", () => {
+  it("50102 ?tab=rounds opens the Rounds tab (Roster's All N, D-53)", () => {
     wrap(<StatsPlayer data={player()} coachId="c1" initialTab="rounds" />);
     expect(selected()).toMatch(/Rounds/);
     expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe('tab-rounds');
   });
 
-  it('no tab, or one that does not exist, opens Overview', () => {
+  it('50102 no tab, or one that does not exist, opens Overview', () => {
     const { unmount } = wrap(<StatsPlayer data={player()} coachId="c1" initialTab="sg" />);
     expect(selected()).toMatch(/Overview/);
     unmount();
@@ -193,13 +220,15 @@ describe('Stats player · opened from a link', () => {
 });
 
 describe('Stats player · haptics and accessibility', () => {
-  it('CH-5701 changing tabs ticks; the current tab does not', async () => {
+  it('CH-5701 52301 changing tabs ticks and leaves a breadcrumb; the current tab does neither', async () => {
     const user = userEvent.setup();
     show(player());
     await openTab(user, /Overview/);
     expect(hapticSpy).not.toHaveBeenCalled();
+    expect(trailSpy).not.toHaveBeenCalled();
     await openTab(user, /Rounds/);
     expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(trailSpy).toHaveBeenCalledWith('stats tab rounds');
   });
 
   it('CH-5801 tabs are real tabs: selected state, controlled panel', async () => {
@@ -248,7 +277,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     );
   const top = () => screen.getByTestId('phone-top');
 
-  it('the phone view replaces desktop: who, three figures, one game section at a time', async () => {
+  it('51901 the phone view replaces desktop: who, three figures, one game section at a time', async () => {
     const user = userEvent.setup();
     phone(player());
     expect(document.querySelector('.ch-st.is-desk')).toBeNull();
@@ -303,7 +332,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.queryByRole('button', { name: 'Add focus area' })).toBeNull();
   });
 
-  it('rounds show five, then all; ?tab=rounds opens them all', async () => {
+  it('CH-5807 rounds show five, then all; ?tab=rounds opens them all', async () => {
     const user = userEvent.setup();
     const { unmount } = phone(player());
     const rows = () => document.querySelectorAll('.ch-spm-round').length;
@@ -339,5 +368,509 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('CH-5302 no rounds in the window', () => {
     phone(player({ rounds: [] }));
     expect(code('CH-5302')).not.toBeNull();
+  });
+});
+
+/* ── The route: who may open what (category 08) ── */
+
+const OWN = '9c1d5e7a-2b3f-4a6c-8d0e-1f2a3b4c5d6e';
+const OTHER = '3f8e2a4c-1b7d-4c1e-9a5b-6d2f7e8a9b01';
+type RouteEl = React.ReactElement<{ data: ChPlayerProfile; coachId: string | null; initialTab?: string; coach?: boolean }>;
+const asCoach = () => {
+  vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
+  vi.mocked(resolveClubhouseTeam).mockResolvedValue({ role: 'coach', teamId: 't1', coachId: 'c1' });
+};
+const asPlayer = () => {
+  vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: null, player: { id: OWN } } as never);
+  vi.mocked(resolveClubhouseTeam).mockResolvedValue({ role: 'player', teamId: 't1', playerId: OWN });
+};
+
+describe('Stats player · who may open what', () => {
+  beforeEach(() => {
+    vi.mocked(getGolfSessionProfile).mockReset();
+    vi.mocked(resolveClubhouseTeam).mockReset();
+    vi.mocked(loadPlayerProfile).mockReset();
+    vi.mocked(loadTeamStats).mockReset();
+  });
+
+  it('50803 a player gets their own profile whatever the address says: ?player= is never read, and no team figure is loaded', async () => {
+    asPlayer();
+    vi.mocked(loadPlayerProfile).mockResolvedValue(player({ viewer: 'player', id: OWN }));
+    for (const query of [{}, { player: OTHER }, { player: 'not-an-id' }, { player: OWN, window: 'season' }]) {
+      vi.mocked(loadPlayerProfile).mockClear();
+      const el = (await ClubhouseStatsRoute(query)) as RouteEl;
+      expect(el.type).toBe(StatsPlayer);
+      // No coach id: the profile has no focus-area editor, and the server is told this is the player's own view.
+      expect(el.props.coachId).toBeNull();
+      expect(loadPlayerProfile).toHaveBeenCalledTimes(1);
+      expect(loadPlayerProfile).toHaveBeenCalledWith({ viewer: 'player', teamId: 't1', playerId: OWN, window: 'window' in query ? 'season' : 'last10' });
+    }
+    expect(loadTeamStats).not.toHaveBeenCalled();
+  });
+
+  it('CH-4309 CH-5307 50803 a player with no active team sees the no-team state; one the profile cannot find on the roster sees "not available"; a signed-out request renders nothing', async () => {
+    asPlayer();
+    vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
+    const none = (await ClubhouseStatsRoute({ player: OTHER })) as RouteEl;
+    expect(none.type).toBe(StatsNoTeam);
+    expect(none.props.coach).toBe(false);
+    expect(loadPlayerProfile).not.toHaveBeenCalled();
+    wrap(none);
+    expect(code('CH-4309')!.textContent).toMatch(/Your stats show here once a coach adds you to a team roster/);
+    // The team resolved, but the roster has no row for this player when the profile is read (removed in between).
+    asPlayer();
+    vi.mocked(loadPlayerProfile).mockResolvedValue(null);
+    const gone = (await ClubhouseStatsRoute({})) as RouteEl;
+    expect(gone.type).toBe(NotOnTeam);
+    expect(gone.props.coach).toBe(false);
+    vi.mocked(getGolfSessionProfile).mockResolvedValue(null);
+    expect(await ClubhouseStatsRoute({})).toBeNull();
+  });
+
+  it('50804 CH-5306 a coach opens ?player= against their own team only: the team comes from the session, and a player the loader cannot find, or an id that is not an id, is "not on your team"', async () => {
+    asCoach();
+    vi.mocked(loadPlayerProfile).mockResolvedValue(player());
+    const ok = (await ClubhouseStatsRoute({ player: OTHER, window: 'qualifiers', tab: 'rounds' })) as RouteEl;
+    expect(ok.type).toBe(StatsPlayer);
+    expect(ok.props.coachId).toBe('c1');
+    expect(ok.props.initialTab).toBe('rounds');
+    expect(loadPlayerProfile).toHaveBeenCalledWith({ viewer: 'coach', teamId: 't1', playerId: OTHER, window: 'qualifiers' });
+    // Another team's player, or a removed one: the loader answers null.
+    vi.mocked(loadPlayerProfile).mockResolvedValue(null);
+    const off = (await ClubhouseStatsRoute({ player: OTHER })) as RouteEl;
+    expect(off.type).toBe(NotOnTeam);
+    expect(off.props.coach).toBe(true);
+    // Not shaped like an id: the same answer, and no read is made (the database would answer 22P02).
+    vi.mocked(loadPlayerProfile).mockClear();
+    for (const junk of ['not-an-id', "1' or '1'='1", '../../x']) {
+      const bad = (await ClubhouseStatsRoute({ player: junk })) as RouteEl;
+      expect(bad.type).toBe(NotOnTeam);
+    }
+    expect(loadPlayerProfile).not.toHaveBeenCalled();
+    // A coach with no team gets the no-team state, whatever the address says.
+    vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
+    const none = (await ClubhouseStatsRoute({ player: OTHER })) as RouteEl;
+    expect(none.type).toBe(StatsNoTeam);
+    expect(none.props.coach).toBe(true);
+    expect(loadPlayerProfile).not.toHaveBeenCalled();
+  });
+
+  it('50102 the address picks the window: last10 unless it says season or qualifiers', async () => {
+    asCoach();
+    vi.mocked(loadPlayerProfile).mockResolvedValue(player());
+    for (const [given, want] of [
+      [undefined, 'last10'],
+      ['season', 'season'],
+      ['qualifiers', 'qualifiers'],
+      ['everything', 'last10'],
+    ] as const) {
+      vi.mocked(loadPlayerProfile).mockClear();
+      await ClubhouseStatsRoute({ player: OTHER, window: given });
+      expect(loadPlayerProfile).toHaveBeenCalledWith(expect.objectContaining({ window: want }));
+    }
+  });
+
+  it("50803 50806 a player's own profile is theirs alone: Your stats, no Message, no Add focus area, no way back to the team, no pager, no team column", () => {
+    show(player({ viewer: 'player', teamAvg: null, nav: null, comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }), null);
+    expect(screen.getByRole('heading', { level: 1, name: 'Your stats' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /Message/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /focus area/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Team stats/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /player$/ })).toBeNull();
+    // The crumb trail is the navigation's, not "Stats › name".
+    expect(screen.getByTestId('trail').textContent).toBe('nav');
+    expect(screen.getByRole('heading', { level: 3, name: 'You vs. D1' })).toBeTruthy();
+    expect(screen.queryByRole('columnheader', { name: 'Team' })).toBeNull();
+  });
+});
+
+/* ── The loader on a fake Supabase ── */
+
+const DAY = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+type Filters = Array<[string, unknown[]]>;
+const isMembership = (f: Filters) => f.some(([k]) => k === 'in');
+function profileTables(over: import('./supabase-fake').ChFakeTables = {}): import('./supabase-fake').ChFakeTables {
+  return {
+    golf_teams: { data: { gender: 'men' } },
+    golf_players: { data: { id: OTHER, first_name: 'Jonah', last_name: 'Okafor', graduation_year: 2029, hometown: 'Charlotte', state: 'NC', handicap: 3.9, handicap_index: null } },
+    golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: OTHER }, { player_id: 'p2' }] }),
+    golf_rounds: { data: [{ id: 'r1', player_id: OTHER, round_date: DAY, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'practice' }] },
+    golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 4, scrambles_converted: 2 }] },
+    golf_pga_standards: { data: [{ metric_id: 'gir_pct', div1_avg_value: 67, tour: 'pga' }] },
+    golf_player_focus_areas: { data: [] },
+    golf_goals: { data: [] },
+    ...over,
+  };
+}
+const realLoader = async () => (await vi.importActual<typeof import('../data/stats-player')>('../data/stats-player')).loadPlayerProfile;
+const loadAs = async (viewer: 'coach' | 'player' = 'coach', playerId = OTHER, window: 'last10' | 'season' | 'qualifiers' = 'season') =>
+  (await realLoader())({ viewer, teamId: 't1', playerId, window });
+
+describe('Stats player · the loader', () => {
+  beforeEach(() => {
+    tables.current = profileTables();
+    detailed.mockReset();
+    detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 1 });
+  });
+
+  it('50611 CH-5306 a player or membership read that fails raises the route error view; it is never shown as "not on your team"', async () => {
+    tables.current = profileTables({ golf_team_members: (f) => (isMembership(f) ? { error: { message: 'boom' } } : { data: [] }) });
+    await expect(loadAs()).rejects.toThrow(/player profile read failed/);
+    expect(logServer).toHaveBeenCalledWith('stats', 'membership', expect.anything(), 'teams');
+    logServer.mockClear();
+    tables.current = profileTables({ golf_players: { error: { message: 'boom' } } });
+    await expect(loadAs()).rejects.toThrow(/player profile read failed/);
+    expect(logServer).toHaveBeenCalledWith('stats', 'player', expect.anything());
+    // A read that worked and found nobody is the other answer: null, which the route shows as "not on your team".
+    tables.current = profileTables({ golf_team_members: (f) => (isMembership(f) ? { data: null } : { data: [] }) });
+    expect(await loadAs()).toBeNull();
+    tables.current = profileTables({ golf_players: { data: null } });
+    expect(await loadAs()).toBeNull();
+  });
+
+  it('50804 the roster check is this team, this player, active or inactive only: a pending or removed member is not on the team; an inactive one opens as Inactive', async () => {
+    let seen: Filters = [];
+    tables.current = profileTables({
+      golf_team_members: (f) => {
+        if (!isMembership(f)) return { data: [{ player_id: OTHER }] };
+        seen = f;
+        return { data: { status: 'inactive' } };
+      },
+    });
+    const profile = await loadAs();
+    expect(seen).toContainEqual(['eq', ['team_id', 't1']]);
+    expect(seen).toContainEqual(['eq', ['player_id', OTHER]]);
+    expect(seen).toContainEqual(['in', ['status', ['active', 'inactive']]]);
+    expect(profile!.status).toBe('inactive');
+  });
+
+  it('50803 a player is compared with D1 only: their own rounds are the only ones read, there is no team average or pager, and shot detail is asked for their own id', async () => {
+    const roundReads: Filters[] = [];
+    tables.current = profileTables({
+      golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: 'someone-else' }] }),
+      golf_rounds: (f) => {
+        roundReads.push(f);
+        return { data: [{ id: 'r1', player_id: OWN, round_date: DAY, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'practice' }] };
+      },
+    });
+    const profile = await loadAs('player', OWN);
+    expect(profile!.viewer).toBe('player');
+    expect(profile!.teamAvg).toBeNull();
+    expect(profile!.nav).toBeNull();
+    expect(profile!.comparisons.every((c) => c.team == null)).toBe(true);
+    expect(roundReads.flat()).toContainEqual(['in', ['player_id', [OWN]]]);
+    expect(JSON.stringify(roundReads)).not.toContain('someone-else');
+    expect(detailed).toHaveBeenCalledWith(OWN, 'overall', expect.anything());
+  });
+
+  it('50805 CH-5202 shot detail the server refuses (it answers empty for a caller who is not the player or their coach) shows as "didn\'t load", never as zeros', async () => {
+    detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 0 });
+    const denied = await loadAs();
+    expect(denied!.statsError).toBe(true);
+    expect(denied!.stats).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('stats', 'detailedStatsEmpty', expect.any(String), 'stats_analytics');
+    logServer.mockClear();
+    detailed.mockRejectedValue(new Error('boom'));
+    const thrown = await loadAs();
+    expect(thrown!.statsError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('stats', 'detailedStats', expect.anything(), 'stats_analytics');
+    // The id the server is asked about is the profile's, and the window travels as its filter.
+    detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 1 });
+    await loadAs('coach', OTHER, 'last10');
+    expect(detailed).toHaveBeenLastCalledWith(OTHER, 'overall', { preset: 'last10' });
+    await loadAs('coach', OTHER, 'qualifiers');
+    expect(detailed).toHaveBeenLastCalledWith(OTHER, 'overall', expect.objectContaining({ roundType: 'qualifier' }));
+  });
+
+  it("CH-5208 the D1 column: read from the team's tour; without the benchmarks, or without the team's own row, nothing is compared with a benchmark it does not have", async () => {
+    const ok = await loadAs('player', OTHER);
+    expect(ok!.d1).toEqual({ gir_pct: 67 });
+    expect(ok!.comparisons.find((c) => c.label === 'Greens in regulation')!.d1).toBe(67);
+    // The benchmark read fails: logged, empty, and the profile shows no D1 column at all.
+    tables.current = profileTables({ golf_pga_standards: { error: { message: 'boom' } } });
+    const noD1 = await loadAs('player', OTHER);
+    expect(logServer).toHaveBeenCalledWith('stats', 'd1Benchmarks', expect.anything());
+    expect(noD1!.d1).toEqual({});
+    expect(noD1!.comparisons.every((c) => c.d1 == null)).toBe(true);
+    wrap(<StatsPlayer data={noD1!} coachId={null} />);
+    expect(screen.queryByRole('columnheader', { name: 'D1' })).toBeNull();
+    // The team's own row fails: its tour is unknown, so the benchmarks are not even read (a women's team is never graded against the men's).
+    const bench = vi.fn(() => ({ data: [{ metric_id: 'gir_pct', div1_avg_value: 67, tour: 'pga' }] }));
+    tables.current = profileTables({ golf_teams: { error: { message: 'boom' } }, golf_pga_standards: bench });
+    const unknown = await loadAs('player', OTHER);
+    expect(logServer).toHaveBeenCalledWith('stats', 'team', expect.anything(), 'teams');
+    expect(bench).not.toHaveBeenCalled();
+    expect(unknown!.d1).toEqual({});
+  });
+
+  it('50103 a coach pages through the team by scoring average, and past the last player comes the first', async () => {
+    const round = (id: string, player_id: string, score: number) => ({ id, player_id, round_date: DAY, total_score: score, score_to_par: score - 72, front_nine: 37, back_nine: score - 37, holes_played: 18, status: 'completed', round_type: 'practice' });
+    tables.current = profileTables({
+      golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: 'a' }, { player_id: 'b' }, { player_id: 'c' }] }),
+      golf_rounds: { data: [round('r1', 'a', 70), round('r2', 'b', 72), round('r3', 'c', 74)] },
+    });
+    const first = await loadAs('coach', 'a');
+    expect(first!.nav).toEqual({ index: 1, total: 3, prev: 'c', next: 'b' });
+    const last = await loadAs('coach', 'c');
+    expect(last!.nav).toEqual({ index: 3, total: 3, prev: 'b', next: 'a' });
+    // The links carry the player and keep the window.
+    wrap(<StatsPlayer data={player({ nav: first!.nav, window: 'season' })} coachId="c1" />);
+    expect(screen.getByRole('link', { name: 'Next player' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=b&window=season');
+    expect(screen.getByRole('link', { name: 'Previous player' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=c&window=season');
+    expect(screen.getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?window=season');
+  });
+
+  it('52101 the loader reads each source once: the team, the player and the membership together, then rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once', async () => {
+    const reads: Record<string, number> = {};
+    const count = (table: string, answer: import('./supabase-fake').ChFakeTables[string]) => (f: Filters) => {
+      reads[table] = (reads[table] ?? 0) + 1;
+      return typeof answer === 'function' ? answer(f) : answer;
+    };
+    tables.current = Object.fromEntries(Object.entries(profileTables()).map(([table, answer]) => [table, count(table, answer)]));
+    await loadAs('coach', OTHER, 'last10');
+    expect(reads).toEqual({
+      golf_teams: 1,
+      golf_players: 1,
+      golf_team_members: 2,
+      golf_rounds: 1,
+      golf_round_stats_cache: 1,
+      golf_pga_standards: 1,
+      golf_player_focus_areas: 1,
+      golf_goals: 1,
+    });
+    expect(detailed).toHaveBeenCalledTimes(1);
+    // A failed rounds read is flagged, never thrown, and the rest of the page loads.
+    tables.current = profileTables({ golf_rounds: { error: { message: 'boom' } } });
+    const partial = await loadAs();
+    expect(partial!.roundsError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('stats', 'rounds', expect.anything());
+  });
+
+  it('52301 CH-5203 focus areas and goals that fail to read are logged and flagged, never thrown', async () => {
+    tables.current = profileTables({ golf_player_focus_areas: { error: { message: 'boom' } }, golf_goals: { error: { message: 'boom' } } });
+    const profile = await loadAs();
+    expect(profile!.devError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('stats', 'focusAreas', expect.anything(), 'development');
+    expect(logServer).toHaveBeenCalledWith('stats', 'goals', expect.anything(), 'development');
+  });
+});
+
+/* ── The page ── */
+
+describe('Stats player · the page', () => {
+  it('50101 a coach opens a profile: who, four figures, the four sections, the overview first, compared with the team', () => {
+    show(player());
+    expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
+    expect([...document.querySelectorAll('.ch-pf-hero__figs dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'Handicap', 'SG / round', 'Rounds']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Game detail', 'Rounds10', 'Development']);
+    expect(screen.getByRole('tab', { selected: true }).textContent).toBe('Overview');
+    expect(screen.getByRole('heading', { level: 3, name: 'Jonah vs. team' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Team stats' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add focus area' })).toBeTruthy();
+    expect(screen.getByTestId('trail').textContent).toBe('Stats › Jonah Okafor');
+  });
+
+  it("50104 a coach's Message opens the direct thread with this player, on desktop and on the phone; a player's profile has none", () => {
+    const { unmount } = show(player());
+    expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
+    unmount();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const phoneView = wrap(
+        <PhoneChromeProvider>
+          <StatsPlayer data={player()} coachId="c1" />
+        </PhoneChromeProvider>,
+      );
+      expect(screen.getByRole('link', { name: 'Message Jonah' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
+      phoneView.unmount();
+      wrap(
+        <PhoneChromeProvider>
+          <StatsPlayer data={player({ viewer: 'player' })} coachId={null} />
+        </PhoneChromeProvider>,
+      );
+      expect(screen.queryByRole('link', { name: /Message/ })).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('51202 the tab stays when the window changes or the coach pages to another player', async () => {
+    const user = userEvent.setup();
+    const view = show(player());
+    await openTab(user, /Rounds/);
+    view.rerender(shell(<StatsPlayer data={player({ window: 'season' })} coachId="c1" />));
+    expect(screen.getByRole('tab', { selected: true }).textContent).toMatch(/Rounds/);
+    view.rerender(shell(<StatsPlayer data={player({ window: 'season', id: 'ava', name: 'Ava Lindqvist', firstName: 'Ava' })} coachId="c1" />));
+    expect(screen.getByRole('heading', { level: 1, name: 'Ava Lindqvist' })).toBeTruthy();
+    expect(screen.getByRole('tab', { selected: true }).textContent).toMatch(/Rounds/);
+  });
+
+  it('50901 51501 a proposal lands: a proposal for this player from this coach is sent, the toast and the success tick say so, the sheet closes and empties, and the page is read again', async () => {
+    const user = userEvent.setup();
+    createFocusArea.mockResolvedValue({ success: true });
+    show(player());
+    await user.click(screen.getByRole('button', { name: 'Add focus area' }));
+    await user.type(screen.getByRole('textbox', { name: 'What to work on' }), '  Lag putting  ');
+    await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
+    expect(await screen.findByText('Focus area proposed to Jonah. It starts when Jonah accepts.')).toBeTruthy();
+    expect(createFocusArea).toHaveBeenCalledWith(
+      expect.objectContaining({ player_id: 'jonah', coach_id: 'c1', title: 'Lag putting', status: 'proposed', area_type: 'approach', description: null, target_value: null }),
+    );
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add a focus area for Jonah' })).toBeNull());
+    await user.click(screen.getByRole('button', { name: 'Add focus area' }));
+    expect((screen.getByRole('textbox', { name: 'What to work on' }) as HTMLInputElement).value).toBe('');
+  });
+
+  it('52001 the window switch moves with the arrow keys and Enter in the focus-area field proposes it', async () => {
+    const user = userEvent.setup();
+    createFocusArea.mockResolvedValue({ success: true });
+    show(player());
+    screen.getByRole('radio', { name: 'Last 10' }).focus();
+    await user.keyboard('{ArrowRight}');
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?player=jonah&window=season', { scroll: false });
+    expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Season' }));
+    await user.click(screen.getByRole('button', { name: 'Add focus area' }));
+    await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting{Enter}');
+    await waitFor(() => expect(createFocusArea).toHaveBeenCalledTimes(1));
+  });
+
+  it('52001 each section tab is one Tab stop, chosen with Enter or Space', async () => {
+    const user = userEvent.setup();
+    show(player());
+    const rounds = screen.getByRole('tab', { name: /Rounds/ });
+    rounds.focus();
+    await user.keyboard('{Enter}');
+    expect(rounds.getAttribute('aria-selected')).toBe('true');
+    const dev = screen.getByRole('tab', { name: /Development/ });
+    dev.focus();
+    await user.keyboard(' ');
+    expect(dev.getAttribute('aria-selected')).toBe('true');
+    // Not a roving group: every tab is reachable with Tab.
+    for (const tab of screen.getAllByRole('tab')) expect(tab.getAttribute('tabindex')).not.toBe('-1');
+  });
+});
+
+describe('Stats player · network', () => {
+  it('CH-5901 changing the window offline requests nothing and says so', async () => {
+    const user = userEvent.setup();
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    show(player());
+    await user.click(screen.getByRole('radio', { name: 'Season' }));
+    await expectCode('CH-5901', /Couldn't open the season: you're offline/);
+    expect(code('CH-5901')!.textContent).toMatch(/still the last 10 rounds/);
+    expect(router.push).not.toHaveBeenCalled();
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
+    online.mockRestore();
+  });
+
+  it('CH-5902 a slow window change says so once; a quick one says nothing', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const view = show(player());
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?player=jonah&window=season', { scroll: false });
+      expect(trailSpy).toHaveBeenCalledWith('stats window season');
+      // The server answers inside five seconds: no notice.
+      view.rerender(shell(<StatsPlayer data={player({ window: 'season' })} coachId="c1" />));
+      vi.advanceTimersByTime(6000);
+      expect(code('CH-5902')).toBeNull();
+      // It doesn't: the notice names both windows.
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      vi.advanceTimersByTime(4900);
+      expect(code('CH-5902')).toBeNull();
+      vi.advanceTimersByTime(200);
+      await expectCode('CH-5902', /Still loading qualifier rounds…/);
+      expect(code('CH-5902')!.textContent).toMatch(/still the season/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('CH-5402 while the new window loads the page is marked busy, and it stays the last 10 rounds until the server answers', async () => {
+    const user = userEvent.setup();
+    router.push.mockImplementation(() => new Promise(() => {}));
+    try {
+      show(player());
+      expect(document.querySelector('.ch-st')!.getAttribute('aria-busy')).toBe('false');
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      await waitFor(() => expect(document.querySelector('.ch-st')!.getAttribute('aria-busy')).toBe('true'));
+      expect(code('CH-5402')).not.toBeNull();
+      expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
+    } finally {
+      router.push.mockReset();
+    }
+  });
+
+  it("CH-1903 a focus area proposed offline is refused before it is sent, and the shell's toast names what did not happen", async () => {
+    const user = userEvent.setup();
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      show(player());
+      await user.click(screen.getByRole('button', { name: 'Add focus area' }));
+      await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting');
+      await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
+      await expectCode('CH-1903', /Couldn't add the focus area for Jonah: you're offline/);
+      expect(createFocusArea).not.toHaveBeenCalled();
+      // The sheet stays open with the text, so the coach can send it once back online.
+      expect((screen.getByRole('textbox', { name: 'What to work on' }) as HTMLInputElement).value).toBe('Lag putting');
+    } finally {
+      online.mockRestore();
+    }
+  });
+
+  it('CH-5901 on the phone the window switch is refused offline the same way', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      const user = userEvent.setup();
+      wrap(
+        <PhoneChromeProvider>
+          <StatsPlayer data={player()} coachId="c1" />
+        </PhoneChromeProvider>,
+      );
+      await user.click(screen.getByRole('radio', { name: /Season/ }));
+      await expectCode('CH-5901', /you're offline/);
+      expect(router.push).not.toHaveBeenCalled();
+    } finally {
+      online.mockRestore();
+      window.matchMedia = real;
+    }
+  });
+});
+
+describe('Stats player · tests', () => {
+  it('52401 this file names every Stats player catalog code it forces, in a test title', () => {
+    const self = fileURLToPath(import.meta.url);
+    const read = (path: string) => readFileSync(resolve(dirname(self), path), 'utf8');
+    const titles = (src: string) =>
+      src
+        .split('\n')
+        .filter((line) => /^\s*(it|describe)\(/.test(line))
+        .join('\n');
+    const mine = titles(read('./stats-player.test.tsx'));
+    // A row's test cell may name another code ("stats-player.test › CH-5101"): that code is the one the title carries.
+    const forced = (catalog: string, code: RegExp, file: string) =>
+      catalog
+        .split('\n')
+        .filter((line) => code.test(line) && !/retired/i.test(line) && line.includes(file))
+        .map((line) => /›\s*(CH-\d{4})/.exec(line)?.[1] ?? /^\| (CH-\d{4}) \|/.exec(line)![1]!);
+    // Rows whose test is in this file: the profile's own block, and the no-team row that Team stats catalogues.
+    const codes = [
+      ...forced(read('../../../docs/clubhouse/catalog/stats-player.md'), /^\| CH-5\d{3} \|/, 'stats-player.test'),
+      ...forced(read('../../../docs/clubhouse/catalog/stats-team.md'), /^\| CH-4\d{3} \|/, 'stats-player.test'),
+    ];
+    // A floor, so an unreadable catalog can't pass by finding nothing.
+    expect(codes.length).toBeGreaterThanOrEqual(24);
+    expect(codes.filter((c) => !mine.includes(c))).toEqual([]);
+    // The hand contracts: each one this file claims is named in a test title.
+    const ids = ['50101', '50102', '50103', '50104', '50611', '50803', '50804', '50805', '50806', '50901', '51201', '51202', '51401', '51501', '51901', '52001', '52101', '52301', '52401'];
+    expect(ids.filter((id) => !mine.includes(id))).toEqual([]);
   });
 });

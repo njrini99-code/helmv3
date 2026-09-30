@@ -3,7 +3,7 @@
 import { Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
-import { useState, useTransition, type FormEvent } from 'react';
+import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -17,7 +17,8 @@ import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollRegion } from '../../ui/ScrollRegion';
-import { useAction } from '../../lib/use-action';
+import { useToast } from '../../ui/Toast';
+import { CH_SLOW_SAVE_AFTER, isOffline, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { chTween } from '../../lib/motion';
@@ -30,7 +31,7 @@ import { usePageCrumbs } from '../../shell/crumbs';
 import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, YardagePage } from './charts';
 import { GameDetail } from './GameDetail';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
-import { WindowSwitch } from './WindowSwitch';
+import { WINDOW_WORDS, WindowSwitch } from './WindowSwitch';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -49,6 +50,7 @@ export function formNote(first: string, scores: number[]): string {
 /** `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. */
 export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string }) {
   const router = useRouter();
+  const toast = useToast();
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   const [tab, setTab] = useState<Tab>(() => TABS.find((t) => t === initialTab) ?? 'overview');
@@ -69,7 +71,29 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     return s ? `${base}?${s}` : base;
   };
   const go = (player: string | null, win: ChWindow) => start(() => router.push(href(player, win), { scroll: false }));
-  const messageHref = rebuiltHref('/golf/dashboard/messages');
+  // Changing the window while offline requests nothing (CH-5901); one that is slow says so once (CH-5902).
+  const [loading, setLoading] = useState<ChWindow | null>(null);
+  useEffect(() => setLoading(null), [data.window, data.id]);
+  useEffect(() => {
+    if (!loading) return;
+    const slow = window.setTimeout(
+      () => toast({ title: `Still loading ${WINDOW_WORDS[loading]}…`, body: `This is taking longer than usual. The figures shown are still ${WINDOW_WORDS[data.window]}.`, code: 'CH-5902' }),
+      CH_SLOW_SAVE_AFTER,
+    );
+    return () => window.clearTimeout(slow);
+  }, [loading, data.window, toast]);
+  const changeWindow = (win: ChWindow) => {
+    if (isOffline()) {
+      haptic('error');
+      toast({ tone: 'error', title: `Couldn't open ${WINDOW_WORDS[win]}: you're offline`, body: `Reconnect, then try again. The figures shown are still ${WINDOW_WORDS[data.window]}.`, code: 'CH-5901' });
+      return;
+    }
+    chTrail(`stats window ${win}`);
+    setLoading(win);
+    go(data.id, win);
+  };
+  // A coach's Message opens the direct thread with this player (Messages' ?player= link), not the bare inbox.
+  const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${data.id}`) : null;
 
   const heroFigs: Array<[string, string, string, string?]> = [
     ['Scoring avg', formatFixed(w.avg), coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
@@ -94,7 +118,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           initialTab={initialTab}
           playerHref={href(data.id, data.window)}
           messageHref={messageHref}
-          onWindow={(v) => go(data.id, v)}
+          onWindow={changeWindow}
           onBackToTeam={() => go(null, data.window)}
           onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
           onRetry={() => router.refresh()}
@@ -191,7 +215,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
             </button>
           ))}
         </div>
-        <WindowSwitch value={data.window} onChange={(v) => go(data.id, v)} />
+        <WindowSwitch value={data.window} onChange={changeWindow} />
       </div>
 
       {early && (
