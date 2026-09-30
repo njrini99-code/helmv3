@@ -2,6 +2,28 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The first-run page (D-71, CH-6309)
+
+```text
+Design package: design/handoff/ v2 (gh-states EMPTY.calendar)
+PR/commit:      agent/clubhouse (1f51b49c1; renumbered from CH-6308, which the phone Day view already owned)
+Contract IDs:   60409 (CH-6309)
+Actions:        none new (Create event opens the existing editor)
+Data impact:    one read added: a coach's head count of the team's events, in the same round as the window's events
+Held items:     none
+```
+
+### Added
+
+- `CalendarFirstRun`: a coach whose team has never scheduled anything gets the v2 page empty state and
+  Create event instead of an empty month. Once anything exists, an empty range keeps CH-6301. A player
+  never gets it, and neither does a count that failed or an events read that failed.
+
+### Fixed
+
+- The first-run row reused CH-6308, the phone Day view's empty day; `clubhouse:check` reported the code
+  catalogued twice. It is CH-6309 now, with its own Bridge ID.
+
 ## 2026-09-30 — V2 page docs and contracts, proven by tests; Retry finishes the job; a player's data trimmed
 
 ```text
@@ -64,7 +86,7 @@ Held items:     none
 - Attendance's Retry sends every changed mark again, including those that had saved; harmless, each is an upsert.
 - `getAttendanceReport` and the attendance select policy let an active team player read a whole event's attendance;
   the Clubhouse never asks for it for a player.
-- The v2 first-run page empty state for a team that has never scheduled anything (D-71) is not built.
+- The v2 first-run page empty state for a team that has never scheduled anything (D-71) is not built. (Built since: CH-6309, above.)
 
 ## 2026-09-30 — V2 phone build
 

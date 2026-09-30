@@ -36,8 +36,37 @@ function Field({ label, error, errorCode, children, id }: { label: string; error
   );
 }
 
-/** Players to include: the whole team, or chosen players. */
-function PlayerPicks({ players, picked, onChange, label }: { players: ChTeamHub['players']; picked: string[]; onChange: (ids: string[]) => void; label: string }) {
+/** Players to include: the whole team, or chosen players. With none to show it says why: the roster didn't load (CH-10208), or the team has nobody on it yet (CH-10310). */
+function PlayerPicks({
+  players,
+  error,
+  onRetry,
+  picked,
+  onChange,
+  label,
+}: {
+  players: ChTeamHub['players'];
+  error: boolean;
+  onRetry: () => void;
+  picked: string[];
+  onChange: (ids: string[]) => void;
+  label: string;
+}) {
+  if (players.length === 0 && error)
+    return (
+      <div className="ch-hb-roster" data-ch-code="CH-10208">
+        <span className="ch-field__help is-error">The roster didn’t load, so players can’t be chosen.</span>
+        <Button variant="ghost" size="sm" onClick={onRetry}>
+          Try again
+        </Button>
+      </div>
+    );
+  if (players.length === 0)
+    return (
+      <span className="ch-field__help" data-ch-code="CH-10310">
+        No players on the roster yet. Add them in Roster, then choose them here.
+      </span>
+    );
   return (
     <div className="ch-hb-picks" role="group" aria-label={label}>
       {players.map((p) => {
@@ -65,12 +94,14 @@ export function ComposeSheet({
   open,
   onClose,
   players,
+  playersError,
   write,
   onDone,
 }: {
   open: boolean;
   onClose: () => void;
   players: ChTeamHub['players'];
+  playersError: boolean;
   write: ChHubWrites['postAnnouncement'];
   /** After a post lands: the page reads again. */
   onDone: () => void;
@@ -149,7 +180,7 @@ export function ComposeSheet({
           <div className="ch-hb-aud" role="radiogroup" aria-label="Send to">
             {(
               [
-                ['all', `Whole team · ${players.length}`],
+                ['all', playersError ? 'Whole team' : `Whole team · ${players.length}`],
                 ['pick', 'Choose players'],
               ] as const
             ).map(([k, l]) => (
@@ -167,8 +198,8 @@ export function ComposeSheet({
               </button>
             ))}
           </div>
-          {aud === 'pick' && <PlayerPicks players={players} picked={picked} onChange={setPicked} label="Players who get it" />}
-          {pickErr && (
+          {aud === 'pick' && <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={picked} onChange={setPicked} label="Players who get it" />}
+          {pickErr && players.length > 0 && (
             <span className="ch-field__help is-error" data-ch-code="CH-10102">
               {pickErr}
             </span>
@@ -307,6 +338,7 @@ export function AssignSheet({
   onClose,
   teamId,
   players,
+  playersError,
   write,
   onDone,
 }: {
@@ -314,6 +346,7 @@ export function AssignSheet({
   onClose: () => void;
   teamId: string;
   players: ChTeamHub['players'];
+  playersError: boolean;
   write: ChHubWrites['assignTask'];
   /** After a task is assigned: the page reads again. */
   onDone: () => void;
@@ -323,6 +356,13 @@ export function AssignSheet({
   const [detail, setDetail] = useState('');
   const [due, setDue] = useState('');
   const [picked, setPicked] = useState<string[]>(() => players.map((p) => p.id));
+  // A roster that arrives later (Try again on CH-10208) starts fully chosen, like the first one.
+  const rosterKey = players.map((p) => p.id).join(',');
+  const [seenRoster, setSeenRoster] = useState(rosterKey);
+  if (seenRoster !== rosterKey) {
+    setSeenRoster(rosterKey);
+    setPicked(players.map((p) => p.id));
+  }
   const [tried, setTried] = useState(false);
   const titleErr = tried && title.trim().length < 3 ? 'Name the task, at least three characters.' : null;
   const pickErr = tried && picked.length === 0 ? 'Choose at least one player.' : null;
@@ -388,10 +428,16 @@ export function AssignSheet({
         </Field>
         <div className="ch-field">
           <span className="ch-field__label">
-            For <span className="ch-num">{picked.length}</span> of <span className="ch-num">{players.length}</span>
+            {players.length > 0 ? (
+              <>
+                For <span className="ch-num">{picked.length}</span> of <span className="ch-num">{players.length}</span>
+              </>
+            ) : (
+              'For'
+            )}
           </span>
-          <PlayerPicks players={players} picked={picked} onChange={setPicked} label="Players the task is for" />
-          {pickErr && (
+          <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={picked} onChange={setPicked} label="Players the task is for" />
+          {pickErr && players.length > 0 && (
             <span className="ch-field__help is-error" data-ch-code="CH-10108">
               {pickErr}
             </span>

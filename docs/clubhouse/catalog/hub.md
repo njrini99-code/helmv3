@@ -50,6 +50,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10205 | A section crashes while drawing | "RSVPs couldn't be shown." (or the section's name); the rest of the page stays | `SectionBoundary hub.*` | hub.test › CH-10205 |
 | CH-10206 | Announcements don't load | "Announcements didn't load." | `TeamHub` | hub.test › CH-10206 |
 | CH-10207 | Travel doesn't load | "Travel didn't load." + "Trips are safe." | `TeamHub` | hub.test › CH-10207 |
+| CH-10208 | The coach's roster doesn't load | In the announcement and task sheets, where players are chosen: "The roster didn't load, so players can't be chosen." + Try again (reads the page again; the roster that arrives starts fully chosen). "Whole team" loses its count and still posts; Assign stops with this line, never "For 0 of 0" | `PlayerPicks` (`playersError` from `loadTeamHub`) | hub.test › CH-10208 |
 
 ## 103xx Empty
 
@@ -64,6 +65,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10307 | No announcements | "No announcements yet." | `TeamHub` | hub.test › CH-10307 |
 | CH-10308 | No trips | "No trips planned." + who fills it | `TeamHub` | hub.test › CH-10308 |
 | CH-10309 | No team | "You aren't on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
+| CH-10310 | A team with nobody on the roster | In the sheets, where players are chosen: "No players on the roster yet. Add them in Roster, then choose them here." | `PlayerPicks` | hub.test › CH-10310 |
 
 ## 104xx Loading
 

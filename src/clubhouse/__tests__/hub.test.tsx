@@ -244,6 +244,69 @@ describe('Team Hub · coach', () => {
     expect((within(dialog).getByRole('textbox', { name: 'Headline' }) as HTMLInputElement).value).toBe('Bus leaves at 6');
   });
 
+  it('CH-10208 a roster that didn’t load: the whole team still gets a post, choosing players says why it can’t, and Try again reads the page again', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn(ok);
+    show({ ...PREVIEW_HUB_COACH, players: [], playersError: true }, writes({ postAnnouncement: post }));
+    await user.click(screen.getByRole('button', { name: 'New announcement' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New announcement' });
+    // No "Whole team · 0": the count is unknown, not zero.
+    expect(within(dialog).getByRole('radio', { name: 'Whole team' })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: 'Choose players' }));
+    await expectCode('CH-10208', /roster didn’t load/);
+    expect(code('CH-10310')).toBeNull();
+    await user.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('radio', { name: 'Whole team' }));
+    await user.type(within(dialog).getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.click(within(dialog).getByRole('button', { name: 'Post' }));
+    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null });
+  });
+
+  it('CH-10208 CH-10310 a task with no roster to choose from: never "For 0 of 0", and Assign stops with the reason, not "Choose at least one player"', async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn(ok);
+    show({ ...PREVIEW_HUB_COACH, players: [], playersError: true }, writes({ assignTask: assign }), 'tasks');
+    await user.click(screen.getByRole('button', { name: 'Assign' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
+    await expectCode('CH-10208');
+    expect(dialog.textContent).not.toMatch(/For \d+ of \d+/);
+    await user.type(within(dialog).getByRole('textbox', { name: 'Task' }), 'Book physicals');
+    await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
+    expect(assign).not.toHaveBeenCalled();
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    expect(code('CH-10108')).toBeNull();
+    cleanup();
+    show({ ...PREVIEW_HUB_COACH, players: [], playersError: false }, writes({ assignTask: assign }), 'tasks');
+    await user.click(screen.getByRole('button', { name: 'Assign' }));
+    dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
+    await expectCode('CH-10310', /No players on the roster yet/);
+    expect(dialog.textContent).not.toMatch(/For \d+ of \d+/);
+    expect(code('CH-10208')).toBeNull();
+  });
+
+  it('CH-10208 a roster that arrives after Try again starts fully chosen, like the first one', async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn(ok);
+    const tree = (data: ChTeamHub) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <TeamHub data={data} writes={writes({ assignTask: assign })} initialTab="tasks" viewerName="Maya Reyes" />
+          </div>
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const { rerender } = render(tree({ ...PREVIEW_HUB_COACH, players: [], playersError: true }));
+    await user.click(screen.getByRole('button', { name: 'Assign' }));
+    rerender(tree(PREVIEW_HUB_COACH));
+    const dialog = await screen.findByRole('dialog', { name: 'Assign a task' });
+    for (const p of PREVIEW_HUB_COACH.players) expect(within(dialog).getByRole('button', { name: p.name }).getAttribute('aria-pressed')).toBe('true');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Task' }), 'Book physicals');
+    await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
+    expect(assign).toHaveBeenCalledWith(expect.objectContaining({ playerIds: PREVIEW_HUB_COACH.players.map((p) => p.id) }));
+  });
+
   it('100901 101501 a post that lands closes the sheet and refreshes the page', async () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH);
@@ -452,6 +515,17 @@ describe('Team Hub · the loader', () => {
     expect([data.documents.error, data.updates.error, data.trips.error, data.tasks.error, data.rsvps.error]).toEqual([true, true, true, true, true]);
     expect(data.announcements.error).toBe(false);
     for (const read of ['documents', 'updates', 'trips', 'tasks', 'events']) expect(logServer).toHaveBeenCalledWith('hub', read, expect.anything());
+  });
+
+  it('102101 CH-10208 a failed roster read is flagged for a coach, not passed off as an empty team, and logged', async () => {
+    base();
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    tables.current = { golf_teams: team, golf_team_members: { error: { message: 'roster down' } } };
+    const coach = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect([coach.players, coach.playersError]).toEqual([[], true]);
+    expect(logServer).toHaveBeenCalledWith('hub', 'roster', expect.anything());
+    tables.current = { golf_teams: team, golf_team_members: { data: [] } };
+    expect((await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null })).playersError).toBe(false);
   });
 
   it('files group into folders ("Team" for none), newest first, with a type and a size', () => {

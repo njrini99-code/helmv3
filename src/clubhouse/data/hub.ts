@@ -130,6 +130,8 @@ export interface ChTeamHub {
   viewerPlayerId: string | null;
   /** The team's active players (coach: audiences, travelers, assignees). Empty for a player. */
   players: Array<{ id: string; name: string }>;
+  /** The coach's roster read failed: `players` is empty because it didn't load, not because the team has none (CH-10208). */
+  playersError: boolean;
   rsvps: { rows: ChHubRsvp[]; error: boolean };
   announcements: { rows: ChHubAnnouncement[]; error: boolean };
   trips: { rows: ChHubTrip[]; error: boolean };
@@ -200,6 +202,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     teamName: teamRes.data?.name ?? 'Your team',
     season: teamRes.data?.season ?? null,
     viewerPlayerId: input.role === 'player' ? input.playerId : null,
+    playersError: input.role === 'coach' && !!rosterRes.error,
     players: input.role === 'coach' ? roster.map((p) => ({ id: p.id, name: fullName(p) })).sort((a, b) => a.name.localeCompare(b.name)) : [],
     documents: { folders: docsRes.error ? [] : folders(docsRes.data ?? [], f), error: !!docsRes.error },
     updates: {

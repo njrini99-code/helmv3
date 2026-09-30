@@ -2,6 +2,27 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — A roster that didn't load (CH-10208, CH-10310)
+
+```text
+Design package: design/handoff/ v2 (no board state; the sheets' own error and empty lines)
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (catalog rows CH-10208, CH-10310; Bridge IDs on the next sync)
+Actions:        none new
+Data impact:    none (the loader's existing roster read now reports its failure)
+Held items:     none
+```
+
+### Fixed (each with a test that fails without the fix)
+
+- **A failed roster read looked like an empty team.** The announcement sheet offered "Whole team · 0". The
+  task sheet read "For 0 of 0" with no players and answered Assign with "Choose at least one player". The
+  loader now reports `playersError`, and wherever players are chosen the sheet says the roster didn't load
+  (CH-10208) and offers Try again. A team with nobody on it says so (CH-10310). A post to the whole team
+  still goes through.
+- **The task sheet chose its players once.** A roster that arrived after a refresh was never chosen. It now
+  starts fully chosen, like the first one.
+
 ## 2026-09-30 — V2 page docs and the contract pass
 
 ```text

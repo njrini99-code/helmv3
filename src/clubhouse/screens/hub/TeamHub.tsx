@@ -415,9 +415,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
       {coach && (
         <>
-          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} write={writes.postAnnouncement} onDone={refresh} />
+          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} write={writes.postAnnouncement} onDone={refresh} />
           <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} write={writes.planTrip} onDone={refresh} />
-          <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} write={writes.assignTask} onDone={refresh} />
+          <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} />
           <ConfirmDelete
             open={!!confirm}
             what={confirm?.kind === 'ann' ? 'this announcement' : confirm?.kind === 'task' ? 'this task' : 'this file'}

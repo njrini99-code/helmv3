@@ -54,6 +54,10 @@ Round entry is two engines and one tracking screen, all Fairway-rendered today:
   - `typecheck:fast`, and `npm run build`;
   - a fresh-context `code-reviewer` on the move diff;
   - the move commit touches no Clubhouse file.
+- Pre-move findings (2026-09-30, `new-round-client.tsx`, 3,272 lines; logic ends at the `return (` on line 3065):
+  - The `if (step === 'tracking')` at line 1355 is a mis-indented early return inside the local-save effect, not a hook boundary. The move keeps it byte for byte and does not re-indent.
+  - `persistRoundStart` reads `setupData`, `selectedQualifierId` and `selectedRoundNumber` from state. The Clubhouse setup submits a whole `ChSetupForm`, so the hook's start takes the form as an argument (`start(form)`) and the legacy caller passes its state. Setting state and then starting would read a stale closure.
+  - The logic range makes 14 calls to `showToast`, `useMobileNav` and `haptic`. Each becomes a port call, and `decidePostHoleCompleteAction` stays exported from the client path its test imports.
 
 ## Board to source
 

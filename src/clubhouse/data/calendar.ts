@@ -35,7 +35,7 @@ export interface ChCalendarData {
   events: ChCalEvent[];
   people: ChCalPerson[];
   eventsError: boolean;
-  /** A coach's team has never scheduled anything (CH-6308); false for a player or when the count didn't load. */
+  /** A coach's team has never scheduled anything (CH-6309); false for a player or when the count didn't load. */
   firstRun: boolean;
   rsvpError: boolean;
   classesError: boolean;
@@ -186,7 +186,7 @@ export async function loadCalendar(input: {
           .lte('start_date', range.to)
           .limit(500)
       : null,
-    // CH-6308: has this team ever scheduled anything? A count, no rows; a coach's question only.
+    // CH-6309: has this team ever scheduled anything? A count, no rows; a coach's question only.
     input.role === 'coach' ? supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', input.teamId) : null,
   ]);
   if (everRes?.error) chLogServer('calendar', 'eventCount', everRes.error, 'calendar');

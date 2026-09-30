@@ -758,6 +758,14 @@
   box-shadow: none;
   color: var(--ch-ivory-100);
 }
+/* CH-10208: the roster didn't load; the reason and Try again sit on one line. */
+.ch-hb-roster {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
 .ch-hb-picks {
   display: flex;
   flex-wrap: wrap;

@@ -80,6 +80,7 @@ const TRIPS: ChHubTrip[] = [
 const BASE = {
   teamId: 't1',
   teamName: 'Varsity',
+  playersError: false,
   season: 'Fall 2026',
   announcements: { rows: ANNS, error: false },
   trips: { rows: TRIPS, error: false },
@@ -178,6 +179,8 @@ export const PREVIEW_HUB_COACH_EMPTY = empty(PREVIEW_HUB_COACH);
 
 const failed = (d: ChTeamHub): ChTeamHub => ({
   ...d,
+  players: [],
+  playersError: d.role === 'coach',
   rsvps: { rows: [], error: true },
   announcements: { rows: [], error: true },
   trips: { rows: [], error: true },
