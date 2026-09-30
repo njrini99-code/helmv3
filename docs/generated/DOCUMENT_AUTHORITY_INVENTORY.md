@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 57 | 6 | 31 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 47 | 15 | 2 | 2 |
+| `INCIDENT` | 48 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
 | `UNKNOWN` | 93 | 12 | 40 | 76 |
@@ -500,6 +500,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |

@@ -20,6 +20,7 @@
 import { isAuthSessionMissingError, type SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { logBestEffortMiss } from '@/lib/coachhelm/best-effort-miss';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -435,10 +436,12 @@ async function getTopInsightForPlayerImpl(
     // handled miss here is a single warning — not a paging error and NOT a
     // Sentry-escalated exception (skipSentry: true — expected degradation,
     // not an incident to page on).
-    void logServerError(
-      `getTopInsightForPlayer.urgent failed (continuing without urgent pass): ${urgentError.message}`,
-      { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId, skipSentry: true },
-      'warning',
+    // A budget abort is 'info' (off the triage queue); anything else stays a
+    // 'warning'. See logBestEffortMiss (20ed2ddd).
+    void logBestEffortMiss(
+      'getTopInsightForPlayer.urgent failed (continuing without urgent pass)',
+      urgentError.message,
+      { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId },
     ).catch(() => undefined);
   } else if (urgent && urgent.length > 0) {
     const urgentInsights = urgent
@@ -1382,10 +1385,12 @@ async function fetchShotDriversByCategory(
     // above tripping first) is a single warning, not a paging error and NOT a
     // Sentry-escalated exception (skipSentry: true — this is expected
     // degradation, not an incident to page on).
-    void logServerError(
-      `fetchShotDriversByCategory failed (continuing without shot drivers): ${describeError(err)}`,
-      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId, skipSentry: true },
-      'warning',
+    // A budget abort is 'info' (off the triage queue); anything else stays a
+    // 'warning'. See logBestEffortMiss (8ff00f0e).
+    void logBestEffortMiss(
+      'fetchShotDriversByCategory failed (continuing without shot drivers)',
+      describeError(err),
+      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
     ).catch(() => undefined);
     return undefined;
   } finally {
