@@ -56,9 +56,10 @@ Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/hand
 - [x] The owner questions from the spec are answered: Q-30 to Q-39, 2026-09-29, recorded as D-50 to D-59 in `PROGRESS.md`.
 
 ## phone
-- [ ] Built at 390px and 430px, respecting the safe areas
-- [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
-- [ ] Sheets are used instead of popovers, and they drag to dismiss
+Evidence so far (2026-09-29): built on the foundation, and the preview captured at 390 × 844 (roster-34 to 44 in the session scratchpad) against the design boards roster-01 to 14. `clubhouse:a11y roster` is clean on 15 pages, at 390px and 1280px, including the requests sheet, the profile and its ⋯ sheet.
+- [ ] Built at 390px and 430px, respecting the safe areas (390 checked in the preview; 430 and the safe areas on a device still to do)
+- [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent. Rows are 64px; buttons, the sort hit area and the "All N" link are 44px. The desktop row menu is the profile's ⋯ sheet. The axe target-size check is clean.
+- [ ] Sheets are used instead of popovers, and they drag to dismiss (sheets: yes, on `ui/Modal`; drag to dismiss: `ui/Modal` doesn't have it yet)
 - [ ] The bottom tab bar and toasts don't overlap content
 - [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
 
