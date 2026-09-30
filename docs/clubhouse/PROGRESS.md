@@ -49,7 +49,7 @@ setup and shot tracking (preview only until the engine move), first-run pages fo
 Team stats, Accept and Decline for a proposed focus area, toasts inside open sheets (CH-1812), and a run of
 fixes (each in the verification log below).
 
-Your decisions, oldest first (each has the reversible choice already made): Q-65 to Q-84 under "Open owner
+Your decisions, oldest first (each has the reversible choice already made): Q-65 to Q-85 under "Open owner
 questions". The ones that block something: Q-75a (Classes "Delete all"), Q-76 (rebuild the CoachHelm
 drills), Q-78 (the round engine move, which makes #2102 touch the live Fairway round flow).
 
@@ -308,6 +308,7 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Q-82 (open, 2026-09-30) `createEnrichedAnnouncement` ignores an error from its `golf_announcement_documents` insert, so a post whose attachments fail says Posted with no files (Team Hub now attaches documents, gap 5). Not changed (a shared server action). Recommended: return the failure and let the post's toast say the files didn't attach.
 - Q-83 (open, 2026-09-30) Coach-only documents can be attached to an announcement, as in Fairway's composer; players then see an attachment they can't open. Kept as Fairway does. Recommended: offer only files players can open (needs `is_public` on `ChHubFile`).
 - Q-84 (open, 2026-09-30) The board's trip builder warns when a traveler has a class during the trip ("Eli has CHEM 102 lab Mon 3:00–4:15"). Not built: Team Hub doesn't read class schedules, and a coach reading every traveler's classes on this page is a new read of student data. Recommended: add it, reading only the chosen travelers' classes that overlap the trip dates, as Calendar's overlaps already do for coaches.
+- Q-85 (open, 2026-09-30; production, Fairway, found while inventorying Intelligence for a Clubhouse spec) CoachHelm chat: 33 of 73 assistant replies in the database are status 'failed' (read-only SQL, all time; 7 coaches), and on any non-2xx answer (rate limit, daily budget, lost conversation, auth) the coach sees the raw JSON body, e.g. {"error":"Too many requests. Please slow down."}, because the AI SDK puts the response body in error.message (CoachHelmChat.tsx:278-300). All 4 proposed chat actions stayed 'proposed' (none confirmed). Nothing changed. Recommended: a separate fix PR that maps the route's errors to sentences and investigates the failed replies (Sentry, the llm_calls table) before any Clubhouse chat is built on it.
 
 Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 2026-09-29; map in `screens/qualifiers.md`). The owner answered every question on 2026-09-29; Q-16 last, with the phone foundation (D-30 to D-33). Each still shows the options as they were put.
 
