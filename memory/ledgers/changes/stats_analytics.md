@@ -1,5 +1,22 @@
 # Stats And Analytics change ledger
 
+## 2026-09-30 — Tour-only benchmarks, one putting/scrambling definition, SG rules (Q-89, Q-93)
+
+- Change: every D1, college and division benchmark on the golf stats screens is
+  now the Tour (`golf_pga_standards`; the LPGA Tour for women's teams) or is
+  dropped where the Tour has no value (`src/lib/golf/benchmarks/tour.ts`,
+  Priorities rebuilt on it). Putt make %, sand save and penalties have one
+  definition each (`src/lib/golf/putt-make.ts`, `golf_holes.sand_save`,
+  `golf_holes.penalty_strokes`); test rounds are excluded in every stats read;
+  the 100-round cap applies after the countable filter; `getPlayerPatterns`
+  ranks by absolute impact. The TS strokes-gained engine ends each shot at the
+  next shot's start. Migration `20260930150000` (written, NOT applied) makes the
+  two SG SQL functions do the same, charges a penalty to the shot that earned
+  it and stores NULL SG for test rounds.
+- Why: owner decisions Q-93 ("change it all to PGA moving forward, and fix
+  putting and scrambling") and Q-89 (approved as recommended; applying is a
+  separate go). Numbers: `docs/operations/2026-09-30-sg-penalty-and-shot-end-before-after.md`.
+
 ## 2026-08-27 — Ask CoachHelm CTA is role-aware; putting rail label width
 
 - SHA: 1a57943e6.

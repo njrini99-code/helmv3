@@ -32,10 +32,9 @@ export interface LeakBucket {
   label: string;
   /** Computed value for the band: make% (putting) or avg proximity ft (approach). Null when sample_n === 0. */
   team_value: number | null;
-  /** PGA Tour reference (`pga_tour_value`); null where no standard exists. */
+  /** PGA Tour reference (`pga_tour_value`); null where no standard exists.
+   *  The Tour is the only benchmark a bucket carries. */
   pga_value: number | null;
-  /** Division-1 reference (`div1_avg_value`); null where no standard exists. */
-  div1_value: number | null;
   /** Gradeable shots / attempts contributing to `team_value`. */
   sample_n: number;
   /** Attempts a band needs before `team_value` is shown (audit rows 9/32). */
@@ -65,6 +64,9 @@ export interface TeamLeakMaps {
   approach: LeakBucket[];
   /** Completed rounds rolled into the aggregate. */
   roundsIncluded: number;
+  /** The tour whose references `pga_value` carries: 'lpga' for a women's team,
+   *  else 'pga' (loadPgaRefs routing). Optional so older fixtures still type-check. */
+  tour?: 'pga' | 'lpga';
 }
 
 /** Single-player leak maps for the player surface (same band shapes). */
@@ -78,8 +80,8 @@ export interface PlayerLeakMaps {
    *  only so older fixtures still type-check; the loader always sets it. */
   windowFrom?: string | null;
   windowTo?: string | null;
-  /** The tour whose references `pga_value`/`div1_value` carry: 'lpga' for a
-   *  women's team, else 'pga' (loadPgaRefs routing). */
+  /** The tour whose references `pga_value` carries: 'lpga' for a women's
+   *  team, else 'pga' (loadPgaRefs routing). */
   tour?: 'pga' | 'lpga';
 }
 

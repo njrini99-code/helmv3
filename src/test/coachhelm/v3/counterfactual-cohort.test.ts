@@ -1,89 +1,54 @@
 /**
- * Cohort-baseline counterfactual tests (2026-06-05 "smarter by context" build).
+ * Counterfactual target (Q-88, 2026-09-30: "change it all to PGA").
  *
- * The gap is measured to the college/division COHORT baseline (`cohort_value`)
- * when present, falling back to the Tour `pga_value` — so elite-amateur
- * weaknesses are sized realistically (domain doc §349 college-primary).
+ * The gap is measured to the team's Tour: the LPGA value for a women's team,
+ * the PGA value otherwise (`cohortAnchor`, from TOUR_STANDARDS), and the
+ * standing row's `pga_value` for a metric with no anchor. The college cohort
+ * average is never a target; `ComputeCounterfactualInput` no longer takes one.
  */
 import { describe, it, expect } from 'vitest';
 import { computeCounterfactual } from '@/lib/coachhelm/v3/counterfactual/compute';
 
-describe('computeCounterfactual — cohort baseline', () => {
-  it('falls back to pga_value when cohort_value is null (unchanged behavior)', () => {
-    const withNull = computeCounterfactual({
-      metric_id: 'scrambling_pct_sand',
-      direction: 'higher_better',
-      player_value: 30,
-      pga_value: 50,
-      cohort_value: null,
-      player_30d_scoring_avg: 75,
-    });
-    const withoutField = computeCounterfactual({
-      metric_id: 'scrambling_pct_sand',
-      direction: 'higher_better',
-      player_value: 30,
-      pga_value: 50,
-      player_30d_scoring_avg: 75,
-    });
-    expect(withNull.strokes_saved_per_round).toBeCloseTo(withoutField.strokes_saved_per_round);
+const sand = (player_value: number, cohort_gender?: 'mens' | 'womens') =>
+  computeCounterfactual({
+    metric_id: 'scrambling_pct_sand',
+    direction: 'higher_better',
+    player_value,
+    pga_value: 50,
+    player_30d_scoring_avg: 75,
+    ...(cohort_gender ? { cohort_gender } : {}),
   });
 
-  it('uses the cohort baseline (smaller gap) over Tour when present', () => {
-    // higher_better: player 30, college ~40, Tour 50. Gap to college (10) < gap to Tour (20).
-    const cohort = computeCounterfactual({
-      metric_id: 'scrambling_pct_sand',
-      direction: 'higher_better',
-      player_value: 30,
-      pga_value: 50,
-      cohort_value: 40,
-      player_30d_scoring_avg: 75,
-    });
-    const tour = computeCounterfactual({
-      metric_id: 'scrambling_pct_sand',
-      direction: 'higher_better',
-      player_value: 30,
-      pga_value: 50,
-      cohort_value: null,
-      player_30d_scoring_avg: 75,
-    });
-    expect(cohort.strokes_saved_per_round).toBeLessThan(tour.strokes_saved_per_round);
-    expect(cohort.strokes_saved_per_round).toBeGreaterThan(0);
+describe('computeCounterfactual: the Tour target', () => {
+  it("a men's team gaps to the PGA Tour sand save (50%)", () => {
+    const r = sand(30, 'mens');
+    expect(r.suppressed).toBe(false);
+    expect(r.strokes_saved_per_round).toBeGreaterThan(0);
+    // The same as gapping to the standing row's pga_value.
+    expect(r.strokes_saved_per_round).toBeCloseTo(sand(30).strokes_saved_per_round);
   });
 
-  it('suppresses when the player is already at/above the cohort norm (no over-flagging)', () => {
-    // player 45 > college 40 (higher_better) → no realistic gap, even though Tour is 50.
-    const r = computeCounterfactual({
-      metric_id: 'scrambling_pct_sand',
-      direction: 'higher_better',
-      player_value: 45,
-      pga_value: 50,
-      cohort_value: 40,
-      player_30d_scoring_avg: 75,
-    });
-    expect(r.suppressed).toBe(true);
-    expect(r.suppress_reason).toBe('no_gap');
+  it("a women's team gaps to the LPGA Tour sand save (45%), a smaller gap than the PGA's", () => {
+    const womens = sand(30, 'womens');
+    const mens = sand(30, 'mens');
+    expect(womens.strokes_saved_per_round).toBeGreaterThan(0);
+    expect(womens.strokes_saved_per_round).toBeLessThan(mens.strokes_saved_per_round);
   });
 
-  it('handles lower_better metrics (proximity) against the cohort', () => {
-    // lower_better: player 32ft, college 25ft, Tour 19ft. Gap to college = 7ft.
+  it("a player at the team's Tour value has no gap", () => {
+    expect(sand(46, 'womens').suppress_reason).toBe('no_gap');
+    expect(sand(50, 'mens').suppress_reason).toBe('no_gap');
+  });
+
+  it("a metric with no anchor uses the standing row's pga_value", () => {
     const r = computeCounterfactual({
       metric_id: 'approach_proximity_50_125ft',
       direction: 'lower_better',
       player_value: 32,
       pga_value: 19,
-      cohort_value: 25,
       player_30d_scoring_avg: 75,
+      cohort_gender: 'mens',
     });
     expect(r.strokes_saved_per_round).toBeGreaterThan(0);
-    // smaller than gapping all the way to Tour
-    const tour = computeCounterfactual({
-      metric_id: 'approach_proximity_50_125ft',
-      direction: 'lower_better',
-      player_value: 32,
-      pga_value: 19,
-      cohort_value: null,
-      player_30d_scoring_avg: 75,
-    });
-    expect(r.strokes_saved_per_round).toBeLessThan(tour.strokes_saved_per_round);
   });
 });

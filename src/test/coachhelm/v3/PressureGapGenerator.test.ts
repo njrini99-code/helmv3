@@ -39,13 +39,10 @@ vi.mock('@/lib/coachhelm/v3/engine/hole-diagnosis', async (importOriginal) => {
   };
 });
 
-// Priority anchors to the cohort (golf_player_standing.level_avg). Null by
-// default = cold-start (no standing row yet).
-let standingLevelAvg: number | null = null;
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({
-  loadStandingForMetric: vi.fn(async () =>
-    standingLevelAvg === null ? null : { level_avg: standingLevelAvg, level_n: 11, pga_value: 0.5 },
-  ),
+// The team's gender picks the Tour (Q-88): LPGA for a women's team.
+let teamGender: 'mens' | 'womens' | null = null;
+vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
+  loadPlayerCohort: vi.fn(async () => ({ gender: teamGender })),
 }));
 
 import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap';
@@ -95,7 +92,8 @@ function makeAgg(over: Partial<{
     opening3_strokes_delta: over.opening3_strokes_delta ?? 0,
     gap_se: 0.4,
     noise_band: 1.0,
-    cohort_avg: null as number | null,
+    tour_gap: 0.5,
+    tour_label: 'PGA Tour',
     window_start: null,
     window_end: null,
   };
@@ -359,7 +357,7 @@ function holesFor(roundId: string, shape: (h: number) => Partial<HoleRow>): Hole
 }
 
 describe('audit row 14 — pressure gap accuracy', () => {
-  beforeEach(() => { roundRows = []; holeRows = []; standingLevelAvg = null; });
+  beforeEach(() => { roundRows = []; holeRows = []; teamGender = null; });
 
   it('suppresses a gap that sits inside its 95% noise band (Welch SE, t critical)', async () => {
     // Practice mean 1.0 (spread 4), pressure mean 3.0 (spread 4): gap 2.0,
@@ -407,27 +405,30 @@ describe('audit row 14 — pressure gap accuracy', () => {
     expect(c.content).toMatch(/Most of that gap is penalties: \+4\.0 per 18 holes/);
   });
 
-  it('anchors priority and the primary comparison to the cohort, with the Tour as secondary', () => {
+  it("priority and the only comparison are the team's Tour gap (Q-88, never a college cohort)", () => {
     const g = new PressureGapGenerator(PLAYER_ID);
-    // A 1.5-stroke gap is below the 2.27 cohort: not a pressure weakness for
-    // a college player, although it is 3x the Tour's 0.5.
-    const c = g.composeContent({ ...makeAgg({ playerValue: 1.5 }), cohort_avg: 2.27 });
-    expect(c.priority).toBe('low');
-    expect(c.evidence.comparison_value).toBe(2.27);
-    expect(c.evidence.comparison_source).toBe('cohort_avg');
-    expect(c.evidence.secondary_value).toBe(0.5);
-    expect(c.evidence.secondary_source).toBe('pga_baseline');
-    expect(g.composeContent({ ...makeAgg({ playerValue: 3.0 }), cohort_avg: 2.27 }).priority).toBe('medium');
-    expect(g.composeContent({ ...makeAgg({ playerValue: 4.5 }), cohort_avg: 2.27 }).priority).toBe('high');
+    const c = g.composeContent(makeAgg({ playerValue: 1.5 }));
+    expect(c.priority).toBe('high'); // over the Tour's 0.5
+    expect(c.evidence.comparison_value).toBe(0.5);
+    expect(c.evidence.comparison_label).toBe('PGA Tour pressure gap');
+    expect(c.evidence.comparison_source).toBe('pga_baseline');
+    expect(c.evidence.secondary_value).toBeUndefined();
+    expect(c.content.toLowerCase()).not.toMatch(/college|cohort/);
+    expect(g.composeContent(makeAgg({ playerValue: 0.3 })).priority).toBe('medium');
+    expect(g.composeContent(makeAgg({ playerValue: -0.2 })).priority).toBe('low');
   });
 
-  it('aggregate carries the cohort level_avg from standing', async () => {
-    standingLevelAvg = 2.27;
+  it("aggregate labels a women's team with the LPGA Tour", async () => {
+    teamGender = 'womens';
     roundRows = [
       ...rounds('practice', 3, 0),
       ...rounds('tournament', 3, 4),
     ];
     const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
-    expect(agg!.cohort_avg).toBe(2.27);
+    teamGender = null;
+    expect(agg!.tour_label).toBe('LPGA Tour');
+    expect(agg!.tour_gap).toBe(0.5);
+    const c = new PressureGapGenerator(PLAYER_ID).composeContent(agg!);
+    expect(c.content).toContain('The LPGA Tour gap is ~0.5 strokes.');
   });
 });

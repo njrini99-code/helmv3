@@ -24,9 +24,25 @@ import { StageRouter } from '@/components/fairway/modules';
 import { PuttingDrill } from '../PuttingDrill';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { CategorizablePatternWithImpact } from '../buildStatsViewModel';
 
 type PuttingDrillProps = ComponentProps<typeof PuttingDrill>;
+
+/** Standing rows carrying the Tour make-rate standards (PGA Tour values). */
+function tourStanding(overrides: Partial<PlayerStandingRow> = {}): Map<string, PlayerStandingRow> {
+  const row = (metric_id: string, pga_value: number): [string, PlayerStandingRow] => [
+    metric_id,
+    { metric_id, player_value: 0, team_avg: null, team_n: 0, team_pct: null, pga_value, pga_delta: null, ...overrides },
+  ];
+  return new Map([
+    row('putts_made_3_5ft_pct', 90.5),
+    row('putts_made_5_10ft_pct', 62.2),
+    row('putts_made_10_15ft_pct', 35.7),
+    row('putts_made_15_25ft_pct', 15.4),
+    row('putts_made_25_plus_ft_pct', 5.5),
+  ]);
+}
 
 function renderPutting(props: Partial<PuttingDrillProps> = {}) {
   return render(
@@ -41,7 +57,6 @@ function renderPutting(props: Partial<PuttingDrillProps> = {}) {
               detailedStats={null}
               leakMaps={null}
               standingByMetric={new Map()}
-              weaknesses={[]}
               {...props}
             />
           ),
@@ -59,7 +74,8 @@ function fixtureStats(overrides: Partial<GolfStats> = {}): GolfStats {
     threePuttsPerRound: 0.2,
     onePuttsTotal: 40,
     approachPuttAvgLeave: 3.2,
-    // 0-3ft: no PGA standard (flat [70,85,95] scale) — 95% lands band 4.
+    // 0-3ft: the Tour publishes no standard, so it draws neutral.
+    holesPlayed: 180,
     puttMakePct0_3: 95,
     puttMakeCount0_3: 20,
     puttMakePct3_5: 60,
@@ -206,14 +222,21 @@ describe('PuttingDrill', () => {
     expect(screen.getByRole('heading', { name: 'Putts by round', level: 3 })).toBeInTheDocument();
   });
 
-  it('bands the Distance tab Make column with the same ramp classes the Breaks tab uses, plus a compact legend', () => {
-    renderPutting({ detailedStats: fixtureStats() });
+  it('bands the Distance tab Make column off the Tour with the ramp classes the Breaks tab uses, plus a compact legend', () => {
+    renderPutting({ detailedStats: fixtureStats(), standingByMetric: tourStanding() });
 
-    // 95% at 0-3ft with no PGA standard (flat [70,85,95] scale) lands band 4
-    // — RampMatrix's own `RAMP_CLASSES[4]` — the SAME color language as the
-    // Breaks tab's matrix, not an independently-invented one.
-    const badge = screen.getByText('95%');
-    expect(badge.className).toContain('bg-ramp-4');
+    // 60% at 3-5ft against the Tour's 90.5% (thresholds 54.3 / 76.9 / 95.0)
+    // lands band 2 — RampMatrix's own `RAMP_CLASSES[2]` — the SAME color
+    // language as the Breaks tab's matrix, not an independently-invented one.
+    expect(screen.getByText('60%').className).toContain('bg-ramp-2');
+    // 0-3ft has no Tour standard, so its 95% draws neutral: it used to land on
+    // an invented flat [70,85,95] scale (band 4) under a legend that says Tour.
+    const flat = screen.getByText('95%');
+    expect(flat.className).toContain('bg-surface-sunken');
+    expect(flat.className).not.toContain('bg-ramp-');
+    // 15-20ft is the shorter half of the Tour's 15-25ft band; grading it
+    // against that blended average would be unfair, so it draws neutral too.
+    expect(screen.getByText('15%').className).not.toContain('bg-ramp-');
     // The exact top-level attempt count (`puttMakeCount0_3`) backs the n=
     // badge under it, same n the hero MakeCurve reads.
     expect(screen.getByText('n=20')).toBeInTheDocument();
@@ -235,7 +258,7 @@ describe('PuttingDrill', () => {
     expect(legendLabels.length).toBeGreaterThan(0);
   });
 
-  it('offers the putting benchmark sheet only when the leak map loaded rounds (DASH-12)', () => {
+  it('offers the putting benchmark sheet only when the leak map loaded rounds (DASH-12)', async () => {
     const leakMaps = {
       playerId: 'p1',
       putting: [],
@@ -246,12 +269,62 @@ describe('PuttingDrill', () => {
       tour: 'lpga' as const,
     };
     const { unmount } = renderPutting({ leakMaps });
-    expect(screen.getByRole('button', { name: 'Compare with LPGA and D1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Compare with LPGA Tour' })).toBeInTheDocument();
     // The LeakMap names the tour the server routed the references to.
-    expect(screen.getByText('Make rate by distance vs LPGA')).toBeInTheDocument();
+    expect(await screen.findByText('Make rate by distance vs LPGA Tour')).toBeInTheDocument();
     unmount();
 
     renderPutting({ leakMaps, leakError: true });
     expect(screen.queryByRole('button', { name: /Compare with/ })).not.toBeInTheDocument();
+  });
+
+  describe('the putting cost line (Tour only)', () => {
+    // fixtureStats: 3-5ft 60% on 15 putts, 5-10ft 35% on 12, 10-15ft 20% on 10,
+    // over 180 holes (putts per 18 = 1.5 / 1.2 / 1.0).
+    //   PGA Tour:  -0.4575 - 0.3264 - 0.157 = -0.94
+    //   LPGA Tour: -0.39   - 0.24   - 0.10  = -0.73
+    function openBreaks() {
+      fireEvent.click(screen.getByRole('radio', { name: 'Breaks' }));
+    }
+
+    it("prices the gap to the PGA Tour for a men's team, never 'the field'", () => {
+      renderPutting({ detailedStats: fixtureStats(), tour: 'pga' });
+      openBreaks();
+      expect(
+        screen.getByText('Putts from 3 to 15 ft are costing an estimated 0.9 strokes per round vs the PGA Tour.'),
+      ).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/vs the field/);
+    });
+
+    it("prices the gap to the LPGA Tour for a women's team", () => {
+      renderPutting({ detailedStats: fixtureStats(), tour: 'lpga' });
+      openBreaks();
+      expect(
+        screen.getByText('Putts from 3 to 15 ft are costing an estimated 0.7 strokes per round vs the LPGA Tour.'),
+      ).toBeInTheDocument();
+    });
+
+    it('takes the tour from the leak map when the stage passes none', () => {
+      renderPutting({
+        detailedStats: fixtureStats(),
+        leakMaps: { playerId: 'p1', putting: [], approach: [], roundsIncluded: 3, tour: 'lpga' as const },
+      });
+      openBreaks();
+      expect(screen.getByText(/vs the LPGA Tour\.$/)).toBeInTheDocument();
+    });
+
+    it('is omitted when the tour is unknown (it is only true for one tour) or putting beats the Tour', () => {
+      const { unmount } = renderPutting({ detailedStats: fixtureStats(), tour: null });
+      openBreaks();
+      expect(screen.queryByText(/costing an estimated/)).not.toBeInTheDocument();
+      unmount();
+
+      renderPutting({
+        detailedStats: fixtureStats({ puttMakePct3_5: 95, puttMakePct5_10: 70, puttMakePct10_15: 40 }),
+        tour: 'pga',
+      });
+      openBreaks();
+      expect(screen.queryByText(/costing an estimated/)).not.toBeInTheDocument();
+    });
   });
 });

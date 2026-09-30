@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CourseMgmtGenerator } from '@/lib/coachhelm/v3/generators/course-mgmt';
+import { TOUR_STANDARDS } from '@/lib/golf/benchmarks/tour';
 
 const PLAYER_ID = 'p-1';
 
@@ -7,7 +8,7 @@ function makeAgg(
   variant: 'penalty' | 'big_number',
   value: number,
   rounds = 20,
-  anchor: { anchor_value?: number | null; anchor_is_cohort?: boolean } = {},
+  tour: 'pga' | 'lpga' = 'pga',
   cause: Partial<{
     cause_penalty_pct: number;
     cause_missed_gir_pct: number;
@@ -21,19 +22,17 @@ function makeAgg(
     }>;
     worst_holes_excluded_rounds: number;
   }> = {},
-  cohortGender: 'mens' | 'womens' | null = 'mens',
 ) {
+  const t = TOUR_STANDARDS[tour];
   return {
     sampleN: rounds,
     playerValue: value,
     metric_value: value,
     variant,
     rounds_played: rounds,
-    // cm-1: cohort/PGA anchor the prose + priority key off. Default null →
-    // composeContent falls back to the raw PGA anchors (pre-cm-1 behavior).
-    anchor_value: anchor.anchor_value ?? null,
-    anchor_is_cohort: anchor.anchor_is_cohort ?? false,
-    cohort_gender: cohortGender,
+    // Q-88: the team's Tour is the one anchor (aggregate() picks it by gender).
+    anchor_value: variant === 'penalty' ? t.penaltiesPerRound : t.bigNumbersPer100Holes,
+    anchor_label: t.label,
     cause_penalty_pct: cause.cause_penalty_pct ?? 0,
     cause_missed_gir_pct: cause.cause_missed_gir_pct ?? 0,
     cause_three_putt_pct: cause.cause_three_putt_pct ?? 0,
@@ -64,7 +63,7 @@ describe('CourseMgmtGenerator', () => {
     expect(c.title).toContain('Penalty strokes');
     expect(c.title).toContain('0.8');
     expect(c.content).toContain('22 rounds');
-    expect(c.content).toContain('PGA Tour is ~0.3');
+    expect(c.content).toContain('The PGA Tour averages ~0.3');
     expect(c.signature).toBe('course_management:penalty_rate');
     expect(c.evidence.unit).toBe('count');
     expect(c.evidence.comparison_value).toBe(0.3);
@@ -76,60 +75,47 @@ describe('CourseMgmtGenerator', () => {
     const c = g.composeContent(makeAgg('big_number', 7.3));
     expect(c.title).toContain('Double bogey-or-worse');
     expect(c.title).toContain('7.3%');
-    expect(c.content).toContain('PGA Tour is ~2%');
+    expect(c.content).toContain('The PGA Tour is ~2.0%');
     expect(c.signature).toBe('course_management:big_number');
     expect(c.evidence.unit).toBe('percent');
     expect(c.evidence.comparison_value).toBe(2);
   });
 
-  // cm-1: priority + prose anchor to the cohort the counterfactual uses, not
-  // the raw PGA value. An at/below-cohort player must NOT get a HIGH "3× Tour"
-  // card whose strokes_impact is 0.
-  describe('cm-1 cohort anchoring', () => {
-    it('penalty: at/below cohort is LOW (not a HIGH 3× Tour card)', () => {
+  // Q-88: priority, prose and tick all use the team's Tour. The thresholds are
+  // the pre-cm-1 ones (penalties 0.6 high / 0.3 medium; big numbers 4% / 2%).
+  describe('Tour anchoring (Q-88)', () => {
+    it('penalty: over the Tour by more than 0.3 is HIGH, over it MEDIUM, at/under LOW', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
-      // 0.9/rd is 3× the PGA 0.3, but the player's cohort also averages 0.9 →
-      // no gap to close → descriptive (low), matching the zero counterfactual.
-      const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
-      expect(c.priority).toBe('low');
-      expect(c.content).toContain('College players in our data average ~0.9');
-      expect(c.content).toContain('College players in our data average');
-    });
-
-    it('penalty: well above cohort escalates to HIGH', () => {
-      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
-      const c = g.composeContent(makeAgg('penalty', 1.4, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
-      expect(c.priority).toBe('high'); // 1.4 - 0.9 = 0.5 > 0.3 highMargin
-    });
-
-    it('penalty: PGA fallback (no cohort) preserves the pre-cm-1 thresholds', () => {
-      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
-      // anchor_value null → falls back to PGA default 0.3: >0.6 high, >0.3 medium.
       expect(g.composeContent(makeAgg('penalty', 0.7, 20)).priority).toBe('high');
       expect(g.composeContent(makeAgg('penalty', 0.5, 20)).priority).toBe('medium');
       expect(g.composeContent(makeAgg('penalty', 0.2, 20)).priority).toBe('low');
     });
 
-    it('big_number: at/below cohort is LOW; above escalates', () => {
-      const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
-      const atCohort = g.composeContent(makeAgg('big_number', 6, 20, { anchor_value: 6, anchor_is_cohort: true }));
-      expect(atCohort.priority).toBe('low');
-      expect(atCohort.content).toContain('College players in our data average ~6.0%');
-      const above = g.composeContent(makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }));
-      expect(above.priority).toBe('high'); // 9 - 6 = 3 > 2 highMargin
-    });
-
-    it('big_number: PGA fallback preserves pre-cm-1 thresholds (4% high / 2% medium)', () => {
+    it('big_number: 4% high / 2% medium against the PGA Tour', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
       expect(g.composeContent(makeAgg('big_number', 5, 20)).priority).toBe('high');
       expect(g.composeContent(makeAgg('big_number', 3, 20)).priority).toBe('medium');
       expect(g.composeContent(makeAgg('big_number', 1.5, 20)).priority).toBe('low');
     });
 
-    it('does NOT assert a "division cohort" (level_avg is an app-wide population)', () => {
+    it("a women's team is compared with the LPGA Tour, labelled as such", () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
-      const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
-      expect(c.content.toLowerCase()).not.toContain('division cohort');
+      const c = g.composeContent(makeAgg('penalty', 0.7, 20, 'lpga'));
+      expect(c.content).toContain('The LPGA Tour averages ~0.4');
+      expect(c.evidence.comparison_value).toBe(0.4);
+      expect(c.evidence.comparison_label).toBe('LPGA Tour avg');
+      expect(c.priority).toBe('medium'); // 0.7 - 0.4 = 0.3, not over 0.3
+    });
+
+    it('never names a college, cohort or division', () => {
+      for (const v of ['penalty', 'big_number'] as const) {
+        for (const tour of ['pga', 'lpga'] as const) {
+          const c = new CourseMgmtGenerator(PLAYER_ID, v).composeContent(makeAgg(v, 1, 20, tour));
+          expect(c.content.toLowerCase()).not.toMatch(/college|cohort|division/);
+          expect(c.evidence.comparison_source).toBe('pga_baseline');
+          expect(c.evidence.secondary_value).toBeUndefined();
+        }
+      }
     });
   });
 
@@ -137,7 +123,7 @@ describe('CourseMgmtGenerator', () => {
     it('big_number names the dominant proximate cause (3-putt vs penalty vs missed-GIR)', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
       const c = g.composeContent(
-        makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
+        makeAgg('big_number', 9, 20, 'pga', {
           cause_three_putt_pct: 55, cause_missed_gir_pct: 30, cause_penalty_pct: 15,
         }),
       );
@@ -149,7 +135,7 @@ describe('CourseMgmtGenerator', () => {
     it('penalty action is specific to the dominant cause, not generic "avoid penalties"', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
       const c = g.composeContent(
-        makeAgg('penalty', 1.4, 20, { anchor_value: 0.9, anchor_is_cohort: true }, {
+        makeAgg('penalty', 1.4, 20, 'pga', {
           cause_penalty_pct: 70, cause_missed_gir_pct: 20, cause_three_putt_pct: 10,
         }),
       );
@@ -161,7 +147,7 @@ describe('CourseMgmtGenerator', () => {
     it('big_number surfaces the worst holes by avg-to-par when present', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
       const c = g.composeContent(
-        makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
+        makeAgg('big_number', 9, 20, 'pga', {
           cause_three_putt_pct: 40, cause_missed_gir_pct: 40, cause_penalty_pct: 20,
           worst_holes: [
             { course_id: 'c-1', course_name: 'Pine Valley', hole_number: 7, avg_to_par: 0.9, n: 6 },
@@ -180,7 +166,7 @@ describe('CourseMgmtGenerator', () => {
     it('big_number states the coverage gap when rounds without a course_id were left out of the ranking', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
       const c = g.composeContent(
-        makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
+        makeAgg('big_number', 9, 20, 'pga', {
           cause_three_putt_pct: 40, cause_missed_gir_pct: 40, cause_penalty_pct: 20,
           worst_holes: [
             { course_id: 'c-1', course_name: null, hole_number: 3, avg_to_par: 1.2, n: 4 },
@@ -197,26 +183,22 @@ describe('CourseMgmtGenerator', () => {
 describe('audit row 12 — print what the priority used, and label the window', () => {
   const g = (v: 'penalty' | 'big_number') => new CourseMgmtGenerator(PLAYER_ID, v);
 
-  it('the primary comparison is the cohort the priority used; the Tour is the secondary tick', () => {
-    const pen = g('penalty').composeContent(makeAgg('penalty', 0.7, 20, { anchor_value: 0.86, anchor_is_cohort: true }));
-    expect(pen.priority).toBe('low'); // better than cohort
-    expect(pen.evidence.comparison_value).toBe(0.86);
-    expect(pen.evidence.comparison_source).toBe('cohort_avg');
-    expect(pen.evidence.secondary_value).toBe(0.3);
-    expect(pen.evidence.secondary_source).toBe('pga_baseline');
+  it('the comparison is the Tour value the priority used, with no secondary tick', () => {
+    const pen = g('penalty').composeContent(makeAgg('penalty', 0.7, 20));
+    expect(pen.priority).toBe('high');
+    expect(pen.evidence.comparison_value).toBe(0.3);
+    expect(pen.evidence.comparison_source).toBe('pga_baseline');
+    expect(pen.evidence.secondary_value).toBeUndefined();
 
-    const big = g('big_number').composeContent(makeAgg('big_number', 9, 20, { anchor_value: 5.49, anchor_is_cohort: true }));
-    expect(big.evidence.comparison_value).toBe(5.49);
-    expect(big.evidence.comparison_source).toBe('cohort_avg');
-    expect(big.evidence.secondary_value).toBe(2);
+    const big = g('big_number').composeContent(makeAgg('big_number', 9, 20));
+    expect(big.evidence.comparison_value).toBe(2);
+    expect(big.evidence.comparison_label).toBe('PGA Tour avg');
   });
 
-  it("a women's cohort card never carries the men's Tour tick", () => {
-    const c = g('penalty').composeContent(
-      makeAgg('penalty', 0.7, 20, { anchor_value: 0.9, anchor_is_cohort: true }, {}, 'womens'),
-    );
-    expect(c.evidence.comparison_source).toBe('cohort_avg');
-    expect(c.evidence.secondary_value).toBeUndefined();
+  it("a women's card carries the LPGA value and never the men's", () => {
+    const c = g('big_number').composeContent(makeAgg('big_number', 9, 20, 'lpga'));
+    expect(c.evidence.comparison_value).toBe(3);
+    expect(c.evidence.comparison_label).toBe('LPGA Tour avg');
   });
 
   it('labels the window lifetime: the value is the all-time cache scalar', () => {

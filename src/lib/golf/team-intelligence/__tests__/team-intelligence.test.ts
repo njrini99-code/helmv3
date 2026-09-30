@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeShots, type RawShotRow } from '../normalize';
 import {
+  PUTT_BANDS,
   approachInBand,
   approachSummary,
   bucketMeans,
@@ -8,6 +9,7 @@ import {
   filterRounds,
   playerThemeSg,
   puttSummary,
+  puttsIn,
   teeSummary,
   themeSummary,
   worstFirst,
@@ -110,10 +112,10 @@ describe('normalizeShots', () => {
     const { chips } = normalizeShots(
       [
         shot({ hole_number: 1, shot_number: 3, shot_type: 'around_green', lie_before: 'rough', distance_to_hole_before: 15, lie_after: 'green', distance_to_hole_after: 3, distance_unit_after: 'feet' }),
-        shot({ hole_number: 1, shot_number: 4, shot_type: 'putting', putt_distance_feet: 3, putt_made: true }),
+        shot({ hole_number: 1, shot_number: 4, shot_type: 'putting', distance_to_hole_before: 3, putt_made: true }),
         shot({ hole_number: 2, shot_number: 3, shot_type: 'around_green', lie_before: 'sand', distance_to_hole_before: 12, lie_after: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet' }),
-        shot({ hole_number: 2, shot_number: 4, shot_type: 'putting', putt_distance_feet: 20, putt_made: false }),
-        shot({ hole_number: 2, shot_number: 5, shot_type: 'putting', putt_distance_feet: 2, putt_made: true }),
+        shot({ hole_number: 2, shot_number: 4, shot_type: 'putting', distance_to_hole_before: 20, putt_made: false }),
+        shot({ hole_number: 2, shot_number: 5, shot_type: 'putting', distance_to_hole_before: 2, putt_made: true }),
       ],
       index,
     );
@@ -133,15 +135,57 @@ describe('normalizeShots', () => {
   it('marks the first putt of a three-putt hole, break, slope and miss sides', () => {
     const { putts } = normalizeShots(
       [
-        shot({ hole_number: 1, shot_number: 2, shot_type: 'putting', putt_distance_feet: 40, putt_made: false, putt_break: 'right_to_left', putt_slope: 'downhill', miss_direction: 'low_short' }),
-        shot({ hole_number: 1, shot_number: 3, shot_type: 'putting', putt_distance_feet: 5, putt_made: false, putt_break: 'multiple', putt_slope: 'severe' }),
-        shot({ hole_number: 1, shot_number: 4, shot_type: 'putting', putt_distance_feet: 1, putt_made: true }),
+        shot({ hole_number: 1, shot_number: 2, shot_type: 'putting', distance_to_hole_before: 40, putt_made: false, putt_break: 'right_to_left', putt_slope: 'downhill', miss_direction: 'low_short' }),
+        shot({ hole_number: 1, shot_number: 3, shot_type: 'putting', distance_to_hole_before: 5, putt_made: false, putt_break: 'multiple', putt_slope: 'severe' }),
+        shot({ hole_number: 1, shot_number: 4, shot_type: 'putting', distance_to_hole_before: 1, putt_made: true }),
       ],
       index,
     );
     expect(putts[0]).toMatchObject({ first: true, threePutt: true, brk: 'rl', slope: 'down', side: 'low', depth: 'short', leaveFeet: 5 });
     expect(putts[1]).toMatchObject({ first: false, threePutt: false, brk: null, slope: null });
     expect(putts[2]).toMatchObject({ made: true, side: null, leaveFeet: null });
+  });
+
+  describe('putts follow the one make % definition (src/lib/golf/putt-make.ts, Q-93)', () => {
+    it('starts from distance_to_hole_before, never putt_distance_feet', () => {
+      const { putts } = normalizeShots(
+        [shot({ hole_number: 1, shot_number: 2, shot_type: 'putting', distance_to_hole_before: 4, putt_distance_feet: 30, putt_made: true })],
+        index,
+      );
+      expect(putts[0]?.feet).toBe(4);
+    });
+
+    it('a holed result is a make even when putt_made is null; a null putt_made without one is a miss', () => {
+      const { putts } = normalizeShots(
+        [
+          shot({ hole_number: 1, shot_number: 2, shot_type: 'putting', distance_to_hole_before: 12, putt_made: null, result: 'hole' }),
+          // The last putt of a hole with no holed signal is a miss, not an assumed make.
+          shot({ hole_number: 2, shot_number: 2, shot_type: 'putting', distance_to_hole_before: 12, putt_made: null, result: 'green' }),
+          shot({ hole_number: 3, shot_number: 2, shot_type: 'putting', distance_to_hole_before: 2, putt_made: true }),
+        ],
+        index,
+      );
+      expect(putts.map((p) => p.made)).toEqual([true, false, true]);
+    });
+
+    it('a putt with no start distance is left out, not read as 0 ft', () => {
+      const { putts } = normalizeShots(
+        [shot({ hole_number: 1, shot_number: 2, shot_type: 'putting', distance_to_hole_before: null, putt_distance_feet: 12, putt_made: false })],
+        index,
+      );
+      expect(putts).toHaveLength(0);
+    });
+
+    it('bands are (lo, hi]: 5 ft is 3-5, 25 ft is 15-25, 3 ft has no band', () => {
+      const p = (feet: number) => ({ ri: 0, feet, made: false, first: false, threePutt: false, brk: null, slope: null, side: null, depth: null, leaveFeet: null });
+      const all = [p(3), p(5), p(10), p(15), p(25), p(26)];
+      const n = (id: (typeof PUTT_BANDS)[number]['id']) => puttsIn(all, id).map((x) => x.feet);
+      expect(n('3')).toEqual([5]);
+      expect(n('5')).toEqual([10]);
+      expect(n('10')).toEqual([15]);
+      expect(n('15')).toEqual([25]);
+      expect(n('25')).toEqual([26]);
+    });
   });
 
   it('drops shots of rounds outside the payload', () => {

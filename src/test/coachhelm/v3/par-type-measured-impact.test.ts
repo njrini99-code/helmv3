@@ -3,7 +3,7 @@
  *
  * par_scoring wrote strokes_impact 0 on 141 of 141 rows, including 29 whose
  * counterfactual was unsuppressed. The row is floor-exempt, so the base keeps
- * whatever the generator composes: the measured gap-to-cohort impact must be
+ * whatever the generator composes: the measured gap-to-Tour impact (Q-88) must be
  * composed here, sized by the player's OWN holes of that par per round.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -52,22 +52,23 @@ describe('ParTypeGenerator — measured strokes impact', () => {
     });
   });
 
-  it('(avg − cohort) × the player\'s own par-4s per round', async () => {
+  it('(avg − Tour) × the player\'s own par-4s per round, never the college cohort', async () => {
     holes.mockResolvedValue(card(12, 12, 5)); // 12 par-4s per round
-    standing.mockResolvedValue({ pga_value: 4.0, level_avg: 4.4 });
+    // level_avg is ignored (Q-88): the target is the Tour's 4.4.
+    standing.mockResolvedValue({ pga_value: 4.4, level_avg: 4.0 });
     const g = new ParTypeGenerator('p', 4);
     const agg = await g.aggregate();
     expect(agg?.holes_per_round).toBe(12);
-    // (4.5 − 4.4 cohort) × 12 = 1.2, under the par-4 ceiling of 1.5.
+    // (4.5 − 4.4 Tour) × 12 = 1.2, under the par-4 ceiling of 1.5.
     expect(agg?.strokes_impact).toBeCloseTo(1.2, 6);
     const c = g.composeContent(agg!);
     expect(c.evidence.strokes_impact).toBeCloseTo(1.2, 6);
     expect(c.evidence.window_start).toBe('2026-03-01');
   });
 
-  it('is 0 when the player is at or better than the cohort', async () => {
+  it('is 0 when the player is at or better than the Tour', async () => {
     holes.mockResolvedValue(card(12, 10, 4));
-    standing.mockResolvedValue({ pga_value: 4.0, level_avg: 4.6 });
+    standing.mockResolvedValue({ pga_value: 4.6, level_avg: 4.0 });
     const agg = await new ParTypeGenerator('p', 4).aggregate();
     expect(agg?.strokes_impact).toBe(0);
   });

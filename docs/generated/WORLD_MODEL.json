@@ -14004,6 +14004,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "anchor": "src/lib/golf/pattern-impact-ranking"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/player-effectiveness.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -15734,6 +15739,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/resolve-player-tour.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/signup-gate.ts",
           "anchor": "src/lib/auth/supabase-rate-limit"
         },
@@ -16343,6 +16353,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/leak-map-buckets.ts",
           "anchor": "src/app/golf/actions/stats-leak-maps-types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/resolve-player-tour.ts",
+          "anchor": "src/lib/golf/benchmarks/tour"
         },
         {
           "kind": "import_graph",
@@ -18577,6 +18592,28 @@
     },
     {
       "source": "player_coachhelm_development",
+      "target": "stats_analytics",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/counterfactual/cohort-baselines.ts",
+          "anchor": "src/lib/golf/benchmarks/tour"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/course-mgmt.ts",
+          "anchor": "src/lib/golf/benchmarks/tour"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
+          "anchor": "src/lib/golf/benchmarks/tour"
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
       "target": "tests:src/test/coachhelm/**",
       "kind": "feature_test",
       "evidence": [
@@ -20666,6 +20703,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
+          "anchor": "src/lib/golf/resolve-player-tour"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-data.ts",
           "anchor": "src/lib/golf/round-total"
         },
         {
@@ -20730,6 +20772,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-leak-maps.ts",
+          "anchor": "src/lib/golf/resolve-player-tour"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/stats.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -20776,6 +20823,16 @@
           "kind": "import_graph",
           "path": "src/lib/golf/benchmarks/__tests__/putting.test.ts",
           "anchor": "src/lib/coachhelm/v3/counterfactual/cohort-baselines"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/benchmarks/__tests__/tour.test.ts",
+          "anchor": "src/lib/coachhelm/v3/counterfactual/cohort-baselines"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/benchmarks/tour.ts",
+          "anchor": "src/lib/coachhelm/v3/standing/pga-standards"
         }
       ]
     },
