@@ -64,10 +64,11 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [ ] Every failure path was forced once locally and seen in the console or Sentry (the preview forces the events, replies, classes and attendance failures; the mutations still need a forced failure)
 
 ## phone-spec
-- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
-- [ ] The owner approved it (the file says `Status: approved`)
+- [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (the v2 board, mapped piece by piece, 2026-09-30)
+- [x] The owner approved it (the file says `Status: approved`; the owner's v2 phone board is the spec, D-22)
 
 ## phone
+<!-- Built 2026-09-30 (CalendarPhone): tests at the phone width; not yet in a browser at 390/430 or on an iPhone. -->
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss

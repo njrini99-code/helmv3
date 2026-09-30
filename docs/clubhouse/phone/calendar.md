@@ -1,21 +1,32 @@
 # Phone design: Calendar (coach and player)
 
-Status: draft (awaiting owner approval)
+Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff/Coach - Calendar - Mobile.html`, `m-cal.jsx`, `m.css`. It replaces the earlier draft in this file. Built 2026-09-30 as `src/clubhouse/screens/calendar/CalendarPhone.tsx`, inside the desktop `Calendar` container (state, writes and dialogs shared). The iPhone pass is open.
 
-A seven-column week grid is unreadable at 390px. The phone calendar is built around the agenda and a day view instead.
+The boards: Day (week strip, agenda with classes), Event detail (conflict and suggested times), Month (competition days marked), New event (class-schedule check).
 
 ## Layout
-1. Top bar: the month and year as the title (tap opens the jump-to-date sheet); trailing action: New event (coach), or Add to calendar app (player).
-2. Week strip: seven day pills (Sun to Sat) with a dot under days that have events; swipe the strip to change weeks; today filled green. Tapping a day scrolls the list to it.
-3. Default view: Agenda for the selected week, grouped by day, with the "Now" divider on today. Each row is 64px: time, dot, title, place, and an Overlap badge (coach).
-4. A segmented control switches Agenda and Day. Day is the hour grid for one day at full width (the desktop day view, 44px per hour), with lanes for overlaps. Month is not offered on phone; the jump sheet covers it.
-5. Filter (coach): a "People" button opens the people picker as a sheet.
 
-## Event detail
-Tapping an event pushes a full-height sheet with the desktop panel's content in the same order: facts, overlap notice, responses, invitees. Coach actions (Edit, Attendance) sit in a bottom bar above the home indicator. A player's reply (Going, Maybe, Can't make it) is a full-width segmented control.
+| Board piece | Built as |
+| --- | --- |
+| Top bar "Calendar" with + | Coach: the tab root (D-66 makes Calendar a coach tab) titled Calendar, with New event. Player: "‹ More" (Calendar opens from More), with Add to calendar app |
+| The month and Day, Month, List | `h2` month and a `Segmented`; the desktop's week and day views are the phone's Day, agenda is List |
+| Day: week strip, day heading with counts, agenda | `DayView`: the anchor's week (Sun to Sat) with dots, the day's events and class or busy blocks, the now line on today, overlap marks (coach), Now on a live event |
+| Event detail sheet | The desktop detail panel (`EventDetail`, `Attendance`, `Overlap`) in a `Modal` sheet: type, facts, overlap with Review (suggested open times), responses, invitees, files, Edit and Attendance (coach), the player's reply |
+| Month | `MonthGrid`: dots, competition days dark; a day opens its Day view |
+| List | The desktop `AgendaView` |
+| New event sheet | The desktop `EventEditor` (a sheet on the phone), with its class-schedule check |
 
-## Editor (coach)
-A full-height sheet in one column: title, type chips (wrapping), native date and time pickers, All day, Repeat, location, notes, then invitees and the verify line. Find a time becomes a per-person list of busy blocks with the proposed time highlighted; dragging a band is not used on phone.
+## Differences from the board (Q-67)
 
-## Attendance (coach)
-A full-height sheet: one row per player with Present, Late and No-show as 44px segments; Mark all present at the top; Save pinned at the bottom.
+- **Top bar.** The board draws "‹ More"; D-66 made Calendar a coach tab, so the coach's top bar is the tab root. A player still comes from More.
+- **Message invitees** (the event sheet's footer): Messages has no link that starts a group with chosen people, so it isn't built. A one-invitee event could link to that direct thread; left for the Messages owner.
+- **New event** is the full desktop editor as a sheet, not the board's compact form: every field and its checks stay (the owner's rule for phone forms, D-33 by analogy).
+- **Workout** type: there is none (as on Home, Q-66).
+
+## States
+
+The failed-read notices are the desktop's (CH-6201 to CH-6203, CH-6212). A day with nothing: CH-6308. The list's empty range: CH-6301. The view crashes on its own (CH-6210), the sheet likewise (CH-6211).
+
+## Gestures and haptics
+
+Selection on a day, a view change and opening an event; the sheet drags shut (the shell's CH-1611). Reduced motion turns the press and reveal off.

@@ -1560,3 +1560,303 @@
   opacity: 0.55;
   cursor: default;
 }
+
+/* ── Phone (v2: design/handoff/Coach - Calendar - Mobile.html, m-cal.jsx, m.css) ── */
+.ch-calm {
+  display: none;
+}
+@media (max-width: 820px) {
+  /* The server renders desktop; on a phone it stays hidden until the phone view takes over at hydration. The skeleton stays. */
+  .ch-cal:not([data-ch-code]) {
+    visibility: hidden;
+  }
+  .ch-calm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 14px 24px;
+  }
+  .ch-calm-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 2px 0;
+  }
+  .ch-calm-title {
+    font: 600 28px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.034em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-text-primary);
+  }
+  .ch-calm-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+    list-style: none;
+  }
+  .ch-calm-week__d {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    padding: 8px 0 7px;
+    border: 0;
+    border-radius: 14px;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-calm-week__d em {
+    font: 500 11px/1 var(--ch-font-sans);
+    font-style: normal;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm-week__d b {
+    font: 500 16px/1 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-calm-week__d i {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 6px;
+  }
+  .ch-calm-week__d i span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgb(28 25 18 / 0.25);
+  }
+  .ch-calm-week__d.is-today b {
+    font-weight: 600;
+    color: var(--ch-green-700);
+  }
+  .ch-calm-week__d.is-on {
+    background: var(--ch-green-600);
+  }
+  .ch-calm-week__d.is-on em,
+  .ch-calm-week__d.is-on b {
+    color: var(--ch-ivory-25);
+  }
+  .ch-calm-week__d.is-on i span {
+    background: rgb(253 252 248 / 0.7);
+  }
+  .ch-calm-dayk {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 4px 2px 0;
+  }
+  .ch-calm-dayk b {
+    font: 600 16px/1.2 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-calm-dayk span {
+    font: var(--ch-type-caption);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm-agenda {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    list-style: none;
+  }
+  .ch-calm-agenda li + li .ch-calm-ev {
+    border-top: 1px solid var(--ch-border-hairline);
+  }
+  .ch-calm-ev {
+    position: relative;
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 16px 10px 18px;
+    border: 0;
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  /* The type as a rail on the left edge, in the desktop's type colours. */
+  .ch-calm-ev::before {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 8px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--ch-ink-400);
+    content: '';
+  }
+  .ch-calm-ev.is-practice::before {
+    background: var(--ch-green-500);
+  }
+  .ch-calm-ev.is-qualifier::before,
+  .ch-calm-ev.is-tournament::before {
+    background: var(--ch-green-800);
+  }
+  .ch-calm-ev.is-travel::before {
+    background: var(--ch-ink-300);
+  }
+  .ch-calm-ev.is-class,
+  .ch-calm-ev.is-busy {
+    background: var(--ch-well-soft-bg);
+  }
+  .ch-calm-ev.is-class::before,
+  .ch-calm-ev.is-busy::before {
+    background: var(--ch-ivory-400);
+  }
+  .ch-calm-ev:active,
+  .ch-calm-ev.is-sel {
+    background: var(--ch-bg-hover);
+  }
+  .ch-calm-ev.is-past {
+    opacity: 0.5;
+  }
+  .ch-calm-ev.is-cancelled b {
+    text-decoration: line-through;
+  }
+  .ch-calm-ev__t {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font: 500 13px/1 var(--ch-font-sans);
+    color: var(--ch-ink-700);
+  }
+  .ch-calm-ev__t em {
+    font: 400 12px/1 var(--ch-font-sans);
+    font-style: normal;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm-ev__b {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .ch-calm-ev__b b,
+  .ch-calm-ev__b span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .ch-calm-ev__b b {
+    font: 600 14.5px/1.25 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-calm-ev__b span {
+    font: 400 12.5px/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm-ev__w {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--ch-warning-100);
+    color: var(--ch-warning-600);
+  }
+  .ch-calm-now {
+    position: relative;
+    height: 0;
+    margin: 0 16px;
+    border-top: 2px solid var(--ch-green-600);
+  }
+  .ch-calm-now span {
+    position: absolute;
+    top: -10px;
+    left: -2px;
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: var(--ch-green-600);
+    font: 600 11px/1 var(--ch-font-sans);
+    color: var(--ch-ivory-0);
+  }
+  section.ch-calm-month {
+    padding: 12px 10px 14px;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+  }
+  .ch-calm-month__h,
+  .ch-calm-month__g {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .ch-calm-month__h span {
+    padding-bottom: 8px;
+    font: 500 11.5px/1 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+    text-align: center;
+  }
+  .ch-calm-month__c {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 48px;
+    padding-top: 8px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .ch-calm-month__c b {
+    font: 500 15px/1 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-calm-month__c.is-out b {
+    color: var(--ch-text-disabled);
+  }
+  .ch-calm-month__c.is-today b {
+    font-weight: 600;
+    color: var(--ch-green-700);
+  }
+  .ch-calm-month__c.is-on {
+    background: var(--ch-bg-selected);
+  }
+  .ch-calm-month__c i,
+  .ch-calm-month__lg i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ch-green-500);
+  }
+  .ch-calm-month__c i.is-major,
+  .ch-calm-month__lg i.is-major {
+    width: 7px;
+    height: 7px;
+    background: var(--ch-green-800);
+  }
+  .ch-calm-month__lg {
+    display: flex;
+    gap: 16px;
+    padding: 10px 6px 0;
+    font: var(--ch-type-caption);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm-month__lg span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* The detail panel in a sheet: the sheet's own title and close stand in for the panel's. */
+  .ch-calm-sheet[data-kind='event'] .ch-in__back,
+  .ch-calm-sheet[data-kind='event'] .ch-in__title {
+    display: none;
+  }
+}

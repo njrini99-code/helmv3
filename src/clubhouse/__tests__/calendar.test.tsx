@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Calendar: every numbered state in docs/clubhouse/catalog/calendar.md, found by its number. */
 
@@ -420,5 +420,68 @@ describe('Calendar · no team', () => {
     unmount();
     render(<CalendarNoTeam coach={false} />);
     expect(code('CH-6307')!.textContent).toMatch(/once a coach adds you/);
+  });
+});
+
+describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('Day: the week strip and the chosen day’s agenda, classes in their place', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    expect(screen.getByRole('heading', { level: 2, name: 'October' })).toBeTruthy();
+    const strip = screen.getByRole('list', { name: 'This week' });
+    expect(within(strip).getAllByRole('button')).toHaveLength(7);
+    expect(within(strip).getByRole('button', { name: /^Wed 14/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
+    expect(screen.getByRole('button', { name: /^Short-game block, 3:30 PM to 5:00 PM/ })).toBeTruthy();
+    // Coaches see a class in its slot, with its owner.
+    expect(screen.getByRole('button', { name: /^Priya · STAT 201/ })).toBeTruthy();
+    await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
+    expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
+  });
+
+  it('an event opens the detail panel in a sheet, with its responses', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    await user.click(screen.getByRole('button', { name: /^Short-game block/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Short-game block' });
+    expect(within(sheet).getByText('Responses')).toBeTruthy();
+  });
+
+  it('Month: a compact grid; a day opens its Day view', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    await user.click(screen.getByRole('radio', { name: 'Month' }));
+    const day = await screen.findByRole('button', { name: /^Fri 16 October: .*competition/ });
+    await user.click(day);
+    expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
+  });
+
+  it('CH-6308 a day with nothing on it says so', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    await user.click(within(screen.getByRole('list', { name: 'This week' })).getByRole('button', { name: /^Sun 11/ }));
+    await expectCode('CH-6308', /Nothing on this day/);
+  });
+
+  it('CH-6201 the calendar didn’t load: the notice, never an empty day', () => {
+    wrap(cal({ eventsError: true, events: [] }));
+    expect(code('CH-6201')).not.toBeNull();
+    expect(code('CH-6308')).toBeNull();
+  });
+
+  it('a player sees their team events and only their own class', () => {
+    wrap(PREVIEW_CALENDAR_PLAYER);
+    expect(screen.getByRole('button', { name: /^Short-game block/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Priya · STAT 201/ })).toBeNull();
   });
 });

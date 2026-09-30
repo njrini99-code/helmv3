@@ -21,6 +21,9 @@ import { AgendaView, MonthView, TimeGrid, type ChNow } from './views';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
 import { BusySheet } from './extras';
+import { CalendarPhone } from './CalendarPhone';
+import { Modal } from '../../ui/Modal';
+import { useChPhone } from '../../lib/use-phone';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -221,6 +224,7 @@ export function Calendar({
   const [subs, setSubs] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
   const [jump, setJump] = useState(false);
+  const phone = useChPhone();
   const clock = useNow();
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
 
@@ -323,6 +327,117 @@ export function Calendar({
     ...(coach && overlaps.length ? [{ label: `Overlaps · ${overlaps.length}`, icon: TriangleAlert, onSelect: () => setInsp({ kind: 'overlap' as const, id: overlaps[0]!.id }) }] : []),
   ];
 
+  const notices = (
+    <>
+      {data.settingsError && (
+        <InlineNotice
+          code="CH-6212"
+          title="Your team's timezone didn't load."
+          body={`Times are shown in ${data.zoneLabel} until it does. Try again; the error has been reported.`}
+          onRetry={refresh}
+        />
+      )}
+      {data.busyError && (
+        <InlineNotice code="CH-6202" title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
+      )}
+      {data.classesError && (
+        <InlineNotice
+          code="CH-6203"
+          title={coach ? "Class schedules didn't load." : "Your classes didn't load."}
+          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again; the error has been reported.' : 'Team events are complete. Try again; the error has been reported.'}
+          onRetry={refresh}
+        />
+      )}
+
+    </>
+  );
+  const dialogs = (
+    <>
+      {coach && (
+        <EventEditor
+          seed={editor}
+          onClose={() => setEditor(null)}
+          onSaved={(d) => {
+            setEditor(null);
+            setInsp(null);
+            if (d < data.range.from || d > data.range.to) go(view, d);
+            else refresh();
+          }}
+          events={data.events}
+          people={data.people}
+          timezone={data.timezone}
+          today={now.date}
+        />
+      )}
+      {coach && (
+        <CancelEvent
+          event={cancelling}
+          onClose={() => setCancelling(null)}
+          onDone={() => {
+            setCancelling(null);
+            refresh();
+          }}
+        />
+      )}
+      <SubscribeSheet open={subs} onClose={() => setSubs(false)} role={data.role} />
+      {coach && (
+        <BusySheet
+          open={busyOpen}
+          today={now.date}
+          onClose={() => setBusyOpen(false)}
+          onSaved={(d) => {
+            setBusyOpen(false);
+            if (d < data.range.from || d > data.range.to) go(view, d);
+            else refresh();
+          }}
+        />
+      )}
+    </>
+  );
+
+  if (phone) {
+    const sel = insp?.kind === 'event' || insp?.kind === 'attendance' ? data.events.find((x) => x.id === insp.id) : undefined;
+    return (
+      <>
+        <CalendarPhone
+          data={data}
+          events={events}
+          people={people}
+          now={now}
+          anchor={anchor}
+          view={view}
+          flagged={flagged}
+          selId={selId}
+          notices={
+            <>
+              {notices}
+              {data.eventsError && <InlineNotice code="CH-6201" title="The calendar didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} />}
+            </>
+          }
+          onView={go}
+          onOpen={open}
+          onNew={(d) => setEditor({ event: null, date: d })}
+          onSubscribe={() => setSubs(true)}
+        />
+        {/* The desktop's detail panel, as a sheet (board: event detail). */}
+        <Modal
+          open={!!insp}
+          onClose={() => setInsp(null)}
+          title={insp?.kind === 'overlap' ? 'Schedule overlap' : insp?.kind === 'attendance' ? 'Attendance' : (sel?.title ?? 'Event')}
+        >
+          <div className="ch-calm-sheet" data-kind={insp?.kind}>
+            <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
+              {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
+              {insp?.kind === 'attendance' && <Attendance key={insp.id} ctx={ctx} id={insp.id} date={insp.date} />}
+              {insp?.kind === 'overlap' && <Overlap key={insp.id} ctx={ctx} id={insp.id} />}
+            </SectionBoundary>
+          </div>
+        </Modal>
+        {dialogs}
+      </>
+    );
+  }
+
   return (
     <main className="ch-cal" aria-busy={pending}>
       <header className="ch-cal-mast">
@@ -414,26 +529,7 @@ export function Calendar({
         </div>
       </div>
 
-      {data.settingsError && (
-        <InlineNotice
-          code="CH-6212"
-          title="Your team's timezone didn't load."
-          body={`Times are shown in ${data.zoneLabel} until it does. Try again; the error has been reported.`}
-          onRetry={refresh}
-        />
-      )}
-      {data.busyError && (
-        <InlineNotice code="CH-6202" title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
-      )}
-      {data.classesError && (
-        <InlineNotice
-          code="CH-6203"
-          title={coach ? "Class schedules didn't load." : "Your classes didn't load."}
-          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again; the error has been reported.' : 'Team events are complete. Try again; the error has been reported.'}
-          onRetry={refresh}
-        />
-      )}
-
+      {notices}
       {data.eventsError ? (
         <div className="ch-cal-surface" style={{ padding: 20 }}>
           <InlineNotice code="CH-6201" title="The calendar didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} />
@@ -492,45 +588,7 @@ export function Calendar({
         </span>
       )}
 
-      {coach && (
-        <EventEditor
-          seed={editor}
-          onClose={() => setEditor(null)}
-          onSaved={(d) => {
-            setEditor(null);
-            setInsp(null);
-            if (d < data.range.from || d > data.range.to) go(view, d);
-            else refresh();
-          }}
-          events={data.events}
-          people={data.people}
-          timezone={data.timezone}
-          today={now.date}
-        />
-      )}
-      {coach && (
-        <CancelEvent
-          event={cancelling}
-          onClose={() => setCancelling(null)}
-          onDone={() => {
-            setCancelling(null);
-            refresh();
-          }}
-        />
-      )}
-      <SubscribeSheet open={subs} onClose={() => setSubs(false)} role={data.role} />
-      {coach && (
-        <BusySheet
-          open={busyOpen}
-          today={now.date}
-          onClose={() => setBusyOpen(false)}
-          onSaved={(d) => {
-            setBusyOpen(false);
-            if (d < data.range.from || d > data.range.to) go(view, d);
-            else refresh();
-          }}
-        />
-      )}
+      {dialogs}
     </main>
   );
 }
