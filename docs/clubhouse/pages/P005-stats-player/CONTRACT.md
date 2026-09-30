@@ -57,6 +57,15 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50406 | CH-5308 | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
 | 50407 | CH-5309 | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | Phone: no strokes gained in the window (no leg and no total) |
 | 50408 | CH-5310 | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
+| 50409 | CH-5311 | `HOLES_WERE_SCORED_IN_THE_WINDOW_BUT` | Holes were scored in the window but none has been played three times |
+| 50410 | CH-5312 | `A_ROUND_TYPE_WITH_NO_ROUNDS_IN` | A round type with no rounds in the window (practice, qualifying, tournament) |
+| 50411 | CH-5313 | `THE_ROUNDS_TAB_HAS_NO_EARLIER_WINDOW` | The Rounds tab has no earlier window to compare with |
+| 50412 | CH-5314 | `A_PER_ROUND_LINE_HAS_FEWER_THAN` | A per-round line has fewer than two rounds with the figure (score by round, fairways, greens, putts) |
+| 50413 | CH-5315 | `NO_TEE_SHOTS_OR_APPROACHES_WITH_A` | No tee shots or approaches with a finish are logged in the window |
+| 50414 | CH-5316 | `APPROACH_PROXIMITY_AGAINST_THE_TOUR_A_RANGE` | Approach proximity against the Tour: a range under 10 shots, or no approaches with a finish distance |
+| 50415 | CH-5317 | `A_MORE_DETAIL_PANEL_WITH_NO_DATA` | A More detail panel with no data behind it (outcomes by par, hole-out, toughest holes, fairways by tee type, tee miss by club, strokes to hole out, misses by distance, sand saves, up and downs, up and down by miss direction, finish after the chip, putting by distance, break tables, practice target, the Tour table) |
+| 50416 | CH-5318 | `A_STANDING_TABLE_ROW_IS_UNDER_ITS` | A standing-table row is under its sample floor |
+| 50417 | CH-5319 | `THE_WINDOW_HAS_MORE_18_HOLE_ROUNDS` | The window has more 18-hole rounds than the shot-level reads take (100) |
 
 ## 05 — Validation
 
@@ -89,6 +98,10 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50611 | — | `PROFILE_READ_FAILURE_RAISES_ROUTE_ERROR` | When the player row or the roster membership read fails, the loader logs it and throws, so the route error view (with Try again) shows; a profile is never reported as That player isn't on your team unless a read that worked found nobody. |
 | 50612 | CH-5003 | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | A player's Accept of a proposed focus area fails |
 | 50613 | CH-5004 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails |
+| 50614 | CH-5209 | `THE_HOLE_READ_FAILS` | The hole read fails (the window's scored holes) |
+| 50615 | CH-5210 | `THE_APPROACH_SHOT_READ_FAILS` | The approach-shot read fails |
+| 50616 | CH-5211 | `THE_PUTT_READ_FAILS` | The putt read fails |
+| 50617 | CH-5212 | `THE_SPRAY_READ_THROWS` | The spray read throws |
 
 ## 07 — Network / offline
 

@@ -60,6 +60,23 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-8404 | 03 Background loading / refresh | A photo upload in flight. |
 | CH-8405 | 03 Background loading / refresh | CoachHelm settings saving, then 'All changes saved'. |
 | CH-8403 | 13 Optimistic UI | The switch holds its new position before the save confirms: optimistic, rolled back on failure (CH-8005). |
+| CH-14403 | 03 Background loading / refresh | A prospect save in flight: work in progress on a shown page. |
+| CH-14404 | 03 Background loading / refresh | A document upload in flight. |
+| CH-14405 | 03 Background loading / refresh | A document removal in flight. |
+| CH-14406 | 03 Background loading / refresh | A prospect delete in flight. |
+| CH-14902 | 08 Permission / authorization | A player who opens Recruiting is sent Home: the page is the coach's, and RLS is the lock behind it. |
+| CH-14903 | 08 Permission / authorization | The server refuses a coach-only write (a document add or delete): an authorization outcome, not a failed write. |
+| CH-14904 | 01 Default / core UI | Core behaviour: Recruiting opens on the pipeline, the list and the first prospect's panel. |
+| CH-14905 | 09 Success | A prospect was added. |
+| CH-14906 | 09 Success | A prospect's changes were saved. |
+| CH-14907 | 09 Success | A prospect was deleted. |
+| CH-14908 | 09 Success | A document was added or removed. |
+| CH-14909 | 13 Optimistic UI | A stage change holds its new place before the save confirms: optimistic, rolled back on failure (CH-14003). |
+| CH-14910 | 12 State preservation | A save that fails leaves the form open with what was typed: protects unsaved state. |
+| CH-14911 | 14 Retry / recovery | Retry on a failed write's toast, and Try again on a failed read: the recovery path. |
+| CH-14912 | 15 Data freshness / sync | The server's fresh list replaces the page's copy after a write or Try again. |
+| CH-14913 | 20 Keyboard / input | Enter saves the form, Esc closes a dialog or clears the search, arrows move a stage. |
+| CH-14914 | 19 Responsive layout | Phone layout at 820px and below. |
 
 ## Count by page and category
 
@@ -69,7 +86,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P004 | 2 | 1 | 1 | 12 | 1 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 50 |
-| P005 | 4 | 2 | 2 | 8 | 1 | 13 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
+| P005 | 4 | 2 | 2 | 17 | 1 | 17 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 73 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 24 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 123 |
@@ -78,6 +95,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P011 | 14 | 8 |  | 14 | 10 | 28 | 11 | 5 | 2 |  | 19 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 151 |
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
+| P014 | 1 | 2 | 4 | 6 | 6 | 10 | 1 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 2 | 5 | 1 | 1 |  |  |  |  |  | 53 |
 
 ## P001 Shell
 
@@ -355,6 +373,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50406 | CH-5308 | 04 Empty | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | implemented | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
 | 50407 | CH-5309 | 04 Empty | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | implemented | Phone: no strokes gained in the window (no leg and no total) |
 | 50408 | CH-5310 | 04 Empty | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | implemented | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
+| 50409 | CH-5311 | 04 Empty | `HOLES_WERE_SCORED_IN_THE_WINDOW_BUT` | implemented | Holes were scored in the window but none has been played three times |
+| 50410 | CH-5312 | 04 Empty | `A_ROUND_TYPE_WITH_NO_ROUNDS_IN` | implemented | A round type with no rounds in the window (practice, qualifying, tournament) |
+| 50411 | CH-5313 | 04 Empty | `THE_ROUNDS_TAB_HAS_NO_EARLIER_WINDOW` | implemented | The Rounds tab has no earlier window to compare with |
+| 50412 | CH-5314 | 04 Empty | `A_PER_ROUND_LINE_HAS_FEWER_THAN` | implemented | A per-round line has fewer than two rounds with the figure (score by round, fairways, greens, putts) |
+| 50413 | CH-5315 | 04 Empty | `NO_TEE_SHOTS_OR_APPROACHES_WITH_A` | implemented | No tee shots or approaches with a finish are logged in the window |
+| 50414 | CH-5316 | 04 Empty | `APPROACH_PROXIMITY_AGAINST_THE_TOUR_A_RANGE` | implemented | Approach proximity against the Tour: a range under 10 shots, or no approaches with a finish distance |
+| 50415 | CH-5317 | 04 Empty | `A_MORE_DETAIL_PANEL_WITH_NO_DATA` | implemented | A More detail panel with no data behind it (outcomes by par, hole-out, toughest holes, fairways by tee type, tee miss by club, strokes to hole out, misses by distance, sand saves, up and downs, up and down by miss direction, finish after the chip, putting by distance, break tables, practice target, the Tour table) |
+| 50416 | CH-5318 | 04 Empty | `A_STANDING_TABLE_ROW_IS_UNDER_ITS` | implemented | A standing-table row is under its sample floor |
+| 50417 | CH-5319 | 04 Empty | `THE_WINDOW_HAS_MORE_18_HOLE_ROUNDS` | implemented | The window has more 18-hole rounds than the shot-level reads take (100) |
 | 50501 | CH-5101 | 05 Validation | `A_FOCUS_AREA_WITH_A_NAME_UNDER` | implemented | A focus area with a name under three characters |
 | 50601 | CH-5001 | 06 Server / system error | `PROPOSING_A_FOCUS_AREA_FAILS` | implemented | Proposing a focus area fails |
 | 50602 | CH-5201 | 06 Server / system error | `ROUNDS_DONT_LOAD` | implemented | Rounds don't load |
@@ -369,6 +396,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50611 |  | 06 Server / system error | `PROFILE_READ_FAILURE_RAISES_ROUTE_ERROR` | implemented | When the player row or the roster membership read fails, the loader logs it and throws, so the route error view (with Try again) shows; a profile is never reported as That player isn't on your team unless a read that worked found nobody. |
 | 50612 | CH-5003 | 06 Server / system error | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | implemented | A player's Accept of a proposed focus area fails |
 | 50613 | CH-5004 | 06 Server / system error | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | implemented | A player's Decline of a proposed focus area fails |
+| 50614 | CH-5209 | 06 Server / system error | `THE_HOLE_READ_FAILS` | implemented | The hole read fails (the window's scored holes) |
+| 50615 | CH-5210 | 06 Server / system error | `THE_APPROACH_SHOT_READ_FAILS` | implemented | The approach-shot read fails |
+| 50616 | CH-5211 | 06 Server / system error | `THE_PUTT_READ_FAILS` | implemented | The putt read fails |
+| 50617 | CH-5212 | 06 Server / system error | `THE_SPRAY_READ_THROWS` | implemented | The spray read throws |
 | 50701 | CH-5901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, on desktop or the phone) while offline |
 | 50702 | CH-5902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window change takes longer than 5 seconds |
 | 50801 | CH-5306 | 08 Permission / authorization | `A_COACH_OPENS_A_PLAYER_WHO_ISNT` | implemented | A coach opens a player who isn't on their team |
@@ -1222,6 +1253,64 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | reserved | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | reserved | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | reserved | A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |
+
+## P014 Recruiting
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 140101 | CH-14904 | 01 Default / core UI | `RECRUITING_OPENS` | implemented | Recruiting opens |
+| 140201 | CH-14401 | 02 Initial loading / skeleton | `THE_PAGE_IS_ON_ITS_WAY` | implemented | The page is on its way |
+| 140202 | CH-14402 | 02 Initial loading / skeleton | `A_PROSPECTS_DOCUMENTS_ARE_LOADING` | implemented | A prospect's documents are loading |
+| 140301 | CH-14403 | 03 Background loading / refresh | `AN_ADD_OR_A_SAVE_IS_ON` | implemented | An add or a save is on its way |
+| 140302 | CH-14404 | 03 Background loading / refresh | `A_DOCUMENT_IS_UPLOADING` | implemented | A document is uploading |
+| 140303 | CH-14405 | 03 Background loading / refresh | `A_DOCUMENT_IS_BEING_REMOVED` | implemented | A document is being removed |
+| 140304 | CH-14406 | 03 Background loading / refresh | `A_PROSPECT_IS_BEING_DELETED` | implemented | A prospect is being deleted |
+| 140401 | CH-14301 | 04 Empty | `FIRST_RUN_NO_PROSPECTS` | implemented | First run: no prospects |
+| 140402 | CH-14302 | 04 Empty | `A_SEARCH_OR_A_STAGE_MATCHES_NOTHING` | implemented | A search or a stage matches nothing |
+| 140403 | CH-14303 | 04 Empty | `A_PROSPECT_WITH_NO_EMAIL_AND_NO` | implemented | A prospect with no email and no phone |
+| 140404 | CH-14304 | 04 Empty | `A_PROSPECT_WITH_NO_NOTES` | implemented | A prospect with no notes |
+| 140405 | CH-14305 | 04 Empty | `A_PROSPECT_WITH_NO_DOCUMENTS` | implemented | A prospect with no documents |
+| 140406 | CH-14306 | 04 Empty | `A_COACH_ON_NO_TEAM_THE_PAGE` | implemented | A coach on no team the page can resolve |
+| 140501 | CH-14101 | 05 Validation | `SAVE_WITH_NO_FIRST_NAME` | implemented | Save with no first name |
+| 140502 | CH-14102 | 05 Validation | `A_CLASS_YEAR_THAT_IS_NOT_A` | implemented | A class year that is not a four-digit year from 2020 to 2040 |
+| 140503 | CH-14103 | 05 Validation | `A_STATE_THAT_IS_NOT_TWO_LETTERS` | implemented | A state that is not two letters |
+| 140504 | CH-14104 | 05 Validation | `A_VALUE_PAST_THE_SERVERS_LIMIT_NAMES` | implemented | A value past the server's limit: names and hometown 120 characters, email 254, phone 40, notes 5,000 |
+| 140505 | CH-14105 | 05 Validation | `A_FILE_OVER_25_MB` | implemented | A file over 25 MB |
+| 140506 | CH-14106 | 05 Validation | `A_FILE_WHOSE_TYPE_THE_BUCKET_DOES` | implemented | A file whose type the bucket does not take |
+| 140601 | CH-14001 | 06 Server / system error | `ADDING_A_PROSPECT_FAILS` | implemented | Adding a prospect fails |
+| 140602 | CH-14002 | 06 Server / system error | `SAVING_CHANGES_TO_A_PROSPECT_FAILS` | implemented | Saving changes to a prospect fails |
+| 140603 | CH-14003 | 06 Server / system error | `A_STAGE_CHANGE_FAILS` | implemented | A stage change fails |
+| 140604 | CH-14004 | 06 Server / system error | `DELETING_A_PROSPECT_FAILS` | implemented | Deleting a prospect fails |
+| 140605 | CH-14005 | 06 Server / system error | `UPLOADING_A_DOCUMENT_FAILS` | implemented | Uploading a document fails |
+| 140606 | CH-14006 | 06 Server / system error | `REMOVING_A_DOCUMENT_FAILS` | implemented | Removing a document fails |
+| 140607 | CH-14007 | 06 Server / system error | `OPENING_A_DOCUMENT_FAILS` | implemented | Opening a document fails |
+| 140608 | CH-14201 | 06 Server / system error | `THE_PROSPECT_LIST_DOESNT_LOAD` | implemented | The prospect list doesn't load |
+| 140609 | CH-14202 | 06 Server / system error | `A_PROSPECTS_DOCUMENTS_DONT_LOAD` | implemented | A prospect's documents don't load |
+| 140610 | CH-14203 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
+| 140701 | CH-14901 | 07 Network / offline | `ANY_WRITE_WHILE_OFFLINE` | implemented | Any write while offline |
+| 140801 | CH-14902 | 08 Permission / authorization | `A_PLAYER_OPENS_RECRUITING` | implemented | A player opens Recruiting |
+| 140802 | CH-14903 | 08 Permission / authorization | `THE_SERVER_REFUSES_A_WRITE_BECAUSE_THE` | implemented | The server refuses a write because the caller is not the team's coach |
+| 140901 | CH-14905 | 09 Success | `A_PROSPECT_IS_ADDED` | implemented | A prospect is added |
+| 140902 | CH-14906 | 09 Success | `CHANGES_TO_A_PROSPECT_ARE_SAVED` | implemented | Changes to a prospect are saved |
+| 140903 | CH-14907 | 09 Success | `A_PROSPECT_IS_DELETED` | implemented | A prospect is deleted |
+| 140904 | CH-14908 | 09 Success | `A_DOCUMENT_IS_ADDED_OR_REMOVED` | implemented | A document is added or removed |
+| 141101 | CH-14501 | 11 Destructive | `DELETE_PROSPECT_FROM_THE_PANEL_OR_THE` | implemented | Delete prospect, from the panel (desktop) or the edit sheet (phone) |
+| 141102 | CH-14502 | 11 Destructive | `REMOVE_A_DOCUMENT` | implemented | Remove a document |
+| 141201 | CH-14910 | 12 State preservation | `A_SAVE_FAILS` | implemented | A save fails |
+| 141301 | CH-14909 | 13 Optimistic UI | `A_STAGE_IS_PICKED` | implemented | A stage is picked |
+| 141401 | CH-14911 | 14 Retry / recovery | `A_WRITE_FAILS_OR_THE_LIST_DOES` | implemented | A write fails, or the list does not load |
+| 141501 | CH-14912 | 15 Data freshness / sync | `THE_SERVER_SENDS_A_FRESH_LIST` | implemented | The server sends a fresh list (after a write, or Try again) |
+| 141601 | CH-14601 | 16 Micro animation | `HOVERING_OR_PRESSING_A_STAGE_IN_THE` | implemented | Hovering or pressing a stage in the pipeline |
+| 141602 | CH-14602 | 16 Micro animation | `A_PROSPECT_OPENS_ON_THE_PHONE` | implemented | A prospect opens on the phone |
+| 141701 | CH-14701 | 17 Haptic | `A_STAGE_IS_PICKED_AS_THE_FILTER` | implemented | A stage is picked, as the filter or as a prospect's stage; a row is opened; a sort is chosen |
+| 141702 | CH-14702 | 17 Haptic | `DELETE_PROSPECT_IS_TAPPED` | implemented | Delete prospect is tapped |
+| 141801 | CH-14801 | 18 Accessibility | `A_SCREEN_READER_REACHES_THE_PIPELINE` | implemented | A screen reader reaches the pipeline |
+| 141802 | CH-14802 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PROSPECTS` | implemented | A screen reader moves through the prospects |
+| 141803 | CH-14803 | 18 Accessibility | `A_STAGE_IS_CHANGED` | implemented | A stage is changed |
+| 141804 | CH-14804 | 18 Accessibility | `A_SAVE_IS_REFUSED` | implemented | A save is refused |
+| 141805 | CH-14805 | 18 Accessibility | `EMAIL_AND_CALL` | implemented | Email and Call |
+| 141901 | CH-14914 | 19 Responsive layout | `THE_PHONE` | implemented | The phone |
+| 142001 | CH-14913 | 20 Keyboard / input | `KEYBOARD` | implemented | Keyboard |
 
 ## Tombstones
 
