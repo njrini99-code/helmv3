@@ -54,25 +54,23 @@ vi.mock('@/lib/server-error-logger', () => ({
 vi.mock('@/lib/admin/observed-action', () => ({
   withAdminObserved: (_n: string, _m: unknown, fn: unknown) => fn,
 }));
-vi.mock('@/lib/admin/rls-denial', () => ({ maybeCaptureRlsDenial: vi.fn() }));
-vi.mock('@/lib/golf/resolve-team-server', () => ({ resolveCoachTeamIdWithCookie: vi.fn() }));
 vi.mock('@/lib/supabase/untyped', () => ({
   fromUntyped: vi.fn(() => ({ insert: untypedInsert })),
 }));
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(async () => ({
-    auth: { getUser: vi.fn(async () => ({ data: { user: { id: 'head-user' } }, error: null })) },
-    from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) })),
-  })),
-}));
 
-const { joinTeamAsAssistantCoach } = await import('../teams');
+// Server-only, NOT a 'use server' export: nothing below reads a session, and
+// nothing needs to — the id comes from signup's own auth.signUp result.
+const { joinTeamAsAssistantCoach } = await import('@/lib/golf/assistant-join');
 
 /** What the admin client was asked to write. */
 const writes = {
   coachUpserts: [] as Record<string, unknown>[],
   staffUpserts: [] as Record<string, unknown>[],
+  staffUpsertOptions: [] as unknown[],
 };
+/** Rows the account already has before the join runs. */
+let existingCoach: { id: string; organization_id: string | null } | null;
+let existingPlayer: { id: string } | null;
 /** Per-table failure injection. */
 const failures = new Map<string, { message: string }>();
 /** Teams the org contains, so the multi-team case can vary it. */
@@ -81,6 +79,9 @@ let programTeams: Array<{ id: string }>;
 beforeEach(() => {
   writes.coachUpserts = [];
   writes.staffUpserts = [];
+  writes.staffUpsertOptions = [];
+  existingCoach = null;
+  existingPlayer = null;
   failures.clear();
   programTeams = [{ id: TEAM_MENS }, { id: TEAM_WOMENS }];
   untypedInsert.mockClear();
@@ -113,8 +114,24 @@ beforeEach(() => {
       };
     }
 
+    if (table === 'golf_players') {
+      return {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () =>
+              failures.has('golf_players')
+                ? { data: null, error: failures.get('golf_players') }
+                : { data: existingPlayer, error: null },
+          }),
+        }),
+      };
+    }
+
     if (table === 'golf_coaches') {
       return {
+        select: () => ({
+          eq: () => ({ maybeSingle: async () => ({ data: existingCoach, error: null }) }),
+        }),
         upsert: (payload: Record<string, unknown>) => {
           writes.coachUpserts.push(payload);
           return {
@@ -132,8 +149,9 @@ beforeEach(() => {
     // golf_team_coach_staff — the grant, plus the head-coach lookup for the
     // notification.
     return {
-      upsert: async (rows: Record<string, unknown>[]) => {
+      upsert: async (rows: Record<string, unknown>[], options?: unknown) => {
         writes.staffUpserts.push(...rows);
+        writes.staffUpsertOptions.push(options);
         return failures.has('golf_team_coach_staff')
           ? { error: failures.get('golf_team_coach_staff') }
           : { error: null };
@@ -247,5 +265,70 @@ describe('joinTeamAsAssistantCoach — failures must not look like success', () 
     // They are on the team; telling the head coach is courtesy, not the grant.
     expect(result.success).toBe(true);
     expect(writes.staffUpserts.length).toBeGreaterThan(0);
+  });
+});
+
+describe('joinTeamAsAssistantCoach — never repoints an existing account', () => {
+  it('refuses a coach who already belongs to ANOTHER organization, writing nothing', async () => {
+    existingCoach = { id: 'other-coach', organization_id: '99999999-9999-4999-8999-999999999999' };
+
+    const result = await join();
+
+    expect(result.success).toBe(false);
+    expect(String(result.error)).toMatch(/another program/i);
+    // The upsert on user_id is what would have overwritten organization_id.
+    expect(writes.coachUpserts).toHaveLength(0);
+    expect(writes.staffUpserts).toHaveLength(0);
+    expect(untypedInsert).not.toHaveBeenCalled();
+  });
+
+  it('refuses an account that already has a player profile, writing nothing', async () => {
+    existingPlayer = { id: 'player-1' };
+
+    const result = await join();
+
+    expect(result.success).toBe(false);
+    expect(String(result.error)).toMatch(/player account/i);
+    expect(writes.coachUpserts).toHaveLength(0);
+    expect(writes.staffUpserts).toHaveLength(0);
+  });
+
+  it('refuses when the existing-account check cannot be read', async () => {
+    failures.set('golf_players', { message: 'statement timeout' });
+
+    const result = await join();
+
+    // Unknown is not "no existing account".
+    expect(result.success).toBe(false);
+    expect(writes.coachUpserts).toHaveLength(0);
+    expect(writes.staffUpserts).toHaveLength(0);
+  });
+
+  it('is idempotent for a coach already in THIS organization', async () => {
+    existingCoach = { id: 'asst-coach', organization_id: ORG };
+
+    const first = await join();
+    const second = await join();
+
+    expect(first.success).toBe(true);
+    expect(second.success).toBe(true);
+    expect(writes.coachUpserts.every((row) => row.organization_id === ORG)).toBe(true);
+    // Same (team, coach) pairs both times, and existing staff rows are left
+    // alone rather than rewritten — a same-org head coach keeps their role.
+    expect(writes.staffUpserts.map((r) => r.team_id).sort()).toEqual(
+      [TEAM_MENS, TEAM_MENS, TEAM_WOMENS, TEAM_WOMENS].sort(),
+    );
+    for (const options of writes.staffUpsertOptions) {
+      expect(options).toMatchObject({ onConflict: 'team_id,coach_id', ignoreDuplicates: true });
+    }
+  });
+
+  it('accepts a coach row with no organization yet (repointing null is not repointing)', async () => {
+    existingCoach = { id: 'asst-coach', organization_id: null };
+
+    const result = await join();
+
+    expect(result.success).toBe(true);
+    expect(writes.coachUpserts[0]).toMatchObject({ organization_id: ORG });
   });
 });

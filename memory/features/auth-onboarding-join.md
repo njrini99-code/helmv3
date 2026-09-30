@@ -42,6 +42,11 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
   than inside `auth.ts` itself: that file opens with `'use server'`, and
   Next.js requires every export from such a file to be an async Server
   Action, which this synchronous telemetry helper is not.
+- `src/lib/golf/assistant-join.ts` — `joinTeamAsAssistantCoach`, the
+  roster-code assistant join (instant staff rows on every team in the
+  program, `onboarding_completed: true`, head-coach notification). It is
+  `server-only`, NOT a server action: its one caller is `signupActionImpl`,
+  which passes `data.user.id` from its own `auth.signUp` result.
 
 ## Core Data
 
@@ -86,6 +91,14 @@ Join code
 - A session that expires mid-request on `/golf/dashboard` (passes the top-of-page check, fails the data-fetch re-validation with `Not authenticated`) redirects to `/golf/login?returnTo=/golf/dashboard` instead of hitting the error boundary. Retryable auth failures (network / GoTrue 5xx) still surface to the error boundary — only a genuinely missing/expired session redirects.
 - College/coach/player role rules must be respected before granting dashboard access.
 - Service-role logic must stay server-only and admin-bounded.
+- Assistant join runs server-only; its user id comes from the server. It must
+  never be exported from a `'use server'` file (every such export is a
+  POST-able endpoint; it used to be one in `actions/teams.ts` and was callable
+  without a session). It refuses, writing nothing, when the account already has
+  a `golf_players` row or a `golf_coaches` row bound to a different
+  organization; same-org re-runs are idempotent and leave existing staff rows
+  (and their role) untouched. Pinned by
+  `src/app/golf/actions/__tests__/assistant-join-surface.test.ts`.
 
 ## UI Contract
 

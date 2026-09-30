@@ -75,10 +75,9 @@ const { joinTeamAsAssistantCoach, redeemStaffInvite } = vi.hoisted(() => ({
   ),
   redeemStaffInvite: vi.fn(async (_token: string, _fullName?: string) => ({ success: true })),
 }));
-vi.mock('@/app/golf/actions/teams', () => ({
-  joinTeamAsAssistantCoach,
-  redeemStaffInvite,
-}));
+vi.mock('@/app/golf/actions/teams', () => ({ redeemStaffInvite }));
+// Server-only, not an action: signup is its one caller (see assistant-join.ts).
+vi.mock('@/lib/golf/assistant-join', () => ({ joinTeamAsAssistantCoach }));
 
 import { signupAction } from '../auth';
 
@@ -105,6 +104,9 @@ describe("assistant coach on the team code — a grant, immediately", () => {
     // The team comes from the GATE, so a forged form field cannot redirect the
     // request at another program.
     expect(joinTeamAsAssistantCoach.mock.calls[0]?.[1]).toBe(CODE);
+    // The user id is the one auth.signUp returned on the server — nothing the
+    // browser sent can choose whose account gets attached.
+    expect(joinTeamAsAssistantCoach.mock.calls[0]?.[0]).toBe('user-1');
     // Nothing on this path may mint staff access.
     expect(redeemStaffInvite).not.toHaveBeenCalled();
   });

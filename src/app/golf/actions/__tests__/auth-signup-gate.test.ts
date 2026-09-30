@@ -107,9 +107,11 @@ const joinTeamAsAssistantCoach = vi.fn(
   ): Promise<{ success: boolean; error?: string }> => ({ success: true }),
 );
 vi.mock('@/app/golf/actions/teams', () => ({
+  redeemStaffInvite: vi.fn(async () => ({ success: true })),
+}));
+vi.mock('@/lib/golf/assistant-join', () => ({
   joinTeamAsAssistantCoach: (...args: unknown[]) =>
     joinTeamAsAssistantCoach(...(args as [string, string, string | undefined, string])),
-  redeemStaffInvite: vi.fn(async () => ({ success: true })),
 }));
 
 vi.mock('@/lib/analytics/posthog-server', () => ({ captureServer: vi.fn(async () => undefined) }));

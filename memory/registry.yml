@@ -1328,6 +1328,7 @@ features:
         - src/lib/auth/**
         - src/lib/supabase/**
         - src/hooks/use-presence.ts
+        - src/lib/golf/assistant-join.ts
       db:
         - supabase/migrations/*auth*.sql
         - supabase/migrations/*user*.sql

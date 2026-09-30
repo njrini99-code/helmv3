@@ -29,7 +29,8 @@ import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { verifyStaffInvite } from '@/lib/golf/staff-invite';
-import { joinTeamAsAssistantCoach, redeemStaffInvite } from '@/app/golf/actions/teams';
+import { redeemStaffInvite } from '@/app/golf/actions/teams';
+import { joinTeamAsAssistantCoach } from '@/lib/golf/assistant-join';
 import { resolveStaffInviteCode } from '@/lib/golf/staff-invite-lookup';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
@@ -557,8 +558,9 @@ async function signupActionImpl(
   //
   // There is deliberately NO approval step (owner decision 2026-08-20): "The
   // approval is them having the access code, and putting it in when they hit
-  // sign up." See joinTeamAsAssistantCoach in actions/teams.ts for the
-  // trade-off that decision accepts.
+  // sign up." See joinTeamAsAssistantCoach in lib/golf/assistant-join.ts for
+  // the trade-off that decision accepts. It is server-only, not an action: the
+  // user id it receives is `data.user.id` from signUp above, never a client value.
   //
   // Anchored to gate.teamJoinCode, never to anything the browser sent: without
   // a team code there is no program to join, and the signup is refused rather
