@@ -8,6 +8,14 @@ Player permissions: a player always sees their own profile (`?player` is ignored
 with no team figures, no roster pager and no focus-area editor. Reads go through the same RLS-scoped client
 and `getDetailedStats` access gate the current app uses.
 
+Shared changes from the Team stats pass that already reach this view (start the player pass from them):
+- Yardage-page notes sit 10px under their chart, as in the design system (`.ch-yb .ch-yb__note`; the base reset had removed the margin). 1e598e651
+- Card and yardage-page headings are ink-900 (`--ch-text-primary`) instead of the app's global heading colour. 1e598e651
+- `loadRoundCache` (stats-common) reads its id chunks in parallel. 1e598e651
+- `StatsSkeleton`, this view's loading state too, has line and card heights sized to the loaded Team stats, not to this profile. f4a4df5bc
+- `SectionBoundary` wraps each section in a `Suspense`, so a section that crashes on the server render no longer fails the page (D-24). cee2c2024
+- The shell loads `domMax` lazily, so `layoutId` slides now run: the tab and window switch pills slide (220ms), unless motion is reduced (D-25). 576a6331c, 314b03055
+
 ## spec
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md

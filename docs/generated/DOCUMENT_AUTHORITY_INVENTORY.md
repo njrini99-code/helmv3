@@ -34,7 +34,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 20 | 2 | 6 | 1 |
+| `POLICY` | 20 | 2 | 6 | 0 |
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 175 | 12 | 40 | 78 |
+| `UNKNOWN` | 176 | 12 | 40 | 78 |
 
 ## Files
 
@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | - |
-| `.claude/rules/clubhouse.md` | current | - | - | - | 1 |
+| `.claude/rules/clubhouse.md` | current | - | - | - | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | - |
@@ -657,6 +657,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/messages.md` | current | - | - | - | - |

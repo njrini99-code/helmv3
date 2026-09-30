@@ -31,7 +31,7 @@ Route: (shell, tokens, primitives)   Surface tag: `shell`
 - [ ] Empty (first run): says what will appear here and the one next step
 - [ ] Empty (filtered or no results): distinct from first run, and offers to clear filters
 - [ ] Partial failure: each section has its own failure flag and shows an inline notice with Try again; the rest of the page still works
-- [ ] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
+- [ ] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag (part done: since D-24, cee2c2024, the primitive contains a crash on the server render as well as in the browser, on every page. Proof: two server-render tests in stats-team.test fail without it; `stats?state=crash` went from 500 to 200; every preview is pixel-identical before and after. Still open: the shell's own parts (sidebar, top bar, bell, offline banner) aren't wrapped)
 - [x] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
 - [ ] Not found and no access: plain words and a way back
 - [ ] Offline or slow network: the action says so instead of spinning forever
@@ -75,7 +75,7 @@ Route: (shell, tokens, primitives)   Surface tag: `shell`
 
 ## performance
 - [ ] No request waterfall on the server, with independent reads in parallel
-- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
+- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily (part done: since D-25 the animation features load through `@/lib/motion/load-features` in their own chunk after first paint, `domMax` since 314b03055 (576a6331c, 314b03055). Proof: in dev the features chunk was requested at 706ms, after a 116ms first paint, and toasts still animate. Still open: the whole shell is a client tree, and the first-load JS with `domMax` is measured at the merge pass, D-27)
 - [ ] No layout shift after first paint
 
 ## verified
