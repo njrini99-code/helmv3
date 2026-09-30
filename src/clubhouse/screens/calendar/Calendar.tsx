@@ -24,6 +24,7 @@ import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
+import { CalendarFirstRun } from './CalendarFirstRun';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -394,6 +395,15 @@ export function Calendar({
       )}
     </>
   );
+
+  if (coach && data.firstRun && !data.eventsError) {
+    return (
+      <>
+        <CalendarFirstRun onNew={() => setEditor({ event: null })} />
+        {dialogs}
+      </>
+    );
+  }
 
   if (phone) {
     const sel = insp?.kind === 'event' || insp?.kind === 'attendance' ? data.events.find((x) => x.id === insp.id) : undefined;

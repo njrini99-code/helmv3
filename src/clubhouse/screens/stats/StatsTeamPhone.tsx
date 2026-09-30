@@ -7,6 +7,7 @@ import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
+import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
@@ -39,7 +40,9 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       </header>
       <WindowSwitch value={data.window} onChange={go} />
       {data.roundsError && <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />}
-      {noRounds ? (
+      {noRounds && data.window === 'season' ? (
+        <StatsTeamFirstRun />
+      ) : noRounds ? (
         <EmptyState
           code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
           icon={Users}

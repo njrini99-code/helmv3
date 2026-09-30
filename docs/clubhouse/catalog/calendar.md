@@ -63,6 +63,7 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6306 | Nothing needs attention this week | Coach: "No overlaps and no replies waiting." Player: "You're all caught up." | `Summary` | calendar.test › CH-6306 |
 | CH-6307 | Signed in with no team (coach or player) | The page empty state: "You aren't on a team yet" + Coach: "The calendar fills in once your team is set up." Player: "Team events show here once a coach adds you to a team roster." | `CalendarNoTeam`, from the route | calendar.test › CH-6307 |
 | CH-6308 | A day with nothing on it (phone Day view) | "Nothing on this day." + Coach: "Tap + to plan something for the team." Player: "Events your coach invites you to show here." | `EmptyState` in `CalendarPhone` | calendar.test › CH-6308 |
+| CH-6308 | A coach whose team has never scheduled anything (D-71) | The page empty state: "Nothing on the calendar" + "Add practices, qualifiers and trips. Players see them on their calendar and can reply." + Create event (the editor). Once anything exists, an empty range keeps CH-6301; a player, or a count that failed, never gets it | `CalendarFirstRun`; the loader's head count of the team's events | calendar.test › CH-6308 |
 
 ## 64xx Loading
 

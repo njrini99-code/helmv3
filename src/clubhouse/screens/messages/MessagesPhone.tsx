@@ -59,6 +59,7 @@ import {
   type ChMsg,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
+import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import {
   AddMembersModal,
   Bubble,
@@ -244,6 +245,8 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             </div>
           ))}
         </div>
+      ) : isMessagesFirstRun(api) ? (
+        <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={onNew} />
       ) : !api.convs.length ? (
         <EmptyState
           code="CH-7301"

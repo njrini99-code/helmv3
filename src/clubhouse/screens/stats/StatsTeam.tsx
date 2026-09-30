@@ -4,6 +4,7 @@ import type { ChTeamStats } from '../../data/stats-team';
 import type { ChWindow } from '../../data/stats-common';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
+import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
@@ -39,7 +40,9 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
         <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />
       )}
 
-      {noRounds ? (
+      {noRounds && data.window === 'season' ? (
+        <StatsTeamFirstRun />
+      ) : noRounds ? (
         <div className="ch-st-card">
           <EmptyState
             code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}

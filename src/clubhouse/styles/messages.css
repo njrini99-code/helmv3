@@ -7,6 +7,11 @@
   height: calc(100dvh - 16px - var(--ch-topbar-h));
   min-height: 0;
 }
+/* CH-7309: nothing at all yet; the page is the first-run empty. */
+.ch-ms.ch-ms--first {
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+}
 .ch-ms.has-details {
   grid-template-columns: 340px minmax(0, 1fr) 300px;
 }

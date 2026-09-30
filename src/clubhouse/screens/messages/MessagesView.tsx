@@ -81,6 +81,7 @@ import {
   type ChFile,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
+import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesPhone } from "./MessagesPhone";
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
@@ -1835,6 +1836,15 @@ function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
+
+  if (isMessagesFirstRun(api) && !conv && !ann) {
+    return (
+      <main data-view="desktop" className="ch-ms ch-ms--first">
+        <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
+        <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
+      </main>
+    );
+  }
 
   return (
     <main

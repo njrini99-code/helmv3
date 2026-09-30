@@ -433,6 +433,24 @@ describe('Calendar · empty and loading', () => {
     expect(code('CH-6301')!.textContent).toMatch(/Nothing on the calendar in this range/);
   });
 
+  it('CH-6308 a team that has never scheduled anything: the page is the first-run empty; Create event opens the editor', async () => {
+    const user = userEvent.setup();
+    wrap(cal({ events: [], firstRun: true }));
+    expect(code('CH-6308')!.textContent).toMatch(/Nothing on the calendar/);
+    expect(code('CH-6301')).toBeNull();
+    expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Create event' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('CH-6308 a player never gets it, and a failed read never claims it', () => {
+    const { unmount } = wrap({ ...PREVIEW_CALENDAR_PLAYER, events: [], firstRun: true });
+    expect(code('CH-6308')).toBeNull();
+    unmount();
+    wrap(cal({ events: [], firstRun: true, eventsError: true }));
+    expect(code('CH-6308')).toBeNull();
+  });
+
   it('CH-6302 CH-6306 nothing today, nothing needing attention', () => {
     wrap(cal({ events: [] }));
     expect(code('CH-6302')!.textContent).toMatch(/Nothing on the team calendar today/);
@@ -833,6 +851,17 @@ describe('Calendar · the loader', () => {
   beforeEach(freezeClock);
   afterEach(() => vi.useRealTimers());
 
+  it('CH-6308 the loader counts the team’s events for a coach: none ever is the first run; any, a failed count, or a player is not', async () => {
+    serve({ ...healthy(), golf_events: { data: [], count: 0 } as { data?: unknown } });
+    expect((await load()).firstRun).toBe(true);
+    serve({ ...healthy(), golf_events: { data: [], count: 3 } as { data?: unknown } });
+    expect((await load()).firstRun).toBe(false);
+    serve({ ...healthy(), golf_events: { data: [], count: 0 } as { data?: unknown } });
+    expect((await load(asPlayer('p2'))).firstRun).toBe(false);
+    serve({ ...healthy(), golf_events: { data: [], count: 0, error: { message: 'boom' } } as { data?: unknown } });
+    expect((await load()).firstRun).toBe(false);
+  });
+
   it('60104 61501 times are the team’s zone: today and the checked hour come from it, a timed event lands on its local day, an all-day date is never shifted', async () => {
     serve({
       ...healthy(),
@@ -902,21 +931,21 @@ describe('Calendar · the loader', () => {
     expect(document.querySelector('.ch-in__need')!.textContent).toMatch(/Event e1/);
   });
 
-  it('62101 the loader reads each table once for the whole screen, in three rounds: the team, then events with classes and busy time, then every event’s replies together', async () => {
+  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6308), in three rounds: the team, then events with classes and busy time, then every event’s replies together', async () => {
     const { asked, order } = serve({ ...healthy(), golf_events: { data: [eventRow('e1'), eventRow('e2'), eventRow('e3'), classEventRow('c1', 'k1')] } });
     await load();
     expect(Object.fromEntries(Object.entries(asked).map(([table, calls]) => [table, calls.length]))).toEqual({
       golf_team_settings: 1,
       golf_teams: 1,
       golf_team_members: 1,
-      golf_events: 1,
+      golf_events: 2,
       golf_player_classes: 1,
       golf_coach_blocked_time: 1,
       golf_event_attendance: 1,
     });
     expect(order.slice(0, 3).sort()).toEqual(['golf_team_members', 'golf_team_settings', 'golf_teams']);
-    expect(order.slice(3, 6).sort()).toEqual(['golf_coach_blocked_time', 'golf_events', 'golf_player_classes']);
-    expect(order[6]).toBe('golf_event_attendance');
+    expect(order.slice(3, 7).sort()).toEqual(['golf_coach_blocked_time', 'golf_events', 'golf_events', 'golf_player_classes']);
+    expect(order[7]).toBe('golf_event_attendance');
     // The replies of the three team events are asked for together (a class takes none), never one event at a time.
     expect(asked.golf_event_attendance![0]).toContainEqual(['in', ['event_id', ['e1', 'e2', 'e3']]]);
   });
@@ -928,6 +957,7 @@ describe('Calendar · the loader', () => {
     expect(logServer.mock.calls.map(([surface, read, , area]) => `${surface}.${read}.${area}`).sort()).toEqual([
       'calendar.blockedTime.calendar',
       'calendar.classes.calendar',
+      'calendar.eventCount.calendar',
       'calendar.events.calendar',
       'calendar.members.teams',
       'calendar.team.teams',

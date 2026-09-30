@@ -35,6 +35,8 @@ export interface ChCalendarData {
   events: ChCalEvent[];
   people: ChCalPerson[];
   eventsError: boolean;
+  /** A coach's team has never scheduled anything (CH-6308); false for a player or when the count didn't load. */
+  firstRun: boolean;
   rsvpError: boolean;
   classesError: boolean;
   settingsError: boolean;
@@ -160,7 +162,7 @@ export async function loadCalendar(input: {
   const fromIso = `${addDays(range.from, -1)}T00:00:00Z`;
   const toIso = `${addDays(range.to, 2)}T00:00:00Z`;
 
-  const [eventsRes, classesRes, busyRes] = await Promise.all([
+  const [eventsRes, classesRes, busyRes, everRes] = await Promise.all([
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
@@ -184,7 +186,11 @@ export async function loadCalendar(input: {
           .lte('start_date', range.to)
           .limit(500)
       : null,
+    // CH-6308: has this team ever scheduled anything? A count, no rows; a coach's question only.
+    input.role === 'coach' ? supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', input.teamId) : null,
   ]);
+  if (everRes?.error) chLogServer('calendar', 'eventCount', everRes.error, 'calendar');
+  const firstRun = !!everRes && !everRes.error && everRes.count === 0;
   if (eventsRes.error) chLogServer('calendar', 'events', eventsRes.error, 'calendar');
   if (classesRes.error) chLogServer('calendar', 'classes', classesRes.error, 'calendar');
 
@@ -339,6 +345,7 @@ export async function loadCalendar(input: {
     events,
     people: input.role === 'coach' ? people : people.filter((p) => p.id === input.viewerPlayerId),
     eventsError: !!eventsRes.error,
+    firstRun,
     rsvpError,
     classesError: !!classesRes.error,
     settingsError: !!settingsRes.error,

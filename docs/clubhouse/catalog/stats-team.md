@@ -42,6 +42,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4307 | No season bests yet | "No season bests yet." + "Low round, most birdies and the rest appear once rounds are posted." | `SeasonBests` | stats-team.test › CH-4307 |
 | CH-4308 | A player has too few rounds for strokes gained | "Early read" in Total, dashes in the leg cells; never 0.0 | `LegGrid` | stats-team.test › CH-4308 |
 | CH-4309 | A coach or player with no team | The page empty state (v2 medallion): "You aren't on a team yet" + what fills in once they are | `StatsNoTeam` (route) | stats-player.test › CH-4309 |
+| CH-4310 | No countable round all season (D-71) | The page empty state: "No stats yet" + "Team and player stats fill in as players post rounds this season." + View roster; other windows keep CH-4301 | `StatsTeamFirstRun` (desktop and phone) | stats-team.test › CH-4310 |
 
 ## 44xx Loading
 

@@ -121,6 +121,7 @@ export const PREVIEW_CALENDAR: ChCalendarData = {
   events: [...events, ...busy],
   people,
   eventsError: false,
+  firstRun: false,
   rsvpError: false,
   classesError: false,
   settingsError: false,
@@ -138,5 +139,7 @@ export const PREVIEW_CALENDAR_PLAYER: ChCalendarData = {
 };
 
 export const PREVIEW_CALENDAR_EMPTY: ChCalendarData = { ...PREVIEW_CALENDAR, events: [] };
+/** CH-6308: a team that has never scheduled anything. */
+export const PREVIEW_CALENDAR_FIRST: ChCalendarData = { ...PREVIEW_CALENDAR, events: [], firstRun: true };
 export const PREVIEW_CALENDAR_FAILED: ChCalendarData = { ...PREVIEW_CALENDAR, events: [], eventsError: true };
 export const PREVIEW_CALENDAR_PARTIAL: ChCalendarData = { ...PREVIEW_CALENDAR, rsvpError: true, classesError: true, events: events.filter((e) => e.type !== 'class').map((e) => ({ ...e, rsvp: {} })) };

@@ -351,12 +351,26 @@ describe('Messages · reads that fail', () => {
 });
 
 describe('Messages · empty and loading', () => {
-  it('CH-7301 CH-7305 no conversations yet', async () => {
+  it('CH-7309 nothing at all yet: the page is the first-run empty, with New message as its one action', async () => {
+    const user = userEvent.setup();
     live.convs.conversations = [];
     live.msgs.messages = [];
     show();
+    await expectCode('CH-7309', /No conversations yet/);
+    expect(code('CH-7301')).toBeNull();
+    expect(code('CH-7305')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'New message' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('CH-7301 CH-7305 no conversations, but an announcement: the rail and thread empties', async () => {
+    live.convs.conversations = [];
+    live.msgs.messages = [];
+    a.getAnnouncementsWithMeta.mockResolvedValue({ success: true, data: [annRow] });
+    show();
     await expectCode('CH-7301', /No conversations yet/);
     await expectCode('CH-7305', /Start your first conversation/);
+    expect(code('CH-7309')).toBeNull();
   });
 
   it('CH-7302 a rail search that matches nothing', async () => {

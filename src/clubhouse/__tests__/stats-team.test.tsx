@@ -220,6 +220,13 @@ describe('Stats team · empty', () => {
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
 
+  it('CH-4310 no round all season: the page is the first-run empty, with the roster as the next step', () => {
+    wrap(empty({ window: 'season' }));
+    expect(code('CH-4310')!.textContent).toMatch(/No stats yet/);
+    expect(code('CH-4301')).toBeNull();
+    expect(screen.getByRole('link', { name: /View roster/ })).toHaveAttribute('href', '/golf/dashboard/roster');
+  });
+
   it('CH-4302 no qualifier rounds', () => {
     wrap(empty({ window: 'qualifiers' }));
     expect(code('CH-4302')!.textContent).toMatch(/No qualifier rounds this season yet/);
