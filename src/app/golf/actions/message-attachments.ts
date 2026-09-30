@@ -333,6 +333,112 @@ export async function getGolfMessageAttachments(messageId: string): Promise<{
 }
 
 /**
+ * A conversation's shared files, newest first, for the phone's Details
+ * (owner decision D-48). Metadata only: no storage paths and no signed URLs;
+ * opening one goes through getGolfMessageAttachments(messageId), which signs
+ * a URL for that message's files. Participants only: the caller is checked
+ * against golf_conversation_participants before anything is read, and the
+ * read itself is RLS-scoped ("Users can view attachments in their
+ * conversations"). Files on deleted messages are left out.
+ */
+async function getGolfConversationFilesImpl(conversationId: string): Promise<{
+  files?: Array<{
+    id: string;
+    messageId: string;
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+    sentAt: string | null;
+    senderId: string | null;
+  }>;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: 'Unauthorized' };
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+      .from('golf_conversation_participants')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (membershipError) {
+      await logServerError(`[Attachments] Failed to check conversation membership: ${describeError(membershipError)}`, { action: 'message_attachments.getGolfConversationFiles' });
+      return { error: 'Failed to load files' };
+    }
+    if (!membership) {
+      return { error: 'Not a participant in this conversation' };
+    }
+
+    const { data, error } = await supabase
+      .from('golf_message_attachments')
+      .select('id, message_id, file_name, mime_type, file_size, created_at, message:golf_messages!inner(conversation_id, sender_id, is_deleted)')
+      .eq('message.conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) {
+      await logServerError(`[Attachments] Failed to list conversation files: ${describeError(error)}`, { action: 'message_attachments.getGolfConversationFiles' });
+      return { error: 'Failed to load files' };
+    }
+
+    type Row = {
+      id: string;
+      message_id: string;
+      file_name: string;
+      mime_type: string;
+      file_size: number;
+      created_at: string | null;
+      message: { conversation_id: string; sender_id: string; is_deleted: boolean | null } | null;
+    };
+    const files = ((data ?? []) as unknown as Row[])
+      .filter((row) => row.message && !row.message.is_deleted)
+      .map((row) => ({
+        id: row.id,
+        messageId: row.message_id,
+        fileName: row.file_name,
+        mimeType: row.mime_type,
+        fileSize: row.file_size,
+        sentAt: row.created_at,
+        senderId: row.message?.sender_id ?? null,
+      }));
+
+    return { files };
+  } catch (err) {
+    await logServerError(`[Attachments] Unexpected error: ${describeError(err)}`, { action: 'message_attachments.getGolfConversationFiles' });
+    return { error: 'Failed to load files' };
+  }
+}
+
+const observedGetGolfConversationFiles = withAdminObserved(
+  'getGolfConversationFiles',
+  { sport: 'golf', feature: 'messaging' },
+  getGolfConversationFilesImpl,
+);
+
+export async function getGolfConversationFiles(conversationId: string): Promise<{
+  files?: Array<{
+    id: string;
+    messageId: string;
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+    sentAt: string | null;
+    senderId: string | null;
+  }>;
+  error?: string;
+}> {
+  return observedGetGolfConversationFiles(conversationId);
+}
+
+/**
  * Delete an attachment (only by sender)
  */
 async function deleteGolfMessageAttachmentImpl(attachmentId: string): Promise<{

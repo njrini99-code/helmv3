@@ -1,5 +1,6 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,7 +27,8 @@ vi.mock('@/lib/supabase/server', () => ({
     },
   }),
 }));
-vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, refetch: vi.fn() }) }));
+const badgeState = vi.hoisted(() => ({ messages: 0 }));
+vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, messages: badgeState.messages, refetch: vi.fn() }) }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: vi.fn(), markNotificationRead: vi.fn(), markAllNotificationsRead: vi.fn() }));
 
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
@@ -40,6 +42,9 @@ import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { Sidebar } from '../shell/Sidebar';
 import { TabBar } from '../shell/TabBar';
+import { PhoneScreen } from '../shell/PhoneScreen';
+import { PhoneTop, usePhoneStackHistory } from '../shell/phone-chrome';
+import { PhoneBar } from '../ui/PhoneBar';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -344,5 +349,105 @@ describe('Shell · navigation and accessibility', () => {
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('commit'));
     await user.click(screen.getByRole('button', { name: 'bad' }));
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('error'));
+  });
+});
+
+describe('Shell · phone chrome', () => {
+  const shell: ChShellData = { nextEvent: null, pendingJoinRequests: 2 };
+  afterEach(() => {
+    badgeState.messages = 0;
+  });
+
+  it('CH-1808 each role gets its own phone tabs, and More carries the Messages unread count', () => {
+    badgeState.messages = 3;
+    const { unmount } = wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+    const bar = code('CH-1808')!;
+    const names = [...bar.querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label') ?? el.querySelector('.ch-tab__label')!.textContent);
+    expect(names).toEqual(['Home', 'Helm', 'Rounds', 'Stats', 'More, 3 unread messages']);
+    unmount();
+    wrap(<TabBar pathname="/golf/dashboard/messages" shell={shell} role="player" />);
+    const labels = [...code('CH-1808')!.querySelectorAll('.ch-tab__label')].map((el) => el.textContent);
+    expect(labels).toEqual(['Home', 'Calendar', 'Messages', 'My stats', 'More']);
+    expect(screen.getByRole('link', { name: /Messages/ }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
+  });
+
+  it('CH-1809 a pushed screen takes focus on its title and makes the shell chrome inert until it closes', async () => {
+    function Page({ open }: { open: boolean }) {
+      return open ? (
+        <PhoneScreen labelledBy="t-title">
+          <PhoneBar title="Varsity team" titleId="t-title" back={{ onBack: () => {}, ariaLabel: 'Back to Messages' }} />
+        </PhoneScreen>
+      ) : (
+        <p>Inbox</p>
+      );
+    }
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+        <Page open={false} />
+      </ClubhouseFrame>,
+    );
+    expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false);
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+        <Page open />
+      </ClubhouseFrame>,
+    );
+    const screenEl = screen.getByRole('region', { name: 'Varsity team' });
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById('t-title')));
+    expect(screenEl.contains(document.activeElement)).toBe(true);
+    expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.ch-topbar')!.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-immersive')).toBe(true);
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+        <Page open={false} />
+      </ClubhouseFrame>,
+    );
+    await waitFor(() => expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false));
+  });
+
+  it('CH-1810 the phone top bar names the page, and a page top swaps the bell for a named back link', async () => {
+    const back = vi.fn();
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <p>Roster</p>
+      </ClubhouseFrame>,
+    );
+    const bar = document.querySelector('.ch-topbar')!;
+    expect(bar.getAttribute('data-phone')).toBe('root');
+    expect(bar.querySelector('.ch-topbar__ptitle')!.textContent).toBe('Roster');
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <PhoneTop title="Roster" back={{ label: 'More', onBack: back }} />
+      </ClubhouseFrame>,
+    );
+    await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('page'));
+    const link = screen.getByRole('button', { name: 'Back to More' });
+    expect(bar.contains(link)).toBe(true);
+    await userEvent.setup().click(link);
+    expect(back).toHaveBeenCalled();
+  });
+});
+
+describe('Shell · phone back', () => {
+  it('CH-1906 the back gesture pops the top pushed screen; closing from the UI takes its entry back off', async () => {
+    const start = window.history.length;
+    let setDepth: (n: number) => void = () => {};
+    function Stack() {
+      const [depth, set] = useState(0);
+      setDepth = set;
+      usePhoneStackHistory(depth, (level) => set(level));
+      return <p data-testid="depth">{depth}</p>;
+    }
+    render(<Stack />);
+    act(() => setDepth(1));
+    act(() => setDepth(2));
+    expect(window.history.length).toBe(start + 2);
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.getByTestId('depth').textContent).toBe('1'));
+    act(() => setDepth(0));
+    await waitFor(() => expect((window.history.state as { chPhone?: number } | null)?.chPhone ?? 0).toBe(0));
+    expect(screen.getByTestId('depth').textContent).toBe('0');
   });
 });

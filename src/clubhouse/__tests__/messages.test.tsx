@@ -12,6 +12,9 @@ const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.
 const params = vi.hoisted(() => ({ current: new URLSearchParams() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => params.current }));
 vi.mock('../lib/use-now', () => ({ useNow: () => null }));
+/** Phone or desktop layout (useChPhone), set per test. */
+const layout = vi.hoisted(() => ({ phone: false }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px)' }));
 
 /** The realtime hooks, as plain state the tests set. */
 const live = vi.hoisted(() => ({
@@ -51,6 +54,9 @@ const a = vi.hoisted(() => ({
   getAnnouncementDetail: vi.fn(),
   getAnnouncementsWithMeta: vi.fn(),
   acknowledgeAnnouncement: vi.fn(),
+  addGolfGroupMember: vi.fn(),
+  getGolfGroupAddCandidates: vi.fn(),
+  getGolfConversationFiles: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/messages', () => ({
   createGolfConversation: a.createGolfConversation,
@@ -59,7 +65,10 @@ vi.mock('@/app/golf/actions/messages', () => ({
   getGolfMessageAttachments: a.getGolfMessageAttachments,
   leaveGolfGroup: a.leaveGolfGroup,
   searchGolfMessages: a.searchGolfMessages,
+  addGolfGroupMember: a.addGolfGroupMember,
+  getGolfGroupAddCandidates: a.getGolfGroupAddCandidates,
 }));
+vi.mock('@/app/golf/actions/message-attachments', () => ({ getGolfConversationFiles: a.getGolfConversationFiles }));
 vi.mock('@/app/golf/actions/message-mute', () => ({ getGolfConversationMute: a.getGolfConversationMute, setGolfConversationMute: a.setGolfConversationMute }));
 vi.mock('@/app/golf/actions/announcements', () => ({
   completeAnnouncementTask: a.completeAnnouncementTask,
@@ -73,6 +82,7 @@ import type { ChMessagesData } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
 import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
 import { ToastProvider } from '../ui/Toast';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import './dialog-polyfill';
 
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((el) => el.tagName !== 'DIALOG' || el.hasAttribute('open')) ?? null;
@@ -110,6 +120,28 @@ function show(d: ChMessagesData = data) {
     </LazyMotion>,
   );
 }
+/** The phone layout, inside the shell's phone chrome so the page's own top bar (New message) renders. */
+function SlotHost() {
+  const { setSlot } = usePhoneChromeState();
+  return <div ref={setSlot} data-testid="phone-top" />;
+}
+function showPhone(d: ChMessagesData = data) {
+  layout.phone = true;
+  // Phone width: nothing opens beside the list.
+  window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
+  return render(
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <PhoneChromeProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <SlotHost />
+            <Messages data={d} />
+          </div>
+        </PhoneChromeProvider>
+      </ToastProvider>
+    </LazyMotion>,
+  );
+}
 type User = ReturnType<typeof userEvent.setup>;
 const openDetails = (user: User) => user.click(screen.getByRole('button', { name: 'Details' }));
 const messageMenu = async (user: User, item: string) => {
@@ -140,8 +172,14 @@ beforeEach(() => {
   live.msgs.removeMessage.mockReset().mockResolvedValue(undefined);
   live.reactions.setReaction.mockReset().mockResolvedValue(undefined);
   live.files.sendMessageWithAttachments.mockReset().mockResolvedValue({ success: true });
+  a.getGolfConversationFiles.mockResolvedValue({ files: [] });
+  a.getGolfGroupAddCandidates.mockResolvedValue({ candidates: [] });
+  a.addGolfGroupMember.mockResolvedValue({ success: true });
 });
-afterEach(() => setOnline(true));
+afterEach(() => {
+  setOnline(true);
+  layout.phone = false;
+});
 
 describe('Messages · actions that fail', () => {
   it('CH-7001 a deep link to a player who is not on the team', async () => {
@@ -557,5 +595,171 @@ describe('Messages · more loading', () => {
     await openDetails(user);
     await expectCode('CH-7405');
     await expectCode('CH-7407');
+  });
+});
+
+const nora = { userId: 'nora', name: 'Nora Castillo', avatarUrl: null, subtitle: 'Freshman', type: 'player' };
+const dan = { userId: 'dan', name: 'Dan Whitfield', role: 'coach' as const, subtitle: 'Assistant coach', playerId: null };
+const deferred = <T,>() => {
+  let resolve: (v: T) => void = () => {};
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+};
+
+describe('Messages · group members (D-45, D-47)', () => {
+  it('CH-7410 CH-7215 CH-7307 the Add sheet loads, fails with Try again, and says when everyone is in', async () => {
+    const user = userEvent.setup();
+    const first = deferred<{ error: string }>();
+    a.getGolfGroupAddCandidates.mockReturnValueOnce(first.promise).mockResolvedValueOnce({ candidates: [] });
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: /^Add$/ }));
+    await expectCode('CH-7410');
+    first.resolve({ error: 'nope' });
+    await expectCode('CH-7215', /team list didn't load/);
+    await user.click(within(code('CH-7215') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    await expectCode('CH-7307', /Everyone on the team is already in this group/);
+  });
+
+  it('CH-7018 adding someone who cannot be added says so; a success names them', async () => {
+    const user = userEvent.setup();
+    a.getGolfGroupAddCandidates.mockResolvedValue({ candidates: [nora] });
+    a.addGolfGroupMember.mockResolvedValueOnce({ error: 'nope' }).mockResolvedValueOnce({ success: true });
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: /^Add$/ }));
+    await user.click(await screen.findByRole('button', { name: 'Add Nora Castillo' }));
+    await expectCode('CH-7018', /Couldn't add Nora/);
+    await user.click(screen.getByRole('button', { name: 'Add Nora Castillo' }));
+    expect(await screen.findByText(/Added Nora to Varsity team/)).toBeTruthy();
+    expect(a.addGolfGroupMember).toHaveBeenLastCalledWith('team', 'nora');
+  });
+
+  it('CH-7019 a coach in a new group is added after it is created; one who cannot be added is named', async () => {
+    const user = userEvent.setup();
+    a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'g1' });
+    a.addGolfGroupMember.mockResolvedValue({ error: 'nope' });
+    show({ ...data, directory: [dan, ...data.directory] });
+    const dlg = await newMessage(user, /Group/);
+    await user.type(dlg.getByRole('textbox', { name: 'Group name' }), 'Travel');
+    await user.click(dlg.getByRole('option', { name: /Jonah Okafor/ }));
+    await user.click(dlg.getByRole('option', { name: /Dan Whitfield/ }));
+    await user.click(dlg.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7019', /Group created, but Dan wasn't added/);
+    expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith({ teamId: 't1', title: 'Travel', selectedPlayerIds: ['p-jonah'] });
+    expect(a.addGolfGroupMember).toHaveBeenCalledWith('g1', 'dan');
+  });
+});
+
+describe('Messages · phone', () => {
+  const openThread = async (user: User) => {
+    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    return screen.findByRole('region', { name: /Varsity team/ });
+  };
+
+  it('CH-7804 CH-7704 the inbox pushes a named thread; a message opens its actions by long press or its button', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    const thread = await openThread(user);
+    expect(within(thread).getByRole('button', { name: 'Back to Messages' })).toBeTruthy();
+    const bubble = await within(thread).findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    const stack = bubble.closest('.ch-ms-msg__stack') as HTMLElement;
+    hapticSpy.mockClear();
+    act(() => {
+      stack.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 10, clientY: 10 }));
+    });
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('press'), { timeout: 1500 });
+    await expectCode('CH-7604');
+    const sheet = within(code('CH-7604') as HTMLElement);
+    expect(sheet.getByRole('button', { name: 'Copy' })).toBeTruthy();
+    expect(sheet.getByRole('button', { name: 'Edit' })).toBeTruthy();
+    expect(sheet.getByRole('button', { name: 'Delete' })).toBeTruthy();
+    await user.click(sheet.getByRole('button', { name: 'Close' }));
+    // Without a long press: the named button VoiceOver and keyboards reach.
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await expectCode('CH-7604');
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Close' }));
+    await user.click(within(thread).getByRole('button', { name: 'Details' }));
+    const details = await screen.findByRole('region', { name: 'Details' });
+    expect(within(details).getByRole('button', { name: 'Back to Chat' })).toBeTruthy();
+  });
+
+  it('CH-7020 copying a message that cannot be copied says so', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
+    showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Copy' }));
+    await expectCode('CH-7020', /Couldn't copy the message/);
+  });
+
+  it('CH-7409 CH-7306 CH-7214 Details files load, say when there are none, and fail with Try again', async () => {
+    const user = userEvent.setup();
+    const first = deferred<{ files: [] }>();
+    a.getGolfConversationFiles.mockReturnValueOnce(first.promise).mockResolvedValueOnce({ error: 'nope' }).mockResolvedValue({ files: [] });
+    const { unmount } = showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Details' }));
+    await expectCode('CH-7409');
+    first.resolve({ files: [] });
+    await expectCode('CH-7306', /No files shared yet/);
+    unmount();
+    showPhone();
+    const again = await openThread(user);
+    await user.click(within(again).getByRole('button', { name: 'Details' }));
+    await expectCode('CH-7214', /Files didn't load/);
+    await user.click(within(code('CH-7214') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    await expectCode('CH-7306');
+  });
+
+  it('CH-7021 a shared file that will not open says so', async () => {
+    const user = userEvent.setup();
+    a.getGolfConversationFiles.mockResolvedValue({ files: [{ id: 'f1', messageId: 'm1', fileName: 'Room list.pdf', mimeType: 'application/pdf', fileSize: 49152, sentAt: '2026-10-14T15:02:00Z', senderId: 'me' }] });
+    a.getGolfMessageAttachments.mockResolvedValue({ attachments: [] });
+    showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Details' }));
+    await user.click(await screen.findByRole('button', { name: /Room list\.pdf/ }));
+    await expectCode('CH-7021', /Couldn't open Room list\.pdf/);
+    expect(a.getGolfMessageAttachments).toHaveBeenCalledWith('m1');
+  });
+
+  it('CH-7104 a coach names a new group before it is created; a player picks one person at a time', async () => {
+    const user = userEvent.setup();
+    const { unmount } = showPhone();
+    await user.click(await screen.findByRole('button', { name: 'New message' }));
+    const newMsg = await screen.findByRole('region', { name: 'New message' });
+    expect(within(newMsg).getByText('Whole team')).toBeTruthy();
+    await user.click(within(newMsg).getByRole('option', { name: /Jonah Okafor/ }));
+    await user.click(within(newMsg).getByRole('option', { name: /Eli Brandt/ }));
+    await user.click(within(newMsg).getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7104', /Name the group/);
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+    unmount();
+    showPhone({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    await user.click(await screen.findByRole('button', { name: 'New message' }));
+    const playerNew = await screen.findByRole('region', { name: 'New message' });
+    expect(within(playerNew).queryByText('Whole team')).toBeNull();
+    await user.click(within(playerNew).getByRole('option', { name: /Jonah Okafor/ }));
+    await user.click(within(playerNew).getByRole('option', { name: /Eli Brandt/ }));
+    expect(within(playerNew).getAllByRole('option', { selected: true }).map((o) => o.textContent)).toEqual([expect.stringMatching(/Eli Brandt/)]);
+    expect(within(playerNew).getByRole('button', { name: 'Next' })).toBeTruthy();
+  });
+
+  it('CH-7004 the first message written in New message is sent when the thread opens, and a failure keeps it in the box', async () => {
+    const user = userEvent.setup();
+    live.msgs.sendMessage.mockRejectedValueOnce(new Error('refused'));
+    live.convs.conversations = [team, { id: 'dm-jonah', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' }];
+    showPhone();
+    await user.click(await screen.findByRole('button', { name: 'New message' }));
+    const newMsg = await screen.findByRole('region', { name: 'New message' });
+    await user.click(within(newMsg).getByRole('option', { name: /Jonah Okafor/ }));
+    await user.type(within(newMsg).getByRole('textbox', { name: 'Message Jonah' }), '5 works. Bay 4.');
+    await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
+    await expectCode('CH-7004', /Couldn't send the message/);
+    expect(live.msgs.sendMessage).toHaveBeenCalledWith('5 works. Bay 4.');
+    const box = await screen.findByRole('textbox', { name: /Message Jonah/ });
+    expect((box as HTMLTextAreaElement).value).toBe('5 works. Bay 4.');
   });
 });

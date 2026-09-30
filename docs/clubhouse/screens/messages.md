@@ -59,8 +59,9 @@ they return.
 - [ ] Every failure path was forced once locally and seen in the console or Sentry (the preview forces the conversation-list and thread failures; send, edit, delete and leave still need a forced failure against a live session)
 
 ## phone-spec
-- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
-- [ ] The owner approved it (the file says `Status: approved`)
+- [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (`phone/messages.md` maps the six boards of `design/handoff/mobile/Messages Mobile.html` and `m-msg.jsx` to components, loader fields, hooks and actions, for coach and player. Rendered at 390 × 844 on 2026-09-29, captures `messages-01..22`, beside our preview at 390px, `messages-preview-*`)
+- [x] The owner approved it (the file says `Status: approved`). The handoff in `design/handoff/mobile/` is the approval (D-22)
+- [x] Every design/data gap is answered as an owner decision in `PROGRESS.md` (`MOBILE.md` step 1). Q-48 to Q-64 were answered by the owner on 2026-09-29, recorded as D-44 to D-49.
 
 ## phone
 - [ ] Built at 390px and 430px, respecting the safe areas

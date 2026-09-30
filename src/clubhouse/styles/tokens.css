@@ -105,7 +105,9 @@
   --ch-gutter: 40px;
   --ch-sidebar-w: 240px;
   --ch-topbar-h: 56px;
-  --ch-tabbar-h: 58px;
+  /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
+  --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
+  --ch-tabbar-h: 56px;
 
   /* Radius */
   --ch-radius-xs: 5px;
@@ -120,6 +122,13 @@
   --ch-shadow-lg: 0 0 0 1px rgb(28 25 18 / 0.06), 0 8px 16px -6px rgb(28 25 18 / 0.08), 0 28px 56px -16px rgb(28 25 18 / 0.2);
   --ch-glass-bg: rgb(250 248 241 / 0.7);
   --ch-glass-blur: 34px;
+  --ch-phone-bar-bg: rgb(247 245 239 / 0.9);
+  --ch-phone-tabbar-bg: rgb(253 252 248 / 0.92);
+  --ch-phone-composer-bg: rgb(253 252 248 / 0.94);
+  /* The one neutral coin: every avatar on the phone (D-43), and the default tone on desktop. */
+  --ch-avatar-neutral-bg: #e9e3d3;
+  --ch-avatar-neutral-fg: #5a4e36;
+  --ch-avatar-neutral-ring: rgb(90 78 54 / 0.22);
 
   /* Depth vocabulary ("depth like the toggles") */
   --ch-well-bg: linear-gradient(180deg, #dcd7ca 0%, #e6e2d7 55%, #ece8de 100%);

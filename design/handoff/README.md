@@ -27,7 +27,7 @@ The screens are **high fidelity**. Colours, type, spacing, depth and interaction
 - `_ds/` is the compiled bundle the prototypes load (`window.FairwayClubhouseEdition_9c4f4d`).
 
 ### Non-negotiable rules
-- **Red means under par only.** Use `--score-under`/`--chart-flag` `#B03A2E` for that and the pin flag, nothing else. Gains are green `--chart-gain` `#155A39`. Losses, misses and below-benchmark readings are **amber** `--chart-loss` `#9A6512`.
+- **Red means under par, the pin flag, or a destructive action** (D-42). Use `--score-under`/`--chart-flag` `#B03A2E` for under par and the pin flag, and `--danger-600` for a destructive action such as Leave group or Delete, nothing else. Gains are green `--chart-gain` `#155A39`. Losses, misses and below-benchmark readings are **amber** `--chart-loss` `#9A6512`.
 - **Type:** Instrument Sans only, with JetBrains Mono for `kbd`. Use sentence case everywhere. No tracked uppercase eyebrows, no serif.
 - **Numbers:** always tabular (`.fw-num`). Use a true minus `−`, `E` for even and `—` for no data. Null, zero and "early read" must render differently.
 - **Motion:** no count-ups and no entrance staggers. Durations are 90, 150, 220 and 360ms, all eased with `cubic-bezier(.2,.8,.2,1)`. Pressed controls scale to 0.985.

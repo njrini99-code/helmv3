@@ -7,7 +7,9 @@ errors, and the behaviour every page shares. Code `src/clubhouse/shell/`,
 The shell's rows apply on every page: a page's own catalog only lists what is
 specific to it. The accessibility scan (`npm run clubhouse:a11y`, axe-core,
 WCAG 2.2 AA at 1280px and 390px) covers the bell panel and the phone More
-sheet open.
+sheet open. The phone chrome (the tab bar, the top bar's variants, pushed
+screens) follows the owner's design (`docs/clubhouse/phone/foundation.md`,
+D-40 to D-43).
 
 ## 10xx Error toasts
 
@@ -56,6 +58,7 @@ sheet open.
 | CH-1607 | The first Tab on a page | Skip to content slides into view (150ms) | `.ch-skip` | preview |
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
 | CH-1609 | A page or section is loading | Skeletons shimmer left to right (1.4s loop); they hold still when Animations is off or motion is reduced | `.ch-skel` | preview |
+| CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 220ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
 
@@ -79,6 +82,9 @@ sheet open.
 | CH-1805 | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard | `Bell`, `Menu` (arrow keys, Home, End, Esc) | preview |
 | CH-1806 | Every control shows a focus ring on keyboard focus; text fields show their own green or ink ring instead, never two | `base.css` `:focus-visible` | preview |
 | CH-1807 | No axe violations (WCAG 2.2 AA, contrast included) with the bell open and the More sheet open | `npm run clubhouse:a11y` | a11y scan |
+| CH-1808 | The phone tab bar lists the role's tabs (coach: Home, Helm, Rounds, Stats, More; player: Home, Calendar, Messages, My stats, More; D-40), and when Messages is under More, More is named with its unread count ("More, 3 unread messages") | `TabBar`, `phoneTabsFor` | shell.test › CH-1808 |
+| CH-1809 | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it | `PhoneScreen`, `usePhoneImmersive` | shell.test › CH-1809 |
+| CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |
 
 ## 19xx Network and UX
 
@@ -89,6 +95,7 @@ sheet open.
 | CH-1903 | Someone saves while offline | "Couldn't save your profile: you're offline" (the action named) + "Reconnect, then try again. Nothing was changed." Nothing is sent and switches don't flip | `useAction`, `useInstantSave`, CoachHelm queue | shell.test › CH-1903 |
 | CH-1904 | Moving to another page | The new page opens at the top, never halfway down | `RouteFrame` resets the canvas scroll | preview |
 | CH-1905 | Someone presses Try again on a notice while offline | The notice adds "You're offline. Reconnect, then try again." (warning haptic) and nothing is retried; the line leaves when the connection returns | `InlineNotice` | shell.test › CH-1905 |
+| CH-1906 | On the phone, the edge swipe or the browser's back while a screen is pushed | The top screen pops, as the back link would; the page stays put | `usePhoneStackHistory` | shell.test › CH-1906 |
 | CH-1951 | Someone clicks the same thing over and over (rage click) | Nothing on screen | Sentry Replay in production. Partial: only 10% of sessions are recorded, plus every session that has an error, so most rage clicks are not seen. No Clubhouse-side detector yet | existing |
 | CH-1952 | A click that does nothing (dead click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |
 | CH-1953 | A slow response to a click (slow click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |

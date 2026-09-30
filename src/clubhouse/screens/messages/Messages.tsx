@@ -6,13 +6,16 @@ import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } 
 import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import {
+  addGolfGroupMember,
   createGolfConversation,
   createGolfTeamBroadcast,
   getGolfConversationParticipantIdentities,
+  getGolfGroupAddCandidates,
   getGolfMessageAttachments,
   leaveGolfGroup,
   searchGolfMessages,
 } from '@/app/golf/actions/messages';
+import { getGolfConversationFiles } from '@/app/golf/actions/message-attachments';
 import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/actions/message-mute';
 import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
@@ -25,7 +28,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { MessagesView, type ChMessagesApi } from './MessagesView';
-import type { ChAnnouncement, ChAnnouncementDetail, ChConv, ChMember, ChMsg, ChMute, ChReaction, ChReactionKey } from './model';
+import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
   const n = c.participant_count ?? c.participant_ids?.length ?? 0;
@@ -187,10 +190,27 @@ export function Messages({ data }: { data: ChMessagesData }) {
             ? await createGolfTeamBroadcast({ teamId: data.teamId, title, selectedPlayerIds: userIds.map((u) => people.get(u)?.playerId).filter((x): x is string => !!x) })
             : await createGolfConversation(userIds, data.teamId);
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not create the group');
+        // A coach's group can include other coaches (D-45): a broadcast adds players only, so they join right after.
+        const coaches = data.role === 'coach' ? userIds.filter((u) => people.get(u)?.role === 'coach') : [];
+        const missed: string[] = [];
+        for (const coachId of coaches) {
+          try {
+            const added = await addGolfGroupMember(res.conversationId, coachId);
+            if ('error' in added) missed.push(coachId);
+          } catch {
+            missed.push(coachId);
+          }
+        }
         await refetch();
         setSelectedId(res.conversationId);
         haptic('commit');
         toast({ title: data.role === 'coach' ? `Group created · ${title}` : 'Group created' });
+        if (missed.length) {
+          chReport(new Error(`${missed.length} coach(es) not added to a new group`), { surface: 'messages.createGroup', severity: 'low' });
+          haptic('warning');
+          const names = missed.map((u) => firstName(people.get(u)?.name ?? 'A coach')).join(', ');
+          toast({ tone: 'error', title: `Group created, but ${names} ${missed.length === 1 ? "wasn't" : "weren't"} added`, body: 'Add them from Details.', code: 'CH-7019' });
+        }
       });
     },
     [data.role, data.teamId, people, refetch, toast, attempt],
@@ -374,6 +394,30 @@ export function Messages({ data }: { data: ChMessagesData }) {
     };
   }, [selectedId, muteAttempt]);
 
+  // Stable, like loadAttachments: the Add sheet and the Files list key their fetch on them.
+  const addCandidates = useCallback(async (): Promise<ChMember[] | null> => {
+    if (!selectedId) return null;
+    const res = await getGolfGroupAddCandidates(selectedId);
+    if ('error' in res) {
+      chReport(new Error(res.error), { surface: 'messages.addCandidates', severity: 'low' });
+      return null;
+    }
+    return res.candidates.map((c) => ({
+      userId: c.userId,
+      name: people.get(c.userId)?.name ?? c.name,
+      subtitle: people.get(c.userId)?.subtitle ?? c.subtitle ?? (c.type === 'coach' ? 'Coach' : 'Player'),
+      role: c.type,
+    }));
+  }, [selectedId, people]);
+  const loadFiles = useCallback(async (conversationId: string): Promise<ChFile[] | null> => {
+    const res = await getGolfConversationFiles(conversationId);
+    if (res.error || !res.files) {
+      chReport(new Error(res.error || 'files read failed'), { surface: 'messages.files', severity: 'low' });
+      return null;
+    }
+    return res.files.map((f) => ({ id: f.id, messageId: f.messageId, name: f.fileName, size: f.fileSize, mime: f.mimeType, sentAt: f.sentAt, senderId: f.senderId }));
+  }, []);
+
   // Stable across renders: the attachment tiles key their fetch on it, and signed URLs cost a round trip.
   const loadAttachments = useCallback(async (messageId: string) => {
     const res = await getGolfMessageAttachments(messageId);
@@ -480,6 +524,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await refetch();
       });
     },
+    addCandidates,
+    addMember: (userId, name) =>
+      attempt('addMember', { failed: `Couldn't add ${firstName(name)}`, hint: 'Try again in a moment.', code: 'CH-7018' }, async () => {
+        if (!selectedId) throw new Error('No conversation open');
+        const res = await addGolfGroupMember(selectedId, userId);
+        if ('error' in res) throw new Error(res.error);
+        haptic('commit');
+        toast({ title: `Added ${firstName(name)} to ${selected?.title ?? 'the group'}` });
+        setMembersAttempt((n) => n + 1);
+        await refetch();
+      }),
+    files: loadFiles,
     directory: data.directory,
     directoryError: data.directoryError,
     retryDirectory: () => router.refresh(),

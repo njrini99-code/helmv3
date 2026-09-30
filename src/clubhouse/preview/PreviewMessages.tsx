@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { MessagesView, type ChMessagesApi } from '../screens/messages/MessagesView';
-import type { ChAnnouncement, ChConv, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
+import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
 
 /**
@@ -103,6 +103,11 @@ const previewSearch = async (q: string) =>
     .flatMap(([cid, list]) => list.filter((m) => m.text.toLowerCase().includes(q.toLowerCase())).map((m) => ({ messageId: m.id, conversationId: cid, conversationName: baseConvs.find((c) => c.id === cid)!.title, senderName: m.senderId === 'me' ? 'You' : (people.find((p) => p.userId === m.senderId)?.name ?? 'Member'), text: m.text, at: m.at })));
 
 const previewAttachments = async () => [{ id: 'a1', name: 'Room list · Pinehurst.pdf', size: 48 * 1024, mime: 'application/pdf', url: null }];
+const previewFiles: Record<string, ChFile[]> = {
+  travel: [{ id: 'a1', messageId: 'v1', name: 'Room list · Pinehurst.pdf', size: 48 * 1024, mime: 'application/pdf', sentAt: at(14, 11, 2), senderId: 'me' }],
+};
+/** Coaches and players on the team who aren't in a group yet (the Add sheet). */
+const previewCandidates: ChMember[] = [{ userId: 'nora', name: 'Nora Castillo', subtitle: 'Freshman', role: 'player' }];
 
 export function PreviewMessages({ state, role = 'coach' }: { state?: string; role?: 'coach' | 'player' }) {
   const toast = useToast();
@@ -113,6 +118,9 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
+
+  const files = useCallback(async (id: string) => (state === 'files-failed' ? null : (previewFiles[id] ?? [])), [state]);
+  const addCandidates = useCallback(async () => (state === 'add-failed' ? null : previewCandidates), [state]);
 
   const members: ChMember[] = useMemo(
     () => [{ userId: 'me', name: 'Maya Reyes', subtitle: 'Head coach', role: 'coach' as const }, ...people.map((p) => ({ userId: p.userId, name: p.name, subtitle: p.subtitle, role: p.role }))],
@@ -183,6 +191,12 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     membersError: false,
     retryMembers: () => {},
     leave: async () => true,
+    addCandidates,
+    addMember: async (_userId, name) => {
+      toast({ title: `Added ${name.split(' ')[0]} to ${convs.find((c) => c.id === selectedId)?.title ?? 'the group'}` });
+      return true;
+    },
+    files,
     directory: people,
     directoryError: false,
     retryDirectory: () => {},
