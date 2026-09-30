@@ -22,7 +22,8 @@ export interface ChNavItem {
   href: string;
   icon: LucideIcon;
   section?: ChNavSection;
-  badge?: 'messages' | 'joinRequests';
+  /** `hub`: the player's unread announcements, tasks and trips, as the current app's Team Hub badge counts them. */
+  badge?: 'messages' | 'joinRequests' | 'hub';
 }
 
 /**
@@ -51,7 +52,7 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
   { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound },
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, badge: 'hub' },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
   { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },

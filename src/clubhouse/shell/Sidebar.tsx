@@ -11,11 +11,16 @@ import { NextEventCard } from "./NextEventCard";
 
 export function badgeCount(
   item: ChNavItem,
-  badges: { messages: number },
+  badges: { messages: number; announcements: number; tasks: number; travel: number },
   shell: ChShellData,
 ): number | null {
   if (item.badge === "messages")
     return badges.messages > 0 ? badges.messages : null;
+  if (item.badge === "hub") {
+    // The same sum as the current app's Team Hub badge (src/lib/golf/nav-registry.ts).
+    const n = badges.announcements + badges.tasks + badges.travel;
+    return n > 0 ? n : null;
+  }
   if (item.badge === "joinRequests")
     return shell.pendingJoinRequests ? shell.pendingJoinRequests : null;
   return null;

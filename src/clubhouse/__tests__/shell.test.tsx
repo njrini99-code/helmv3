@@ -27,8 +27,8 @@ vi.mock('@/lib/supabase/server', () => ({
     },
   }),
 }));
-const badgeState = vi.hoisted(() => ({ messages: 0 }));
-vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, messages: badgeState.messages, refetch: vi.fn() }) }));
+const badgeState = vi.hoisted(() => ({ messages: 0, announcements: 0, tasks: 0, travel: 0 }));
+vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, ...badgeState, refetch: vi.fn() }) }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: vi.fn(), markNotificationRead: vi.fn(), markAllNotificationsRead: vi.fn() }));
 const signOutSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/sign-out', () => ({ chSignOut: signOutSpy }));
@@ -42,7 +42,8 @@ import { OfflineBanner } from '../shell/OfflineBanner';
 import { CH_SLOW_SAVE_AFTER, useAction } from '../lib/use-action';
 import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
-import { Sidebar } from '../shell/Sidebar';
+import { badgeCount, Sidebar } from '../shell/Sidebar';
+import { CH_NAV_PLAYER } from '../shell/nav';
 import { TabBar } from '../shell/TabBar';
 import { PhoneScreen } from '../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory, usePhoneTabsHidden } from '../shell/phone-chrome';
@@ -379,6 +380,20 @@ describe('Shell · navigation and accessibility', () => {
     expect(code('CH-1801')!.getAttribute('href')).toBe('#ch-content');
     expect(document.getElementById('ch-content')!.textContent).toMatch(/Page body/);
     expect(document.getElementById('ch-content')!.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it("a player's Team Hub carries the current app's Team Hub count: unread announcements, tasks and trips; none shows nothing", () => {
+    const hub = CH_NAV_PLAYER.find((i) => i.id === 'hub')!;
+    const zero = { messages: 0, announcements: 0, tasks: 0, travel: 0 };
+    expect(badgeCount(hub, { ...zero, announcements: 2, tasks: 1, travel: 1 }, shell)).toBe(4);
+    expect(badgeCount(hub, zero, shell)).toBeNull();
+    Object.assign(badgeState, { announcements: 2, tasks: 1, travel: 0 });
+    // TabBar's `role` is the user's role, not an ARIA role; spread so jsx-a11y doesn't read it as one.
+    const asPlayer = { role: 'player' as const };
+    wrap(<TabBar pathname="/golf/dashboard" shell={shell} {...asPlayer} />);
+    const tab = screen.getByRole('link', { name: /Team Hub/ });
+    expect(tab.querySelector('.ch-tab__badge')!.textContent).toBe('3');
+    Object.assign(badgeState, { announcements: 0, tasks: 0, travel: 0 });
   });
 
   it('CH-1802 a More sheet row with a count is named with a space between its parts ("Messages 3 new")', async () => {
