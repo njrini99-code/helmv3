@@ -84,7 +84,7 @@ Types come from `src/lib/types/database.ts` and were checked against the live sc
 | Edit qualifier | route `/qualifiers/[id]/edit`: `updateGolfQualifierDetails`, then `setQualifierRoundCourses` | Not drawn (Q-11). A failed second write says the details were saved. |
 | Close qualifier | `updateQualifierStatus(id, 'completed')` | Coach of the team; the update is verified to hit one row. |
 | Reopen qualifier | `updateQualifierStatus(id, 'in_progress')` | |
-| Open selection workspace, Manage selections | today the Fairway route `/coachhelm/qualifying/[id]`, backed by `advanceSelectionState`, `setQualifierCoachPick` (reasoning required), `removeQualifierCoachPick`, `confirmQualifierSelection` | Not drawn and not rebuilt (Q-10). Picks are allowed only in `closed` or `selected`. |
+| Manage selections | route `/qualifiers/[id]/selection` (`QualifierSelection`), on `advanceSelectionState`, `setQualifierCoachPick` (reasoning required), `removeQualifierCoachPick`, `confirmQualifierSelection` | Built 2026-09-30 (Q-65; goes past D-32, which left it out). Picks are allowed only in `closed` or `selected`. Outside Clubhouse the address sends to the Fairway `/coachhelm/qualifying/[id]`. |
 | Leaderboard row (open scorecards), phone row (player sheet), round chips | client over data read on the server | |
 | Message (phone sheet) | route `/golf/dashboard/messages` through `rebuiltHref` | As Roster does. |
 | Stats (phone sheet) | route `/golf/dashboard/stats?player=<id>` | |
@@ -163,6 +163,7 @@ Missing actions:
 - [x] It says `Status: approved` (the design is the owner's, D-22; Q-5, Q-15, Q-16 and Q-20 answered by D-30, D-33 and D-34)
 
 ## phone
+<!-- Built 2026-09-30: list (phone CSS), detail (QualifierDetailPhone), player sheet (PlayerRounds), form (PhoneTop, tab bar hidden), Manage selections. Checked by tests at the phone width; not yet in a browser at 390/430 or on an iPhone. -->
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss

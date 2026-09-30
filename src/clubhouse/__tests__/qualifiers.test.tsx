@@ -2,7 +2,7 @@ import { LazyMotion, domAnimation } from 'framer-motion';
 import { render, screen, waitFor, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 /** Qualifiers: every numbered state in docs/clubhouse/catalog/qualifiers.md, found by its number. */
 
@@ -23,16 +23,18 @@ vi.mock('@/app/golf/actions/golf', () => ({
   updateQualifierStatus: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/qualifier-setup', () => ({ setQualifierEntrants: vi.fn(), setQualifierSquadSize: vi.fn() }));
+vi.mock('@/app/golf/actions/v3/qualifying', () => ({ advanceSelectionState: vi.fn(), confirmQualifierSelection: vi.fn(), removeQualifierCoachPick: vi.fn(), setQualifierCoachPick: vi.fn() }));
 vi.mock('@/app/golf/actions/course-library', () => ({ getCourseDetail: vi.fn(), getTeamSavedCourses: vi.fn(), listCoursesStrict: vi.fn() }));
 
-import { loadQualifierDetail, loadQualifierForm, loadQualifierList, type ChQDetail, type ChQFormData, type ChQList } from '../data/qualifiers';
+import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection, type ChQDetail, type ChQFormData, type ChQList } from '../data/qualifiers';
 import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
+import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { buildBoard, roundPars, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
-import { runEditPlan, type ChQWrites } from '../screens/qualifiers/writes';
-import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList } from '../preview/fixtures-qualifiers';
+import { runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
+import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 
@@ -622,5 +624,225 @@ describe('Qualifiers · loading', () => {
     expect(code('CH-09401')!.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-09402')!.getAttribute('aria-label')).toBe('Loading the qualifier');
     expect(code('CH-09403')!.getAttribute('aria-label')).toBe('Loading the qualifier form');
+  });
+});
+
+describe('Qualifiers · Manage selections', () => {
+  type SelWrites = { [K in keyof ChQSelectionWrites]: Mock<ChQSelectionWrites[K]> };
+  const ok = async () => ({ success: true });
+  const selWrites = (over: Partial<Record<keyof ChQSelectionWrites, Mock>> = {}): SelWrites =>
+    ({
+      advance: vi.fn<ChQSelectionWrites['advance']>(ok),
+      setPick: vi.fn<ChQSelectionWrites['setPick']>(ok),
+      removePick: vi.fn<ChQSelectionWrites['removePick']>(ok),
+      confirm: vi.fn<ChQSelectionWrites['confirm']>(ok),
+      ...over,
+    }) as SelWrites;
+  const open = (name: string | RegExp) => screen.getByRole('button', { name });
+  const inDialog = (c: string, name: string | RegExp) => within(code(c) as HTMLElement).getByRole('button', { name });
+
+  it('CH-09503 CH-09703 CH-09005 starting asks first with the warning tap, steps to closed one step at a time, and a refusal says so', async () => {
+    const user = userEvent.setup();
+    const w = selWrites({ advance: vi.fn(async () => ({ success: false, error: 'The squad moved on since this page loaded. Reload to see where it stands.' })) });
+    wrap(<QualifierSelection data={previewSelection('standings')} writes={w} />);
+    await user.click(open('Start selecting'));
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    await expectCode('CH-09503', /can’t be undone/);
+    await user.click(inDialog('CH-09503', 'Start selecting'));
+    await expectCode('CH-09005', /Couldn’t start selecting.*moved on/);
+    // The sample is at "scoring": one step to closed, which was refused.
+    expect(w.advance.mock.calls.map((c) => c[1])).toEqual(['closed']);
+  });
+
+  it('startSelecting walks open → scoring → closed and stops at the first refusal', async () => {
+    const advance = vi.fn().mockResolvedValue({ ok: true });
+    await startSelecting('q', 'open', advance);
+    expect(advance.mock.calls.map((c) => c[1])).toEqual(['scoring', 'closed']);
+    const refused = vi.fn().mockResolvedValueOnce({ success: false, error: 'x' });
+    expect((await startSelecting('q', 'open', refused)).success).toBe(false);
+    expect(refused).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-09112 CH-09111 CH-09701 a pick needs a player and a reason before anything is sent', async () => {
+    const user = userEvent.setup();
+    const w = selWrites();
+    wrap(<QualifierSelection data={previewSelection('picking')} writes={w} />);
+    await user.click(open('Choose a player'));
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    await expectCode('CH-09112', /Choose a player/);
+    expect(w.setPick).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('radio', { name: /Eli Brandt/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    await expectCode('CH-09111', /Say why you picked Eli Brandt/);
+    expect(w.setPick).not.toHaveBeenCalled();
+    await user.type(screen.getByRole('textbox', { name: /^Reason/ }), 'Best short game on the team');
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    await waitFor(() => expect(w.setPick).toHaveBeenCalledWith(previewSelection().id, expect.any(String), 'Best short game on the team'));
+    await screen.findByText('Eli Brandt picked');
+    expect(screen.getByText('Best short game on the team')).toBeTruthy();
+  });
+
+  it('CH-09006 a refused pick keeps the dialog, the player and the reason', async () => {
+    const user = userEvent.setup();
+    wrap(<QualifierSelection data={previewSelection('picking')} writes={selWrites({ setPick: vi.fn(async () => ({ success: false, error: 'Every pick is taken. Remove one first.' })) })} />);
+    await user.click(open('Choose a player'));
+    await user.click(screen.getByRole('radio', { name: /Eli Brandt/ }));
+    await user.type(screen.getByRole('textbox', { name: /^Reason/ }), 'Form');
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-09006"]')?.textContent).toMatch(/Couldn’t pick Eli Brandt.*Every pick is taken/));
+    expect((screen.getByRole('radio', { name: /Eli Brandt/ }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('textbox', { name: /^Reason/ }) as HTMLTextAreaElement).value).toBe('Form');
+  });
+
+  it('CH-09504 CH-09007 removing a pick asks first; a failed remove keeps them', async () => {
+    const user = userEvent.setup();
+    wrap(<QualifierSelection data={previewSelection('picked')} writes={selWrites({ removePick: vi.fn(fail) })} />);
+    await user.click(open('Remove Eli Brandt'));
+    await expectCode('CH-09504', /Remove Eli Brandt as a pick/);
+    await user.click(inDialog('CH-09504', 'Remove'));
+    await expectCode('CH-09007', /Couldn’t remove Eli Brandt as a pick/);
+    expect(screen.getAllByText(/Best short game|Two top-ten/).length).toBeGreaterThan(0);
+  });
+
+  it('CH-09505 CH-09008 CH-09408 confirming names who makes the trip, shows it is in flight, and a failure confirms nothing', async () => {
+    const user = userEvent.setup();
+    let settle: (v: { success: boolean; error?: string }) => void = () => {};
+    const w = selWrites({ confirm: vi.fn(() => new Promise((r) => (settle = r))) });
+    wrap(<QualifierSelection data={previewSelection('picked')} writes={w} />);
+    await user.click(open('Confirm squad'));
+    await expectCode('CH-09505', /5 players make the trip: Sofia Alvarez, Theo Marchetti, .*Eli Brandt/);
+    await user.click(inDialog('CH-09505', 'Confirm squad'));
+    await expectCode('CH-09408', /Confirming/);
+    await act(async () => settle({ success: false }));
+    await expectCode('CH-09008', /nobody was told/);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('confirming that lands opens the qualifier', async () => {
+    const user = userEvent.setup();
+    wrap(<QualifierSelection data={previewSelection('picked')} writes={selWrites()} />);
+    await user.click(open('Confirm squad'));
+    await user.click(inDialog('CH-09505', 'Confirm squad'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${previewSelection().id}`));
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+  });
+
+  it('Confirm squad stays off until every pick is made with a reason', () => {
+    wrap(<QualifierSelection data={previewSelection('picking')} writes={selWrites()} />);
+    expect((open('Confirm squad') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('CH-09903 a confirmed squad is read-only', () => {
+    wrap(<QualifierSelection data={previewSelection('selected')} writes={selWrites()} />);
+    expect(code('CH-09903')!.textContent).toMatch(/squad is confirmed/);
+    expect(screen.queryByRole('button', { name: /Confirm squad|Start selecting|Choose a player|Remove/ })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Qualified on score' })).toBeTruthy();
+  });
+
+  it('CH-09315 CH-09316 nobody to pick, and nobody on score yet', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const none = { ...base, candidates: base.candidates.map((c) => ({ ...c, rank: null, toPar: null, onScore: false })) };
+    wrap(<QualifierSelection data={none} writes={selWrites()} />);
+    await expectCode('CH-09316', /Nobody has a score in yet/);
+    await user.click(open('Choose a player'));
+    await expectCode('CH-09315', /Nobody else can be picked yet/);
+  });
+
+  it('CH-09219 a crash in the lists stays inside the section; the head and steps stay', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const base = previewSelection('picking');
+    // A row that throws when drawn: only the lists read a candidate's rounds.
+    const broken = Object.defineProperty({ ...base.candidates[0]! }, 'rounds', { get: () => { throw new Error('boom'); } });
+    wrap(<QualifierSelection data={{ ...base, candidates: [broken, ...base.candidates.slice(1)] }} writes={selWrites()} />);
+    await expectCode('CH-09219');
+    expect(screen.getByRole('heading', { level: 1, name: base.name })).toBeTruthy();
+    expect(screen.getByRole('list', { name: 'Selection steps' })).toBeTruthy();
+    spy.mockRestore();
+  });
+
+  it('selectionReason turns the server’s refusals into words a coach can act on', () => {
+    expect(selectionReason('illegal transition open → selected')).toMatch(/moved on/);
+    expect(selectionReason('all 1 coach-pick slots filled')).toMatch(/Every pick is taken/);
+    expect(selectionReason('Not a coach of this team')).toMatch(/Only this team’s coaches/);
+    expect(selectionReason('cannot confirm: no entrant has a qualifying score and no coach pick was made')).toMatch(/no squad to confirm/);
+    expect(selectionReason('Internal error')).toBeNull();
+  });
+
+  it('CH-09218 a failed read is logged and told apart from a qualifier on another team', async () => {
+    tables.current = { golf_qualifiers: { error: { message: 'boom' } } };
+    expect((await loadQualifierSelection({ teamId: 't1', qualifierId: 'q1' })).kind).toBe('error');
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'selection', expect.anything(), 'qualifiers');
+    tables.current = { golf_qualifiers: { data: { id: 'q1', team_id: 'other' } } };
+    expect((await loadQualifierSelection({ teamId: 't1', qualifierId: 'q1' })).kind).toBe('missing');
+  });
+});
+
+describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('board 02: facts, the leaderboard as cards, and Manage selections for the coach', () => {
+    wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
+    const facts = document.querySelector('.ch-qfm-facts')!;
+    expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
+    expect(facts.textContent).toMatch(/4\+1/);
+    expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${detail('live').id}/selection`);
+    expect(document.querySelectorAll('.ch-qfm-lb__row').length).toBeGreaterThan(3);
+    // Round-by-round stays on desktop (Q-20).
+    expect(screen.queryByRole('heading', { name: 'Round-by-round scores' })).toBeNull();
+  });
+
+  it('board 03 CH-09701: a row opens that player’s rounds, the latest played round chosen, with Message and Stats', async () => {
+    const user = userEvent.setup();
+    wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
+    await user.click(screen.getByRole('button', { name: /^Sofia Alvarez, 1/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    const dialog = await screen.findByRole('dialog', { name: 'Sofia Alvarez' });
+    const chips = within(dialog).getAllByRole('button', { name: /^R\d/ });
+    expect(chips.map((c) => c.textContent)).toEqual(['R1 · −1', 'R2 · −2', 'R3']);
+    expect(chips[1]!.getAttribute('aria-pressed')).toBe('true');
+    expect((chips[2] as HTMLButtonElement).disabled).toBe(true);
+    expect(within(dialog).getByRole('table', { name: /Round 2, front nine/ })).toBeTruthy();
+    expect(within(dialog).getByRole('link', { name: 'Stats' }).getAttribute('href')).toBe(`/golf/dashboard/stats?player=${PLAYER_ID.sofia}`);
+    expect(within(dialog).getByRole('link', { name: 'Message' }).getAttribute('href')).toBe(`/golf/dashboard/messages?player=${PLAYER_ID.sofia}`);
+    await user.click(chips[0]!);
+    expect(chips[0]!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('D-33 on the phone a player opens only their own rounds, and has no Message link to themselves', async () => {
+    const user = userEvent.setup();
+    wrap(<QualifierDetail data={detail('live', 'player')} writes={fakeWrites()} live={false} />);
+    const buttons = [...document.querySelectorAll('button.ch-qfm-lb__row')];
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]!.textContent).toMatch(/Jonah Okafor/);
+    await user.click(buttons[0] as HTMLElement);
+    const dialog = await screen.findByRole('dialog', { name: 'Jonah Okafor' });
+    expect(within(dialog).queryByRole('link', { name: 'Message' })).toBeNull();
+    expect(within(dialog).getByRole('link', { name: 'Stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
+    expect(screen.queryByRole('link', { name: 'Manage selections' })).toBeNull();
+  });
+
+  it('Q-20 CH-09501: Close sits behind Edit as a sheet action, and still asks first', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    wrap(<QualifierDetail data={detail('live')} writes={w} live={false} />);
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(await screen.findByRole('button', { name: 'Close qualifier' }));
+    await expectCode('CH-09501', /Close this qualifier/);
+    expect(w.setStatus).not.toHaveBeenCalled();
+  });
+
+  it('board 05: a confirmed squad sits above the leaderboard', () => {
+    wrap(<QualifierDetail data={detail('selected')} writes={fakeWrites()} live={false} />);
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(headings.indexOf('Squad')).toBeGreaterThan(-1);
+    expect(headings.indexOf('Squad')).toBeLessThan(headings.indexOf('Leaderboard'));
   });
 });

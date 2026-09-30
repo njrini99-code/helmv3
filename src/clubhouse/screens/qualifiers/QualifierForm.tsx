@@ -13,6 +13,9 @@ import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useAction } from '../../lib/use-action';
 import { chTrail } from '../../lib/track';
+import { useChPhone } from '../../lib/use-phone';
+import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
+import { PhoneTextAction } from '../../ui/PhoneBar';
 import { FIELD_ORDER, plural, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
@@ -144,6 +147,12 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
     }
   };
 
+  const phone = useChPhone();
+  // Phone (docs/clubhouse/phone/qualifiers.md, board 04): Cancel and the submit sit in the top bar, so the
+  // keyboard never covers them, and the tab bar steps aside.
+  usePhoneTabsHidden(phone);
+  const cancel = () => (dirty ? setLeaving(true) : router.push(doneHref));
+
   const toggle = (id: string, on: boolean) => set('playerIds', on ? [...v.playerIds, id] : v.playerIds.filter((x) => x !== id));
   const pick = (round: number, p: ChQPickedCourse) => {
     setCourses((cur) => new Map(cur).set(round, { number: round, courseId: p.courseId, courseName: p.courseName, teeId: p.teeId, teeName: p.teeName, par: p.par }));
@@ -174,8 +183,19 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
 
   return (
     <main className="ch-qf ch-qf--form">
+      {phone && (
+        <PhoneTop
+          title={editing ? 'Edit qualifier' : 'New qualifier'}
+          back={{ label: 'Cancel', chevron: false, onBack: cancel }}
+          action={
+            <PhoneTextAction onClick={() => void submit()} disabled={blocked} busy={pending}>
+              {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving' : 'Creating'}</span> : editing ? 'Save' : 'Create'}
+            </PhoneTextAction>
+          }
+        />
+      )}
       <div className="ch-qf-back">
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={() => (dirty ? setLeaving(true) : router.push(doneHref))}>
+        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={cancel}>
           {editing ? 'Qualifier' : 'Qualifiers'}
         </Button>
       </div>
@@ -429,7 +449,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               </div>
             </fieldset>
             <div className="ch-qf-formact">
-              <Button variant="ghost" onClick={() => (dirty ? setLeaving(true) : router.push(doneHref))}>
+              <Button variant="ghost" onClick={cancel}>
                 Cancel
               </Button>
               <Button type="submit" variant="primary" leftIcon={Check} disabled={pending || blocked}>

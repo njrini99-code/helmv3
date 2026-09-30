@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
-import { InlineNotice } from '../../ui/Notices';
+import { InlineNotice } from './Notices';
 
 /** A section-level failed read, with Try again re-running the server render. */
 export function RefreshNotice({ title, body, code }: { title: string; body: string; code: string }) {

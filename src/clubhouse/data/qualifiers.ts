@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
+import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
+import type { QualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/types';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
 import {
@@ -562,5 +564,86 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
     coursesError: !!coursesRes.error || teesError,
     squadLocked: parseSelectionState(q.selection_state) === 'selected',
     minRounds: Math.max(1, ...used.map((u) => u.qualifier_round_number ?? 1)),
+  };
+}
+
+// ── Selection (Manage selections) ──
+
+export interface ChQCandidate {
+  playerId: string;
+  name: string;
+  /** The server's standing (to par, then total strokes); null with no score in. */
+  rank: number | null;
+  toPar: number | null;
+  total: number | null;
+  rounds: number;
+  /** Inside the places decided on score, so set by the standings when the squad is confirmed. */
+  onScore: boolean;
+  /** A coach's pick, with the reason given. */
+  pick: { reasoning: string | null } | null;
+  /** On the confirmed squad (on score or a pick). */
+  selected: boolean;
+}
+
+export interface ChQSelectionData {
+  id: string;
+  name: string;
+  status: ChQStatus;
+  selectionState: ChQSelectionState;
+  squad: number;
+  picks: number;
+  candidates: ChQCandidate[];
+}
+
+export type ChQSelectionLoad = { kind: 'ok'; data: ChQSelectionData } | { kind: 'missing' } | { kind: 'error' };
+
+/**
+ * Manage selections for one qualifier, coach only. It reads through the same
+ * loader the server actions use when they confirm the squad
+ * (`loadQualifyingWorkspace`), so the squad shown is the squad committed. A
+ * failed read is told apart from a qualifier that isn't on the team.
+ */
+export async function loadQualifierSelection(input: { teamId: string; qualifierId: string }): Promise<ChQSelectionLoad> {
+  const supabase = await createClient();
+  const own = await supabase.from('golf_qualifiers').select('id, team_id').eq('id', input.qualifierId).maybeSingle();
+  if (own.error) {
+    chLogServer('qualifiers', 'selection', own.error, 'qualifiers');
+    return { kind: 'error' };
+  }
+  if (!own.data || own.data.team_id !== input.teamId) return { kind: 'missing' };
+  let ws: QualifyingWorkspace | null;
+  try {
+    ws = await loadQualifyingWorkspace(supabase, input.qualifierId);
+  } catch (err) {
+    chLogServer('qualifiers', 'selection', err, 'qualifiers');
+    return { kind: 'error' };
+  }
+  if (!ws) {
+    // The qualifier was just read, so a null workspace is a failed read, not a missing qualifier.
+    chLogServer('qualifiers', 'selection', new Error('the selection workspace did not load'), 'qualifiers');
+    return { kind: 'error' };
+  }
+  const state = parseSelectionState(ws.selection_state);
+  return {
+    kind: 'ok',
+    data: {
+      id: ws.qualifier_id,
+      name: ws.name,
+      status: parseStatus(ws.status),
+      selectionState: state,
+      squad: ws.selection_slots_total,
+      picks: ws.selection_slots_coach_pick,
+      candidates: ws.candidates.map((c) => ({
+        playerId: c.player_id,
+        name: fullName({ first_name: c.player_first_name, last_name: c.player_last_name }),
+        rank: c.leaderboard_rank,
+        toPar: c.total_to_par,
+        total: c.total_score,
+        rounds: c.rounds_completed,
+        onScore: c.is_top_score_slot,
+        pick: c.selection?.selection_type === 'coach_pick' ? { reasoning: c.selection.coach_reasoning } : null,
+        selected: state === 'selected' && c.selection != null,
+      })),
+    },
   };
 }

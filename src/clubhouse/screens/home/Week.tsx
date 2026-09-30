@@ -3,7 +3,7 @@ import type { ChAgendaRow, ChCoachHome } from '../../data/home';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
-import { RefreshNotice } from './RefreshNotice';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 
 /** What the dots under a day say to a screen reader. */
 export function dayLabel(count: number, competition: boolean): string {

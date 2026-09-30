@@ -1,4 +1,4 @@
-import type { ChQDetail, ChQFormData, ChQList, ChQListItem } from '../data/qualifiers';
+import type { ChQDetail, ChQFormData, ChQList, ChQListItem, ChQSelectionData } from '../data/qualifiers';
 import { buildBoard, roundPars, type ChQEntrant, type ChQHole, type ChQRound, type ChQSelection, type ChQSelectionState, type ChQStatus } from '../screens/qualifiers/model';
 
 /**
@@ -367,3 +367,37 @@ export const PREVIEW_TEES = [
   { id: 't-blue', name: 'Blue', par: 72, yards: 6820, holes: 18 },
   { id: 't-white', name: 'White', par: 72, yards: 6310, holes: 18 },
 ];
+
+/**
+ * Manage selections on the live sample (Pinehurst: a five-player squad, four
+ * on score and one coach's pick). `stage` sets how far the selection has come:
+ * before selecting, picking (with or without the pick made), or confirmed.
+ */
+export function previewSelection(stage: 'standings' | 'picking' | 'picked' | 'selected' = 'standings'): ChQSelectionData {
+  const d = previewDetail(DETAIL_INDEX.live!);
+  const b = d.board!;
+  const topN = d.squad - d.picks;
+  const pickId = PLAYER_ID.eli;
+  const picked = stage === 'picked' || stage === 'selected';
+  const ranked = b.rows.map((r, i) => ({
+    playerId: r.playerId,
+    name: r.name,
+    rank: i + 1,
+    toPar: r.toPar,
+    total: r.total,
+    rounds: r.played,
+    onScore: i < topN,
+    pick: picked && r.playerId === pickId ? { reasoning: 'Two top-ten finishes at Pinehurst last spring, and the best short game on the team.' } : null,
+    selected: stage === 'selected' && (i < topN || r.playerId === pickId),
+  }));
+  const unranked = b.unscored.map((r) => ({ playerId: r.playerId, name: r.name, rank: null, toPar: null, total: null, rounds: 0, onScore: false, pick: null, selected: false }));
+  return {
+    id: d.id,
+    name: d.name,
+    status: d.status,
+    selectionState: stage === 'standings' ? 'scoring' : stage === 'selected' ? 'selected' : 'closed',
+    squad: d.squad,
+    picks: d.picks,
+    candidates: [...ranked, ...unranked],
+  };
+}

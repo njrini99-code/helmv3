@@ -168,11 +168,15 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
                         <Icon icon={i.icon} size={17} />
                       </span>
                       <span className="ch-more__label">{i.label}</span>
+                      {/* The spaces are text nodes, so the link is named "Messages 3 new", not "Messages3new". */}
                       {count != null && (
-                        <span className="ch-more__count ch-num">
-                          {count > 99 ? '99+' : count}
-                          <span className="ch-sr-only"> new</span>
-                        </span>
+                        <>
+                          {' '}
+                          <span className="ch-more__count ch-num">
+                            {count > 99 ? '99+' : count}{' '}
+                            <span className="ch-sr-only">new</span>
+                          </span>
+                        </>
                       )}
                     </Link>
                   );

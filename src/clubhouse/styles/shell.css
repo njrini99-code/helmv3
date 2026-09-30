@@ -767,6 +767,16 @@
     left: 12px;
     bottom: calc(var(--ch-tabbar-h) + 12px + env(safe-area-inset-bottom));
   }
+  /* A full-page form hides the tab bar (usePhoneTabsHidden): its Cancel and submit are in the top bar. */
+  .ch-root[data-phone-notabs] .ch-tabbar {
+    display: none;
+  }
+  .ch-root[data-phone-notabs] .ch-canvas {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ch-root[data-phone-notabs] .ch-toasts {
+    bottom: calc(12px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
+  }
   /* A pushed screen hides the tab bar: toasts sit above its composer instead (and above the keyboard). */
   .ch-root[data-phone-immersive] .ch-toasts {
     bottom: calc(72px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
@@ -871,8 +881,6 @@
     margin-left: 0;
     padding: 0;
   }
-  .ch-pbar__back:active,
-  .ch-pbar__icon:active,
   .ch-pbar__title {
     position: absolute;
     top: env(safe-area-inset-top);

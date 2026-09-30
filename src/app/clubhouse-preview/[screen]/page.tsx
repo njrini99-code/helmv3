@@ -18,8 +18,8 @@ import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
 import { PreviewSettings } from '@/clubhouse/preview/PreviewSettings';
 import { QualifiersList } from '@/clubhouse/screens/qualifiers/QualifiersList';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
-import { PreviewQualifierDetail, PreviewQualifierForm } from '@/clubhouse/preview/PreviewQualifiers';
-import { DETAIL_INDEX, previewCreateForm, previewDetail, previewEditForm, previewList } from '@/clubhouse/preview/fixtures-qualifiers';
+import { PreviewQualifierDetail, PreviewQualifierForm, PreviewQualifierSelection } from '@/clubhouse/preview/PreviewQualifiers';
+import { DETAIL_INDEX, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '@/clubhouse/preview/fixtures-qualifiers';
 import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
 import { MessagesSkeleton } from '@/clubhouse/screens/messages/MessagesSkeleton';
 import { Calendar } from '@/clubhouse/screens/calendar/Calendar';
@@ -55,6 +55,7 @@ import {
  *   /clubhouse-preview/qualifiers ?state=empty | failed | partial | loading  (and qualifiers-player, my-qualifiers ?state=empty)
  *   /clubhouse-preview/qualifier ?q=live | upcoming | selected | completed | spring, &state=failed | scores | partial | failwrites | loading
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
+ *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  */
 export default async function ClubhousePreview({
@@ -195,6 +196,10 @@ export default async function ClubhousePreview({
     'qualifier-edit': {
       path: '/golf/dashboard/qualifiers',
       node: state === 'loading' ? <QualifierFormSkeleton /> : <PreviewQualifierForm data={qForm(true)} state={state} />,
+    },
+    'qualifier-selection': {
+      path: '/golf/dashboard/qualifiers',
+      node: <PreviewQualifierSelection data={previewSelection(q === 'picking' || q === 'picked' || q === 'selected' ? q : 'standings')} state={state} />,
     },
     'messages-player': {
       path: '/golf/dashboard/messages',

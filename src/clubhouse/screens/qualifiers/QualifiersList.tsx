@@ -14,6 +14,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
+import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { ctaLabel } from './model';
 import { Meta, StatusPill, ToPar } from './parts';
 import '../../styles/qualifiers.css';
@@ -26,6 +27,7 @@ const detailHref = (id: string) => `${LIST}/${id}`;
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
 export function QualifiersList({ data }: { data: ChQList }) {
   const router = useRouter();
+  const backFromMore = useBackFromMore();
   const coach = data.role === 'coach';
   const [filter, setFilter] = useState<Filter>('all');
   const [q, setQ] = useState('');
@@ -58,7 +60,9 @@ export function QualifiersList({ data }: { data: ChQList }) {
       : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
 
   return (
-    <main className="ch-qf">
+    <main className="ch-qf ch-qf--list">
+      {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
+      <PhoneTop title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
       <header className="ch-qf-head">
         <div>
           <span className="ch-qf-eyebrow ch-num">

@@ -1,6 +1,6 @@
 # Phone design: Qualifiers
 
-Status: approved. The design is `design/handoff/mobile/Qualifiers Mobile.html`, `qual-mobile.jsx` and `qual-mobile.css`, and it shares `qual-core.jsx`, `qual-data.js` and `qual.css` with desktop. Under D-22 the owner's design is the phone spec. The mapping's questions are answered: the player view (Q-5, D-30), navigation (Q-15, D-33), the tab (Q-16, D-34) and the phone gaps (Q-20, D-33). The phone build waits for the foundation to merge (D-34).
+Status: approved; built 2026-09-30 (the iPhone pass is open). The design is `design/handoff/mobile/Qualifiers Mobile.html`, `qual-mobile.jsx` and `qual-mobile.css`, and it shares `qual-core.jsx`, `qual-data.js` and `qual.css` with desktop. Under D-22 the owner's design is the phone spec. The mapping's questions are answered: the player view (Q-5, D-30), navigation (Q-15, D-33), the tab (Q-16, D-34) and the phone gaps (Q-20, D-33). The phone build waits for the foundation to merge (D-34).
 
 The boards are drawn at 402 × 874, an iPhone 16 Pro inside a Safari frame. They were rendered on 2026-09-29 at 390 × 844 without the bezel (`qualifiers-01..11`) and as drawn (`qualifiers-01..05-*-frame`); the captures are not committed. Every board is the coach's view, and there is no player phone design (Q-5).
 
@@ -23,7 +23,7 @@ The phone foundation (tab bar, top bar, More, sheets) is specified by its own sp
 The page builds on the shell's pieces rather than this copy, and nothing here overrides the foundation.
 
 Two things are page-specific:
-- **Which tab owns Qualifiers.** The Rounds tab, as the boards draw it (D-34).
+- **Which tab owns Qualifiers.** The boards draw the Rounds tab (D-34). D-66 superseded it: Qualifiers opens from More for both roles, so the list's top bar reads "‹ More" and "Qualifiers" ("My qualifiers" on `/my-qualifiers`).
 - **The top bar per screen.** The list has the title "Qualifiers" and the bell. The detail has a "Qualifiers" back link and the title "Qualifier". The create form has Cancel and a trailing Create, and hides the tab bar.
 
 The Safari chrome is prototype framing, since the app is the Capacitor shell. Toasts are styled in `qual-mobile.css` (`.qm-toast`) but never rendered, so their phone placement follows the foundation.
@@ -46,6 +46,12 @@ The Safari chrome is prototype framing, since the app is the Capacitor shell. To
 - Hero card: status, a 21px name, dates, course · spots, the top three leaders in a soft well with "N of M rounds in", and the call to action.
 - Active and Concluded sections of cards: name, status, dates, spots, call to action.
 - The search is drawn but not wired in the prototype. It filters the loaded list, as on desktop.
+
+As built (2026-09-30): the list is the desktop list with phone CSS; the detail is `QualifierDetailPhone`
+(chosen by `useChPhone()`), with the player sheet `PlayerRounds`; the form is the desktop form with
+`PhoneTop` (Cancel, Create or Save) and the tab bar hidden (`usePhoneTabsHidden`). "Manage selections"
+opens `/qualifiers/[id]/selection` (Q-65), and Edit opens a sheet with Edit details and Close or
+Reopen (Q-20).
 
 **02 Detail**
 - Status pill and dates.

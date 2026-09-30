@@ -123,11 +123,11 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
 
 /**
  * Addresses under a rebuilt route that belong to the same screen (SCREENS.md
- * lists them with their parent). Qualifiers: /new, /[id] and /[id]/edit. A
+ * lists them with their parent). Qualifiers: /new, /[id], /[id]/edit and /[id]/selection. A
  * player on /new or /edit gets Clubhouse's coach-only state, not a Fairway page.
  */
 const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
-  '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/edit)?)$/i,
+  '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
 };
 
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {

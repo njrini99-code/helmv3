@@ -14,7 +14,7 @@ import { ScrollRegion } from '../../ui/ScrollRegion';
 import { chSwap } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
-import { RefreshNotice } from './RefreshNotice';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 
 function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
   const par = holes.every((h) => h.par != null) ? holes.reduce((a, h) => a + (h.par ?? 0), 0) : null;

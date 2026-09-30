@@ -43,7 +43,7 @@ import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { Sidebar } from '../shell/Sidebar';
 import { TabBar } from '../shell/TabBar';
 import { PhoneScreen } from '../shell/PhoneScreen';
-import { PhoneTop, usePhoneStackHistory } from '../shell/phone-chrome';
+import { PhoneTop, usePhoneStackHistory, usePhoneTabsHidden } from '../shell/phone-chrome';
 import { PhoneBar } from '../ui/PhoneBar';
 import { Modal } from '../ui/Modal';
 import './dialog-polyfill';
@@ -346,6 +346,16 @@ describe('Shell · navigation and accessibility', () => {
     expect(document.getElementById('ch-content')!.getAttribute('tabindex')).toBe('-1');
   });
 
+  it('CH-1802 a More sheet row with a count is named with a space between its parts ("Messages 3 new")', async () => {
+    const user = userEvent.setup();
+    badgeState.messages = 3;
+    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+    await user.click(screen.getByRole('button', { name: /^More/ }));
+    await expectCode('CH-1802');
+    expect(within(code('CH-1802') as HTMLElement).getByRole('link', { name: 'Messages 3 new' })).toBeTruthy();
+    badgeState.messages = 0;
+  });
+
   it('CH-1802 the More sheet takes focus, keeps Tab inside, and gives it back on Esc', async () => {
     const user = userEvent.setup();
     wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
@@ -602,6 +612,28 @@ describe('Shell · phone chrome', () => {
     expect(bar.contains(link)).toBe(true);
     await userEvent.setup().click(link);
     expect(back).toHaveBeenCalled();
+  });
+});
+
+describe('Shell · phone form', () => {
+  it('11901 a full-page form hides the phone tab bar while it is open (usePhoneTabsHidden)', () => {
+    function Form({ on }: { on: boolean }) {
+      usePhoneTabsHidden(on);
+      return <p>Form</p>;
+    }
+    const shell: ChShellData = { nextEvent: null, pendingJoinRequests: null };
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/qualifiers" forceRebuilt>
+        <Form on />
+      </ClubhouseFrame>,
+    );
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(true);
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/qualifiers" forceRebuilt>
+        <Form on={false} />
+      </ClubhouseFrame>,
+    );
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(false);
   });
 });
 

@@ -12,6 +12,8 @@ import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
  *                            and one action) in place of the tab root's title and bell
  *   usePhoneImmersive(open)  a pushed screen (a thread, details) covers the page, so the
  *                            shell's top bar and tab bar go inert
+ *   usePhoneTabsHidden(on)   a full-page form (a create form) hides the tab bar, so its
+ *                            submit in the top bar is the only way forward
  *   usePhoneStackHistory(depth, popTo)
  *                            each pushed screen is a history entry, so the iOS edge swipe
  *                            and the browser's back pop it instead of leaving the page
@@ -25,6 +27,8 @@ interface Ctx {
   setPageTop: (fn: (n: number) => number) => void;
   immersive: number;
   setImmersive: (fn: (n: number) => number) => void;
+  noTabs: number;
+  setNoTabs: (fn: (n: number) => number) => void;
 }
 
 const PhoneChromeCtx = createContext<Ctx>({
@@ -34,20 +38,33 @@ const PhoneChromeCtx = createContext<Ctx>({
   setPageTop: () => {},
   immersive: 0,
   setImmersive: () => {},
+  noTabs: 0,
+  setNoTabs: () => {},
 });
 
 export function PhoneChromeProvider({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [pageTop, setPageTop] = useState(0);
   const [immersive, setImmersive] = useState(0);
-  const value = useMemo(() => ({ slot, setSlot, pageTop, setPageTop, immersive, setImmersive }), [slot, pageTop, immersive]);
+  const [noTabs, setNoTabs] = useState(0);
+  const value = useMemo(() => ({ slot, setSlot, pageTop, setPageTop, immersive, setImmersive, noTabs, setNoTabs }), [slot, pageTop, immersive, noTabs]);
   return <PhoneChromeCtx.Provider value={value}>{children}</PhoneChromeCtx.Provider>;
 }
 
 /** For the shell: whether a page supplies the top bar, whether a pushed screen covers the page, and where the page's top bar goes. */
-export function usePhoneChromeState(): { pageTop: boolean; immersive: boolean; setSlot: (el: HTMLElement | null) => void } {
-  const { pageTop, immersive, setSlot } = useContext(PhoneChromeCtx);
-  return { pageTop: pageTop > 0, immersive: immersive > 0, setSlot };
+export function usePhoneChromeState(): { pageTop: boolean; immersive: boolean; noTabs: boolean; setSlot: (el: HTMLElement | null) => void } {
+  const { pageTop, immersive, noTabs, setSlot } = useContext(PhoneChromeCtx);
+  return { pageTop: pageTop > 0, immersive: immersive > 0, noTabs: noTabs > 0, setSlot };
+}
+
+/** While `on`, the phone tab bar is hidden: a full-page form whose Cancel and submit sit in the top bar. */
+export function usePhoneTabsHidden(on: boolean): void {
+  const { setNoTabs } = useContext(PhoneChromeCtx);
+  useEffect(() => {
+    if (!on) return;
+    setNoTabs((n) => n + 1);
+    return () => setNoTabs((n) => n - 1);
+  }, [on, setNoTabs]);
 }
 
 /** While `open`, a pushed screen covers the page, so the shell's top bar and tab bar go inert. */

@@ -1,10 +1,10 @@
 # Qualifiers catalog (09xxx)
 
 Routes:
-- `/golf/dashboard/qualifiers` with `/new`, `/[id]` and `/[id]/edit`
+- `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and `/[id]/selection` (Manage selections)
 - `/golf/dashboard/my-qualifiers`
 
-Coaches and players share the list and the detail (D-30). Create and edit are coach-only.
+Coaches and players share the list and the detail (D-30). Create, edit and Manage selections are coach-only.
 
 Where things live:
 - Code: `src/clubhouse/screens/qualifiers/`
@@ -30,6 +30,10 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09002 | Saving an edit fails | "Couldn't save the qualifier" + the reason when it is short, else "Check the form and save again." The full account stays on the form (CH-09902). Done: "Qualifier saved" | `useAction('qualifiers.save')` → `runEditPlan` (details, rounds and courses, squad, players, in order) | qualifiers.test › CH-09002 |
 | CH-09003 | Closing a qualifier fails | "Couldn't close Pinehurst qualifier" + "It is still open, and players can still enter rounds. Try again." Done: "Qualifier closed · no new rounds accepted" | `useAction('qualifiers.close')` → `updateQualifierStatus(id, 'completed')` | qualifiers.test › CH-09003 |
 | CH-09004 | Reopening a qualifier fails | "Couldn't reopen Fall invitational qualifier" + "It is still closed. Try again." Done: "Qualifier reopened · players can enter rounds" | `useAction('qualifiers.reopen')` → `updateQualifierStatus(id, 'in_progress')` | qualifiers.test › CH-09004 |
+| CH-09005 | Start selecting fails | "Couldn't start selecting" + the reason, or "Nothing changed. Try again." Done: "Selecting is open · choose your picks" | `useAction('qualifiers.startSelecting')` → `startSelecting` (`advanceSelectionState`, one step at a time to closed) | qualifiers.test › CH-09005 |
+| CH-09006 | Saving a coach's pick fails | "Couldn't pick Ava Chen" + the reason (for example "Every pick is taken. Remove one first."), or "Nothing changed. Try again." The dialog keeps the player and the reason. Done: "Ava Chen picked" | `useAction('qualifiers.setPick')` → `setQualifierCoachPick` | qualifiers.test › CH-09006 |
+| CH-09007 | Removing a coach's pick fails | "Couldn't remove Ava Chen as a pick" + "They are still a pick. Try again." Done: "Ava Chen removed as a pick" | `useAction('qualifiers.removePick')` → `removeQualifierCoachPick` | qualifiers.test › CH-09007 |
+| CH-09008 | Confirming the squad fails | "Couldn't confirm the squad" + the reason, or "Nothing was confirmed and nobody was told. Try again." Done: "Squad confirmed · 5 players told", then the qualifier opens | `useAction('qualifiers.confirmSquad')` → `confirmQualifierSelection` | qualifiers.test › CH-09008 |
 
 ## 091xx Validation
 
@@ -45,6 +49,8 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09108 | Squad size isn't 1 to 12 | "Squad size must be a whole number from 1 to 12." | `validateForm` | qualifiers.test › CH-09108 |
 | CH-09109 | More coach's picks than places | "Coach's picks must be a whole number no bigger than the squad." | `validateForm` | qualifiers.test › CH-09109 |
 | CH-09110 | Any of the above on submit | "Couldn't create the qualifier." (or save) + the one problem, or "Fix the 3 highlighted fields below." Nothing is sent | `InlineNotice` | qualifiers.test › CH-09110 |
+| CH-09111 | A coach's pick with no reason | "Say why you picked Ava Chen." under the reason; nothing is sent | `PickDialog` | qualifiers.test › CH-09111 |
+| CH-09112 | Save pick with no player chosen | "Choose a player." under the list; nothing is sent | `PickDialog` | qualifiers.test › CH-09112 |
 
 ## 092xx Didn't load
 
@@ -67,6 +73,8 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09215 | Course per round crashes | "Course per round couldn't be shown." | `SectionBoundary` `qualifiers.courses` | qualifiers.test › CH-09215 |
 | CH-09216 | The form crashes | "The qualifier form couldn't be shown." | `SectionBoundary` `qualifiers.form` | qualifiers.test › CH-09216 |
 | CH-09217 | The round courses don't load in the edit form | "The round courses didn't load." Saving keeps the courses already set | `InlineNotice` | qualifiers.test › CH-09217 |
+| CH-09218 | Manage selections doesn't load | "Selections didn't load." + Try again, never "That qualifier isn't on your team" | `RefreshNotice` in the route; logged `clubhouse.qualifiers.selection` | qualifiers.test › CH-09218 |
+| CH-09219 | Manage selections crashes | "Selections couldn't be shown." The head and steps stay | `SectionBoundary` `qualifiers.selection` | qualifiers.test › CH-09219 |
 
 ## 093xx Empty
 
@@ -81,9 +89,11 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09308 | A round has no hole-by-hole card | "No hole-by-hole card for this round. Only the total was recorded." | `Scorecard` | qualifiers.test › CH-09308 |
 | CH-09309 | Not on a team | The page empty state (v2 medallion): "You aren't on a team yet" | `EmptyState` (route) | preview |
 | CH-09310 | The qualifier isn't on the viewer's team, or doesn't exist | The page empty state (v2 medallion): "That qualifier isn't on your team" + Back to qualifiers | `EmptyState` (route) | preview |
-| CH-09311 | A player opens /new or /edit | The page empty state (v2 medallion): "Only coaches create qualifiers" (or edit) + a way back | `EmptyState` (route) | preview |
+| CH-09311 | A player opens /new, /edit or /selection | The page empty state (v2 medallion): "Only coaches create qualifiers" (or edit, or "Only coaches pick the squad") + a way back | `EmptyState` (route) | preview |
 | CH-09312 | The course search matches nothing | "No courses match “Pine”." | `EmptyState` | qualifiers.test › CH-09312 |
 | CH-09314 | A course has no tee sets | "This course has no tee sets yet." | `EmptyState` | qualifiers.test › CH-09314 |
+| CH-09315 | Nobody can be a coach's pick | "Nobody else can be picked yet." + "A player needs a round in, outside the places on score, to be a coach's pick." in the pick dialog | `EmptyState` in `PickDialog` | qualifiers.test › CH-09315 |
+| CH-09316 | No place on score is filled | "Nobody has a score in yet." (or, with no places on score, "Every place is a coach's pick.") in On score now | `EmptyState` in `QualifierSelection` | qualifiers.test › CH-09316 |
 
 ## 094xx Loading
 
@@ -96,6 +106,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09405 | A close is in flight | "Closing", disabled | `QualifierDetail` | qualifiers.test › CH-09405 |
 | CH-09406 | A reopen is in flight | "Reopening", disabled | `QualifierDetail` | qualifiers.test › CH-09406 |
 | CH-09407 | Courses or tees are loading in the picker | Skeleton rows | `CoursePicker` | qualifiers.test › CH-09407 |
+| CH-09408 | A selection write is in flight | The dialog's button reads "Starting", "Saving", "Removing" or "Confirming" and is disabled | `QualifierSelection` | qualifiers.test › CH-09408 |
 
 ## 095xx Confirm
 
@@ -103,6 +114,9 @@ Every save goes through `useAction`, so these belong to the shell:
 | --- | --- | --- | --- | --- |
 | CH-09501 | Close qualifier | "Close this qualifier?" + "Players won't be able to enter or submit rounds in Pinehurst qualifier, including rounds already started, until you reopen it. It moves to Concluded." Keep it open / Close qualifier | `Modal` | qualifiers.test › CH-09501 |
 | CH-09502 | Cancel or Back with unsaved changes in the form | "Discard your changes?" Keep editing / Discard | `Modal` | qualifiers.test › CH-09502 |
+| CH-09503 | Start selecting | "Start selecting?" + "Coach's picks open. This step can't be undone. The standings keep updating, and the places on score are set when you confirm the squad." Not yet / Start selecting | `Modal` | qualifiers.test › CH-09503 |
+| CH-09504 | Remove a coach's pick | "Remove Ava Chen as a pick?" + "Their reason is removed with them. You can pick them again." Keep them / Remove | `Modal` | qualifiers.test › CH-09504 |
+| CH-09505 | Confirm the squad | "Confirm the squad?" + who makes the trip + "Every entrant is told whether they made it, and the squad can't be changed afterwards." Keep editing / Confirm squad | `Modal` | qualifiers.test › CH-09505 |
 
 ## 096xx Motion
 
@@ -115,8 +129,9 @@ Every save goes through `useAction`, so these belong to the shell:
 
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-09701 | A status pill, a leaderboard row, a player checkbox, a course or a tee | select | `haptic('select')` | qualifiers.test › CH-09701 |
+| CH-09701 | A status pill, a leaderboard row, a player checkbox, a course, a tee, or a player in the pick dialog | select | `haptic('select')` | qualifiers.test › CH-09701 |
 | CH-09702 | Close qualifier, Discard | warning before the question or the loss | `Button feel="warning"` | qualifiers.test › CH-09702 |
+| CH-09703 | Start selecting, Confirm squad, Remove a pick | warning before the question (D-70: they can't be undone, or lose a reason); success when it lands | `Button feel="warning"` | qualifiers.test › CH-09703 |
 
 ## 098xx Accessibility
 
@@ -132,3 +147,4 @@ Every save goes through `useAction`, so these belong to the shell:
 | --- | --- | --- | --- | --- |
 | CH-09901 | The qualifier is closed | Coach: "Closed to new rounds. Players can't enter or submit rounds in it, including rounds already started, until you reopen it." Player: "This qualifier is closed." (D-31) | `QualifierDetail` | qualifiers.test › CH-09901 |
 | CH-09902 | An edit saved only in part, or not at all | "Couldn't save the qualifier." at the top of the form, with which part did save, for example "Saved the details and the rounds and courses, but not the players. One player has a round … Save again to finish." It stays until the next save | `InlineNotice` in `QualifierForm`, from `runEditPlan`'s message | qualifiers.test › CH-09902 |
+| CH-09903 | The squad is confirmed (Manage selections) | "The squad is confirmed, and every entrant has been told whether they made it." The page is read-only | `QualifierSelection` | qualifiers.test › CH-09903 |

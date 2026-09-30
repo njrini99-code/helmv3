@@ -8,7 +8,7 @@ import { EmptyState } from '../../ui/States';
 import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { FormLine } from '../../ui/FormLine';
-import { RefreshNotice } from './RefreshNotice';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {
   improving: 'Improving',

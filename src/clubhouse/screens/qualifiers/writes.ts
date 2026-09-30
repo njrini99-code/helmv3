@@ -3,7 +3,9 @@
 import { createGolfQualifier, setQualifierRoundCourses, updateGolfQualifierDetails, updateQualifierStatus } from '@/app/golf/actions/golf';
 import { setQualifierEntrants, setQualifierSquadSize } from '@/app/golf/actions/qualifier-setup';
 import { getCourseDetail, getTeamSavedCourses, listCoursesStrict } from '@/app/golf/actions/course-library';
+import { advanceSelectionState, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
 import type { ServerResult } from '../../lib/use-action';
+import { chTrail } from '../../lib/track';
 
 /**
  * Every write and lookup the Qualifiers screens make, behind one interface so
@@ -122,4 +124,70 @@ export const LIVE_WRITES: ChQWrites = {
       .filter((t) => !t.is_draft)
       .map((t) => ({ id: t.id, name: t.tee_name, par: t.total_par, yards: t.total_yards, holes: t.holes_count }));
   },
+};
+
+// ── Manage selections ──
+
+export type ChQSelectionStep = 'open' | 'scoring' | 'closed' | 'selected';
+
+/**
+ * The squad writes, on the live selection actions
+ * (`src/app/golf/actions/v3/qualifying.ts`, EXISTING): the selection moves
+ * open → scoring → closed → selected, one step at a time and never back.
+ * Picks can be made once it is closed; confirming the squad sets the places
+ * decided on score from the standings and tells the players.
+ */
+export interface ChQSelectionWrites {
+  advance: (id: string, to: ChQSelectionStep) => Promise<ServerResult>;
+  setPick: (id: string, playerId: string, reasoning: string) => Promise<ServerResult>;
+  removePick: (id: string, playerId: string) => Promise<ServerResult>;
+  confirm: (id: string) => Promise<ServerResult>;
+}
+
+const STEPS: ChQSelectionStep[] = ['open', 'scoring', 'closed', 'selected'];
+
+/**
+ * Start selecting: step the selection to closed from wherever it is, one
+ * step at a time, as the server requires. Stops at the first step refused.
+ */
+export async function startSelecting(id: string, from: ChQSelectionStep, advance: ChQSelectionWrites['advance']): Promise<ServerResult> {
+  for (let i = STEPS.indexOf(from) + 1; i <= STEPS.indexOf('closed'); i++) {
+    const res = await advance(id, STEPS[i]!);
+    if (!(res.ok || res.success)) return res;
+  }
+  return { success: true };
+}
+
+/**
+ * The selection actions' refusals are written for developers ("illegal
+ * transition open → selected"). Each becomes words a coach can act on, or
+ * null to fall back to the action's own hint.
+ */
+export function selectionReason(error: string | undefined): string | null {
+  if (!error) return null;
+  if (/not a coach|unauthori[sz]ed/i.test(error)) return 'Only this team’s coaches manage its squad.';
+  if (/illegal transition/i.test(error)) return 'The squad moved on since this page loaded. Reload to see where it stands.';
+  if (/picks locked/i.test(error)) return 'Picks open once you start selecting.';
+  if (/slots filled/i.test(error)) return 'Every pick is taken. Remove one first.';
+  if (/reasoning required/i.test(error)) return 'Say why you picked this player.';
+  if (/not on this team/i.test(error)) return 'That player isn’t on this team.';
+  if (/no entrant has a qualifying score/i.test(error)) return 'Nobody has a score in yet and no pick is made, so there is no squad to confirm.';
+  if (/cannot confirm/i.test(error)) return 'Choose every pick, each with a reason, before confirming.';
+  if (/could not verify|couldn.t confirm your roster/i.test(error)) return 'The roster couldn’t be checked just now. Try again.';
+  if (/not found|not loadable/i.test(error)) return 'This qualifier couldn’t be found. It may have been deleted.';
+  return null;
+}
+
+/** The coach sees the translated reason; the raw refusal stays in the error's breadcrumb trail for Sentry. */
+const asResult = (r: { ok: boolean; error?: string }): ServerResult => {
+  if (r.ok) return { success: true };
+  if (r.error) chTrail('qualifiers selection refused', { reason: r.error.slice(0, 200) });
+  return { success: false, error: selectionReason(r.error) ?? undefined };
+};
+
+export const LIVE_SELECTION_WRITES: ChQSelectionWrites = {
+  advance: async (id, to) => asResult(await advanceSelectionState(id, to)),
+  setPick: async (id, playerId, reasoning) => asResult(await setQualifierCoachPick(id, playerId, reasoning)),
+  removePick: async (id, playerId) => asResult(await removeQualifierCoachPick(id, playerId)),
+  confirm: async (id) => asResult(await confirmQualifierSelection(id)),
 };

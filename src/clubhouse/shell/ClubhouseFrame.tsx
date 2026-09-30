@@ -86,13 +86,14 @@ export function ClubhouseFrame({
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
 function FrameRoot({ motionOff, children }: { motionOff: boolean; children: ReactNode }) {
-  const { immersive } = usePhoneChromeState();
+  const { immersive, noTabs } = usePhoneChromeState();
   return (
     <div
       className={`ch-root ${clubhouseFontVariables}`}
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}
+      data-phone-notabs={noTabs ? '' : undefined}
     >
       {children}
     </div>

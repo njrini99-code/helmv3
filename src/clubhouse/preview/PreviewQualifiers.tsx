@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { ChQDetail, ChQFormData } from '../data/qualifiers';
+import type { ChQDetail, ChQFormData, ChQSelectionData } from '../data/qualifiers';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
-import type { ChQWrites } from '../screens/qualifiers/writes';
+import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
+import type { ChQSelectionWrites, ChQWrites } from '../screens/qualifiers/writes';
 import { PREVIEW_COURSES, PREVIEW_TEES } from './fixtures-qualifiers';
 
 /** Qualifiers with fake writes for the dev preview. `failwrites` makes every write and lookup fail. */
@@ -32,4 +33,14 @@ export function PreviewQualifierDetail({ data, state }: { data: ChQDetail; state
 export function PreviewQualifierForm({ data, state }: { data: ChQFormData; state?: string }) {
   const writes = useFakeWrites(state === 'failwrites');
   return <QualifierForm data={data} writes={writes} />;
+}
+
+/** Manage selections with fake writes. `failwrites` refuses every one with the server's words for a filled pick. */
+export function PreviewQualifierSelection({ data, state }: { data: ChQSelectionData; state?: string }) {
+  const fail = state === 'failwrites';
+  const writes = useMemo<ChQSelectionWrites>(() => {
+    const r = () => wait(fail ? { success: false, error: 'Every pick is taken. Remove one first.' } : { success: true });
+    return { advance: r, setPick: r, removePick: r, confirm: r };
+  }, [fail]);
+  return <QualifierSelection data={data} writes={writes} />;
 }
