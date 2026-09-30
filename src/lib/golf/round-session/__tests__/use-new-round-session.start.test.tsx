@@ -173,6 +173,39 @@ describe('start(form)', () => {
     expect(hook.result.current.savedRoundIdRef.current).toBe('round-1');
   });
 
+  it('numbers a back nine 1..9, as the legacy hole editor does, whatever the form calls its holes', async () => {
+    const hook = render();
+    await act(async () => {
+      await hook.result.current.start(form({ holes: holes.slice(9).map((h) => ({ ...h })) }));
+    });
+
+    const payload = mocks.savePartialRound.mock.calls[0]![0];
+    expect(payload.holesToPlay).toBe(9);
+    expect(payload.holeConfigs.map((h: { holeNumber: number }) => h.holeNumber)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(payload.holeConfigs[0]).toMatchObject({ par: holes[9]!.par, yardage: holes[9]!.yardage });
+    expect(hook.result.current.holes.map((h) => h.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it('refuses a second start while one runs, instead of meeting the server dedupe with the round the first made', async () => {
+    let finish: (value: unknown) => void = () => {};
+    mocks.savePartialRound.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    const hook = render();
+    let first: Promise<unknown> | undefined;
+    let second: Awaited<ReturnType<typeof hook.result.current.start>> | undefined;
+    await act(async () => {
+      first = hook.result.current.start(form());
+      second = await hook.result.current.start(form());
+    });
+    expect(second).toEqual({ ok: false, reason: 'in_flight', error: 'A round is already starting.' });
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finish(created);
+      await first;
+    });
+    expect(hook.result.current.step).toBe('tracking');
+  });
+
   it('keeps a qualifier round number the form decided, and does not leave for Continue when the round it made comes back as active', async () => {
     const hook = render();
     await act(async () => {

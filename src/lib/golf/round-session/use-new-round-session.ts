@@ -130,7 +130,10 @@ export interface NewRoundStartForm extends NewRoundSetup {
   courseId: string | null;
   /** golf_course_tees.id of a cloud pick, else null. */
   teeId: string | null;
-  /** The holes this round plays, in order (the chosen nine of an 18-hole card already sliced): 9 or 18. */
+  /**
+   * The holes this round plays, in order: 9 or 18 (the chosen nine of an 18-hole card already sliced). The engine
+   * numbers them 1..N by position, a back nine included, as the legacy hole editor does, whatever `holeNumber` says.
+   */
   holes: HoleConfig[];
   /** A hand-typed course: save it to the player's library and offer it to the cloud library (the legacy "save course" opt-in). */
   saveCourse: boolean;
@@ -138,6 +141,7 @@ export interface NewRoundStartForm extends NewRoundSetup {
 
 export type NewRoundStartFailureReason =
   | 'invalid'
+  | 'in_flight'
   | 'offline'
   | 'in_progress_exists'
   | 'duplicate_completed_round'
@@ -1000,6 +1004,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
   // persistRoundStart call. Set at the top of each of those two functions, so
   // it is always current regardless of which one is in flight.
   const lastStartRetryRef = useRef<(() => Promise<unknown>) | null>(null);
+  // Set while a `start(form)` runs; see there.
+  const startInFlightRef = useRef(false);
   // Reactive mirror of "a cloud tee is selected" (selectedTeeIdRef is a ref and
   // can't drive render). Kept in lockstep with selectedTeeIdRef so the setup
   // screen can show a read-only "Course ready" confirmation for a cloud pick
@@ -1922,7 +1928,21 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
    * round then retry the whole start with this same form, so the renderer follows `step` becoming 'tracking', not
    * the promise, after a retry.
    */
-  const start = async (form: NewRoundStartForm): Promise<NewRoundStartResult> => {
+  const start = async (startForm: NewRoundStartForm): Promise<NewRoundStartResult> => {
+    // A second call while one runs would meet the server's own dedupe and come back as a conflict with the round the
+    // first call has just created, so it is refused here (the legacy screens guard the same way with isStartingRound).
+    if (startInFlightRef.current) {
+      return { ok: false, reason: 'in_flight', error: 'A round is already starting.' };
+    }
+    startInFlightRef.current = true;
+    try {
+      return await startFromForm(startForm);
+    } finally {
+      startInFlightRef.current = false;
+    }
+  };
+  const startFromForm = async (startForm: NewRoundStartForm): Promise<NewRoundStartResult> => {
+    const form = { ...startForm, holes: startForm.holes.map((h, i) => ({ ...h, holeNumber: i + 1 })) };
     const setupChanged =
       form.setup.courseName !== setupData.courseName
       || form.setup.roundDate !== setupData.roundDate
