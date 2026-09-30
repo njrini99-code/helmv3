@@ -93,6 +93,18 @@
     "CH-14911": { "category": 14, "why": "Retry on a failed write's toast, and Try again on a failed read: the recovery path." },
     "CH-14912": { "category": 15, "why": "The server's fresh list replaces the page's copy after a write or Try again." },
     "CH-14913": { "category": 20, "why": "Enter saves the form, Esc closes a dialog or clears the search, arrows move a stage." },
-    "CH-14914": { "category": 19, "why": "Phone layout at 820px and below." }
+    "CH-14914": { "category": 19, "why": "Phone layout at 820px and below." },
+    "CH-15004": { "category": 7, "why": "The sign-in could not reach the server." },
+    "CH-15402": { "category": 3, "why": "A sign-in in flight: work in progress on a shown page." },
+    "CH-15901": { "category": 12, "why": "The invite returnTo and the demo ref are kept through the sign-in round trip: protects state that would otherwise be lost." },
+    "CH-15902": { "category": 8, "why": "Where a sign-in goes is decided by who the person is (onboarded, no profile yet, admin) and whether the returnTo is safe." },
+    "CH-15903": { "category": 8, "why": "A session the auth server has ruled invalid is sent back to sign in before anything is drawn." },
+    "CH-15904": { "category": 9, "why": "A positive notice: the password was reset, the account was created, the person signed out." },
+    "CH-15905": { "category": 19, "why": "The App Store build draws less (no Home link, no sign-up): a different shell, not a different state." },
+    "CH-15906": { "category": 14, "why": "A stale bundle reloads once, then says so: the recovery path." },
+    "CH-15907": { "category": 21, "why": "The form is in the server HTML; the course loads after first paint, on layers that never repaint on a loop." },
+    "CH-15908": { "category": 23, "why": "A failed read or a crash is logged with its surface." },
+    "CH-15909": { "category": 19, "why": "Phone layout at 820px and below." },
+    "CH-15910": { "category": 20, "why": "Enter moves to the next field, signs in, or continues; the button scrolls into view above the keyboard." }
   }
 }
