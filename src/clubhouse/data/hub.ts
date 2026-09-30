@@ -223,15 +223,23 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     const annsFallback = summary ? null : await getPlayerHubAnnouncements(input.teamId, playerId).catch(() => null);
     const annList = anns ?? (annsFallback?.success ? (annsFallback.data ?? []) : null);
     if (!annList) log('announcements', 'player announcements did not load');
-    const authors = await authorNames(supabase, annList ?? []);
     // A trip is the player's when they're invited to its event.
     const tripEvents = (summary?.trips ?? []).map((t) => (t as { event_id?: string | null }).event_id).filter((id): id is string => !!id);
-    const invited = await invitedTo(supabase, tripEvents, playerId);
+    // The aggregate lists every team event, with the player's own reply or null when they have no place on its invite
+    // list (an attendance row is what invites someone, as in Calendar). Only their own are theirs to answer: a reply to
+    // any other would add them to that event's list.
+    const replyable = (summary?.events ?? []).filter((e) => e.event_type !== CLASS_EVENT_TYPE && e.rsvp_status != null);
+    const [authors, invited, closed] = await Promise.all([
+      authorNames(supabase, annList ?? []),
+      invitedTo(supabase, tripEvents, playerId),
+      closedReplies(supabase, replyable.map((e) => e.event_id), now.getTime()),
+    ]);
     return {
       ...base,
       rsvps: {
-        rows: (summary?.events ?? [])
-          .filter((e) => e.event_type !== CLASS_EVENT_TYPE)
+        // Only events that still take a reply: respondToEvent refuses the rest, so they get no Going / Maybe / Can't.
+        rows: replyable
+          .filter((e) => !closed.has(e.event_id))
           .map((e) => ({
             eventId: e.event_id,
             title: e.title,
@@ -243,7 +251,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           })),
         error: !summary,
       },
-      announcements: { rows: (annList ?? []).map((a) => announcement(a, authors, f)), error: !annList },
+      announcements: { rows: (annList ?? []).map((a) => announcement(a, authors, f, 'player')), error: !annList },
       trips: {
         rows: summary
           ? summary.trips.map((t) => {
@@ -319,7 +327,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       }),
       error: !!eventsRes.error,
     },
-    announcements: { rows: annRes.success ? (annRes.data ?? []).map((a) => announcement(a, authors, f)) : [], error: !annRes.success },
+    announcements: { rows: annRes.success ? (annRes.data ?? []).map((a) => announcement(a, authors, f, 'coach')) : [], error: !annRes.success },
     trips: {
       rows: trips.map((t) => {
         const who = t.event_id && !attendance.error ? (attendance.byEvent.get(t.event_id) ?? []).map((r) => names.get(r.player)).filter((n): n is string => !!n) : null;
@@ -365,6 +373,31 @@ async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eve
   return new Set((data ?? []).map((r) => r.event_id));
 }
 
+/**
+ * The rules respondToEvent enforces (updateRSVP in lib/calendar/rsvp.ts): a cancelled event takes no reply, nor one that
+ * has started (an all-day event a day after its stored start), nor one past its RSVP deadline.
+ */
+export function replyIsClosed(e: { status: string | null; cancelled_at: string | null; all_day: boolean | null; start_time: string | null; rsvp_deadline: string | null }, nowMs: number): boolean {
+  if (e.status === 'cancelled' || e.cancelled_at) return true;
+  const start = e.start_time ? new Date(e.start_time).getTime() : NaN;
+  if (Number.isFinite(start) && (e.all_day ? start + 86400000 : start) <= nowMs) return true;
+  return !!e.rsvp_deadline && new Date(e.rsvp_deadline).getTime() < nowMs;
+}
+
+/** Which of these events no longer take a reply. A read that fails closes nothing: the row stays and the server still decides. */
+async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], nowMs: number): Promise<Set<string>> {
+  const closed = new Set<string>();
+  for (const ids of chunkIds([...new Set(eventIds)])) {
+    const { data, error } = await supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline').in('id', ids);
+    if (error) {
+      log('eventReplyRules', error);
+      continue;
+    }
+    for (const e of data ?? []) if (replyIsClosed(e, nowMs)) closed.add(e.id);
+  }
+  return closed;
+}
+
 async function assignmentsFor(supabase: Awaited<ReturnType<typeof createClient>>, taskIds: string[]) {
   const byTask = new Map<string, { done: number; total: number }>();
   for (const ids of chunkIds(taskIds)) {
@@ -392,7 +425,7 @@ async function authorNames(supabase: Awaited<ReturnType<typeof createClient>>, a
   return out;
 }
 
-function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: string; title: string | null }>, f: ReturnType<typeof formatters>): ChHubAnnouncement {
+function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: string; title: string | null }>, f: ReturnType<typeof formatters>, role: ChHubRole): ChHubAnnouncement {
   const who = a.created_by ? authors.get(a.created_by) : undefined;
   const at = a.published_at ?? a.created_at ?? '';
   return {
@@ -405,8 +438,10 @@ function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: stri
     createdAt: at,
     needAck: !!a.requires_acknowledgement,
     acked: !!a.has_player_acknowledged,
-    ackCount: a.acknowledged_count ?? 0,
-    recipients: a.total_recipients ?? a.recipient_count ?? 0,
+    // Read receipts are the coach's. The player's data has none: the announcements read gives them team-wide counts, and
+    // the screen would only hide them, so they never leave the server for a player (100802).
+    ackCount: role === 'coach' ? (a.acknowledged_count ?? 0) : 0,
+    recipients: role === 'coach' ? (a.total_recipients ?? a.recipient_count ?? 0) : 0,
     documentCount: a.document_count ?? 0,
   };
 }

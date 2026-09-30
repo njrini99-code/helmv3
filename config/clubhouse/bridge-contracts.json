@@ -8136,6 +8136,32 @@
     ]
   },
   {
+    "id": 100101,
+    "page": "P010",
+    "category": 1,
+    "item": 1,
+    "name": "HUB_READY",
+    "meaning": "Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; src/app/golf/(dashboard)/dashboard/team-hub/page.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 100102,
+    "page": "P010",
+    "category": 1,
+    "item": 2,
+    "name": "TAB_LINK_OPENS_A_TAB",
+    "meaning": "?tab=home|ann|travel|docs|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#parseHubTab; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
     "id": 100201,
     "page": "P010",
     "category": 2,
@@ -8176,6 +8202,17 @@
     "name": "A_TASK_IS_BEING_ASSIGNED",
     "chCode": "CH-10404",
     "meaning": "A task is being assigned",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100205,
+    "page": "P010",
+    "category": 2,
+    "item": 5,
+    "name": "TEAM_HUB_IS_LOADING",
+    "chCode": "CH-10405",
+    "meaning": "Team Hub is loading",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -8277,6 +8314,19 @@
     "meaning": "No team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100410,
+    "page": "P010",
+    "category": 4,
+    "item": 10,
+    "name": "PAGE_EMPTY_ONLY_WHEN_EVERY_READ_IS_EMPTY",
+    "meaning": "The whole-page empty state (CH-10305 for a coach, CH-10306 for a player) shows only when every section read answered and every one was empty, Updates included: a failed read, Updates too, shows its own notice with Try again instead, and an update to read is shown, never hidden behind No team updates yet.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (nothing)",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
   },
   {
     "id": 100501,
@@ -8543,6 +8593,81 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100701,
+    "page": "P010",
+    "category": 7,
+    "item": 1,
+    "name": "WRITES_REFUSE_OFFLINE",
+    "meaning": "Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (every useAction); src/clubhouse/screens/hub/sheets.tsx#ComposeSheet, TripSheet, AssignSheet; src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 100801,
+    "page": "P010",
+    "category": 8,
+    "item": 1,
+    "name": "CONTROLS_FOLLOW_THE_ROLE",
+    "meaning": "The role from the session decides the controls: a player is never drawn New announcement, Plan a trip, Assign, the drop zone or a delete menu, and a coach is never drawn a reply button, Got it or a task box.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (coach); src/clubhouse/screens/hub/parts.tsx#Rsvps, Announcement, Tasks, Documents",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 100802,
+    "page": "P010",
+    "category": 8,
+    "item": 2,
+    "name": "PLAYER_GETS_ONLY_WHAT_IS_THEIRS",
+    "meaning": "A player's data carries none of their teammates' read receipts (an announcement's acknowledged and recipient counts), replies, task completions, traveler lists or names, and no roster; those are in a coach's data only, where the same post reads 5 of 6.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/hub.ts#loadTeamHub, announcement",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 100803,
+    "page": "P010",
+    "category": 8,
+    "item": 3,
+    "name": "REPLY_ONLY_WHERE_IT_IS_OPEN",
+    "meaning": "A player is offered Going, Maybe and Can't only on an event they are invited to that still takes a reply: an event they have no place on the invite list of (the aggregate gives it no reply status, and a reply would add them to the list), one that has started (an all-day event, a day after its stored start), one that was cancelled and one past its RSVP deadline are left off the list, by the rules respondToEvent enforces; a rules read that fails leaves the rows in place for the server to decide.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/hub.ts#replyIsClosed, closedReplies, loadTeamHub",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 100804,
+    "page": "P010",
+    "category": 8,
+    "item": 4,
+    "name": "SERVER_ACTIONS_ARE_THE_GATE",
+    "meaning": "Every write is checked again by its server action, whatever the screen shows: createEnrichedAnnouncement, createGolfTravelItinerary, createTask, createGolfDocument, deleteAnnouncement and deleteTask refuse a caller who is not a coach of the team, and respondToEvent, acknowledgeAnnouncement and completeTask refuse a caller with no player profile or team membership; deleteGolfDocument (any active member of the team passes) and uploadGolfDocument (any signed-in user passes) do not check for a coach, so for those the screen and row-level security are the gate. Read in this pass, not run: no test here forces a refusal.",
+    "status": "reserved",
+    "where": "src/app/golf/actions/announcements.ts; travel.ts; tasks.ts; documents.ts; golf.ts; communication.ts"
+  },
+  {
+    "id": 100901,
+    "page": "P010",
+    "category": 9,
+    "item": 1,
+    "name": "CHANGE_LANDED",
+    "meaning": "A change that lands names itself in a toast with the success haptic (Posted, Seahawk is on Travel, Book physicals assigned to the team, Local rules.pdf shared with the team, Deleted, You're going to Team dinner, Sign travel waiver done); Got it and opening a file land without a toast, since the button turning to Acknowledged and the file opening are the confirmation.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (useAction copy); src/clubhouse/screens/hub/sheets.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
     "id": 101101,
     "page": "P010",
     "category": 11,
@@ -8574,6 +8699,71 @@
     "meaning": "Deleting a file",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 101201,
+    "page": "P010",
+    "category": 12,
+    "item": 1,
+    "name": "FORM_KEPT_ON_FAILURE",
+    "meaning": "A post, trip or task that fails leaves its sheet open with every field as typed; nothing is cleared until the save lands, and a save that lands clears the form for the next one. Cancel keeps a half-written announcement for as long as the page stays open.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/sheets.tsx#ComposeSheet, TripSheet, AssignSheet",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 101301,
+    "page": "P010",
+    "category": 13,
+    "item": 1,
+    "name": "CHANGES_SHOW_AT_ONCE",
+    "meaning": "A reply, Got it and a task check show at once and go back to the last answer the server confirmed if the write is refused or throws; posting, planning a trip, assigning, uploading and deleting are not optimistic: they wait for the write, and a refusal leaves everything as it was.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#optimistic, TeamHub",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 101401,
+    "page": "P010",
+    "category": 14,
+    "item": 1,
+    "name": "RETRY_FINISHES_THE_JOB",
+    "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows: the reply, Got it or task tick shows, the file opens in a tab of its own, the sheet closes and clears, the page reads again, the deleted row leaves and its dialog closes, and the drop zone reads Uploading. This holds for all nine writes: a reply, Got it, a task check, opening a file, posting, planning a trip, assigning a task, uploading, and deleting a post, a task or a file.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (the useAction actions); src/clubhouse/screens/hub/sheets.tsx#ComposeSheet, TripSheet, AssignSheet",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 101402,
+    "page": "P010",
+    "category": 14,
+    "item": 2,
+    "name": "TRY_AGAIN_REREADS_THE_PAGE",
+    "meaning": "Try again on a failed-read notice has the server read the whole page again; none re-reads a section on its own.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/parts.tsx#Rsvps, Updates, Tasks, Documents; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/ui/RefreshNotice.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 101501,
+    "page": "P010",
+    "category": 15,
+    "item": 1,
+    "name": "PAGE_READS_AGAIN_AFTER_A_CHANGE",
+    "meaning": "After a coach's post, trip, task, upload or delete lands, the page reads again from the server (router.refresh).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (upload, remove); src/clubhouse/screens/hub/sheets.tsx (onDone)",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
   },
   {
     "id": 101701,
@@ -8620,6 +8810,71 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 101901,
+    "page": "P010",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_LAYOUT",
+    "meaning": "At 820px and below Team Hub is the phone build, never a shrunken desktop: the page takes the phone frame, the title is read by a screen reader instead of drawn, and the same tabs, writes and sheets are there. State, writes and sheets are the desktop's.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (phone); src/clubhouse/lib/use-phone.ts#useChPhone; src/clubhouse/styles/hub.css",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 102001,
+    "page": "P010",
+    "category": 20,
+    "item": 1,
+    "name": "TABS_AND_REPLIES_WORK_FROM_THE_KEYBOARD",
+    "meaning": "The tabs and the reply buttons are native buttons in the tab order: Tab reaches them and Enter or Space presses them; Esc closes a sheet and focus goes back to the button that opened it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub (tabs); src/clubhouse/screens/hub/parts.tsx#Rsvps; src/clubhouse/screens/hub/sheets.tsx#ComposeSheet; src/clubhouse/ui/Modal.tsx#Modal",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 102101,
+    "page": "P010",
+    "category": 21,
+    "item": 1,
+    "name": "LOADER_READS_IN_ROUNDS",
+    "meaning": "The server loader reads the page for either role before first paint, in a few rounds of parallel reads and never one request per row: attendance, task completion and a player's reply rules are each read once for every event or task together (in chunks of 200); a read that fails is flagged on its own section and logged, never thrown, so a partial read still renders the rest.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/hub.ts#loadTeamHub",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 102301,
+    "page": "P010",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A read that fails in the loader is logged through chLogServer(\"hub\", <read>) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab <tab>, action hub.<name>); a section that crashes reports under its own surface (hub.updates and the rest).",
+    "status": "implemented",
+    "where": "src/clubhouse/data/hub.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
+    "id": 102401,
+    "page": "P010",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/hub.test.tsx names in a test title every Team Hub catalog code of kinds 0 to 5 that is not marked preview, and every hand contract on this page it proves by its Bridge ID.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/hub.test.tsx (102401)",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  {
     "id": 110201,
     "page": "P011",
     "category": 2,
@@ -8627,6 +8882,17 @@
     "name": "THE_PAGE_IS_ON_ITS_WAY",
     "chCode": "CH-11401",
     "meaning": "The page is on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110202,
+    "page": "P011",
+    "category": 2,
+    "item": 2,
+    "name": "A_HOLED_OUT_HOLE_IS_SAVING",
+    "chCode": "CH-11402",
+    "meaning": "A holed-out hole is saving",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -8708,6 +8974,83 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110408,
+    "page": "P011",
+    "category": 4,
+    "item": 8,
+    "name": "A_HOLE_WITH_NO_SHOTS_YET",
+    "chCode": "CH-11308",
+    "meaning": "A hole with no shots yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110501,
+    "page": "P011",
+    "category": 5,
+    "item": 1,
+    "name": "NEXT_SHOT_CANT_BE_RECORDED_YET",
+    "chCode": "CH-11101",
+    "meaning": "Next shot can't be recorded yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110502,
+    "page": "P011",
+    "category": 5,
+    "item": 2,
+    "name": "A_SHOT_IS_POSSIBLE_BUT_UNUSUAL",
+    "chCode": "CH-11102",
+    "meaning": "A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110503,
+    "page": "P011",
+    "category": 5,
+    "item": 3,
+    "name": "A_SHOT_THAT_CANT_HAPPEN",
+    "chCode": "CH-11103",
+    "meaning": "A shot that can't happen (a 540-yard drive onto the green)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110504,
+    "page": "P011",
+    "category": 5,
+    "item": 4,
+    "name": "THE_DISTANCE_ISNT_A_NUMBER",
+    "chCode": "CH-11104",
+    "meaning": "The distance isn't a number",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110505,
+    "page": "P011",
+    "category": 5,
+    "item": 5,
+    "name": "A_CHANGED_SHOT_BREAKS_A_SHOT_RULE",
+    "chCode": "CH-11105",
+    "meaning": "A changed shot breaks a shot rule",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110506,
+    "page": "P011",
+    "category": 5,
+    "item": 6,
+    "name": "A_HOLE_REACHES_SHOT_12",
+    "chCode": "CH-11106",
+    "meaning": "A hole reaches shot 12",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110601,
     "page": "P011",
     "category": 6,
@@ -8785,6 +9128,83 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110608,
+    "page": "P011",
+    "category": 6,
+    "item": 8,
+    "name": "UNDO_FAILS",
+    "chCode": "CH-11002",
+    "meaning": "Undo fails (tracking)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110609,
+    "page": "P011",
+    "category": 6,
+    "item": 9,
+    "name": "A_HOLED_OUT_HOLE_DOESNT_SAVE",
+    "chCode": "CH-11003",
+    "meaning": "A holed-out hole doesn't save",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110610,
+    "page": "P011",
+    "category": 6,
+    "item": 10,
+    "name": "CHANGING_OR_DELETING_A_SHOT_FAILS",
+    "chCode": "CH-11004",
+    "meaning": "Changing or deleting a shot fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110611,
+    "page": "P011",
+    "category": 6,
+    "item": 11,
+    "name": "SUBMITTING_THE_ROUND_FAILS",
+    "chCode": "CH-11005",
+    "meaning": "Submitting the round fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110612,
+    "page": "P011",
+    "category": 6,
+    "item": 12,
+    "name": "DISCARDING_FROM_EXIT_FAILS",
+    "chCode": "CH-11006",
+    "meaning": "Discarding from Exit fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110613,
+    "page": "P011",
+    "category": 6,
+    "item": 13,
+    "name": "THE_SHOT_SCREEN_GETS_A_HOLE_THAT",
+    "chCode": "CH-11207",
+    "meaning": "The shot screen gets a hole that doesn't exist",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110701,
+    "page": "P011",
+    "category": 7,
+    "item": 1,
+    "name": "THE_ROUND_SAVES_IN_THE_BACKGROUND",
+    "chCode": "CH-11901",
+    "meaning": "The round saves in the background",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 111101,
     "page": "P011",
     "category": 11,
@@ -8792,6 +9212,94 @@
     "name": "DISCARD_ON_AN_UNFINISHED_ROUND",
     "chCode": "CH-11501",
     "meaning": "Discard on an unfinished round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111102,
+    "page": "P011",
+    "category": 11,
+    "item": 2,
+    "name": "UNDO",
+    "chCode": "CH-11502",
+    "meaning": "Undo",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111103,
+    "page": "P011",
+    "category": 11,
+    "item": 3,
+    "name": "PENALTY",
+    "chCode": "CH-11503",
+    "meaning": "Penalty",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111104,
+    "page": "P011",
+    "category": 11,
+    "item": 4,
+    "name": "LEAVING_A_HOLE_WITH_A_RESULT_PICKED",
+    "chCode": "CH-11504",
+    "meaning": "Leaving a hole with a result picked but not recorded",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111105,
+    "page": "P011",
+    "category": 11,
+    "item": 5,
+    "name": "A_RECORDED_SHOT_IS_TAPPED",
+    "chCode": "CH-11505",
+    "meaning": "A recorded shot is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111106,
+    "page": "P011",
+    "category": 11,
+    "item": 6,
+    "name": "EXIT",
+    "chCode": "CH-11506",
+    "meaning": "Exit",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111107,
+    "page": "P011",
+    "category": 11,
+    "item": 7,
+    "name": "DISCARD_ROUND_FROM_EXIT",
+    "chCode": "CH-11507",
+    "meaning": "Discard round from Exit",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111108,
+    "page": "P011",
+    "category": 11,
+    "item": 8,
+    "name": "THE_LAST_HOLE_IS_SAVED",
+    "chCode": "CH-11508",
+    "meaning": "The last hole is saved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111109,
+    "page": "P011",
+    "category": 11,
+    "item": 9,
+    "name": "SCORECARD_FROM_THE_TOP_BAR",
+    "chCode": "CH-11509",
+    "meaning": "Scorecard, from the top bar",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -8804,6 +9312,28 @@
     "chCode": "CH-11601",
     "meaning": "Hovering a round that opens its review",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111602,
+    "page": "P011",
+    "category": 16,
+    "item": 2,
+    "name": "THE_SHOT_LOG_OPENS",
+    "chCode": "CH-11602",
+    "meaning": "The shot log opens",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111603,
+    "page": "P011",
+    "category": 16,
+    "item": 3,
+    "name": "SUBMITTING_THE_ROUND",
+    "chCode": "CH-11603",
+    "meaning": "Submitting the round",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -8851,6 +9381,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 111705,
+    "page": "P011",
+    "category": 17,
+    "item": 5,
+    "name": "A_SHOT_IS_RECORDED",
+    "chCode": "CH-11705",
+    "meaning": "A shot is recorded (Next shot or Hole out)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111706,
+    "page": "P011",
+    "category": 17,
+    "item": 6,
+    "name": "GOING_TO_ANOTHER_HOLE",
+    "chCode": "CH-11706",
+    "meaning": "Going to another hole",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111707,
+    "page": "P011",
+    "category": 17,
+    "item": 7,
+    "name": "UNDO_DELETE_SHOT_DISCARD_ROUND_LEAVE_WITHOUT",
+    "chCode": "CH-11707",
+    "meaning": "Undo, Delete shot, Discard round, Leave without it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 111801,
     "page": "P011",
     "category": 18,
@@ -8891,6 +9454,50 @@
     "name": "THE_REVIEWS_CARD",
     "chCode": "CH-11804",
     "meaning": "The review's card",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111805,
+    "page": "P011",
+    "category": 18,
+    "item": 5,
+    "name": "THE_HOLE_STRIP",
+    "chCode": "CH-11805",
+    "meaning": "The hole strip",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111806,
+    "page": "P011",
+    "category": 18,
+    "item": 6,
+    "name": "CHOICES_IN_THE_ENTRY_AND_THE_SHEETS",
+    "chCode": "CH-11806",
+    "meaning": "Choices in the entry and the sheets",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111807,
+    "page": "P011",
+    "category": 18,
+    "item": 7,
+    "name": "THE_DISTANCE_BOX",
+    "chCode": "CH-11807",
+    "meaning": "The distance box",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111808,
+    "page": "P011",
+    "category": 18,
+    "item": 8,
+    "name": "THE_HOLE_MAP",
+    "chCode": "CH-11808",
+    "meaning": "The hole map",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   }

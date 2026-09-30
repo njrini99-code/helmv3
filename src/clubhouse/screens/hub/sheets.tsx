@@ -8,11 +8,16 @@ import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
 import { haptic } from '../../lib/haptics';
-import type { ChTripInput } from './writes';
+import { normalise, useAction } from '../../lib/use-action';
+import type { ChHubWrites, ChTripInput } from './writes';
 
 /*
  * Team Hub's forms, each a Modal (a bottom sheet on the phone). A form keeps
  * what was typed when a save fails: it closes only when its save lands.
+ * Each form owns its action, and what follows a landed save (clear the form,
+ * close the sheet, refresh the page) is inside that action: the error toast's
+ * Retry re-runs the action and nothing else, so a Retry that lands finishes
+ * the job the same way the first press would have.
  */
 
 function Field({ label, error, errorCode, children, id }: { label: string; error?: string | null; errorCode?: string; children: ReactNode; id: string }) {
@@ -60,14 +65,15 @@ export function ComposeSheet({
   open,
   onClose,
   players,
-  pending,
-  onPost,
+  write,
+  onDone,
 }: {
   open: boolean;
   onClose: () => void;
   players: ChTeamHub['players'];
-  pending: boolean;
-  onPost: (input: { title: string; body: string; requiresAck: boolean; playerIds: string[] | null }) => Promise<boolean>;
+  write: ChHubWrites['postAnnouncement'];
+  /** After a post lands: the page reads again. */
+  onDone: () => void;
 }) {
   const id = useId();
   const [title, setTitle] = useState('');
@@ -78,22 +84,32 @@ export function ComposeSheet({
   const [tried, setTried] = useState(false);
   const titleErr = tried && title.trim().length < 3 ? 'Give it a headline, at least three characters.' : null;
   const pickErr = tried && aud === 'pick' && picked.length === 0 ? 'Choose at least one player, or send it to the whole team.' : null;
-  const submit = async (e?: FormEvent) => {
+  const post = useAction(
+    'hub.postAnnouncement',
+    async (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => {
+      const res = await write(i);
+      if (normalise(res).success) {
+        setTitle('');
+        setBody('');
+        setAud('all');
+        setPicked([]);
+        setTried(false);
+        onClose();
+        onDone();
+      }
+      return res;
+    },
+    (i) => ({ done: `Posted "${i.title.trim()}"`, failed: 'Couldn’t post the announcement', hint: 'Your text is still here. Try again in a moment.', code: 'CH-10005' }),
+  );
+  const pending = post.pending;
+  const submit = (e?: FormEvent) => {
     e?.preventDefault();
     setTried(true);
     if (title.trim().length < 3 || (aud === 'pick' && picked.length === 0)) {
       haptic('warning');
       return;
     }
-    const ok = await onPost({ title, body, requiresAck: ack, playerIds: aud === 'all' ? null : picked });
-    if (ok) {
-      setTitle('');
-      setBody('');
-      setAud('all');
-      setPicked([]);
-      setTried(false);
-      onClose();
-    }
+    void post.run({ title, body, requiresAck: ack, playerIds: aud === 'all' ? null : picked });
   };
   return (
     <Modal
@@ -177,14 +193,15 @@ export function TripSheet({
   open,
   onClose,
   teamId,
-  pending,
-  onSave,
+  write,
+  onDone,
 }: {
   open: boolean;
   onClose: () => void;
   teamId: string;
-  pending: boolean;
-  onSave: (input: ChTripInput) => Promise<boolean>;
+  write: ChHubWrites['planTrip'];
+  /** After a trip is saved: the page reads again. */
+  onDone: () => void;
 }) {
   const id = useId();
   const empty: ChTripInput = { teamId, name: '', destination: '', transport: 'bus', departDate: '', departTime: '', from: '', returnDate: '', returnTime: '', hotel: '', notes: '' };
@@ -197,7 +214,22 @@ export function TripSheet({
     departDate: tried && !v.departDate ? 'Pick the day the team leaves.' : null,
     returnDate: tried && v.returnDate && v.departDate && v.returnDate < v.departDate ? 'The return can’t be before the departure.' : null,
   };
-  const submit = async (e?: FormEvent) => {
+  const plan = useAction(
+    'hub.planTrip',
+    async (i: ChTripInput) => {
+      const res = await write(i);
+      if (normalise(res).success) {
+        setV(empty);
+        setTried(false);
+        onClose();
+        onDone();
+      }
+      return res;
+    },
+    (i) => ({ done: `${i.name.trim()} is on Travel`, failed: `Couldn’t save ${i.name.trim() || 'the trip'}`, hint: 'What you entered is still here.', code: 'CH-10006' }),
+  );
+  const pending = plan.pending;
+  const submit = (e?: FormEvent) => {
     e?.preventDefault();
     setTried(true);
     const bad = v.name.trim().length < 3 || !v.destination.trim() || !v.departDate || (!!v.returnDate && v.returnDate < v.departDate);
@@ -205,11 +237,7 @@ export function TripSheet({
       haptic('warning');
       return;
     }
-    if (await onSave({ ...v, teamId })) {
-      setV(empty);
-      setTried(false);
-      onClose();
-    }
+    void plan.run({ ...v, teamId });
   };
   const input = (k: keyof ChTripInput, label: string, type = 'text', err?: string | null, code?: string) => (
     <Field label={label} id={`${id}-${k}`} error={err} errorCode={code}>
@@ -279,15 +307,16 @@ export function AssignSheet({
   onClose,
   teamId,
   players,
-  pending,
-  onSave,
+  write,
+  onDone,
 }: {
   open: boolean;
   onClose: () => void;
   teamId: string;
   players: ChTeamHub['players'];
-  pending: boolean;
-  onSave: (input: { teamId: string; title: string; detail: string; dueDate: string | null; playerIds: string[] }) => Promise<boolean>;
+  write: ChHubWrites['assignTask'];
+  /** After a task is assigned: the page reads again. */
+  onDone: () => void;
 }) {
   const id = useId();
   const [title, setTitle] = useState('');
@@ -297,21 +326,37 @@ export function AssignSheet({
   const [tried, setTried] = useState(false);
   const titleErr = tried && title.trim().length < 3 ? 'Name the task, at least three characters.' : null;
   const pickErr = tried && picked.length === 0 ? 'Choose at least one player.' : null;
-  const submit = async (e?: FormEvent) => {
+  const give = useAction(
+    'hub.assignTask',
+    async (i: Parameters<ChHubWrites['assignTask']>[0]) => {
+      const res = await write(i);
+      if (normalise(res).success) {
+        setTitle('');
+        setDetail('');
+        setDue('');
+        setPicked(players.map((p) => p.id));
+        setTried(false);
+        onClose();
+        onDone();
+      }
+      return res;
+    },
+    (i) => ({
+      done: `${i.title.trim()} assigned to ${i.playerIds.length === players.length ? 'the team' : i.playerIds.length === 1 ? '1 player' : `${i.playerIds.length} players`}`,
+      failed: `Couldn’t assign ${i.title.trim() || 'the task'}`,
+      hint: 'What you entered is still here.',
+      code: 'CH-10007',
+    }),
+  );
+  const pending = give.pending;
+  const submit = (e?: FormEvent) => {
     e?.preventDefault();
     setTried(true);
     if (title.trim().length < 3 || picked.length === 0) {
       haptic('warning');
       return;
     }
-    if (await onSave({ teamId, title, detail, dueDate: due || null, playerIds: picked })) {
-      setTitle('');
-      setDetail('');
-      setDue('');
-      setPicked(players.map((p) => p.id));
-      setTried(false);
-      onClose();
-    }
+    void give.run({ teamId, title, detail, dueDate: due || null, playerIds: picked });
   };
   return (
     <Modal

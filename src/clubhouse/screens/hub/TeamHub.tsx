@@ -2,7 +2,7 @@
 
 import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -11,7 +11,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { useAction } from '../../lib/use-action';
+import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
@@ -43,6 +43,30 @@ export function parseHubTab(v: string | undefined, role: ChTeamHub['role']): ChH
 
 type Pending = { kind: 'ann'; a: ChHubAnnouncement } | { kind: 'task'; t: ChHubTask } | { kind: 'file'; f: ChHubFile } | null;
 
+const withId = (id: string) => (s: Set<string>) => new Set(s).add(id);
+const withoutId = (id: string) => (s: Set<string>) => {
+  const next = new Set(s);
+  next.delete(id);
+  return next;
+};
+
+/**
+ * An optimistic change that lives inside its action, so the error toast's Retry (which re-runs the action, not the
+ * handler that called it) shows the change again: `apply` shows it at once, `undo` puts things back when the write is
+ * refused or throws. useAction turns a throw into a failure, so undo runs before the throw goes on.
+ */
+async function optimistic<T>(apply: () => void, undo: () => void, write: () => Promise<ServerResult<T>>): Promise<ServerResult<T>> {
+  apply();
+  try {
+    const res = await write();
+    if (!normalise(res).success) undo();
+    return res;
+  } catch (err) {
+    undo();
+    throw err;
+  }
+}
+
 /**
  * Team Hub (design/handoff/hub.jsx; spec docs/clubhouse/phone/team-hub.md):
  * one page for both roles. A player replies to events, acknowledges posts,
@@ -70,95 +94,129 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
   const refresh = () => router.refresh();
 
-  // ── Player writes (optimistic; a failure puts the state back) ──
-  const reply = useAction('hub.reply', (r: ChHubRsvp, s: Exclude<ChRsvp, 'pending'>) => writes.reply(r.eventId, s), (r, s) => ({
-    done: s === 'accepted' ? `You're going to ${r.title}` : s === 'tentative' ? `Marked maybe for ${r.title}` : `Your coach knows you can't make ${r.title}`,
-    failed: `Couldn't send your reply for ${r.title}`,
-    code: 'CH-10001',
-  }));
-  const ack = useAction('hub.acknowledge', (a: ChHubAnnouncement) => writes.acknowledge(a.id), (a) => ({ done: '', failed: `Couldn't acknowledge "${a.title}"`, code: 'CH-10002' }));
-  const complete = useAction('hub.completeTask', (t: ChHubTask) => writes.completeTask(t.id), (t) => ({ done: `${t.title} done`, failed: `Couldn't mark ${t.title} done`, code: 'CH-10003' }));
-  const open = useAction('hub.openDocument', (f: ChHubFile) => writes.openDocument(f.id), (f) => ({ done: '', failed: `Couldn't open ${f.title}`, hint: 'The file may have been removed. Try again, or ask your coach to share it again.', code: 'CH-10004' }));
+  // Every follow-up to a write (the optimistic tick and its undo, the tab that opens, the refresh, the row that leaves,
+  // the dialog that closes) lives inside the action. The error toast's Retry re-runs the action and nothing else, so
+  // whatever sat after `await x.run()` in a handler was skipped when a Retry landed. The sheets (sheets.tsx) do the same.
 
-  // ── Coach writes ──
-  const post = useAction('hub.postAnnouncement', writes.postAnnouncement, (i) => ({ done: `Posted "${i.title.trim()}"`, failed: 'Couldn’t post the announcement', hint: 'Your text is still here. Try again in a moment.', code: 'CH-10005' }));
-  const plan = useAction('hub.planTrip', writes.planTrip, (i) => ({ done: `${i.name.trim()} is on Travel`, failed: `Couldn’t save ${i.name.trim() || 'the trip'}`, hint: 'What you entered is still here.', code: 'CH-10006' }));
-  const give = useAction('hub.assignTask', writes.assignTask, (i) => ({
-    done: `${i.title.trim()} assigned to ${i.playerIds.length === data.players.length ? 'the team' : i.playerIds.length === 1 ? '1 player' : `${i.playerIds.length} players`}`,
-    failed: `Couldn’t assign ${i.title.trim() || 'the task'}`,
-    hint: 'What you entered is still here.',
-    code: 'CH-10007',
-  }));
-  const upload = useAction('hub.uploadDocument', (f: File) => writes.uploadDocument({ teamId: data.teamId, file: f, folder: null }), (f) => ({ done: `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 50 MB and try again.', code: 'CH-10008' }));
+  // ── Player writes (optimistic; a failure puts the state back) ──
+  // The reply the server last confirmed, per event: the way back after a refusal. A toast's Retry runs an earlier
+  // render's action, so the way back can't be read from that render's state.
+  const confirmedReply = useRef(new Map<string, ChRsvp>());
+  const reply = useAction(
+    'hub.reply',
+    (r: ChHubRsvp, s: Exclude<ChRsvp, 'pending'>) =>
+      optimistic(
+        () => setReplies((m) => new Map(m).set(r.eventId, s)),
+        () =>
+          setReplies((m) => {
+            const next = new Map(m);
+            const was = confirmedReply.current.get(r.eventId);
+            if (was) next.set(r.eventId, was);
+            else next.delete(r.eventId);
+            return next;
+          }),
+        async () => {
+          const res = await writes.reply(r.eventId, s);
+          if (normalise(res).success) confirmedReply.current.set(r.eventId, s);
+          return res;
+        },
+      ),
+    (r, s) => ({
+      done: s === 'accepted' ? `You're going to ${r.title}` : s === 'tentative' ? `Marked maybe for ${r.title}` : `Your coach knows you can't make ${r.title}`,
+      failed: `Couldn't send your reply for ${r.title}`,
+      code: 'CH-10001',
+    }),
+  );
+  const ack = useAction(
+    'hub.acknowledge',
+    (a: ChHubAnnouncement) =>
+      optimistic(
+        () => setAcked(withId(a.id)),
+        () => setAcked(withoutId(a.id)),
+        () => writes.acknowledge(a.id),
+      ),
+    (a) => ({ done: '', failed: `Couldn't acknowledge "${a.title}"`, code: 'CH-10002' }),
+  );
+  const complete = useAction(
+    'hub.completeTask',
+    (t: ChHubTask) =>
+      optimistic(
+        () => setDone(withId(t.id)),
+        () => setDone(withoutId(t.id)),
+        () => writes.completeTask(t.id),
+      ),
+    (t) => ({ done: `${t.title} done`, failed: `Couldn't mark ${t.title} done`, code: 'CH-10003' }),
+  );
+  const open = useAction(
+    'hub.openDocument',
+    async (f: ChHubFile) => {
+      // The tab has to open inside the tap or Safari blocks it, so it opens first and the signed link fills it in. That
+      // holds because useAction calls this straight from the tap (a toast's Retry is a tap too) before its first await;
+      // while offline it never gets here, so no blank tab flashes.
+      const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+      setOpening(f.id);
+      try {
+        const res = await writes.openDocument(f.id);
+        const landed = normalise(res);
+        if (landed.success && landed.data) {
+          if (win) win.location.href = landed.data.url;
+          else window.location.assign(landed.data.url);
+        } else win?.close();
+        return res;
+      } catch (err) {
+        win?.close();
+        throw err;
+      } finally {
+        setOpening(null);
+      }
+    },
+    (f) => ({ done: '', failed: `Couldn't open ${f.title}`, hint: 'The file may have been removed. Try again, or ask your coach to share it again.', code: 'CH-10004' }),
+  );
+
+  // ── Coach writes (the three forms are in sheets.tsx, each with its own action) ──
+  const upload = useAction(
+    'hub.uploadDocument',
+    async (f: File) => {
+      const res = await writes.uploadDocument({ teamId: data.teamId, file: f, folder: null });
+      if (normalise(res).success) refresh();
+      return res;
+    },
+    (f) => ({ done: `${f.name} shared with the team`, failed: `Couldn’t upload ${f.name}`, hint: 'Check the file is under 50 MB and try again.', code: 'CH-10008' }),
+  );
   const remove = useAction(
     'hub.delete',
-    (p: NonNullable<Pending>) => (p.kind === 'ann' ? writes.deleteAnnouncement(p.a.id) : p.kind === 'task' ? writes.deleteTask(p.t.id) : writes.deleteDocument(p.f.id)),
+    async (p: NonNullable<Pending>) => {
+      const res = await (p.kind === 'ann' ? writes.deleteAnnouncement(p.a.id) : p.kind === 'task' ? writes.deleteTask(p.t.id) : writes.deleteDocument(p.f.id));
+      if (normalise(res).success) {
+        setGone(withId(p.kind === 'ann' ? p.a.id : p.kind === 'task' ? p.t.id : p.f.id));
+        setConfirm(null);
+        refresh();
+      }
+      return res;
+    },
     (p) => {
       const name = p.kind === 'ann' ? `"${p.a.title}"` : p.kind === 'task' ? p.t.title : p.f.title;
       return { done: `Deleted ${name}`, failed: `Couldn’t delete ${name}`, code: 'CH-10009' };
     },
   );
 
-  const onReply = async (r: ChHubRsvp, s: Exclude<ChRsvp, 'pending'>) => {
+  const onReply = (r: ChHubRsvp, s: Exclude<ChRsvp, 'pending'>) => {
     haptic('select');
-    const before = replies.get(r.eventId);
-    setReplies((m) => new Map(m).set(r.eventId, s));
-    const res = await reply.run(r, s);
-    if (!res.success)
-      setReplies((m) => {
-        const next = new Map(m);
-        if (before) next.set(r.eventId, before);
-        else next.delete(r.eventId);
-        return next;
-      });
+    void reply.run(r, s);
   };
-  const onAck = async (a: ChHubAnnouncement) => {
-    setAcked((s) => new Set(s).add(a.id));
-    const res = await ack.run(a);
-    if (!res.success)
-      setAcked((s) => {
-        const next = new Set(s);
-        next.delete(a.id);
-        return next;
-      });
-  };
-  const onToggle = async (t: ChHubTask) => {
-    setDone((s) => new Set(s).add(t.id));
-    const res = await complete.run(t);
-    if (!res.success)
-      setDone((s) => {
-        const next = new Set(s);
-        next.delete(t.id);
-        return next;
-      });
-  };
-  const onOpen = async (f: ChHubFile) => {
-    // The tab opens inside the tap, so Safari doesn't block it; the signed link fills it in.
-    const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
-    setOpening(f.id);
-    const res = await open.run(f);
-    setOpening(null);
-    if (res.success && res.data) {
-      if (win) win.location.href = res.data.url;
-      else window.location.assign(res.data.url);
-    } else win?.close();
-  };
+  const onAck = (a: ChHubAnnouncement) => void ack.run(a);
+  const onToggle = (t: ChHubTask) => void complete.run(t);
+  const onOpen = (f: ChHubFile) => void open.run(f);
   const onUpload = async (files: File[]) => {
     setUploading(true);
-    let any = false;
-    for (const f of files) if ((await upload.run(f)).success) any = true;
-    setUploading(false);
-    if (any) refresh();
-  };
-  const onConfirmDelete = async () => {
-    if (!confirm) return;
-    const res = await remove.run(confirm);
-    if (res.success) {
-      const id = confirm.kind === 'ann' ? confirm.a.id : confirm.kind === 'task' ? confirm.t.id : confirm.f.id;
-      setGone((s) => new Set(s).add(id));
-      setConfirm(null);
-      refresh();
+    try {
+      for (const f of files) await upload.run(f);
+    } finally {
+      setUploading(false);
     }
+  };
+  const onConfirmDelete = () => {
+    if (confirm) void remove.run(confirm);
   };
   // CH-10702: the warning comes before the question.
   const askDelete = (p: NonNullable<Pending>) => {
@@ -174,8 +232,19 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const featured = anns.find((a) => !coach && a.needAck && !isAcked(a)) ?? anns[0] ?? null;
   const upcoming = data.trips.rows.filter((t) => t.upcoming);
   const nextTrip = upcoming[0] ?? null;
+  // The page is empty only when every read answered and every one was empty: a failed read (updates included) shows its
+  // own notice, and an update to read is something to show.
   const nothing =
-    !data.announcements.error && !data.trips.error && !data.tasks.error && !data.documents.error && !anns.length && !data.trips.rows.length && !tasks.rows.length && !docs.folders.length;
+    !data.announcements.error &&
+    !data.trips.error &&
+    !data.tasks.error &&
+    !data.documents.error &&
+    !data.updates.error &&
+    !anns.length &&
+    !data.trips.rows.length &&
+    !tasks.rows.length &&
+    !docs.folders.length &&
+    !data.updates.rows.length;
 
   // CH-10701: a tab, a reply or a chip ticks; the current one is silent.
   const pick = (t: ChHubTab) => {
@@ -331,7 +400,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
         {tab === 'docs' && (
           <SectionBoundary surface="hub.documents" label="Documents" code="CH-10205">
-            <Documents role={data.role} data={docs} opening={opening} uploading={uploading} onOpen={onOpen} onUpload={onUpload} onDelete={(f) => askDelete({ kind: 'file', f })} />
+            <Documents role={data.role} data={docs} opening={opening} uploading={uploading || upload.pending} onOpen={onOpen} onUpload={onUpload} onDelete={(f) => askDelete({ kind: 'file', f })} />
           </SectionBoundary>
         )}
 
@@ -346,40 +415,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
       {coach && (
         <>
-          <ComposeSheet
-            open={compose}
-            onClose={() => setCompose(false)}
-            players={data.players}
-            pending={post.pending}
-            onPost={async (i) => {
-              const ok = (await post.run(i)).success;
-              if (ok) refresh();
-              return ok;
-            }}
-          />
-          <TripSheet
-            open={tripOpen}
-            onClose={() => setTripOpen(false)}
-            teamId={data.teamId}
-            pending={plan.pending}
-            onSave={async (i) => {
-              const ok = (await plan.run(i)).success;
-              if (ok) refresh();
-              return ok;
-            }}
-          />
-          <AssignSheet
-            open={assign}
-            onClose={() => setAssign(false)}
-            teamId={data.teamId}
-            players={data.players}
-            pending={give.pending}
-            onSave={async (i) => {
-              const ok = (await give.run(i)).success;
-              if (ok) refresh();
-              return ok;
-            }}
-          />
+          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} write={writes.postAnnouncement} onDone={refresh} />
+          <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} write={writes.planTrip} onDone={refresh} />
+          <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} write={writes.assignTask} onDone={refresh} />
           <ConfirmDelete
             open={!!confirm}
             what={confirm?.kind === 'ann' ? 'this announcement' : confirm?.kind === 'task' ? 'this task' : 'this file'}
@@ -393,7 +431,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             code={confirm?.kind === 'ann' ? 'CH-10501' : confirm?.kind === 'task' ? 'CH-10502' : 'CH-10503'}
             pending={remove.pending}
             onCancel={() => setConfirm(null)}
-            onConfirm={() => void onConfirmDelete()}
+            onConfirm={onConfirmDelete}
           />
         </>
       )}

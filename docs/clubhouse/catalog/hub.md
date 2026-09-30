@@ -10,7 +10,7 @@ Where things live:
 - Tests: `src/clubhouse/__tests__/hub.test.tsx`
 - Preview: `/clubhouse-preview/hub` and `/clubhouse-preview/hub-player` (`?state=empty|failed|failwrites`, `&tab=`)
 
-Every save goes through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), the success and error haptics (D-70).
+Every save goes through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), the success and error haptics (D-70). Everything a save does on the page (the tick and its undo, the open tab, closing and clearing a sheet, the page reading again, the row leaving) is inside that action, so a toast's Retry that lands does it too.
 
 ## 100xx Error toasts
 
@@ -55,12 +55,12 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-10301 | No events need a reply | Player: "You're all caught up" + "New team events that need a reply show here." Coach: "No events need RSVPs" + Create event | `Rsvps` | hub.test › CH-10301 |
+| CH-10301 | No events need a reply | Player: "You're all caught up" + "New team events that need a reply show here." (an event the player is not invited to, or that has started, was cancelled or is past its RSVP deadline, is not listed). Coach: "No events need RSVPs" + Create event | `Rsvps` | hub.test › CH-10301 |
 | CH-10302 | No updates | "Nothing new." + "Posts, trips, tasks and qualifier moves show here as they happen." | `Updates` | hub.test › CH-10302 |
 | CH-10303 | No tasks | Player: "No tasks right now." Coach: "No tasks assigned." + "Assign a task and see who has done it." | `Tasks` | hub.test › CH-10303 |
 | CH-10304 | No documents | "No documents yet." + who fills it | `Documents` | hub.test › CH-10304 |
-| CH-10305 | A coach with nothing posted (v2 first run, gh-states EMPTY.hub.coach) | "Nothing posted yet" + New announcement, Plan a trip | `TeamHub` | hub.test › CH-10305 |
-| CH-10306 | A player with nothing from their coaches (EMPTY.hub.player) | "No team updates yet" + "Announcements, trips and documents from your coaches will show up here." | `TeamHub` | hub.test › CH-10306 |
+| CH-10305 | A coach with nothing posted (v2 first run, gh-states EMPTY.hub.coach) | "Nothing posted yet" + New announcement, Plan a trip. Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10305 |
+| CH-10306 | A player with nothing from their coaches (EMPTY.hub.player) | "No team updates yet" + "Announcements, trips and documents from your coaches will show up here." Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10306 |
 | CH-10307 | No announcements | "No announcements yet." | `TeamHub` | hub.test › CH-10307 |
 | CH-10308 | No trips | "No trips planned." + who fills it | `TeamHub` | hub.test › CH-10308 |
 | CH-10309 | No team | "You aren't on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
@@ -73,6 +73,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10402 | A post is being sent | "Posting" on the button; it can't be pressed twice | `ComposeSheet` | hub.test › CH-10402 |
 | CH-10403 | A trip is being saved | "Saving" | `TripSheet` | hub.test › CH-10403 |
 | CH-10404 | A task is being assigned | "Assigning" | `AssignSheet` | hub.test › CH-10404 |
+| CH-10405 | Team Hub is loading | The header, the tab strip and the two Home columns as grey blocks, in place (nothing for the first 150ms, then a fade); read as "Loading Team Hub" | `HubSkeleton` from `team-hub/loading.tsx` through `ClubhouseSwitch` | hub.test › CH-10405 |
 
 ## 105xx Confirm
 

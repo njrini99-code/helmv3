@@ -74,8 +74,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 89 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
-| P010 |  | 4 |  | 9 | 8 | 16 |  |  |  |  | 3 |  |  |  |  |  | 2 | 2 |  |  |  |  |  |  |  | 44 |
-| P011 |  | 1 |  | 7 |  | 7 |  |  |  |  | 1 |  |  |  |  | 1 | 4 | 4 |  |  |  |  |  |  |  | 25 |
+| P010 | 2 | 5 |  | 10 | 8 | 16 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
+| P011 |  | 2 |  | 8 | 6 | 13 | 1 |  |  |  | 9 |  |  |  |  | 3 | 7 | 8 |  |  |  |  |  |  |  | 57 |
 
 ## P001 Shell
 
@@ -828,10 +828,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
+| 100101 |  | 01 Default / core UI | `HUB_READY` | implemented | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement. |
+| 100102 |  | 01 Default / core UI | `TAB_LINK_OPENS_A_TAB` | implemented | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home. |
 | 100201 | CH-10401 | 02 Initial loading / skeleton | `FILES_ARE_UPLOADING` | implemented | Files are uploading |
 | 100202 | CH-10402 | 02 Initial loading / skeleton | `A_POST_IS_BEING_SENT` | implemented | A post is being sent |
 | 100203 | CH-10403 | 02 Initial loading / skeleton | `A_TRIP_IS_BEING_SAVED` | implemented | A trip is being saved |
 | 100204 | CH-10404 | 02 Initial loading / skeleton | `A_TASK_IS_BEING_ASSIGNED` | implemented | A task is being assigned |
+| 100205 | CH-10405 | 02 Initial loading / skeleton | `TEAM_HUB_IS_LOADING` | implemented | Team Hub is loading |
 | 100401 | CH-10301 | 04 Empty | `NO_EVENTS_NEED_A_REPLY` | implemented | No events need a reply |
 | 100402 | CH-10302 | 04 Empty | `NO_UPDATES` | implemented | No updates |
 | 100403 | CH-10303 | 04 Empty | `NO_TASKS` | implemented | No tasks |
@@ -841,6 +844,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100407 | CH-10307 | 04 Empty | `NO_ANNOUNCEMENTS` | implemented | No announcements |
 | 100408 | CH-10308 | 04 Empty | `NO_TRIPS` | implemented | No trips |
 | 100409 | CH-10309 | 04 Empty | `NO_TEAM` | implemented | No team |
+| 100410 |  | 04 Empty | `PAGE_EMPTY_ONLY_WHEN_EVERY_READ_IS_EMPTY` | implemented | The whole-page empty state (CH-10305 for a coach, CH-10306 for a player) shows only when every section read answered and every one was empty, Updates included: a failed read, Updates too, shows its own notice with Try again instead, and an update to read is shown, never hidden behind No team updates yet. |
 | 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting with a headline under three characters |
 | 100502 | CH-10102 | 05 Validation | `POSTING_TO_CHOSEN_PLAYERS_WITH_NONE_CHOSEN` | implemented | Posting to chosen players with none chosen |
 | 100503 | CH-10103 | 05 Validation | `A_TRIP_WITH_A_NAME_UNDER_THREE` | implemented | A trip with a name under three characters |
@@ -865,19 +869,36 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100614 | CH-10205 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
 | 100615 | CH-10206 | 06 Server / system error | `ANNOUNCEMENTS_DONT_LOAD` | implemented | Announcements don't load |
 | 100616 | CH-10207 | 06 Server / system error | `TRAVEL_DOESNT_LOAD` | implemented | Travel doesn't load |
+| 100701 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
+| 100801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The role from the session decides the controls: a player is never drawn New announcement, Plan a trip, Assign, the drop zone or a delete menu, and a coach is never drawn a reply button, Got it or a task box. |
+| 100802 |  | 08 Permission / authorization | `PLAYER_GETS_ONLY_WHAT_IS_THEIRS` | implemented | A player's data carries none of their teammates' read receipts (an announcement's acknowledged and recipient counts), replies, task completions, traveler lists or names, and no roster; those are in a coach's data only, where the same post reads 5 of 6. |
+| 100803 |  | 08 Permission / authorization | `REPLY_ONLY_WHERE_IT_IS_OPEN` | implemented | A player is offered Going, Maybe and Can't only on an event they are invited to that still takes a reply: an event they have no place on the invite list of (the aggregate gives it no reply status, and a reply would add them to the list), one that has started (an all-day event, a day after its stored start), one that was cancelled and one past its RSVP deadline are left off the list, by the rules respondToEvent enforces; a rules read that fails leaves the rows in place for the server to decide. |
+| 100804 |  | 08 Permission / authorization | `SERVER_ACTIONS_ARE_THE_GATE` | reserved | Every write is checked again by its server action, whatever the screen shows: createEnrichedAnnouncement, createGolfTravelItinerary, createTask, createGolfDocument, deleteAnnouncement and deleteTask refuse a caller who is not a coach of the team, and respondToEvent, acknowledgeAnnouncement and completeTask refuse a caller with no player profile or team membership; deleteGolfDocument (any active member of the team passes) and uploadGolfDocument (any signed-in user passes) do not check for a coach, so for those the screen and row-level security are the gate. Read in this pass, not run: no test here forces a refusal. |
+| 100901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands names itself in a toast with the success haptic (Posted, Seahawk is on Travel, Book physicals assigned to the team, Local rules.pdf shared with the team, Deleted, You're going to Team dinner, Sign travel waiver done); Got it and opening a file land without a toast, since the button turning to Acknowledged and the file opening are the confirmation. |
 | 101101 | CH-10501 | 11 Destructive | `DELETING_AN_ANNOUNCEMENT` | implemented | Deleting an announcement |
 | 101102 | CH-10502 | 11 Destructive | `DELETING_A_TASK` | implemented | Deleting a task |
 | 101103 | CH-10503 | 11 Destructive | `DELETING_A_FILE` | implemented | Deleting a file |
+| 101201 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A post, trip or task that fails leaves its sheet open with every field as typed; nothing is cleared until the save lands, and a save that lands clears the form for the next one. Cancel keeps a half-written announcement for as long as the page stays open. |
+| 101301 |  | 13 Optimistic UI | `CHANGES_SHOW_AT_ONCE` | implemented | A reply, Got it and a task check show at once and go back to the last answer the server confirmed if the write is refused or throws; posting, planning a trip, assigning, uploading and deleting are not optimistic: they wait for the write, and a refusal leaves everything as it was. |
+| 101401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows: the reply, Got it or task tick shows, the file opens in a tab of its own, the sheet closes and clears, the page reads again, the deleted row leaves and its dialog closes, and the drop zone reads Uploading. This holds for all nine writes: a reply, Got it, a task check, opening a file, posting, planning a trip, assigning a task, uploading, and deleting a post, a task or a file. |
+| 101402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a failed-read notice has the server read the whole page again; none re-reads a section on its own. |
+| 101501 |  | 15 Data freshness / sync | `PAGE_READS_AGAIN_AFTER_A_CHANGE` | implemented | After a coach's post, trip, task, upload or delete lands, the page reads again from the server (router.refresh). |
 | 101701 | CH-10701 | 17 Haptic | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | implemented | A tab, an RSVP reply, an audience or transport choice, a player chip |
 | 101702 | CH-10702 | 17 Haptic | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | implemented | Delete (before the question), a form sent with a mistake |
 | 101801 | CH-10801 | 18 Accessibility | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | implemented | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |
 | 101802 | CH-10802 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
+| 101901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below Team Hub is the phone build, never a shrunken desktop: the page takes the phone frame, the title is read by a screen reader instead of drawn, and the same tabs, writes and sheets are there. State, writes and sheets are the desktop's. |
+| 102001 |  | 20 Keyboard / input | `TABS_AND_REPLIES_WORK_FROM_THE_KEYBOARD` | implemented | The tabs and the reply buttons are native buttons in the tab order: Tab reaches them and Enter or Space presses them; Esc closes a sheet and focus goes back to the button that opened it. |
+| 102101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | implemented | The server loader reads the page for either role before first paint, in a few rounds of parallel reads and never one request per row: attendance, task completion and a player's reply rules are each read once for every event or task together (in chunks of 200); a read that fails is flagged on its own section and logged, never thrown, so a partial read still renders the rest. |
+| 102301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in the loader is logged through chLogServer("hub", <read>) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab <tab>, action hub.<name>); a section that crashes reports under its own surface (hub.updates and the rest). |
+| 102401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/hub.test.tsx names in a test title every Team Hub catalog code of kinds 0 to 5 that is not marked preview, and every hand contract on this page it proves by its Bridge ID. |
 
 ## P011 Rounds
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
 | 110201 | CH-11401 | 02 Initial loading / skeleton | `THE_PAGE_IS_ON_ITS_WAY` | implemented | The page is on its way |
+| 110202 | CH-11402 | 02 Initial loading / skeleton | `A_HOLED_OUT_HOLE_IS_SAVING` | implemented | A holed-out hole is saving |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -885,6 +906,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110405 | CH-11305 | 04 Empty | `A_ROUND_POSTED_AS_A_TOTAL_WITH` | implemented | A round posted as a total, with no holes |
 | 110406 | CH-11306 | 04 Empty | `A_HOLE_WITH_A_SCORE_BUT_NO` | implemented | A hole with a score but no shots tracked |
 | 110407 | CH-11307 | 04 Empty | `A_ROUND_THAT_DOESNT_EXIST_OR_ONE` | implemented | A round that doesn't exist, or one this viewer may not see |
+| 110408 | CH-11308 | 04 Empty | `A_HOLE_WITH_NO_SHOTS_YET` | implemented | A hole with no shots yet |
+| 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
+| 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
+| 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
+| 110504 | CH-11104 | 05 Validation | `THE_DISTANCE_ISNT_A_NUMBER` | implemented | The distance isn't a number |
+| 110505 | CH-11105 | 05 Validation | `A_CHANGED_SHOT_BREAKS_A_SHOT_RULE` | implemented | A changed shot breaks a shot rule |
+| 110506 | CH-11106 | 05 Validation | `A_HOLE_REACHES_SHOT_12` | implemented | A hole reaches shot 12 |
 | 110601 | CH-11001 | 06 Server / system error | `DISCARDING_AN_UNFINISHED_ROUND_FAILS` | implemented | Discarding an unfinished round fails |
 | 110602 | CH-11201 | 06 Server / system error | `THE_POSTED_ROUNDS_DONT_LOAD` | implemented | The posted rounds don't load |
 | 110603 | CH-11202 | 06 Server / system error | `THE_ROUND_IN_PROGRESS_CHECK_FAILS` | implemented | The round-in-progress check fails |
@@ -892,16 +920,40 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110605 | CH-11204 | 06 Server / system error | `A_REVIEWS_HOLE_BY_HOLE_CARD_DOESNT` | implemented | A review's hole-by-hole card doesn't load |
 | 110606 | CH-11205 | 06 Server / system error | `A_REVIEWS_SHOTS_DONT_LOAD` | implemented | A review's shots don't load |
 | 110607 | CH-11206 | 06 Server / system error | `THE_ROUND_ITSELF_DOESNT_LOAD` | implemented | The round itself doesn't load |
+| 110608 | CH-11002 | 06 Server / system error | `UNDO_FAILS` | implemented | Undo fails (tracking) |
+| 110609 | CH-11003 | 06 Server / system error | `A_HOLED_OUT_HOLE_DOESNT_SAVE` | implemented | A holed-out hole doesn't save |
+| 110610 | CH-11004 | 06 Server / system error | `CHANGING_OR_DELETING_A_SHOT_FAILS` | implemented | Changing or deleting a shot fails |
+| 110611 | CH-11005 | 06 Server / system error | `SUBMITTING_THE_ROUND_FAILS` | implemented | Submitting the round fails |
+| 110612 | CH-11006 | 06 Server / system error | `DISCARDING_FROM_EXIT_FAILS` | implemented | Discarding from Exit fails |
+| 110613 | CH-11207 | 06 Server / system error | `THE_SHOT_SCREEN_GETS_A_HOLE_THAT` | implemented | The shot screen gets a hole that doesn't exist |
+| 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 111101 | CH-11501 | 11 Destructive | `DISCARD_ON_AN_UNFINISHED_ROUND` | implemented | Discard on an unfinished round |
+| 111102 | CH-11502 | 11 Destructive | `UNDO` | implemented | Undo |
+| 111103 | CH-11503 | 11 Destructive | `PENALTY` | implemented | Penalty |
+| 111104 | CH-11504 | 11 Destructive | `LEAVING_A_HOLE_WITH_A_RESULT_PICKED` | implemented | Leaving a hole with a result picked but not recorded |
+| 111105 | CH-11505 | 11 Destructive | `A_RECORDED_SHOT_IS_TAPPED` | implemented | A recorded shot is tapped |
+| 111106 | CH-11506 | 11 Destructive | `EXIT` | implemented | Exit |
+| 111107 | CH-11507 | 11 Destructive | `DISCARD_ROUND_FROM_EXIT` | implemented | Discard round from Exit |
+| 111108 | CH-11508 | 11 Destructive | `THE_LAST_HOLE_IS_SAVED` | implemented | The last hole is saved |
+| 111109 | CH-11509 | 11 Destructive | `SCORECARD_FROM_THE_TOP_BAR` | implemented | Scorecard, from the top bar |
 | 111601 | CH-11601 | 16 Micro animation | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | reserved | Hovering a round that opens its review |
+| 111602 | CH-11602 | 16 Micro animation | `THE_SHOT_LOG_OPENS` | implemented | The shot log opens |
+| 111603 | CH-11603 | 16 Micro animation | `SUBMITTING_THE_ROUND` | implemented | Submitting the round |
 | 111701 | CH-11701 | 17 Haptic | `DISCARD_IS_TAPPED` | implemented | Discard is tapped |
 | 111702 | CH-11702 | 17 Haptic | `A_ROUND_IS_OPENED` | implemented | A round is opened |
 | 111703 | CH-11703 | 17 Haptic | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | implemented | Continue, Submit or Start a round is tapped |
 | 111704 | CH-11704 | 17 Haptic | `A_HOLE_IS_PICKED_ON_THE_REVIEWS` | implemented | A hole is picked on the review's card, or stepped with the arrows |
+| 111705 | CH-11705 | 17 Haptic | `A_SHOT_IS_RECORDED` | implemented | A shot is recorded (Next shot or Hole out) |
+| 111706 | CH-11706 | 17 Haptic | `GOING_TO_ANOTHER_HOLE` | implemented | Going to another hole |
+| 111707 | CH-11707 | 17 Haptic | `UNDO_DELETE_SHOT_DISCARD_ROUND_LEAVE_WITHOUT` | implemented | Undo, Delete shot, Discard round, Leave without it |
 | 111801 | CH-11801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_BOOK` | implemented | A screen reader moves through the book |
 | 111802 | CH-11802 | 18 Accessibility | `THE_IN_PROGRESS_CARDS_HOLE_STRIP` | implemented | The in-progress card's hole strip |
 | 111803 | CH-11803 | 18 Accessibility | `THE_SEASON_RIBBON` | implemented | The season ribbon |
 | 111804 | CH-11804 | 18 Accessibility | `THE_REVIEWS_CARD` | implemented | The review's card |
+| 111805 | CH-11805 | 18 Accessibility | `THE_HOLE_STRIP` | implemented | The hole strip |
+| 111806 | CH-11806 | 18 Accessibility | `CHOICES_IN_THE_ENTRY_AND_THE_SHEETS` | implemented | Choices in the entry and the sheets |
+| 111807 | CH-11807 | 18 Accessibility | `THE_DISTANCE_BOX` | implemented | The distance box |
+| 111808 | CH-11808 | 18 Accessibility | `THE_HOLE_MAP` | implemented | The hole map |
 
 ## Tombstones
 
