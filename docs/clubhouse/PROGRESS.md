@@ -79,6 +79,26 @@ Starting the next session:
 | Player app (all screens) | /golf/dashboard (player role) | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 <!-- clubhouse:screens:end -->
 
+## Release with the Clubhouse deploy (owner-run)
+
+Noted by the owner 2026-09-29: these migrations go out with the deployment of the new system. Nothing here is applied by an agent. Each file's status stays in `supabase/migrations/HELD.md`, and the apply path is `docs/operations/APPLY_PATH.md`.
+
+1. **Held on `main` (CoachHelm deep audit, merged in #2101).** Apply in this order:
+   1. `20260928130000_golf_insight_exposure_rank_factors.sql`
+   2. `20260928140000_coachhelm_alert_type_enum_values.sql`
+   3. `20260928230000_v3_attribution_control_interval.sql`
+   4. `20260928160000_golf_sg_shot_end_is_next_shot_start.sql`, then the strokes gained recompute
+2. **Deploy.** Run `scripts/deploy-prod.sh`; the owner runs it.
+3. **After the deploy:** the cleanup SQL, the insight regeneration, and the review backfill (169 rounds).
+4. **Flag:** turn on `coachhelm_chat_claim_gate`.
+5. **Blocked until the owner decides OD-01:**
+   - `20260928120000_golf_putt_make_pct_countable_non_test.sql`
+   - `20260928150000_golf_stats_cache_exclude_test_rounds.sql`
+6. **Written on Clubhouse branches, not applied, still to be reviewed:**
+   - the Qualifiers database fixes (D-35, `agent/clubhouse-qualifiers`);
+   - the message attachments fix, queued for after Clubhouse (Data gaps).
+7. **`golf_clubhouse_ui`** stays off until the owner turns it on.
+
 ## Decisions
 
 - D-1 (2026-09-29): Parallel and flag-gated. Coaches and players both get Clubhouse where a screen is rebuilt for their role (Stats, Calendar and Messages have player versions with the permissions players already have); every other route shows the not-rebuilt notice with a link back.
