@@ -3,8 +3,8 @@
 import { type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import type { HoleStats } from '@/lib/types/golf';
+import { useToast } from '@/components/ui/sonner';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
-import { clearEmergencySave } from '@/lib/utils/emergency-save';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
@@ -54,56 +54,55 @@ export default function ContinueRoundClient({
   qualifierRoundNumberUnavailableReason,
   ...session
 }: ContinueRoundClientProps) {
-  const { setupData, playerId } = session;
+  const { setupData } = session;
+  // The engine's port: the same function it used to get from this hook, every render (ROUNDS_PLAN step 5c).
+  const { showToast } = useToast();
   // Mirrors new-round-client so the resume flow shares the exact same
   // exit-sheet + submit overlay as a fresh round.
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
   const {
-    roundId,
     syncStatus,
     currentHoleIndex,
     setCurrentHoleIndex,
     holes,
-    setHoles,
     completedHoleStats,
-    setCompletedHoleStats,
     error,
-    setError,
     submitting,
-    setSubmitting,
     showExitModal,
     setShowExitModal,
-    setInProgressShotsByHole,
     pendingFinalStats,
     showFinishConfirm,
     setShowFinishConfirm,
     completedRoundId,
     qualifierClosed,
-    setQualifierClosed,
     selectedQualifierRoundNumber,
     setSelectedQualifierRoundNumber,
     showQualifierRoundNumberDialog,
-    setShowQualifierRoundNumberDialog,
-    isSubmittingRef,
     roundConflictBlocked,
-    activeProgressHoleRef,
     showRecoveryDialog,
     setShowRecoveryDialog,
     recoveryData,
-    setRecoveryData,
     handleHoleComplete,
     handleHoleStatsUpdate,
     handleSaveShot,
     handleAutoSave,
-    handleRoundSubmit,
     handleSaveAsPractice,
     requestRoundSubmission,
     handleSaveForLater,
     activeHoleShots,
     activeShotNumber,
     handleDeleteRound,
-  } = useContinueRoundSession(session);
+    handleDiscardRecovery,
+    handleRestoreRecovery,
+    handleQualifierRoundDialogChange,
+    handleQualifierRoundBack,
+    handleQualifierRoundSubmit,
+    handleSubmitGoBack,
+    handleSubmitRetry,
+    handleSubmitSaveAndExit,
+    handleSubmitDiscard,
+  } = useContinueRoundSession({ ...session, ports: { showToast } });
   // Submitting overlay stats (computed once, used by overlay)
   const submittingDefinedStats = completedHoleStats.filter((h): h is HoleStats => h != null);
   const submittingTotalScore = submittingDefinedStats.reduce((sum, h) => sum + h.score, 0);
@@ -272,36 +271,13 @@ export default function ContinueRoundClient({
             </p>
             <div className="flex gap-3">
               <FwButton variant="secondary"
-                onClick={() => {
-                  clearEmergencySave(roundId, playerId);
-                  setShowRecoveryDialog(false);
-                  setRecoveryData(null);
-                }}
+                onClick={handleDiscardRecovery}
                 className="flex-1"
               >
                 Discard
               </FwButton>
               <FwButton variant="primary"
-                onClick={() => {
-                  // Restore data from emergency save
-                  if (!recoveryData) return;
-                  if (recoveryData.completedHoleStats) {
-                    setCompletedHoleStats(recoveryData.completedHoleStats);
-                  }
-                  if (recoveryData.inProgressShotsByHole) {
-                    setInProgressShotsByHole(recoveryData.inProgressShotsByHole);
-                  }
-                  if (recoveryData.holes && recoveryData.holes.length > 0) {
-                    setHoles(recoveryData.holes);
-                  }
-                  if (recoveryData.currentHoleIndex != null) {
-                    setCurrentHoleIndex(recoveryData.currentHoleIndex);
-                    activeProgressHoleRef.current = recoveryData.currentHoleIndex;
-                  }
-                  setShowRecoveryDialog(false);
-                  setRecoveryData(null);
-                  // Don't clear emergency save yet — will be cleared after next successful server save
-                }}
+                onClick={handleRestoreRecovery}
                 className="flex-1"
               >
                 Restore
@@ -315,10 +291,7 @@ export default function ContinueRoundClient({
           server-derived unused choices before the terminal guard fills it. */}
       <ModalShell
         open={showQualifierRoundNumberDialog}
-        onOpenChange={(next) => {
-          setShowQualifierRoundNumberDialog(next);
-          if (!next && pendingFinalStats) setShowFinishConfirm(true);
-        }}
+        onOpenChange={handleQualifierRoundDialogChange}
         size="sm"
         title="Choose qualifier round"
       >
@@ -361,10 +334,7 @@ export default function ContinueRoundClient({
               type="button"
               variant="secondary"
               className="flex-1"
-              onClick={() => {
-                setShowQualifierRoundNumberDialog(false);
-                if (pendingFinalStats) setShowFinishConfirm(true);
-              }}
+              onClick={handleQualifierRoundBack}
             >
               Back
             </FwButton>
@@ -373,11 +343,7 @@ export default function ContinueRoundClient({
               variant="primary"
               className="flex-1"
               disabled={selectedQualifierRoundNumber == null || !pendingFinalStats}
-              onClick={() => {
-                if (!pendingFinalStats || selectedQualifierRoundNumber == null) return;
-                setShowQualifierRoundNumberDialog(false);
-                void handleRoundSubmit(pendingFinalStats, selectedQualifierRoundNumber);
-              }}
+              onClick={handleQualifierRoundSubmit}
             >
               Submit Round
             </FwButton>
@@ -410,35 +376,12 @@ export default function ContinueRoundClient({
         courseName={setupData.courseName}
         error={error || undefined}
         completedRoundId={completedRoundId ?? undefined}
-        onGoBack={() => {
-          setSubmitting(false);
-          setError('');
-          setQualifierClosed(false);
-          isSubmittingRef.current = false;
-          // Always re-show the finish confirm so user can submit again
-          if (pendingFinalStats) {
-            setShowFinishConfirm(true);
-          }
-        }}
-        onRetry={qualifierClosed ? undefined : (pendingFinalStats ? () => {
-          setError('');
-          isSubmittingRef.current = false;
-          void requestRoundSubmission(pendingFinalStats);
-        } : undefined)}
+        onGoBack={handleSubmitGoBack}
+        onRetry={qualifierClosed ? undefined : (pendingFinalStats ? handleSubmitRetry : undefined)}
         secondaryActionLabel={qualifierClosed ? 'Save as practice round' : undefined}
         onSecondaryAction={qualifierClosed ? handleSaveAsPractice : undefined}
-        onSaveAndExit={async () => {
-          setError('');
-          isSubmittingRef.current = false;
-          setSubmitting(false);
-          await handleSaveForLater();
-        }}
-        onDiscard={async () => {
-          setError('');
-          isSubmittingRef.current = false;
-          setSubmitting(false);
-          await handleDeleteRound();
-        }}
+        onSaveAndExit={handleSubmitSaveAndExit}
+        onDiscard={handleSubmitDiscard}
       />
 
     </>

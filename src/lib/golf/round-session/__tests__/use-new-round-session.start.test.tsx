@@ -62,7 +62,12 @@ vi.mock('@/lib/offline/sync-engine', () => ({
 }));
 vi.mock('@/lib/offline/indexed-db', () => ({ saveOfflineRound: vi.fn(async () => {}) }));
 vi.mock('@/lib/offline/partial-save-beacon', () => ({ beaconPartialSave: vi.fn(() => false) }));
-vi.mock('@/lib/offline/shot-storage', () => ({ getRoundRecoverySnapshots: vi.fn(async () => []) }));
+vi.mock('@/lib/offline/shot-storage', () => ({
+  getRoundRecoverySnapshots: vi.fn(async () => []),
+  saveRoundRecoverySnapshot: vi.fn(async () => {}),
+  deleteRoundRecoverySnapshot: vi.fn(async () => {}),
+  clearRoundRecoverySnapshotThrough: vi.fn(async () => {}),
+}));
 vi.mock('@/lib/recovery/use-active-work', () => ({ useActiveWork: vi.fn() }));
 vi.mock('@/lib/error-logging', () => ({
   logError: (...args: unknown[]) => mocks.logError(...args),

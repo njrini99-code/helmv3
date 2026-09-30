@@ -30,8 +30,8 @@ import {
 import { isUnreadableWriteFailure } from '@/lib/golf/round-write-outcome';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
-import { useToast } from '@/components/ui/sonner';
 import { useActiveWork } from '@/lib/recovery/use-active-work';
+import { resolveRoundRoutes, type RoundSessionRoutes } from '@/lib/golf/round-session/routes';
 
 export type Hole = RoundHole;
 
@@ -84,6 +84,26 @@ export interface ContinueRoundSessionProps {
  * screen that draws it. Moved out of ContinueRoundClient unchanged (ROUNDS_PLAN step 5b), so a second renderer can
  * drive the same engine.
  */
+/**
+ * What the engine asks of the screen that draws it.
+ *
+ * Identity matters: `showToast` is a dependency of the conflict, auto-save-warning and re-create callbacks, so a new
+ * function each render re-creates them each render. The legacy screen passes exactly that on purpose (`useToast()`
+ * makes new functions per call, as the engine used to get them), so its behaviour is unchanged. A new renderer passes
+ * a stable, module-level port and gets each callback made once. The continue screen never hides the mobile nav and
+ * never ticks a haptic, so the engine has no ports for either.
+ */
+export interface ContinueRoundSessionPorts {
+  showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => unknown;
+}
+
+/** What a screen may tell the continue engine beyond its ports; each omitted value is the Fairway screen's own. */
+export interface ContinueRoundSessionOptions {
+  ports: ContinueRoundSessionPorts;
+  /** Where the engine sends the player. Read at call time, so passing a new object each render is safe. */
+  routes?: Partial<RoundSessionRoutes>;
+}
+
 export function useContinueRoundSession({
   roundId: routeRoundId,
   playerId,
@@ -95,9 +115,15 @@ export function useContinueRoundSession({
   initialShotNumber = 1,
   initialInProgressShotsByHole,
   serverDataTimestamp,
-}: ContinueRoundSessionProps) {
+  ports,
+  routes,
+}: ContinueRoundSessionProps & ContinueRoundSessionOptions) {
   const router = useRouter();
-  const { showToast } = useToast();
+  const { showToast } = ports;
+  // Read at call time, never listed as a dependency: a screen that passes a new `routes` object each render must not
+  // re-create the callbacks that list `router`.
+  const routesRef = useRef(resolveRoundRoutes(routes));
+  routesRef.current = resolveRoundRoutes(routes);
   // After a re-create (recreateMissingRound below) the URL still names the
   // dead id until router.replace lands. Every save in that window must target
   // the row that now exists, or each one re-creates again and the player ends
@@ -263,7 +289,7 @@ export function useContinueRoundSession({
     setSubmitting(false);
     isSubmittingRef.current = false;
     startTransition(() => {
-      router.replace(`/golf/dashboard/rounds/${roundId}`);
+      router.replace(routesRef.current.round(roundId));
     });
   }, [roundId, router]);
 
@@ -794,7 +820,7 @@ export function useContinueRoundSession({
     // recoverable against the dead id. Move anything newer than this save
     // onto the new id and drop the dead key.
     migrateEmergencySave(staleRoundId, recreated.data.roundId, playerId, emergencyTimestamp);
-    router.replace(`/golf/dashboard/rounds/continue/${recreated.data.roundId}`);
+    router.replace(routesRef.current.continueRound(recreated.data.roundId));
     return true;
   }, [liveRoundId, playerId, router, showAutoSaveWarning]);
 
@@ -1392,7 +1418,7 @@ export function useContinueRoundSession({
         setError('');
         showToast('Round saved on this device. Opening recovery flow.', 'warning');
         startTransition(() => {
-          router.push('/golf/dashboard/rounds/recover?from=submit');
+          router.push(routesRef.current.recover);
         });
         return;
       }
@@ -1516,7 +1542,7 @@ export function useContinueRoundSession({
       // re-save. Set before router.push (async; the listeners stay live
       // until the component actually unmounts).
       roundExitedSafelyRef.current = true;
-      router.push('/golf/dashboard/rounds');
+      router.push(routesRef.current.library);
     } catch {
       showToast('Failed to save round. Please try again.', 'error');
     }
@@ -1553,11 +1579,86 @@ export function useContinueRoundSession({
       // re-save on a coincident unload/pagehide. Same reasoning as
       // handleSaveForLater above.
       roundExitedSafelyRef.current = true;
-      router.push('/golf/dashboard/rounds');
+      router.push(routesRef.current.library);
     } catch {
       roundDiscardedRef.current = false;
       showToast?.('Failed to delete round. Please try again.', 'error');
     }
+  };
+
+  // Screen handlers that were inline in ContinueRoundClient: session logic (refs, submit flags, the restore of a
+  // device snapshot) a second renderer would otherwise copy (ROUNDS_PLAN step 5c). Moved verbatim.
+
+  // The device-snapshot recovery dialog.
+  const handleDiscardRecovery = () => {
+    clearEmergencySave(roundId, playerId);
+    setShowRecoveryDialog(false);
+    setRecoveryData(null);
+  };
+  const handleRestoreRecovery = () => {
+    // Restore data from emergency save
+    if (!recoveryData) return;
+    if (recoveryData.completedHoleStats) {
+      setCompletedHoleStats(recoveryData.completedHoleStats);
+    }
+    if (recoveryData.inProgressShotsByHole) {
+      setInProgressShotsByHole(recoveryData.inProgressShotsByHole);
+    }
+    if (recoveryData.holes && recoveryData.holes.length > 0) {
+      setHoles(recoveryData.holes);
+    }
+    if (recoveryData.currentHoleIndex != null) {
+      setCurrentHoleIndex(recoveryData.currentHoleIndex);
+      activeProgressHoleRef.current = recoveryData.currentHoleIndex;
+    }
+    setShowRecoveryDialog(false);
+    setRecoveryData(null);
+    // Don't clear emergency save yet — will be cleared after next successful server save
+  };
+
+  // The dialog that asks a legacy qualifier row for its round number before the guarded submit.
+  const handleQualifierRoundDialogChange = (next: boolean) => {
+    setShowQualifierRoundNumberDialog(next);
+    if (!next && pendingFinalStats) setShowFinishConfirm(true);
+  };
+  const handleQualifierRoundBack = () => {
+    setShowQualifierRoundNumberDialog(false);
+    if (pendingFinalStats) setShowFinishConfirm(true);
+  };
+  const handleQualifierRoundSubmit = () => {
+    if (!pendingFinalStats || selectedQualifierRoundNumber == null) return;
+    setShowQualifierRoundNumberDialog(false);
+    void handleRoundSubmit(pendingFinalStats, selectedQualifierRoundNumber);
+  };
+
+  // The submit overlay's actions. Each one clears the submit flag the overlay's screen was holding, so no renderer
+  // has to know `isSubmittingRef` exists.
+  const handleSubmitGoBack = () => {
+    setSubmitting(false);
+    setError('');
+    setQualifierClosed(false);
+    isSubmittingRef.current = false;
+    // Always re-show the finish confirm so user can submit again
+    if (pendingFinalStats) {
+      setShowFinishConfirm(true);
+    }
+  };
+  const handleSubmitRetry = () => {
+    setError('');
+    isSubmittingRef.current = false;
+    if (pendingFinalStats) void requestRoundSubmission(pendingFinalStats);
+  };
+  const handleSubmitSaveAndExit = async () => {
+    setError('');
+    isSubmittingRef.current = false;
+    setSubmitting(false);
+    await handleSaveForLater();
+  };
+  const handleSubmitDiscard = async () => {
+    setError('');
+    isSubmittingRef.current = false;
+    setSubmitting(false);
+    await handleDeleteRound();
   };
 
   return {
@@ -1605,5 +1706,14 @@ export function useContinueRoundSession({
     activeHoleShots,
     activeShotNumber,
     handleDeleteRound,
+    handleDiscardRecovery,
+    handleRestoreRecovery,
+    handleQualifierRoundDialogChange,
+    handleQualifierRoundBack,
+    handleQualifierRoundSubmit,
+    handleSubmitGoBack,
+    handleSubmitRetry,
+    handleSubmitSaveAndExit,
+    handleSubmitDiscard,
   };
 }

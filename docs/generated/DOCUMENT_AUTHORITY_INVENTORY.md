@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 19 | 2 | 6 | 0 |
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 13 | 1 |
+| `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
@@ -198,7 +198,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | - |
 | `memory/features/roster-team.md` | current | yes | - | - | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | - |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 1 |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | - |
 | `memory/features/team-communications.md` | current | yes | - | - | - |

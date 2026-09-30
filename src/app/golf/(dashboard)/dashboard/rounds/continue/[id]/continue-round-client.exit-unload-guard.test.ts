@@ -57,18 +57,18 @@ describe('Continue Round — Save for later / Discard must not trigger the unloa
   it('handleSaveForLater sets roundExitedSafelyRef before navigating away', () => {
     const handler = slice('const handleSaveForLater = async () => {', 'const completedStatsForHole =');
     const setIndex = handler.indexOf('roundExitedSafelyRef.current = true;');
-    const pushIndex = handler.indexOf("router.push('/golf/dashboard/rounds');");
+    const pushIndex = handler.indexOf('router.push(routesRef.current.library);');
     expect(setIndex, 'roundExitedSafelyRef.current = true not found').toBeGreaterThanOrEqual(0);
-    expect(pushIndex, "router.push('/golf/dashboard/rounds') not found").toBeGreaterThanOrEqual(0);
+    expect(pushIndex, "router.push(routesRef.current.library) not found").toBeGreaterThanOrEqual(0);
     expect(setIndex).toBeLessThan(pushIndex);
   });
 
   it('handleDeleteRound sets roundExitedSafelyRef before navigating away, only on the success path', () => {
     const handler = slice('const handleDeleteRound = async () => {', 'const submittingDefinedStats =');
     const setIndex = handler.indexOf('roundExitedSafelyRef.current = true;');
-    const pushIndex = handler.indexOf("router.push('/golf/dashboard/rounds');");
+    const pushIndex = handler.indexOf('router.push(routesRef.current.library);');
     expect(setIndex, 'roundExitedSafelyRef.current = true not found').toBeGreaterThanOrEqual(0);
-    expect(pushIndex, "router.push('/golf/dashboard/rounds') not found").toBeGreaterThanOrEqual(0);
+    expect(pushIndex, "router.push(routesRef.current.library) not found").toBeGreaterThanOrEqual(0);
     expect(setIndex).toBeLessThan(pushIndex);
     // The early-return failure branch (result not successful) must not set it.
     const failureBranch = handler.slice(

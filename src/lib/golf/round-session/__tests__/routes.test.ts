@@ -33,4 +33,9 @@ describe('round session routes', () => {
     expect(engine).not.toMatch(/['"`]\/golf\/dashboard/);
     expect(engine).not.toContain("component: 'NewRoundClient'");
   });
+
+  it('are not hard-coded in the continue engine', () => {
+    const engine = readFileSync(new URL('../use-continue-round-session.ts', import.meta.url), 'utf8');
+    expect(engine).not.toMatch(/['"`]\/golf\/dashboard/);
+  });
 });

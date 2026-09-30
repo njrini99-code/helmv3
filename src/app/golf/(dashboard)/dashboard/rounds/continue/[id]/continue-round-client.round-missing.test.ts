@@ -45,7 +45,7 @@ describe('Continue Round — round_missing recovery', () => {
     // The expected-updated-at belongs to the row that is gone; sending it
     // against the fresh row would come back as a spurious conflict.
     expect(recreate).toContain('lastServerUpdatedAtRef.current = recreated.data.updatedAt');
-    expect(recreate).toContain('router.replace(`/golf/dashboard/rounds/continue/${recreated.data.roundId}`)');
+    expect(recreate).toContain('router.replace(routesRef.current.continueRound(recreated.data.roundId))');
   });
 
   it('the completed-hole checkpoint uses the shared re-create path instead of its own copy', () => {
