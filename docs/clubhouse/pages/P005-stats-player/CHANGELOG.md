@@ -2,7 +2,7 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
-## 2026-09-30 — Tabs from the keyboard
+## 2026-09-30 — Tabs from the keyboard; a one-round trend
 
 ```text
 PR/commit:      agent/clubhouse
@@ -14,6 +14,8 @@ Data impact:    none
 
 - **The profile tabs had no arrow keys.** They are now one Tab stop, and the arrows (wrapping), Home and End
   move between them and select, as in the Segmented control (52001, reworded).
+- **One round, no trend.** The phone's Scoring trend vanished under two rounds. With one it now says so:
+  "One round so far: 74 on Oct 3. The trend draws from the second." With none it stays out.
 
 ## 2026-09-30 — Page docs, permission proven, six bugs fixed
 

@@ -188,7 +188,7 @@ function Figures({ data }: { data: ChPlayerProfile }) {
 function Trend({ data }: { data: ChPlayerProfile }) {
   // Oldest first, the last ten 18-hole rounds.
   const rounds = [...data.rounds].reverse().slice(-10);
-  if (rounds.length < 2) return null;
+  if (rounds.length === 0) return null;
   const change = rounds[rounds.length - 1]!.score - rounds[0]!.score;
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-spm-trend">
@@ -196,12 +196,19 @@ function Trend({ data }: { data: ChPlayerProfile }) {
         <h2 id="ch-spm-trend">Scoring trend</h2>
         <span className="ch-num">Last {rounds.length}</span>
       </div>
-      <ScoreLine
-        values={rounds.map((r) => r.score)}
-        from={rounds[0]!.date}
-        to={rounds[rounds.length - 1]!.date}
-        label={`Scores over the last ${rounds.length} rounds, from ${rounds[0]!.score} to ${rounds[rounds.length - 1]!.score}${change === 0 ? '' : `, ${Math.abs(change)} ${change < 0 ? 'lower' : 'higher'}`}.`}
-      />
+      {/* A line needs two rounds; with one the panel says what there is instead of vanishing. */}
+      {rounds.length === 1 ? (
+        <p className="ch-stm-note">
+          One round so far: <span className="ch-num">{rounds[0]!.score}</span> on {rounds[0]!.date}. The trend draws from the second.
+        </p>
+      ) : (
+        <ScoreLine
+          values={rounds.map((r) => r.score)}
+          from={rounds[0]!.date}
+          to={rounds[rounds.length - 1]!.date}
+          label={`Scores over the last ${rounds.length} rounds, from ${rounds[0]!.score} to ${rounds[rounds.length - 1]!.score}${change === 0 ? '' : `, ${Math.abs(change)} ${change < 0 ? 'lower' : 'higher'}`}.`}
+        />
+      )}
     </section>
   );
 }

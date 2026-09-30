@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -324,6 +324,24 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     hapticSpy.mockClear();
     await user.click(screen.getByRole('button', { name: 'Approach' }));
     expect(hapticSpy).not.toHaveBeenCalled();
+  });
+
+  it('the phone trend: a line from two rounds; one round says what there is instead of vanishing; none leaves it out', () => {
+    const [first, second] = PREVIEW_PLAYER.rounds;
+    const trend = () => screen.queryByRole('heading', { level: 2, name: 'Scoring trend' });
+    phone(player({ rounds: [first!, second!] }));
+    expect(trend()).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Scores over the last 2 rounds/ })).toBeTruthy();
+    cleanup();
+    phone(player({ rounds: [first!] }));
+    expect(trend()).toBeTruthy();
+    expect(screen.queryByRole('img', { name: /Scores over/ })).toBeNull();
+    expect(screen.getByText(/One round so far/).textContent).toBe(`One round so far: ${first!.score} on ${first!.date}. The trend draws from the second.`);
+    cleanup();
+    phone(player({ rounds: [] }));
+    expect(trend()).toBeNull();
+    // Left out, not crashed into the section's error (CH-5204).
+    expect(document.querySelector('[data-ch-code="CH-5204"]')).toBeNull();
   });
 
   it('a coach: Player stats, back to Team, Message; the window switch changes the window', async () => {
