@@ -6,8 +6,8 @@ errors, and the behaviour every page shares. Code `src/clubhouse/shell/`,
 
 The shell's rows apply on every page: a page's own catalog only lists what is
 specific to it. The accessibility scan (`npm run clubhouse:a11y`, axe-core,
-WCAG 2.2 AA at 1280px and 390px) covers the bell panel and the phone More
-sheet open. The phone chrome (the tab bar, the top bar's variants, pushed
+WCAG 2.2 AA at 1280px and 390px) covers the bell panel, the phone bell sheet
+and the phone More sheet open. The phone chrome (the tab bar, the top bar's variants, pushed
 screens) follows the owner's design (`docs/clubhouse/phone/foundation.md`,
 D-40 to D-43).
 
@@ -83,7 +83,7 @@ D-40 to D-43).
 | CH-1804 | Toasts are announced: confirmations politely, errors right away | `aria-live="polite"`, `role="alert"` on errors | shell.test › CH-1804 |
 | CH-1805 | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard | `Bell`, `Menu` (arrow keys, Home, End, Esc) | preview |
 | CH-1806 | Every control shows a focus ring on keyboard focus; text fields show their own green or ink ring instead, never two | `base.css` `:focus-visible` | preview |
-| CH-1807 | No axe violations (WCAG 2.2 AA, contrast included) with the bell open and the More sheet open | `npm run clubhouse:a11y` | a11y scan |
+| CH-1807 | No axe violations (WCAG 2.2 AA, contrast included) with the bell open (a sheet on the phone) and the More sheet open | `npm run clubhouse:a11y` | a11y scan |
 | CH-1808 | The phone tab bar lists the role's tabs (coach: Home, Helm, Rounds, Stats, More; player: Home, Calendar, Messages, My stats, More; D-40), and when Messages is under More, More is named with its unread count ("More, 3 unread messages") | `TabBar`, `phoneTabsFor` | shell.test › CH-1808 |
 | CH-1809 | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it | `PhoneScreen`, `usePhoneImmersive` | shell.test › CH-1809 |
 | CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |

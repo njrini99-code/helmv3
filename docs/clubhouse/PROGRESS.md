@@ -61,6 +61,20 @@ Starting the next session:
    migration and left unapplied. Open for the owner: marking #2102 ready for
    review, and the live pass on a Vercel preview (Q-4).
 
+Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
+
+- Foundation: `phone` doing. Built and checked at 390px: the top bar's variants, the ivory tab bar with
+  each role's tabs (D-40), the More sheet (D-41), pushed screens that the edge swipe pops, 44px taps,
+  sheets that drag shut (CH-1611) and the bell as a phone sheet (CH-1811). Pages build on `PhoneTop`,
+  `PhoneBar`, `PhoneScreen`, `usePhoneStackHistory`, `useSheetDrag` and `Modal`. Open: the real-iPhone
+  check (the owner).
+- Messages: `phone` doing. The phone stack (Inbox, Thread, Details, New message, announcements) on the
+  same container and hooks, plus `getGolfConversationFiles` (D-48). Open: the real-iPhone check and
+  owner review (the owner); reduced motion and a keyboard walk in a browser (the next agent slot); the
+  e2e run, full build, full suite and performance (the merge pass); forced send, edit, delete and
+  leave failures against a live session (the merge pass). After Clubhouse: the queued attachment
+  migration (Data gaps).
+
 ## Screens
 
 <!-- clubhouse:screens:start -->
@@ -203,3 +217,4 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - 2026-09-29 · Foundation, Messages · phone-spec done: the owner answered Q-40 to Q-64 (D-40 to D-49). The specs cite the decisions, each checklist's third box is ticked, and the doctrine now allows red for destructive actions (D-42). `clubhouse:check` exit 0.
 - 2026-09-29 · Foundation, Messages · phone built (doing): the phone shell (D-40 to D-43) and Messages as a pushed stack (D-44 to D-49), with `getGolfConversationFiles` (participant check, RLS client, metadata only; security review found no Critical or High issue; its finding in this change, deleted files taking slots under the cap, is fixed; two pre-existing ones stay open: `getGolfMessageAttachments` returns storage paths and signed URLs for files on deleted messages, and `anon` holds table grants on `golf_message_attachments`). typecheck 0, eslint 0 errors, `npx vitest run src/clubhouse` 295/295 exit 0, the files action test 5/5, `clubhouse:check` 0, `clubhouse:a11y` on :3104 exit 0 (111 pages, the two known Calendar findings), `npm run build` 0. Left open: sheets don't drag to dismiss yet (a `Modal` gap) and the Bell is a popover on the phone; not yet checked on a real iPhone through `npm run ios:dev`.
 - 2026-09-29 · Foundation · phone: sheets follow the finger and drag shut (CH-1611, `useSheetDrag`; the More sheet's framer drag had never run under `domAnimation`), spring back in 360ms, and don't drag with reduced motion; the bell is a modal sheet on the phone (CH-1811, CH-1612). typecheck:fast 0, `test:file` shell 33/33, `clubhouse:check` 0, `clubhouse:a11y shell` 0 (5 pages) and `shell messages` 0 (29 pages) on :3104, then stopped. Four of five phone boxes ticked; left: the check on a real iPhone through `npm run ios:dev`.
+- 2026-09-29 · Foundation, Messages · tracker pass (docs only, no servers): the phone specs carry a build status, every open box names who owns it (the owner: the real-iPhone check and review; the merge pass: e2e, build, full suite, performance, live forced failures; the next agent slot: reduced motion and a keyboard walk), the phone-only states list their catalog numbers, and the shell catalog notes the bell sheet in the scan. Gate cells unchanged: both `phone` gates stay doing with one open box each. `clubhouse:check` exit 0.

@@ -19,6 +19,21 @@ Anything the design shows without a backend is listed under "Gaps". The owner an
 on 2026-09-29 (Q-48 to Q-64, decided as D-44 to D-49; the shell's are D-40 to D-43), and each row names
 the decision it follows.
 
+## Build status (2026-09-29)
+
+Built on `agent/clubhouse-messages-mobile` as `MessagesPhone.tsx`, on the same container, hooks and
+actions: the Inbox, Thread, Details, New message and the announcement screens, for coach and player, with
+one new read action, `getGolfConversationFiles` (D-48). Checked at 390px and 430px next to the design's
+boards (captures below); checklist `screens/messages.md`, phone section.
+
+Open, with who owns each:
+
+- The check on a real iPhone through `npm run ios:dev`: the owner.
+- The e2e run (`npm run test:e2e -- e2e/messages.spec.ts`), the full build and the full test suite: the
+  merge pass.
+- Reduced motion with the OS setting on, and a full keyboard walk, in a browser: the next agent slot.
+- Owner review of the built screens: the owner.
+
 ## Screens and navigation
 
     More tab ─ Inbox ─┬─ Thread ─ Details
@@ -193,18 +208,21 @@ Every board shows a head coach. The player's view below comes from D-15 and the 
 | Check reaction | Six stored reactions (D-14) | A new stored value | Not offered (D-49) |
 | "Admin" on the assistant coach | Only the creator can manage members | — | Creator only (D-49) |
 
-## Phone-only states (numbered at build, not now)
+## Phone-only states (numbered at build)
 
-Catalog rows are added when the code and the tests exist, so that `clubhouse:check` stays true:
+Each has a catalog row and a test (`catalog/messages.md`):
 
-- the long-press action sheet
-- push and pop
-- "conversation created, first message not sent" from New message
+- the long-press action sheet: CH-7604, with its haptic CH-7704 and a path besides the long press, CH-7804
+- push and pop: the shell's CH-1610 and CH-1906
+- "conversation created, first message not sent" from New message: the draft stays in the thread's
+  composer, CH-7004
+- copying a message, shared files and adding members: CH-7018 to CH-7021, CH-7214, CH-7215, CH-7306,
+  CH-7307, CH-7409 and CH-7410
 - (pull to refresh waits for a design, D-43)
 
-## Today at 390px (captures `messages-preview-*`)
+## Before the build: 390px on 2026-09-29 (captures `messages-preview-*`)
 
-The preview reflows the desktop layout:
+The preview reflowed the desktop layout:
 
 - a breadcrumb bar with the bell and Settings
 - the green tab bar with a Messages tab
@@ -213,7 +231,7 @@ The preview reflows the desktop layout:
 - Details as a side panel that covers most of the thread
 - New message as a bottom sheet with Direct / Group / Announcement
 
-The phone build replaces all of this with the stack above.
+The phone build replaced all of this with the stack above.
 
 ## Captures
 
@@ -232,7 +250,8 @@ at 390 × 844 @2x, and our preview at 390 × 844 for coach and player.
 | `messages-19` to `21` | Pinehurst travel: a thread with a file and two reactions; its details, top and scrolled |
 | `messages-22` | A direct thread with the assistant coach |
 | `messages-90-derived-inbox-without-safari.png` | Not in the design: the Inbox with Safari removed and the tab bar padded 34px for the home indicator (D-43) |
-| `messages-preview-{coach,player}-*` | Our preview today: the list, threads, details, New message, the More sheet, and an announcement |
+| `messages-preview-{coach,player}-*` | Our preview before the build: the list, threads, details, New message, the More sheet, and an announcement |
+| `built/built-{390,430}-*` | The built phone screens, named after the board captures they match (`01-inbox` to `40-announcement`) |
 
 No board has an open sheet, a keyboard, or an empty, loading or failed state. Those follow the
 catalog, laid out for the phone.

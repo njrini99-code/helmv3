@@ -58,7 +58,7 @@ Route: (shell, tokens, primitives)   Surface tag: `shell`
 - [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent (a hit-test probe at 390px (every control drawn under 44px must take a tap 21px from its centre) over the More sheet, top bar, tab bar and pushed screens: 0 misses on 2026-09-29. Controls drawn smaller keep the design's size and carry a 44px hit area. Home's own 36px header buttons belong to Home's phone gate)
 - [x] Sheets are used instead of popovers, and they drag to dismiss (the More sheet, the bell (a sheet on the phone since CH-1811) and every `Modal` sheet follow the finger and close past 80px, CH-1611 and CH-1811 in shell.test. At 390px with real touch input the More and Modal sheets followed a drag, sprang back and closed, scratchpad `phone-shell/drag-390-*`; the bell sheet with a list, empty and failed: `phone-shell/bell-after-390*`. `clubhouse:a11y shell` exit 0, 5 pages, the bell sheet open at 390)
 - [x] The bottom tab bar and toasts don't overlap content (a list scrolled to its end clears the tab bar, capture `built-390-02-inbox-scrolled`; toasts sit above the tab bar, and above the composer on a pushed screen, `shell.css` `.ch-toasts` phone rules)
-- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
+- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device (open: the owner, on a device through `npm run ios:dev`)
 
 ## motion
 - [ ] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease

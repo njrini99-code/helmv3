@@ -16,6 +16,23 @@ It applies below 820px and in the iOS app: iPhone only, portrait, light theme (D
 drawn at 402 × 874, the `IOSDevice` default. They were captured at 390 × 844, and no rule in the shell
 depends on the width.
 
+## Build status (2026-09-29)
+
+Built on `agent/clubhouse-messages-mobile` and checked at 390px (checklist: `screens/foundation.md`,
+phone section):
+
+- The top bar's variants (`TopBar`, `PhoneTop`, `PhoneBar`), the ivory tab bar with each role's tabs and
+  the Messages count rolled onto More (`TabBar`, D-40), the More sheet (D-41), pushed screens that the
+  edge swipe and back pop (`PhoneScreen`, `usePhoneStackHistory`), and the neutral phone avatar (D-43).
+  Catalog CH-1610, 1808, 1809, 1810, 1906.
+- Every control takes a 44px tap while keeping its drawn size.
+- Sheets follow the finger and close past 80px or on a flick (`useSheetDrag`, CH-1611): More, the bell
+  and every `Modal`. With reduced motion they fade and don't drag.
+- The bell is a sheet on the phone (CH-1811, CH-1612).
+
+Open: the check on a real iPhone through `npm run ios:dev`, with haptics felt (the owner). The push
+soft ask and pull to refresh wait for a drawing (D-43).
+
 ## Design versus device chrome
 
 - `MSafari`, the address pill and toolbar under every board, is Safari's own chrome and not app UI.
