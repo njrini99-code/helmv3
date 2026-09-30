@@ -781,6 +781,20 @@ async function getInsightsForCoachWithMetaImpl(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { ok: false, error: 'Not authenticated.' };
 
+  // `coachId` arrives from the caller, and the exposure rows written below are
+  // attributed to a coach. Take that coach from the session, never from the
+  // argument: otherwise any account could record exposures under another
+  // coach's name. (Some callers pass the auth user id here; the reads are RLS
+  // scoped either way.)
+  const { data: self, error: selfError } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  // A failed read records exposures with no coach rather than a guessed one;
+  // the feed itself does not depend on this row.
+  const exposureCoachId: string | null = selfError ? null : (self?.id ?? null);
+
   // Player filter → authorization path. Without a player_id the RLS policies
   // on `golf_coach_insights` restrict reads to teams the coach staffs, which
   // is what we want for the coach dashboard sweep.
@@ -918,7 +932,7 @@ async function getInsightsForCoachWithMetaImpl(
   const data_ = ranked.slice(0, limit);
   // Record exposure for the page the coach actually receives (post rank + dedupe
   // + slice). Rows beyond the limit are NOT counted — only what's surfaced is.
-  recordExposureForReturned(data_, 'coach_feed', coachId, scoreById);
+  recordExposureForReturned(data_, 'coach_feed', exposureCoachId, scoreById);
   return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 

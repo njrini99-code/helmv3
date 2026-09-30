@@ -45,8 +45,12 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({ auth: { signUp, getUser } })),
 }));
 
+// The spent-invite check reads golf_staff_invite_redemptions by nonce.
+const redemption: { row: { nonce: string } | null } = { row: null };
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }),
+  createAdminClient: () => ({
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: redemption.row, error: null }) }) }) }),
+  }),
 }));
 
 vi.mock('@/lib/admin-logger', () => ({
@@ -72,6 +76,7 @@ describe('signupWithStaffInviteAction — the invite is the authorization', () =
   const originalSecret = process.env.COACHHELM_INTERNAL_SECRET;
 
   beforeEach(() => {
+    redemption.row = null;
     signUp.mockReset();
     signUp.mockResolvedValue({
       data: { user: { id: 'user-1' }, session: { access_token: 'tok' } },
@@ -104,6 +109,19 @@ describe('signupWithStaffInviteAction — the invite is the authorization', () =
     const options = signUp.mock.calls[0]![0].options;
     expect(options.data.role).toBe('coach');
     expect(options.data.sport).toBe('golf');
+  });
+
+  it('refuses an invite that was already redeemed, before creating any account', async () => {
+    // Without this, a forwarded or reused link created a coach login attached
+    // to no program: redeemStaffInvite refused the replay only afterwards.
+    redemption.row = { nonce: 'spent' };
+    const token = signStaffInvite(TEAM, ORG, 'coach')!;
+
+    const result = await signupWithStaffInviteAction(token, 'second@uncw.edu', STRONG_PASSWORD, 'Second Person');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('already been used');
+    expect(signUp).not.toHaveBeenCalled();
   });
 
   it('refuses junk instead of creating an account', async () => {

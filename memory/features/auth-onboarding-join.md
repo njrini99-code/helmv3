@@ -86,6 +86,12 @@ Join code
 - A session that expires mid-request on `/golf/dashboard` (passes the top-of-page check, fails the data-fetch re-validation with `Not authenticated`) redirects to `/golf/login?returnTo=/golf/dashboard` instead of hitting the error boundary. Retryable auth failures (network / GoTrue 5xx) still surface to the error boundary — only a genuinely missing/expired session redirects.
 - College/coach/player role rules must be respected before granting dashboard access.
 - Service-role logic must stay server-only and admin-bounded.
+- A team join code signs up players only. `signupActionImpl` refuses any
+  other role on a roster code before `auth.signUp` runs, so no account is
+  created. Assistants join with a staff invite code, whose role lives in a
+  signed token. There is no service-role assistant join; pinned by
+  `src/app/golf/actions/__tests__/assistant-join-surface.test.ts` and
+  `auth-signup-gate.test.ts`.
 
 ## UI Contract
 
