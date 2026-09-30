@@ -143,6 +143,11 @@ The prototype is static. From `MOBILE.md`:
 - reduced motion fades it instead
 - the swipe-back guard stays off while it is open (`data-state="open"`, as built)
 
+As built (2026-09-29): the More sheet, the bell's phone sheet and `Modal` rise in 360ms and follow the
+finger from the grab and the header; past 80px or on a flick they close with `press`, otherwise they
+spring back in 360ms; with reduced motion they fade and don't drag (`useSheetDrag`, CH-1611, CH-1612,
+CH-1811). The body scrolls and doesn't start a drag.
+
 ## Safe areas and the keyboard
 
 - Top: `env(safe-area-inset-top)` replaces the drawn 54px.
@@ -171,7 +176,7 @@ The prototype responds to clicks only. The drawing shows none of these gestures;
 | Chip or segmented choice | Filters | `select` |
 | Switch | Settings rows | `select` |
 | Primary action (Send, Next, Create group) | Top bar, composer | `press`, then `commit` or `error` for the outcome |
-| Drag a sheet down past the threshold | Sheets | `press`, as the More sheet does today |
+| Drag a sheet down past the threshold | Sheets | `press` (built, CH-1611) |
 | Long press | A message bubble (Messages) | `press` when the menu opens |
 | Destructive confirm | Leave group, Delete message | `warning` on the destructive button, then `commit` |
 | Pull to refresh | Lists | Light, at the threshold. Still waits for a drawing (D-43) |
@@ -193,7 +198,9 @@ The design draws some controls smaller than 44px:
 - the send button, 34px
 - the sheet close, 32px
 
-Each keeps its drawn size and gets a 44px hit area, as `MOBILE.md` requires.
+Each keeps its drawn size and gets a 44px hit area, as `MOBILE.md` requires. Built on 2026-09-29: a
+transparent border or a `::before` area around each; a hit-test at 390px found no control that misses a
+tap 21px from its centre.
 
 ## Colours: raw values in the design and their tokens
 

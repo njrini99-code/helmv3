@@ -110,7 +110,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7601 | A message arrives or is sent | It appears in place, no count-up or stagger; the thread keeps its scroll unless you're at the bottom | `Thread` | preview |
 | CH-7602 | Someone is typing | Three dots pulse under the last message | `.ch-ms-typing` | preview |
 | CH-7603 | Opening details or a reaction bar | It opens from its button (150ms) | `CH_POP` | preview |
-| CH-7604 | A long press on a message (phone) | The message sheet rises (360ms): the six reactions, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | preview |
+| CH-7604 | A long press on a message (phone) | The message sheet rises (360ms): the six reactions, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
 
 ## 77xx Haptics
 

@@ -85,11 +85,11 @@ they return.
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [ ] No request waterfall on the server, with independent reads in parallel (open: the merge pass)
-- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily (open: the merge pass, with the build's output)
-- [ ] No layout shift after first paint (open: the merge pass)
+- [x] No request waterfall on the server, with independent reads in parallel (`src/clubhouse/data/messages.ts` reads the team, its settings and its players in one `Promise.all`; only the coaches read waits, on the team's organization)
+- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily (Messages is one client island on the realtime hooks; this branch loads `domAnimation` up front, and `agent/clubhouse` loads it lazily since 314b03055. Open: the merge pass, with the build's output)
+- [ ] No layout shift after first paint (not measured. Open: the merge pass, with the build)
 
 ## verified
-- [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log (green on this branch and logged, but the full suite, the build and the e2e run, `npm run test:e2e -- e2e/messages.spec.ts`, belong to the merge pass)
+- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log (PROGRESS log, 2026-09-29: typecheck 0, eslint 0 errors, `clubhouse:check` 0, `npx vitest run src/clubhouse` 295/295, the files action test 6/6, then `test:file` for messages and the other Modal screens 190/190 after the sheet work. The full suite, the build and the e2e run, `npm run test:e2e -- e2e/messages.spec.ts`, run again at the merge pass)
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md (open: the owner or the merge pass, signed in as a real coach)
 - [ ] Owner review of the built screen (open: the owner)
