@@ -48,8 +48,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
-| `INDEX` | 22 | 1 | 7 | 5 |
-| `UNKNOWN` | 201 | 12 | 46 | 84 |
+| `INDEX` | 23 | 1 | 7 | 5 |
+| `UNKNOWN` | 202 | 12 | 46 | 84 |
 
 ## Files
 
@@ -554,6 +554,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `.circleci/README.md` | current | - | - | - | - |
 | `.claude/workflows/README.md` | current | - | - | - | - |
+| `design/handoff/README.md` | current | - | - | - | - |
 | `design/handoff/mobile/README.md` | current | - | - | - | - |
 | `docs/README.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/README.md` | current | - | - | - | - |
@@ -584,6 +585,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/branch-protection.md` | current | - | - | - | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
 | `design/handoff/README-v1.md` | current | - | - | - | - |
+| `design/handoff/VERSIONS.md` | current | - | - | - | - |
 | `design/handoff/_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/readme.md` | current | - | - | - | 1 |
 | `design/handoff/design-system/SKILL.md` | current | - | - | - | - |
 | `design/handoff/design-system/components/buttons/Button.prompt.md` | current | - | - | - | - |
