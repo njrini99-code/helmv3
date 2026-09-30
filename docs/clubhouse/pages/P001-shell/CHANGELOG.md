@@ -2,6 +2,21 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The shell starts the offline sync engine (swap audit F-14)
+
+```text
+PR/commit:      agent/clubhouse (release train #2110)
+Design package: none (swap audit fix, no visual change)
+Contract IDs:   none (no UI)
+Actions:        none
+Data impact:    `shell/OfflineSync.tsx` (new, no UI) is mounted in `ClubhouseShell`; it initializes `getSyncEngine()` and feeds `useOfflineSyncStore`, as the Fairway shell's `OfflineProvider` does. No schema change.
+Held items:     none
+```
+
+- **Issue.** Only the Fairway shell started the sync engine. Under Clubhouse, a round, hole or shot queued offline synced only while a round screen was open: no interval, no sync after a reload, and service-worker sync requests went unanswered.
+- **Fix.** `OfflineSync` starts the engine for the session, mirrors its state into the offline store (which drives the offline banner and round screens), answers `sw-sync-requested`, and stops auto-sync on unmount.
+- **Checked.** `offline-sync.test.tsx` 3/3; shell 49/49.
+
 ## 2026-09-30 — Phone sheets and the keyboard; Phone tap targets reach 44 x 44; Quick second taps; Native-feel and phone-width scans; Old addresses open the rebuilt screens; The bell on phone tab roots (Clickables gap 1); Team Hub count for players (Clickables gap 3); The gear opens the page's own settings (Clickables gap 20)
 
 ```text

@@ -10,8 +10,8 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Doc
 | --- | --- | --- |
 | Production (served) | `6ee77e98e` | `npm run release:status`, at session start |
 | main | `c706fc80e` | `origin/main` |
-| Clubhouse candidate (#2102) | `940f86f8c` | `agent/clubhouse` |
-| Release train (candidate for tonight) | `agent/release-train` (includes #2102, #2104 round engine, #2108 security, #2109 stats engine) | local merge-train branch; frozen SHA recorded in §6 |
+| Clubhouse candidate (#2102) | `c221d1ca2` | `agent/clubhouse` |
+| Release train | PR #2110, `agent/release-train` at `c0f1b17fe` (#2102, #2104 round engine, #2108 security, #2109 stats engine, plus the audit fixes) | local `next build` exit 0 at `24a4bbca2` (later commits: docs, lint layout, the Hub read fix, one test timeout); CI rerunning at `c0f1b17fe` |
 
 **Production flag state:** `golf_clubhouse_ui` and `golf_clubhouse_front_door` are off in production and on in preview and development (`config/feature-flags.yml`). Per Q-4, production stays off until the owner has done a live preview pass. A train deploy therefore ships the flag-off (Fairway) experience plus the shared fixes. Every finding below that says "flag on" affects no customer until the flag is flipped.
 
