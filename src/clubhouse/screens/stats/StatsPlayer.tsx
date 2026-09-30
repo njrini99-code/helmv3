@@ -22,12 +22,14 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useChPhone } from '../../lib/use-phone';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
 import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, YardagePage } from './charts';
 import { GameDetail } from './GameDetail';
+import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { WindowSwitch } from './WindowSwitch';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
@@ -48,6 +50,7 @@ export function formNote(first: string, scores: number[]): string {
 export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string }) {
   const router = useRouter();
   const reduced = useChReducedMotion();
+  const phone = useChPhone();
   const [tab, setTab] = useState<Tab>(() => TABS.find((t) => t === initialTab) ?? 'overview');
   const [focusOpen, setFocusOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -81,8 +84,28 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     ['dev', 'Development'],
   ];
 
+  const sheet = coach && coachId && <FocusAreaSheet open={focusOpen} onClose={() => setFocusOpen(false)} playerId={data.id} coachId={coachId} first={first} />;
+
+  if (phone)
+    return (
+      <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+        <StatsPlayerPhone
+          data={data}
+          initialTab={initialTab}
+          playerHref={href(data.id, data.window)}
+          messageHref={messageHref}
+          onWindow={(v) => go(data.id, v)}
+          onBackToTeam={() => go(null, data.window)}
+          onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
+          onRetry={() => router.refresh()}
+        />
+        {sheet}
+      </main>
+    );
+
+  // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
   return (
-    <main className="ch-st" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+    <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
       {coach && (
         <div className="ch-st-back">
           <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.window)}>
@@ -220,7 +243,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
         )}
       </div>
 
-      {coach && coachId && <FocusAreaSheet open={focusOpen} onClose={() => setFocusOpen(false)} playerId={data.id} coachId={coachId} first={first} />}
+      {sheet}
     </main>
   );
 }

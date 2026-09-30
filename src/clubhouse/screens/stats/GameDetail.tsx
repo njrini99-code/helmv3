@@ -25,6 +25,7 @@ const SECTIONS = [
 
 function Sec({
   id,
+  hide = false,
   icon,
   title,
   lead,
@@ -33,6 +34,8 @@ function Sec({
   children,
 }: {
   id: string;
+  /** The phone shows one section at a time (the chips switch it); desktop shows all five. */
+  hide?: boolean;
   icon: LucideIcon;
   title: string;
   lead: string;
@@ -40,6 +43,7 @@ function Sec({
   figs: Array<[string, string, string | null, Tone]>;
   children: ReactNode;
 }) {
+  if (hide) return null;
   return (
     <section className="ch-gm" id={`gm-${id}`} aria-labelledby={`gm-${id}-t`}>
       <header className="ch-gm__head">
@@ -82,10 +86,12 @@ function Panel({ title, note, wide, children }: { title: string; note?: string; 
  * a D1 average, then the matched visuals. Missing shot data reads as a dash
  * and a plain sentence, never a zero.
  */
-export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<string, number>; first: string; rounds: number }) {
+export function GameDetail({ s, d1, first, rounds, phone = false }: { s: GolfStats; d1: Record<string, number>; first: string; rounds: number; phone?: boolean }) {
   const [on, setOn] = useState<string>('scoring');
+  const show = (id: string) => !phone || on === id;
 
   useEffect(() => {
+    if (phone) return;
     const els = SECTIONS.map(([id]) => document.getElementById(`gm-${id}`)).filter((e): e is HTMLElement => !!e);
     const io = new IntersectionObserver(
       (entries) => {
@@ -96,11 +102,13 @@ export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<
     );
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
-  }, []);
+  }, [phone]);
 
   const jump = (id: string) => {
+    if (phone && id === on) return;
     haptic('select');
     setOn(id);
+    if (phone) return;
     document.getElementById(`gm-${id}`)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   };
 
@@ -177,7 +185,7 @@ export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<
   const sample = `${rounds} ${rounds === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
 
   return (
-    <div className="ch-gd">
+    <div className={'ch-gd' + (phone ? ' is-phone' : '')}>
       <nav className="ch-gd__nav" aria-label="Game sections">
         {SECTIONS.map(([id, l]) => (
           <button key={id} type="button" className="ch-pill" aria-pressed={on === id} onClick={() => jump(id)}>
@@ -189,6 +197,7 @@ export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<
 
       <Sec
         id="scoring"
+        hide={!show('scoring')}
         icon={Flag}
         title="Scoring"
         sub={`${s.roundsPlayed} rounds`}
@@ -216,6 +225,7 @@ export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<
 
       <Sec
         id="tee"
+        hide={!show('tee')}
         icon={MoveUpRight}
         title="Off the tee"
         sub={`${s.fairwayOpportunities} drives`}
@@ -250,6 +260,7 @@ export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<
 
       <Sec
         id="approach"
+        hide={!show('approach')}
         icon={Crosshair}
         title="Approach"
         sub={`${s.girOpportunities} approach shots`}
@@ -306,6 +317,7 @@ export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<
 
       <Sec
         id="short"
+        hide={!show('short')}
         icon={FlagTriangleRight}
         title="Short game"
         sub={`${s.scrambleAttempts} chances`}
@@ -350,6 +362,7 @@ export function GameDetail({ s, d1, first, rounds }: { s: GolfStats; d1: Record<
 
       <Sec
         id="putting"
+        hide={!show('putting')}
         icon={CircleDot}
         title="Putting"
         sub={`${s.totalPutts} putts`}

@@ -13,6 +13,7 @@ its own boundary, so a crash stays inside the tab.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-5001 | Proposing a focus area fails | "Couldn't add the focus area for Jonah" + "Your text is still here. Try again in a moment." Retry; the sheet stays open with the text. Done: "Focus area proposed to Jonah. It starts when Jonah accepts." | `useAction('stats.addFocusArea')` | stats-player.test › CH-5001 |
+| CH-5002 | Sharing a player's stats from the phone fails (the browser blocks the clipboard) | "Couldn't share the link" + "Your browser blocked it. Try again, or copy the address from the browser." Error haptic. Closing the share sheet is not a failure. Done: "Link copied" | `StatsPlayerPhone` share | stats-player.test › CH-5002 |
 
 ## 51xx Validation
 
@@ -76,3 +77,4 @@ its own boundary, so a crash stays inside the tab.
 | CH-5804 | The focus-area field's name is just "What to work on"; its help or error is read as its description | `label htmlFor`, `aria-describedby`, `aria-invalid` | stats-player.test › CH-5101 |
 | CH-5805 | No axe violations on every tab and state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-5806 | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it | `ScrollRegion` | a11y scan |
+| CH-5807 | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing | `aria-expanded`; `aria-pressed` | stats-player.test › phone rounds |

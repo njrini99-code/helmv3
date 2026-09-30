@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Stats (player): every numbered state in docs/clubhouse/catalog/stats-player.md, found by its number. */
 
@@ -22,6 +22,7 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { NotOnTeam, StatsNoTeam } from '../routes/stats';
 import { ToastProvider } from '../ui/Toast';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
 import './dialog-polyfill';
 
@@ -221,5 +222,122 @@ describe('Stats player · haptics and accessibility', () => {
     expect(route.getAttribute('aria-label')).toMatch(/Off the tee .+, Approach .+, Around green .+, Putting .+/);
     const figs = document.querySelector('.ch-pf-hero__figs')!;
     for (const child of figs.children) for (const el of child.children) expect(['DT', 'DD']).toContain(el.tagName);
+  });
+});
+
+describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    router.push.mockClear();
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  /** The shell's phone top bar, where the page's PhoneTop renders. */
+  function SlotHost() {
+    const { setSlot } = usePhoneChromeState();
+    return <div ref={setSlot} data-testid="phone-top" />;
+  }
+  const phone = (data: ChPlayerProfile, initialTab?: string, coachId: string | null = 'c1') =>
+    wrap(
+      <PhoneChromeProvider>
+        <SlotHost />
+        <StatsPlayer data={data} coachId={coachId} initialTab={initialTab} />
+      </PhoneChromeProvider>,
+    );
+  const top = () => screen.getByTestId('phone-top');
+
+  it('the phone view replaces desktop: who, three figures, one game section at a time', async () => {
+    const user = userEvent.setup();
+    phone(player());
+    expect(document.querySelector('.ch-st.is-desk')).toBeNull();
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
+    expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds · 3.9 hcp');
+    const figs = document.querySelector('.ch-stm-figs')!;
+    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Form']);
+    // One section: Scoring first; a chip switches it with a tick.
+    expect(screen.getByRole('heading', { level: 2, name: 'Scoring' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Approach' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Approach' }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(screen.getByRole('heading', { level: 2, name: 'Approach' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Scoring' })).toBeNull();
+    expect(screen.getByText('Proximity to the hole')).toBeTruthy();
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Approach' }));
+    expect(hapticSpy).not.toHaveBeenCalled();
+  });
+
+  it('a coach: Player stats, back to Team, Message; the window switch changes the window', async () => {
+    const user = userEvent.setup();
+    phone(player());
+    expect(within(top()).getByRole('heading', { name: 'Player stats' })).toBeTruthy();
+    await user.click(within(top()).getByRole('button', { name: 'Back to Team' }));
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats', { scroll: false });
+    expect(screen.getByRole('link', { name: 'Message Jonah' })).toBeTruthy();
+    await user.click(screen.getByRole('radio', { name: /Season/ }));
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?player=jonah&window=season', { scroll: false });
+  });
+
+  it('Share copies the player’s link; a blocked clipboard says so (CH-5002)', async () => {
+    const user = userEvent.setup();
+    phone(player());
+    const copy = vi.spyOn(navigator.clipboard, 'writeText');
+    await user.click(within(top()).getByRole('button', { name: "Share Jonah's stats" }));
+    await waitFor(() => expect(copy).toHaveBeenCalledWith(`${window.location.origin}/golf/dashboard/stats?player=jonah`));
+    expect(await screen.findByText('Link copied')).toBeTruthy();
+    copy.mockRejectedValueOnce(new Error('blocked'));
+    await user.click(within(top()).getByRole('button', { name: "Share Jonah's stats" }));
+    await expectCode('CH-5002', /Couldn.t share the link/);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+  });
+
+  it('a player: My stats, back to More, no Share, no Message, no Add', () => {
+    phone(player({ viewer: 'player' }), undefined, null);
+    expect(within(top()).getByRole('heading', { name: 'My stats' })).toBeTruthy();
+    expect(within(top()).getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(within(top()).queryByRole('button', { name: /Share/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Message/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add focus area' })).toBeNull();
+  });
+
+  it('rounds show five, then all; ?tab=rounds opens them all', async () => {
+    const user = userEvent.setup();
+    const { unmount } = phone(player());
+    const rows = () => document.querySelectorAll('.ch-spm-round').length;
+    expect(rows()).toBe(5);
+    await user.click(screen.getByRole('button', { name: 'All 10 rounds' }));
+    expect(rows()).toBe(10);
+    unmount();
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    phone(player(), 'rounds');
+    expect(rows()).toBe(10);
+    expect(scroll).toHaveBeenCalledWith({ block: 'start' });
+  });
+
+  it('Add focus area opens the same sheet as desktop', async () => {
+    const user = userEvent.setup();
+    phone(player());
+    await user.click(screen.getByRole('button', { name: 'Add focus area' }));
+    expect(await screen.findByRole('dialog', { name: 'Add a focus area for Jonah' })).toBeTruthy();
+  });
+
+  it('CH-5305 CH-5301 CH-5303 CH-5304 an early read: the note, and each empty section says so', () => {
+    phone(PREVIEW_PLAYER_EARLY);
+    for (const c of ['CH-5305', 'CH-5301', 'CH-5303', 'CH-5304']) expect(code(c)).not.toBeNull();
+  });
+
+  it('CH-5201 CH-5202 CH-5203 failed reads: notices, never zeros', () => {
+    phone(player({ roundsError: true, statsError: true, stats: null, devError: true }));
+    for (const c of ['CH-5201', 'CH-5202', 'CH-5203']) expect(code(c)).not.toBeNull();
+    expect(code('CH-5301')).toBeNull();
+  });
+
+  it('CH-5302 no rounds in the window', () => {
+    phone(player({ rounds: [] }));
+    expect(code('CH-5302')).not.toBeNull();
   });
 });

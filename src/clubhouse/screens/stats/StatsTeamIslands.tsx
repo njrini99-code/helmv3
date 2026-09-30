@@ -15,6 +15,7 @@ import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
+import { useChPhone } from '../../lib/use-phone';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
@@ -37,8 +38,12 @@ export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'weeks' | 'team' | 'play
 
 const GoWindow = createContext<(w: ChWindow) => void>(() => {});
 
+/** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
+export const useGoWindow = () => useContext(GoWindow);
+
 /** The page frame: changing the window dims the page and marks it busy until the new window lands. */
-export function StatsTeamFrame({ window: current, children }: { window: ChWindow; children: ReactNode }) {
+export function StatsTeamFrame({ window: current, phone, children }: { window: ChWindow; phone?: ReactNode; children: ReactNode }) {
+  const isPhone = useChPhone() && phone != null;
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
@@ -67,8 +72,9 @@ export function StatsTeamFrame({ window: current, children }: { window: ChWindow
   };
   return (
     <GoWindow.Provider value={go}>
-      <main className="ch-st" aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
-        {children}
+      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
+        {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
+        {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
       </main>
     </GoWindow.Provider>
   );

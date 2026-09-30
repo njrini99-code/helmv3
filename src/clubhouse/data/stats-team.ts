@@ -49,7 +49,9 @@ export interface ChTeamStats {
   team: { sg: Array<number | null>; score: Array<number | null> };
   players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null> }>;
   legWeeks: Record<ChLeg, Array<number | null>>;
-  grid: Array<{ id: string; name: string; rounds: number; legs: Array<number | null>; total: number | null; change: number | null }>;
+  grid: Array<{ id: string; name: string; rounds: number; legs: Array<number | null>; total: number | null; change: number | null; /** Scoring average over the window's 18-hole rounds (the phone's player list). */ avg: number | null }>;
+  /** The team's strokes gained per round in each leg over the window, against the baseline; null with no strokes gained (the phone's leg bars). */
+  legTotals: Array<number | null>;
   putting: { bands: Array<{ label: string; made: number; attempts: number; d1: number | null }>; putts: number } | null;
   bests: Array<{ label: string; playerId: string; name: string; value: string; meta: string; under?: boolean }>;
   sgBaselineNote: string;
@@ -178,7 +180,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
       const sgVals = mine.map((r) => r.strokes_gained_total).filter((x): x is number => x != null).reverse();
       const half = Math.floor(sgVals.length / 2);
       const change = sgVals.length >= 4 ? (mean(sgVals.slice(sgVals.length - half)) ?? 0) - (mean(sgVals.slice(0, half)) ?? 0) : null;
-      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change };
+      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg };
     })
     .filter((g) => g.rounds > 0);
 
@@ -210,6 +212,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
     players: playerSeries,
     legWeeks,
     grid,
+    legTotals: LEGS.map((_, i) => avgOf(windowRounds, (r) => sgLegs(r)[i] ?? null)),
     putting,
     bests,
     sgBaselineNote: tour === 'lpga' ? "the women's baseline" : tour === 'pga' ? 'the Tour baseline' : 'the baseline',

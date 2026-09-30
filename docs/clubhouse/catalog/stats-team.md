@@ -63,6 +63,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | --- | --- | --- | --- | --- |
 | CH-4701 | Choosing a leg, focusing a player, changing the window or lens | A selection tick | `TeamCharts` `haptic('select')`, `Segmented` | stats-team.test › CH-4701 |
 | CH-4702 | An export lands / fails | The OS success pattern / the OS error pattern (D-70) | `TeamHeadActions` export | preview |
+| CH-4703 | Sorting the phone's players by Avg or SG | A selection tick; the current sort is silent | `StatsTeamPhone` `Segmented` | stats-team.test › phone players sort |
 
 ## 48xx Accessibility
 
@@ -72,6 +73,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4802 | The strokes gained grid is a table with a header for every value | `role="table|row|cell|columnheader"` | stats-team.test › CH-4802 |
 | CH-4803 | Loss amber on a tinted grid cell is darkened to hold 4.5:1 | `--ch-chart-loss-on-tint` | a11y scan |
 | CH-4804 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
+| CH-4805 | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) | `ScoreLine` `role="img"`; `.ch-stm-row` | stats-team.test › phone view |
 
 ## 49xx Network and UX
 

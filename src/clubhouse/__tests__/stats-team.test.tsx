@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Stats (team): every numbered state in docs/clubhouse/catalog/stats-team.md, found by its number. */
 
@@ -305,5 +305,78 @@ describe('Stats team · loading, haptics, accessibility', () => {
     for (const row of table.querySelectorAll('[role="row"]'))
       for (const child of row.children) expect(['cell', 'columnheader']).toContain(child.getAttribute('role'));
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(expect.arrayContaining(['Player', 'Total', 'Trend']));
+  });
+});
+
+describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('the phone view replaces desktop: four figures, the trend, legs, players and putting', () => {
+    wrap(stats());
+    expect(document.querySelector('.ch-st-desk')).toBeNull();
+    expect(document.querySelector('.ch-st.is-phone')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
+    const figs = document.querySelector('.ch-stm-figs')!;
+    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'GIR', 'Putts', 'Scrambling']);
+    // Scoring down 0.9 is better (green); putts up 0.3 is worse (amber).
+    const deltas = [...figs.querySelectorAll('dd:last-of-type')];
+    expect(deltas[0]!.className).toMatch(/ch-gain/);
+    expect(deltas[2]!.className).toMatch(/ch-loss/);
+    for (const h of ['Scoring trend', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Team scoring average by week, from 74\.8 to 73\.4\. Down 1\.4 strokes/ })).toBeTruthy();
+    expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
+  });
+
+  it('players sort by scoring average, or by strokes gained; a row opens the player', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    const names = () => [...document.querySelectorAll('.ch-stm-row__b b')].map((b) => b.textContent);
+    expect(names().slice(0, 3)).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist']);
+    expect(names().at(-1)).toBe('Luca Ferraro');
+    await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(names().slice(-2)).toEqual(['Priya Natarajan', 'Luca Ferraro']);
+    const luca = screen.getByRole('link', { name: /Luca Ferraro/ });
+    expect(luca.textContent).toMatch(/Early read/);
+    expect(luca.getAttribute('href')).toMatch(/luca/);
+  });
+
+  it('the window switch on the phone changes the window', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    await user.click(screen.getByRole('radio', { name: /Season/ }));
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
+  });
+
+  it('CH-4201 rounds do not load: the notice, never an empty team', () => {
+    wrap(stats({ roundsError: true }));
+    expect(code('CH-4201')).not.toBeNull();
+    expect(document.querySelector('.ch-stm-figs')).toBeNull();
+  });
+
+  it('CH-4301 no rounds in the window: offers the season', () => {
+    wrap(empty());
+    expect(code('CH-4301')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /season/i })).toBeTruthy();
+  });
+
+  it('CH-4303 CH-4305 CH-4306 each empty section says so on its own', () => {
+    wrap(stats({ legTotals: [null, null, null, null], grid: [], putting: null }));
+    expect(code('CH-4303')).not.toBeNull();
+    expect(code('CH-4305')).not.toBeNull();
+    expect(code('CH-4306')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Scoring trend' })).toBeTruthy();
+  });
+
+  it('CH-4203 putting does not load: the notice, the rest stays', () => {
+    wrap(stats({ puttsError: true }));
+    expect(code('CH-4203')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeTruthy();
   });
 });
