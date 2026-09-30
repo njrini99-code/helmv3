@@ -205,6 +205,9 @@ Noted by the owner 2026-09-29: these migrations go out with the deployment of th
 
   Live counts (aggregates only): of 224 qualifier rounds, none has no team, another team or another status, so the trigger gap is latent. There are 6 selection rows and none has reasoning written, so nothing has leaked (owner).
 - D-36 (2026-09-29): A player seeing only their own scorecards is a screen choice, not a privacy rule. Players can read teammates' `golf_holes` through RLS, and that stays (owner).
+- D-60 (2026-09-29, owner): The Foundation V2 plan (`docs/clubhouse/foundation-v2/`) is the process. Page IDs and Bridge namespaces follow the existing catalog page digits, so nothing is renumbered and D-21 stands: P001 Shell, P002 Home, P003 Roster, P004 Stats team, P005 Stats player, P006 Calendar, P007 Messages, P008 Settings, P009 Qualifiers. Existing `CH-` codes stay on elements and in tests; each gets a Bridge contract with its V2 category (01 to 25). Pages not yet designed stay unallocated.
+- D-61 (2026-09-29, owner): New capabilities built on 2026-09-29 are HELD. Each refuses on the server unless Clubhouse is on for the caller and has a held feature plan in `docs/clubhouse/held/`. Done: the conversation-files action (D-48). D-45 and D-47 reuse existing live actions (EXISTING, not held). Still to do: the Qualifiers squad-size and entrant actions (D-32).
+- D-62 (2026-09-29, owner): Rollout: merge the finished branches, build the V2 registry and checks, make Messages (P007) the gold-standard page, then copy it to the other pages. New designs wait until the gold standard is done.
 
 ## Open owner questions
 
