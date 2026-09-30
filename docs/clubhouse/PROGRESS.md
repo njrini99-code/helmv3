@@ -133,7 +133,7 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
 | Rounds | /golf/dashboard/rounds with /new, /[id], /[id]/review (player; review also coach; plan `ROUNDS_PLAN.md`, Q-72) | done | doing | doing | doing | doing | done | todo | todo | todo | todo | todo |
 | Classes | /golf/dashboard/classes (player; boards `Player - Classes.html`, phone) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Recruiting | /golf/dashboard/recruiting (coach; boards in the Clubhouse Recruiting canvas, Q-87) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
-| Auth | /golf/login, /golf/welcome, /golf/signup, /golf/player (signed out; boards design/handoff/auth, Q-96; flag golf_clubhouse_front_door) | done | done | done | done | done | done | done | done | doing | doing | todo |
+| Auth | /golf/login, /golf/welcome, /golf/signup, /golf/player (signed out; boards design/handoff/auth, Q-96; flag golf_clubhouse_front_door) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role; built: Home, Stats, Calendar, Messages, Qualifiers, Team Hub, Settings; next: Rounds, CoachHelm, Classes) | doing | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 <!-- clubhouse:screens:end -->
