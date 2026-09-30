@@ -28,14 +28,14 @@ needs and does not specify the shell itself.
   (`scratchpad/roster-mobile/`) and are not committed:
   - `roster-01-list-sort-avg`, `02-list-inactive`, `03-list-sort-sg` and `04-list-sort-name`
   - `05-list-long-name`, where the sample names were lengthened to test truncation
-  - `06-requests-sheet`, `07-requests-sheet-many` and `07b-requests-sheet-many-code` (five requests, scrolled)
+  - `06-requests-sheet`, `07-requests-sheet-many` (five requests) and `14-requests-sheet-many-code` (the same, scrolled to the code)
   - `08-profile`, `09-profile-about`, `10-profile-captain`, `11-profile-early-read`, `12-profile-inactive` and `13-profile-long-name`
 - The current preview at 390 × 844 (`/clubhouse-preview/roster`) is in the same folder:
-  - `roster-p01-preview-top` and `p02-preview-full`
-  - `p03-preview-player-open`, where the desktop panel falls below the cards
-  - `p04-preview-invite`, where `Modal` is already a bottom sheet
-  - `p05-preview-list-view`
-  - `p06-preview-empty`, `-failed`, `-partial` and `-loading`
+  - `roster-15-preview-top` and `16-preview-full`
+  - `17-preview-player-open` and `18-preview-player-open-full`, where the desktop panel falls below the cards
+  - `19-preview-invite`, where `Modal` is already a bottom sheet
+  - `20-preview-list-view`
+  - `21-preview-empty`, `22-preview-failed`, `23-preview-partial` and `24-preview-loading`
 
   Today the phone gets the desktop page reflowed. The player panel lands under
   eight tall face cards, and the join requests take the first screen.
