@@ -21,6 +21,15 @@ Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff
 - **Season bests** and **Export** stay on desktop: the board has neither, and an export on a phone has nowhere useful to land.
 - **Trend note**: the board's second sentence ("The last three rounds held under 73.6") is not generated; the reading says the change across the window.
 
+## Round filter (owner's addition, 2026-09-30)
+
+The approved board has no filter. A Filter button sits under the window switch with the active filters as removable chips
+(a Clear, and "12 rounds: tournaments, Sep 1 to Sep 29" under them); it opens the shared bottom sheet: round type, time (the
+windows or a From and To date), course, and Only these / Exclude these rounds, applied on Done; Holes (18 holes, 9 holes, Both)
+sits between round type and time, and a note under the count line says nine-hole rounds count per 18 holes whenever they are in.
+While a date range is on the window switch shows a selected Custom pill. A row opens the player with the filter kept.
+States CH-4101, CH-4313 to CH-4319.
+
 ## States
 
 The failed reads are the desktop's (CH-4201, CH-4202, CH-4203). No rounds in the window: CH-4301 with Show the season (CH-4302 for qualifiers). A leg chart with nothing: CH-4303. No players: CH-4305. No putts: CH-4306. Each section crashes on its own (CH-4204 to CH-4207).

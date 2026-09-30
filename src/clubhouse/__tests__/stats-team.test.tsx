@@ -37,6 +37,7 @@ import { isRebuilt } from '../shell/nav';
 import { StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
+import { filterFor } from '../data/stats-filter';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -55,7 +56,8 @@ function tree(data: ChTeamStats) {
   );
 }
 const wrap = (data: ChTeamStats) => render(tree(data));
-const stats = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...over });
+// A test that chooses a window chooses it for the filter too (the screens read the filter, whose window is the window).
+const stats = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const empty = (over: Partial<ChTeamStats> = {}) => stats({ roundCount: 0, grid: [], players: [], putting: null, bests: [], ...over });
 
 /** One active player with one countable round from yesterday, so every read downstream runs. */

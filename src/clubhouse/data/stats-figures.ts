@@ -1,15 +1,18 @@
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { DEFAULT_MIN_PLAYS, rankHoleAnalyses } from '@/lib/golf/worst-hole-ranking';
 import type { HoleAnalysis } from '@/app/golf/actions/stats-data-types';
-import { isFull18, shortDate, type ChRound } from './season';
+import { shortDate, type ChRound } from './season';
+import { effectiveCount, hasScore, per18, weightedMean } from './stats-weight';
 
 /**
  * The figures on the production player stats page that come from a player's
  * round rows and hole scores rather than from shots: personal bests, the
  * per-round series, this window against the one before, the pressure gap,
  * the opening hole, and the toughest holes. Each is computed over the rounds
- * it is given (the window's 18-hole rounds), with production's formulas
- * (getTrendAnalysis, getWorstHoleAnalysis, the standing refresh).
+ * it is given (the window's rounds, of one length or both), with production's formulas
+ * (getTrendAnalysis, getWorstHoleAnalysis, the standing refresh). Averages are per 18
+ * holes, a nine-hole round counting as half a round (stats-weight); personal bests are
+ * taken over the rounds they are given, so the caller lists each length on its own.
  */
 
 const COURSE_FALLBACK = 'Course not recorded';
@@ -28,7 +31,7 @@ export interface ChBests {
 
 /** Oldest first, so a tie goes to the earliest round (production sorts oldest first and keeps the first). */
 function oldestFirst(rounds: ChRound[]): ChRound[] {
-  return rounds.filter(isFull18).sort((a, b) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id)));
+  return rounds.filter(hasScore).sort((a, b) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id)));
 }
 
 export function girPct(r: ChRound): number | null {
@@ -69,7 +72,7 @@ export interface ChSeries {
   putts: ChSeriesPoint[];
 }
 
-/** One point per round, oldest first; a round with no value for a figure has no point in it. */
+/** One point per round, oldest first, a score or putt count per 18 holes (a nine-hole round's doubled); a round with no value for a figure has no point in it. */
 export function perRoundSeries(rounds: ChRound[]): ChSeries {
   const list = oldestFirst(rounds);
   const points = (pick: (r: ChRound) => number | null): ChSeriesPoint[] =>
@@ -78,10 +81,10 @@ export function perRoundSeries(rounds: ChRound[]): ChSeries {
       return v == null ? [] : [{ label: shortDate(r.round_date), value: v }];
     });
   return {
-    score: points((r) => r.total_score),
+    score: points((r) => (r.total_score == null ? null : per18(r.total_score, r.holes_played))),
     gir: points(girPct),
     fairway: points(fairwayPct),
-    putts: points((r) => (r.total_putts != null && r.total_putts > 0 ? r.total_putts : null)),
+    putts: points((r) => (r.total_putts != null && r.total_putts > 0 ? per18(r.total_putts, r.holes_played) : null)),
   };
 }
 
@@ -99,15 +102,13 @@ export interface ChCompare {
   rows: ChCompareRow[];
 }
 
-/** Scoring average, GIR, fairways and putts over a set of 18-hole rounds: summed numerators over summed denominators, never a mean of percentages. */
+/** Scoring average and putts per 18, GIR and fairways over a set of rounds: summed numerators over summed denominators, never a mean of percentages. */
 function periodFigures(rounds: ChRound[]): { avg: number | null; gir: number | null; fairways: number | null; putts: number | null } {
-  const list = rounds.filter(isFull18);
+  const list = rounds.filter(hasScore);
   let gir = 0;
   let girOpp = 0;
   let fw = 0;
   let fwOpp = 0;
-  let putts = 0;
-  let puttRounds = 0;
   for (const r of list) {
     if (r.total_gir != null && r.total_gir_possible != null) {
       gir += r.total_gir;
@@ -117,17 +118,13 @@ function periodFigures(rounds: ChRound[]): { avg: number | null; gir: number | n
       fw += r.total_fairways_hit;
       fwOpp += r.total_fairways;
     }
-    if (r.total_putts != null && r.total_putts > 0) {
-      putts += r.total_putts;
-      puttRounds += 1;
-    }
   }
-  const round1 = (v: number) => Math.round(v * 10) / 10;
+  const round1 = (v: number | null) => (v == null ? null : Math.round(v * 10) / 10);
   return {
-    avg: list.length ? round1(list.reduce((a, r) => a + (r.total_score as number), 0) / list.length) : null,
+    avg: round1(weightedMean(list, (r) => r.total_score)),
     gir: girOpp > 0 ? round1((gir / girOpp) * 100) : null,
     fairways: fwOpp > 0 ? round1((fw / fwOpp) * 100) : null,
-    putts: puttRounds > 0 ? round1(putts / puttRounds) : null,
+    putts: round1(weightedMean(list, (r) => (r.total_putts != null && r.total_putts > 0 ? r.total_putts : null))),
   };
 }
 
@@ -137,8 +134,8 @@ export function windowCompare(last: ChRound[], previous: ChRound[] | null): ChCo
   const a = periodFigures(last);
   const b = periodFigures(previous);
   return {
-    lastRounds: last.filter(isFull18).length,
-    previousRounds: previous.filter(isFull18).length,
+    lastRounds: last.filter(hasScore).length,
+    previousRounds: previous.filter(hasScore).length,
     rows: [
       { label: 'Scoring avg', last: a.avg, previous: b.avg, unit: '', digits: 1, lowerIsBetter: true },
       { label: 'Greens in regulation', last: a.gir, previous: b.gir, unit: '%', digits: 1, lowerIsBetter: false },
@@ -148,7 +145,7 @@ export function windowCompare(last: ChRound[], previous: ChRound[] | null): ChCo
   };
 }
 
-/** Production's floors for the pressure gap (the standing refresh): 3 tournament or qualifier rounds, 3 practice rounds, 5 rounds in all. */
+/** Production's floors for the pressure gap (the standing refresh): 3 tournament or qualifier rounds, 3 practice rounds, 5 rounds in all (whole rounds: a nine-hole round is half). */
 export const PRESSURE_MIN = { pressure: 3, practice: 3, total: 5 } as const;
 export const OPENING_MIN_ROUNDS = 5;
 
@@ -160,16 +157,18 @@ export interface ChPressure {
 }
 
 export function pressureGap(rounds: ChRound[]): ChPressure {
-  const press: number[] = [];
-  const prac: number[] = [];
-  for (const r of rounds.filter(isFull18)) {
+  const press: ChRound[] = [];
+  const prac: ChRound[] = [];
+  for (const r of rounds.filter(hasScore)) {
     if (r.round_type == null || r.score_to_par == null) continue;
-    const kind = roundTypeFromDb(r.round_type);
-    (kind === 'practice' ? prac : press).push(r.score_to_par);
+    (roundTypeFromDb(r.round_type) === 'practice' ? prac : press).push(r);
   }
-  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const ok = press.length >= PRESSURE_MIN.pressure && prac.length >= PRESSURE_MIN.practice && press.length + prac.length >= PRESSURE_MIN.total;
-  return { gap: ok ? mean(press) - mean(prac) : null, pressureRounds: press.length, practiceRounds: prac.length };
+  const toPar = (r: ChRound) => r.score_to_par;
+  const pressWhole = effectiveCount(press, toPar);
+  const pracWhole = effectiveCount(prac, toPar);
+  const ok = pressWhole >= PRESSURE_MIN.pressure && pracWhole >= PRESSURE_MIN.practice && pressWhole + pracWhole >= PRESSURE_MIN.total;
+  // Strokes to par per 18 holes on each side, so a nine-hole round's to-par is doubled as a half round.
+  return { gap: ok ? (weightedMean(press, toPar) as number) - (weightedMean(prac, toPar) as number) : null, pressureRounds: press.length, practiceRounds: prac.length };
 }
 
 export interface ChHoleRow {

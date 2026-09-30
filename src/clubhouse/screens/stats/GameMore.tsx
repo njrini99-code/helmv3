@@ -36,6 +36,14 @@ function Shots({ error, code, what, onRetry, children }: { error: boolean; code:
 }
 
 export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; onRetry?: () => void }) {
+  const at = (v: { course: string; date: string } | null) => (v ? `${v.course} · ${v.date}` : null);
+  // A 9-hole score and an 18-hole score are not the same best: with 9-hole rounds in the window each length has its own best and worst.
+  const mixed = x.nineRounds > 0;
+  const lengths: Array<{ label: string; best: number | null; worst: number | null; at: string | null; n: number }> = [
+    // The course and date are the window's own best when it is the calculator's (it reads the newest 100 rounds with hole data), never another round's.
+    { label: '18-hole', best: s.bestRound18, worst: s.worstRound18, at: x.bests.score?.value === s.bestRound18 ? at(x.bests.score) : null, n: s.roundsPlayed18 },
+    { label: '9-hole', best: s.bestRound9, worst: s.worstRound9, at: x.bests9?.score && x.bests9.score.value === s.bestRound9 ? at(x.bests9.score) : null, n: s.roundsPlayed9 },
+  ];
   const best = x.bests.score;
   const types: Array<[string, number | null, number]> = [
     ['Practice', s.practiceScoringAvg, s.practiceRounds],
@@ -50,8 +58,17 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           label="Scoring numbers"
           items={[
             { label: 'Average to par', value: s.avgScoreToPar == null ? NO_DATA : formatToPar(s.avgScoreToPar, 2), sub: 'Per 18 holes' },
-            { label: 'Best round', value: s.bestRound == null ? NO_DATA : String(s.bestRound), sub: best && best.value === s.bestRound ? `${best.course} · ${best.date}` : null },
-            { label: 'Worst round', value: s.worstRound == null ? NO_DATA : String(s.worstRound) },
+            ...(mixed
+              ? lengths
+                  .filter((l) => l.n > 0)
+                  .flatMap((l) => [
+                    { label: `Best ${l.label} round`, value: l.best == null ? NO_DATA : String(l.best), sub: l.at },
+                    { label: `Worst ${l.label} round`, value: l.worst == null ? NO_DATA : String(l.worst) },
+                  ])
+              : [
+                  { label: 'Best round', value: s.bestRound == null ? NO_DATA : String(s.bestRound), sub: best && best.value === s.bestRound ? `${best.course} · ${best.date}` : null },
+                  { label: 'Worst round', value: s.worstRound == null ? NO_DATA : String(s.worstRound) },
+                ]),
           ]}
         />
       </Panel>
@@ -102,7 +119,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           )}
         </div>
       </Panel>
-      <Panel title="By round type" note="Average score of 18-hole rounds of each type in this window.">
+      <Panel title="By round type" note={mixed ? "Average score per 18 holes of each type's rounds in this window: a 9-hole score counts as half a round." : 'Average score of 18-hole rounds of each type in this window.'}>
         <Tiles
           label="Scoring by round type"
           items={types.map(([l, avg, n]) => ({

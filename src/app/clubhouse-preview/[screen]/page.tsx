@@ -25,7 +25,18 @@ import { PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_RO
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
 import { StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
-import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '@/clubhouse/preview/fixtures-stats';
+import {
+  PREVIEW_PLAYER,
+  PREVIEW_PLAYER_EARLY,
+  PREVIEW_PLAYER_FILTERED,
+  PREVIEW_PLAYER_NINES,
+  PREVIEW_PLAYER_NOMATCH,
+  PREVIEW_TEAM_EARLY_FILTER,
+  PREVIEW_TEAM_FILTERED,
+  PREVIEW_TEAM_NINES,
+  PREVIEW_TEAM_NOMATCH,
+  PREVIEW_TEAM_STATS,
+} from '@/clubhouse/preview/fixtures-stats';
 import '@/clubhouse/styles/stats.css';
 import '@/clubhouse/styles/calendar.css';
 import '@/clubhouse/styles/messages.css';
@@ -98,7 +109,8 @@ import '@/clubhouse/styles/coachhelm.css';
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail   (the shot screen)
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
- *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading
+ *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in)
+ *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
@@ -250,6 +262,14 @@ export default async function ClubhousePreview({
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />
         ) : state === 'partial' ? (
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, cacheError: true, puttsError: true, figures: PREVIEW_TEAM_STATS.figures.map((f) => (f.label === 'Scoring average' ? f : { ...f, value: null, delta: null })) }} />
+        ) : state === 'filtered' ? (
+          <StatsTeam data={PREVIEW_TEAM_FILTERED} />
+        ) : state === 'nomatch' ? (
+          <StatsTeam data={PREVIEW_TEAM_NOMATCH} />
+        ) : state === 'earlyfilter' ? (
+          <StatsTeam data={PREVIEW_TEAM_EARLY_FILTER} />
+        ) : state === 'nines' ? (
+          <StatsTeam data={PREVIEW_TEAM_NINES} />
         ) : state === 'crash' ? (
           // Malformed sections, so every SectionBoundary (CH-4204 to CH-4208) catches and reports once.
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }} />
@@ -262,6 +282,12 @@ export default async function ClubhousePreview({
       node:
         state === 'failed' ? (
           <StatsPlayer data={{ ...PREVIEW_PLAYER, roundsError: true, statsError: true, devError: true }} coachId="preview-coach" />
+        ) : state === 'filtered' ? (
+          <StatsPlayer data={PREVIEW_PLAYER_FILTERED} coachId="preview-coach" />
+        ) : state === 'nomatch' ? (
+          <StatsPlayer data={PREVIEW_PLAYER_NOMATCH} coachId="preview-coach" />
+        ) : state === 'nines' ? (
+          <StatsPlayer data={PREVIEW_PLAYER_NINES} coachId="preview-coach" />
         ) : (
           <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? { ...PREVIEW_PLAYER, viewer: 'player', nav: null } : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} />
         ),

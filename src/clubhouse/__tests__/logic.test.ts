@@ -116,9 +116,14 @@ describe('roster attention', () => {
 });
 
 describe('stats windows', async () => {
-  const { parseWindow, roundsInWindow, previousWindow, rate, tourForGender, weekOf } = await import('../data/stats-common');
+  const { parseWindow, roundsInFilter, previousInFilter, rate, tourForGender, weekOf } = await import('../data/stats-common');
+  const { filterFor } = await import('../data/stats-filter');
+  const { seasonStartDate } = await import('../data/season');
+  // Dated the first day of the current season, so the rounds are in every window whatever day the test runs.
   const round = (i: number, type = 'practice', holes = 18) =>
-    ({ id: `r${i}`, player_id: 'p', round_date: '2026-09-01', round_type: type, holes_played: holes, total_score: 73, score_to_par: 1 }) as never;
+    ({ id: `r${i}`, player_id: 'p', round_date: seasonStartDate(), round_type: type, holes_played: holes, total_score: 73, score_to_par: 1 }) as never;
+  const roundsInWindow = (rs: never[], w: 'last10' | 'season' | 'qualifiers') => roundsInFilter(rs, filterFor(w));
+  const previousWindow = (rs: never[], w: 'last10' | 'season' | 'qualifiers') => previousInFilter(rs, filterFor(w));
 
   it('defaults an unknown window to the last 10', () => {
     expect(parseWindow(undefined)).toBe('last10');

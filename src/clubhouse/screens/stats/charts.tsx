@@ -98,7 +98,7 @@ export function SgChangeChip({ change, code }: { change: ChSgChange; code?: stri
 
 /** Scoring trend on a scoreboard: a smooth line (lower scores sit higher) over to-par tiles. */
 export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; score: number; toPar: number | null }> }) {
-  if (rounds.length === 0) return <p className="ch-gm-p__empty">No 18-hole rounds in this window.</p>;
+  if (rounds.length === 0) return <p className="ch-gm-p__empty">No rounds in this window.</p>;
   const w = 690;
   const h = 176;
   const padX = w / (rounds.length * 2);

@@ -8,6 +8,8 @@ import { calculateStatsFromShots, type GolfStats } from '@/lib/utils/golf-stats-
 import type { ChTeamStats } from '../data/stats-team';
 import type { ChPlayerProfile } from '../data/stats-player';
 import type { ChPlayerSeason } from '../data/season';
+import type { ChWindowSeason } from '../data/stats-weight';
+import { filterFor, type ChFilter, type ChFilterOptions, type ChPickRound, type ChRoundKind } from '../data/stats-filter';
 
 const WEEKS = ['Aug 30', 'Sep 6', 'Sep 13', 'Sep 20', 'Sep 27', 'Oct 4', 'Oct 12'];
 const P = [
@@ -29,11 +31,49 @@ const MEANS: Record<(typeof P)[number][0], { sgMean: number; scoreMean: number }
   priya: { sgMean: -1.2, scoreMean: 75.2 },
 };
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** 'Sep 27' as the season's calendar date. */
+const isoDay = (label: string) => {
+  const [m, d] = label.split(' ') as [string, string];
+  return `2026-${String(MONTHS.indexOf(m) + 1).padStart(2, '0')}-${d.padStart(2, '0')}`;
+};
+
+/** What the filter sheet can list, from rounds shaped like the fixtures' (newest first). */
+function optionsFrom(rounds: ChPickRound[]): ChFilterOptions {
+  const counts = new Map<string, number>();
+  for (const r of rounds) if (r.course) counts.set(r.course, (counts.get(r.course) ?? 0) + 1);
+  return {
+    rounds,
+    total: rounds.length,
+    courses: [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    seasonStart: '2026-08-01',
+  };
+}
+
+const TEAM_KINDS: ChRoundKind[] = ['tournament', 'practice', 'qualifier', 'tournament', 'practice'];
+const TEAM_COURSES = ['Finley GC', 'Oakmont CC', 'Pine Needles'];
+/** Each player's last three weekly rounds, newest first, so the sheet has a real list to pick from. */
+const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
+  [6, 5, 4].map((w, j) => ({
+    id: `${id}-${w}`,
+    date: isoDay(WEEKS[w] as string),
+    // A few nine-hole rounds, so the sheet's list shows how they read.
+    holes: (pi * 3 + j) % 7 === 3 ? 9 : 18,
+    kind: TEAM_KINDS[(pi * 3 + j) % TEAM_KINDS.length] ?? null,
+    course: TEAM_COURSES[(pi + j) % TEAM_COURSES.length] ?? null,
+    score: scores[w] as number,
+    player: name,
+  })),
+).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id.localeCompare(b.id)));
+
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
   window: 'last10',
+  filter: filterFor('last10'),
+  filterOptions: optionsFrom(TEAM_PICK_ROUNDS),
   activeCount: 7,
   roundCount: 64,
+  roundsEffective: 64,
   figures: [
     { label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, lowerIsBetter: false, context: 'vs. previous 10', note: 'vs Tour · 58 rounds with shots' },
     { label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, lowerIsBetter: true, context: 'vs. previous 10' },
@@ -339,9 +379,18 @@ const JONAH_ROUNDS = [
   ['Finley GC', 'Aug 30', 73, 1, '13/18', 30, 0.2],
 ] as const;
 
+/** Jonah's rounds as the sheet lists them (his kinds run newest first). */
+const JONAH_KINDS = ['practice', 'qualifier', 'practice', 'tournament', 'practice', 'practice', 'qualifier', 'practice', 'practice', 'qualifier'] as const;
+const JONAH_PICK_ROUNDS: ChPickRound[] = JONAH_ROUNDS.map(([course, date, score], i) => ({ id: `j${i}`, date: isoDay(date), kind: JONAH_KINDS[i] ?? null, course, holes: 18, score, player: null }));
+
+/** A season summary as the profile's window summary: every round is 18 holes, so the whole-round counts are the round counts. */
+const windowSeason = (s: ChPlayerSeason): ChWindowSeason => ({ ...s, effRounds: s.rounds, effSgRounds: s.sgRounds });
+
 export const PREVIEW_PLAYER: ChPlayerProfile = {
   viewer: 'coach',
   window: 'last10',
+  filter: filterFor('last10'),
+  filterOptions: optionsFrom(JONAH_PICK_ROUNDS),
   id: 'jonah',
   name: 'Jonah Okafor',
   firstName: 'Jonah',
@@ -351,7 +400,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
   status: 'active',
   handicap: 3.9,
   season: season(74.1, [72, 72, 73, 74, 75, 74, 75], -0.9, 21, 'slipping'),
-  win: season(74.1, [73, 72, 72, 73, 73, 74, 73, 75, 75, 74].slice(-7), -0.9, 10, 'slipping'),
+  win: windowSeason(season(74.1, [73, 72, 72, 73, 73, 74, 73, 75, 75, 74].slice(-7), -0.9, 10, 'slipping')),
   teamAvg: 72.8,
   tour: 'pga',
   sgChange: { delta: -1.3, context: 'vs. previous 10' },
@@ -364,6 +413,8 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
     { label: '25+ ft', made: 1, attempts: 34, bench: 5.5 },
   ],
   extra: {
+    bests9: null,
+    nineRounds: 0,
     bests: {
       score: { value: 72, date: 'Sep 9', course: 'Pinehurst No. 8' },
       toPar: { value: 0, date: 'Sep 9', course: 'Pinehurst No. 8' },
@@ -468,6 +519,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
     id: `j${i}`,
     course,
     date,
+    holes: 18,
     type: (['practice', 'qualifier', 'practice', 'tournament', 'practice', 'practice', 'qualifier', 'practice', 'practice', 'qualifier'] as const)[i] ?? null,
     score,
     toPar,
@@ -549,7 +601,7 @@ export const PREVIEW_PLAYER_EARLY: ChPlayerProfile = {
   hometown: 'Bologna, IT',
   handicap: 6.0,
   season: { ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
-  win: { ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
+  win: windowSeason({ ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } }),
   rounds: PREVIEW_PLAYER.rounds.slice(0, 2),
   // No strokes gained yet: no change to show, and no figures in the comparison table.
   sgChange: { delta: null, context: '' },
@@ -570,4 +622,48 @@ export const PREVIEW_PLAYER_EARLY: ChPlayerProfile = {
   focusAreas: [],
   goals: [],
   nav: { index: 7, total: 7, prev: 'priya', next: 'theo' },
+};
+
+/** Team stats under a filter (tournaments, September): twelve of the team's rounds. */
+const TEAM_FILTER: ChFilter = { ...filterFor('last10'), types: ['tournament'], from: '2026-09-01', to: '2026-09-29' };
+export const PREVIEW_TEAM_FILTERED: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: TEAM_FILTER, roundCount: 12 };
+/** A filter that matches nothing: no team figure is shown, and Clear filters is the way back. */
+export const PREVIEW_TEAM_NOMATCH: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  filter: { ...filterFor('season'), courses: ['Pine Needles'], types: ['qualifier'] },
+  roundCount: 0,
+  grid: [],
+  players: [],
+  putting: null,
+  bests: [],
+};
+/** Two rounds match: the early-read note, and the figures still draw. */
+export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };
+
+/** Both lengths: the per-18 note under the count line, and the team's rounds counted in whole rounds (a few are 9 holes). */
+export const PREVIEW_TEAM_NINES: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), holes: 'all' }, roundsEffective: 60.5 };
+
+/** Jonah's window with a 9-hole round in it (Both): its score drawn per 18 holes, the round row named, and the 9-hole best listed on its own. */
+export const PREVIEW_PLAYER_NINES: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  filter: { ...filterFor('last10'), holes: 'all' },
+  win: { ...PREVIEW_PLAYER.win, effRounds: 9.5, effSgRounds: 9.5 },
+  rounds: PREVIEW_PLAYER.rounds.map((r, i) => (i === 1 ? { ...r, holes: 9, score: 37, toPar: 1 } : r)),
+  extra: { ...PREVIEW_PLAYER.extra, nineRounds: 1, bests9: { score: { value: 37, date: PREVIEW_PLAYER.rounds[1]!.date, course: PREVIEW_PLAYER.rounds[1]!.course }, toPar: { value: 1, date: PREVIEW_PLAYER.rounds[1]!.date, course: PREVIEW_PLAYER.rounds[1]!.course }, gir: null, putts: null } },
+};
+
+/** Jonah's qualifier rounds: three of his ten. */
+export const PREVIEW_PLAYER_FILTERED: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  filter: { ...filterFor('last10'), types: ['qualifier'] },
+  win: { ...PREVIEW_PLAYER.win, rounds: 3, sgRounds: 3, effRounds: 3, effSgRounds: 3 },
+  rounds: PREVIEW_PLAYER.rounds.filter((r) => r.type === 'qualifier'),
+};
+/** A filter that matches none of Jonah's rounds. */
+export const PREVIEW_PLAYER_NOMATCH: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  filter: { ...filterFor('season'), from: '2026-03-01', to: '2026-03-31' },
+  win: { ...PREVIEW_PLAYER.win, rounds: 0, sgRounds: 0, effRounds: 0, effSgRounds: 0, avg: null, sgPerRound: null },
+  rounds: [],
+  stats: null,
 };

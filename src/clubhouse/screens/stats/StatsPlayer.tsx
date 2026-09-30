@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChWindow } from '../../data/stats-common';
+import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -37,7 +38,9 @@ import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
 import { ProposalAnswer } from './ProposalAnswer';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
-import { WINDOW_WORDS, WindowSwitch } from './WindowSwitch';
+import { changeWords, WindowSwitch } from './WindowSwitch';
+import { countWords, shotsWords } from './notes';
+import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -67,40 +70,40 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   usePageCrumbs(coach ? ['Stats', data.name] : null);
   const w = data.win;
   // Strokes gained needs three rounds WITH shots, so the banner keys on those, not on the round count alone.
-  const early = w.rounds < 3;
-  const noShots = !early && w.sgRounds < 3;
+  // A filter that leaves no round says so in place of the tab's figures (CH-5320), not as an early read of nothing.
+  const filtered = isFiltered(data.filter);
+  const emptyFilter = filtered && w.rounds === 0 && !data.roundsError;
+  const early = w.effRounds < 3 && !emptyFilter;
+  const noShots = !early && !emptyFilter && w.effSgRounds < 3;
+  const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
   const first = data.firstName;
   const baseline = sgBaseline(data.tour);
   const base = '/golf/dashboard/stats';
-  const href = (player: string | null, win: ChWindow) => {
-    const q = new URLSearchParams();
-    if (player && coach) q.set('player', player);
-    if (win !== 'last10') q.set('window', win);
-    const s = q.toString();
-    return s ? `${base}?${s}` : base;
-  };
-  const go = (player: string | null, win: ChWindow) => start(() => router.push(href(player, win), { scroll: false }));
-  // Changing the window while offline requests nothing (CH-5901); one that is slow says so once (CH-5902).
-  const [loading, setLoading] = useState<ChWindow | null>(null);
-  useEffect(() => setLoading(null), [data.window, data.id]);
+  const href = (player: string | null, f: ChFilter) => statsHref(base, f, { player: player && coach ? player : null });
+  const go = (player: string | null, f: ChFilter) => start(() => router.push(href(player, f), { scroll: false }));
+  // Changing the window or the filter while offline requests nothing (CH-5901); one that is slow says so once (CH-5902).
+  const here = href(data.id, data.filter);
+  const [loading, setLoading] = useState<ChFilter | null>(null);
+  useEffect(() => setLoading(null), [here]);
   useEffect(() => {
     if (!loading) return;
-    const slow = window.setTimeout(
-      () => toast({ title: `Still loading ${WINDOW_WORDS[loading]}…`, body: `This is taking longer than usual. The figures shown are still ${WINDOW_WORDS[data.window]}.`, code: 'CH-5902' }),
-      CH_SLOW_SAVE_AFTER,
-    );
+    const words = changeWords(data.filter, loading);
+    const slow = window.setTimeout(() => toast({ title: words.slow, body: `This is taking longer than usual. ${words.still}`, code: 'CH-5902' }), CH_SLOW_SAVE_AFTER);
     return () => window.clearTimeout(slow);
-  }, [loading, data.window, toast]);
-  const changeWindow = (win: ChWindow) => {
+  }, [loading, data.filter, toast]);
+  const changeFilter = (next: ChFilter) => {
     if (isOffline()) {
+      const words = changeWords(data.filter, next);
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't open ${WINDOW_WORDS[win]}: you're offline`, body: `Reconnect, then try again. The figures shown are still ${WINDOW_WORDS[data.window]}.`, code: 'CH-5901' });
+      toast({ tone: 'error', title: words.offline, body: `Reconnect, then try again. ${words.still}`, code: 'CH-5901' });
       return;
     }
-    chTrail(`stats window ${win}`);
-    setLoading(win);
-    go(data.id, win);
+    chTrail(isWindowChange(data.filter, next) ? `stats window ${next.window}` : 'stats filter');
+    setLoading(next);
+    go(data.id, next);
   };
+  const changeWindow = (win: ChWindow) => changeFilter(withWindow(data.filter, win));
+  const filterCodes = { empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' };
   // A coach's Message opens the direct thread with this player (Messages' ?player= link), not the bare inbox.
   const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${data.id}`) : null;
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52).
@@ -140,10 +143,11 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
         <StatsPlayerPhone
           data={data}
           initialTab={initialTab}
-          playerHref={href(data.id, data.window)}
+          playerHref={href(data.id, data.filter)}
           messageHref={messageHref}
           onWindow={changeWindow}
-          onBackToTeam={() => go(null, data.window)}
+          onFilter={changeFilter}
+          onBackToTeam={() => go(null, data.filter)}
           onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
           onRetry={() => router.refresh()}
         />
@@ -156,18 +160,18 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
       {coach && (
         <div className="ch-st-back">
-          <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.window)}>
+          <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
             Team stats
           </Button>
           {data.nav && (
             <div className="ch-st-back__nav">
-              <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.window)} aria-label="Previous player" onClick={() => haptic('select')} scroll={false}>
+              <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" onClick={() => haptic('select')} scroll={false}>
                 <Icon icon={ChevronLeft} size={15} />
               </Link>
               <span className="ch-num">
                 {data.nav.index} of {data.nav.total}
               </span>
-              <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.window)} aria-label="Next player" onClick={() => haptic('select')} scroll={false}>
+              <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" onClick={() => haptic('select')} scroll={false}>
                 <Icon icon={ChevronRight} size={15} />
               </Link>
             </div>
@@ -241,19 +245,22 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
             </button>
           ))}
         </div>
-        <WindowSwitch value={data.window} onChange={changeWindow} />
+        <WindowSwitch value={data.window} onChange={changeWindow} custom={hasRange(data.filter)} />
       </div>
 
+      {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}
+
+      {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${data.firstName} has` : 'You have'} />}
       {early && (
         <div className="ch-pf-early" role="note" data-ch-code="CH-5305">
           <Icon icon={Info} size={15} />
-          Early read. {first} has {w.rounds} countable {w.rounds === 1 ? 'round' : 'rounds'} in this window, so averages and trends will move a lot. Strokes gained shows once there are three.
+          Early read. {first} has {countWords(w.rounds, w.effRounds)} in this window, so averages and trends will move a lot. Strokes gained shows once there are three.
         </div>
       )}
       {noShots && (
         <div className="ch-pf-early" role="note" data-ch-code="CH-5308">
           <Icon icon={Info} size={15} />
-          Strokes gained needs three rounds posted with shots. {first} has {w.sgRounds} of {w.rounds} rounds with shots in this window, so strokes gained shows a dash until there are three.
+          Strokes gained needs three rounds posted with shots. {first} has {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
         </div>
       )}
       {data.roundsError && (
@@ -261,13 +268,15 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
       )}
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="ch-st-panel">
-        {tab === 'overview' && (
+        {emptyFilter && tab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
+
+        {tab === 'overview' && !emptyFilter && (
           <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
             <Overview data={data} coach={coach} />
           </SectionBoundary>
         )}
 
-        {tab === 'game' && (
+        {tab === 'game' && !emptyFilter && (
           <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
             {data.statsError ? (
               <InlineNotice
@@ -277,7 +286,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 onRetry={() => router.refresh()}
               />
             ) : data.stats && data.stats.roundsPlayed > 0 ? (
-              <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={first} rounds={w.rounds} window={data.window} puttBands={data.puttBands} onRetry={() => router.refresh()} />
+              <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={first} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
             ) : (
               <div className="ch-st-card">
                 <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -286,14 +295,14 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           </SectionBoundary>
         )}
 
-        {tab === 'rounds' && (
+        {tab === 'rounds' && !emptyFilter && (
           <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
             {data.rounds.length > 0 && (
               <div className="ch-st-grid2">
-                <RoundsExtra x={data.extra} win={data.window} />
+                <RoundsExtra x={data.extra} filter={data.filter} />
               </div>
             )}
-            <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} />
+            <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
           </SectionBoundary>
         )}
 
@@ -332,8 +341,12 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       context: ref == null ? `${w.rounds} rounds` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
     };
   };
-  const best = data.rounds.length ? Math.min(...data.rounds.map((r) => r.score)) : null;
-  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: r.score, toPar: r.toPar }));
+  // Best round: one length at a time (a 9-hole score and an 18-hole score are not the same best): the 9-hole rounds when that is all
+  // the window holds, else the 18-hole ones. The lines draw scores per 18 holes, a 9-hole score doubled.
+  const bestHoles = data.filter.holes === '9' ? 9 : 18;
+  const bestPool = data.rounds.filter((r) => r.holes === bestHoles);
+  const best = bestPool.length ? Math.min(...bestPool.map((r) => r.score)) : null;
+  const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   const legs = [
     { label: 'Off the tee', value: w.sgLegs.tee },
     { label: 'Approach', value: w.sgLegs.approach },
@@ -357,13 +370,13 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
           fig('Greens in regulation', 'Greens in regulation'),
           fig('Putts per round', 'Putts per round'),
           fig('Scrambling', 'Scrambling'),
-          { label: 'Best round', value: best == null ? NO_DATA : String(best), context: `${w.rounds} rounds in window` },
+          { label: 'Best round', value: best == null ? NO_DATA : String(best), context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window` },
         ]}
       />
       <div className="ch-st-grid2">
         <YardagePage
           title="Scoring"
-          meta={`Last ${trendRounds.length} 18-hole ${trendRounds.length === 1 ? 'round' : 'rounds'}`}
+          meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${trendRounds.length === 1 ? 'round' : 'rounds'}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
           note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
         >
           <ScoreBoardTrend rounds={trendRounds} />
@@ -384,14 +397,14 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   );
 }
 
-function RoundsTable({ rounds, role, tour }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour'] }) {
+function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour']; holes: ChHoles }) {
   const baseline = sgBaseline(tour);
   return (
     <section className="ch-st-card">
       <div className="ch-st-card__head">
         <div>
           <h2>Rounds</h2>
-          <span>Countable 18-hole rounds &middot; newest first &middot; strokes gained {baseline.vs}</span>
+          <span>Countable {HOLES_ADJ[holes]} rounds &middot; newest first &middot; strokes gained {baseline.vs}</span>
         </div>
       </div>
       {rounds.length === 0 ? (
@@ -427,6 +440,7 @@ function RoundsTable({ rounds, role, tour }: { rounds: ChPlayerProfile['rounds']
                       r.course
                     );
                   })()}
+                  {r.holes === 9 && <em className="ch-gx-type">9 holes</em>}
                   {r.type && <em className={`ch-gx-type is-${r.type}`}>{ROUND_TYPE[r.type]}</em>}
                 </span>
                 <span role="cell" className="ch-n2">{r.date}</span>

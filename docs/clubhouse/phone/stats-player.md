@@ -21,6 +21,16 @@ Below the board, from the desktop's other tabs, because a phone has no tabs for 
 - **Previous / next player** isn't on the phone; back to Team and choose the next row.
 - **Rounds and Development** are added under the board's content (above).
 
+## Round filter (owner's addition, 2026-09-30)
+
+The approved board has no filter. A Filter button sits under the window switch with the active filters as removable chips
+(a Clear, and "3 rounds: qualifying rounds, last 10" under them); it opens the shared bottom sheet: round type, time (the
+windows or a From and To date), course, and Only these / Exclude these rounds, applied on Done; Holes (18 holes, 9 holes, Both)
+sits between round type and time. With nine-hole rounds in, a note under the count line says they count per 18 holes, the scoring
+line is drawn per 18 ("9-hole scores doubled") and a 9-hole round's row says "9 holes". While a date range is on the
+window switch shows a selected Custom pill. A filter that leaves no round shows "No rounds match these filters" above
+Development (CH-5320). States CH-5102, CH-5320 to CH-5324.
+
 ## States
 
 Early read (CH-5305). Rounds didn't load (CH-5201), shot detail (CH-5202), development (CH-5203). No shot-by-shot rounds (CH-5301), no rounds (CH-5302), no focus areas (CH-5303), no goals (CH-5304). Each section crashes on its own (CH-5204 to CH-5207). Share blocked (CH-5002).

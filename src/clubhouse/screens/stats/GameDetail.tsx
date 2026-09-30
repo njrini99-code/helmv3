@@ -4,6 +4,7 @@ import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type Lucide
 import { useEffect, useState, type ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand, ChWindow } from '../../data/stats-common';
+import type { ChHoles } from '../../data/stats-filter';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
@@ -98,6 +99,8 @@ export function GameDetail({
   first,
   rounds,
   window: win,
+  basis,
+  holes = '18',
   puttBands: shotBands = null,
   onRetry,
   phone = false,
@@ -110,6 +113,10 @@ export function GameDetail({
   first: string;
   rounds: number;
   window: ChWindow;
+  /** Which rounds the figures count, in words, when a filter narrows the window ("Tournaments, Sep 1 to Sep 29"); the window's own label when absent. */
+  basis?: string;
+  /** Which round lengths the figures count: said under each section (a 9-hole round counts as half a round, per 18). */
+  holes?: ChHoles;
   /** Make rate by distance from the window's putts in the six bands the Tour grades, for the lead sentence and the Tour table. */
   puttBands?: ChPuttBand[] | null;
   onRetry?: () => void;
@@ -220,8 +227,12 @@ export function GameDetail({
   }));
 
   const sample = `${rounds} ${rounds === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
-  // What every section counts: the window's own 18-hole rounds, the same ones the Rounds table lists.
-  const basis = `${RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, 18 holes only (9-hole rounds are left out)`;
+  // What every section counts: the window's own rounds, of the lengths the filter chose, the same ones the Rounds table lists.
+  const lengths =
+    holes === '18'
+      ? '18 holes only (9-hole rounds are left out)'
+      : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
+  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}`;
   const open = !phone;
 
   return (
@@ -246,7 +257,7 @@ export function GameDetail({
         icon={Flag}
         title="Scoring"
         sub={`${s.roundsPlayed} rounds`}
-        rule={`${basis}. Every scored hole of those rounds.`}
+        rule={`${basisLine}. Every scored hole of those rounds.`}
         lead={
           s.roundsPlayed
             ? `${first} makes ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
@@ -280,7 +291,7 @@ export function GameDetail({
         icon={MoveUpRight}
         title="Off the tee"
         sub={`${s.fairwayOpportunities} drives`}
-        rule={`${basis}. Par 4 and par 5 tee shots; penalties are logged penalty shots.`}
+        rule={`${basisLine}. Par 4 and par 5 tee shots; penalties are logged penalty shots.`}
         lead={
           fw == null
             ? 'No tee shots are logged in this window, so fairways and distance can’t be read yet.'
@@ -322,7 +333,7 @@ export function GameDetail({
         icon={Crosshair}
         title="Approach"
         sub={`${s.girOpportunities} approach shots`}
-        rule={`${basis}. Every approach, whether the green is hit or missed.`}
+        rule={`${basisLine}. Every approach, whether the green is hit or missed.`}
         lead={
           s.girPercentage == null
             ? 'No approach shots are logged in this window.'
@@ -404,7 +415,7 @@ export function GameDetail({
         icon={FlagTriangleRight}
         title="Short game"
         sub={`${s.scrambleAttempts} chances`}
-        rule={`${basis}. Chances are greens missed; chips and pitches are counted by the lie they were played from.`}
+        rule={`${basisLine}. Chances are greens missed; chips and pitches are counted by the lie they were played from.`}
         lead={
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
@@ -455,7 +466,7 @@ export function GameDetail({
         icon={CircleDot}
         title="Putting"
         sub={`${s.totalPutts} putts`}
-        rule={`${basis}. Putts per round are per 18 holes; make rates count the putts logged with a distance.`}
+        rule={`${basisLine}. Putts per round are per 18 holes; make rates count the putts logged with a distance.`}
         lead={
           s.totalPutts === 0
             ? 'No putts are logged in this window.'

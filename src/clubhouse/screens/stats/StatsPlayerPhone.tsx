@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChWindow } from '../../data/stats-common';
+import { basisWords, clearFilters, hasRange, isFiltered, per18, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -23,8 +24,10 @@ import { SgBars, SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
+import { countWords, shotsWords } from './notes';
 import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
+import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
 
 /** Rounds the list shows before "All N rounds". */
@@ -44,6 +47,7 @@ export function StatsPlayerPhone({
   playerHref,
   messageHref,
   onWindow,
+  onFilter,
   onBackToTeam,
   onAddFocus,
   onRetry,
@@ -54,6 +58,8 @@ export function StatsPlayerPhone({
   playerHref: string;
   messageHref: string | null;
   onWindow: (w: ChWindow) => void;
+  /** Any change of the round filter: the page's offline refusal, slow notice, then the new address. */
+  onFilter: (next: ChFilter) => void;
   onBackToTeam: () => void;
   onAddFocus: (() => void) | null;
   onRetry: () => void;
@@ -64,8 +70,12 @@ export function StatsPlayerPhone({
   const w = data.win;
   const first = data.firstName;
   // Strokes gained needs three rounds WITH shots, so the banner keys on those, not on the round count alone.
-  const early = w.rounds < 3;
-  const noShots = !early && w.sgRounds < 3;
+  // A filter that leaves no round says so in place of the figures (CH-5320), not as an early read of nothing.
+  const filtered = isFiltered(data.filter);
+  const emptyFilter = filtered && w.rounds === 0 && !data.roundsError;
+  const early = w.effRounds < 3 && !emptyFilter;
+  const noShots = !early && !emptyFilter && w.effSgRounds < 3;
+  const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
 
   const share = async () => {
     haptic('press');
@@ -118,23 +128,29 @@ export function StatsPlayerPhone({
         )}
       </header>
 
-      <WindowSwitch value={data.window} onChange={onWindow} />
+      <WindowSwitch value={data.window} onChange={onWindow} custom={hasRange(data.filter)} />
+      {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone />}
 
+      {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
       {early && (
         <div className="ch-pf-early" role="note" data-ch-code="CH-5305">
           <Icon icon={Info} size={15} />
-          Early read. {coach ? `${first} has` : 'You have'} {w.rounds} countable {w.rounds === 1 ? 'round' : 'rounds'} in this window, so averages and trends will move a lot. Strokes gained shows once
+          Early read. {coach ? `${first} has` : 'You have'} {countWords(w.rounds, w.effRounds)} in this window, so averages and trends will move a lot. Strokes gained shows once
           there are three.
         </div>
       )}
       {noShots && (
         <div className="ch-pf-early" role="note" data-ch-code="CH-5308">
           <Icon icon={Info} size={15} />
-          Strokes gained needs three rounds posted with shots. {coach ? `${first} has` : 'You have'} {w.sgRounds} of {w.rounds} rounds with shots in this window, so strokes gained shows a dash until there are three.
+          Strokes gained needs three rounds posted with shots. {coach ? `${first} has` : 'You have'} {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
         </div>
       )}
       {data.roundsError && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={onRetry} />}
 
+      {emptyFilter && <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />}
+
+      {!emptyFilter && (
+        <>
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
         <Figures data={data} />
       </SectionBoundary>
@@ -147,7 +163,7 @@ export function StatsPlayerPhone({
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn't load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} puttBands={data.puttBands} onRetry={onRetry} phone />
+          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} puttBands={data.puttBands} onRetry={onRetry} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState
@@ -165,9 +181,11 @@ export function StatsPlayerPhone({
       </SectionBoundary>
 
       <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
-        {data.rounds.length > 0 && <RoundsExtra x={data.extra} win={data.window} phone />}
+        {data.rounds.length > 0 && <RoundsExtra x={data.extra} filter={data.filter} phone />}
         <Rounds rounds={data.rounds} open={initialTab === 'rounds'} />
       </SectionBoundary>
+        </>
+      )}
 
       <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
         <Development data={data} coach={coach} onAdd={onAddFocus} onRetry={onRetry} />
@@ -247,15 +265,18 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
 }
 
 function Trend({ data }: { data: ChPlayerProfile }) {
-  // Oldest first, the last ten 18-hole rounds.
-  const rounds = [...data.rounds].reverse().slice(-10);
+  // Oldest first, the last ten rounds, a score per 18 holes (a 9-hole score doubled).
+  const rounds = [...data.rounds].reverse().slice(-10).map((r) => ({ ...r, score: per18(r.score, r.holes) }));
   if (rounds.length === 0) return null;
   const change = rounds[rounds.length - 1]!.score - rounds[0]!.score;
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-spm-trend">
       <div className="ch-stm-panel__h">
         <h2 id="ch-spm-trend">Scoring trend</h2>
-        <span className="ch-num">Last {rounds.length}</span>
+        <span className="ch-num">
+          Last {rounds.length}
+          {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
+        </span>
       </div>
       {/* A line needs two rounds; with one the panel says what there is instead of vanishing. */}
       {rounds.length === 1 ? (
@@ -297,7 +318,7 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
               <li key={r.id} className="ch-spm-round">
                 <span className="ch-stm-row__b">
                   <b>{r.course}</b>
-                  <span className="ch-num">{[r.date, r.type ? ROUND_TYPE[r.type] : null, r.gir ? `GIR ${r.gir}` : null, r.putts != null ? `${r.putts} putts` : null].filter(Boolean).join(' · ')}</span>
+                  <span className="ch-num">{[r.date, r.holes === 9 ? '9 holes' : null, r.type ? ROUND_TYPE[r.type] : null, r.gir ? `GIR ${r.gir}` : null, r.putts != null ? `${r.putts} putts` : null].filter(Boolean).join(' · ')}</span>
                 </span>
                 <span className="ch-stm-row__v ch-num">
                   <b>{r.score}</b>

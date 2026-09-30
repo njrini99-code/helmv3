@@ -2,6 +2,20 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Round filter with a Holes control: any stretch of rounds, 9 or 18 holes, every figure per 18 (owner: "make it 9 or 18")
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (catalog CH-5102, CH-5320 to CH-5324; CH-5305, CH-5308, CH-5313 change their words)
+Data impact:    none (reads only; no migration)
+```
+
+- **Issue.** The page read only its three fixed windows, so a coach could not look at tournaments alone, a stretch of dates, a course or chosen rounds, and the 36 nine-hole rounds (5% of countable rounds) were left out with no way to see them (Q-90, Q-94). The owner asked for one filter on both Stats pages and then said "make it 9 or 18".
+- **Fix.** One filter, kept in the address and shared with Team stats: round type, **holes** (18 holes by default, 9 holes, Both), time (the three windows or a From and To date, which may reach before this season), course, and Only these / Exclude these rounds; removable chips, Clear, a count line and a sheet (Done applies), desktop and phone. Every figure follows it. Per-round figures are per 18 holes (a nine-hole round counts as half: a 38 is a 76); rates pool the holes and shots; floors count whole rounds; personal bests list each length apart; a note says so whenever nine-hole rounds are in. The shared calculator is not edited: a thin adapter restates its per-round counts, average to par and scoring by round type when a nine-hole round is in. PARITY.md has the method ("Nine- and eighteen-hole rounds").
+- **Also.** With no 18-hole round but 9-hole ones in the window, the page says where they are (CH-5324). A player's filter only ever reads their own rounds (Q-91; tested). SG4 and PT12 now read "waiting on the shared Tour fix (Q-93)", and the figures that move with that fix are listed.
+- **Not built.** Tees and rating, event, home or away (no usable column; counts and reasons in PARITY.md).
+- **Checked.** 135 new tests and 389 in the Stats set (9-only and Both cases, strokes gained per 18, the floors, the address, every state by its code); mutations of the filter (72) and of Holes (95), one equivalent survivor; axe (50 pages) and native-feel at 390 and 430px clean.
+
 ## 2026-09-30 — Parity with the production player stats page: every production figure is shown, or named with a reason (PARITY.md)
 
 ```text

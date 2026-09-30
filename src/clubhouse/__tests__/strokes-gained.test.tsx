@@ -589,7 +589,7 @@ describe('player profile · desktop', () => {
 });
 
 describe('the early-read banner keys on rounds with shots', () => {
-  const win = (rounds: number, sgRounds: number) => ({ ...PREVIEW_PLAYER.win, rounds, sgRounds, sgPerRound: sgRounds >= 3 ? -0.9 : null });
+  const win = (rounds: number, sgRounds: number) => ({ ...PREVIEW_PLAYER.win, rounds, sgRounds, effRounds: rounds, effSgRounds: sgRounds, sgPerRound: sgRounds >= 3 ? -0.9 : null });
 
   it('CH-5308 five rounds but one with shots: strokes gained needs three, and the banner says how many have them', () => {
     showPlayer(player({ win: win(5, 1) }));

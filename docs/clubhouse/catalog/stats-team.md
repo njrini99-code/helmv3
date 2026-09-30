@@ -14,6 +14,12 @@ component inside its own boundary, so a crash in one never reaches the page.
 | --- | --- | --- | --- | --- |
 | CH-4001 | The browser blocks the CSV export | "Couldn't export team stats" + "Your browser blocked the download. Try a desktop browser." Done: "Team stats exported" | `TeamHeadActions` export, reported low | stats-team.test › CH-4001 |
 
+## 41xx Validation
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-4101 | The filter's date range starts after it ends, and Done is tapped | "The start date is after the end date. Swap them, or clear one." under the dates, which are marked invalid; the start date takes focus and a warning plays; nothing is requested and the sheet stays open. Nothing is said while they are still typing | `FilterSheet` in `StatsFilter` (`aria-invalid`, `aria-describedby`) | stats-filter-ui.test › CH-4101 |
+
 ## 42xx Didn't load
 
 | # | When | They see | How | Test |
@@ -45,13 +51,20 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4310 | No countable round all season (D-71) | The page empty state: "No stats yet" + "Team and player stats fill in as players post rounds this season." + View roster; other windows keep CH-4301 | `StatsTeamFirstRun` (desktop and phone) | stats-team.test › CH-4310 |
 | CH-4311 | The window has no round posted with shots, so the team has no strokes gained | The "Team SG per round" headline reads "—" with "Needs rounds with shots" and what it is measured against ("vs Tour"), never a zero | `TeamFigures` (`FigureCards`, `data-ch-code` on the card); loader `figures[0].state = 'empty'` | strokes-gained.test › CH-4311 |
 | CH-4312 | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) | The headline keeps its value and says "No earlier rounds" (or "Too few earlier rounds with shots") where the change chip would be. The season and qualifier windows have no previous window by design and say nothing | `TeamFigures`; `sgChange` in `stats-common`, `figures[0].state = 'no-comparison'` | strokes-gained.test › CH-4312 |
+| CH-4313 | The round filter leaves no round (a type, course, range or pick that matches nothing) | "No rounds match these filters." + "Try a wider time, fewer round types, or clear the filters to see every round again." + Clear filters. The Filter button, the chips and the count line ("0 rounds: qualifying rounds, at Pine Hollow, this season") stay, so the filter can be changed or cleared. Never the first-run page (CH-4310) or CH-4301 / CH-4302, which are for no filter | `FilterEmpty` via `TeamFilterEmpty` (desktop and phone) | stats-filter-ui.test › CH-4313 |
+| CH-4314 | The filter leaves fewer than three whole rounds (a 9-hole round counts as half: four 9-hole rounds are two, six are three) | A note above the figures: "Early read. One round matches these filters, so the averages and trends will move a lot. Strokes gained shows once a player has three rounds with shots." With more rounds than that it says how many match and how they count ("4 rounds match these filters, 2 counting 9-hole rounds as half, so the averages..."). The figures still draw. Three whole rounds, or no filter, say nothing | `EarlyRead` (`StatsTeam`, `StatsTeamPhone`); keys on `roundsEffective` | stats-filter-ui.test › CH-4314 |
+| CH-4315 | The sheet's round list (Only these, Exclude these) has nothing to offer | "No rounds to pick from." + "Nothing matches the round type, course and time above. Widen them, then pick." Or, when the range starts before the season, "Rounds before Aug 1 load once the range is applied. Apply it, then open Filter again to pick among them." | `FilterSheet` | stats-filter-ui.test › CH-4315 |
+| CH-4316 | The sheet's round list is cut at 200 rounds | "Showing the newest 200 of 250 rounds. Narrow the time or the course to reach the rest." under the list | `FilterSheet`, `PICK_LIST_MAX` | stats-filter-ui.test › CH-4316 |
+| CH-4317 | A filter is on and Season bests is showing | The card's subtitle reads "Countable rounds since August · the filter does not apply here": the bests are the whole season's and do not follow the filter. Without a filter it reads "Countable rounds since August" | `SeasonBests` | stats-filter-ui.test › CH-4317 |
+| CH-4318 | The filter lets 9-hole rounds in (Holes: 9 holes or Both) | A note under the count line: "Per-round figures are per 18 holes: a 9-hole round counts as half a round." The chip reads "9 holes" or "18 and 9 holes" and the count line names the lengths ("3 rounds: 9-hole rounds, last 10"). Scoring, putts, birdies and strokes gained are per 18 holes (a 38 over nine holes is a 76); the rates pool the holes. At the default of 18 holes it says nothing | `StatsFilter` (desktop and phone), `PER_18_NOTE` | stats-filter-ui.test › CH-4318 |
+| CH-4319 | No round of the default length (18 holes), but the team has 9-hole rounds in this window | Above the empty state: "This team has 9-hole rounds in this window, which the 18-hole view leaves out. Choose 9 holes or Both in Filter to see them." Not shown when a filter is on (that is CH-4313), when there are rounds to show, or when Both would show nothing in this window (no 9-hole round of its time, such as a 9-hole practice round on Qualifiers, or one from before the season) | `NineHint` (`StatsTeam`, `StatsTeamPhone`) | stats-filter-ui.test › CH-4319 |
 
 ## 44xx Loading
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-4401 | Team stats are loading (a player's profile is CH-5403) | The page's header, five figure cards and chart frames as skeletons, each line and card sized like the loaded Team stats so nothing below moves when it lands | `StatsSkeleton`, `aria-busy` | stats-team.test › CH-4401 |
-| CH-4402 | Changing the window (Last 10, Season, Qualifiers) | The page dims slightly and is marked busy until the new window lands; the scroll position stays | `StatsTeamFrame` (`useTransition`), `.ch-st[aria-busy]` | stats-team.test › CH-4402 |
+| CH-4402 | Changing the window (Last 10, Season, Qualifiers) or the round filter | The page dims slightly and is marked busy until the new rounds land; the scroll position stays | `StatsTeamFrame` (`useTransition`), `.ch-st[aria-busy]` | stats-team.test › CH-4402 |
 
 ## 46xx Motion
 
@@ -67,6 +80,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4701 | Choosing a leg, focusing a player, changing the window or lens | A selection tick | `TeamCharts` `haptic('select')`, `Segmented` | stats-team.test › CH-4701 |
 | CH-4702 | An export lands / fails | The OS success pattern / the OS error pattern (D-70) | `TeamHeadActions` export | stats-team.test › CH-4702 |
 | CH-4703 | Sorting the phone's players by Avg or SG | A selection tick; the current sort is silent | `StatsTeamPhone` `Segmented` | stats-team.test › phone players sort |
+| CH-4704 | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear | A selection tick. Done is a primary button and taps lightly; a range error plays the warning pattern (CH-4101) | `StatsFilter` (`haptic('select')`, `Checkbox`, `Segmented`), `haptic('warning')` | stats-filter-ui.test › CH-4101 |
 
 ## 48xx Accessibility
 
@@ -77,10 +91,11 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4803 | Loss amber on a tinted grid cell is darkened to hold 4.5:1 | `--ch-chart-loss-on-tint` | a11y scan |
 | CH-4804 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-4805 | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) | `ScoreLine` `role="img"`; `.ch-stm-row` | stats-team.test › phone view |
+| CH-4806 | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description | `StatsFilter`, `Modal`, `Checkbox`, `Segmented` | stats-filter-ui.test › CH-4806; a11y scan |
 
 ## 49xx Network and UX
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-4901 | Changing the window (the switch, or Show the season) while offline | "Couldn't open the season: you're offline" + "Reconnect, then try again. The figures shown are still the last 10 rounds." Nothing is requested, the switch stays where it was, and the OS error pattern plays | `StatsTeamFrame` `go`, `isOffline` | stats-team.test › CH-4901 |
-| CH-4902 | A window change takes longer than 5 seconds | "Still loading the season…" + "This is taking longer than usual. The figures shown are still the last 10 rounds.", once; the page stays dimmed and busy (CH-4402) until the new window lands | `StatsTeamFrame`, `CH_SLOW_SAVE_AFTER` | stats-team.test › CH-4902 |
+| CH-4901 | Changing the window (the switch, or Show the season) or the round filter while offline | "Couldn't open the season: you're offline" + "Reconnect, then try again. The figures shown are still the last 10 rounds." A filter change says "Couldn't apply the filter: you're offline" + "Reconnect, then try again. The figures shown are still the rounds you had." Nothing is requested, the control stays where it was, and the OS error pattern plays | `StatsTeamFrame` `go`, `isOffline` | stats-team.test › CH-4901 |
+| CH-4902 | A window or filter change takes longer than 5 seconds | "Still loading the season…" + "This is taking longer than usual. The figures shown are still the last 10 rounds.", once (a filter change: "Still loading the filtered rounds…"); the page stays dimmed and busy (CH-4402) until the new window lands | `StatsTeamFrame`, `CH_SLOW_SAVE_AFTER` | stats-team.test › CH-4902 |

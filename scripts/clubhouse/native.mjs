@@ -44,7 +44,8 @@ function scan() {
       return hit !== null && (hit === el || el.contains(hit));
     });
   };
-  const root = document.querySelector('.ch-root') ?? document.body;
+  // With a modal dialog open nothing behind it can be tapped (the top layer is inert, so a probe there lands on the dialog): scan the dialog.
+  const root = document.querySelector('dialog[open]') ?? document.querySelector('.ch-root') ?? document.body;
   const targets = root.querySelectorAll('button, a[href], [role="button"], [role="tab"], [role="switch"], [role="menuitem"], select, summary, input[type="checkbox"], input[type="radio"]');
   for (const el of targets) {
     if (!shown(el) || el.disabled) continue;

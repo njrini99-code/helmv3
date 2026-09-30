@@ -1,17 +1,18 @@
 import { Users } from 'lucide-react';
 import Link from 'next/link';
 import type { ChTeamStats } from '../../data/stats-team';
-import type { ChWindow } from '../../data/stats-common';
+import { isFiltered, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
+import { EarlyRead, NineHint } from './StatsFilter';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
 import { StatsTeamPhone } from './StatsTeamPhone';
-import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamHeadActions } from './StatsTeamIslands';
+import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
 
 /**
  * Team stats. Rendered on the server: the figures, putting and season bests
@@ -20,9 +21,12 @@ import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamHeadActions } 
  */
 export function StatsTeam({ data }: { data: ChTeamStats }) {
   const noRounds = !data.roundsError && data.roundCount === 0;
+  const filtered = isFiltered(data.filter);
+  // Nothing to filter before a round exists (the first-run page); a filter already on always shows, so it can be cleared.
+  const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
 
   return (
-    <StatsTeamFrame window={data.window} phone={<StatsTeamPhone data={data} />}>
+    <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
       <header className="ch-st-head">
         <div className="ch-st-head__row">
           <div>
@@ -32,15 +36,22 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             </p>
           </div>
           {/* Never export a half-loaded window. */}
-          <TeamHeadActions window={data.window} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
+          <TeamHeadActions filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
         </div>
       </header>
+
+      {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} />}
 
       {data.roundsError && (
         <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />
       )}
 
-      {noRounds && data.window === 'season' ? (
+      {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
+      {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
+
+      {noRounds && filtered ? (
+        <TeamFilterEmpty />
+      ) : noRounds && data.window === 'season' ? (
         <StatsTeamFirstRun />
       ) : noRounds ? (
         <div className="ch-st-card">
@@ -62,6 +73,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             <TeamCharts
               data={{
                 window: data.window,
+                filter: data.filter,
                 weeks: data.weeks,
                 team: data.team,
                 players: data.players,
@@ -78,7 +90,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
                 <TeamPutting putting={data.putting} failed={data.puttsError} />
               </SectionBoundary>
               <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
-                <SeasonBests bests={data.bests} window={data.window} />
+                <SeasonBests bests={data.bests} filter={data.filter} />
               </SectionBoundary>
             </div>
           </>
@@ -138,13 +150,15 @@ function TeamPutting({ putting, failed }: { putting: ChTeamStats['putting']; fai
   );
 }
 
-function SeasonBests({ bests, window }: { bests: ChTeamStats['bests']; window: ChWindow }) {
+function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: ChFilter }) {
+  const filtered = isFiltered(filter);
   return (
     <section className="ch-st-card">
       <div className="ch-st-card__head">
         <div>
           <h2>Season bests</h2>
-          <span>Countable rounds since August</span>
+          {/* CH-4317: the bests are the whole season's; they do not follow the filter. */}
+          <span data-ch-code={filtered ? 'CH-4317' : undefined}>{filtered ? 'Countable rounds since August · the filter does not apply here' : 'Countable rounds since August'}</span>
         </div>
       </div>
       {bests.length === 0 ? (
@@ -153,7 +167,7 @@ function SeasonBests({ bests, window }: { bests: ChTeamStats['bests']; window: C
         bests.map((b) => (
           <div key={b.label} className="ch-best__r">
             <span className="ch-best__k">{b.label}</span>
-            <Link href={teamPlayerHref(b.playerId, window)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
               <Avatar name={b.name} size={26} />
               <span>
                 <b>{b.name}</b>

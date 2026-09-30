@@ -34,7 +34,8 @@ has no action of theirs.
 
 ### Secondary actions
 
-Change the window (Last 10, Season, Qualifiers), switch between Overview, Game detail, Rounds and
+Change the window (Last 10, Season, Qualifiers), filter the rounds (round type, a date range, course, and Only these or
+Exclude these rounds), switch between Overview, Game detail, Rounds and
 Development, page to the previous or next player (coach), Message the player (coach), and on the phone
 Share the link (coach) and open all rounds.
 

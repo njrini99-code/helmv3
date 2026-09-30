@@ -139,7 +139,7 @@ GIR, putting, all of it." PARITY.md is the row-by-row record (every production f
 and where Clubhouse shows it, or why it does not). The shape:
 
 - **Every Game detail section keeps its lead sentence and four figures, and gains a line under them saying which
-  rounds it counts** ("Last 10 rounds · 10 rounds, 18 holes only (9-hole rounds are left out)"), the matched
+  rounds it counts** ("Last 10 rounds · 10 rounds, 18 holes only (9-hole rounds are left out)"; with Holes on 9 or Both it names the lengths and says the figures are per 18 holes), the matched
   panels, and a **More detail** disclosure (a native `details`: open on the desktop, closed on the phone, where
   the chips still show one section at a time) holding the rest of the area: scoring numbers, outcomes by par,
   by round type, streaks and the toughest holes; fairways by tee type and club, where tee shots finish and
@@ -147,11 +147,11 @@ and where Clubhouse shows it, or why it does not). The shape:
   approaches finish; short-game numbers, strokes to hole out from around the green, up and down by where the
   green was missed and the finish after the chip; putting by distance (nine bands), the break matrix, misses by
   break, the practice target, the Tour table and putts by round.
-- **Every figure counts the window's own 18-hole rounds** (the ones the Rounds table lists), by passing their ids
-  to `getDetailedStats`, the putts, the holes, the approaches and the spray read, rather than a date preset that
-  counted a different set and 9-hole rounds (Q-90 says 18-hole only for strokes gained; the same rule now holds
-  for every figure on the page, and is said under each section). A window shows the newest 100 at most, and says
-  so (CH-5319).
+- **Every figure counts the window's own rounds** (the ones the Rounds table lists: 18-hole rounds unless the filter's Holes
+  control says 9 or Both), by passing their ids to `getDetailedStats`, the putts, the holes, the approaches and the spray
+  read, rather than a date preset that counted a different set. The owner's "make it 9 or 18" (2026-09-30) replaces Q-90's
+  and Q-94's 18-hole-only rule: nine-hole rounds count when chosen, per 18 holes (PARITY.md, "Nine- and eighteen-hole rounds": per-round figures per 18 holes, a nine-hole round counting as half, rates pooling the holes, floors in whole rounds), and the rule is said under each
+  section. A window shows the newest 100 at most, and says so (CH-5319).
 - **Proximity against the Tour is the Tour's basis**: every approach, hit or missed, lay-ups left out, a range
   needs 10 shots (production's `aggregateApproachBuckets`). The seven-band ladder counts hit greens only, which
   is not that basis, so it carries no Tour tick and says "when the green is hit". This corrects the earlier
@@ -196,6 +196,44 @@ None.
 D-53 (`?tab=` opens a tab; Roster's All N), D-42 (gains green, losses amber), D-66 (My stats in the
 player's More sheet), D-70 (haptics), D-71 (page empty states), Q-68 (phone gaps, built on the
 recommendation).
+
+## Round filter (2026-09-30, phase 3)
+
+One filter for every figure, shared with Team stats (P004) and kept in the address, so a link, a refresh and the pager all keep it
+(`?window=`, `type=`, `holes=`, `from=` and `to=`, `course=` repeated, `only=` or `skip=`; defaults are left out). PARITY.md (P005),
+"The round filter", has the order rounds are selected in, the dimensions and what was left out with the counts.
+
+- **Holes (owner, 2026-09-30: "make it 9 or 18"; Q-94 superseded).** 18 holes (the default), 9 holes or Both, in the sheet
+  between Round type and Time, as three toggle buttons; choosing one changes nothing until Done. Every figure follows it by
+  one method (PARITY.md, "Nine- and eighteen-hole rounds": per-round figures per 18 holes, a nine-hole round counting as half, rates pooling the holes, floors in whole rounds). On this page: scoring, putts, 3-putts, birdies to doubles and
+  penalties a round, strokes gained and its legs, the trend and every by-round line (a 9-hole score is drawn doubled and the
+  line says so) are per 18 holes; GIR, fairways, scrambling, sand saves, make rates and proximity pool the holes and shots.
+  Personal bests list 18-hole and 9-hole rounds apart (Rounds tab; Game detail's best and worst round per length); a 9-hole
+  round is named on its row ("9 holes"). Early reads count whole rounds ("4 countable rounds, 2 counting 9-hole rounds as
+  half"), as do strokes gained's three rounds with shots. Under Both "Last 10" is the ten newest of either length. The
+  calculator's own per-round counts are restated per 18 when a nine-hole round is in (PARITY.md). A note under the count line
+  says all this whenever nine-hole rounds are in (CH-5323); with no 18-hole round but 9-hole rounds posted, the page says where
+  they are (CH-5324).
+- **The control.** A Filter button under the tabs (under the window switch on the phone) shows how many filters are on;
+  each one is a removable chip (a tap removes it at once), Clear takes them all off, and a count line says what is being
+  read: "12 rounds: tournaments, Sep 1 to Sep 29". The sheet (the shared Modal, a bottom sheet on the phone) has Round type
+  (All, Tournament, Qualifying, Practice), Time (Last 10, Season, Qualifiers, or a From and To date), Course (with how many
+  rounds each) and Pick rounds (All matching, Only these, Exclude these, each round a checkbox with its date, course, type
+  and score). Done applies; nothing is requested before it.
+- **Windows.** The switch keeps its three choices. Qualifiers is a round type, so choosing it clears the type, and
+  choosing a type while on it moves to Season. While a date range is on, the switch shows a selected Custom pill;
+  choosing a window drops the range.
+- **Under every figure.** Game detail's line under each section reads the filter's words ("Tournaments, Sep 1 to Sep 29 ·
+  4 rounds, 18 holes only", or "9-hole rounds; per-round figures are per 18 holes") instead of the window's. The Rounds tab's "this window against the one before" is the ten
+  matching rounds against the ten before them, and is absent for a range or picked rounds (as for Season).
+- **States.** No round matches: the content is replaced by "No rounds match these filters" with Clear filters, and
+  Development stays (CH-5320); one or two rounds is the existing early read (CH-5305); the sheet's own are a range that
+  starts after it ends (CH-5102), nothing to pick from (CH-5321) and a list cut at 200 (CH-5322). An early read counts whole
+  rounds, with shots and without (CH-5305, CH-5308); the Rounds tab says why there is no earlier window (CH-5313). Some panels are empty
+  by construction under a type filter (the pressure gap needs three practice and three tournament or qualifier rounds;
+  By round type shows a type with no rounds as empty, CH-5312): their own floors say so.
+- **Phone.** The approved phone board (D-22) has no filter; this is the owner's addition, built on the shared
+  controls: the Filter button and chips sit under the window switch and the sheet is the standard bottom sheet.
 
 ## Explicit non-goals
 

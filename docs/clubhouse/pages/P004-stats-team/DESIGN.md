@@ -145,6 +145,36 @@ tab), D-70 (haptics), D-71 (page empty state), Q-68 (phone gaps, built on the re
 - The notes read a change as a change ("up about 1.0 a round since Aug 30").
 - Every benchmark is the Tour's (`golf_pga_standards.pga_tour_value`, the LPGA row for a women's team); there is no D1 benchmark anywhere in Clubhouse (Q-88). Stored strokes gained is measured against the Tour and is always labelled so.
 
+## Round filter (2026-09-30, phase 3)
+
+One filter for every figure, shared with the player profile (P005) and kept in the address, so a link, a refresh and the pager all keep it
+(`?window=`, `type=`, `holes=`, `from=` and `to=`, `course=` repeated, `only=` or `skip=`; defaults are left out). PARITY.md (P005),
+"The round filter", has the order rounds are selected in, the dimensions and what was left out with the counts.
+
+- **Holes (owner, 2026-09-30: "make it 9 or 18"; Q-94 superseded).** The filter's Holes control reads 18 holes (the default),
+  9 holes or Both. Every figure follows it, by one method (PARITY.md, "Nine- and eighteen-hole rounds": per-round figures per 18 holes, a nine-hole round counting as half, rates pooling the holes, floors in whole rounds). Here: Scoring average, putts and birdies a
+  round, Team SG per round, the legs, the weekly lines and each player's average and strokes gained are per 18 holes;
+  greens, scrambling and the putting rings pool the holes and shots. A player's strokes gained needs three whole rounds
+  with shots, the grid's change four, the previous 10 three, and an early read counts whole rounds too (four 9-hole rounds
+  are two). Season bests stay 18-hole season rounds. "Last 10" under Both is each player's ten newest rounds of either
+  length. A note under the count line says so whenever nine-hole rounds are in (CH-4318).
+- **What it reads.** Every figure: the six cards and their changes, the trend, the leg cards, the grid, the putting
+  rings, the phone's players and putting. The filter applies to each player on their own rounds ("Last 10" is each
+  player's ten newest matching rounds) and to the team's figures pooled from them; "vs. previous 10" is the ten matching
+  rounds before, for a range or picked rounds there is none. Season bests stays the whole season's and says so while a
+  filter is on (CH-4317).
+- **The control.** As on the profile: a Filter button with the count of filters on, removable chips, Clear, the count
+  line ("12 rounds: tournaments, Sep 1 to Sep 29") and the sheet. "Pick rounds" lists every player's rounds (newest 200,
+  with the player named) and "Only these" / "Exclude these" choose among the ones matching the other choices.
+- **Links and export.** A grid row, a Season best and a phone row open the player's profile with the filter kept. The
+  CSV is named for the filter ("varsity-stats-last10-filtered.csv").
+- **States.** No round matches: "No rounds match these filters" with Clear filters (CH-4313), in place of the first-run
+  page and of CH-4301 / CH-4302; fewer than three whole rounds: an early-read note above the figures (CH-4314); the sheet's
+  range error (CH-4101), nothing to pick from (CH-4315), a list cut at 200 (CH-4316); nine-hole rounds in: the per-18 note
+  (CH-4318); no 18-hole round but 9-hole ones posted: where they are (CH-4319).
+- **Phone.** As on the profile: the bar under the window switch, the standard bottom sheet (the approved phone board has
+  no filter; this is the owner's addition).
+
 ## Explicit non-goals
 
 The team stat sheet (the owner removed it), the prediction card, "vs. tour" figures for anything but strokes gained (which is stored against the Tour), a Season best

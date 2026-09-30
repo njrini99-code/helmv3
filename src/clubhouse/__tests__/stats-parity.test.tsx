@@ -36,6 +36,7 @@ import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome'
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
+import { filterFor } from '../data/stats-filter';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const codes = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)];
@@ -71,7 +72,8 @@ function phoneWidth() {
 }
 
 const x = PREVIEW_PLAYER.extra;
-const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...over });
+// A test that chooses a window chooses it for the filter too (the screens read the filter, whose window is the window).
+const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const withExtra = (over: Partial<ChPlayerProfile['extra']>, rest: Partial<ChPlayerProfile> = {}) => player({ extra: { ...x, ...over }, ...rest });
 const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer data={data} coachId={coachId} />);
 const showPhone = (data: ChPlayerProfile) =>
@@ -141,10 +143,9 @@ describe('personal bests', () => {
     expect(b.putts).toEqual({ value: 27, date: 'Sep 10', course: 'Early GC' });
   });
 
-  it('a round with no value for a figure is not in it, and nine-hole rounds are left out: a missing to par is never read as even, a missing putt count never as zero', () => {
+  it('a round with no value for a figure is not in it: a missing to par is never read as even, a missing putt count never as zero', () => {
     const rounds = [
       round('a', '2026-09-01', { total_score: 80, score_to_par: null, total_putts: null, total_gir: null, total_gir_possible: null }),
-      round('nine', '2026-09-02', { total_score: 30, score_to_par: -6, holes_played: 9 }),
       round('z', '2026-09-03', { total_score: 78, score_to_par: 6, total_putts: 0 }),
     ];
     const b = personalBests(rounds);
@@ -153,6 +154,12 @@ describe('personal bests', () => {
     expect(b.putts).toBeNull();
     expect(b.gir!.value).toBe(50);
     expect(personalBests([])).toEqual({ score: null, toPar: null, gir: null, putts: null });
+  });
+
+  it('takes the rounds it is given, whatever their length: a 9-hole score is its own best, listed apart from the 18-hole ones by the loader', () => {
+    const nine = round('nine', '2026-09-02', { total_score: 30, score_to_par: -6, holes_played: 9 });
+    expect(personalBests([nine]).score).toEqual({ value: 30, date: 'Sep 2', course: 'Finley GC' });
+    expect(personalBests([round('a', '2026-09-01', { total_score: 80 }), nine]).score!.value).toBe(30);
   });
 });
 

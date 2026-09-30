@@ -45,6 +45,7 @@ import { ToastProvider } from '../ui/Toast';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
+import { filterFor } from '../data/stats-filter';
 import { ClubhouseMarker } from '../shell/context';
 import StatsLoading from '@/app/golf/(dashboard)/dashboard/stats/loading';
 import './dialog-polyfill';
@@ -74,7 +75,8 @@ function shell(node: React.ReactNode) {
 function wrap(node: React.ReactNode) {
   return render(shell(node));
 }
-const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...over });
+// A test that chooses a window chooses it for the filter too (the screens read the filter, whose window is the window).
+const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const show = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer data={data} coachId={coachId} />);
 const openTab = (user: ReturnType<typeof userEvent.setup>, name: RegExp) => user.click(screen.getByRole('tab', { name }));
 
@@ -508,7 +510,7 @@ describe('Stats player · who may open what', () => {
       // No coach id: the profile has no focus-area editor, and the server is told this is the player's own view.
       expect(el.props.coachId).toBeNull();
       expect(loadPlayerProfile).toHaveBeenCalledTimes(1);
-      expect(loadPlayerProfile).toHaveBeenCalledWith({ viewer: 'player', teamId: 't1', playerId: OWN, window: 'window' in query ? 'season' : 'last10' });
+      expect(loadPlayerProfile).toHaveBeenCalledWith({ viewer: 'player', teamId: 't1', playerId: OWN, window: 'window' in query ? 'season' : 'last10', filter: filterFor('window' in query ? 'season' : 'last10') });
     }
     expect(loadTeamStats).not.toHaveBeenCalled();
   });
@@ -539,7 +541,7 @@ describe('Stats player · who may open what', () => {
     expect(ok.type).toBe(StatsPlayer);
     expect(ok.props.coachId).toBe('c1');
     expect(ok.props.initialTab).toBe('rounds');
-    expect(loadPlayerProfile).toHaveBeenCalledWith({ viewer: 'coach', teamId: 't1', playerId: OTHER, window: 'qualifiers' });
+    expect(loadPlayerProfile).toHaveBeenCalledWith({ viewer: 'coach', teamId: 't1', playerId: OTHER, window: 'qualifiers', filter: filterFor('qualifiers') });
     // Another team's player, or a removed one: the loader answers null.
     vi.mocked(loadPlayerProfile).mockResolvedValue(null);
     const off = (await ClubhouseStatsRoute({ player: OTHER })) as RouteEl;

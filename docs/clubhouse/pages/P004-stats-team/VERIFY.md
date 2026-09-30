@@ -121,6 +121,21 @@ Notes:             client code 17.7 to 11.8 KB minified after the server/island 
 | Axe | `node scripts/clubhouse/a11y.mjs stats-team` | clean, 12 pages (1280 and 390px) |
 | Look | the preview at 1280 and 390px, read by eye | six cards in a row, the phone panel's bars and total row draw as built |
 
+## Round filter pass (2026-09-30, with Holes)
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npx vitest run src/clubhouse/__tests__/stats-filter.test.ts stats-filter-data.test.tsx stats-filter-ui.test.tsx stats-weight.test.ts` | 135 pass (exit 0): the address and the order rounds are selected in (35), what both loaders read and count under a filter, for 9 holes and Both too, with strokes gained per 18 and a player's read never reaching other players' rounds (33), the screens, desktop and phone (56), the weights and the calculator's restated counts (11) |
+| Tests | the same four plus `stats-team`, `stats-player`, `stats-parity`, `strokes-gained`, `logic` | 9 files, 389 tests pass (exit 0). The contract moved in the last five (the loaders take a filter, the window summary carries whole-round counts); setup only, no expectation weakened |
+| Tests | `npx vitest run src/clubhouse` (once) | 34 files: 1702 pass, 10 fail, all in `classes`, `coachhelm` and `recruiting` tests, which other sessions' uncommitted work in this checkout changes; none in Stats |
+| Mutations | `scratchpad/sg-build/mutate.py muts_filter.py`, `muts_holes.py`, `muts_holes2.py` | 72 mutations of the filter (67 caught, the 5 survivors fixed with tests), then 86 of the Holes behaviour (76 caught; 9 survivors fixed with tests and re-run, all caught) and 9 more for the review fixes, all caught. The one mutant left is equivalent: a player's team pool is already the player alone |
+| Types | `npm run -s typecheck:fast` | exit 0 on this work; the last run (exit 1) reports one error, in `hub.test.tsx`, which another session is changing |
+| Lint | `eslint` on the 33 changed files | exit 0 (one existing warning in the preview page, `role` on a Messages preview) |
+| Clubhouse | `npm run -s clubhouse:check` | exit 1 for registry drift only: the new catalog rows have no Bridge ID and the generated files and CONTRACT.md are stale (the lead's sync), and other pages' own gaps. No Stats source, test or catalog-use violation |
+| Axe | `node scripts/clubhouse/a11y.mjs stats-team stats-player` | exit 0, 50 pages clean (1280 and 390px), including the filtered, no-match, early-read and nine-hole states and the filter sheet open |
+| Native-feel | `CH_BASE=http://localhost:3107 node scripts/clubhouse/native.mjs stats-team stats-player` (390 and 430px) | clean on the second run. The first run had one `page.tap` timeout opening a Game detail chip at 430px while other sessions' tests were running; the chips and the filter's chips and Clear were within 44 x 44 in both. Nothing here sets a height on `.ch-seg__b` or `.ch-pill` |
+| Look | not done | no browser or iPhone pass (owner) |
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390 and 430.

@@ -3,6 +3,7 @@ import { FairwayPlayerStats } from '@/components/fairway/pages/coachhelm/Fairway
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseStatsRoute } from '@/clubhouse/routes/stats';
+import type { ChFilterQuery } from '@/clubhouse/data/stats-filter';
 import { mapLegacyStatsTab } from '@/components/fairway/modules';
 import { FeatureUnavailable } from '@/components/fairway';
 import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
@@ -35,7 +36,7 @@ export const dynamic = 'force-dynamic';
  */
 
 interface GolfStatsPageProps {
-  searchParams: Promise<{ player?: string; tab?: string; window?: string }>;
+  searchParams: Promise<{ player?: string; tab?: string; window?: string } & ChFilterQuery>;
 }
 
 export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps) {
@@ -46,7 +47,7 @@ export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps
   // coaches and players, each with the permissions they already have.
   const chSession = await getGolfSessionProfile();
   if (isClubhouseFor(chSession?.coach ? 'coach' : chSession?.player ? 'player' : null)) {
-    return <ClubhouseStatsRoute player={params.player} window={params.window} tab={params.tab} />;
+    return <ClubhouseStatsRoute player={params.player} window={params.window} tab={params.tab} query={params} />;
   }
 
   // Legacy `?tab=` (the old FairwayStatsCockpit tab strip) → the Spine &

@@ -34,7 +34,7 @@ Open a player from the strokes gained grid (or from Season bests) to see their p
 
 ### Secondary actions
 
-Change the window (Last 10, Season, Qualifiers), choose a leg, focus a player on the trend, switch
+Change the window (Last 10, Season, Qualifiers), filter the rounds (round type, a date range, course, and Only these or Exclude these rounds), choose a leg, focus a player on the trend, switch
 the trend between strokes gained and scoring, show the season from an empty window, export the
 grid as a CSV, and on the phone sort the players by Avg or SG.
 
@@ -52,7 +52,7 @@ Whether the team's line is rising or falling, and which leg is amber.
 ### User should never have to think about
 
 Whether a figure is complete (a failed read hides the figures instead of showing them half-built),
-which rounds count (only countable 18-hole rounds do, and every figure names its window and sample),
+which rounds count (countable rounds of the length the filter's Holes control chose, 18 holes by default, and every figure names its window and sample),
 or whether a small sample is a real trend (a player with fewer than three rounds of strokes gained
 reads Early read, never 0.0).
 

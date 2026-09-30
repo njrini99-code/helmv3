@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import type { ChWindow } from '../../data/stats-common';
+import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -22,7 +23,8 @@ import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale, sgTint } from '../../lib/sg';
-import { WINDOW_WORDS, WindowSwitch } from './WindowSwitch';
+import { changeWords, WindowSwitch } from './WindowSwitch';
+import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { teamPlayerHref } from './links';
 
 /*
@@ -38,55 +40,59 @@ type Lens = 'sg' | 'score';
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 /** What the trend, the leg cards and the grid read; the rest of the page stays on the server. */
-export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount'>;
+export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount'>;
 
-const GoWindow = createContext<(w: ChWindow) => void>(() => {});
+/** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void }>({ filter: filterFor(), go: () => {} });
 
 /** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
-export const useGoWindow = () => useContext(GoWindow);
+export function useGoWindow() {
+  const { filter, go } = useContext(GoFilter);
+  return (w: ChWindow) => go(withWindow(filter, w));
+}
 
-/** The page frame: changing the window dims the page and marks it busy until the new window lands. */
-export function StatsTeamFrame({ window: current, phone, children }: { window: ChWindow; phone?: ReactNode; children: ReactNode }) {
+/** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
+export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
   const isPhone = useChPhone() && phone != null;
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  // The window being loaded; cleared when the server answers with it.
-  const [loading, setLoading] = useState<ChWindow | null>(null);
-  useEffect(() => setLoading(null), [current]);
+  const here = statsHref('/golf/dashboard/stats', current);
+  // The filter being loaded; cleared when the server answers with a new address.
+  const [loading, setLoading] = useState<ChFilter | null>(null);
+  useEffect(() => setLoading(null), [here]);
   useEffect(() => {
     if (!loading) return;
-    // CH-4902: a slow window change says so once instead of dimming forever.
-    const slow = window.setTimeout(
-      () => toast({ title: `Still loading ${WINDOW_WORDS[loading]}…`, body: `This is taking longer than usual. The figures shown are still ${WINDOW_WORDS[current]}.`, code: 'CH-4902' }),
-      CH_SLOW_SAVE_AFTER,
-    );
+    // CH-4902: a slow window or filter change says so once instead of dimming forever.
+    const words = changeWords(current, loading);
+    const slow = window.setTimeout(() => toast({ title: words.slow, body: `This is taking longer than usual. ${words.still}`, code: 'CH-4902' }), CH_SLOW_SAVE_AFTER);
     return () => window.clearTimeout(slow);
   }, [loading, current, toast]);
-  const go = (w: ChWindow) => {
+  const go = (next: ChFilter) => {
     if (isOffline()) {
-      // CH-4901: nothing is requested while offline, and the switch stays where it is.
+      // CH-4901: nothing is requested while offline, and the control stays where it is.
+      const words = changeWords(current, next);
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't open ${WINDOW_WORDS[w]}: you're offline`, body: `Reconnect, then try again. The figures shown are still ${WINDOW_WORDS[current]}.`, code: 'CH-4901' });
+      toast({ tone: 'error', title: words.offline, body: `Reconnect, then try again. ${words.still}`, code: 'CH-4901' });
       return;
     }
-    chTrail(`stats window ${w}`);
-    setLoading(w);
-    start(() => router.push(w === 'last10' ? '/golf/dashboard/stats' : `/golf/dashboard/stats?window=${w}`, { scroll: false }));
+    chTrail(isWindowChange(current, next) ? `stats window ${next.window}` : 'stats filter');
+    setLoading(next);
+    start(() => router.push(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoWindow.Provider value={go}>
+    <GoFilter.Provider value={{ filter: current, go }}>
       <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
       </main>
-    </GoWindow.Provider>
+    </GoFilter.Provider>
   );
 }
 
 /** The header's window switch and Export. */
-export function TeamHeadActions({ window: current, teamName, grid }: { window: ChWindow; teamName: string; grid: ChTeamStats['grid'] | null }) {
-  const go = useContext(GoWindow);
+export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; teamName: string; grid: ChTeamStats['grid'] | null }) {
+  const go = useGoWindow();
   const toast = useToast();
   const exportCsv = (rows: ChTeamStats['grid']) => {
     const head = ['Player', 'Rounds', ...LEGS_LIST.map((l) => `SG ${l}`), 'SG total'];
@@ -94,7 +100,7 @@ export function TeamHeadActions({ window: current, teamName, grid }: { window: C
     try {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' }));
-      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${current}.csv`;
+      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${filter.window}${isFiltered(filter) ? '-filtered' : ''}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
       haptic('success');
@@ -107,7 +113,7 @@ export function TeamHeadActions({ window: current, teamName, grid }: { window: C
   };
   return (
     <div className="ch-st-head__act">
-      <WindowSwitch value={current} onChange={go} />
+      <WindowSwitch value={filter.window} onChange={go} custom={hasRange(filter)} />
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
         <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)}>
@@ -120,12 +126,24 @@ export function TeamHeadActions({ window: current, teamName, grid }: { window: C
 
 /** The empty window's way out. */
 export function ShowSeason() {
-  const go = useContext(GoWindow);
+  const go = useGoWindow();
   return (
     <Button size="sm" onClick={() => go('season')}>
       Show the season
     </Button>
   );
+}
+
+/** The round filter (Filter button, chips, count line and sheet), changing the team page's address through the frame. */
+export function TeamFilter({ filter, options, count, phone = false }: { filter: ChFilter; options: ChTeamStats['filterOptions']; count: number; phone?: boolean }) {
+  const { go } = useContext(GoFilter);
+  return <StatsFilter filter={filter} options={options} count={count} onChange={go} phone={phone} team codes={{ empty: 'CH-4313', pickEmpty: 'CH-4315', pickCap: 'CH-4316', range: 'CH-4101', holes: 'CH-4318' }} />;
+}
+
+/** The filter leaves no round: CH-4313, and Clear filters is the way back. */
+export function TeamFilterEmpty() {
+  const { filter, go } = useContext(GoFilter);
+  return <FilterEmpty code="CH-4313" onClear={() => go(clearFilters(filter))} />;
 }
 
 /** A failed read's notice; Try again re-runs the server render. */
@@ -387,7 +405,11 @@ function LegTrend({ leg, data, mean, selected, onSelect }: { leg: ChLeg; data: A
   );
 }
 
-const GRID_WINDOW: Record<ChWindow, string> = { last10: 'last 10 rounds', season: 'this season', qualifiers: 'qualifier rounds' };
+/** Which rounds the grid reads, in a clause: the window's own words, or what the filter selects. */
+function gridBasis(filter: ChFilter): string {
+  const b = basisWords(filter);
+  return b.charAt(0).toLowerCase() + b.slice(1);
+}
 
 function LegGrid({
   data,
@@ -400,7 +422,7 @@ function LegGrid({
   focus: string | null;
   setFocus: (id: string | null) => void;
 }) {
-  const playerHref = (id: string) => teamPlayerHref(id, data.window);
+  const playerHref = (id: string) => teamPlayerHref(id, data.filter);
   const li = LEGS_LIST.indexOf(leg);
   const rows = [...data.grid].sort((a, b) => (b.legs[li] ?? -99) - (a.legs[li] ?? -99));
   // The tint scales to the largest cell in the grid (rounded up, at least 1), not to a fixed 1.2.
@@ -412,7 +434,7 @@ function LegGrid({
         <div>
           <h2>Where each player gains and loses</h2>
           <span>
-            Strokes gained per round by leg &middot; {GRID_WINDOW[data.window]} &middot; needs three rounds &middot; sorted by {leg.toLowerCase()}
+            Strokes gained per round by leg &middot; {gridBasis(data.filter)} &middot; needs three rounds &middot; sorted by {leg.toLowerCase()}
           </span>
         </div>
       </div>

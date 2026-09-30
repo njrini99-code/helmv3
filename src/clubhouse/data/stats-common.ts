@@ -3,16 +3,24 @@ import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chLogServer } from '../lib/track-server';
-import { isFull18, type ChRound } from './season';
+import { seasonStartDate, type ChRound } from './season';
+import { hasScore } from './stats-weight';
+import {
+  earlierCount,
+  hasRange,
+  PICK_LIST_MAX,
+  previousRounds,
+  roundKind,
+  selectRounds,
+  type ChFilter,
+  type ChFilterOptions,
+  type ChFilterRow,
+  type ChWindow,
+} from './stats-filter';
+
+export { parseWindow, type ChWindow } from './stats-filter';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
-
-/** The Stats window switch: last 10 rounds per player, the season, or qualifier rounds. */
-export type ChWindow = 'last10' | 'season' | 'qualifiers';
-
-export function parseWindow(v: string | undefined): ChWindow {
-  return v === 'season' || v === 'qualifiers' ? v : 'last10';
-}
 
 export const WINDOW_LABEL: Record<ChWindow, string> = {
   last10: 'Last 10 rounds',
@@ -20,21 +28,56 @@ export const WINDOW_LABEL: Record<ChWindow, string> = {
   qualifiers: 'Qualifier rounds',
 };
 
-const QUALIFIER_TYPES = new Set(['qualifier', 'qualifying']);
-
-/** One player's rounds in the window, newest first (18-hole, countable, already season-bounded). */
-export function roundsInWindow(rounds: ChRound[], w: ChWindow): ChRound[] {
-  const full = rounds.filter(isFull18);
-  if (w === 'qualifiers') return full.filter((r) => QUALIFIER_TYPES.has((r.round_type ?? '').toLowerCase()));
-  if (w === 'last10') return full.slice(0, 10);
-  return full;
+/** A round as the filter reads it. */
+export function roundRow(r: ChRound): ChFilterRow {
+  return { id: r.id, date: r.round_date.slice(0, 10), kind: roundKind(r.round_type), course: r.course_name, holes: r.holes_played ?? 18 };
 }
 
-/** The window before this one, for "vs. previous" deltas. Season and qualifiers have none. */
-export function previousWindow(rounds: ChRound[], w: ChWindow): ChRound[] | null {
-  if (w !== 'last10') return null;
-  const prev = rounds.filter(isFull18).slice(10, 20);
-  return prev.length >= 3 ? prev : null;
+/**
+ * One player's rounds under the filter, newest first: matched on type, round length (18 holes unless the filter says 9 or both),
+ * course and time, then the picks, then the newest-ten cut (see stats-filter).
+ */
+export function roundsInFilter(rounds: ChRound[], f: ChFilter): ChRound[] {
+  return selectRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
+}
+
+/** The matching rounds before the newest ten, for "vs. previous 10"; null when the filter has no previous window or there are fewer than three. */
+export function previousInFilter(rounds: ChRound[], f: ChFilter): ChRound[] | null {
+  return previousRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
+}
+
+/** How many matching rounds come before the newest ten. */
+export function earlierInFilter(rounds: ChRound[], f: ChFilter): number {
+  return earlierCount(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
+}
+
+/** Rounds from this season only (a custom range can load earlier ones; the season's own figures must not count them). */
+export function seasonOnly(rounds: ChRound[]): ChRound[] {
+  const start = seasonStartDate();
+  return rounds.filter((r) => r.round_date.slice(0, 10) >= start);
+}
+
+/**
+ * Where the rounds read starts: the season, unless a custom range reaches before it (then its start, or no bound when
+ * the range has no start). Undefined is `loadSeasonRounds`' own default, the season.
+ */
+export function loadSince(f: ChFilter): string | null | undefined {
+  if (!hasRange(f)) return undefined;
+  if (!f.from) return null;
+  return f.from < seasonStartDate() ? f.from : undefined;
+}
+
+/** What the sheet can list: the loaded rounds of both lengths (newest first, cut at the list size), and the courses with how many rounds each. */
+export function filterOptions(rounds: ChRound[], names?: Map<string, string>): ChFilterOptions {
+  const full = rounds.filter(hasScore);
+  const counts = new Map<string, number>();
+  for (const r of full) if (r.course_name?.trim()) counts.set(r.course_name, (counts.get(r.course_name) ?? 0) + 1);
+  return {
+    rounds: full.slice(0, PICK_LIST_MAX).map((r) => ({ ...roundRow(r), score: r.total_score as number, player: names?.get(r.player_id) ?? null })),
+    total: full.length,
+    courses: [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    seasonStart: seasonStartDate(),
+  };
 }
 
 /** How strokes gained moved against the previous window: the chip's change, and the words when there is none to show. */
@@ -45,7 +88,7 @@ export interface ChSgChange {
 }
 
 /**
- * `earlier` is how many 18-hole rounds come before the last 10. Both means
+ * `earlier` is how many matching rounds come before the last 10. Both means
  * need three rounds with shots (MIN_SG_ROUNDS), so "no earlier rounds" is
  * said only when there are none, and a thin earlier stretch says so instead.
  */

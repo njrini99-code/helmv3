@@ -7,6 +7,8 @@ Route:                   /golf/dashboard/stats (coach) and the old address /golf
 Pages:                   src/app/golf/(dashboard)/dashboard/stats/page.tsx (isClubhouseFor -> Clubhouse, else Fairway)
                          src/app/golf/(dashboard)/dashboard/stats/team/page.tsx (a non-coach is sent to /stats;
                          isClubhouseFor('coach') -> the same route with no parameters, else Fairway)
+Address:                 the round filter: window, type, holes, from, to, course (repeated), only, skip (see P005's WIRING);
+                         the old address /stats/team carries none
 Clubhouse route adapter: src/clubhouse/routes/stats.tsx ClubhouseStatsRoute (session, resolveClubhouseTeam;
                          no team -> StatsNoTeam, CH-4309; a player -> their profile, P005; a coach with no
                          ?player= -> StatsTeam)
@@ -61,10 +63,11 @@ gained and Scoring lens, and the phone's Avg and SG sort are local state and hav
 | Path | Purpose | States |
 | --- | --- | --- |
 | `screens/stats/StatsTeam.tsx` | The server-rendered page: header, notices, the empty card, figures, putting, season bests | 40101, 40401, 40402, 40407, 40602 to 40604, 40605, 40608, 40609 |
-| `screens/stats/StatsTeamIslands.tsx` | The client islands: `StatsTeamFrame`, `TeamHeadActions`, `ShowSeason`, `RetryNotice`, `TeamCharts` (trend, leg cards, grid) | 40301, 40403 to 40405, 40408, 40601, 40606, 40607, 40701, 40702, 41601, 41602 |
+| `screens/stats/StatsTeamIslands.tsx` | The client islands: `StatsTeamFrame` (window and filter changes: the offline refusal, the slow notice, the new address), `TeamHeadActions`, `ShowSeason`, `TeamFilter`, `TeamFilterEmpty`, `RetryNotice`, `TeamCharts` (trend, leg cards, grid) | 40301, 40403 to 40405, 40408, 40601, 40606, 40607, 40701, 40702, 41601, 41602 |
 | `screens/stats/StatsTeamPhone.tsx` | The phone view and `ScoreLine` (also used by the player's phone profile) | 41901, 41805 |
 | `screens/stats/StatsSkeleton.tsx` | The route skeleton (shared with the profile) | 40201 |
-| `screens/stats/WindowSwitch.tsx` | The switch and the words for each window | 40701, 40702 |
+| `screens/stats/WindowSwitch.tsx` | The switch (with a Custom pill while a date range is on), the words for each window and `changeWords` | 40701, 40702 |
+| `screens/stats/StatsFilter.tsx` | The round filter: Filter button, chips, count line, the per-18 note, the sheet (with Holes), `FilterEmpty`, `EarlyRead`, `NineHint` (shared with the profile) | CH-4101, CH-4313 to CH-4319 |
 | `screens/stats/charts.tsx` | `FigureCards`, `YardagePage`, `PuttingRings` (shared with the profile) | 41803 |
 | `screens/stats/links.ts`, `legs.ts`, `notes.ts` | The player link, the leg order for client code, the putting note | none |
 | `routes/stats.tsx` | `ClubhouseStatsRoute`, `StatsNoTeam`, `NotOnTeam` | 40409, 40801, 40802 |
@@ -113,6 +116,17 @@ Write path: none
 None.
 
 ## Impact notes
+
+- The round filter (2026-09-30): `loadTeamStats` takes `filter` (the window alone when absent) and returns `filter` and
+  `filterOptions`; every `roundsInWindow` / `previousWindow` call became `roundsInFilter` / `previousInFilter` /
+  `earlierInFilter`. A custom range before the season widens the rounds read (`loadSince`); the season bests and the
+  cache and putt reads are arranged so that only the bests stay season-only. `data/stats-filter.ts` is pure and shared
+  with the profile (P005).
+- Holes (2026-09-30): the filter carries `holes` (18, 9 or all). `data/stats-weight.ts` (pure; shared with the profile) holds
+  the weights: `weightedMean`, `effectiveRounds`, `effectiveCount`, `summarizeWindow`. `loadTeamStats` takes every per-round
+  mean through `weightedMean`, reads the round cache for every loaded round of either length, returns `roundsEffective`
+  (the early read's whole rounds), and keeps the season bests to 18-hole season rounds. The grid's `total` and `change` use
+  whole-round floors. No new table or column.
 
 - `charts.tsx`, `WindowSwitch.tsx`, `notes.ts`, `ScoreLine` and `StatsSkeleton` are shared with the player
   profile (P005): a change there changes both pages.

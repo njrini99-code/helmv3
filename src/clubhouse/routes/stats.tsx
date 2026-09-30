@@ -4,7 +4,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { loadTeamStats } from '../data/stats-team';
 import { loadPlayerProfile } from '../data/stats-player';
-import { parseWindow } from '../data/stats-common';
+import { parseFilter, type ChFilterQuery } from '../data/stats-filter';
 import { StatsTeam } from '../screens/stats/StatsTeam';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { EmptyState } from '../ui/States';
@@ -17,27 +17,29 @@ import '../styles/stats.css';
  *   coach  - team stats, or ?player=<id> for any player on their team
  *   player - always their own profile; ?player= is ignored, never trusted
  * The team is always the caller's own (resolveClubhouseTeam), never one named in the address.
- * `?tab=` opens a profile tab (overview, game, rounds, dev).
+ * `?tab=` opens a profile tab (overview, game, rounds, dev). The round filter (window, type, from, to, course, only, skip) is
+ * read from `query` by `parseFilter`, which drops anything unusable; `window` alone is the older, narrower way in.
  */
-export async function ClubhouseStatsRoute({ player, window, tab }: { player?: string; window?: string; tab?: string }) {
+export async function ClubhouseStatsRoute({ player, window, tab, query }: { player?: string; window?: string; tab?: string; query?: ChFilterQuery }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
   if (!team) return <StatsNoTeam coach={!!session.coach} />;
-  const win = parseWindow(window);
+  const filter = parseFilter({ ...query, ...(window !== undefined ? { window } : {}) });
+  const win = filter.window;
 
   if (team.role === 'player') {
-    const profile = await loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win });
+    const profile = await loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter });
     return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} /> : <NotOnTeam coach={false} />;
   }
 
   if (player) {
     // An id that is not shaped like one is not on any team; it never reaches the database (which would answer 22P02).
     if (!isUuid(player)) return <NotOnTeam coach />;
-    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win });
+    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
     return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} /> : <NotOnTeam coach />;
   }
-  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win })} />;
+  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} />;
 }
 
 export function StatsNoTeam({ coach }: { coach: boolean }) {

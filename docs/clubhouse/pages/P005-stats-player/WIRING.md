@@ -5,6 +5,9 @@
 ```text
 Route:                   /golf/dashboard/stats?player=<golf_players.id> (coach) and /golf/dashboard/stats (player)
 Page:                    src/app/golf/(dashboard)/dashboard/stats/page.tsx (isClubhouseFor -> Clubhouse, else Fairway)
+Address:                 ?player= ?tab= and the round filter: window, type, holes, from, to, course (repeated), only, skip.
+                         `parseFilter` (data/stats-filter.ts) keeps only what is usable: a type that is a kind, a date that
+                         is a calendar day, a round id shaped like one; the page passes the address through `query`
 Clubhouse route adapter: src/clubhouse/routes/stats.tsx ClubhouseStatsRoute (session, resolveClubhouseTeam;
                          no team -> StatsNoTeam, CH-4309; a player -> loadPlayerProfile as viewer player for
                          their own id; a coach with ?player= -> loadPlayerProfile as viewer coach, or NotOnTeam,
@@ -73,6 +76,7 @@ The tab strip, the Game detail chips and the phone's All N rounds are local stat
 | `screens/stats/RoundsExtra.tsx` | The Rounds tab's score by round, personal bests and this window against the one before (a card on the desktop, a panel on the phone) | CH-5313, CH-5314 |
 | `screens/stats/StatsPlayerPhone.tsx` | The phone profile: header, three figures, chips, scoring line, rounds, development, Share | 50610, 51901, 51807 |
 | `screens/stats/charts.tsx` | `FigureCards`, `FieldTable`, `LegRoute`, `ScoreBoardTrend`, `YardagePage`, the ladders and compares (shared with Team stats) | 51803 |
+| `screens/stats/StatsFilter.tsx` | The round filter: Filter button, chips, count line, the sheet (`FilterSheet`), `FilterEmpty` and `EarlyRead` (shared with Team stats; each page gives it its own codes), the per-18 note and `NineHint` | CH-5102, CH-5320 to CH-5324 |
 | `screens/stats/StatsSkeleton.tsx` | The route skeleton (shared with Team stats) | CH-4401 |
 | `routes/stats.tsx` | `ClubhouseStatsRoute`, `NotOnTeam`, `StatsNoTeam` | 50801, 50802, 50803, 50804, CH-4309 |
 
@@ -121,7 +125,13 @@ Realtime: none
 Cache:    none; the page is read again after a write and on Try again
 RLS:      the caller's own database session for every read but the shot-level detail, which getDetailedStats
           authorises itself and then reads on the service role
-Read path:  loadPlayerProfile on the server, one pass
+Read path:  loadPlayerProfile on the server, one pass. golf_rounds is read from the season's first day, or from a
+            custom range's start when that is earlier (no lower bound when the range has no start): `loadSince`.
+            The window's rounds are `roundsInFilter(rounds, filter)`; "this season", the hero's Rounds and the pager's
+            order count this season's rounds only. The round cache, putts, holes, approach shots, spray and
+            getDetailedStats are read for the filtered rounds' ids (newest 100), including rounds before the season.
+            The sheet's list (`filterOptions`) is this player's loaded rounds: a player's read never loads a
+            teammate's, so a teammate's round id in the address is not there to pick (Q-91)
 Write path: createFocusArea (a coach's insert into golf_player_focus_areas, status proposed)
 ```
 
@@ -130,6 +140,22 @@ Write path: createFocusArea (a coach's insert into golf_player_focus_areas, stat
 None.
 
 ## Impact notes
+
+- The round filter (2026-09-30): `data/stats-filter.ts` is pure (no server-only) and shared by both loaders, the route
+  and the sheet. `roundsInFilter`, `previousInFilter` and `earlierInFilter` (stats-common) replace `roundsInWindow`
+  and `previousWindow`, so a missed call site does not compile. `StatsFilter.tsx`, `WindowSwitch.tsx` (a Custom pill,
+  `changeWords`) and `links.ts` are shared with Team stats (P004). The page file also passes the address through
+  (`src/app/golf/(dashboard)/dashboard/stats/page.tsx`); `stats/team/page.tsx` still renders the route with no
+  parameters (the old address has no filter).
+- Holes (2026-09-30): the filter carries `holes` (18, 9 or all). `data/stats-weight.ts` is pure and shared with Team stats:
+  `weightedMean` (a round weighs holes over 18), `effectiveRounds` / `effectiveCount` (the floors in whole rounds),
+  `summarizeWindow` (`ChWindowSeason`: `ChPlayerSeason` plus `effRounds` and `effSgRounds`; `season.ts`'s `summarizePlayer`,
+  `MIN_SG_ROUNDS` and `isFull18` are unchanged because Home and Roster share them) and `perEighteen`, the adapter that
+  restates the calculator's per-round counts, average to par and scoring by round type per 18 when a nine-hole round is in
+  the window (the shared calculator is not edited, Q-93). `loadPlayerProfile` returns `win: ChWindowSeason`,
+  `extra.bests` (18-hole), `extra.bests9`, `extra.nineRounds` and each round's `holes`. A player's read is still only
+  their own rounds (Q-91): `teamIds` is the player alone, and `stats-filter-data.test` asserts no other player's rounds,
+  round figures or shots are asked for under any holes choice. No new table or column.
 
 - `charts.tsx`, `WindowSwitch.tsx`, `ScoreLine` (in `StatsTeamPhone.tsx`) and `StatsSkeleton` are shared with
   Team stats (P004): a change there changes both pages.
@@ -145,7 +171,7 @@ None.
   of `comparisons` (`sg: true`; a player's `team` is always null). `lib/sg.ts` holds the baseline label, the bar
   scale and the tint. No new table or column.
 - Parity with the production page (2026-09-30, PARITY.md): `loadPlayerProfile` now asks `getDetailedStats` for
-  the window's round ids (the same 18-hole rounds the Rounds table lists, newest 100 at most) instead of a date
+  the window's round ids (the same rounds the Rounds table lists, of the lengths the filter chose, newest 100 at most) instead of a date
   preset, reads the window's holes, approach shots and spray in the same pass (each failing on its own:
   `extra.holesError`, `approachError`, `puttsError`, `sprayError`), and returns `extra` (bests, the per-round
   series, this window against the one before, the pressure gap, the opening hole, the toughest holes, approach

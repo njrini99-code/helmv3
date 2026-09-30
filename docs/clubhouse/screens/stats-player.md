@@ -18,10 +18,21 @@ Shared changes from the Team stats pass that already reach this view (start the 
 
 ## parity (2026-09-30, `docs/clubhouse/pages/P005-stats-player/PARITY.md`)
 - [x] Every production player-stats figure is shown, or named with a reason ("not shown because"); the Tour is the only benchmark (Q-88)
-- [x] Every section says which rounds it counts (the window's own 18-hole rounds) and every shot-level figure reads exactly those rounds
+- [x] Every section says which rounds it counts (the window's own rounds, of the lengths the Holes control chose) and every shot-level figure reads exactly those rounds
 - [x] Every new panel has an empty or low-sample state with a catalog code and a test (CH-5209 to CH-5212, CH-5311 to CH-5319)
 - [x] A player's view shows no team figure on any new row (Q-91)
 - [x] Native-feel and axe scans of the new sections at 390, 430 and 1280px (`native.mjs` and `a11y.mjs` on stats-player, exit 0; see VERIFY.md)
+
+## round filter (2026-09-30)
+- [x] One filter (round type, holes, time with a custom date range, course, Only these / Exclude these) reads every figure on the profile (Overview, Game detail and Rounds, desktop and phone), and the team figure beside them for a coach, and each says which rounds it counts
+- [x] It lives in the address (`window`, `type`, `holes`, `from`, `to`, `course`, `only`, `skip`); anything unusable is dropped and a round id is matched against the rounds already read for the viewer before any figure is computed
+- [x] Active filters are removable chips with a one-tap Clear and a count line ("12 rounds: tournaments, Sep 1 to Sep 29")
+- [x] The empty filter (CH-5320), the sheet's range error (CH-5102), nothing to pick (CH-5321) and a cut list (CH-5322); fewer than three whole rounds is the early read (CH-5305, CH-5308); the per-18 note (CH-5323) and the hint for a player with only 9-hole rounds (CH-5324): each with a catalog code and a test
+- [x] A filter change goes through the window switch's offline refusal and slow notice (CH-5901, CH-5902)
+- [x] Phone: a Filter button and the chips under the window switch, and the standard bottom sheet (Done applies)
+- [x] Tees and rating, event and home or away are not filters, each with its reason (P005 PARITY.md, "The round filter"); 9 or 18 holes is (owner, 2026-09-30)
+- [x] Holes: 18 (default), 9 or Both; per-round figures per 18 holes with a nine-hole round counting as half, rates pooling the holes, floors in whole rounds, bests listed by length (P005 PARITY.md, "Nine- and eighteen-hole rounds"); tests for 9-only and Both, including strokes gained per 18, and for a player's read never reaching other players' rounds (Q-91)
+- [ ] Browser pass with a real account, desktop and phone (owner)
 
 ## spec
 - [x] Desktop reference files and screenshots are named above

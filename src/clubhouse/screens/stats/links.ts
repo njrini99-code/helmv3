@@ -1,6 +1,6 @@
-import type { ChWindow } from '../../data/stats-common';
+import { statsHref, type ChFilter } from '../../data/stats-filter';
 
-/** A player's profile from Team stats, keeping the window the coach is looking at. */
-export function teamPlayerHref(id: string, window: ChWindow): string {
-  return `/golf/dashboard/stats?player=${id}${window === 'last10' ? '' : `&window=${window}`}`;
+/** A player's profile from Team stats, keeping the window and filter the coach is looking at. */
+export function teamPlayerHref(id: string, filter: ChFilter): string {
+  return statsHref('/golf/dashboard/stats', filter, { player: id });
 }

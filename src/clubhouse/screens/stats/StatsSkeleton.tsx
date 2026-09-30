@@ -47,6 +47,10 @@ export function StatsProfileSkeleton() {
         </div>
         <Skeleton width={236} height={32} radius={11} />
       </div>
+      {/* The round filter's bar (its Filter button), so the figures do not move when it appears. */}
+      <div className="ch-sf" aria-hidden="true">
+        <Skeleton width={78} height={30} radius={10} />
+      </div>
       <div className="ch-sgt" style={{ padding: 20 }} aria-hidden="true">
         <Skeleton width={200} height={17} />
         <div style={{ height: 16 }} />
@@ -56,7 +60,7 @@ export function StatsProfileSkeleton() {
   );
 }
 
-/** Route loading for Stats: title, window switch, six figure cards (strokes gained first) and the trend card, in place. */
+/** Route loading for Stats: title, window switch, the filter bar, six figure cards (strokes gained first) and the trend card, in place. */
 export function StatsSkeleton() {
   return (
     <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
@@ -74,6 +78,10 @@ export function StatsSkeleton() {
           <Skeleton width={236} height={32} radius={11} />
         </div>
       </header>
+      {/* The round filter's bar (its Filter button), so the figures do not move when it appears. */}
+      <div className="ch-sf" aria-hidden="true">
+        <Skeleton width={78} height={30} radius={10} />
+      </div>
       <div className="ch-fg" style={{ ['--ch-fg-n' as string]: 6 }}>
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="ch-fg__c ch-fg__c--skel">

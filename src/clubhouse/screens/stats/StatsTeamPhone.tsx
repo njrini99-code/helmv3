@@ -16,7 +16,9 @@ import { sgBaseline } from '../../lib/sg';
 import { SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
-import { RetryNotice, ShowSeason, useGoWindow } from './StatsTeamIslands';
+import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow } from './StatsTeamIslands';
+import { EarlyRead, NineHint } from './StatsFilter';
+import { hasRange, isFiltered } from '../../data/stats-filter';
 import { WindowSwitch } from './WindowSwitch';
 
 type Sort = 'avg' | 'sg';
@@ -32,6 +34,8 @@ type Sort = 'avg' | 'sg';
 export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const go = useGoWindow();
   const noRounds = !data.roundsError && data.roundCount === 0;
+  const filtered = isFiltered(data.filter);
+  const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
   return (
     <div className="ch-stm">
       <header className="ch-stm-head">
@@ -40,9 +44,14 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         </span>
         <h1>Team stats</h1>
       </header>
-      <WindowSwitch value={data.window} onChange={go} />
+      <WindowSwitch value={data.window} onChange={go} custom={hasRange(data.filter)} />
+      {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
       {data.roundsError && <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />}
-      {noRounds && data.window === 'season' ? (
+      {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
+      {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
+      {noRounds && filtered ? (
+        <TeamFilterEmpty />
+      ) : noRounds && data.window === 'season' ? (
         <StatsTeamFirstRun />
       ) : noRounds ? (
         <EmptyState
@@ -225,7 +234,7 @@ function Players({ data }: { data: ChTeamStats }) {
         <ul className="ch-stm-list">
           {rows.map((p) => (
             <li key={p.id}>
-              <Link href={teamPlayerHref(p.id, data.window)} className="ch-stm-row">
+              <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row">
                 <Avatar name={p.name} size={36} />
                 <span className="ch-stm-row__b">
                   <b>{p.name}</b>

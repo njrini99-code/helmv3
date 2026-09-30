@@ -2,6 +2,19 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Round filter with a Holes control: the same filter on every player and the team's figures (owner: "make it 9 or 18")
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (catalog CH-4101, CH-4313 to CH-4319; CH-4314 changes its words)
+Data impact:    none (reads only; no migration)
+```
+
+- **Issue.** Team stats read only its three fixed windows and 18-hole rounds. A coach could not look at tournaments alone, a stretch of dates, a course or chosen rounds, or bring the team's 9-hole rounds in.
+- **Fix.** The filter of the player profile (P005), applied to each player's own rounds ("Last 10" is each player's ten newest matching rounds) and to the team's figures pooled from them: the six cards and their changes, the trend, the leg cards, the grid, the putting rings and the phone's lists. Holes (18 holes by default, 9 holes, Both): Scoring average, putts and birdies a round, Team SG per round, the weekly lines and each player's average and strokes gained are per 18 holes (a nine-hole round counts as half); greens, scrambling and the putting rings pool the holes; floors count whole rounds. Season bests stay the season's 18-hole rounds and say so while a filter is on (CH-4317). A grid row, a Season best and a phone row open the player with the filter kept; the CSV is named for the filter.
+- **Also.** The grid's late-against-early change is per 18 and needs four whole rounds. With no 18-hole round but 9-hole ones in the window, the page says where they are (CH-4319).
+- **Checked.** The data and screen tests of P005's entry (per-player cut, pooled figures, range before the season, the whole-round floors), mutations, axe and native-feel clean at 1280, 390 and 430px.
+
 ## 2026-09-30 — The Tour is the only benchmark (Q-88): no D1 anywhere
 
 ```text

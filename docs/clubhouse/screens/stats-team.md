@@ -4,6 +4,17 @@ Reference: design/handoff/Stats.html, stats.jsx, stats.css, stats-sg.jsx, screen
 Route: /golf/dashboard/stats (coach)   Surface tag: `stats.team.<figures|trend|legs|putting|bests|export>`
 Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 
+## round filter (2026-09-30)
+- [x] One filter (round type, holes, time with a custom date range, course, Only these / Exclude these) reads every figure on the page (the cards, trend, legs, grid, putting and the phone's lists), per player and pooled for the team, and each says which rounds it counts
+- [x] It lives in the address (`window`, `type`, `holes`, `from`, `to`, `course`, `only`, `skip`); anything unusable is dropped and a round id is matched against the rounds already read for the viewer before any figure is computed
+- [x] Active filters are removable chips with a one-tap Clear and a count line ("12 rounds: tournaments, Sep 1 to Sep 29")
+- [x] The empty filter (CH-4313), fewer than three whole rounds (CH-4314), the sheet's range error (CH-4101), nothing to pick (CH-4315), a cut list (CH-4316), the season bests note (CH-4317), the per-18 note (CH-4318) and the hint for a team with only 9-hole rounds (CH-4319): each with a catalog code and a test
+- [x] A filter change goes through the window switch's offline refusal and slow notice (CH-4901, CH-4902)
+- [x] Phone: a Filter button and the chips under the window switch, and the standard bottom sheet (Done applies)
+- [x] Tees and rating, event and home or away are not filters, each with its reason (P005 PARITY.md, "The round filter"); 9 or 18 holes is (owner, 2026-09-30)
+- [x] Holes: 18 (default), 9 or Both; per-round figures per 18 holes with a nine-hole round counting as half, rates pooling the holes, floors in whole rounds, season bests 18-hole (P005 PARITY.md, "Nine- and eighteen-hole rounds"); tests for 9-only and Both, including strokes gained per 18
+- [ ] Browser pass with a real account, desktop and phone (owner)
+
 ## spec
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
