@@ -941,6 +941,10 @@
     gap: 12px;
     padding: 14px 14px 24px;
   }
+  /* Phone form fields are 44px targets. */
+  .ch-msp-page .ch-input {
+    height: 44px;
+  }
   .ch-msp-scroll {
     flex: 1;
     min-height: 0;
@@ -949,11 +953,14 @@
   }
 
   /* Inbox */
+  /* The design's 40px field inside a 44px target: the transparent border is tappable, the fill stops inside it. */
   .ch-msp-search.ch-search {
-    height: 40px;
+    height: 44px;
     padding: 0 12px;
-    border-radius: 12px;
+    border: 2px solid transparent;
+    border-radius: 14px;
     background: rgb(28 25 18 / 0.05);
+    background-clip: padding-box;
     box-shadow: none;
   }
   .ch-msp-search input {
@@ -977,11 +984,11 @@
     cursor: pointer;
     transition: transform var(--ch-dur-instant) var(--ch-ease);
   }
-  /* A 44px target around the 34px chip. */
+  /* A 44px target around the 34px chip (the 6px gaps shared out, for a short chip such as All). */
   .ch-msp-chip::before {
     content: '';
     position: absolute;
-    inset: -5px 0;
+    inset: -5px -3px;
   }
   .ch-msp-chip:active {
     transform: scale(var(--ch-press-scale));
@@ -1192,13 +1199,16 @@
     width: 44px;
     height: 44px;
   }
+  /* The design's 38px pill inside a 44px target, as the search field. */
   .ch-msp-thread .ch-ms-comp__field textarea,
   .ch-msp-new .ch-ms-comp__field textarea {
-    min-height: 38px;
+    min-height: 44px;
     padding: 9px 14px;
     box-sizing: border-box;
-    border-radius: 19px;
+    border: 3px solid transparent;
+    border-radius: 22px;
     background: var(--ch-ivory-0);
+    background-clip: padding-box;
     box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
     font: 400 16px/1.25 var(--ch-font-sans);
   }
@@ -1226,6 +1236,25 @@
     content: '';
     position: absolute;
     inset: -5px;
+  }
+  /* A 44px target around a 24px reaction, centred on it. */
+  .ch-msp-thread .ch-ms-react {
+    position: relative;
+  }
+  .ch-msp-thread .ch-ms-react::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    bottom: -10px;
+    left: 50%;
+    width: max(100% + 4px, 44px);
+    transform: translateX(-50%);
+  }
+  /* A 44px target around the Add sheet's 30px buttons. */
+  .ch-ms-pick .ch-btn--sm::before {
+    content: '';
+    position: absolute;
+    inset: -7px 0;
   }
 
   /* The long-press sheet */
@@ -1540,15 +1569,17 @@
   .ch-msp-to__in::placeholder {
     color: var(--ch-text-tertiary);
   }
+  /* A 44px target on the 32px line: the margins give the extra back to the row's padding. */
   .ch-msp-to__in {
     flex: 1;
     min-width: 80px;
-    height: 32px;
+    height: 44px;
+    margin: -6px 0;
     padding: 0;
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 16px/32px var(--ch-font-sans);
+    font: 400 16px/44px var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-msp-check {

@@ -196,7 +196,7 @@ Each keeps its drawn size and gets a 44px hit area, as `MOBILE.md` requires.
 | `rgb(28 25 18 / .06)`, `/ .18` | Sheet close, grab | Ink at 6% and 18%. No token |
 | `rgb(20 18 12 / .34)` | Sheet scrim | The existing `.ch-scrim` (`rgb(20 20 18 / .32)`) |
 | `#F4F2EA` | Sheet footer | `--ch-ivory-100` |
-| `#E9E3D3`, `#5A4E36`, `rgb(90 78 54 / .22)` | Phone avatar | New tokens `--ch-avatar-phone-bg`, `--ch-avatar-phone-fg` and `--ch-avatar-phone-ring` (D-43) |
+| `#E9E3D3`, `#5A4E36`, `rgb(90 78 54 / .22)` | Phone avatar | `--ch-avatar-neutral-bg`, `--ch-avatar-neutral-fg` and `--ch-avatar-neutral-ring` in `tokens.css`; the phone media rule gives every tone this coin (D-43) |
 
 ## Where the design contradicts D-3 or the old draft
 

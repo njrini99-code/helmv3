@@ -376,6 +376,12 @@
     flex: 1;
     height: 44px;
   }
+  /* A 44px target around the 30px close. */
+  .ch-modal__head .ch-iconbtn::before {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
 }
 
 /* Person picker rows (Calendar people filter, Messages new message) */
