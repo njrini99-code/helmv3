@@ -12,9 +12,9 @@ Where things live:
 - Setup actions: `src/app/golf/actions/qualifier-setup.ts`
 - Tests: `src/clubhouse/__tests__/qualifiers.test.tsx`
 - Preview:
-  - `/clubhouse-preview/qualifiers` (`?state=empty|failed|partial|nomatch|loading`)
-  - `/clubhouse-preview/qualifier` (`?q=live|upcoming|completed|selected|closed`, and `?state=failed|scores|partial|loading`)
-  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit` (`?state=failed|noroster|failwrites|loading`)
+  - `/clubhouse-preview/qualifiers` (`?state=empty|failed|partial|loading`)
+  - `/clubhouse-preview/qualifier` (`?q=live|upcoming|selected|completed|spring`, and `?state=failed|scores|partial|failwrites|loading`)
+  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit` (`?state=failed|noroster|courses|failwrites|loading`)
   - `/clubhouse-preview/qualifiers-player`, `/clubhouse-preview/qualifier-player` and `/clubhouse-preview/my-qualifiers`
 
 Every save goes through `useAction`, so these belong to the shell:
