@@ -33,7 +33,7 @@ function App() {
   const [toasts, setToasts] = React.useState([]);
   const toast = (title, icon) => { const id = Date.now() + Math.random(); setToasts((t) => [...t, { id, title, icon }]); setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4200); };
   const items = GH.items('coach');
-  
+
   return (
     <div className="h2-app">
       <FairwaySidebar current="roster" onNavigate={GH.go} items={items}

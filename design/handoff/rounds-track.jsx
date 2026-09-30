@@ -142,7 +142,7 @@ function Tracking({ initial = {}, onExit, onReview }) {
             <div className="rt-hero__k"><b className="rt-hno"><em>Hole</em>{hn}</b><span className="rt-hmeta"><b>{`Par ${hole.par}`}</b><i>{`${hole.y} yds`}</i><i>{`Hcp ${((hn * 7) % 18) + 1}`}</i></span></div>
             {holeDone ? <div className="rt-hero__done"><ScoreMark score={score} par={hole.par} /><div><b>{score - hole.par === 0 ? 'Par' : score - hole.par === -1 ? 'Birdie' : score - hole.par === 1 ? 'Bogey' : tp(score - hole.par)}</b><span>{score} strokes · {shots.filter((s) => s.type === 'Putt').length} putts</span></div></div>
               : <div className="rt-hero__dist"><span className="rt-hero__shot">Shot {shots.length + 1}<em>{kind === 'tee' ? 'Tee shot' : kind === 'putt' ? 'Putt' : around ? 'Around the green' : 'Approach'}</em></span><b>{remaining}</b><em>{remUnit === 'ft' ? 'feet to hole' : 'yards to pin'}</em></div>}
-            
+
           </div>
           <HoleMap hole={hole} shots={shots} pending={!holeDone} />
           <ShotLog shots={shots} />

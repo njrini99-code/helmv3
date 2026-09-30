@@ -35,6 +35,8 @@ What changed in files that already existed:
 - `roster.jsx`, `stats.jsx`: links renamed to the new board names only.
 - `m-shell.jsx`: the tab bar reads its tabs from `gh-nav.js` for each role.
 - `m-msg.jsx`, `m-roster.jsx`: "Delete conversation" is now "Delete chat".
+- Trailing whitespace was stripped from nine v2 files on 2026-09-30 (the push hook's
+  `git diff --check`); nothing else in them changed.
 - `design-system/tokens/colors.css`: **not taken.** The bundle's copy lacks
   `--green-25` and `--champagne-100`, which the repo added for Qualifiers
   (75e9d5084). The repo copy stays.

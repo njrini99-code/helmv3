@@ -38,7 +38,7 @@ function App() {
   const ref = React.useRef(null);
   const open = (id) => { setPlayer(id); localStorage.setItem('st-player', id); if (ref.current) ref.current.scrollTop = 0; };
   const items = GH.items('coach');
-  
+
   const p = window.ROSTER.players.find((x) => x.id === player);
   return (
     <div className="h2-app">

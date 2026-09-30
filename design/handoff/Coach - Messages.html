@@ -48,7 +48,7 @@ function App() {
   };
   const react = (idx, r) => setThreads((th) => ({ ...th, [conv.id]: th[conv.id].map((m, i) => { if (i !== idx) return m; const list = m.react ? [...m.react] : []; const j = list.findIndex(([x]) => x === r); if (j < 0) list.push([r, 1, true]); else { const [x, n, mine] = list[j]; list[j] = mine ? [x, n - 1, false] : [x, n + 1, true]; } return { ...m, react: list.filter(([, n]) => n > 0) }; }) }));
   const items = GH.items('coach');
-  
+
   return (
     <div className="h2-app">
       <FairwaySidebar current="messages" onNavigate={GH.go} items={items}

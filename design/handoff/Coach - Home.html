@@ -174,7 +174,7 @@ const D = window.HOME_DATA;
 function App() {
   const [nav, setNav] = React.useState(() => localStorage.getItem('h3-nav') || 'home');
   const [toasts, setToasts] = React.useState([]);
-  
+
   const toast = (title, icon) => { const id = Date.now(); setToasts((t) => [...t, { id, title, icon, action: { label: 'Undo' } }]); setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4200); };
   const items = GH.items('coach');
   const label = items.find((i) => i.id === nav)?.label || 'Home';

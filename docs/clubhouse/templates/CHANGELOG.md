@@ -13,11 +13,11 @@ Held items:
 
 ### Changed
 
-- 
+-
 
 ### Why
 
-- 
+-
 
 ### Verification
 

@@ -38,7 +38,7 @@ Implementation Root:
 Reference canonical IDs from `memory/registry.yml`.
 
 ```text
-- 
+-
 ```
 
 ## Design authority
