@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit prospect</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Instrument Sans',system-ui,sans-serif;background:#f4f2ea;color:#1c1b18;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,textarea{font-family:inherit}
+textarea::placeholder,input::placeholder{color:#6b6860}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #7d7a72; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden">
+<div role="dialog" aria-label="Edit prospect" style="height: 790px; box-sizing: border-box; background: #f4f2ea; border-radius: 24px 24px 0 0; padding: 8px 16px 40px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 -8px 30px rgb(0 0 0 / 0.18)">
+<span aria-hidden="true" style="width: 36px; height: 5px; border-radius: 3px; background: #c9c2b1; align-self: center"></span>
+<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center"><a href="PhoneDetail.dc.html" style="height: 44px; display: flex; align-items: center; font-size: 16px; color: #155a39">Cancel</a><b style="font-size: 17px; font-weight: 600">Prospect</b><a href="PhoneDetail.dc.html" style="justify-self: end; height: 44px; display: flex; align-items: center; font-size: 16px; font-weight: 600; color: #155a39">Save</a></div>
+<div style="background: #fdfcf8; border-radius: 16px; box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07)"><label style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px"><span style="width: 96px; font-size: 16px; color: #55524b">First name</span><input value="Mason" placeholder="" style="all: unset; flex-grow: 1; font-size: 16px; color: #1c1b18"></label><div style="height: 1px; margin-left: 16px; background: rgb(28 25 18 / 0.07)"></div><label style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px"><span style="width: 96px; font-size: 16px; color: #55524b">Last name</span><input value="Reilly" placeholder="" style="all: unset; flex-grow: 1; font-size: 16px; color: #1c1b18"></label></div>
+<div style="background: #fdfcf8; border-radius: 16px; box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07)"><label style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px"><span style="width: 96px; font-size: 16px; color: #55524b">Email</span><input value="mason.reilly@example.com" placeholder="" style="all: unset; flex-grow: 1; font-size: 16px; color: #1c1b18"></label><div style="height: 1px; margin-left: 16px; background: rgb(28 25 18 / 0.07)"></div><label style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px"><span style="width: 96px; font-size: 16px; color: #55524b">Phone</span><input value="(555) 010-4418" placeholder="" style="all: unset; flex-grow: 1; font-size: 16px; color: #1c1b18"></label></div>
+<div style="background: #fdfcf8; border-radius: 16px; box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07)"><label style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px"><span style="width: 96px; font-size: 16px; color: #55524b">Hometown</span><input value="Charlotte" placeholder="" style="all: unset; flex-grow: 1; font-size: 16px; color: #1c1b18"></label><div style="height: 1px; margin-left: 16px; background: rgb(28 25 18 / 0.07)"></div><label style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px"><span style="width: 96px; font-size: 16px; color: #55524b">State</span><input value="NC" placeholder="" style="all: unset; flex-grow: 1; font-size: 16px; color: #1c1b18"></label><div style="height: 1px; margin-left: 16px; background: rgb(28 25 18 / 0.07)"></div><label style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px"><span style="width: 96px; font-size: 16px; color: #55524b">Class of</span><input value="2027" placeholder="" style="all: unset; flex-grow: 1; font-size: 16px; color: #1c1b18"></label></div>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 500; color: #6b6860; padding: 0 16px">Notes</span><textarea rows="4" style="all: unset; box-sizing: border-box; min-height: 110px; padding: 14px 16px; border-radius: 16px; background: #fdfcf8; box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07); font-size: 16px; line-height: 1.5">Saw him at the Carolinas Junior in July. Long hitter, needs work inside 100 yards. Official visit planned for October.</textarea></label>
+<div style="flex-grow: 1"></div>
+<button type="button" style="all: unset; cursor: pointer; height: 52px; border-radius: 16px; background: #fdfcf8; box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07); display: grid; place-items: center; font-size: 16px; font-weight: 500; color: #b03a2e">Delete prospect</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

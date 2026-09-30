@@ -1,0 +1,111 @@
+# P002 — Home
+
+The first screen of both roles: the coach's morning view of the program, and the player's own day. One address, two pages.
+
+## Identity
+
+```text
+Page ID:            P002
+Page Name:          Home
+Route:              /golf/dashboard (coach and player; two pages behind one address)
+Bridge Namespace:   2 (Bridge IDs 2ccii, D-68; catalog codes CH-2xxx)
+Roles:              coach, player
+Implementation Root: src/clubhouse/screens/home
+Manifest:           config/clubhouse/pages/P002-home.json
+```
+
+The coach page is `CoachHome` (with `HomePhone`), read by `loadCoachHome` in `src/clubhouse/data/home.ts`. The player page is `PlayerHome` (with `PlayerHomePhone`), read by `loadPlayerHome` in `src/clubhouse/data/player-home.ts`. The manifest names one loader and one phone spec; the second of each is `player-home.ts` and `docs/clubhouse/phone/home-player.md`. The week, the clock and the latest rounds are shared (`loadHomeWeek`, `homeClock`, `latestWithHoles`, in `home.ts`).
+
+## Purpose
+
+### Primary user
+
+Coach: a college golf coach who opens the app in the morning to see the day and the team. Player: a college golfer on the same team, who opens it to see their own day, their coach's schedule and their own scoring.
+
+### Job to be done
+
+Coach: know who needs a look, what is on today and this week, and how the last rounds went, without opening anything else. Player: know what is next and when, how their own last rounds went, and where their game is gaining or losing strokes.
+
+### Primary action
+
+Coach: New event (the page's one primary button; N from anywhere on the page). Player: Message coach, and Post a round once round entry is rebuilt for players (until then it is not drawn, Q-69).
+
+### Secondary actions
+
+Coach: Message team; open an event, a day or a round; page through the latest three rounds; open a player's stats from the leaderboard or the latest round; Full roster; on the phone, Plan or add the first event from an empty Up next. Player: open Up next or a day in Calendar; page through My latest round; choose the Scoring window (last 5, 10 or 20); My stats.
+
+### Information hierarchy
+
+1. Coach: the greeting and the one-sentence brief (who needs a look, then the week's next competition); the week beside the latest round; the leaderboard. Phone: Up next, Today, the team's scoring form, This week, Latest rounds.
+2. Player: the greeting and one sentence from their own rounds; the week with Up next and its countdown beside My latest round; Scoring; the four parts of the game. Phone: Up next with the countdown and Message coach, This week, Today, My latest round, Scoring, the parts of the game.
+
+### User should notice first
+
+Coach: the brief, and what is next on the calendar. Player: what is next and how long until it starts.
+
+### User should never have to think about
+
+Whether a figure is a guess: a figure with no source is absent or reads "Early read" or "—", never invented. Whether a failed read is an empty page: it is always a notice with Try again. Whether a player can see teammates' scores or names: they cannot (CONTRACT.md, 08).
+
+### Success looks like
+
+A coach reads the brief, sees what the week holds, opens the latest round and messages the team in under a minute. A player sees the countdown to their next event and which part of their game is gaining or costing strokes, and every failure along the way says which part did not load.
+
+## Semantic features
+
+Canonical IDs from `memory/registry.yml`:
+
+```text
+- team_operations (memory/features/team-operations.md)
+- calendar_events (memory/features/calendar-events.md)
+- stats_analytics (memory/features/stats-analytics.md)
+```
+
+`npm run knowledge:map` maps none of the Clubhouse Home files to a feature (the `src/clubhouse` tree is not in the registry's code paths); the feature docs above describe the Fairway dashboard's data, which Home reads the same way.
+
+## Design authority
+
+```text
+Package:          design/handoff/ (v2; VERSIONS.md). v1 files kept where records cite them.
+Coach desktop:    design/handoff/Coach - Home.html, Coach Home v3.html, coach-home-v3.jsx
+                  (screenshots home-01-top, home-02-leaderboard, coach-home)
+Coach phone:      docs/clubhouse/phone/home.md (approved), from design/handoff/Coach - Home - Mobile.html,
+                  m-home.jsx, m-home.css
+Player desktop:   design/handoff/Player - Home.html, player-home.jsx, player-home.css (screenshot player-home)
+Player phone:     docs/clubhouse/phone/home-player.md (approved), from design/handoff/Player - Home - Mobile.html,
+                  m-player-home.jsx, m-player-home.css
+Status:           approved
+```
+
+## Related pages
+
+### Enters from
+
+The sidebar and the phone tab bar (Home is the first destination for both roles, D-66), and Back to Home on the route error view of any other page.
+
+### Exits to
+
+Calendar (an event: `?date=&event=`; a day: `?view=day&date=`; the editor: `?new=1`, with `&type=`), Messages (`?conversation=` the team chat, `?player=` a player, `?user=` the coach), Stats (`?player=` a player's, and the player's own), Roster (Full roster, Invite players). Post a round and Add classes are not drawn for a player until round entry and Classes are rebuilt.
+
+## Ownership
+
+```text
+Design:          the owner (Claude Design)
+Implementation:  src/clubhouse/screens/home, src/clubhouse/data/home.ts, src/clubhouse/data/player-home.ts,
+                 and the Clubhouse branches of src/app/golf/(dashboard)/dashboard/page.tsx (no route adapter)
+Data:            team_operations, calendar_events, stats_analytics: golf_team_settings, golf_team_members,
+                 golf_players, golf_teams, golf_coaches, golf_conversations, golf_events, golf_event_attendance,
+                 golf_rounds, golf_holes, golf_round_stats_cache, golf_pga_standards
+```
+
+## Current status
+
+```text
+Design:         approved
+Implementation: in_progress (desktop and phone built for both roles; gates in PROGRESS.md)
+Contract:       complete (CONTRACT.md: all 25 categories answered)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
+Data:           existing (no held plan)
+Verification:   partial (VERIFY.md)
+Docs:           current
+```

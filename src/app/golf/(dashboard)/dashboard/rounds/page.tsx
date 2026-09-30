@@ -8,6 +8,8 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerException } from '@/lib/server-error-logger';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseRoundsRoute } from '@/clubhouse/routes/rounds';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import {
@@ -37,6 +39,10 @@ export default async function RoundsPage() {
 
   const { role: userRole, coach, player } = session;
   if (!userRole) redirect('/golf/login');
+
+  // Clubhouse Rounds (golf_clubhouse_ui): the player's library. Coaches keep
+  // this page; v2 has no coach Rounds library.
+  if (userRole === 'player' && player && isClubhouseFor('player')) return <ClubhouseRoundsRoute />;
 
   const supabase = await createClient();
 

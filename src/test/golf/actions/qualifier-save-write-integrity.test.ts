@@ -54,6 +54,10 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn(async () => {}),
 }));
 
+// setQualifierRoundCourses checks the caller coaches the qualifier's team first.
+const access = vi.hoisted(() => ({ result: { allowed: true, reason: 'coach' } as { allowed: boolean; reason?: string } }));
+vi.mock('@/lib/auth/verify-player-access', () => ({ verifyTeamAccess: vi.fn(async () => access.result) }));
+
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
@@ -123,6 +127,9 @@ import {
   setQualifierRoundCourses,
 } from '@/app/golf/actions/golf';
 
+/** setQualifierRoundCourses refuses anything that isn't a uuid before it reads. */
+const QID = '11111111-1111-4111-8111-111111111111';
+
 /** The reads both actions make before writing — all authorised, same org. */
 function authorisedReads() {
   selectRows = {
@@ -161,7 +168,7 @@ describe('qualifier saves report failure when the write matched no rows', () => 
     // write that happens and there is nothing else to fail loudly.
     updateReturns = [];
 
-    const result = await setQualifierRoundCourses('q1', 1, []);
+    const result = await setQualifierRoundCourses(QID, 1, []);
 
     expect(result.success).toBe(false);
   });
@@ -169,13 +176,13 @@ describe('qualifier saves report failure when the write matched no rows', () => 
   it('setQualifierRoundCourses still succeeds when a row was updated', async () => {
     updateReturns = [{ id: 'q1' }];
 
-    const result = await setQualifierRoundCourses('q1', 1, []);
+    const result = await setQualifierRoundCourses(QID, 1, []);
 
     expect(result.success).toBe(true);
   });
 
   it('setQualifierRoundCourses rejects an invalid cap instead of silently turning it into one round', async () => {
-    const result = await setQualifierRoundCourses('q1', 0, []);
+    const result = await setQualifierRoundCourses(QID, 0, []);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -191,5 +198,32 @@ describe('qualifier saves report failure when the write matched no rows', () => 
     const result = await updateGolfQualifierDetails('q1', {});
 
     expect(result.success).toBe(true);
+  });
+});
+
+describe('setQualifierRoundCourses checks who is asking before it writes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authorisedReads();
+    updateReturns = [{ id: QID }];
+    access.result = { allowed: true, reason: 'coach' };
+  });
+
+  it('refuses a caller who does not coach the qualifier’s team', async () => {
+    access.result = { allowed: false, reason: 'denied' };
+    const result = await setQualifierRoundCourses(QID, 2, []);
+    expect(result).toEqual({ success: false, error: 'Only a coach of this team can change this qualifier.' });
+  });
+
+  it('refuses a malformed qualifier id or course id without reading anything', async () => {
+    expect((await setQualifierRoundCourses('q1', 2, [])).success).toBe(false);
+    const bad = await setQualifierRoundCourses(QID, 2, [{ roundNumber: 1, courseId: 'not-a-uuid', courseName: 'Finley GC', teeId: null }]);
+    expect(bad).toEqual({ success: false, error: 'A round’s course or tees aren’t valid. Choose them again.' });
+  });
+
+  it('says not found when the qualifier isn’t visible', async () => {
+    selectRows = { ...selectRows, golf_qualifiers: null };
+    const result = await setQualifierRoundCourses(QID, 2, []);
+    expect(result).toEqual({ success: false, error: 'That qualifier wasn’t found. It may have been deleted.' });
   });
 });

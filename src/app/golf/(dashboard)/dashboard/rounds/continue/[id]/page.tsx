@@ -12,6 +12,8 @@ import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { logServerError } from '@/lib/server-error-logger';
 import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseContinueRoundRoute } from '@/clubhouse/routes/round-continue';
 
 export const metadata: Metadata = {
   title: 'Continue Round',
@@ -568,6 +570,27 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     if (completedHoleStats[i]) continue;
     const sorted = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
     allInProgressShots[i] = sorted.map(s => mapShotToRecord(s, puttDetailsByShot.get(s.id), approachDetailsByShot.get(s.id)));
+  }
+
+  // Clubhouse (golf_clubhouse_ui) draws the same round over the same engine, from everything loaded above. It leaves
+  // the live-round type editor below to Fairway: that is a Fairway component, and its qualifier reads are skipped.
+  if (isClubhouseFor('player')) {
+    return (
+      <ClubhouseContinueRoundRoute
+        roundId={id}
+        playerId={player.id}
+        setupData={setupData}
+        holes={allHoles}
+        completedHoleStats={completedHoleStats}
+        startHoleIndex={startHoleIndex}
+        initialShots={initialShots}
+        initialShotNumber={startShotNumber}
+        initialInProgressShotsByHole={allInProgressShots}
+        serverDataTimestamp={round.updated_at ?? undefined}
+        qualifierRoundNumberOptions={qualifierRoundNumberOptions}
+        qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
+      />
+    );
   }
 
   // ── Re-typing a LIVE round, from the screen the player is already on ──────

@@ -1,0 +1,119 @@
+# P009 — Qualifiers
+
+Four screens on one page: the list (a player's own list is `/my-qualifiers`), one qualifier, the create and edit form,
+and Manage selections.
+Coaches and players share the list and the qualifier (D-30); create, edit and Manage selections are
+coach-only.
+
+## Identity
+
+```text
+Page ID:            P009
+Page Name:          Qualifiers
+Route:              /golf/dashboard/qualifiers (coach and player), with /new, /[id], /[id]/edit and
+                    /[id]/selection (Manage selections); /golf/dashboard/my-qualifiers (player)
+Bridge Namespace:   9 (Bridge IDs 9ccii, D-68; catalog codes CH-09xxx)
+Roles:              coach, player
+Implementation Root: src/clubhouse/screens/qualifiers
+Manifest:           config/clubhouse/pages/P009-qualifiers.json
+```
+
+## Purpose
+
+### Primary user
+
+A college golf coach deciding who travels: they run qualifiers, watch the standings build as players
+sign their rounds, and confirm the squad. Players use the same list and qualifier read-only, to see
+where they stand.
+
+### Job to be done
+
+Turn a run of counted rounds into a travel squad, and tell every entrant where they stand and whether
+they made it.
+
+### Primary action
+
+Coach: set up a qualifier (Create qualifier), then carry it to a confirmed squad (Manage selections).
+Player: open a qualifier and see where they stand.
+
+### Secondary actions
+
+Search and filter the list; open a player's scorecards from the leaderboard; edit a qualifier (details,
+rounds and courses, squad size, players); close and reopen it; start selecting, save a coach's pick with
+its reason, remove a pick, confirm the squad.
+
+### Information hierarchy
+
+1. The list: the live qualifier and its leaders. One qualifier: the leaderboard with its cut lines
+   (top-score line, travel cut).
+2. The facts: dates, deadline, entrants, rounds in, course, spots.
+3. Beside the leaderboard: selections or the confirmed squad, the course per round, the scoring rules.
+
+### User should notice first
+
+Who is qualifying now, who is on the bubble, and (for a player) their own row, marked You.
+
+### User should never have to think about
+
+Whether a close, a pick or the confirm landed (each says so, or says what did not happen), whether the
+standings are current (a live qualifier re-reads by itself), or what a player is allowed to see (the
+server decides, and never sends a player a teammate's scorecards or a coach's reasons).
+
+### Success looks like
+
+A coach sets up a qualifier in a minute, watches the standings build without reloading, and confirms the
+squad in one sitting; every entrant is told whether they made it.
+
+## Semantic features
+
+Canonical IDs from `memory/registry.yml`:
+
+```text
+- qualifiers (memory/features/qualifiers.md)
+```
+
+## Design authority
+
+```text
+Package:          design/handoff/ (v2; VERSIONS.md). v1 files kept where records cite them.
+Desktop reference: design/handoff/Coach - Qualifiers.html, Qualifiers.html, qualifiers.jsx, qual-core.jsx
+                  (rendered 2026-09-29 at 1280 and 924; the captures are not committed)
+Phone spec:       docs/clubhouse/phone/qualifiers.md (approved), from design/handoff/Coach - Qualifiers - Mobile.html,
+                  mobile/Qualifiers Mobile.html, qual-mobile.jsx
+Status:           approved (Manage selections is not drawn: it is built from the existing workspace's steps in
+                  Clubhouse's own design, Q-65, open)
+```
+
+## Related pages
+
+### Enters from
+
+The sidebar (Team › Qualifiers for a coach, My game › Qualifiers for a player, D-66), the More sheet on
+the phone, and older links to `/my-qualifiers`, which is a player's own list.
+
+### Exits to
+
+A player's Messages and Stats from the phone rounds sheet (through `rebuiltHref`); the not-rebuilt
+notice for entering a round (Q-6); the existing CoachHelm qualifying workspace when the Clubhouse is off.
+
+## Ownership
+
+```text
+Design:          the owner (Claude Design)
+Implementation:  src/clubhouse/screens/qualifiers, on the existing qualifier server actions
+Data:            qualifiers: golf_qualifiers, golf_qualifier_entries, golf_qualifier_round_courses,
+                 golf_qualifier_selections, with golf_rounds and golf_holes read for the standings and scorecards
+```
+
+## Current status
+
+```text
+Design:         approved
+Implementation: in_progress (desktop and phone built, Manage selections built 2026-09-30; gates in PROGRESS.md)
+Contract:       complete (CONTRACT.md: all 25 categories answered)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
+Data:           existing, plus two held plans (held/features/qualifier-squad-and-entrants.md,
+                held/data/qualifier-db-hardening.md)
+Verification:   partial (VERIFY.md)
+Docs:           current
+```

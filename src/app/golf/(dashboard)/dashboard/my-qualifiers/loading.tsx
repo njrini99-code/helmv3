@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
 
@@ -10,7 +12,7 @@ import { Skeleton } from '@/components/fairway/feedback';
  * then an Active and a Concluded section, each a SectionHeading label over
  * a `md:grid-cols-2` grid of scorecard-shaped cards.
  */
-export default function Loading() {
+function LegacyLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -87,4 +89,9 @@ function QualifierCardSkeleton() {
       </div>
     </div>
   );
+}
+
+/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<QualifiersSkeleton />} fallback={<LegacyLoading />} />;
 }

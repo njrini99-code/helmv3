@@ -1,0 +1,1352 @@
+/* Clubhouse shell: green frame, inset ivory canvas, sidebar, top bar, phone tab bar, states. */
+
+.ch-app {
+  display: flex;
+  height: 100dvh;
+  background: var(--ch-frame);
+}
+.ch-canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  margin: 8px 8px 8px 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: 14px;
+  background: var(--ch-bg-page);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12);
+  container-type: inline-size;
+}
+.ch-frame-route {
+  min-height: calc(100% - var(--ch-topbar-h));
+}
+/* The skip target takes focus without a ring: the page itself is the destination. */
+.ch-frame-route:focus {
+  outline: none;
+}
+
+/* Skip to content: off screen until it is focused (the first Tab). */
+.ch-skip {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-surface);
+  color: var(--ch-green-800);
+  font: 500 13.5px/1 var(--ch-font-sans);
+  text-decoration: none;
+  box-shadow: var(--ch-shadow-md);
+  transform: translateY(-160%);
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-skip:focus-visible {
+  transform: none;
+}
+
+/* Sidebar (ivory pass on Augusta green) */
+.ch-sidebar {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 1px;
+  width: var(--ch-sidebar-w);
+  height: 100%;
+  padding: 14px 10px 12px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #0e4029, #0a331f);
+  color: #f4f1e8;
+}
+.ch-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  margin: 0 -2px 14px;
+  padding: 10px 10px 12px;
+  border-radius: 12px;
+  background: rgb(250 248 241 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.16);
+}
+.ch-brand img {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+.ch-brand__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-brand__word {
+  font: 600 18px/1 var(--ch-font-sans);
+  letter-spacing: -0.03em;
+  font-variation-settings: 'wdth' 92;
+  color: #fbfaf6;
+}
+.ch-brand__team {
+  overflow: hidden;
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: #cfc7b2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-nav {
+  display: flex;
+  flex-direction: column;
+}
+.ch-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ch-nav__section {
+  padding: 18px 10px 6px;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: #dccda6;
+  opacity: 0.8;
+}
+.ch-navitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #e9e4d6;
+  font: 500 13.5px/1 var(--ch-font-sans);
+  letter-spacing: -0.006em;
+  text-decoration: none;
+  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease),
+    box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-navitem svg {
+  color: #cfc7b2;
+  transition: color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-navitem:hover {
+  background: rgb(250 248 241 / 0.07);
+  color: #fbfaf6;
+}
+.ch-navitem:hover svg {
+  color: #f4f1e8;
+}
+.ch-navitem:focus-visible {
+  outline: 2px solid #dccda6;
+  outline-offset: 1px;
+}
+.ch-navitem[aria-current='page'] {
+  background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
+  color: var(--ch-green-800);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 14px -8px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 #fff;
+}
+.ch-navitem[aria-current='page'] svg,
+.ch-navitem[aria-current='page'] .ch-navitem__count {
+  color: var(--ch-green-700);
+}
+.ch-navitem__count {
+  margin-left: auto;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: #dccda6;
+}
+.ch-sidebar__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 4px 2px;
+  border-top: 1px solid rgb(220 205 166 / 0.18);
+}
+.ch-next {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.4), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
+  transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-next:hover {
+  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff;
+}
+.ch-next__k {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-next__k span:last-child {
+  font-weight: 600;
+  color: var(--ch-green-700);
+}
+.ch-next__t {
+  font: 600 15px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  font-variation-settings: 'wdth' 92;
+  color: var(--ch-green-800);
+}
+.ch-next__m {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-next__bar {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--ch-ivory-200);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
+}
+.ch-next__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ch-green-600);
+}
+.ch-identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 0 4px;
+}
+.ch-identity .ch-avatar {
+  box-shadow: 0 0 0 2px rgb(220 205 166 / 0.5);
+}
+.ch-identity__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-identity__name,
+.ch-identity__meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-identity__name {
+  font: 600 14px/1.3 var(--ch-font-sans);
+  color: #fbfaf6;
+}
+.ch-identity__meta {
+  font: var(--ch-type-caption);
+  color: #cfc7b2;
+}
+
+/* Top bar */
+.ch-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--ch-z-sticky);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--ch-topbar-h);
+  padding: 0 24px;
+  border-bottom: 1px solid var(--ch-border-hairline);
+  background: var(--ch-glass-bg);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+}
+.ch-topbar__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: 500 13.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-topbar__crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-topbar__crumb b {
+  font-weight: 500;
+  color: var(--ch-green-700);
+}
+.ch-topbar__team {
+  display: none;
+}
+.ch-topbar__actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+/* The phone's tab-root title and the slot for a page's own top bar: phone only. */
+.ch-topbar__ptitle,
+.ch-topbar__pslot {
+  display: none;
+}
+
+/* Placeholder and full-page error */
+.ch-notyet {
+  display: grid;
+  place-items: center;
+  min-height: calc(100dvh - var(--ch-topbar-h) - 16px);
+  padding: 40px var(--ch-gutter);
+}
+.ch-notyet__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  max-width: 460px;
+  padding: 32px;
+}
+.ch-notyet__title {
+  font: var(--ch-type-display-s);
+  letter-spacing: -0.028em;
+  font-variation-settings: 'wdth' 88;
+  color: var(--ch-text-primary);
+}
+.ch-notyet__body {
+  font: 400 15px/1.55 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-notyet__meta {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-notyet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+.ch-notyet__dev {
+  max-width: 100%;
+  max-height: 160px;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  font: 400 11.5px/1.5 var(--ch-font-mono);
+  color: var(--ch-text-secondary);
+  white-space: pre-wrap;
+}
+
+/* States */
+.ch-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 20px;
+  text-align: center;
+}
+.ch-empty--compact {
+  padding: 20px 12px;
+}
+.ch-empty__action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* The v2 page empty state (gh-polish.css .gh-empty): the whole page body is
+   empty. A medallion on faint rings, a title that names what belongs, one or
+   two sentences, one primary action. Its parts rise in once, 55ms apart. */
+.ch-empty-page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 140px);
+  padding: 56px 24px;
+}
+.ch-empty-page__in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 460px;
+  text-align: center;
+}
+.ch-empty-page__in > * {
+  animation: ch-reveal var(--ch-dur-reveal) var(--ch-ease) backwards;
+}
+.ch-empty-page__in > :nth-child(2) {
+  animation-delay: var(--ch-reveal-step);
+}
+.ch-empty-page__in > :nth-child(3) {
+  animation-delay: calc(var(--ch-reveal-step) * 2);
+}
+.ch-empty-page__in > :nth-child(4) {
+  animation-delay: calc(var(--ch-reveal-step) * 3);
+}
+.ch-empty-page__in > :nth-child(5) {
+  animation-delay: calc(var(--ch-reveal-step) * 4);
+}
+.ch-empty-page__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+  margin-bottom: 4px;
+}
+.ch-empty-page__art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle at center, rgb(21 90 57 / 0.1) 0 1px, transparent 1.5px 17px);
+  -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%);
+  mask: radial-gradient(circle, #000 30%, transparent 70%);
+}
+.ch-empty-page__ic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: var(--ch-green-800);
+  color: #f4f1e8;
+  box-shadow: 0 16px 30px -14px rgb(11 58 37 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+.ch-empty-page__title {
+  margin: 0;
+  font: 600 26px/1.15 var(--ch-font-sans);
+  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.028em;
+  color: var(--ch-ink-950);
+  text-wrap: balance;
+}
+.ch-empty-page__body {
+  max-width: 42ch;
+  margin: 0;
+  font: 400 15px/1.55 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-empty-page__prog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ch-empty-page__seg {
+  display: flex;
+  gap: 5px;
+}
+.ch-empty-page__seg i {
+  width: 34px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.1);
+}
+.ch-empty-page__seg i.is-on {
+  background: var(--ch-green-600);
+}
+.ch-empty-page__prog-t {
+  font: 500 12.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-empty-page__a {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-empty-page__in > *,
+[data-motion='off'] [data-ui='clubhouse'] .ch-empty-page__in > * {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-empty-page__in > * {
+    animation: none !important;
+  }
+}
+@media (max-width: 820px) {
+  .ch-empty-page {
+    min-height: 0;
+    padding: 52px 22px 40px;
+  }
+  .ch-empty-page__art {
+    width: 120px;
+    height: 120px;
+  }
+  .ch-empty-page__title {
+    font-size: 21px;
+  }
+  .ch-empty-page__body {
+    font-size: 14.5px;
+  }
+  .ch-empty-page__a {
+    flex-direction: column;
+    align-self: stretch;
+  }
+  .ch-empty-page__a > * {
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+  }
+}
+.ch-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 4px;
+  color: var(--ch-text-tertiary);
+}
+.ch-empty__title {
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+}
+.ch-empty__body {
+  max-width: 44ch;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+  text-wrap: pretty;
+}
+.ch-empty__action {
+  margin-top: 8px;
+}
+.ch-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  border-radius: 12px;
+}
+.ch-notice--danger {
+  background: #f7ece8;
+  box-shadow: inset 0 0 0 1px rgb(126 59 48 / 0.16);
+}
+.ch-notice--danger .ch-notice__icon {
+  flex: none;
+  margin-top: 1px;
+  color: #7e3b30;
+}
+.ch-notice__txt {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-notice__title {
+  font: 600 13.5px/1.35 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-notice__body {
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+/* One sweep shared by every block on the page (a viewport-fixed gradient,
+   v2 .gh-sk). iOS WebKit may ignore the fixed attachment, so on the phone
+   each block can sweep on its own (noted under D-64). */
+.ch-skel {
+  display: block;
+  background: linear-gradient(100deg, #ebe7dc 42%, #f3f0e8 50%, #ebe7dc 58%) 0 0 / 200vw 100% fixed;
+  animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
+}
+/* Animations off in Settings: skeletons hold still. */
+.ch-root[data-motion='off'] .ch-skel {
+  animation: none;
+}
+@keyframes ch-shimmer {
+  from {
+    background-position: 100vw 0;
+  }
+  to {
+    background-position: -100vw 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-skel {
+    animation: none !important;
+  }
+}
+.ch-toast__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-toast__body {
+  font: 400 12.5px/1.4 var(--ch-font-sans);
+  color: #c9c5bb;
+}
+.ch-toast--error .ch-toast__icon {
+  color: #f0b7a8;
+}
+
+/* Phone tab bar and More sheet */
+.ch-tabbar {
+  display: none;
+}
+.ch-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ch-z-overlay);
+  background: rgb(20 18 12 / 0.34);
+}
+.ch-more {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--ch-z-overlay);
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.18);
+  touch-action: none;
+}
+.ch-more__grab,
+.ch-bellp__grab {
+  width: 38px;
+  height: 5px;
+  margin: 8px auto 4px;
+  border-radius: 5px;
+  background: rgb(28 25 18 / 0.18);
+}
+.ch-more__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0 12px;
+  font: 600 18px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ch-text-primary);
+}
+.ch-more__x,
+.ch-bellp__x {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(28 25 18 / 0.06);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+/* A 44px target around the 32px coin. */
+.ch-more__x::before,
+.ch-bellp__x::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.ch-more__list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-shadow-sm);
+}
+.ch-more__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--ch-border-hairline);
+  color: var(--ch-text-primary);
+  font: 500 14.5px/1.25 var(--ch-font-sans);
+  text-decoration: none;
+  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-more__row:first-child {
+  border-top: 0;
+}
+.ch-more__row:active {
+  background: var(--ch-bg-hover);
+}
+.ch-more__ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--ch-bg-subtle);
+  color: var(--ch-text-secondary);
+}
+.ch-more__label {
+  flex: 1;
+  min-width: 0;
+}
+.ch-more__count {
+  flex: none;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--ch-green-600);
+  color: var(--ch-text-on-accent);
+  font: 600 11.5px/20px var(--ch-font-sans);
+  text-align: center;
+}
+.ch-more__row[aria-current='page'] {
+  color: var(--ch-green-700);
+  font-weight: 600;
+}
+.ch-more__row[aria-current='page'] .ch-more__ic {
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+}
+/* v2 More (m-ch.jsx MoreM): who you are, the app, then Settings, Help and Sign out. */
+.ch-more__list + .ch-more__list {
+  margin-top: 12px;
+}
+button.ch-more__row {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--ch-border-hairline);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+button.ch-more__row:first-child {
+  border-top: 0;
+}
+button.ch-more__row[disabled] {
+  color: var(--ch-text-tertiary);
+  cursor: progress;
+}
+.ch-more__sub {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  font: 400 12.5px/1.25 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-more__me {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-shadow-sm);
+  color: var(--ch-text-tertiary);
+  text-decoration: none;
+}
+.ch-more__me-t {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-more__me-t b {
+  font: 600 16px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-more__me-t em {
+  font: 400 13px/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+
+@media (max-width: 820px) {
+  .ch-app {
+    display: block;
+    height: auto;
+    min-height: 100dvh;
+    background: var(--ch-bg-page);
+  }
+  .ch-sidebar {
+    display: none;
+  }
+  .ch-canvas {
+    margin: 0;
+    overflow: visible;
+    border-radius: 0;
+    box-shadow: none;
+    padding-bottom: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom));
+  }
+  /* The owner's phone top bar (m-shell.jsx MTop): ivory at 90%, a hairline, a 44px row under the status bar. */
+  .ch-topbar {
+    gap: 8px;
+    height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 8px 6px 16px;
+    background: var(--ch-phone-bar-bg);
+  }
+  .ch-topbar__crumbs,
+  .ch-topbar__settings {
+    display: none;
+  }
+  .ch-topbar__ptitle {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font: 600 17px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.01em;
+    color: var(--ch-text-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-topbar[data-phone='page'] {
+    padding-left: 16px;
+  }
+  /* A page's own top replaces the title and the bell (its action takes the right edge). */
+  .ch-topbar[data-phone='page'] .ch-topbar__ptitle,
+  .ch-topbar[data-phone='page'] .ch-topbar__actions {
+    display: none;
+  }
+  .ch-topbar[data-phone='page'] .ch-topbar__pslot {
+    display: contents;
+  }
+  /* A tab root that draws its own title (PhoneTop start, no action): its title, and the bell stays. */
+  .ch-topbar[data-phone='start'] {
+    padding-left: 16px;
+  }
+  .ch-topbar[data-phone='start'] .ch-topbar__ptitle {
+    display: none;
+  }
+  .ch-topbar[data-phone='start'] .ch-topbar__pslot {
+    display: contents;
+  }
+  .ch-topbar .ch-iconbtn {
+    width: 44px;
+    height: 44px;
+    color: var(--ch-text-secondary);
+  }
+  .ch-toasts {
+    right: 12px;
+    left: 12px;
+    bottom: calc(var(--ch-tabbar-h) + 12px + env(safe-area-inset-bottom));
+  }
+  /* CH-1812: inside an open sheet the toasts drop from the top, clear of the sheet's buttons. */
+  .ch-root .ch-toasts.ch-toasts--in-dialog {
+    top: calc(12px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+  /* The green hero's bar (usePhoneHero, the v2 phone Home, m-home.css .mh-hero__bar): the team and the bell on green. */
+  .ch-root[data-phone-hero] .ch-topbar {
+    background: var(--ch-green-800);
+    box-shadow: none;
+  }
+  .ch-root[data-phone-hero] .ch-topbar__ptitle {
+    display: none;
+  }
+  .ch-root[data-phone-hero] .ch-topbar__team {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font: 600 14px/1 var(--ch-font-sans);
+    color: var(--ch-ivory-100);
+  }
+  .ch-root[data-phone-hero] .ch-topbar__team img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+  .ch-root[data-phone-hero] .ch-topbar .ch-bell {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    color: var(--ch-ivory-100);
+  }
+  /* A full-page form hides the tab bar (usePhoneTabsHidden): its Cancel and submit are in the top bar. */
+  .ch-root[data-phone-notabs] .ch-tabbar {
+    display: none;
+  }
+  .ch-root[data-phone-notabs] .ch-canvas {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ch-root[data-phone-notabs] .ch-toasts {
+    bottom: calc(12px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
+  }
+  /* A pushed screen hides the tab bar: toasts sit above its composer instead (and above the keyboard). */
+  .ch-root[data-phone-immersive] .ch-toasts {
+    bottom: calc(72px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
+  }
+  .ch-toast {
+    min-width: 0;
+    max-width: none;
+  }
+  /* The owner's phone tab bar (m-shell.jsx MTabs, D-40): ivory glass, the active tab in green, no chip. */
+  .ch-tabbar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--ch-z-sticky);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    height: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom));
+    padding: 6px 6px calc(4px + env(safe-area-inset-bottom));
+    background: var(--ch-phone-tabbar-bg);
+    -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+    box-shadow: 0 -1px 0 var(--ch-border-hairline);
+  }
+  .ch-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 46px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ch-text-tertiary);
+    font: 500 10.5px/1 var(--ch-font-sans);
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-tab[aria-current='page'] {
+    color: var(--ch-green-700);
+  }
+  .ch-tab__icon {
+    position: relative;
+    display: inline-flex;
+  }
+  .ch-tab__badge {
+    position: absolute;
+    top: -4px;
+    right: -9px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--ch-green-600);
+    color: var(--ch-text-on-accent);
+    font: 600 9.5px/15px var(--ch-font-sans);
+    text-align: center;
+  }
+
+  /* The parts of a phone top bar (ui/PhoneBar.tsx): in the shell's bar for a page's own top, and on pushed screens. */
+  .ch-pbar {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 8px 6px 16px;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--ch-border-hairline);
+    background: var(--ch-phone-bar-bg);
+  }
+  .ch-pbar.is-lead {
+    gap: 4px;
+    padding-left: 4px;
+  }
+  .ch-pbar__back {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    height: 44px;
+    margin-left: -8px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    font: 500 16px/1 var(--ch-font-sans);
+    color: var(--ch-green-700);
+    cursor: pointer;
+    transition: transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-pbar__back.is-text {
+    margin-left: -4px;
+  }
+  .ch-pbar__back.is-bare {
+    justify-content: center;
+    width: 44px;
+    margin-left: 0;
+    padding: 0;
+  }
+  .ch-pbar__title {
+    position: absolute;
+    top: env(safe-area-inset-top);
+    left: 50%;
+    display: flex;
+    align-items: center;
+    max-width: 52%;
+    height: 44px;
+    margin: 0;
+    overflow: hidden;
+    transform: translateX(-50%);
+    font: 600 16px/1 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+    white-space: nowrap;
+  }
+  /* The title takes focus when a screen is pushed (for VoiceOver): it is a destination, not a control, so no ring. */
+  .ch-pbar__title:focus {
+    outline: none;
+  }
+  .ch-pbar__title.is-start {
+    position: static;
+    flex: 1;
+    max-width: none;
+    transform: none;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+  }
+  .ch-pbar__lead {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .ch-pbar__right {
+    display: flex;
+    flex: none;
+    align-items: center;
+    margin-left: auto;
+  }
+  .ch-pbar__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--ch-text-secondary);
+    cursor: pointer;
+    transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-pbar__icon:active {
+    background: rgb(28 25 18 / 0.06);
+  }
+  .ch-pbar__text {
+    height: 44px;
+    padding: 0 10px;
+    border: 0;
+    background: none;
+    font: 600 16px/44px var(--ch-font-sans);
+    color: var(--ch-green-700);
+    cursor: pointer;
+    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-pbar__text[aria-disabled='true'] {
+    color: var(--ch-text-tertiary);
+    cursor: default;
+  }
+
+  /* A pushed screen (shell/PhoneScreen.tsx): the whole phone, over the page and its chrome. */
+  .ch-pscreen {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--ch-z-sticky) + 10);
+    display: flex;
+    flex-direction: column;
+    background: var(--ch-bg-page);
+    outline: none;
+    overscroll-behavior: contain;
+  }
+  /* The keyboard never resizes the WebView: a screen with a composer lifts itself by the keyboard's height. */
+  body.keyboard-open .ch-pscreen[data-fw-keyboard-aware] {
+    padding-bottom: var(--keyboard-height);
+  }
+  .ch-notyet {
+    min-height: 60dvh;
+    padding: 24px 16px;
+  }
+  .ch-notyet__card {
+    padding: 24px 20px;
+  }
+}
+
+/* Notifications bell */
+.ch-bell {
+  position: relative;
+}
+.ch-bell__count {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ch-green-600);
+  box-shadow: 0 0 0 2px var(--ch-bg-page);
+  font: 600 10px/1 var(--ch-font-sans);
+  color: var(--ch-text-on-accent);
+}
+.ch-bellp {
+  /* A design-system PopoverPanel (.ch-popover): glass, 14px radius, 5px inset. */
+  position: fixed;
+  z-index: var(--ch-z-overlay);
+  display: flex;
+  flex-direction: column;
+  max-height: min(540px, calc(100dvh - 80px));
+  transform-origin: top right;
+  outline: none;
+}
+/* The bell on the phone is a sheet (MSheet), not a popover (CH-1811). */
+.ch-bellp--sheet {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: 82dvh;
+  padding: 0 8px calc(8px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.18);
+}
+/* It follows the finger from its grab and header (CH-1611); the list scrolls. */
+.ch-bellp__grab,
+.ch-bellp__shead {
+  flex: none;
+  touch-action: none;
+}
+.ch-bellp__shead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 8px 10px;
+}
+.ch-bellp__stitle {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ch-bellp__stitle b {
+  font: 600 18px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ch-text-primary);
+}
+.ch-bellp__stitle span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-bellp__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+}
+/* A 44px target around the 30px buttons. */
+.ch-bellp__tools .ch-btn::before {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
+}
+.ch-bellp__head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 3px 3px 10px;
+}
+.ch-bellp__head b {
+  flex: 1;
+  font: 600 13.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-bellp__head b span {
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-bellp__filter {
+  gap: 4px;
+  color: var(--ch-text-secondary);
+}
+.ch-bellp__body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 2px;
+}
+.ch-bellp__body > .ch-notice {
+  margin: 4px 6px 6px;
+}
+.ch-bellp__day {
+  /* .ch-popover__label */
+  padding: 8px 10px 6px;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-bellp__body > section + section {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgb(28 25 18 / 0.08);
+}
+.ch-bellp__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-bellp__row:hover,
+.ch-bellp__row:focus-visible {
+  /* .ch-menu__item hover: the design system's popover item */
+  outline: none;
+  background: #ece8de;
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+}
+.ch-bellp__ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #e3ede5;
+  color: var(--ch-green-700);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.6);
+}
+.ch-bellp__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.ch-bellp__top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ch-bellp__top b {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font: 500 13.5px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-bellp__row.is-unread .ch-bellp__top b {
+  font-weight: 600;
+}
+.ch-bellp__top time {
+  flex: none;
+  font: 400 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-bellp__txt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font: 400 13px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-bellp__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+.ch-bellp__row.is-unread .ch-bellp__dot {
+  background: var(--ch-green-500);
+}
+.ch-bellp__skel {
+  display: grid;
+  gap: 14px;
+  padding: 10px;
+}
+.ch-bellp__skelrow {
+  display: flex;
+  gap: 10px;
+}
+.ch-bellp__skelrow > span {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+}
+.ch-bellp__empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 28px 24px 30px;
+  text-align: center;
+  color: var(--ch-text-tertiary);
+}
+.ch-bellp__empty b {
+  font: 600 14px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-bellp__empty span {
+  max-width: 260px;
+  font: 400 13px/1.45 var(--ch-font-sans);
+}
+.ch-bellp__empty .ch-btn {
+  margin-top: 6px;
+}
+.ch-topbar__actions .ch-iconbtn.is-on {
+  color: var(--ch-green-700);
+  background: rgb(21 90 57 / 0.08);
+}
+
+/* Offline banner (CH-1901) */
+.ch-offline {
+  position: sticky;
+  top: var(--ch-topbar-h);
+  z-index: var(--ch-z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgb(148 96 14 / 0.18);
+  background: var(--ch-warning-100);
+  font: 500 13px/1.35 var(--ch-font-sans);
+  color: var(--ch-warning-600);
+  text-align: center;
+}
+
+/* Print (Calendar's More › Print week): the page alone, unclipped, without the frame, sidebar, top bar or tabs. */
+@media print {
+  .ch-app {
+    display: block;
+    height: auto;
+    background: none;
+  }
+  .ch-canvas {
+    margin: 0;
+    overflow: visible;
+    border-radius: 0;
+  }
+  .ch-sidebar,
+  .ch-topbar,
+  .ch-tabbar {
+    display: none !important;
+  }
+}

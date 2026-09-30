@@ -1437,3 +1437,194 @@ export async function getItineraryForEvent(
 ): Promise<{ success: boolean; data?: { id: string; event_name: string; destination: string } | null; error?: string }> {
   return observedGetItineraryForEvent(eventId);
 }
+
+// ============================================================================
+// TRAVELERS' CLASSES DURING A TRIP (Team Hub's Plan a trip, Travelers step)
+// ============================================================================
+
+/** One class a traveler would miss: a class's meetings inside the trip, grouped as the board words them. */
+export interface TravelerClass {
+  playerId: string;
+  /** As the player named it: "CHEM 102 lab". */
+  title: string;
+  /** The weekdays it meets inside the trip, in the order they come: ["Mon", "Wed"]. */
+  days: string[];
+  /** In the team's zone: "3:00–4:15 PM", or "11:30 AM–12:45 PM" across noon. */
+  time: string;
+}
+
+export interface TravelerClassConflicts {
+  classes: TravelerClass[];
+  /**
+   * A read behind this answer failed, so a class may be missing: "no classes" is not a finding. The UI says the check
+   * could not run rather than showing an all-clear.
+   */
+  partial: boolean;
+}
+
+const travelerClassesSchema = z.object({
+  teamId: z.string().uuid(),
+  playerIds: z.array(z.string().uuid()).max(80),
+  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  fromTime: z.string().regex(/^\d{2}:\d{2}$/).nullish(),
+  toTime: z.string().regex(/^\d{2}:\d{2}$/).nullish(),
+});
+
+/** A trip longer than this is not checked: the answer would be a wall of meetings, and nobody travels for six weeks. */
+const MAX_TRIP_DAYS = 45;
+const MAX_CLASSES_PER_TRAVELER = 8;
+const PARALLEL_TRAVELERS = 5;
+
+/**
+ * Which of the chosen travelers have a class meeting during the trip. A COACH's read, scoped three ways: the coach must be
+ * staffed on the team, every traveler must be on that team's active roster, and only the class itself leaves the server
+ * (the player's id, the class's name, its weekdays and its hours): no name, no avatar, no instructor, room or other busy
+ * time. It asks the availability layer the Calendar's conflict check asks ("when is this player in class?"), so a class's
+ * term, its synced meetings, academic breaks and the team's zone are decided in one place.
+ */
+async function getTravelerClassConflictsImpl(
+  input: z.input<typeof travelerClassesSchema>,
+): Promise<{ success: boolean; data?: TravelerClassConflicts; error?: string }> {
+  try {
+    const v = travelerClassesSchema.parse(input);
+    if (v.toDate < v.fromDate) return { success: false, error: 'The return can’t be before the departure.' };
+    const utcMs = (d: string) => new Date(`${d}T00:00:00Z`).getTime();
+    if ((utcMs(v.toDate) - utcMs(v.fromDate)) / 86_400_000 >= MAX_TRIP_DAYS) {
+      return { success: false, error: `That trip runs longer than ${MAX_TRIP_DAYS} days, so its classes aren’t checked.` };
+    }
+    const travelerIds = [...new Set(v.playerIds)];
+    if (travelerIds.length === 0) return { success: true, data: { classes: [], partial: false } };
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (coachError) {
+      await logServerError(
+        `travel coach lookup failed: ${describeError(coachError)}`,
+        { action: 'travel.getTravelerClassConflicts', featureArea: 'travel' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't verify your coach access just now. Please try again." };
+    }
+    if (!coach) return { success: false, error: 'Only coaches can check a trip’s classes.' };
+    if (!(await validateCoachTeamAccess(supabase, coach.id, v.teamId, coach.organization_id))) {
+      return { success: false, error: 'You don’t have access to this team.' };
+    }
+
+    // Every traveler must be on this team's active roster: an id list is never trusted on its own.
+    const { data: members, error: membersError } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', v.teamId)
+      .eq('status', 'active')
+      .in('player_id', travelerIds);
+    if (membersError) {
+      await logServerError(
+        `travelers' roster read failed: ${describeError(membersError)}`,
+        { action: 'travel.getTravelerClassConflicts', featureArea: 'travel' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't read the roster just now. Please try again." };
+    }
+    const onTeam = new Set((members ?? []).map((m) => m.player_id));
+    if (travelerIds.some((id) => !onTeam.has(id))) {
+      return { success: false, error: 'Some of those players aren’t on this team.' };
+    }
+    const { data: accounts, error: accountsError } = await supabase.from('golf_players').select('id, user_id').in('id', travelerIds);
+    if (accountsError) {
+      await logServerError(
+        `travelers' account read failed: ${describeError(accountsError)}`,
+        { action: 'travel.getTravelerClassConflicts', featureArea: 'travel' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't read the travelers just now. Please try again." };
+    }
+
+    const { getUserBusyPeriodsWithStatus, periodsOverlap, resolveTeamTimeZone } = await import('@/lib/calendar/availability');
+    const { wallClockInZone } = await import('@/lib/golf/timezone');
+    const tz = await resolveTeamTimeZone([v.teamId], supabase, 'travel.getTravelerClassConflicts');
+
+    // The trip in the team's wall clock: its first day from the departure time (or midnight) to its last day's return time
+    // (or the end of that day). A class that ended before the bus left, or starts after the team is back, is not missed.
+    const dayOf = (d: string) => {
+      const [y, m, dd] = d.split('-').map(Number);
+      return new Date(y!, m! - 1, dd!);
+    };
+    const nextMidnight = (d: string) => {
+      const day = dayOf(d);
+      day.setDate(day.getDate() + 1);
+      return wallClockInZone(day, '00:00', tz);
+    };
+    const start = wallClockInZone(dayOf(v.fromDate), v.fromTime ?? '00:00', tz);
+    let end = v.toTime ? wallClockInZone(dayOf(v.toDate), v.toTime, tz) : nextMidnight(v.toDate);
+    if (!(end > start)) end = nextMidnight(v.toDate);
+
+    const weekday = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' });
+    const clock = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
+    const parts = (d: Date) => {
+      const p = clock.formatToParts(d);
+      const at = (t: string) => p.find((x) => x.type === t)?.value ?? '';
+      return { hm: `${at('hour')}:${at('minute')}`, period: at('dayPeriod').toUpperCase() };
+    };
+    const hours = (a: Date, b: Date) => {
+      const s = parts(a);
+      const e = parts(b);
+      return s.period === e.period ? `${s.hm}–${e.hm} ${e.period}` : `${s.hm} ${s.period}–${e.hm} ${e.period}`;
+    };
+
+    // A traveler the read did not return could not be asked about, which is not the same as having no class.
+    let partial = (accounts ?? []).length < travelerIds.length;
+    const classes: TravelerClass[] = [];
+    // A player with no account has no classes: the classes are written by the player's own session.
+    const people = (accounts ?? []).filter((a): a is { id: string; user_id: string } => Boolean(a.user_id));
+    for (let i = 0; i < people.length; i += PARALLEL_TRAVELERS) {
+      const batch = await Promise.all(
+        people.slice(i, i + PARALLEL_TRAVELERS).map(async (a) => {
+          const res = await getUserBusyPeriodsWithStatus(a.user_id, start, end, supabase);
+          return { playerId: a.id, res };
+        }),
+      );
+      for (const { playerId, res } of batch) {
+        if (res.partial) partial = true;
+        const groups = new Map<string, TravelerClass>();
+        for (const period of res.periods) {
+          if (period.type !== 'class' || !periodsOverlap({ start, end }, period)) continue;
+          const time = hours(period.start, period.end);
+          const key = `${period.title ?? ''}|${time}`;
+          const day = weekday.format(period.start);
+          const group = groups.get(key);
+          if (!group) groups.set(key, { playerId, title: period.title?.trim() || 'a class', days: [day], time });
+          else if (!group.days.includes(day)) group.days.push(day);
+        }
+        classes.push(...[...groups.values()].slice(0, MAX_CLASSES_PER_TRAVELER));
+      }
+    }
+    return { success: true, data: { classes, partial } };
+  } catch (error) {
+    if (error instanceof z.ZodError) return { success: false, error: 'Those trip dates or travelers couldn’t be read.' };
+    await logServerError(
+      `Unexpected error in getTravelerClassConflicts: ${describeError(error)}`,
+      { action: 'travel.getTravelerClassConflicts', featureArea: 'travel' },
+    );
+    return { success: false, error: 'Failed to check the travelers’ classes.' };
+  }
+}
+
+const observedGetTravelerClassConflicts = withAdminObserved(
+  'getTravelerClassConflicts',
+  { sport: 'golf', feature: 'travel' },
+  getTravelerClassConflictsImpl,
+);
+
+export async function getTravelerClassConflicts(
+  input: z.input<typeof travelerClassesSchema>,
+): Promise<{ success: boolean; data?: TravelerClassConflicts; error?: string }> {
+  return observedGetTravelerClassConflicts(input);
+}

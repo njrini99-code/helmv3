@@ -194,4 +194,31 @@ describe('submitGolfRoundComprehensive — manual qualifier closure', () => {
       error: "Couldn't update this qualifier — it may have been deleted, or you may not have edit access to this team.",
     });
   });
+
+  it('90812 refuses a player and a coach from another organisation before any update; only the qualifier’s own team’s coach can close or reopen it', async () => {
+    const world = (userId: string) =>
+      createFakeSupabase({
+        user: { id: userId },
+        tables: {
+          golf_qualifiers: [{ id: QUALIFIER_ID, team_id: 'team-1', status: 'in_progress' }],
+          golf_coaches: [
+            { id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' },
+            { id: 'coach-2', user_id: 'u-rival', organization_id: 'org-2' },
+          ],
+          golf_teams: [{ id: 'team-1', organization_id: 'org-1' }],
+        },
+      });
+    for (const userId of ['u-player', 'u-rival']) {
+      fake = world(userId);
+      for (const status of ['completed', 'in_progress'] as const) {
+        await expect(updateQualifierStatus(QUALIFIER_ID, status)).resolves.toEqual({ success: false, error: 'Unauthorized' });
+      }
+      const row = (await fake.from('golf_qualifiers').select('status').eq('id', QUALIFIER_ID).single()).data as { status: string };
+      expect([userId, row.status]).toEqual([userId, 'in_progress']);
+    }
+    fake = world('u-coach');
+    await expect(updateQualifierStatus(QUALIFIER_ID, 'completed')).resolves.toEqual({ success: true, data: undefined });
+    const closed = (await fake.from('golf_qualifiers').select('status').eq('id', QUALIFIER_ID).single()).data as { status: string };
+    expect(closed.status).toBe('completed');
+  });
 });

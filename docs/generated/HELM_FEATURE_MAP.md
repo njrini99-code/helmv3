@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 34 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/components/fairway/pages/rounds-tracking/**` … and 35 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md`
 - **Repair units:** `player-lookup-maybe-single-2026-09-25` (verified)
@@ -102,7 +102,7 @@ is a second thing to keep true.
 **Qualifiers** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/qualifiers.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/my-qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/components/fairway/pages/qualifiers/**`, `src/components/fairway/pages/my-qualifiers/**`, `src/app/golf/actions/golf.ts` … and 7 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/my-qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/components/fairway/pages/qualifiers/**`, `src/components/fairway/pages/my-qualifiers/**`, `src/clubhouse/screens/qualifiers/**` … and 15 more in the registry
 - **Telemetry:** `qualifiers` (golfhelm, med), `my_qualifiers` (golfhelm, low)
 - **Incidents:** `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md`
 - **Repair units:** `qualifier-manual-close-only-2026-08-22` (verified_in_production)
@@ -135,7 +135,7 @@ is a second thing to keep true.
 **Calendar And Events** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/calendar-events.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/components/golf/calendar/**`, `src/components/fairway/pages/calendar/**`, `src/components/fairway/controls/wheel-picker.*`, `src/app/api/calendar/**`, `src/app/golf/actions/attendance.ts` … and 20 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/app/golf/(dashboard)/dashboard/classes/**`, `src/clubhouse/routes/classes.tsx`, `src/components/golf/calendar/**`, `src/clubhouse/screens/classes/**`, `src/clubhouse/data/classes.ts` … and 26 more in the registry
 - **Telemetry:** `calendar_events` (golfhelm, high), `academics_classes` (golfhelm, low)
 - **Incidents:** `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md`
 - **Repair units:** none in the queue
@@ -179,7 +179,7 @@ is a second thing to keep true.
 **Team Operations** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-operations.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 18 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 20 more in the registry
 - **Telemetry:** `task_management` (golfhelm, med), `documents` (golfhelm, low), `travel` (golfhelm, low), `coach_dashboard` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -201,7 +201,7 @@ is a second thing to keep true.
 **Recruiting HQ** · active · criticality medium · owner product
 
 - **Behaviour:** `memory/features/recruiting.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/app/golf/actions/recruiting.ts`, `src/app/golf/actions/recruit-documents.ts`, `src/app/golf/actions/recruit-documents-categories.ts`, `supabase/migrations/*golf_recruits*.sql` … and 1 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/clubhouse/screens/recruiting/**`, `src/clubhouse/data/recruiting.ts`, `src/clubhouse/data/recruiting-shape.ts`, `src/clubhouse/routes/recruiting.tsx` … and 10 more in the registry
 - **Telemetry:** `recruiting_prospect_tracking` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

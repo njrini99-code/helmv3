@@ -1,0 +1,669 @@
+/**
+ * Stats preview fixtures: the handoff's sample team and Jonah's profile
+ * (design/handoff/stats*.jsx), shaped as the real loaders' output. The
+ * GolfStats object starts from the real calculator's empty result, so the
+ * shape can't drift from production.
+ */
+import { calculateStatsFromShots, type GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import type { ChTeamStats } from '../data/stats-team';
+import type { ChPlayerProfile } from '../data/stats-player';
+import type { ChPlayerSeason } from '../data/season';
+import type { ChWindowSeason } from '../data/stats-weight';
+import { filterFor, type ChFilter, type ChFilterOptions, type ChPickRound, type ChRoundKind } from '../data/stats-filter';
+
+const WEEKS = ['Aug 30', 'Sep 6', 'Sep 13', 'Sep 20', 'Sep 27', 'Oct 4', 'Oct 12'];
+const P = [
+  ['theo', 'Theo Marchetti', [72, 71, 71, 70, 70, 71, 70], [1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.7]],
+  ['sofia', 'Sofia Alvarez', [72, 72, 71, 72, 71, 71, 71], [0.9, 1.0, 1.0, 1.1, 1.2, 1.2, 1.2]],
+  ['ava', 'Ava Lindqvist', [73, 74, 72, 72, 72, 73, 72], [0.4, 0.3, 0.5, 0.6, 0.5, 0.6, 0.6]],
+  ['jonah', 'Jonah Okafor', [72, 72, 73, 74, 75, 74, 75], [0.8, 0.5, 0.2, -0.3, -0.6, -0.8, -0.9]],
+  ['eli', 'Eli Brandt', [74, 75, 74, 75, 75, 74, 75], [-0.2, -0.3, -0.4, -0.4, -0.5, -0.5, -0.5]],
+  ['priya', 'Priya Natarajan', [78, 77, 77, 76, 75, 75, 74], [-2.9, -2.5, -2.1, -1.8, -1.5, -1.3, -1.2]],
+] as const;
+
+/** Each player's window means (what the trend's list shows and sorts by): the grid's total and scoring average. */
+const MEANS: Record<(typeof P)[number][0], { sgMean: number; scoreMean: number }> = {
+  theo: { sgMean: 1.7, scoreMean: 70.9 },
+  sofia: { sgMean: 1.2, scoreMean: 71.6 },
+  ava: { sgMean: 0.6, scoreMean: 72.4 },
+  jonah: { sgMean: -0.9, scoreMean: 74.1 },
+  eli: { sgMean: -0.5, scoreMean: 74.8 },
+  priya: { sgMean: -1.2, scoreMean: 75.2 },
+};
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** 'Sep 27' as the season's calendar date. */
+const isoDay = (label: string) => {
+  const [m, d] = label.split(' ') as [string, string];
+  return `2026-${String(MONTHS.indexOf(m) + 1).padStart(2, '0')}-${d.padStart(2, '0')}`;
+};
+
+/** What the filter sheet can list, from rounds shaped like the fixtures' (newest first). */
+function optionsFrom(rounds: ChPickRound[]): ChFilterOptions {
+  const counts = new Map<string, number>();
+  for (const r of rounds) if (r.course) counts.set(r.course, (counts.get(r.course) ?? 0) + 1);
+  return {
+    rounds,
+    total: rounds.length,
+    courses: [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    seasonStart: '2026-08-01',
+  };
+}
+
+const TEAM_KINDS: ChRoundKind[] = ['tournament', 'practice', 'qualifier', 'tournament', 'practice'];
+const TEAM_COURSES = ['Finley GC', 'Oakmont CC', 'Pine Needles'];
+/** Each player's last three weekly rounds, newest first, so the sheet has a real list to pick from. */
+const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
+  [6, 5, 4].map((w, j) => ({
+    id: `${id}-${w}`,
+    date: isoDay(WEEKS[w] as string),
+    // A few nine-hole rounds, so the sheet's list shows how they read.
+    holes: (pi * 3 + j) % 7 === 3 ? 9 : 18,
+    kind: TEAM_KINDS[(pi * 3 + j) % TEAM_KINDS.length] ?? null,
+    course: TEAM_COURSES[(pi + j) % TEAM_COURSES.length] ?? null,
+    score: scores[w] as number,
+    player: name,
+  })),
+).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id.localeCompare(b.id)));
+
+export const PREVIEW_TEAM_STATS: ChTeamStats = {
+  teamName: 'Varsity',
+  window: 'last10',
+  filter: filterFor('last10'),
+  filterOptions: optionsFrom(TEAM_PICK_ROUNDS),
+  activeCount: 7,
+  roundCount: 64,
+  roundsEffective: 64,
+  figures: [
+    { label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, lowerIsBetter: false, context: 'vs. previous 10', note: 'vs Tour · 58 rounds with shots' },
+    { label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, lowerIsBetter: true, context: 'vs. previous 10' },
+    { label: 'Greens in regulation', value: 61, unit: '%', digits: 0, delta: 3, lowerIsBetter: false, context: 'Tour averages 66%' },
+    { label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, lowerIsBetter: true, context: 'vs. previous 10' },
+    { label: 'Scrambling', value: 52, unit: '%', digits: 0, delta: 4, lowerIsBetter: false, context: 'vs. previous 10' },
+    { label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, lowerIsBetter: false, context: 'Birdies and eagles' },
+  ],
+  weeks: WEEKS,
+  team: { sg: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], score: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], sgMean: -0.5, scoreMean: 73.6 },
+  players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id] })),
+  legWeeks: {
+    'Off the tee': [0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4],
+    Approach: [-1.2, -1.1, -1.0, -0.9, -0.9, -0.8, -0.8],
+    'Around green': [0.0, -0.1, 0.1, 0.0, 0.1, 0.1, 0.1],
+    Putting: [0.1, 0.2, 0.1, 0.3, 0.2, 0.3, 0.3],
+  },
+  grid: [
+    { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9 },
+    { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6 },
+    { id: 'ava', name: 'Ava Lindqvist', rounds: 10, legs: [0.2, 0.3, 0.1, 0.3], total: 0.6, change: 0.2, avg: 72.4 },
+    { id: 'eli', name: 'Eli Brandt', rounds: 10, legs: [0.0, -0.4, 0.0, 0.0], total: -0.5, change: -0.3, avg: 74.8 },
+    { id: 'priya', name: 'Priya Natarajan', rounds: 10, legs: [-0.6, -0.8, -0.2, -0.3], total: -1.2, change: 1.7, avg: 75.2 },
+    { id: 'jonah', name: 'Jonah Okafor', rounds: 10, legs: [0.3, -1.2, -0.1, 0.2], total: -0.9, change: -1.7, avg: 74.1 },
+    { id: 'luca', name: 'Luca Ferraro', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 76.5 },
+  ],
+  legTotals: [0.4, -0.7, 0.1, -0.3],
+  putting: {
+    putts: 220 + 211,
+    bands: [
+      { label: '0–3 ft', made: 118, attempts: 122, bench: null },
+      { label: '3–5 ft', made: 64, attempts: 92, bench: 90.5 },
+      { label: '5–10 ft', made: 30, attempts: 71, bench: 62.2 },
+      { label: '10–15 ft', made: 14, attempts: 80, bench: 35.7 },
+      { label: '15–25 ft', made: 4, attempts: 58, bench: 15.4 },
+      { label: '25+ ft', made: 1, attempts: 40, bench: 5.5 },
+    ],
+  },
+  bests: [
+    { label: 'Low round', playerId: 'theo', name: 'Theo Marchetti', value: '69 (−3)', meta: 'Pine Needles · Oct 11', under: true },
+    { label: 'Most birdies', playerId: 'sofia', name: 'Sofia Alvarez', value: '6', meta: 'Finley GC · Sep 27' },
+    { label: 'Best SG round', playerId: 'theo', name: 'Theo Marchetti', value: '+4.1', meta: 'Oakmont CC · Oct 12' },
+    { label: 'Longest putt made', playerId: 'ava', name: 'Ava Lindqvist', value: '42 ft', meta: 'Finley GC · Oct 8' },
+    { label: 'Most improved', playerId: 'priya', name: 'Priya Natarajan', value: '−4.0', meta: 'Scoring avg, first five rounds to latest five' },
+  ],
+  tour: 'pga',
+  sgChange: { delta: 0.4, context: 'vs. previous 10' },
+  sgRounds: 58,
+  roundsError: false,
+  cacheError: false,
+  puttsError: false,
+};
+
+function jonahStats(): GolfStats {
+  const s = calculateStatsFromShots([], [], []);
+  const dist = (eagle: number, birdie: number, par: number, bogey: number, doublePlus: number, total: number, avgToPar: number) => ({ eagle, birdie, par, bogey, doublePlus, total, avgToPar });
+  return {
+    ...s,
+    roundsPlayed: 10,
+    holesPlayed: 180,
+    scoringAverage: 73.6,
+    scoringAverage18: 73.6,
+    eaglesPerRound: 0.06,
+    birdiesPerRound: 1.9,
+    parsPerRound: 9.8,
+    bogeysPerRound: 4.8,
+    doublePlusPerRound: 1.2,
+    scoringByPar: { par3: dist(0, 4, 22, 10, 4, 40, 0.3), par4: dist(0, 9, 60, 30, 7, 106, 0.32), par5: dist(1, 6, 16, 8, 3, 34, -0.07) },
+    fairwayOpportunities: 118,
+    fairwayPercentage: 63,
+    fairwayPctPar4: 65,
+    fairwayPctPar5: 58,
+    missLeftPct: 20,
+    missRightPct: 17,
+    drivingDistanceDriverOnly: 266,
+    drivingDistanceNonDriverOnly: 238,
+    penaltiesPerRound: 0.6,
+    girOpportunities: 164,
+    girPercentage: 47,
+    girPct50_75: 77,
+    girPct75_100: 70,
+    girPct100_125: 57,
+    girPct125_150: 44,
+    girPct150_175: 39,
+    girPct175_200: 28,
+    girPct200_225: 15,
+    girPctFromFairway: 58,
+    girPctFromRough: 35,
+    girPctFromSand: 18,
+    approachProximityAvg: 35,
+    approachProx30_75: 19,
+    approachProx75_100: 22,
+    approachProx100_125: 29,
+    approachProx125_150: 33,
+    approachProx150_175: 37,
+    approachProx175_200: 46,
+    approachProx200_225: 56,
+    approachMissTotal: 87,
+    approachMissShortPct: 34,
+    approachMissShortLeftPct: 9,
+    approachMissShortRightPct: 11,
+    approachMissLeftPct: 12,
+    approachMissRightPct: 14,
+    approachMissLongLeftPct: 4,
+    approachMissLongPct: 10,
+    approachMissLongRightPct: 6,
+    scrambleAttempts: 71,
+    scramblingPercentage: 47,
+    scramblingPctFringe: 64,
+    scrambleFringeAttempts: 18,
+    scramblingPctFairway: 56,
+    scrambleFairwayAttempts: 14,
+    scramblingPctRough: 36,
+    scrambleRoughAttempts: 27,
+    scramblingPctSand: 33,
+    scrambleSandAttempts: 12,
+    scramblingPct0_10: 60,
+    scramblingPct10_20: 45,
+    scramblingPct20_30: 28,
+    sandSavePercentage: 37,
+    totalPutts: 298,
+    puttsPerGir: 1.84,
+    threePuttsPerRound: 0.8,
+    onePuttsTotal: 54,
+    firstPuttDistanceAvg: 18.5,
+    puttMakePct0_3: 89,
+    puttMakeCount0_3: 64,
+    puttMakePct3_5: 62,
+    puttMakeCount3_5: 38,
+    puttMakePct5_10: 40,
+    puttMakeCount5_10: 51,
+    puttMakePct10_15: 20,
+    puttMakeCount10_15: 40,
+    puttMakePct15_20: 13,
+    puttMakeCount15_20: 33,
+    puttMissLeftPct: 18,
+    puttMissRightPct: 22,
+    puttMissShortPct: 36,
+    puttMissLongPct: 12,
+    puttMissLowPct: 64,
+    puttMissHighPct: 36,
+    approachPuttAvgLeaveByBand: { '20_30': 3.1, '30_40': 3.9, '40_plus': 5.2 },
+    // The parity pass: the figures Game detail's "More detail" and the Rounds tab read.
+    avgScoreToPar: 1.6,
+    bestRound: 72,
+    worstRound: 75,
+    totalEagles: 1,
+    totalBirdies: 19,
+    totalPars: 100,
+    totalBogeys: 48,
+    totalDoublePlus: 12,
+    practiceScoringAvg: 73.4,
+    practiceRounds: 6,
+    qualifyingScoringAvg: 74,
+    qualifyingRounds: 3,
+    tournamentScoringAvg: 75,
+    tournamentRounds: 1,
+    mostBirdiesRound: 4,
+    mostBirdiesRow: 2,
+    mostParsRow: 6,
+    longestNo3PuttStreak: 34,
+    longestHoleOut: 42,
+    drivingDistanceAvg: 259,
+    fairwaysHit: 74,
+    fairwayPctDriver: 61,
+    fairwayPctNonDriver: 71,
+    missLeftPctDriver: 58,
+    missRightPctDriver: 42,
+    missLeftPctNonDriver: 45,
+    missRightPctNonDriver: 55,
+    girPerRound: 8.5,
+    girTotal: 77,
+    girPctPar3: 52,
+    girPctPar4: 45,
+    girPctPar5: 50,
+    girCountFromFairway: 70,
+    girCountFromRough: 52,
+    girCountFromSand: 11,
+    approachProximityWhenHitGreen: 28,
+    approachProximityWhenMissedGreen: 52,
+    approachEff30_75: { fairway: 2.3, rough: 2.6, sand: null },
+    approachEff75_100: { fairway: 2.5, rough: 2.8, sand: 3.1 },
+    approachEff100_125: { fairway: 2.7, rough: 3.0, sand: null },
+    approachEff125_150: { fairway: 2.9, rough: 3.2, sand: null },
+    approachEff150_175: { fairway: 3.0, rough: 3.3, sand: null },
+    approachEff175_200: { fairway: 3.2, rough: 3.5, sand: null },
+    approachEff200_225: { fairway: 3.4, rough: null, sand: null },
+    approachEff225Plus: { fairway: null, rough: null, sand: null },
+    approachMissByBand: {
+      '75_100': { short: 30, long: 10, left: 30, right: 30, total: 10 },
+      '125_150': { short: 38, long: 12, left: 25, right: 25, total: 16 },
+      '150_175': { short: 41, long: 9, left: 27, right: 23, total: 22 },
+      '175_200': { short: 46, long: 8, left: 23, right: 23, total: 13 },
+    },
+    scramblesMade: 33,
+    sandSaveAttempts: 11,
+    sandSavesMade: 4,
+    scramblingByMissDirection: {
+      short: { attempts: 30, made: 12, pct: 40, shareOfMisses: 42 },
+      long: { attempts: 9, made: 4, pct: 44, shareOfMisses: 13 },
+      left: { attempts: 20, made: 10, pct: 50, shareOfMisses: 28 },
+      right: { attempts: 18, made: 9, pct: 50, shareOfMisses: 25 },
+    },
+    atgEfficiencyAvg: 2.4,
+    atgEfficiency0_10: 2.2,
+    atgEfficiency10_20: 2.5,
+    atgEfficiency20_30: 2.7,
+    atgEffFairway: 2.3,
+    atgEffRough: 2.6,
+    atgEffSand: 2.8,
+    atgEffByDistanceLie: {
+      '0_10': { fairway: 2.1, rough: 2.3, sand: 2.6 },
+      '10_20': { fairway: 2.4, rough: 2.6, sand: 2.8 },
+      '20_30': { fairway: 2.6, rough: 2.8, sand: null },
+    },
+    atgProximityAvg: 6.5,
+    atgProximityByLie: { fairway: 5.2, rough: 7.4, sand: 9.1 },
+    puttsPerRound: 29.8,
+    puttsPerHole: 1.66,
+    approachPuttAvgLeave: 1.1,
+    puttMakePct20_25: 9,
+    puttMakePct25_30: 6,
+    puttMakePct30_35: 4,
+    puttMakePct35Plus: 3,
+    firstPuttDistanceByBand: { '0_3': 10, '3_5': 12, '5_10': 25, '10_15': 20, '15_20': 14, '20_25': 8, '25_30': 5, '30_35': 3, '35_plus': 3 },
+    puttEff0_5: 1.12,
+    puttEff5_10: 1.6,
+    puttEff10_15: 1.85,
+    puttEff15_20: 1.94,
+    puttEff20_25: 2.0,
+    puttEff25_30: 2.05,
+    puttEff30_35: 2.1,
+    puttEff35Plus: 2.2,
+    puttProximity0_5: 1.6,
+    puttProximity5_10: 2.2,
+    puttProximity10_15: 2.9,
+    puttProximity15_20: 3.4,
+    puttProximity20Plus: 4.6,
+    puttingByBreak: {
+      left_to_right: breakStats(96, 20, 0.36, 0.44, 0.2, [0.9, 0.6, 0.38, 0.22, 0.14, 0.08, 0.05, 0.04, 0.02], [20, 14, 18, 14, 10, 8, 6, 4, 2]),
+      straight: breakStats(110, 28, 0.4, 0.4, 0.2, [0.95, 0.66, 0.44, 0.24, 0.13, 0.1, 0.06, 0.04, 0.03], [26, 16, 22, 16, 12, 8, 6, 3, 1]),
+      right_to_left: breakStats(84, 18, 0.34, 0.46, 0.2, [0.88, 0.58, 0.36, 0.2, 0.12, 0.07, 0.04, 0.03, 0.02], [18, 10, 14, 12, 14, 6, 6, 3, 1]),
+      multiple: breakStats(8, 6, 0.3, 0.3, 0.4, [0.9, 0.5, 0.3, 0.2, 0.1, 0.05, 0.03, 0.02, 0.01], [2, 1, 1, 1, 1, 1, 1, 0, 0]),
+    },
+  };
+}
+
+/** A break's putting stats from make rates and counts by the nine distance bands (fixture only). */
+function breakStats(total: number, _: number, missShort: number, missLow: number, missHigh: number, rates: number[], counts: number[]): GolfStats['puttingByBreak']['straight'] {
+  const pick = (i: number) => (counts[i] ? Math.round(rates[i]! * 100) : null);
+  const made = counts.reduce((a, c, i) => a + c * rates[i]!, 0);
+  return {
+    totalPutts: total,
+    makePct0_3: pick(0),
+    makePct3_5: pick(1),
+    makePct5_10: pick(2),
+    makePct10_15: pick(3),
+    makePct15_20: pick(4),
+    makePct20_25: pick(5),
+    makePct25_30: pick(6),
+    makePct30_35: pick(7),
+    makePct35Plus: pick(8),
+    count0_3: counts[0]!,
+    count3_5: counts[1]!,
+    count5_10: counts[2]!,
+    count10_15: counts[3]!,
+    count15_20: counts[4]!,
+    count20_25: counts[5]!,
+    count25_30: counts[6]!,
+    count30_35: counts[7]!,
+    count35Plus: counts[8]!,
+    overallMakePct: Math.round((made / counts.reduce((a, b) => a + b, 0)) * 100),
+    missShortPct: Math.round(missShort * 100),
+    missLowPct: Math.round(missLow * 100),
+    missHighPct: Math.round(missHigh * 100),
+  };
+}
+
+const season = (avg: number, trend: number[], sg: number | null, rounds: number, status: ChPlayerSeason['status']): ChPlayerSeason => ({
+  rounds,
+  avg,
+  toPar: avg - 72,
+  trend,
+  formChange: status === 'slipping' ? 2.1 : null,
+  sgPerRound: sg,
+  sgRounds: rounds,
+  sgLegs: { tee: 0.3, approach: -1.2, around: -0.1, putting: 0.2 },
+  status,
+  recent: [],
+  lastRoundDate: '2026-10-12',
+});
+
+const JONAH_ROUNDS = [
+  ['Oakmont CC', 'Oct 12', 74, 2, '10/18', 28, -1.1],
+  ['Pine Needles', 'Oct 8', 75, 3, '11/18', 31, -1.6],
+  ['Finley GC', 'Oct 4', 75, 3, '12/18', 29, -1.2],
+  ['Finley GC', 'Sep 27', 75, 3, '13/18', 32, -1.4],
+  ['Lonnie Poole GC', 'Sep 23', 73, 1, '14/18', 30, -0.2],
+  ['Finley GC', 'Sep 20', 74, 2, '15/18', 28, -0.8],
+  ['Finley GC', 'Sep 13', 73, 1, '10/18', 31, 0.1],
+  ['Pinehurst No. 8', 'Sep 9', 72, 0, '11/18', 29, 0.6],
+  ['Finley GC', 'Sep 6', 72, 0, '12/18', 30, 0.5],
+  ['Finley GC', 'Aug 30', 73, 1, '13/18', 30, 0.2],
+] as const;
+
+/** Jonah's rounds as the sheet lists them (his kinds run newest first). */
+const JONAH_KINDS = ['practice', 'qualifier', 'practice', 'tournament', 'practice', 'practice', 'qualifier', 'practice', 'practice', 'qualifier'] as const;
+const JONAH_PICK_ROUNDS: ChPickRound[] = JONAH_ROUNDS.map(([course, date, score], i) => ({ id: `j${i}`, date: isoDay(date), kind: JONAH_KINDS[i] ?? null, course, holes: 18, score, player: null }));
+
+/** A season summary as the profile's window summary: every round is 18 holes, so the whole-round counts are the round counts. */
+const windowSeason = (s: ChPlayerSeason): ChWindowSeason => ({ ...s, effRounds: s.rounds, effSgRounds: s.sgRounds });
+
+export const PREVIEW_PLAYER: ChPlayerProfile = {
+  viewer: 'coach',
+  window: 'last10',
+  filter: filterFor('last10'),
+  filterOptions: optionsFrom(JONAH_PICK_ROUNDS),
+  id: 'jonah',
+  name: 'Jonah Okafor',
+  firstName: 'Jonah',
+  classYear: 'Sophomore',
+  gradYear: 2029,
+  hometown: 'Charlotte, NC',
+  status: 'active',
+  handicap: 3.9,
+  season: season(74.1, [72, 72, 73, 74, 75, 74, 75], -0.9, 21, 'slipping'),
+  win: windowSeason(season(74.1, [73, 72, 72, 73, 73, 74, 73, 75, 75, 74].slice(-7), -0.9, 10, 'slipping')),
+  teamAvg: 72.8,
+  tour: 'pga',
+  sgChange: { delta: -1.3, context: 'vs. previous 10' },
+  puttBands: [
+    { label: '0–3 ft', made: 57, attempts: 64, bench: null },
+    { label: '3–5 ft', made: 24, attempts: 38, bench: 90.5 },
+    { label: '5–10 ft', made: 20, attempts: 51, bench: 62.2 },
+    { label: '10–15 ft', made: 8, attempts: 40, bench: 35.7 },
+    { label: '15–25 ft', made: 5, attempts: 46, bench: 15.4 },
+    { label: '25+ ft', made: 1, attempts: 34, bench: 5.5 },
+  ],
+  extra: {
+    bests9: null,
+    nineRounds: 0,
+    bests: {
+      score: { value: 72, date: 'Sep 9', course: 'Pinehurst No. 8' },
+      toPar: { value: 0, date: 'Sep 9', course: 'Pinehurst No. 8' },
+      gir: { value: 83.3, date: 'Sep 23', course: 'Lonnie Poole GC' },
+      putts: { value: 28, date: 'Oct 12', course: 'Oakmont CC' },
+    },
+    series: {
+      score: [...JONAH_ROUNDS].reverse().map((r) => ({ label: r[1], value: r[2] })),
+      gir: [...JONAH_ROUNDS].reverse().map((r) => ({ label: r[1], value: Math.round((Number(r[4].split('/')[0]) / 18) * 1000) / 10 })),
+      fairway: [...JONAH_ROUNDS].reverse().map((r, i) => ({ label: r[1], value: [57, 64, 71, 50, 64, 57, 71, 64, 57, 64][i]! })),
+      putts: [...JONAH_ROUNDS].reverse().map((r) => ({ label: r[1], value: r[5] })),
+    },
+    compare: {
+      lastRounds: 10,
+      previousRounds: 10,
+      rows: [
+        { label: 'Scoring avg', last: 73.6, previous: 72.9, unit: '', digits: 1, lowerIsBetter: true },
+        { label: 'Greens in regulation', last: 47.2, previous: 52.8, unit: '%', digits: 1, lowerIsBetter: false },
+        { label: 'Fairways hit', last: 62.7, previous: 61.1, unit: '%', digits: 1, lowerIsBetter: false },
+        { label: 'Putts per round', last: 29.8, previous: 30.6, unit: '', digits: 1, lowerIsBetter: true },
+      ],
+    },
+    pressure: { gap: 0.8, pressureRounds: 4, practiceRounds: 6 },
+    opening: { delta: 0.3, rounds: 10 },
+    toughest: {
+      holes: [
+        { hole: 7, par: 4, avgToPar: 0.9, plays: 10, doublePlus: 3 },
+        { hole: 14, par: 4, avgToPar: 0.7, plays: 10, doublePlus: 2 },
+        { hole: 11, par: 3, avgToPar: 0.6, plays: 9, doublePlus: 1 },
+        { hole: 4, par: 5, avgToPar: 0.4, plays: 10, doublePlus: 1 },
+        { hole: 16, par: 4, avgToPar: 0.4, plays: 8, doublePlus: 1 },
+      ],
+      belowFloor: false,
+      minPlays: 3,
+    },
+    holesError: false,
+    approach: [
+      { label: '50-125 yd', value: 26, bench: 18, shots: 55, belowFloor: false, floor: 10, greenHitPct: 62 },
+      { label: '125-175 yd', value: 40, bench: 30, shots: 72, belowFloor: false, floor: 10, greenHitPct: 41 },
+      { label: '175+ yd', value: null, bench: 45, shots: 7, belowFloor: true, floor: 10, greenHitPct: null },
+    ],
+    approachError: false,
+    spray: {
+      driving: {
+        shots: 118,
+        avgForward: 258,
+        avgRemaining: 152,
+        playable: 92,
+        trouble: 18,
+        penalty: 8,
+        dominant: 'Center',
+        bands: [
+          { sector: 'long_left', label: 'Long Left', count: 0, pct: 0, avgForward: null, avgRemaining: null },
+          { sector: 'long', label: 'Long', count: 1, pct: 0.8, avgForward: 272, avgRemaining: 120 },
+          { sector: 'long_right', label: 'Long Right', count: 0, pct: 0, avgForward: null, avgRemaining: null },
+          { sector: 'left', label: 'Left', count: 24, pct: 20.3, avgForward: 251, avgRemaining: 158 },
+          { sector: 'center', label: 'Center', count: 71, pct: 60.2, avgForward: 262, avgRemaining: 148 },
+          { sector: 'right', label: 'Right', count: 20, pct: 16.9, avgForward: 249, avgRemaining: 160 },
+          { sector: 'short_left', label: 'Short Left', count: 1, pct: 0.8, avgForward: 210, avgRemaining: 190 },
+          { sector: 'short', label: 'Short', count: 1, pct: 0.8, avgForward: 204, avgRemaining: 196 },
+          { sector: 'short_right', label: 'Short Right', count: 0, pct: 0, avgForward: null, avgRemaining: null },
+        ],
+      },
+      approach: {
+        shots: 164,
+        avgForward: 141,
+        avgRemaining: 34,
+        playable: 120,
+        trouble: 38,
+        penalty: 6,
+        dominant: 'Center',
+        bands: [
+          { sector: 'long_left', label: 'Long Left', count: 4, pct: 2.4, avgForward: 150, avgRemaining: 22 },
+          { sector: 'long', label: 'Long', count: 9, pct: 5.5, avgForward: 149, avgRemaining: 24 },
+          { sector: 'long_right', label: 'Long Right', count: 5, pct: 3, avgForward: 152, avgRemaining: 25 },
+          { sector: 'left', label: 'Left', count: 13, pct: 7.9, avgForward: 139, avgRemaining: 27 },
+          { sector: 'center', label: 'Center', count: 77, pct: 47, avgForward: 140, avgRemaining: 29 },
+          { sector: 'right', label: 'Right', count: 14, pct: 8.5, avgForward: 141, avgRemaining: 28 },
+          { sector: 'short_left', label: 'Short Left', count: 10, pct: 6.1, avgForward: 137, avgRemaining: 35 },
+          { sector: 'short', label: 'Short', count: 24, pct: 14.6, avgForward: 138, avgRemaining: 33 },
+          { sector: 'short_right', label: 'Short Right', count: 8, pct: 4.9, avgForward: 140, avgRemaining: 34 },
+        ],
+      },
+    },
+    sprayError: false,
+    puttBandsNine: [
+      { label: '0–3 ft', made: 57, attempts: 64, bench: null },
+      { label: '3–5 ft', made: 24, attempts: 38, bench: 90.5 },
+      { label: '5–10 ft', made: 20, attempts: 51, bench: 62.2 },
+      { label: '10–15 ft', made: 8, attempts: 40, bench: 35.7 },
+      { label: '15–20 ft', made: 4, attempts: 33, bench: 15.4 },
+      { label: '20–25 ft', made: 1, attempts: 13, bench: 15.4 },
+      { label: '25–30 ft', made: 1, attempts: 16, bench: 5.5 },
+      { label: '30–35 ft', made: 0, attempts: 10, bench: 5.5 },
+      { label: '35+ ft', made: 0, attempts: 8, bench: 5.5 },
+    ],
+    puttsError: false,
+    truncated: false,
+  },
+  // The legs add up to the round's total: approach carries the difference.
+  rounds: JONAH_ROUNDS.map(([course, date, score, toPar, gir, putts, sg], i) => ({
+    id: `j${i}`,
+    course,
+    date,
+    holes: 18,
+    type: (['practice', 'qualifier', 'practice', 'tournament', 'practice', 'practice', 'qualifier', 'practice', 'practice', 'qualifier'] as const)[i] ?? null,
+    score,
+    toPar,
+    gir,
+    putts,
+    sg,
+    sgLegs: [0.2, Math.round((sg - 0.2) * 10) / 10, -0.1, 0.1] as [number, number, number, number],
+  })),
+  comparisons: [
+    { label: 'SG total', group: 'Strokes gained', you: -0.9, team: -0.5, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG off the tee', group: 'Strokes gained', you: 0.3, team: 0.4, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG approach', group: 'Strokes gained', you: -1.2, team: -0.7, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG around green', group: 'Strokes gained', you: -0.1, team: 0.1, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG putting', group: 'Strokes gained', you: 0.2, team: -0.3, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'Scoring avg', group: 'Scoring', you: 74.1, team: 72.8, bench: null, unit: '', digits: 1, lowerIsBetter: true },
+    { label: 'Par 3 scoring', group: 'Scoring', you: 3.3, team: null, bench: 3.0, unit: '', digits: 2, lowerIsBetter: true },
+    { label: 'Par 4 scoring', group: 'Scoring', you: 4.32, team: null, bench: 3.97, unit: '', digits: 2, lowerIsBetter: true },
+    { label: 'Par 5 scoring', group: 'Scoring', you: 4.93, team: null, bench: 4.55, unit: '', digits: 2, lowerIsBetter: true },
+    { label: 'Big numbers', group: 'Scoring', you: 6.7, team: 5.4, bench: 2, unit: '%', digits: 1, lowerIsBetter: true },
+    { label: 'Fairways hit', group: 'Driving', you: 63, team: 62, bench: null, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Greens in regulation', group: 'Approach', you: 60, team: 61, bench: 66, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Proximity 50–125 yd', group: 'Approach', you: 26, team: null, bench: 18, unit: ' ft', digits: 0, lowerIsBetter: true, floor: 'Needs 10 approaches from the range.' },
+    { label: 'Proximity 125–175 yd', group: 'Approach', you: 40, team: null, bench: 30, unit: ' ft', digits: 0, lowerIsBetter: true, floor: 'Needs 10 approaches from the range.' },
+    { label: 'Proximity 175+ yd', group: 'Approach', you: null, team: null, bench: 45, unit: ' ft', digits: 0, lowerIsBetter: true, floor: 'Needs 10 approaches from the range.' },
+    { label: 'Scrambling', group: 'Short game', you: 53, team: 52, bench: null, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Scrambling from the fairway', group: 'Short game', you: 56, team: null, bench: 65, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Scrambling from the rough', group: 'Short game', you: 36, team: null, bench: 58, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Sand saves', group: 'Short game', you: 37, team: 41, bench: 50, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Putts per round', group: 'Putting', you: 31.2, team: 30.4, bench: null, unit: '', digits: 1, lowerIsBetter: true },
+    { label: '3-putts per round', group: 'Putting', you: 0.8, team: 0.7, bench: null, unit: '', digits: 2, lowerIsBetter: true },
+    { label: 'Make 3–5 ft', group: 'Putting', you: 63, team: null, bench: 90.5, unit: '%', digits: 0, lowerIsBetter: false, floor: 'Needs 10 putts in the band.' },
+    { label: 'Make 5–10 ft', group: 'Putting', you: 39, team: null, bench: 62.2, unit: '%', digits: 0, lowerIsBetter: false, floor: 'Needs 10 putts in the band.' },
+    { label: 'Make 10–15 ft', group: 'Putting', you: 20, team: null, bench: 35.7, unit: '%', digits: 0, lowerIsBetter: false, floor: 'Needs 10 putts in the band.' },
+    { label: 'Make 15–25 ft', group: 'Putting', you: 11, team: null, bench: 15.4, unit: '%', digits: 0, lowerIsBetter: false, floor: 'Needs 10 putts in the band.' },
+    { label: 'Make 25+ ft', group: 'Putting', you: 3, team: null, bench: 5.5, unit: '%', digits: 0, lowerIsBetter: false, floor: 'Needs 10 putts in the band.' },
+    { label: 'Penalty strokes', group: 'Course management', you: 0.6, team: 0.5, bench: 0.3, unit: '', digits: 1, lowerIsBetter: true },
+    { label: 'Pressure gap', group: 'Pressure', you: 0.8, team: null, bench: 0.5, unit: '', digits: 1, lowerIsBetter: true, signed: true, floor: 'Needs 3 tournament or qualifier rounds and 3 practice rounds.' },
+    { label: 'Opening hole', group: 'Pressure', you: 0.3, team: null, bench: 0.1, unit: '', digits: 1, lowerIsBetter: true, signed: true, floor: 'Needs 5 rounds scored hole by hole.' },
+  ],
+  stats: jonahStats(),
+  statsError: false,
+  // The Tour's averages (golf_pga_standards, tour = pga).
+  bench: {
+    gir_pct: 66,
+    penalty_rate_per_round: 0.3,
+    big_number_rate: 2,
+    scoring_par_3: 3.0,
+    scoring_par_4: 3.97,
+    scoring_par_5: 4.55,
+    approach_proximity_50_125ft: 18,
+    approach_proximity_125_175ft: 30,
+    approach_proximity_175_plus_ft: 45,
+    scrambling_pct_fairway: 65,
+    scrambling_pct_rough: 58,
+    scrambling_pct_sand: 50,
+    putts_made_3_5ft_pct: 90.5,
+    putts_made_5_10ft_pct: 62.2,
+    putts_made_10_15ft_pct: 35.7,
+    putts_made_15_25ft_pct: 15.4,
+    putts_made_25_plus_ft_pct: 5.5,
+  },
+  focusAreas: [
+    { id: 'f1', title: 'Approach 125–150 yds', baseline: 38, current: 35, target: 30, metric: 'proximity', status: 'active' },
+    { id: 'f2', title: 'Short putts', baseline: 55, current: 62, target: 75, metric: 'make_3_5', status: 'active' },
+  ],
+  goals: [{ id: 'g1', title: 'Break 70 in competition', state: 'active', current: 72, target: 69, baseline: 74 }],
+  devError: false,
+  nav: { index: 4, total: 7, prev: 'ava', next: 'eli' },
+  roundsError: false,
+};
+
+export const PREVIEW_PLAYER_EARLY: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  id: 'luca',
+  name: 'Luca Ferraro',
+  firstName: 'Luca',
+  classYear: 'Freshman',
+  gradYear: 2030,
+  hometown: 'Bologna, IT',
+  handicap: 6.0,
+  season: { ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
+  win: windowSeason({ ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } }),
+  rounds: PREVIEW_PLAYER.rounds.slice(0, 2),
+  // No strokes gained yet: no change to show, and no figures in the comparison table.
+  sgChange: { delta: null, context: '' },
+  puttBands: null,
+  extra: {
+    ...PREVIEW_PLAYER.extra,
+    series: { score: PREVIEW_PLAYER.extra.series.score.slice(-2), gir: PREVIEW_PLAYER.extra.series.gir.slice(-2), fairway: PREVIEW_PLAYER.extra.series.fairway.slice(-2), putts: PREVIEW_PLAYER.extra.series.putts.slice(-2) },
+    compare: null,
+    pressure: { gap: null, pressureRounds: 0, practiceRounds: 2 },
+    opening: { delta: null, rounds: 2 },
+    toughest: { holes: [], belowFloor: true, minPlays: 3 },
+    approach: null,
+    spray: null,
+    puttBandsNine: null,
+  },
+  comparisons: PREVIEW_PLAYER.comparisons.map((c) => (c.sg ? { ...c, you: null, team: null } : c)),
+  stats: null,
+  focusAreas: [],
+  goals: [],
+  nav: { index: 7, total: 7, prev: 'priya', next: 'theo' },
+};
+
+/** Team stats under a filter (tournaments, September): twelve of the team's rounds. */
+const TEAM_FILTER: ChFilter = { ...filterFor('last10'), types: ['tournament'], from: '2026-09-01', to: '2026-09-29' };
+export const PREVIEW_TEAM_FILTERED: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: TEAM_FILTER, roundCount: 12 };
+/** A filter that matches nothing: no team figure is shown, and Clear filters is the way back. */
+export const PREVIEW_TEAM_NOMATCH: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  filter: { ...filterFor('season'), courses: ['Pine Needles'], types: ['qualifier'] },
+  roundCount: 0,
+  grid: [],
+  players: [],
+  putting: null,
+  bests: [],
+};
+/** Two rounds match: the early-read note, and the figures still draw. */
+export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };
+
+/** Both lengths: the per-18 note under the count line, and the team's rounds counted in whole rounds (a few are 9 holes). */
+export const PREVIEW_TEAM_NINES: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), holes: 'all' }, roundsEffective: 60.5 };
+
+/** Jonah's window with a 9-hole round in it (Both): its score drawn per 18 holes, the round row named, and the 9-hole best listed on its own. */
+export const PREVIEW_PLAYER_NINES: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  filter: { ...filterFor('last10'), holes: 'all' },
+  win: { ...PREVIEW_PLAYER.win, effRounds: 9.5, effSgRounds: 9.5 },
+  rounds: PREVIEW_PLAYER.rounds.map((r, i) => (i === 1 ? { ...r, holes: 9, score: 37, toPar: 1 } : r)),
+  extra: { ...PREVIEW_PLAYER.extra, nineRounds: 1, bests9: { score: { value: 37, date: PREVIEW_PLAYER.rounds[1]!.date, course: PREVIEW_PLAYER.rounds[1]!.course }, toPar: { value: 1, date: PREVIEW_PLAYER.rounds[1]!.date, course: PREVIEW_PLAYER.rounds[1]!.course }, gir: null, putts: null } },
+};
+
+/** Jonah's qualifier rounds: three of his ten. */
+export const PREVIEW_PLAYER_FILTERED: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  filter: { ...filterFor('last10'), types: ['qualifier'] },
+  win: { ...PREVIEW_PLAYER.win, rounds: 3, sgRounds: 3, effRounds: 3, effSgRounds: 3 },
+  rounds: PREVIEW_PLAYER.rounds.filter((r) => r.type === 'qualifier'),
+};
+/** A filter that matches none of Jonah's rounds. */
+export const PREVIEW_PLAYER_NOMATCH: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  filter: { ...filterFor('season'), from: '2026-03-01', to: '2026-03-31' },
+  win: { ...PREVIEW_PLAYER.win, rounds: 0, sgRounds: 0, effRounds: 0, effSgRounds: 0, avg: null, sgPerRound: null },
+  rounds: [],
+  stats: null,
+};

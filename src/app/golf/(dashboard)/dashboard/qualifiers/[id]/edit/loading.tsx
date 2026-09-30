@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { QualifierFormSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -50,7 +52,7 @@ function FieldSkeleton({
  * Course & rules FormSections (Rounds + Spots available, not the create
  * flow's Travel-squad/Players sections), and the Cancel/Save action row.
  */
-export default function EditQualifierLoading() {
+function LegacyEditQualifierLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -104,4 +106,9 @@ export default function EditQualifierLoading() {
       </div>
     </div>
   );
+}
+
+/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+export default function EditQualifierLoading() {
+  return <ClubhouseSwitch clubhouse={<QualifierFormSkeleton />} fallback={<LegacyEditQualifierLoading />} />;
 }

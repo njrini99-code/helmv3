@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { cn } from '@/lib/utils';
@@ -30,7 +32,7 @@ const SKELETON_ROW_COUNT = 6;
  * 940px exactly like MatrixBoard's own columns (MatrixBoard.tsx:29,
  * `HIDE_ON_MOBILE`).
  */
-export default function TeamStatsLoading() {
+function LegacyTeamStatsLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <div aria-busy="true" className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
@@ -170,4 +172,9 @@ export default function TeamStatsLoading() {
       </div>
     </div>
   );
+}
+
+/** Inside Clubhouse the old Team stats address shows the Clubhouse stats skeleton, the same page /stats renders. */
+export default function TeamStatsLoading() {
+  return <ClubhouseSwitch clubhouse={<StatsSkeleton />} fallback={<LegacyTeamStatsLoading />} />;
 }

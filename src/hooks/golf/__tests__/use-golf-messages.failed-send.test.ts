@@ -37,7 +37,7 @@ const code = source
   })
   .join('\n');
 
-describe('use-golf-messages — a failed send retains the message (G-19)', () => {
+describe('use-golf-messages (P007 71301) — a failed send retains the message (G-19)', () => {
   it('no longer filters the optimistic row out on failure', () => {
     // The exact broken expression, byte for byte — in code, not in prose.
     expect(code).not.toContain('prev.filter(m => m.id !== optimisticId)');

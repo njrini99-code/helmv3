@@ -430,14 +430,12 @@ when the column is empty. That is why `GroupMember` is its own type rather than
 `GolfConversationParticipant`, whose `subtitle` is required and whose DM path
 fills the gap with `'Golf Coach'` / `'Golf Player'`.
 
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team, golf_active_team -->
+<!-- schema-drift-absent: golf_group_membership_management, golf_active_team -->
 <!--
-  `golf_user_on_conversation_team` is a real function, created by
-  20260907160000 — which is written and NOT applied, so it is correctly absent
-  from the production schema snapshot `db:types` generates. Delete this name
-  from the declaration above the moment the owner applies the migration and
-  re-runs `npm run db:types`; leaving it here would exempt a real object from
-  the drift check.
+  `golf_user_on_conversation_team` used to be declared here while
+  20260907160000 was unapplied. It is applied (verified live 2026-09-29, see
+  "Group membership management" below) and it is in `src/lib/types/database.ts`,
+  so it is a real object again and is no longer exempt from the drift check.
   `golf_group_membership_management` is not a database object at all — it is
   the pgTAP suite's own filename, which happens to start with `golf_`:
   `supabase/tests/rls/golf_group_membership_management.sql`.
@@ -460,8 +458,17 @@ against live production `pg_policies` before any code was written:
 That clause is
 `20260819070000_conversation_creator_cannot_inject_third_party.sql`, added
 after a **verified production attack**. So "Leave group" was the only membership
-mutation the product could perform, and it still is until
-`20260907160000_golf_team_chat_membership_management.sql` is APPLIED.
+mutation the product could perform until
+`20260907160000_golf_team_chat_membership_management.sql` was applied.
+
+**It is applied.** A read-only check of production on 2026-09-29 (metadata only,
+no rows) found: version `20260907160000` recorded in
+`supabase_migrations.schema_migrations`; `public.golf_user_on_conversation_team`
+present in `pg_proc`; the `golf_conversation_participants` INSERT policy's
+`with_check` calling it; and a DELETE policy branch bounded on `is_team_chat`
+and `created_by`. `src/lib/types/database.ts` carries the function too. Adding
+members (`addGolfGroupMember`, `getGolfGroupAddCandidates`) therefore works in
+production, and the Clubhouse view uses it (D-45, D-47; see "Clubhouse view").
 
 **The new migration is a scoped allowance, not a reversal.** The 2026-08-19
 branch authorized an insert on the sole basis that the actor created the
@@ -746,3 +753,56 @@ conversation-membership boundary when roster-scoped profile reads cannot
 resolve them. This does not broaden customer profile RLS, return email
 addresses, or expose a general profile directory. A truly missing profile
 keeps a generic member label.
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, `/golf/dashboard/messages` is a server page that renders the Clubhouse Messages view
+(`src/clubhouse/routes/messages.tsx`) for coaches and players; otherwise it renders `FairwayMessages` as before.
+The Clubhouse view reuses `useGolfConversations`, `useGolfMessages`, `useMessageReactions` and
+`useMessageAttachments` unchanged, plus `createGolfConversation`, `createGolfTeamBroadcast` (coach groups),
+`getGolfConversationParticipantIdentities`, `getGolfMessageAttachments`, `leaveGolfGroup`, `addGolfGroupMember`,
+`getGolfGroupAddCandidates` and `getGolfConversationFiles`. The server loads only
+the directory of who may be messaged (org coaches and active team players) and the team timezone. Players start
+direct threads only, as in the Fairway sheet. Reactions render as icons (stored values unchanged).
+Checklist and decisions: `docs/clubhouse/screens/messages.md`, `docs/clubhouse/PROGRESS.md` (D-13 to D-15).
+
+Below 820px the same container renders a phone stack (`src/clubhouse/screens/messages/MessagesPhone.tsx`, spec
+`docs/clubhouse/phone/messages.md`, D-44 to D-49): inbox, thread, details, new message. It adds no hook and one
+read action.
+
+Contract changes on 2026-09-29 (desktop and phone alike):
+
+- **New groups include coaches (D-45).** A coach names the group first (CH-7104), then the container calls
+  `createGolfTeamBroadcast` with the players, and `addGolfGroupMember` once for each chosen coach. The broadcast
+  stays players-only on the server. A coach who can't be added leaves the group created and says so: "Group
+  created, but Dan wasn't added" + "Add them from Details." (CH-7019). Whole team counts players and coaches.
+- **The creator adds members (D-47).** Details offers Add only when `created_by` is the viewer, and the sheet lists
+  `getGolfGroupAddCandidates`. Both actions go through `loadGolfGroupIOwn` in `src/app/actions/messages.ts`, which
+  refuses a DM ("Only team group chats can change members") and anyone but the creator ("Only the group creator
+  can change members") before the insert, which RLS bounds again (the three axes above). A failed add is CH-7018;
+  a duplicate insert (`23505`) counts as done. Removing someone else is not offered in Clubhouse.
+
+`getGolfConversationFiles(conversationId)` (D-48) lists a conversation's shared files for Details. It is HELD
+(D-61, `docs/clubhouse/held/features/conversation-files.md`): unless `isClubhouseFor(role)` is true for the
+caller it returns "Not available" before any read. Contract otherwise: the
+caller must be a row in `golf_conversation_participants` for that conversation, checked before any attachment is
+read (a stranger and a non-existent id both get "Not a participant"); the read runs on the RLS client; files on
+deleted messages are filtered in the query, newest first, capped at 100; it returns metadata only (id, message id,
+name, MIME type, size, sent at, sender), never a storage path or signed URL. Opening a file still goes through
+`getGolfMessageAttachments` for that one message. Test:
+`src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts` (7 cases: the HELD gate, non-participant and
+signed-out refusals, metadata only, the deleted-message filter in the query, one conversation per call, a failed
+read logged). A security review (2026-09-29) found no Critical or High issue.
+
+**Queued: the attachment migration (owner, 2026-09-29).** The same review found two gaps that predate the
+Clubhouse work, both confirmed live on 2026-09-29: the `golf_message_attachments` SELECT policy has no
+`is_deleted` clause, so `getGolfMessageAttachments` still returns a storage path and a signed URL for a file on a
+deleted message; and `anon` holds 7 table grants on `golf_message_attachments` (not exploitable today: every
+policy is `TO authenticated`). The owner's decision: after Clubhouse, a forward-only migration revokes the `anon`
+grants and excludes deleted messages from the SELECT policy. It is not written or applied yet; the owner decides
+on apply (`docs/clubhouse/held/data/message-attachments-hardening.md`, `docs/clubhouse/PROGRESS.md` Data gaps).
+
+**Foundation V2 classification (D-61, 2026-09-29).** D-45 (coaches in new groups) and D-47 (the creator adds
+members) are EXISTING: they call `createGolfTeamBroadcast`, `addGolfGroupMember` and `getGolfGroupAddCandidates`,
+which predate Clubhouse (79f6e1a07) and which Fairway's `GroupDetailsSheet` already uses; no server action or
+query changed, and the policies they rest on are applied in production. D-48 is HELD-FEATURE, gated as above.

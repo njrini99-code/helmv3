@@ -4982,6 +4982,21 @@ ALTER FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_pl
 
 COMMENT ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) IS 'W13 / OD-01 (2026-09-24). The DB copy of isCountableRound (src/lib/golf/round-countable.ts). Keep the two in step; supabase/tests/rls/golf_round_is_countable.sql pins the shared cases.';
 
+CREATE OR REPLACE FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") RETURNS TABLE("player_id" "uuid", "coach_reasoning" "text")
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT s.player_id, s.coach_reasoning
+  FROM public.golf_qualifier_selections s
+  JOIN public.golf_qualifiers q ON q.id = s.qualifier_id
+  WHERE s.qualifier_id = p_qualifier_id
+    AND public.is_team_coach(q.team_id);
+$$;
+
+ALTER FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") IS 'D-35: a qualifier''s coach''s-pick reasons, for a coach of its team only (is_team_coach). Players get no rows. Signed-in users cannot select golf_qualifier_selections.coach_reasoning directly.';
+
 CREATE OR REPLACE FUNCTION "public"."golf_recruit_documents_assert_same_team"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
@@ -6783,7 +6798,7 @@ COMMENT ON FUNCTION "public"."is_super_admin"() IS 'Helm Bridge gate: true iff a
 
 CREATE OR REPLACE FUNCTION "public"."is_team_coach"("team_uuid" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   RETURN EXISTS (
@@ -6802,7 +6817,7 @@ COMMENT ON FUNCTION "public"."is_team_coach"("team_uuid" "uuid") IS 'v3 RLS help
 
 CREATE OR REPLACE FUNCTION "public"."is_team_player"("team_uuid" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   RETURN EXISTS (

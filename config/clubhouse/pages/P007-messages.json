@@ -1,0 +1,390 @@
+{
+  "id": "P007",
+  "name": "Messages",
+  "slug": "messages",
+  "bridgeNamespace": 7,
+  "routes": [
+    "/golf/dashboard/messages"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "team_communications"
+  ],
+  "progressRow": "Messages",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "complete",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Messages.html",
+      "design/handoff/Messages.html",
+      "design/handoff/messages.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Messages - Mobile.html",
+      "design/handoff/mobile/Messages Mobile.html",
+      "design/handoff/m-msg.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/messages",
+    "loader": "src/clubhouse/data/messages.ts",
+    "route": "src/clubhouse/routes/messages.tsx",
+    "styles": "src/clubhouse/styles/messages.css",
+    "tests": [
+      "src/clubhouse/__tests__/messages.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/messages.md",
+  "checklist": "docs/clubhouse/screens/messages.md",
+  "phoneSpec": "docs/clubhouse/phone/messages.md",
+  "actions": [
+    {
+      "id": "ACT-P007-SEND-MESSAGE",
+      "label": "Send a message",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#Composer",
+      "handler": "api.send",
+      "service": "src/hooks/golf/use-golf-messages.ts#sendMessage",
+      "data": [
+        "golf_messages"
+      ],
+      "bridge": {
+        "success": 70901,
+        "failure": 70603,
+        "unconfirmed": 70701,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-SEND-ATTACHMENT",
+      "label": "Send files with a message",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#Composer",
+      "handler": "api.sendFiles",
+      "service": "src/hooks/golf/use-message-attachments.ts#sendMessageWithAttachments",
+      "data": [
+        "golf_messages",
+        "golf_message_attachments",
+        "storage golf-attachments"
+      ],
+      "bridge": {
+        "validation": 70501,
+        "success": 70901,
+        "failure": 70604,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-RETRY-SEND",
+      "label": "Retry a refused message",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#Bubble",
+      "handler": "api.retry",
+      "service": "src/hooks/golf/use-golf-messages.ts#retryMessage",
+      "data": [
+        "golf_messages"
+      ],
+      "bridge": {
+        "recovery": 71401,
+        "failure": 70613
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-EDIT-MESSAGE",
+      "label": "Edit your message",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#EditMessageModal",
+      "handler": "api.edit",
+      "service": "src/app/golf/actions/messages.ts#updateGolfMessage",
+      "data": [
+        "golf_messages"
+      ],
+      "bridge": {
+        "success": 70902,
+        "failure": 70605,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-DELETE-MESSAGE",
+      "label": "Delete your message",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#DeleteMessageModal",
+      "handler": "api.remove",
+      "service": "src/app/golf/actions/messages.ts#deleteGolfMessage",
+      "data": [
+        "golf_messages"
+      ],
+      "bridge": {
+        "confirm": 71101,
+        "success": 70902,
+        "failure": 70606,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-REACT",
+      "label": "React to a message",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#Bubble",
+      "handler": "api.react",
+      "service": "src/hooks/golf/use-message-reactions.ts#setReaction",
+      "data": [
+        "golf_message_reactions"
+      ],
+      "bridge": {
+        "failure": 70607,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-COPY-MESSAGE",
+      "label": "Copy a message (phone)",
+      "component": "src/clubhouse/screens/messages/MessagesPhone.tsx#PhoneThread",
+      "handler": "copy",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "failure": 70615
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-START-DIRECT",
+      "label": "Start a direct thread",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#NewMessage",
+      "handler": "api.startDirect",
+      "service": "src/app/golf/actions/messages.ts#createGolfConversation",
+      "data": [
+        "golf_conversations",
+        "golf_conversation_participants"
+      ],
+      "bridge": {
+        "failure": 70601,
+        "permission": 70801,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-CREATE-GROUP",
+      "label": "Create a group",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#NewMessage",
+      "handler": "api.createGroup",
+      "service": "src/app/golf/actions/messages.ts#createGolfTeamBroadcast",
+      "data": [
+        "golf_conversations",
+        "golf_conversation_participants"
+      ],
+      "bridge": {
+        "validation": 70502,
+        "success": 70902,
+        "failure": 70602,
+        "partial": 71001,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-ADD-MEMBER",
+      "label": "Add someone to a group you created",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#AddMembersModal",
+      "handler": "api.addMember",
+      "service": "src/app/golf/actions/messages.ts#addGolfGroupMember",
+      "data": [
+        "golf_conversation_participants"
+      ],
+      "bridge": {
+        "success": 70902,
+        "failure": 70614,
+        "empty": 70407,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-LEAVE-GROUP",
+      "label": "Leave a group",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#Details",
+      "handler": "api.leave",
+      "service": "src/app/golf/actions/messages.ts#leaveGolfGroup",
+      "data": [
+        "golf_conversation_participants"
+      ],
+      "bridge": {
+        "confirm": 71102,
+        "success": 70902,
+        "failure": 70608,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-MUTE",
+      "label": "Mute or unmute a conversation",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#Details",
+      "handler": "api.setMute",
+      "service": "src/app/golf/actions/message-mute.ts#setGolfConversationMute",
+      "data": [
+        "golf_conversation_participants"
+      ],
+      "bridge": {
+        "success": 70902,
+        "failure": 70609,
+        "loadFailed": 70624,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-SEARCH",
+      "label": "Search messages",
+      "component": "src/clubhouse/screens/messages/MessagesView.tsx#MessagesDesktop",
+      "handler": "api.searchMessages",
+      "service": "src/app/golf/actions/messages.ts#searchGolfMessages",
+      "data": [
+        "golf_messages"
+      ],
+      "bridge": {
+        "loading": 70204,
+        "empty": 70403,
+        "failure": 70619
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-OPEN-FILE",
+      "label": "Open a shared file",
+      "component": "src/clubhouse/screens/messages/MessagesPhone.tsx#FilesPanel",
+      "handler": "open",
+      "service": "src/app/golf/actions/message-attachments.ts#getGolfMessageAttachments",
+      "data": [
+        "golf_message_attachments",
+        "storage golf-attachments"
+      ],
+      "bridge": {
+        "failure": 70616
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-LIST-FILES",
+      "label": "List a conversation's files (held, D-61)",
+      "component": "src/clubhouse/screens/messages/MessagesPhone.tsx#FilesPanel",
+      "handler": "api.files",
+      "service": "src/app/golf/actions/message-attachments.ts#getGolfConversationFiles",
+      "data": [
+        "golf_message_attachments",
+        "golf_messages"
+      ],
+      "bridge": {
+        "loading": 70209,
+        "empty": 70406,
+        "failure": 70630,
+        "held": 72302
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx",
+        "src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P007-ACKNOWLEDGE",
+      "label": "Acknowledge an announcement (player)",
+      "component": "src/clubhouse/screens/messages/announcements.tsx",
+      "handler": "api.acknowledge",
+      "service": "src/app/golf/actions/communication.ts#acknowledgeAnnouncement",
+      "data": [
+        "golf_announcement_acknowledgements"
+      ],
+      "bridge": {
+        "success": 70902,
+        "failure": 70610,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-COMPLETE-TASK",
+      "label": "Mark an announcement task done (player)",
+      "component": "src/clubhouse/screens/messages/announcements.tsx",
+      "handler": "api.completeTask",
+      "service": "src/app/golf/actions/announcements.ts#completeAnnouncementTask",
+      "data": [
+        "golf_task_assignments"
+      ],
+      "bridge": {
+        "success": 70902,
+        "failure": 70611,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P007-POST-ANNOUNCEMENT",
+      "label": "Post an announcement (coach)",
+      "component": "src/clubhouse/screens/messages/announcements.tsx",
+      "handler": "api.createAnnouncement",
+      "service": "src/app/golf/actions/announcements.ts#createEnrichedAnnouncement",
+      "data": [
+        "golf_announcements"
+      ],
+      "bridge": {
+        "validation": 70505,
+        "success": 70902,
+        "failure": 70612,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/messages.test.tsx"
+      ]
+    }
+  ],
+  "held": [
+    "docs/clubhouse/held/features/conversation-files.md",
+    "docs/clubhouse/held/data/message-attachments-hardening.md"
+  ]
+}

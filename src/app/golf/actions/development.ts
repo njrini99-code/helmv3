@@ -860,7 +860,10 @@ export async function updateFocusArea(id: string, data: UpdateFocusAreaData): Pr
 
 /**
  * Delete a focus area
- * Only the coach who created it can delete focus areas
+ * Any coach staffed on a team the player is on can delete it (Q-86), as
+ * `golf_player_focus_areas_delete_coach` allows. It used to delete with
+ * `.eq('coach_id', own)`: a co-staff coach matched no row, PostgREST returned
+ * error:null, and the coach was told "Focus area deleted" while it stayed.
  */
 async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
@@ -870,27 +873,52 @@ async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult>
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Verify user is a coach
-  const { data: coach, error: coachError } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
+  // Whose focus area is it? Authorisation is by the player it belongs to, not
+  // by who created it.
+  const { data: focusArea, error: focusAreaError } = await supabase
+    .from('golf_player_focus_areas')
+    .select('player_id')
+    .eq('id', id)
+    .maybeSingle();
 
-  if (coachError || !coach) {
-    return { success: false, error: 'Not authorized to delete focus areas' };
+  if (focusAreaError) {
+    await logServerError(
+      `Failed to read focus area before delete: ${describeError(focusAreaError)}`,
+      { action: 'development.deleteFocusArea' },
+    );
+    return { success: false, error: "Couldn't load this focus area. Please try again." };
   }
 
-  // Only delete if this coach owns the focus area
-  const { error } = await supabase
+  if (!focusArea?.player_id) {
+    return { success: false, error: 'Focus area not found' };
+  }
+
+  // Coach-only: a coach staffed on a team this player is on. A player reaches
+  // `reason: 'self'` for their own area and is refused: they can decline a
+  // proposal, not delete the coach's plan.
+  const access = await verifyPlayerAccess(focusArea.player_id, user.id, supabase);
+  if (access.reason === 'unavailable') {
+    return { success: false, error: "Couldn't check your access right now. Please try again." };
+  }
+  if (!access.allowed || access.reason !== 'coach') {
+    return { success: false, error: 'Not authorized to delete this focus area' };
+  }
+
+  // Select the deleted row back: a DELETE matching no row (changed under us, or
+  // filtered by row-level security) returns error:null and must not read as success.
+  const { data: deleted, error } = await supabase
     .from('golf_player_focus_areas')
     .delete()
     .eq('id', id)
-    .eq('coach_id', coach.id);
+    .select('id');
 
   if (error) {
     await logServerError(`Failed to delete focus area: ${describeError(error)}`, { action: 'development.deleteFocusArea' });
     return { success: false, error: 'Failed to delete focus area. Please try again.' };
+  }
+
+  if (!deleted || deleted.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
   }
 
   revalidatePath('/golf/dashboard/development');

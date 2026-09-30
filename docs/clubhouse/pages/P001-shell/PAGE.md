@@ -1,0 +1,110 @@
+# P001 — Shell
+
+The frame every Clubhouse page sits in. It is not a page anyone opens, and it has no route of its
+own. Every page inherits its contracts.
+
+## Identity
+
+```text
+Page ID:            P001
+Page Name:          Shell
+Route:              none (wraps every /golf/dashboard route for which isClubhouseFor is true)
+Bridge Namespace:   1 (Bridge IDs 1ccii, D-68; catalog codes CH-1xxx)
+Roles:              coach, player
+Implementation Root: src/clubhouse/shell
+Manifest:           config/clubhouse/pages/P001-shell.json
+```
+
+## Purpose
+
+### Primary user
+
+Anyone on a Clubhouse page: a coach running the program, or a player.
+
+### Job to be done
+
+Get to the right page, see what's new, and always know whether something worked, didn't, or
+couldn't be tried because the device is offline.
+
+### Primary action
+
+Go to a page: the sidebar on a wide screen, and on a phone the tab bar and More.
+
+### Secondary actions
+
+Open the bell, filter it, open a notification, mark all read, open Settings, skip to content, and
+Try again or Reload on a crashed page.
+
+### Information hierarchy
+
+1. The page itself: the canvas takes the width.
+2. Where you are: the current page is marked in the navigation, the breadcrumb in the top bar, and
+   the title on the phone.
+3. What's new: the Messages unread count, the Roster join-request badge (coach), and the bell.
+4. What's next: the sidebar's next-event card, with who has confirmed.
+
+### User should notice first
+
+The page they came for. The frame never competes with it.
+
+### User should never have to think about
+
+Whether a save went through (every save says so, or says what failed and offers Retry), whether
+they are offline (the banner says so, and nothing is sent), or which screens are finished (an
+unfinished one says so and offers a way back).
+
+### Success looks like
+
+A coach moves between Home, Roster, Calendar and Messages without a lost click, and every failure
+they meet names itself and its way out.
+
+## Semantic features
+
+Canonical IDs from `memory/registry.yml`:
+
+```text
+- ios_native_shell
+- team_communications (the bell and the Messages badge)
+```
+
+## Design authority
+
+```text
+Package:          design/handoff/ (v2; VERSIONS.md). v1 files kept where records cite them.
+Desktop reference: design/handoff/sidebar.css, depth.css, gh-nav.js, gh-states.jsx, gh-polish.css
+Phone spec:       docs/clubhouse/phone/foundation.md (approved), from design/handoff/m-shell.jsx,
+                  m.css and mobile/m-shell.jsx
+Status:           approved
+```
+
+## Related pages
+
+### Enters from
+
+Sign-in, which lands on Home, and every deep link into `/golf/dashboard`.
+
+### Exits to
+
+Every page: the navigation (D-66), the bell's notification links (followed only inside GolfHelm),
+and Settings.
+
+## Ownership
+
+```text
+Design:          the owner (Claude Design)
+Implementation:  src/clubhouse/shell, src/clubhouse/ui (toasts, notices), src/clubhouse/lib (useAction, track, motion, haptics)
+Data:            golf_events and golf_event_attendance (next-event card), golf_team_join_requests (Roster
+                 badge), golf_team_settings (timezone), the unified notifications feed
+```
+
+## Current status
+
+```text
+Design:         approved
+Implementation: in_progress (desktop and phone built; gates in PROGRESS.md, row "Foundation")
+Contract:       complete (CONTRACT.md: all 25 categories answered)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
+Data:           existing
+Verification:   partial (VERIFY.md)
+Docs:           current
+```
