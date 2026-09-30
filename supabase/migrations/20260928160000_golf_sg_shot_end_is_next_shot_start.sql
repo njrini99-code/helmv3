@@ -29,6 +29,9 @@
 -- ROLLBACK: re-apply the previous body (pg_get_functiondef captured
 -- 2026-09-28; identical to the body below except the two CASE expressions
 -- and the LATERAL join).
+--
+-- VERIFY: for a completed round, SUM(strokes_gained) over its shots equals
+-- expected(first shot of each hole) - strokes, within rounding.
 
 CREATE OR REPLACE FUNCTION public.recalculate_round_strokes_gained(
     p_round_id uuid
