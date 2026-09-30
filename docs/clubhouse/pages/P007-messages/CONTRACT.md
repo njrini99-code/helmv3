@@ -35,7 +35,7 @@ Route skeleton (70201) in Messages' own shape, plus a skeleton for every section
 | 70206 | CH-7406 | `AN_ANNOUNCEMENTS_DETAILS_ARE_LOADING` | An announcement's details are loading |
 | 70207 | CH-7407 | `THE_MUTE_SETTING_IS_LOADING` | The mute setting is loading |
 | 70208 | CH-7408 | `A_MESSAGES_ATTACHMENTS_ARE_LOADING` | A message's attachments are loading |
-| 70209 | CH-7409 | `THE_SHARED_FILES_ARE_LOADING` | The shared files are loading (phone Details) |
+| 70209 | CH-7409 | `THE_SHARED_FILES_ARE_LOADING` | The shared files are loading (Details) |
 | 70210 | CH-7410 | `THE_ADD_SHEETS_LIST_IS_LOADING` | The Add sheet's list is loading |
 
 From the shell (P001): 10201 CH-1401.
@@ -63,7 +63,7 @@ First-run (70401, no conversations) and filtered (70402 to 70404) are distinct, 
 | 70403 | CH-7303 | `NO_MESSAGE_MENTIONS_THE_SEARCH` | No message mentions the search |
 | 70404 | CH-7304 | `A_THREAD_WITH_NO_MESSAGES` | A thread with no messages |
 | 70405 | CH-7305 | `NOTHING_OPEN` | Nothing open |
-| 70406 | CH-7306 | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | Nothing has been shared in the conversation (phone Details) |
+| 70406 | CH-7306 | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | Nothing has been shared in the conversation (Details) |
 | 70407 | CH-7307 | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | `SIGNED_IN_WITH_NO_TEAM` | Signed in with no team (coach or player) |
 | 70409 | CH-7309 | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | Nothing at all yet: no conversation and no announcement (D-71) |
@@ -105,7 +105,7 @@ Every change has its own toast (70601 to 70616) naming what failed and what to d
 | 70613 | CH-7016 | `A_MESSAGE_IS_REFUSED` | A message is refused |
 | 70614 | CH-7018 | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
 | 70615 | CH-7020 | `COPYING_A_MESSAGE_FAILS` | Copying a message fails (phone, from the long-press sheet) |
-| 70616 | CH-7021 | `A_SHARED_FILE_WONT_OPEN` | A shared file won't open (phone Details › Files) |
+| 70616 | CH-7021 | `A_SHARED_FILE_WONT_OPEN` | A shared file won't open (Details › Files) |
 | 70617 | CH-7201 | `CONVERSATIONS_DONT_LOAD` | Conversations don't load |
 | 70618 | CH-7202 | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | A conversation's messages don't load |
 | 70619 | CH-7203 | `MESSAGE_SEARCH_DOESNT_LOAD` | Message search doesn't load |
@@ -119,7 +119,7 @@ Every change has its own toast (70601 to 70616) naming what failed and what to d
 | 70627 | CH-7211 | `AN_ANNOUNCEMENT_CRASHES` | An announcement crashes |
 | 70628 | CH-7212 | `THE_THREAD_CRASHES` | The thread crashes |
 | 70629 | CH-7213 | `DETAILS_CRASH` | Details crash |
-| 70630 | CH-7214 | `THE_SHARED_FILES_DONT_LOAD` | The shared files don't load (phone Details) |
+| 70630 | CH-7214 | `THE_SHARED_FILES_DONT_LOAD` | The shared files don't load (Details) |
 | 70631 | CH-7215 | `THE_ADD_SHEETS_TEAM_LIST_DOESNT_LOAD` | The Add sheet's team list doesn't load |
 
 ## 07 — Network / offline

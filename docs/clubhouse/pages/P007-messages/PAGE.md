@@ -86,7 +86,8 @@ The sidebar and the More sheet (D-66), the bell (a message notification), Home's
 
 ### Exits to
 
-Calendar's editor from a thread's Schedule (`?new=1`, D-47), a player's stats from a direct thread's
+Calendar's editor from a thread's Schedule (`?new=1`, D-47; on desktop a direct thread with a player also
+invites that player, `&with=`, D-52), a player's stats from a direct thread's
 Details (coach), and back to the rail.
 
 ## Ownership

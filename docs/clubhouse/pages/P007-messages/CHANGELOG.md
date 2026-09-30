@@ -2,6 +2,31 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Clickables 10, 13, 14: Schedule invite, desktop Files, attach in New message
+
+```text
+Contract IDs:   none new (70209, 70406, 70616, 70630 now also draw on desktop Details; 70501 and 70604 also reach a first message)
+Actions:        ACT-P007-SCHEDULE (new); ACT-P007-LIST-FILES and ACT-P007-SEND-ATTACHMENT widened
+Data impact:    none
+```
+
+### Changed
+
+- The desktop thread header's calendar icon is Schedule (label and tooltip) and opens Calendar's New event
+  (`?new=1`); a direct thread with a player adds `&with=<golf_players.id>` (D-52), a group or a coach
+  thread does not. The phone tile is unchanged (`?new=1`, no invite).
+- Desktop Details lists the shared files, as the phone does: one shared read and open
+  (`screens/messages/files.ts`), the same loading, none-yet, didn't-load and won't-open states.
+- New message on the phone has the thread composer's Attach (+). Its files go to the thread with the
+  first message and are sent there through `api.sendFiles`, so the 10-file cap, the type and size check
+  (CH-7101) and the failure (CH-7006) are the thread's. A refused file is reported once the thread has
+  opened and stays in its box.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/messages.test.tsx` 63/63 (55 before); each new test fails with its
+  fix removed (8 mutations).
+
 ## 2026-09-30 — Every contract proven by a test; drafts kept per thread
 
 ```text

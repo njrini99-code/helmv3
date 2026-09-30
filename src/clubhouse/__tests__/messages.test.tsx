@@ -794,6 +794,139 @@ describe('Messages · phone', () => {
     const box = await screen.findByRole('textbox', { name: /Message Jonah/ });
     expect((box as HTMLTextAreaElement).value).toBe('5 works. Bay 4.');
   });
+
+  describe('attach in New message (clickables 14)', () => {
+    const dmJonah = { id: 'dm-jonah', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
+    const newMessageTo = async (user: User) => {
+      live.convs.conversations = [team, dmJonah];
+      showPhone();
+      await user.click(await screen.findByRole('button', { name: 'New message' }));
+      const newMsg = await screen.findByRole('region', { name: 'New message' });
+      const attach = within(newMsg).getByRole('button', { name: 'Attach a file' });
+      // Like the message box, attach waits for someone to send to.
+      expect((attach as HTMLButtonElement).disabled).toBe(true);
+      await user.click(within(newMsg).getByRole('option', { name: /Jonah Okafor/ }));
+      expect((attach as HTMLButtonElement).disabled).toBe(false);
+      return { newMsg, input: newMsg.querySelector('input[type="file"]') as HTMLInputElement };
+    };
+
+    it('a first message with a file is sent by the thread as an attachment send, text and file together', async () => {
+      const user = userEvent.setup({ applyAccept: false });
+      const { newMsg, input } = await newMessageTo(user);
+      await user.upload(input, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
+      expect(within(newMsg).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
+      await user.type(within(newMsg).getByRole('textbox', { name: 'Message Jonah' }), 'Range plan for Friday');
+      await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
+      await waitFor(() =>
+        expect(live.files.sendMessageWithAttachments).toHaveBeenCalledWith(
+          expect.objectContaining({ conversationId: 'dm-jonah', content: 'Range plan for Friday', attachments: [expect.objectContaining({ file: expect.objectContaining({ name: 'plan.pdf' }) })] }),
+        ),
+      );
+      expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('a file alone is a first message: Send is ready without text and the thread sends it', async () => {
+      const user = userEvent.setup({ applyAccept: false });
+      const { newMsg, input } = await newMessageTo(user);
+      const send = within(newMsg).getByRole('button', { name: 'Send' }) as HTMLButtonElement;
+      expect(send.disabled).toBe(true);
+      await user.upload(input, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
+      expect(send.disabled).toBe(false);
+      await user.click(send);
+      await waitFor(() =>
+        expect(live.files.sendMessageWithAttachments).toHaveBeenCalledWith(expect.objectContaining({ conversationId: 'dm-jonah', content: '', attachments: [expect.objectContaining({ file: expect.objectContaining({ name: 'plan.pdf' }) })] })),
+      );
+    });
+
+    it('CH-7101 a file the thread would refuse is refused the same way, and stays in the thread box', async () => {
+      const user = userEvent.setup({ applyAccept: false });
+      const { newMsg, input } = await newMessageTo(user);
+      await user.upload(input, new File(['x'], 'setup.exe', { type: 'application/x-msdownload' }));
+      await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
+      await expectCode('CH-7101', /Can't attach setup\.exe/);
+      expect(live.files.sendMessageWithAttachments).not.toHaveBeenCalled();
+      const thread = await screen.findByRole('region', { name: /Jonah/ });
+      expect(within(thread).getByRole('button', { name: 'Remove setup.exe' })).toBeTruthy();
+    });
+  });
+});
+
+describe('Messages · desktop Schedule and shared files (clickables 10, 13)', () => {
+  const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: { content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' }, creator_id: 'me' };
+  const dmCoach = { ...dm, id: 'dm-dana', participant_ids: ['me', 'dana'], other_participant: { id: 'dana', name: 'Dana Cole' }, last_message: { content: 'Bay 4', created_at: '2026-10-14T16:00:00Z', sender_id: 'dana' } };
+  const dana = { userId: 'dana', name: 'Dana Cole', role: 'coach' as const, subtitle: 'Assistant coach', playerId: null };
+  const roomList = { id: 'f1', messageId: 'm1', fileName: 'Room list.pdf', mimeType: 'application/pdf', fileSize: 49152, sentAt: '2026-10-14T15:02:00Z', senderId: 'me' };
+
+  it('the thread header Schedule opens Calendar’s New event: a group invites nobody, a player thread invites that player, a coach thread nobody', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [team, dm, dmCoach];
+    show({ ...data, directory: [...data.directory, dana] });
+    const schedule = async () => (await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href');
+    // The team thread is the newest and opens first.
+    expect(await schedule()).toBe('/golf/dashboard/calendar?new=1');
+    await user.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
+    await screen.findByRole('textbox', { name: /Message Jonah$/ });
+    expect(await schedule()).toBe('/golf/dashboard/calendar?new=1&with=p-jonah');
+    await user.click(screen.getAllByRole('button', { name: /Dana Cole/ })[0]!);
+    await screen.findByRole('textbox', { name: /Message Dana$/ });
+    expect(await schedule()).toBe('/golf/dashboard/calendar?new=1');
+    expect(screen.getByRole('link', { name: 'Schedule' }).getAttribute('title')).toBe('Schedule');
+  });
+
+  it('a player has no Schedule link in a thread header', async () => {
+    live.convs.conversations = [team, dm];
+    show({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    expect(screen.queryByRole('link', { name: 'Schedule' })).toBeNull();
+  });
+
+  it('CH-7409 CH-7306 CH-7214 Details files load, say when there are none, and fail with Try again', async () => {
+    const user = userEvent.setup();
+    const first = deferred<{ files: [] }>();
+    a.getGolfConversationFiles.mockReturnValueOnce(first.promise).mockResolvedValueOnce({ error: 'nope' }).mockResolvedValue({ files: [] });
+    const { unmount } = show();
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    await openDetails(user);
+    await expectCode('CH-7409');
+    first.resolve({ files: [] });
+    await expectCode('CH-7306', /No files shared yet/);
+    unmount();
+    show();
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    await openDetails(user);
+    await expectCode('CH-7214', /Files didn't load/);
+    await user.click(within(code('CH-7214') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    await expectCode('CH-7306');
+    expect(a.getGolfConversationFiles).toHaveBeenCalledTimes(3);
+  });
+
+  it('Details lists a conversation’s files with kind, size and day, and a file opens through its message', async () => {
+    const user = userEvent.setup();
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    a.getGolfConversationFiles.mockResolvedValue({ files: [roomList] });
+    a.getGolfMessageAttachments.mockResolvedValue({ attachments: [{ id: 'f1', fileName: 'Room list.pdf', fileSize: 49152, mimeType: 'application/pdf', url: 'https://files.example/room-list.pdf' }] });
+    show();
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    await openDetails(user);
+    const row = await screen.findByRole('button', { name: /Room list\.pdf/ });
+    expect(row.textContent).toMatch(/PDF · 48 KB · Today/);
+    expect(a.getGolfConversationFiles).toHaveBeenCalledWith('team');
+    await user.click(row);
+    await waitFor(() => expect(open).toHaveBeenCalledWith('https://files.example/room-list.pdf', '_blank', 'noopener,noreferrer'));
+    expect(a.getGolfMessageAttachments).toHaveBeenCalledWith('m1');
+    open.mockRestore();
+  });
+
+  it('CH-7021 a shared file that will not open says so', async () => {
+    const user = userEvent.setup();
+    a.getGolfConversationFiles.mockResolvedValue({ files: [roomList] });
+    a.getGolfMessageAttachments.mockResolvedValue({ attachments: [] });
+    show();
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: /Room list\.pdf/ }));
+    await expectCode('CH-7021', /Couldn't open Room list\.pdf/);
+  });
 });
 
 describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messages/CONTRACT.md)', () => {

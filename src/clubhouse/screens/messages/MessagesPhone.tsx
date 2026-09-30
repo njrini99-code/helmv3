@@ -55,13 +55,15 @@ import {
   threadItems,
   type ChConv,
   type ChConvFilter,
-  type ChFile,
   type ChMsg,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
+import { fileMeta, useConversationFiles } from "./files";
 import {
   AddMembersModal,
+  AttachButton,
+  AttachChips,
   Bubble,
   Composer,
   ConvRow,
@@ -70,10 +72,13 @@ import {
   LeaveGroupModal,
   MessageHits,
   REACTIONS,
-  fileSize,
+  addAttachments,
   personOf,
   type ChMessagesApi,
 } from "./MessagesView";
+
+/** What New message hands the thread that opens next: the text and any files picked with it. */
+type FirstMessage = { text: string; files: File[] };
 
 /**
  * Messages on the phone: the owner's design (docs/clubhouse/phone/messages.md,
@@ -89,7 +94,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
   const [announcing, setAnnouncing] = useState(false);
   const [details, setDetails] = useState(false);
   /** The first message written in New message, sent by the thread's composer once the thread opens. */
-  const [firstMessage, setFirstMessage] = useState<string | null>(null);
+  const [firstMessage, setFirstMessage] = useState<FirstMessage | null>(null);
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
@@ -310,7 +315,7 @@ function PhoneThread({
   conv: ChConv;
   onBack: () => void;
   onDetails: () => void;
-  firstMessage?: string;
+  firstMessage?: FirstMessage;
   onFirstSent: () => void;
   /** Details is pushed over the thread. */
   covered: boolean;
@@ -418,7 +423,15 @@ function PhoneThread({
           </div>
         </div>
       </SectionBoundary>
-      <Composer key={conv.id} api={api} conv={conv} phone initialDraft={firstMessage} autoSend={!!firstMessage} />
+      <Composer
+        key={conv.id}
+        api={api}
+        conv={conv}
+        phone
+        initialDraft={firstMessage?.text}
+        initialFiles={firstMessage?.files}
+        autoSend={!!firstMessage}
+      />
 
       <Modal code="CH-7604" open={acting != null} onClose={() => setActing(null)} title="Message">
         {acting && (
@@ -655,48 +668,20 @@ function PersonRow({ name, sub, you = false, onMessage }: { name: string; sub: s
   );
 }
 
-const kindOf = (mime: string) =>
-  mime === "application/pdf" ? "PDF" : mime.startsWith("image/") ? "Image" : mime.startsWith("video/") ? "Video" : mime.startsWith("audio/") ? "Audio" : "File";
-
 /**
  * The conversation's shared files (D-48): loading (CH-7409), didn't load
- * (CH-7214), none yet (CH-7306). Tapping one signs it through its message's
- * attachments and opens it; a failure says so (CH-7021).
+ * (CH-7214), none yet (CH-7306). Tapping one opens it (CH-7021 when it will
+ * not). The read and the open are `useConversationFiles`, shared with desktop.
  */
 function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
-  const toast = useToast();
-  const [files, setFiles] = useState<ChFile[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const load = api.files;
-  useEffect(() => {
-    let live = true;
-    setFailed(false);
-    setFiles(null);
-    load(conv.id)
-      .then((r) => live && (r ? setFiles(r) : setFailed(true)))
-      .catch(() => live && setFailed(true));
-    return () => {
-      live = false;
-    };
-  }, [load, conv.id, attempt]);
-  const open = async (f: ChFile) => {
-    const list = await api.attachments(f.messageId).catch(() => null);
-    const hit = list?.find((x) => x.id === f.id) ?? null;
-    if (!hit?.url) {
-      haptic("error");
-      toast({ tone: "error", title: `Couldn't open ${f.name}`, body: "Try again in a moment.", code: "CH-7021" });
-      return;
-    }
-    window.open(hit.url, "_blank", "noopener,noreferrer");
-  };
+  const { files, failed, retry, open } = useConversationFiles(api, conv);
   return (
     <Panel
       title="Files"
       action={files && files.length > 0 ? <span className="ch-msp-count ch-num">{files.length}</span> : undefined}
     >
       {failed ? (
-        <InlineNotice code="CH-7214" title="Files didn't load." body="Your messages are fine. Try again; the error has been reported." onRetry={() => setAttempt((n) => n + 1)} />
+        <InlineNotice code="CH-7214" title="Files didn't load." body="Your messages are fine. Try again; the error has been reported." onRetry={retry} />
       ) : !files ? (
         <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7409">
           <Skeleton height={36} />
@@ -713,9 +698,7 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
             </span>
             <span className="ch-msp-row__b">
               <b>{f.name}</b>
-              <span className="ch-num">
-                {[kindOf(f.mime), fileSize(f.size), f.sentAt ? dayLabel(f.sentAt, api.now, api.timeZone) : null].filter(Boolean).join(" · ")}
-              </span>
+              <span className="ch-num">{fileMeta(f, api)}</span>
             </span>
           </button>
         ))
@@ -736,13 +719,14 @@ function PhoneNewMessage({
   onCancel: () => void;
   onAnnounce: () => void;
   /** Hands the first message to the thread that opens next; null takes it back. */
-  onFirstMessage: (text: string | null) => void;
+  onFirstMessage: (first: FirstMessage | null) => void;
 }) {
   const coach = api.viewer.role === "coach";
   const [to, setTo] = useState<string[]>([]);
   const [q, setQ] = useState("");
   const [name, setName] = useState("");
   const [draft, setDraft] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const nameInput = useRef<HTMLInputElement | null>(null);
@@ -773,8 +757,9 @@ function PhoneNewMessage({
     }
     setBusy(true);
     const text = draft.trim();
-    // Handed over first: the thread opens as soon as the conversation exists, and its composer sends it.
-    onFirstMessage(text || null);
+    // Handed over first: the thread opens as soon as the conversation exists, and its composer sends it
+    // (files through the same `api.sendFiles` the thread's attach uses, so its limits and errors apply).
+    onFirstMessage(text || files.length ? { text, files } : null);
     chTrail(group ? "messages create group" : "messages start direct");
     const ok = group ? await api.createGroup(to, name.trim()) : await api.startDirect(to[0]!);
     setBusy(false);
@@ -909,7 +894,9 @@ function PhoneNewMessage({
         </div>
       </div>
       <footer className="ch-ms-comp">
+        <AttachChips files={files} onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))} />
         <div className="ch-ms-comp__field">
+          <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles((s) => addAttachments(s, picked))} />
           <textarea
             rows={1}
             aria-label={to.length ? `Message ${who}` : "Choose who to message"}
@@ -921,9 +908,9 @@ function PhoneNewMessage({
           />
           <button
             type="button"
-            className={"ch-ms-send" + (to.length && draft.trim() && !busy ? " is-ready" : "")}
+            className={"ch-ms-send" + (to.length && (draft.trim() || files.length) && !busy ? " is-ready" : "")}
             onClick={() => void go()}
-            disabled={!to.length || !draft.trim() || busy}
+            disabled={!to.length || !(draft.trim() || files.length) || busy}
             aria-label="Send"
           >
             <Icon icon={ArrowUp} size={17} />

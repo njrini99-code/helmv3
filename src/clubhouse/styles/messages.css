@@ -698,6 +698,45 @@
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
+/* Shared files in Details (D-48): one row per file, opened on click. */
+.ch-ms-fil {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  box-sizing: border-box;
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-ms-fil:hover {
+  background: var(--ch-bg-hover);
+}
+.ch-ms-fil:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+}
+.ch-ms-fil b {
+  display: block;
+  overflow: hidden;
+  font: 500 13.5px/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-ms-fil span span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-det__none {
+  margin: 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
 
 /* New message */
 .ch-ms-new {

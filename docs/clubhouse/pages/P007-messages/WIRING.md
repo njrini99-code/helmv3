@@ -35,7 +35,7 @@ Contract outcomes: CONTRACT.md (Bridge IDs 7ccii, catalog CH-7xxx)
 ↓
 Bridge: recorded, not wired (D-68)
 ↓
-Tests: src/clubhouse/__tests__/messages.test.tsx (53 cases), message-attachments-conversation-files.test.ts
+Tests: src/clubhouse/__tests__/messages.test.tsx (63 cases), message-attachments-conversation-files.test.ts
 ```
 
 ## Actions
@@ -47,7 +47,7 @@ anything is sent (the shell's 10703, CH-1903).
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
 | ACT-P007-SEND-MESSAGE | Composer send, Enter | `api.send` | `useGolfMessages.sendMessage` → `sendGolfMessage` (optimistic id) | golf_messages | lands 70901 · refused 70603 · unconfirmed 70701 · draft kept 71201 · optimistic 71301 |
-| ACT-P007-SEND-ATTACHMENT | Composer attach + send | `api.sendFiles` | `useMessageAttachments.sendMessageWithAttachments` → `sendGolfMessageWithAttachments` | golf_messages, golf_message_attachments, storage | invalid file 70501 · lands 70901 · fails 70604 |
+| ACT-P007-SEND-ATTACHMENT | Composer attach + send; phone New message attach (its files go to the thread's composer, which sends them once the thread opens) | `api.sendFiles` | `useMessageAttachments.sendMessageWithAttachments` → `sendGolfMessageWithAttachments` | golf_messages, golf_message_attachments, storage | invalid file 70501 · lands 70901 · fails 70604 |
 | ACT-P007-RETRY-SEND | Retry under a refused bubble | `api.retry` | `useGolfMessages.retryMessage` (same id) | golf_messages | 71401 · still refused 70613 |
 | ACT-P007-EDIT-MESSAGE | Edit (own message) | `api.edit` | `updateGolfMessage` | golf_messages | 70902 · 70605 |
 | ACT-P007-DELETE-MESSAGE | Delete (own message) | `api.remove` | `deleteGolfMessage` | golf_messages | confirm 71101 · 70902 · 70606 |
@@ -60,7 +60,8 @@ anything is sent (the shell's 10703, CH-1903).
 | ACT-P007-MUTE | Details › Mute | `api.setMute` | `setGolfConversationMute` | participants | 70902 · 70609 · setting didn't load 70624 |
 | ACT-P007-SEARCH | Rail search | `api.searchMessages` | `searchGolfMessages` | golf_messages | running 70204 · no hits 70403 · failed 70619 |
 | ACT-P007-OPEN-FILE | A file in a bubble or Files | `open` | `getGolfMessageAttachments` (signed URL per message) | golf_message_attachments, storage | 70616 |
-| ACT-P007-LIST-FILES | Phone Details › Files | `api.files` | `getGolfConversationFiles` (HELD, D-61) | golf_message_attachments, golf_messages | loading 70209 · none 70406 · failed 70630 · held gate 72302 |
+| ACT-P007-LIST-FILES | Details › Files (phone and desktop) | `api.files` (`useConversationFiles`) | `getGolfConversationFiles` (HELD, D-61) | golf_message_attachments, golf_messages | loading 70209 · none 70406 · failed 70630 · held gate 72302 |
+| ACT-P007-SCHEDULE | Schedule (coach; the desktop thread header, the phone Details tile) | a link to `/golf/dashboard/calendar?new=1`, plus `&with=<golf_players.id>` on a direct thread with a player (desktop; D-47, D-52) | none (Calendar opens its editor) | none | Calendar 60103 |
 | ACT-P007-ACKNOWLEDGE | Got it on an announcement (player) | `api.acknowledge` | `acknowledgeAnnouncement` | golf_announcement_acknowledgements | 70902 · 70610 |
 | ACT-P007-COMPLETE-TASK | Mark done on an announcement task (player) | `api.completeTask` | `completeAnnouncementTask` | golf_task_assignments | 70902 · 70611 |
 | ACT-P007-POST-ANNOUNCEMENT | New message → Announcement (coach) | `api.createAnnouncement` | `createEnrichedAnnouncement` | golf_announcements | fields 70505 · 70902 · 70612 |
@@ -70,8 +71,9 @@ anything is sent (the shell's 10703, CH-1903).
 | Path | Purpose | States |
 | --- | --- | --- |
 | `screens/messages/Messages.tsx` | The live container: hooks, `attempt`, the api object, deep links, auto-open | 70101, 70102, every toast |
-| `screens/messages/MessagesView.tsx` | `MessagesDesktop`, `Rail`, `ConvRow`, `Thread`, `Bubble`, `Composer`, `Details`, `MuteControl`, `NewMessage`, the modals | 702xx, 704xx, 705xx, 706xx, 71xxx |
-| `screens/messages/MessagesPhone.tsx` | The phone stack: Inbox, `PhoneThread`, Details, `FilesPanel`, New message | 71901, 70209, 70406, 70615, 70616, 70630 |
+| `screens/messages/MessagesView.tsx` | `MessagesDesktop`, `Rail`, `ConvRow`, `Thread` (header Schedule), `Bubble`, `Composer` (with `AttachButton`, `AttachChips`), `Details` (`FilesSection`), `MuteControl`, `NewMessage`, the modals | 702xx, 704xx, 705xx, 706xx, 71xxx, 70209, 70406, 70616, 70630 |
+| `screens/messages/MessagesPhone.tsx` | The phone stack: Inbox, `PhoneThread`, Details, `FilesPanel`, New message (its attach hands files to the thread's composer) | 71901, 70209, 70406, 70615, 70616, 70630 |
+| `screens/messages/files.ts` | `useConversationFiles` (the files read, Try again, open) and `fileMeta`, shared by `FilesPanel` and `FilesSection` | 70209, 70406, 70616, 70630 |
 | `screens/messages/announcements.tsx` | The announcement pane and composer | 70206, 70505, 70610 to 70612, 70622, 70623 |
 | `screens/messages/MessagesSkeleton.tsx` | Route skeleton | 70201 |
 | `screens/messages/MessagesNoTeam.tsx` | No team | 70408 |
@@ -97,7 +99,7 @@ anything is sent (the shell's 10703, CH-1903).
 | getGolfConversationParticipantIdentities | actions/messages.ts | Existing | Details › members |
 | getGolfConversationMute, setGolfConversationMute | actions/message-mute.ts | Existing | mute |
 | sendGolfMessageWithAttachments, getGolfMessageAttachments | actions/message-attachments.ts | Existing | files |
-| getGolfConversationFiles | actions/message-attachments.ts | **Held** (D-61) | the phone's Files panel |
+| getGolfConversationFiles | actions/message-attachments.ts | **Held** (D-61) | Details' Files (phone and desktop) |
 | getAnnouncementsWithMeta, getAnnouncementDetail, createEnrichedAnnouncement, completeAnnouncementTask | actions/announcements.ts | Existing (D-16, D-44) | announcements |
 | acknowledgeAnnouncement | actions/communication.ts | Existing | Got it |
 

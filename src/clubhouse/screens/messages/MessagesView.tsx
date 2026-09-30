@@ -81,6 +81,7 @@ import {
   type ChFile,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
+import { fileMeta, useConversationFiles } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesPhone } from "./MessagesPhone";
 
@@ -770,11 +771,85 @@ export function Bubble({
   );
 }
 
+/** At most this many files ride on one message. */
+const MAX_ATTACHMENTS = 10;
+export const addAttachments = (cur: File[], picked: File[]) =>
+  [...cur, ...picked].slice(0, MAX_ATTACHMENTS);
+
+/** The picked files as removable chips above a composer. */
+export function AttachChips({
+  files,
+  onRemove,
+}: {
+  files: File[];
+  onRemove: (index: number) => void;
+}) {
+  if (!files.length) return null;
+  return (
+    <div className="ch-ms-to">
+      {files.map((f, i) => (
+        <span key={`${f.name}${i}`} className="ch-ms-to__c">
+          <Icon icon={FileText} size={13} />
+          {f.name}
+          <button
+            type="button"
+            aria-label={`Remove ${f.name}`}
+            onClick={() => onRemove(i)}
+          >
+            <Icon icon={X} size={12} />
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A composer's attach button and its hidden file picker. The type and size
+ * limits are not checked here; they are checked when the files send
+ * (`api.sendFiles`, CH-7101).
+ */
+export function AttachButton({
+  phone = false,
+  disabled,
+  onPick,
+}: {
+  /** Phone: the design's "+", not the paperclip. */
+  phone?: boolean;
+  disabled?: boolean;
+  onPick: (picked: File[]) => void;
+}) {
+  const input = useRef<HTMLInputElement | null>(null);
+  return (
+    <>
+      <IconButton
+        icon={phone ? Plus : Paperclip}
+        label="Attach a file"
+        size="sm"
+        disabled={disabled}
+        onClick={() => input.current?.click()}
+      />
+      <input
+        ref={input}
+        type="file"
+        multiple
+        hidden
+        onChange={(e) => {
+          const picked = Array.from(e.target.files ?? []);
+          if (picked.length) onPick(picked);
+          e.target.value = "";
+        }}
+      />
+    </>
+  );
+}
+
 export function Composer({
   api,
   conv,
   phone = false,
   initialDraft,
+  initialFiles,
   autoSend = false,
 }: {
   api: ChMessagesApi;
@@ -783,7 +858,9 @@ export function Composer({
   phone?: boolean;
   /** A first message written before the conversation existed (the phone's New message). */
   initialDraft?: string;
-  /** Send `initialDraft` as soon as the thread opens; a failure leaves it in the box (CH-7004). */
+  /** Files picked with that first message. */
+  initialFiles?: File[];
+  /** Send `initialDraft` and `initialFiles` as soon as the thread opens; a failure leaves them in the box (CH-7004). */
   autoSend?: boolean;
 }) {
   const [draft, setDraftState] = useState(initialDraft ?? api.drafts.get(conv.id) ?? "");
@@ -792,10 +869,9 @@ export function Composer({
     if (text) api.drafts.set(conv.id, text);
     else api.drafts.delete(conv.id);
   };
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<File[]>(initialFiles ?? []);
   const [sending, setSending] = useState(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
-  const fileInput = useRef<HTMLInputElement | null>(null);
   const typingTimer = useRef<number | null>(null);
   const ready = (draft.trim() || files.length) && !sending;
 
@@ -830,7 +906,7 @@ export function Composer({
   };
   const autoSent = useRef(false);
   useEffect(() => {
-    if (!autoSend || autoSent.current || !initialDraft?.trim()) return;
+    if (!autoSend || autoSent.current || !(initialDraft?.trim() || initialFiles?.length)) return;
     autoSent.current = true;
     void send();
     // Once, when the thread first opens with the first message.
@@ -844,40 +920,14 @@ export function Composer({
   const label = conv.group ? conv.title : firstName(conv.title);
   return (
     <footer className="ch-ms-comp">
-      {files.length > 0 && (
-        <div className="ch-ms-to">
-          {files.map((f, i) => (
-            <span key={`${f.name}${i}`} className="ch-ms-to__c">
-              <Icon icon={FileText} size={13} />
-              {f.name}
-              <button
-                type="button"
-                aria-label={`Remove ${f.name}`}
-                onClick={() => setFiles((s) => s.filter((_, j) => j !== i))}
-              >
-                <Icon icon={X} size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+      <AttachChips
+        files={files}
+        onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
+      />
       <div className="ch-ms-comp__field">
-        <IconButton
-          icon={phone ? Plus : Paperclip}
-          label="Attach a file"
-          size="sm"
-          onClick={() => fileInput.current?.click()}
-        />
-        <input
-          ref={fileInput}
-          type="file"
-          multiple
-          hidden
-          onChange={(e) => {
-            const picked = Array.from(e.target.files ?? []);
-            if (picked.length) setFiles((s) => [...s, ...picked].slice(0, 10));
-            e.target.value = "";
-          }}
+        <AttachButton
+          phone={phone}
+          onPick={(picked) => setFiles((s) => addAttachments(s, picked))}
         />
         <textarea
           ref={ta}
@@ -937,7 +987,14 @@ function Thread({
     () => threadItems(api.msgs, api.now, api.timeZone),
     [api.msgs, api.now, api.timeZone],
   );
-  const calendarHref = rebuiltHref("/golf/dashboard/calendar", api.viewer.role);
+  // Schedule opens Calendar's New event editor (D-47). A direct thread with a
+  // player invites that player alone (`with=`, D-52); a group or coach thread none.
+  const other = !conv.group ? personOf(api, conv.memberIds[0] ?? "") : undefined;
+  const scheduleWith = other?.role === "player" ? other.playerId : null;
+  const calendarHref = rebuiltHref(
+    `/golf/dashboard/calendar?new=1${scheduleWith ? `&with=${encodeURIComponent(scheduleWith)}` : ""}`,
+    api.viewer.role,
+  );
 
   useLayoutEffect(() => {
     const s = scroller.current;
@@ -1002,8 +1059,8 @@ function Thread({
             <a
               className="ch-btn ch-btn--ghost ch-iconbtn"
               href={calendarHref}
-              aria-label="Open the calendar"
-              title="Open the calendar"
+              aria-label="Schedule"
+              title="Schedule"
             >
               <Icon icon={CalendarPlus} size={16} />
             </a>
@@ -1424,6 +1481,7 @@ function Details({
           )}
         </div>
       )}
+      <FilesSection api={api} conv={conv} />
       {conv.group && conv.creatorId !== api.viewer.userId && (
         <div className="ch-ms-det__sec">
           <Button
@@ -1438,6 +1496,56 @@ function Details({
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={onClose} />
       {mayAdd && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
     </aside>
+  );
+}
+
+/**
+ * The conversation's shared files (D-48), newest first: loading (CH-7409),
+ * didn't load (CH-7214), none yet (CH-7306). A row opens the file (CH-7021 when
+ * it will not). The phone's Files panel reads through the same hook.
+ */
+function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
+  const { files, failed, retry, open } = useConversationFiles(api, conv);
+  return (
+    <div className="ch-ms-det__sec">
+      <div className="ch-ms-det__l">
+        <span>Files</span>
+        {files && files.length > 0 && <span className="ch-num">{files.length}</span>}
+      </div>
+      {failed ? (
+        <InlineNotice
+          code="CH-7214"
+          title="Files didn't load."
+          body="Your messages are fine. Try again; the error has been reported."
+          onRetry={retry}
+        />
+      ) : !files ? (
+        <div aria-busy="true" data-ch-code="CH-7409">
+          <Skeleton height={34} />
+        </div>
+      ) : !files.length ? (
+        <p className="ch-ms-det__none" data-ch-code="CH-7306">
+          No files shared yet.
+        </p>
+      ) : (
+        files.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            className="ch-ms-fil"
+            onClick={() => void open(f)}
+          >
+            <span className="ch-ms-file__ic">
+              <Icon icon={FileText} size={15} />
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <b>{f.name}</b>
+              <span className="ch-num">{fileMeta(f, api)}</span>
+            </span>
+          </button>
+        ))
+      )}
+    </div>
   );
 }
 

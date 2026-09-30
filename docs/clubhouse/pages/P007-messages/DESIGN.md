@@ -100,7 +100,7 @@ hooks), and the server actions in `src/app/golf/actions/messages.ts`, `message-m
 
 ### New features
 
-`getGolfConversationFiles` (the phone's Files panel): built, and HELD behind `isClubhouseFor`
+`getGolfConversationFiles` (Details' Files, phone and desktop): built, and HELD behind `isClubhouseFor`
 (`docs/clubhouse/held/features/conversation-files.md`, D-61).
 
 ### New data/schema
