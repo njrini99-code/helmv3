@@ -38,6 +38,16 @@ copied from `CHECKLIST_TEMPLATE.md`. It has one section per gate, and
 unchecked box. That checklist is the definition of pro quality for the
 screen.
 
+## Where we left off (2026-09-30 evening: swap audit and release train)
+
+The owner's swap audit is in `SWAP_AUDIT.md` (baselines, scorecard, role × route table, live notification
+destinations, F-01 to F-20). Fixed tonight: F-14, where the Clubhouse shell never started the offline sync engine,
+and F-15 to F-20, the 13 `test:all` failures that draft CI never ran. Tonight's release candidate is the merge
+train `agent/release-train`: #2108, #2104, #2109 and #2102, with the flag off in production (Q-4, Q-106). The
+package is `RELEASE_2026-09-30.md`; no migration is required. For after the audit: Q-103 (which not-rebuilt routes
+to build, alias or retire), Q-104 (qualifier ties) and Q-105 (the player CoachHelm views). F-02 (round recovery
+with the flag on) blocks a player flag flip, not the deploy.
+
 ## Where we left off (2026-09-30 overnight, for the owner)
 
 Branch `agent/clubhouse`, draft PR #2102. Nothing merged, deployed or migrated; `golf_clubhouse_ui` untouched.
