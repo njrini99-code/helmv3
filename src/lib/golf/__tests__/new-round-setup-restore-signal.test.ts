@@ -85,13 +85,34 @@ describe('reportRoundSetupRestoredAfterReload', () => {
   });
 });
 
+describe('reportRoundSetupRestoredAfterReload log source', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('carries the log source a renderer passes, and the Fairway one by default', () => {
+    reportRoundSetupRestoredAfterReload({ courseId: 'c-1', teeId: 't-1' }, { component: 'ClubhouseRoundNew', route: '/clubhouse/rounds/new' });
+    reportRoundSetupRestoredAfterReload({ courseId: 'c-1', teeId: 't-1' });
+    const [own, legacy] = sentry.logger.info.mock.calls as Array<[string, Record<string, unknown>]>;
+    expect(own![1]).toMatchObject({ component: 'ClubhouseRoundNew', route: '/clubhouse/rounds/new' });
+    expect(legacy![1]).toMatchObject({ component: 'NewRoundClient', route: '/golf/dashboard/rounds/new' });
+  });
+});
+
 describe('NewRoundClient restore call site', () => {
   it('routes the restore through the info-level helper, not logError(new Error(...))', () => {
-    const source = readFileSync(
+    const source = [
+  // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
+  readFileSync(
+      resolve(process.cwd(), 'src/lib/golf/round-session/use-new-round-session.ts'),
+      'utf8',
+    ),
+  readFileSync(
       resolve(process.cwd(), 'src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx'),
       'utf8',
-    );
+    ),
+].join('\n');
     expect(source).not.toMatch(/new Error\(\s*['"]Round setup restored after reload['"]/);
-    expect(source).toMatch(/reportRoundSetupRestoredAfterReload\(\{\s*courseId: pending\.courseId,\s*teeId: pending\.teeId\s*\}\)/);
+    expect(source).toMatch(/reportRoundSetupRestoredAfterReload\(\{\s*courseId: pending\.courseId,\s*teeId: pending\.teeId\s*\}(?:, logSourceRef\.current)?\)/);
   });
 });

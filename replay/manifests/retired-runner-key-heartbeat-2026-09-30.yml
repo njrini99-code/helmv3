@@ -1,0 +1,30 @@
+schema_version: 1
+replay_id: retired-runner-key-heartbeat-2026-09-30
+incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
+feature_id: admin_selfheal
+title: >-
+  The retired cloud Diagnose task tagged its failed heartbeat with
+  metadata.runner instead of metadata.method, so selectStageHeartbeat let it
+  decide Diagnose's status again; it now matches either key.
+bad_version: c70bd65ef68f79dad557efb92010c7473f5b0dec
+fixed_version: ec225fe22ce5d42995b98d6667135733ba043641
+fixture:
+  - source: selfheal-registry.test.ts
+    target: src/lib/admin/__tests__/selfheal-registry.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/lib/admin/__tests__/selfheal-registry.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic heartbeat rows (timestamps, runner/method strings); no
+    production rows, IDs, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-09-30"
+notes: >-
+  On bad_version 1 test fails: "recognises a retired runner that names itself
+  in metadata.runner" (picked the failed cloud row, expected the vercel-cron
+  row). 24 others pass.
