@@ -46,7 +46,7 @@ import {
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
- *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route
+ *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
  *   /clubhouse-preview/settings ?state=player | noteam | failed | partial | assistant | failwrites | loading, &section=
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  */

@@ -8,6 +8,12 @@ test('flags Fairway imports and tokens', () => {
   assert.ok(v.some((x) => x.includes('non-Clubhouse custom property')));
 });
 
+test('the iOS keyboard height is the one foreign property a phone surface may read', () => {
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-ms-comp{padding-bottom:var(--keyboard-height, 0px)}').length, 0);
+  assert.ok(checkSource('src/clubhouse/a.css', '.ch-x{height:var(--keyboard-heights)}').some((x) => x.includes('non-Clubhouse custom property')));
+  assert.ok(checkSource('src/clubhouse/a.css', '.ch-x{color:var(--text-primary)}').some((x) => x.includes('non-Clubhouse custom property')));
+});
+
 test('flags unscoped CSS selectors and literal durations', () => {
   const v = checkSource('src/clubhouse/a.css', '.button{transition:opacity 200ms}\n.ch-ok{color:var(--ch-ink-900)}');
   assert.ok(v.some((x) => x.includes('unscoped selector ".button"')));

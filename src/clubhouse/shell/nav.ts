@@ -17,8 +17,8 @@ export interface ChNavItem {
   href: string;
   icon: LucideIcon;
   section?: 'Team' | 'Program';
-  /** Shown in the phone tab bar; everything else lives under More. */
-  tab?: boolean;
+  /** The phone tab's label when it differs from the sidebar's (CoachHelm is "Helm"). */
+  tabLabel?: string;
   badge?: 'messages' | 'joinRequests';
 }
 
@@ -28,11 +28,11 @@ export interface ChNavItem {
  * nothing (tracker: open questions).
  */
 export const CH_NAV_COACH: readonly ChNavItem[] = [
-  { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House, tab: true },
-  { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
-  { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays, tab: true },
-  { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, tab: true, badge: 'messages' },
-  { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', tab: true, badge: 'joinRequests' },
+  { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
+  { id: 'coachhelm', label: 'CoachHelm', tabLabel: 'Helm', href: '/golf/dashboard/coachhelm', icon: Sparkles },
+  { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
+  { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'Team' },
   { id: 'lineups', label: 'Lineups', href: '/golf/dashboard/qualifiers', icon: ListOrdered, section: 'Team' },
@@ -41,14 +41,36 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
 
 /** Player navigation: the shared screens first, with a player's own permissions. */
 export const CH_NAV_PLAYER: readonly ChNavItem[] = [
-  { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House, tab: true },
-  { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays, tab: true },
-  { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, tab: true, badge: 'messages' },
-  { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, tab: true },
+  { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
+  { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
+  { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3 },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag },
 ];
 
 export type ChRole = 'coach' | 'player';
+
+/**
+ * Phone tabs, in order (D-40). Coaches get the owner's phone design: Home,
+ * Helm, Rounds and Stats, with Calendar, Messages and Roster under More;
+ * Helm and Rounds show the not-rebuilt notice until those screens exist.
+ * Players keep their set until a player tab design exists. Everything not
+ * listed opens from the More sheet.
+ */
+export const CH_PHONE_TABS: Record<ChRole, readonly string[]> = {
+  coach: ['home', 'coachhelm', 'rounds', 'stats'],
+  player: ['home', 'calendar', 'messages', 'stats'],
+};
+
+/** The role's phone tabs, in order, and everything else (the More sheet), in sidebar order. */
+export function phoneTabsFor(role: ChRole): { tabs: ChNavItem[]; more: ChNavItem[] } {
+  const nav = navFor(role);
+  const ids = CH_PHONE_TABS[role];
+  return {
+    tabs: ids.map((id) => nav.find((i) => i.id === id)).filter((i): i is ChNavItem => !!i),
+    more: nav.filter((i) => !ids.includes(i.id)),
+  };
+}
 
 export function navFor(role: ChRole): readonly ChNavItem[] {
   return role === 'player' ? CH_NAV_PLAYER : CH_NAV_COACH;

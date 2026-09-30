@@ -141,9 +141,9 @@
 
 /* Monogram coin with the extra depth the owner asked for. */
 .ch-avatar {
-  --ch-av-bg: #e9e3d3;
-  --ch-av-fg: #5a4e36;
-  --ch-av-ring: rgb(90 78 54 / 0.22);
+  --ch-av-bg: var(--ch-avatar-neutral-bg);
+  --ch-av-fg: var(--ch-avatar-neutral-fg);
+  --ch-av-ring: var(--ch-avatar-neutral-ring);
   display: inline-grid;
   flex: none;
   place-items: center;
@@ -176,6 +176,14 @@
   --ch-av-bg: #ebddd3;
   --ch-av-fg: #6a4a3c;
   --ch-av-ring: rgb(106 74 60 / 0.22);
+}
+/* On the phone every coin is the one calm neutral (owner design, m.css; D-43). */
+@media (max-width: 820px) {
+  .ch-avatar[data-tone] {
+    --ch-av-bg: var(--ch-avatar-neutral-bg);
+    --ch-av-fg: var(--ch-avatar-neutral-fg);
+    --ch-av-ring: var(--ch-avatar-neutral-ring);
+  }
 }
 .ch-avatar--ring {
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 0 0 2px var(--ch-bg-surface), inset 0 0 0 3px var(--ch-green-600);

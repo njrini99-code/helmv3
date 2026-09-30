@@ -28,6 +28,8 @@ import {
   Search,
   BellOff,
   Megaphone,
+  Plus,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -37,6 +39,8 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
@@ -53,6 +57,7 @@ import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
 import { chReport, chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
+import { useChPhone } from "../../lib/use-phone";
 import {
   clock,
   dayLabel,
@@ -73,8 +78,10 @@ import {
   type ChMute,
   type ChAnnouncement,
   type ChAnnouncementDetail,
+  type ChFile,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
+import { MessagesPhone } from "./MessagesPhone";
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
   { key: "Like", icon: ThumbsUp },
@@ -123,6 +130,11 @@ export interface ChMessagesApi {
   membersError: boolean;
   retryMembers: () => void;
   leave: () => Promise<boolean>;
+  /** The open group's creator only: who on the team isn't in it yet, and adding one (D-47). */
+  addCandidates: () => Promise<ChMember[] | null>;
+  addMember: (userId: string, name: string) => Promise<boolean>;
+  /** The open conversation's shared files, newest first (D-48). */
+  files: (conversationId: string) => Promise<ChFile[] | null>;
 
   directory: ChPerson[];
   directoryError: boolean;
@@ -154,12 +166,12 @@ export interface ChMessagesApi {
   }) => Promise<boolean>;
 }
 
-const personOf = (api: ChMessagesApi, userId: string) =>
+export const personOf = (api: ChMessagesApi, userId: string) =>
   api.directory.find((p) => p.userId === userId);
 
 /* Rail */
 
-function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
+export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
   const [hits, setHits] = useState<ChSearchHit[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -243,6 +255,76 @@ function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
         </div>
       )}
     </section>
+  );
+}
+
+/** One conversation in the list: the desktop rail and the phone inbox. */
+export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: ChConv; avatarSize?: number }) {
+  return (
+    <button
+      type="button"
+      className={
+        "ch-ms-row" +
+        (c.unread ? " is-unread" : "") +
+        (api.selectedId === c.id ? " is-sel" : "")
+      }
+      aria-current={
+        api.selectedId === c.id ? "true" : undefined
+      }
+      onClick={() => {
+        haptic("select");
+        chTrail("messages open conversation");
+        api.select(c.id);
+      }}
+    >
+      {c.group ? (
+        <span className="ch-ms-grp">
+          <Icon icon={Users} size={15} />
+        </span>
+      ) : (
+        <Avatar name={c.title} size={avatarSize} />
+      )}
+      <span className="ch-ms-row__main">
+        <span className="ch-ms-row__top">
+          <b>{c.title}</b>
+          <span className="ch-num">
+            {railTime(c.lastAt, api.now, api.timeZone)}
+          </span>
+        </span>
+        <span className="ch-ms-row__bot">
+          <span>
+            {c.lastText ? (
+              <>
+                {c.lastSenderId &&
+                  (c.group ||
+                    c.lastSenderId === api.viewer.userId) && (
+                    <em>
+                      {c.lastSenderId === api.viewer.userId
+                        ? "You"
+                        : firstName(
+                            personOf(api, c.lastSenderId)
+                              ?.name ?? "Member",
+                          )}
+                      :{" "}
+                    </em>
+                  )}
+                {c.lastText}
+              </>
+            ) : (
+              "No messages yet"
+            )}
+          </span>
+          {c.unread > 0 && (
+            <span
+              className="ch-ms-count ch-num"
+              aria-label={`${c.unread} unread`}
+            >
+              {c.unread}
+            </span>
+          )}
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -339,71 +421,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                   <div className="ch-ms-sec__l">{l}</div>
                   <div className="ch-ms-sec__card">
                     {rows.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className={
-                          "ch-ms-row" +
-                          (c.unread ? " is-unread" : "") +
-                          (api.selectedId === c.id ? " is-sel" : "")
-                        }
-                        aria-current={
-                          api.selectedId === c.id ? "true" : undefined
-                        }
-                        onClick={() => {
-                          haptic("select");
-                          chTrail("messages open conversation");
-                          api.select(c.id);
-                        }}
-                      >
-                        {c.group ? (
-                          <span className="ch-ms-grp">
-                            <Icon icon={Users} size={15} />
-                          </span>
-                        ) : (
-                          <Avatar name={c.title} size={36} />
-                        )}
-                        <span className="ch-ms-row__main">
-                          <span className="ch-ms-row__top">
-                            <b>{c.title}</b>
-                            <span className="ch-num">
-                              {railTime(c.lastAt, api.now, api.timeZone)}
-                            </span>
-                          </span>
-                          <span className="ch-ms-row__bot">
-                            <span>
-                              {c.lastText ? (
-                                <>
-                                  {c.lastSenderId &&
-                                    (c.group ||
-                                      c.lastSenderId === api.viewer.userId) && (
-                                      <em>
-                                        {c.lastSenderId === api.viewer.userId
-                                          ? "You"
-                                          : firstName(
-                                              personOf(api, c.lastSenderId)
-                                                ?.name ?? "Member",
-                                            )}
-                                        :{" "}
-                                      </em>
-                                    )}
-                                  {c.lastText}
-                                </>
-                              ) : (
-                                "No messages yet"
-                              )}
-                            </span>
-                            {c.unread > 0 && (
-                              <span
-                                className="ch-ms-count ch-num"
-                                aria-label={`${c.unread} unread`}
-                              >
-                                {c.unread}
-                              </span>
-                            )}
-                          </span>
-                        </span>
-                      </button>
+                      <ConvRow key={c.id} api={api} c={c} />
                     ))}
                   </div>
                 </section>
@@ -426,7 +444,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
 
 /* Thread */
 
-function Attachments({
+export function Attachments({
   load,
   id,
   mine,
@@ -501,7 +519,7 @@ function Attachments({
   );
 }
 
-function fileSize(b: number) {
+export function fileSize(b: number) {
   if (!b) return "";
   const k = 1024;
   const units = ["B", "KB", "MB", "GB"];
@@ -509,7 +527,46 @@ function fileSize(b: number) {
   return `${(b / k ** i).toFixed(i ? 1 : 0).replace(/\.0$/, "")} ${units[i]}`;
 }
 
-function Bubble({
+/**
+ * Long press (the phone's stand-in for desktop's hover tools): 450ms without
+ * moving opens the message's actions, with a press tick (CH-7704). A right
+ * click or the context-menu key does the same.
+ */
+function useLongPress(onFire: (() => void) | undefined) {
+  const timer = useRef<number | null>(null);
+  const origin = useRef<{ x: number; y: number } | null>(null);
+  if (!onFire) return {};
+  const clear = () => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = null;
+    origin.current = null;
+  };
+  return {
+    onPointerDown: (e: ReactPointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      origin.current = { x: e.clientX, y: e.clientY };
+      timer.current = window.setTimeout(() => {
+        clear();
+        haptic("press");
+        onFire();
+      }, 450);
+    },
+    onPointerMove: (e: ReactPointerEvent) => {
+      const o = origin.current;
+      if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > 10) clear();
+    },
+    onPointerUp: clear,
+    onPointerCancel: clear,
+    onPointerLeave: clear,
+    onContextMenu: (e: ReactMouseEvent) => {
+      e.preventDefault();
+      clear();
+      onFire();
+    },
+  };
+}
+
+export function Bubble({
   api,
   m,
   first,
@@ -519,6 +576,7 @@ function Bubble({
   setPicking,
   onEdit,
   onDelete,
+  onActions,
 }: {
   api: ChMessagesApi;
   m: ChMsg;
@@ -529,8 +587,11 @@ function Bubble({
   setPicking: (v: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
+  /** Phone: the message's actions open in a sheet on a long press, in place of the hover tools. */
+  onActions?: () => void;
 }) {
   const who = personOf(api, m.senderId);
+  const press = useLongPress(m.failed ? undefined : onActions);
   const reacts = api.reactions.get(m.id) ?? [];
   if (m.deleted) {
     return (
@@ -571,13 +632,23 @@ function Bubble({
           </span>
         )}
         <div className="ch-ms-msg__line">
-          <div className="ch-ms-msg__stack">
+          <div className="ch-ms-msg__stack" {...press}>
             {m.text && <div className="ch-ms-bub">{m.text}</div>}
             {m.hasAttachments && (
               <Attachments load={api.attachments} id={m.id} mine={m.mine} />
             )}
           </div>
-          {!m.failed && (
+          {onActions && !m.failed && (
+            <button
+              type="button"
+              className="ch-sr-only"
+              data-ch-code="CH-7804"
+              onClick={onActions}
+            >
+              Message actions
+            </button>
+          )}
+          {!m.failed && !onActions && (
             <div className="ch-ms-msg__tools">
               <button
                 type="button"
@@ -692,8 +763,23 @@ function Bubble({
   );
 }
 
-function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
-  const [draft, setDraft] = useState("");
+export function Composer({
+  api,
+  conv,
+  phone = false,
+  initialDraft,
+  autoSend = false,
+}: {
+  api: ChMessagesApi;
+  conv: ChConv;
+  /** Phone: the design's "+" attach button, and no keyboard hint. */
+  phone?: boolean;
+  /** A first message written before the conversation existed (the phone's New message). */
+  initialDraft?: string;
+  /** Send `initialDraft` as soon as the thread opens; a failure leaves it in the box (CH-7004). */
+  autoSend?: boolean;
+}) {
+  const [draft, setDraft] = useState(initialDraft ?? "");
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
@@ -730,6 +816,13 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
     }
     ta.current?.focus();
   };
+  const autoSent = useRef(false);
+  useEffect(() => {
+    if (!autoSend || autoSent.current || !initialDraft?.trim()) return;
+    autoSent.current = true;
+    void send();
+    // Once, when the thread first opens with the first message.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
@@ -758,7 +851,7 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       )}
       <div className="ch-ms-comp__field">
         <IconButton
-          icon={Paperclip}
+          icon={phone ? Plus : Paperclip}
           label="Attach a file"
           size="sm"
           onClick={() => fileInput.current?.click()}
@@ -802,9 +895,11 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
           <Icon icon={ArrowUp} size={17} />
         </button>
       </div>
-      <span className="ch-ms-comp__hint">
-        Enter to send · Shift + Enter for a new line
-      </span>
+      {!phone && (
+        <span className="ch-ms-comp__hint">
+          Enter to send · Shift + Enter for a new line
+        </span>
+      )}
     </footer>
   );
 }
@@ -824,9 +919,7 @@ function Thread({
 }) {
   const [picking, setPicking] = useState<string | null>(null);
   const [editing, setEditing] = useState<ChMsg | null>(null);
-  const [editText, setEditText] = useState("");
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
-  const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(
     () => threadItems(api.msgs, api.now, api.timeZone),
@@ -968,10 +1061,7 @@ function Thread({
                   group={conv.group}
                   picking={picking === it.m.id}
                   setPicking={(v) => setPicking(v ? it.m.id : null)}
-                  onEdit={() => {
-                    setEditing(it.m);
-                    setEditText(it.m.text);
-                  }}
+                  onEdit={() => setEditing(it.m)}
                   onDelete={() => setDeleting(it.m)}
                 />
               ),
@@ -998,71 +1088,220 @@ function Thread({
       </div>
       <Composer key={conv.id} api={api} conv={conv} />
 
-      <Modal
-        open={editing != null}
-        onClose={() => setEditing(null)}
-        icon={Pencil}
-        title="Edit message"
-        description="Everyone in the conversation sees it marked as edited."
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setEditing(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              disabled={busy || !editText.trim()}
-              onClick={async () => {
-                if (!editing) return;
-                setBusy(true);
-                const ok = await api.edit(editing.id, editText.trim());
-                setBusy(false);
-                if (ok) setEditing(null);
-              }}
-            >
-              {busy ? "Saving…" : "Save"}
-            </Button>
-          </>
-        }
-      >
-        <textarea
-          className="ch-textarea"
-          rows={4}
-          aria-label="Message"
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-        />
-      </Modal>
-      <Modal
-        code="CH-7501"
-        open={deleting != null}
-        onClose={() => setDeleting(null)}
-        icon={Trash2}
-        title="Delete this message?"
-        description="It's removed for everyone in the conversation. This can't be undone."
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setDeleting(null)}>
-              Keep it
-            </Button>
-            <Button
-              variant="danger"
-              feel="warning"
-              disabled={busy}
-              onClick={async () => {
-                if (!deleting) return;
-                setBusy(true);
-                const ok = await api.remove(deleting.id);
-                setBusy(false);
-                if (ok) setDeleting(null);
-              }}
-            >
-              {busy ? "Deleting…" : "Delete message"}
-            </Button>
-          </>
-        }
-      />
+      <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
+      <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
     </section>
+  );
+}
+
+/** Edit your own message (desktop modal; a sheet on the phone). */
+export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi; message: ChMsg | null; onClose: () => void }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (message) setText(message.text);
+  }, [message]);
+  return (
+    <Modal
+      open={message != null}
+      onClose={onClose}
+      icon={Pencil}
+      title="Edit message"
+      description="Everyone in the conversation sees it marked as edited."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            disabled={busy || !text.trim()}
+            onClick={async () => {
+              if (!message) return;
+              setBusy(true);
+              const ok = await api.edit(message.id, text.trim());
+              setBusy(false);
+              if (ok) onClose();
+            }}
+          >
+            {busy ? "Saving…" : "Save"}
+          </Button>
+        </>
+      }
+    >
+      <textarea
+        className="ch-textarea"
+        rows={4}
+        aria-label="Message"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+    </Modal>
+  );
+}
+
+/** Delete your own message, after a confirm (CH-7501). */
+export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesApi; message: ChMsg | null; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Modal
+      code="CH-7501"
+      open={message != null}
+      onClose={onClose}
+      icon={Trash2}
+      title="Delete this message?"
+      description="It's removed for everyone in the conversation. This can't be undone."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Keep it
+          </Button>
+          <Button
+            variant="danger"
+            feel="warning"
+            disabled={busy}
+            onClick={async () => {
+              if (!message) return;
+              setBusy(true);
+              const ok = await api.remove(message.id);
+              setBusy(false);
+              if (ok) onClose();
+            }}
+          >
+            {busy ? "Deleting…" : "Delete message"}
+          </Button>
+        </>
+      }
+    />
+  );
+}
+
+/** Leave a group you didn't create, after a confirm (CH-7502). */
+export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChMessagesApi; conv: ChConv; open: boolean; onClose: () => void; onLeft: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Modal
+      code="CH-7502"
+      open={open}
+      onClose={onClose}
+      icon={LogOut}
+      title={`Leave ${conv.title}?`}
+      description="You stop getting its messages. Someone in the group can add you back."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Stay
+          </Button>
+          <Button
+            variant="danger"
+            feel="warning"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              const ok = await api.leave();
+              setBusy(false);
+              if (ok) {
+                onClose();
+                onLeft();
+              }
+            }}
+          >
+            {busy ? "Leaving…" : "Leave group"}
+          </Button>
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * The group's creator adds teammates or coaches who aren't in it yet (D-47),
+ * on desktop and phone: the candidates load when it opens (CH-7410), a failed
+ * load says so with Try again (CH-7215), nobody left says so (CH-7307), and a
+ * failed add is toasted (CH-7018).
+ */
+export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesApi; conv: ChConv; open: boolean; onClose: () => void }) {
+  const [people, setPeople] = useState<ChMember[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [added, setAdded] = useState<string[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const load = api.addCandidates;
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    setPeople(null);
+    setFailed(false);
+    setAdded([]);
+    load()
+      .then((r) => live && (r ? setPeople(r) : setFailed(true)))
+      .catch(() => live && setFailed(true));
+    return () => {
+      live = false;
+    };
+  }, [open, attempt, load]);
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      icon={UserPlus}
+      title={`Add to ${conv.title}`}
+      description="Players and coaches on the team who aren't in this group."
+      footer={
+        <Button variant="primary" onClick={onClose}>
+          Done
+        </Button>
+      }
+    >
+      {failed ? (
+        <InlineNotice
+          code="CH-7215"
+          title="The team list didn't load."
+          body="Try again; the error has been reported."
+          onRetry={() => setAttempt((n) => n + 1)}
+        />
+      ) : !people ? (
+        <div style={{ display: "grid", gap: 10 }} aria-busy="true" data-ch-code="CH-7410">
+          <Skeleton height={30} />
+          <Skeleton height={30} />
+          <Skeleton height={30} />
+        </div>
+      ) : !people.length ? (
+        <p className="ch-ms-quiet" data-ch-code="CH-7307">
+          Everyone on the team is already in this group.
+        </p>
+      ) : (
+        <div className="ch-ms-pick" aria-label="People to add">
+          {people.map((p) => {
+            const done = added.includes(p.userId);
+            return (
+              <div key={p.userId} className="ch-pp__row">
+                <Avatar name={p.name} size={28} />
+                <span className="ch-pp__name">
+                  <b>{p.name}</b>
+                  <span>{p.subtitle}</span>
+                </span>
+                <button
+                  type="button"
+                  className={"ch-btn ch-btn--sm " + (done ? "ch-btn--ghost" : "ch-btn--secondary")}
+                  disabled={done || busy === p.userId}
+                  aria-label={done ? `${p.name} added` : `Add ${p.name}`}
+                  onClick={async () => {
+                    haptic("press");
+                    setBusy(p.userId);
+                    const ok = await api.addMember(p.userId, p.name);
+                    setBusy(null);
+                    if (ok) setAdded((a) => [...a, p.userId]);
+                  }}
+                >
+                  {done ? "Added" : busy === p.userId ? "Adding…" : "Add"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -1078,7 +1317,8 @@ function Details({
   onClose: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const mayAdd = conv.group && conv.creatorId === api.viewer.userId;
   const other = !conv.group
     ? personOf(api, conv.memberIds[0] ?? "")
     : undefined;
@@ -1129,6 +1369,11 @@ function Details({
         <div className="ch-ms-det__sec">
           <div className="ch-ms-det__l">
             <span>{conv.memberCount} members</span>
+            {mayAdd && (
+              <Button size="sm" variant="ghost" leftIcon={UserPlus} onClick={() => setAdding(true)}>
+                Add
+              </Button>
+            )}
           </div>
           {api.membersError ? (
             <InlineNotice
@@ -1179,37 +1424,8 @@ function Details({
           </Button>
         </div>
       )}
-      <Modal
-        code="CH-7502"
-        open={leaving}
-        onClose={() => setLeaving(false)}
-        icon={LogOut}
-        title={`Leave ${conv.title}?`}
-        description="You stop getting its messages. Someone in the group can add you back."
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setLeaving(false)}>
-              Stay
-            </Button>
-            <Button
-              variant="danger"
-              feel="warning"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                const ok = await api.leave();
-                setBusy(false);
-                if (ok) {
-                  setLeaving(false);
-                  onClose();
-                }
-              }}
-            >
-              {busy ? "Leaving…" : "Leave group"}
-            </Button>
-          </>
-        }
-      />
+      <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={onClose} />
+      {mayAdd && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
     </aside>
   );
 }
@@ -1318,10 +1534,9 @@ function NewMessage({
     setTouched(false);
   }, [open]);
   const coachGroup = mode === "group" && api.viewer.role === "coach";
-  const people = api.directory.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q.trim().toLowerCase()) &&
-      (!coachGroup || p.role === "player"),
+  // A coach's group can include other coaches (D-45): they're added right after it's created.
+  const people = api.directory.filter((p) =>
+    p.name.toLowerCase().includes(q.trim().toLowerCase()),
   );
   const toggle = (id: string) => {
     haptic("select");
@@ -1491,9 +1706,7 @@ function NewMessage({
             <SearchField
               value={q}
               onChange={setQ}
-              placeholder={
-                coachGroup ? "Find a player" : "Find a player or coach"
-              }
+              placeholder="Find a player or coach"
               label="Find people"
             />
             {mode === "group" && to.length > 0 && (
@@ -1583,12 +1796,14 @@ function NewMessage({
 
 /* Screen */
 
+/**
+ * Messages, desktop or phone. Below 820px the owner's phone design renders
+ * instead (MessagesPhone: an inbox that pushes a thread, details and a new
+ * message), on the same container, hooks, actions and catalog.
+ */
 export function MessagesView({ api }: { api: ChMessagesApi }) {
-  const [details, setDetails] = useState(false);
-  const [compose, setCompose] = useState(false);
+  const phone = useChPhone();
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
-  const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
-  useEffect(() => setDetails(false), [api.selectedId]);
   const toast = useToast();
   useEffect(() => {
     if (api.selectedId && !conv && !api.convsLoading && api.convs.length) {
@@ -1601,9 +1816,19 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
       api.select(null);
     }
   }, [api.selectedId, api.convsLoading, api.convs.length, conv, toast]); // eslint-disable-line react-hooks/exhaustive-deps
+  return phone ? <MessagesPhone api={api} /> : <MessagesDesktop api={api} />;
+}
+
+function MessagesDesktop({ api }: { api: ChMessagesApi }) {
+  const [details, setDetails] = useState(false);
+  const [compose, setCompose] = useState(false);
+  const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
+  const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
+  useEffect(() => setDetails(false), [api.selectedId]);
 
   return (
     <main
+      data-view="desktop"
       className={
         "ch-ms" +
         (conv || ann ? " has-open" : "") +

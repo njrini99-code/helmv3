@@ -165,6 +165,17 @@ export interface ChAnnouncementDetail {
   documents: Array<{ id: string; title: string; url: string; size: number }>;
 }
 
+/** A file shared in a conversation (getGolfConversationFiles; no storage path). Open it through its message's attachments. */
+export interface ChFile {
+  id: string;
+  messageId: string;
+  name: string;
+  size: number;
+  mime: string;
+  sentAt: string | null;
+  senderId: string | null;
+}
+
 export interface ChMute {
   muted: boolean;
   until: string | null;

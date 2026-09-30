@@ -372,9 +372,26 @@
   .ch-modal__head {
     padding-top: 12px;
   }
+  /* The sheet follows the finger from its grab and header (CH-1611). */
+  .ch-modal__grab,
+  .ch-modal__head {
+    touch-action: none;
+  }
+  /* With reduced motion the sheet fades instead of rising, and doesn't drag. */
+  @media (prefers-reduced-motion: reduce) {
+    .ch-modal__panel {
+      animation-name: ch-fade;
+    }
+  }
   .ch-modal__foot .ch-btn {
     flex: 1;
     height: 44px;
+  }
+  /* A 44px target around the 30px close. */
+  .ch-modal__head .ch-iconbtn::before {
+    content: '';
+    position: absolute;
+    inset: -7px;
   }
 }
 

@@ -56,39 +56,40 @@ they return.
 - [x] Key intents leave a `chTrail` breadcrumb (open conversation, send, start direct, create group)
 - [x] No `catch` swallows an error without reporting or handling it on screen
 - [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [ ] Every failure path was forced once locally and seen in the console or Sentry (the preview forces the conversation-list and thread failures; send, edit, delete and leave still need a forced failure against a live session)
+- [ ] Every failure path was forced once locally and seen in the console or Sentry (the preview forces the conversation-list and thread failures; send, edit, delete and leave still need a forced failure against a live session. Open: the merge pass, with a live session)
 
 ## phone-spec
-- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
-- [ ] The owner approved it (the file says `Status: approved`)
+- [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (`phone/messages.md` maps the six boards of `design/handoff/mobile/Messages Mobile.html` and `m-msg.jsx` to components, loader fields, hooks and actions, for coach and player. Rendered at 390 × 844 on 2026-09-29, captures `messages-01..22`, beside our preview at 390px, `messages-preview-*`)
+- [x] The owner approved it (the file says `Status: approved`). The handoff in `design/handoff/mobile/` is the approval (D-22)
+- [x] Every design/data gap is answered as an owner decision in `PROGRESS.md` (`MOBILE.md` step 1). Q-48 to Q-64 were answered by the owner on 2026-09-29, recorded as D-44 to D-49.
 
 ## phone
-- [ ] Built at 390px and 430px, respecting the safe areas
-- [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
-- [ ] Sheets are used instead of popovers, and they drag to dismiss
-- [ ] The bottom tab bar and toasts don't overlap content
-- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
+- [x] Built at 390px and 430px, respecting the safe areas (`MessagesPhone.tsx` on the same container, hooks and actions: Inbox, Thread, Details, New message and the announcement screens, per `phone/messages.md` and D-44 to D-49. Captures next to the design's: scratchpad `messages-mobile/built/built-{390,430}-*` against `messages-mobile/messages-00..22`)
+- [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent (a hit-test probe at 390px (every control drawn under 44px must take a tap 21px from its centre) over the Inbox, thread, actions sheet, Details (group, direct and with files), Add sheet, New message (coach and player), announcement form and announcement, each at its top and scrolled to its end: 0 misses on 2026-09-29. The desktop bubble's hover tools are a long press or the "Message actions" button on the phone, CH-7804)
+- [x] Sheets are used instead of popovers, and they drag to dismiss (the actions, Add members, Edit, Delete and Leave sheets are `Modal` bottom sheets that follow the finger and close past 80px, CH-1611 in shell.test. At 390px with real touch input on 2026-09-29, the Add members sheet followed a 50px drag, sprang back, and closed on a 160px one: scratchpad `phone-shell/drag-390-modal-*`; `clubhouse:a11y shell messages` exit 0, 29 pages)
+- [x] The bottom tab bar and toasts don't overlap content (the Inbox scrolled to its end clears the tab bar, `built-390-02-inbox-scrolled`; pushed screens hide the tab bar and toasts sit above the composer)
+- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device (open: the owner, on a device through `npm run ios:dev`)
 
 ## motion
 - [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
 - [x] Press scales to 0.985 on every tappable surface
 - [x] No count-ups and no entrance staggers; data is final on mount
-- [ ] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on)
+- [ ] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on. In code: pushed screens and sheets fade, and sheets don't drag, shell.test CH-1611; the look with the OS setting on isn't checked in a browser yet. Open: the next agent slot)
 - [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
 
 ## accessibility
-- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
+- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays (the sheets trap Tab and close on Esc in tests, shell.test CH-1802 and CH-1811; a full keyboard walk at 1280px and 390px isn't done. Open: the next agent slot)
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent (aria-label or a view-as-table path) (Messages has no charts)
 - [x] Status changes are announced (aria-live) and errors use role=alert
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [ ] No request waterfall on the server, with independent reads in parallel
-- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
-- [ ] No layout shift after first paint
+- [x] No request waterfall on the server, with independent reads in parallel (`src/clubhouse/data/messages.ts` reads the team, its settings and its players in one `Promise.all`; only the coaches read waits, on the team's organization)
+- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily (Messages is one client island on the realtime hooks; this branch loads `domAnimation` up front, and `agent/clubhouse` loads it lazily since 314b03055. Open: the merge pass, with the build's output)
+- [ ] No layout shift after first paint (not measured. Open: the merge pass, with the build)
 
 ## verified
-- [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
-- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
-- [ ] Owner review of the built screen
+- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log (PROGRESS log, 2026-09-29: typecheck 0, eslint 0 errors, `clubhouse:check` 0, `npx vitest run src/clubhouse` 295/295, the files action test 6/6, then `test:file` for messages and the other Modal screens 190/190 after the sheet work. The full suite, the build and the e2e run, `npm run test:e2e -- e2e/messages.spec.ts`, run again at the merge pass)
+- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md (open: the owner or the merge pass, signed in as a real coach)
+- [ ] Owner review of the built screen (open: the owner)

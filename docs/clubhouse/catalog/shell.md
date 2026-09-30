@@ -6,8 +6,10 @@ errors, and the behaviour every page shares. Code `src/clubhouse/shell/`,
 
 The shell's rows apply on every page: a page's own catalog only lists what is
 specific to it. The accessibility scan (`npm run clubhouse:a11y`, axe-core,
-WCAG 2.2 AA at 1280px and 390px) covers the bell panel and the phone More
-sheet open.
+WCAG 2.2 AA at 1280px and 390px) covers the bell panel, the phone bell sheet
+and the phone More sheet open. The phone chrome (the tab bar, the top bar's variants, pushed
+screens) follows the owner's design (`docs/clubhouse/phone/foundation.md`,
+D-40 to D-43).
 
 ## 10xx Error toasts
 
@@ -48,7 +50,7 @@ sheet open.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-1601 | Moving to another page | The page fades in with a 6px settle (220ms); nothing on first load | `RouteFrame`, `CH_ROUTE` | preview |
-| CH-1602 | Opening More on a phone | The sheet slides up (360ms) over a fading scrim (220ms); a swipe down past 80px closes it | `TabBar`, `chTween('slow')` | preview |
+| CH-1602 | Opening More on a phone | The sheet slides up (360ms) over a fading scrim (220ms); dragging it down closes it (CH-1611) | `TabBar`, `chTween('slow')` | preview |
 | CH-1603 | Opening the bell or any menu | It scales out of its button (150ms) | `CH_POP` | preview |
 | CH-1604 | A toast arrives or leaves | Slides up 10px and fades (220ms); the stack reflows | `ToastProvider` | preview |
 | CH-1605 | Going offline or back online | The banner fades in and out (220ms) | `OfflineBanner` | preview |
@@ -56,6 +58,9 @@ sheet open.
 | CH-1607 | The first Tab on a page | Skip to content slides into view (150ms) | `.ch-skip` | preview |
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
 | CH-1609 | A page or section is loading | Skeletons shimmer left to right (1.4s loop); they hold still when Animations is off or motion is reduced | `.ch-skel` | preview |
+| CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 220ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
+| CH-1611 | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (360ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button | `useSheetDrag` in `TabBar`, `Bell` and `Modal` | shell.test › CH-1611 |
+| CH-1612 | Opening the bell on a phone | The notifications sheet rises (360ms) over a fading scrim (220ms), as More does; a fade when motion is reduced | `Bell`, `chTween('slow')` | preview |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
 
@@ -64,7 +69,7 @@ sheet open.
 | CH-1701 | Changing tabs (not tapping the tab they're on) | A selection tick | `haptic('select')` in `TabBar` | shell.test › CH-1701 |
 | CH-1702 | Any save or send lands | A medium tap | `useAction` → `haptic('commit')` | shell.test › CH-1702 |
 | CH-1703 | Any save or send fails | The OS error pattern | `useAction` → `haptic('error')` | shell.test › CH-1703 |
-| CH-1704 | Opening More; swiping the sheet away | A tick; a light tap | `TabBar` | preview |
+| CH-1704 | Opening More; swiping the sheet away | A tick; a light tap | `TabBar`, `useSheetDrag` | shell.test › CH-1611 (the swipe); preview (the tick) |
 | CH-1705 | Opening the bell, a notification, or a menu item | A selection tick | `Bell`, `Menu` | preview |
 | CH-1706 | The connection drops | The OS warning pattern | `OfflineBanner` | shell.test › CH-1901 |
 
@@ -78,7 +83,11 @@ sheet open.
 | CH-1804 | Toasts are announced: confirmations politely, errors right away | `aria-live="polite"`, `role="alert"` on errors | shell.test › CH-1804 |
 | CH-1805 | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard | `Bell`, `Menu` (arrow keys, Home, End, Esc) | preview |
 | CH-1806 | Every control shows a focus ring on keyboard focus; text fields show their own green or ink ring instead, never two | `base.css` `:focus-visible` | preview |
-| CH-1807 | No axe violations (WCAG 2.2 AA, contrast included) with the bell open and the More sheet open | `npm run clubhouse:a11y` | a11y scan |
+| CH-1807 | No axe violations (WCAG 2.2 AA, contrast included) with the bell open (a sheet on the phone) and the More sheet open | `npm run clubhouse:a11y` | a11y scan |
+| CH-1808 | The phone tab bar lists the role's tabs (coach: Home, Helm, Rounds, Stats, More; player: Home, Calendar, Messages, My stats, More; D-40), and when Messages is under More, More is named with its unread count ("More, 3 unread messages") | `TabBar`, `phoneTabsFor` | shell.test › CH-1808 |
+| CH-1809 | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it | `PhoneScreen`, `usePhoneImmersive` | shell.test › CH-1809 |
+| CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |
+| CH-1811 | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up | `Bell` (`aria-modal`, `data-state="open"`) | shell.test › CH-1811 |
 
 ## 19xx Network and UX
 
@@ -89,6 +98,7 @@ sheet open.
 | CH-1903 | Someone saves while offline | "Couldn't save your profile: you're offline" (the action named) + "Reconnect, then try again. Nothing was changed." Nothing is sent and switches don't flip | `useAction`, `useInstantSave`, CoachHelm queue | shell.test › CH-1903 |
 | CH-1904 | Moving to another page | The new page opens at the top, never halfway down | `RouteFrame` resets the canvas scroll | preview |
 | CH-1905 | Someone presses Try again on a notice while offline | The notice adds "You're offline. Reconnect, then try again." (warning haptic) and nothing is retried; the line leaves when the connection returns | `InlineNotice` | shell.test › CH-1905 |
+| CH-1906 | On the phone, the edge swipe or the browser's back while a screen is pushed | The top screen pops, as the back link would; the page stays put | `usePhoneStackHistory` | shell.test › CH-1906 |
 | CH-1951 | Someone clicks the same thing over and over (rage click) | Nothing on screen | Sentry Replay in production. Partial: only 10% of sessions are recorded, plus every session that has an error, so most rage clicks are not seen. No Clubhouse-side detector yet | existing |
 | CH-1952 | A click that does nothing (dead click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |
 | CH-1953 | A slow response to a click (slow click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |

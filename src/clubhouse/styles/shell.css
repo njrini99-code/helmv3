@@ -284,6 +284,11 @@
   gap: 4px;
   margin-left: auto;
 }
+/* The phone's tab-root title and the slot for a page's own top bar: phone only. */
+.ch-topbar__ptitle,
+.ch-topbar__pslot {
+  display: none;
+}
 
 /* Placeholder and full-page error */
 .ch-notyet {
@@ -440,7 +445,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--ch-z-overlay);
-  background: rgb(20 20 18 / 0.32);
+  background: rgb(20 18 12 / 0.34);
 }
 .ch-more {
   position: fixed;
@@ -448,61 +453,110 @@
   bottom: 0;
   left: 0;
   z-index: var(--ch-z-overlay);
-  padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
-  border-radius: 20px 20px 0 0;
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-shadow-lg);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.18);
   touch-action: none;
 }
-.ch-more__grab {
-  width: 36px;
+.ch-more__grab,
+.ch-bellp__grab {
+  width: 38px;
   height: 5px;
-  margin: 0 auto 6px;
-  border-radius: 3px;
-  background: var(--ch-ivory-300);
+  margin: 8px auto 4px;
+  border-radius: 5px;
+  background: rgb(28 25 18 / 0.18);
 }
 .ch-more__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 4px 8px 8px;
-  font: var(--ch-type-title);
+  gap: 10px;
+  padding: 8px 0 12px;
+  font: 600 18px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ch-text-primary);
+}
+.ch-more__x,
+.ch-bellp__x {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(28 25 18 / 0.06);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+/* A 44px target around the 32px coin. */
+.ch-more__x::before,
+.ch-bellp__x::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
 .ch-more__list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 14px;
-  background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow);
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-shadow-sm);
 }
 .ch-more__row {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 48px;
-  padding: 0 12px;
-  border-radius: 10px;
+  min-height: 54px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
-  font: 500 15px/1 var(--ch-font-sans);
+  font: 500 14.5px/1.25 var(--ch-font-sans);
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
 }
-.ch-more__row svg {
-  color: var(--ch-text-tertiary);
+.ch-more__row:first-child {
+  border-top: 0;
 }
 .ch-more__row:active {
   transform: scale(var(--ch-press-scale));
-  background: var(--ch-raised-bg);
+  background: var(--ch-bg-hover);
+}
+.ch-more__ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--ch-bg-subtle);
+  color: var(--ch-text-secondary);
+}
+.ch-more__label {
+  flex: 1;
+  min-width: 0;
+}
+.ch-more__count {
+  flex: none;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--ch-green-600);
+  color: var(--ch-text-on-accent);
+  font: 600 11.5px/20px var(--ch-font-sans);
+  text-align: center;
 }
 .ch-more__row[aria-current='page'] {
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
   color: var(--ch-green-700);
   font-weight: 600;
 }
-.ch-more__row[aria-current='page'] svg {
+.ch-more__row[aria-current='page'] .ch-more__ic {
+  background: var(--ch-green-50);
   color: var(--ch-green-700);
 }
 
@@ -523,19 +577,58 @@
     box-shadow: none;
     padding-bottom: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom));
   }
+  /* The owner's phone top bar (m-shell.jsx MTop): ivory at 90%, a hairline, a 44px row under the status bar. */
   .ch-topbar {
-    height: calc(48px + env(safe-area-inset-top));
-    padding: env(safe-area-inset-top) 16px 0;
+    gap: 8px;
+    height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 8px 6px 16px;
+    background: var(--ch-phone-bar-bg);
+  }
+  .ch-topbar__crumbs,
+  .ch-topbar__settings {
+    display: none;
+  }
+  .ch-topbar__ptitle {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font: 600 17px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.01em;
+    color: var(--ch-text-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-topbar[data-phone='page'] {
+    padding-left: 16px;
+  }
+  /* A page's own top replaces the title and the bell (its action takes the right edge). */
+  .ch-topbar[data-phone='page'] .ch-topbar__ptitle,
+  .ch-topbar[data-phone='page'] .ch-topbar__actions {
+    display: none;
+  }
+  .ch-topbar[data-phone='page'] .ch-topbar__pslot {
+    display: contents;
+  }
+  .ch-topbar .ch-iconbtn {
+    width: 44px;
+    height: 44px;
+    color: var(--ch-text-secondary);
   }
   .ch-toasts {
     right: 12px;
     left: 12px;
     bottom: calc(var(--ch-tabbar-h) + 12px + env(safe-area-inset-bottom));
   }
+  /* A pushed screen hides the tab bar: toasts sit above its composer instead (and above the keyboard). */
+  .ch-root[data-phone-immersive] .ch-toasts {
+    bottom: calc(72px + env(safe-area-inset-bottom) + var(--keyboard-height, 0px));
+  }
   .ch-toast {
     min-width: 0;
     max-width: none;
   }
+  /* The owner's phone tab bar (m-shell.jsx MTabs, D-40): ivory glass, the active tab in green, no chip. */
   .ch-tabbar {
     position: fixed;
     right: 0;
@@ -544,11 +637,12 @@
     z-index: var(--ch-z-sticky);
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
     height: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom));
-    padding: 6px 8px env(safe-area-inset-bottom);
-    background: linear-gradient(180deg, #0e4029, #0a331f);
-    box-shadow: 0 -1px 0 rgb(0 0 0 / 0.2), inset 0 1px 0 rgb(220 205 166 / 0.14);
+    padding: 6px 6px calc(4px + env(safe-area-inset-bottom));
+    background: var(--ch-phone-tabbar-bg);
+    -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+    box-shadow: 0 -1px 0 var(--ch-border-hairline);
   }
   .ch-tab {
     display: flex;
@@ -556,46 +650,173 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    height: 46px;
+    min-height: 46px;
     padding: 0;
     border: 0;
-    border-radius: 12px;
     background: none;
-    color: #cfc7b2;
+    color: var(--ch-text-tertiary);
     font: 500 10.5px/1 var(--ch-font-sans);
     text-decoration: none;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease),
-      transform var(--ch-dur-instant) var(--ch-ease);
+    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
   }
   .ch-tab:active {
-    transform: scale(0.96);
+    transform: scale(var(--ch-press-scale));
   }
   .ch-tab[aria-current='page'] {
-    background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
-    color: var(--ch-green-800);
-    font-weight: 600;
-    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), inset 0 1px 0 #fff;
+    color: var(--ch-green-700);
   }
   .ch-tab__icon {
     position: relative;
-    display: grid;
-    place-items: center;
+    display: inline-flex;
   }
   .ch-tab__badge {
     position: absolute;
-    top: -5px;
-    left: 13px;
-    min-width: 17px;
-    height: 17px;
-    padding: 0 5px;
-    border-radius: 9px;
-    background: #dccda6;
-    color: var(--ch-green-900);
-    font: 600 10.5px/17px var(--ch-font-sans);
+    top: -4px;
+    right: -9px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--ch-green-600);
+    color: var(--ch-text-on-accent);
+    font: 600 9.5px/15px var(--ch-font-sans);
     text-align: center;
-    box-shadow: 0 0 0 2px #0c3a25;
+  }
+
+  /* The parts of a phone top bar (ui/PhoneBar.tsx): in the shell's bar for a page's own top, and on pushed screens. */
+  .ch-pbar {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 8px 6px 16px;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--ch-border-hairline);
+    background: var(--ch-phone-bar-bg);
+  }
+  .ch-pbar.is-lead {
+    gap: 4px;
+    padding-left: 4px;
+  }
+  .ch-pbar__back {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    height: 44px;
+    margin-left: -8px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    font: 500 16px/1 var(--ch-font-sans);
+    color: var(--ch-green-700);
+    cursor: pointer;
+    transition: transform var(--ch-dur-instant) var(--ch-ease);
+  }
+  .ch-pbar__back.is-text {
+    margin-left: -4px;
+  }
+  .ch-pbar__back.is-bare {
+    justify-content: center;
+    width: 44px;
+    margin-left: 0;
+    padding: 0;
+  }
+  .ch-pbar__back:active,
+  .ch-pbar__icon:active,
+  .ch-pbar__text:active {
+    transform: scale(var(--ch-press-scale));
+  }
+  .ch-pbar__title {
+    position: absolute;
+    top: env(safe-area-inset-top);
+    left: 50%;
+    display: flex;
+    align-items: center;
+    max-width: 52%;
+    height: 44px;
+    margin: 0;
+    overflow: hidden;
+    transform: translateX(-50%);
+    font: 600 16px/1 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+    white-space: nowrap;
+  }
+  /* The title takes focus when a screen is pushed (for VoiceOver): it is a destination, not a control, so no ring. */
+  .ch-pbar__title:focus {
+    outline: none;
+  }
+  .ch-pbar__title.is-start {
+    position: static;
+    flex: 1;
+    max-width: none;
+    transform: none;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+  }
+  .ch-pbar__lead {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .ch-pbar__right {
+    display: flex;
+    flex: none;
+    align-items: center;
+    margin-left: auto;
+  }
+  .ch-pbar__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--ch-text-secondary);
+    cursor: pointer;
+    transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  }
+  .ch-pbar__icon:active {
+    background: rgb(28 25 18 / 0.06);
+  }
+  .ch-pbar__text {
+    height: 44px;
+    padding: 0 10px;
+    border: 0;
+    background: none;
+    font: 600 16px/44px var(--ch-font-sans);
+    color: var(--ch-green-700);
+    cursor: pointer;
+    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  }
+  .ch-pbar__text[aria-disabled='true'] {
+    color: var(--ch-text-tertiary);
+    cursor: default;
+  }
+
+  /* A pushed screen (shell/PhoneScreen.tsx): the whole phone, over the page and its chrome. */
+  .ch-pscreen {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--ch-z-sticky) + 10);
+    display: flex;
+    flex-direction: column;
+    background: var(--ch-bg-page);
+    outline: none;
+    overscroll-behavior: contain;
+  }
+  /* The keyboard never resizes the WebView: a screen with a composer lifts itself by the keyboard's height. */
+  body.keyboard-open .ch-pscreen[data-fw-keyboard-aware] {
+    padding-bottom: var(--keyboard-height);
   }
   .ch-notyet {
     min-height: 60dvh;
@@ -634,6 +855,57 @@
   max-height: min(540px, calc(100dvh - 80px));
   transform-origin: top right;
   outline: none;
+}
+/* The bell on the phone is a sheet (MSheet), not a popover (CH-1811). */
+.ch-bellp--sheet {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: 82dvh;
+  padding: 0 8px calc(8px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.18);
+}
+/* It follows the finger from its grab and header (CH-1611); the list scrolls. */
+.ch-bellp__grab,
+.ch-bellp__shead {
+  flex: none;
+  touch-action: none;
+}
+.ch-bellp__shead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 8px 10px;
+}
+.ch-bellp__stitle {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ch-bellp__stitle b {
+  font: 600 18px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ch-text-primary);
+}
+.ch-bellp__stitle span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-bellp__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+}
+/* A 44px target around the 30px buttons. */
+.ch-bellp__tools .ch-btn::before {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
 }
 .ch-bellp__head {
   display: flex;

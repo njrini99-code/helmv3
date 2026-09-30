@@ -2,34 +2,40 @@
 
 import Link from 'next/link';
 import { AnimatePresence, m } from 'framer-motion';
-import { Ellipsis, Settings, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { LayoutGrid, Settings, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
 import { chTween } from '../lib/motion';
+import { useSheetDrag } from '../lib/sheet-drag';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, navFor, type ChRole } from './nav';
+import { activeNavItem, phoneTabsFor, type ChRole } from './nav';
+import { usePhoneChromeState } from './phone-chrome';
 import { badgeCount } from './Sidebar';
 
 /**
- * Phone navigation (owner decision D-3): a green tab bar with the ivory-pass
- * active pill, four destinations plus More. A selection tick on every tab
- * change; More opens a sheet with the rest of the app.
+ * Phone navigation (owner design, D-40): the ivory glass tab bar, four
+ * destinations per role plus More, the active tab in green. A selection tick
+ * on every tab change; More opens a sheet with the rest of the app (D-41).
+ * When Messages lives under More, its unread count rolls up onto More.
  */
 export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChShellData; role: ChRole }) {
   const badges = useNotificationBadges();
   const reduced = useChReducedMotion();
+  const { immersive } = usePhoneChromeState();
   const [moreOpen, setMoreOpen] = useState(false);
-  const nav = navFor(role);
   const current = activeNavItem(pathname, role);
-  const tabs = nav.filter((i) => i.tab);
-  const rest = nav.filter((i) => !i.tab);
-  const moreActive = !!current && !current.tab;
+  const { tabs, more: rest } = phoneTabsFor(role);
+  const moreActive = !!current && !tabs.some((t) => t.id === current.id);
+  const messagesUnderMore = rest.find((i) => i.badge === 'messages');
+  const moreCount = messagesUnderMore ? badgeCount(messagesUnderMore, badges, shell) : null;
 
   const moreBtn = useRef<HTMLButtonElement>(null);
   const sheet = useRef<HTMLDivElement>(null);
+  const closeMore = useCallback(() => setMoreOpen(false), []);
+  const drag = useSheetDrag(sheet, closeMore, { enabled: !reduced });
 
   useEffect(() => setMoreOpen(false), [pathname]);
   // The sheet is modal: focus moves into it, Tab stays inside, Esc closes it,
@@ -62,7 +68,7 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
 
   return (
     <>
-      <nav className="ch-tabbar" aria-label="Main">
+      <nav className="ch-tabbar" aria-label="Main" data-ch-code="CH-1808" inert={immersive || undefined}>
         {tabs.map((t) => {
           const count = badgeCount(t, badges, shell);
           const active = current?.id === t.id;
@@ -75,10 +81,15 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
               onClick={() => !active && haptic('select')}
             >
               <span className="ch-tab__icon">
-                <Icon icon={t.icon} size={20} />
-                {count != null && <span className="ch-tab__badge ch-num">{count > 99 ? '99+' : count}</span>}
+                <Icon icon={t.icon} size={21} />
+                {count != null && (
+                  <span className="ch-tab__badge ch-num" aria-hidden="true">
+                    {count > 99 ? '99+' : count}
+                  </span>
+                )}
               </span>
-              <span className="ch-tab__label">{t.label}</span>
+              <span className="ch-tab__label">{t.tabLabel ?? t.label}</span>
+              {count != null && <span className="ch-sr-only">, {count} new</span>}
             </Link>
           );
         })}
@@ -89,13 +100,19 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
           aria-current={moreActive ? 'page' : undefined}
           aria-expanded={moreOpen}
           aria-controls="ch-more"
+          aria-label={moreCount != null ? `More, ${moreCount} unread ${moreCount === 1 ? 'message' : 'messages'}` : 'More'}
           onClick={() => {
             haptic('select');
             setMoreOpen((o) => !o);
           }}
         >
           <span className="ch-tab__icon">
-            <Icon icon={Ellipsis} size={20} />
+            <Icon icon={LayoutGrid} size={21} />
+            {moreCount != null && (
+              <span className="ch-tab__badge ch-num" aria-hidden="true">
+                {moreCount > 99 ? '99+' : moreCount}
+              </span>
+            )}
           </span>
           <span className="ch-tab__label">More</span>
         </button>
@@ -128,36 +145,38 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
               animate={reduced ? { opacity: 1 } : { y: 0 }}
               exit={reduced ? { opacity: 0 } : { y: '100%' }}
               transition={chTween('slow')}
-              drag={reduced ? false : 'y'}
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.6 }}
-              onDragEnd={(_, info) => {
-                if (info.offset.y > 80 || info.velocity.y > 500) {
-                  haptic('press');
-                  setMoreOpen(false);
-                }
-              }}
             >
-              <div className="ch-more__grab" aria-hidden="true" />
-              <div className="ch-more__head">
+              <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+              <div className="ch-more__head" onPointerDown={drag.onPointerDown}>
                 <span>More</span>
-                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={() => setMoreOpen(false)}>
-                  <Icon icon={X} size={15} />
+                <button type="button" className="ch-more__x" aria-label="Close" onClick={() => setMoreOpen(false)}>
+                  <Icon icon={X} size={16} />
                 </button>
               </div>
               <div className="ch-more__list">
-                {[...rest, { id: 'settings', label: 'Settings', href: '/golf/dashboard/settings', icon: Settings }].map((i) => (
-                  <Link
-                    key={i.id}
-                    href={i.href}
-                    className="ch-more__row"
-                    aria-current={current?.id === i.id ? 'page' : undefined}
-                    onClick={() => haptic('select')}
-                  >
-                    <Icon icon={i.icon} size={18} />
-                    <span>{i.label}</span>
-                  </Link>
-                ))}
+                {[...rest, { id: 'settings', label: 'Settings', href: '/golf/dashboard/settings', icon: Settings }].map((i) => {
+                  const count = 'badge' in i && i.badge ? badgeCount(i, badges, shell) : null;
+                  return (
+                    <Link
+                      key={i.id}
+                      href={i.href}
+                      className="ch-more__row"
+                      aria-current={current?.id === i.id ? 'page' : undefined}
+                      onClick={() => haptic('select')}
+                    >
+                      <span className="ch-more__ic">
+                        <Icon icon={i.icon} size={17} />
+                      </span>
+                      <span className="ch-more__label">{i.label}</span>
+                      {count != null && (
+                        <span className="ch-more__count ch-num">
+                          {count > 99 ? '99+' : count}
+                          <span className="ch-sr-only"> new</span>
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             </m.div>
           </>

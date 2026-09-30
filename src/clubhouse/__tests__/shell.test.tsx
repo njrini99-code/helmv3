@@ -1,5 +1,6 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,7 +27,8 @@ vi.mock('@/lib/supabase/server', () => ({
     },
   }),
 }));
-vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, refetch: vi.fn() }) }));
+const badgeState = vi.hoisted(() => ({ messages: 0 }));
+vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, messages: badgeState.messages, refetch: vi.fn() }) }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: vi.fn(), markNotificationRead: vi.fn(), markAllNotificationsRead: vi.fn() }));
 
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
@@ -40,6 +42,11 @@ import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { Sidebar } from '../shell/Sidebar';
 import { TabBar } from '../shell/TabBar';
+import { PhoneScreen } from '../shell/PhoneScreen';
+import { PhoneTop, usePhoneStackHistory } from '../shell/phone-chrome';
+import { PhoneBar } from '../ui/PhoneBar';
+import { Modal } from '../ui/Modal';
+import './dialog-polyfill';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -122,6 +129,33 @@ describe('Shell · bell', () => {
     bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
     await user.click(screen.getByRole('button', { name: 'Notifications' }));
     await expectCode('CH-1302', /all caught up/);
+  });
+
+  it('CH-1811 on the phone the bell is a modal sheet: focus moves in, Tab stays inside, Close gives focus back', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const user = userEvent.setup();
+      bell({});
+      const trigger = screen.getByRole('button', { name: /Notifications/ });
+      await user.click(trigger);
+      await expectCode('CH-1811');
+      const sheet = code('CH-1811') as HTMLElement;
+      expect(sheet.getAttribute('role')).toBe('dialog');
+      expect(sheet.getAttribute('aria-modal')).toBe('true');
+      expect(sheet.classList.contains('ch-popover')).toBe(false);
+      await within(sheet).findByText('Ava in Varsity team');
+      await waitFor(() => expect(sheet.contains(document.activeElement)).toBe(true));
+      const focusables = sheet.querySelectorAll<HTMLElement>('button:not(:disabled)');
+      focusables[focusables.length - 1]!.focus();
+      await user.tab();
+      expect(document.activeElement).toBe(focusables[0]);
+      await user.click(within(sheet).getByRole('button', { name: 'Close' }));
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(trigger);
+    } finally {
+      window.matchMedia = real;
+    }
   });
 
   it('CH-1303 the filter has nothing after a refresh', async () => {
@@ -306,6 +340,127 @@ describe('Shell · navigation and accessibility', () => {
     await waitFor(() => expect(document.activeElement).toBe(more));
   });
 
+  describe('CH-1611 a phone sheet follows the finger', () => {
+    // Down at y=100, then to 100 + `to`. A pause before letting go, so the release is not a flick.
+    const drag = async (handle: HTMLElement, sheet: HTMLElement, to: number) => {
+      act(() => {
+        handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + to }));
+      });
+      expect(sheet.style.translate).toBe(`0 ${to}px`);
+      await new Promise((r) => setTimeout(r, 20));
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + to }));
+        window.dispatchEvent(new MouseEvent('pointerup', { clientY: 100 + to }));
+      });
+    };
+
+    it('the More sheet springs back short of 80px, and closes past it with the press haptic', async () => {
+      const user = userEvent.setup();
+      wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+      const more = screen.getByRole('button', { name: 'More' });
+      await user.click(more);
+      await expectCode('CH-1802');
+      const sheet = code('CH-1802') as HTMLElement;
+      const head = sheet.querySelector('.ch-more__head') as HTMLElement;
+      hapticSpy.mockClear();
+      await drag(head, sheet, 40);
+      expect(sheet.style.translate).toBe('');
+      expect(more.getAttribute('aria-expanded')).toBe('true');
+      expect(hapticSpy).not.toHaveBeenCalled();
+      await drag(head, sheet, 120);
+      expect(hapticSpy).toHaveBeenCalledWith('press');
+      // Closed; the sheet itself leaves with its exit animation.
+      expect(more.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('a Modal is a sheet on the phone: its header drags it shut, its Close button stays a button', async () => {
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        const onCloseSpy = vi.fn();
+        const Harness = () => {
+          const [open, setOpen] = useState(true);
+          return (
+            <Modal
+              open={open}
+              onClose={() => {
+                onCloseSpy();
+                setOpen(false);
+              }}
+              title="Requests"
+            >
+              Body
+            </Modal>
+          );
+        };
+        wrap(<Harness />);
+        const dialog = document.querySelector('dialog.ch-modal') as HTMLElement;
+        const head = dialog.querySelector('.ch-modal__head') as HTMLElement;
+        const close = screen.getByRole('button', { name: 'Close' });
+        act(() => {
+          close.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+          window.dispatchEvent(new MouseEvent('pointermove', { clientY: 200 }));
+        });
+        expect(dialog.style.translate).toBe('');
+        act(() => {
+          window.dispatchEvent(new MouseEvent('pointerup', { clientY: 200 }));
+        });
+        await drag(head, dialog, 30);
+        expect(onCloseSpy).not.toHaveBeenCalled();
+        await drag(head, dialog, 100);
+        expect(onCloseSpy).toHaveBeenCalledTimes(1);
+        expect(hapticSpy).toHaveBeenCalledWith('press');
+        await waitFor(() => expect(dialog.hasAttribute('open')).toBe(false));
+      } finally {
+        window.matchMedia = real;
+      }
+    });
+
+    it('the bell sheet drags shut from its header', async () => {
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        const user = userEvent.setup();
+        bell({});
+        const trigger = screen.getByRole('button', { name: /Notifications/ });
+        await user.click(trigger);
+        await expectCode('CH-1811');
+        const sheet = code('CH-1811') as HTMLElement;
+        hapticSpy.mockClear();
+        await drag(sheet.querySelector('.ch-bellp__shead') as HTMLElement, sheet, 120);
+        expect(hapticSpy).toHaveBeenCalledWith('press');
+        expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      } finally {
+        window.matchMedia = real;
+      }
+    });
+
+    it('with reduced motion a sheet does not drag', async () => {
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' || q === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
+      try {
+        const onClose = vi.fn();
+        wrap(
+          <Modal open onClose={onClose} title="Requests">
+            Body
+          </Modal>,
+        );
+        const dialog = document.querySelector('dialog.ch-modal') as HTMLElement;
+        const head = dialog.querySelector('.ch-modal__head') as HTMLElement;
+        act(() => {
+          head.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+          window.dispatchEvent(new MouseEvent('pointermove', { clientY: 300 }));
+          window.dispatchEvent(new MouseEvent('pointerup', { clientY: 300 }));
+        });
+        expect(dialog.style.translate).toBe('');
+        expect(onClose).not.toHaveBeenCalled();
+      } finally {
+        window.matchMedia = real;
+      }
+    });
+  });
+
   it('CH-1803 the current page is marked in the navigation, and landmarks are named', () => {
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard/roster" />);
     expect(screen.getByRole('link', { name: /Roster/ }).getAttribute('aria-current')).toBe('page');
@@ -344,5 +499,105 @@ describe('Shell · navigation and accessibility', () => {
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('commit'));
     await user.click(screen.getByRole('button', { name: 'bad' }));
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('error'));
+  });
+});
+
+describe('Shell · phone chrome', () => {
+  const shell: ChShellData = { nextEvent: null, pendingJoinRequests: 2 };
+  afterEach(() => {
+    badgeState.messages = 0;
+  });
+
+  it('CH-1808 each role gets its own phone tabs, and More carries the Messages unread count', () => {
+    badgeState.messages = 3;
+    const { unmount } = wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+    const bar = code('CH-1808')!;
+    const names = [...bar.querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label') ?? el.querySelector('.ch-tab__label')!.textContent);
+    expect(names).toEqual(['Home', 'Helm', 'Rounds', 'Stats', 'More, 3 unread messages']);
+    unmount();
+    wrap(<TabBar pathname="/golf/dashboard/messages" shell={shell} role="player" />);
+    const labels = [...code('CH-1808')!.querySelectorAll('.ch-tab__label')].map((el) => el.textContent);
+    expect(labels).toEqual(['Home', 'Calendar', 'Messages', 'My stats', 'More']);
+    expect(screen.getByRole('link', { name: /Messages/ }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
+  });
+
+  it('CH-1809 a pushed screen takes focus on its title and makes the shell chrome inert until it closes', async () => {
+    function Page({ open }: { open: boolean }) {
+      return open ? (
+        <PhoneScreen labelledBy="t-title">
+          <PhoneBar title="Varsity team" titleId="t-title" back={{ onBack: () => {}, ariaLabel: 'Back to Messages' }} />
+        </PhoneScreen>
+      ) : (
+        <p>Inbox</p>
+      );
+    }
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+        <Page open={false} />
+      </ClubhouseFrame>,
+    );
+    expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false);
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+        <Page open />
+      </ClubhouseFrame>,
+    );
+    const screenEl = screen.getByRole('region', { name: 'Varsity team' });
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById('t-title')));
+    expect(screenEl.contains(document.activeElement)).toBe(true);
+    expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.ch-topbar')!.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-immersive')).toBe(true);
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+        <Page open={false} />
+      </ClubhouseFrame>,
+    );
+    await waitFor(() => expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false));
+  });
+
+  it('CH-1810 the phone top bar names the page, and a page top swaps the bell for a named back link', async () => {
+    const back = vi.fn();
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <p>Roster</p>
+      </ClubhouseFrame>,
+    );
+    const bar = document.querySelector('.ch-topbar')!;
+    expect(bar.getAttribute('data-phone')).toBe('root');
+    expect(bar.querySelector('.ch-topbar__ptitle')!.textContent).toBe('Roster');
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <PhoneTop title="Roster" back={{ label: 'More', onBack: back }} />
+      </ClubhouseFrame>,
+    );
+    await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('page'));
+    const link = screen.getByRole('button', { name: 'Back to More' });
+    expect(bar.contains(link)).toBe(true);
+    await userEvent.setup().click(link);
+    expect(back).toHaveBeenCalled();
+  });
+});
+
+describe('Shell · phone back', () => {
+  it('CH-1906 the back gesture pops the top pushed screen; closing from the UI takes its entry back off', async () => {
+    const start = window.history.length;
+    let setDepth: (n: number) => void = () => {};
+    function Stack() {
+      const [depth, set] = useState(0);
+      setDepth = set;
+      usePhoneStackHistory(depth, (level) => set(level));
+      return <p data-testid="depth">{depth}</p>;
+    }
+    render(<Stack />);
+    act(() => setDepth(1));
+    act(() => setDepth(2));
+    expect(window.history.length).toBe(start + 2);
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.getByTestId('depth').textContent).toBe('1'));
+    act(() => setDepth(0));
+    await waitFor(() => expect((window.history.state as { chPhone?: number } | null)?.chPhone ?? 0).toBe(0));
+    expect(screen.getByTestId('depth').textContent).toBe('0');
   });
 });
