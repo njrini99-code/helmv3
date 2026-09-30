@@ -142,11 +142,11 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(figs()[3]).toBe('5 of 5');
   });
 
-  it('the parts of the game: strokes gained, a Tour mark only where a benchmark exists', () => {
+  it('the parts of the game: strokes gained, a D1 mark only where a benchmark exists', () => {
     show();
     const legs = [...document.querySelectorAll('.ch-ph-leg')];
     expect(legs.map((l) => l.querySelector('b')!.textContent)).toEqual(['Off the tee', 'Approach', 'Short game', 'Putting']);
-    expect(legs[1]!.querySelector('.ch-ph-bench')!.textContent).toMatch(/You 74%Tour 66%/);
+    expect(legs[1]!.querySelector('.ch-ph-bench')!.textContent).toMatch(/You 74%D1 60%/);
     expect(legs[0]!.querySelector('.ch-ph-bench')).toBeNull();
     expect(legs[3]!.querySelector('.ch-ph-leg__sg')!.textContent).toMatch(/^\+0\.1/);
   });
@@ -256,7 +256,7 @@ describe('Player Home · the loader', () => {
       golf_coaches: { data: [{ id: 'c-asst', user_id: 'u-asst' }, { id: 'c-head', user_id: 'u-head' }] },
       golf_holes: { data: [] },
       golf_round_stats_cache: { data: [] },
-      golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 60 }] },
+      golf_pga_standards: { data: [{ metric_id: 'gir_pct', div1_avg_value: 60, tour: 'pga' }] },
     };
     const data = await loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Theo' });
     expect(roundsQueries[0]).toContainEqual(['in', ['player_id', ['p1']]]);
@@ -266,8 +266,8 @@ describe('Player Home · the loader', () => {
     // Oldest first: r3 (72), r2 (70), r1 (71), r0 (72).
     expect(data.scoring.points.map((p) => p.score)).toEqual([72, 70, 71, 72]);
     expect(data.latest.rounds).toHaveLength(3);
-    expect(data.legs!.rows.find((l) => l.key === 'approach')!.bench).toBe(60);
-    expect(data.legs!.rows.find((l) => l.key === 'tee')!.bench).toBeNull();
+    expect(data.legs!.rows.find((l) => l.key === 'approach')!.d1).toBe(60);
+    expect(data.legs!.rows.find((l) => l.key === 'tee')!.d1).toBeNull();
   });
 
   it('20804 a player’s week names no one: today’s event reads a count, never teammates’ names', async () => {
@@ -439,7 +439,7 @@ describe('Player Home · what the loader reads and whom it names', () => {
     expect(gone.handicap).toBeNull();
     for (const read of ['timezone', 'events', 'rounds', 'player', 'team']) expect(logServer).toHaveBeenCalledWith('home', read, expect.anything());
 
-    // The rounds load; the hole-by-hole scores, the round cache, the Tour benchmarks and the coaches do not.
+    // The rounds load; the hole-by-hole scores, the round cache, the D1 benchmarks and the coaches do not.
     logServer.mockClear();
     tables.current = {
       golf_team_settings: { data: { timezone: 'America/New_York' } },
@@ -453,11 +453,11 @@ describe('Player Home · what the loader reads and whom it names', () => {
     };
     const part = await loadPlayerHome(player);
     expect(part.latest).toMatchObject({ error: false, holesError: true });
-    expect(part.legs).toMatchObject({ cacheError: true, benchError: true });
+    expect(part.legs).toMatchObject({ cacheError: true, d1Error: true });
     expect(part.legs!.rows).toHaveLength(4);
     expect(part.scoring.points).toHaveLength(3);
     expect(part.coachUserId).toBeNull();
-    for (const read of ['holes', 'roundCache', 'tourBenchmarks', 'coaches']) expect(logServer).toHaveBeenCalledWith('home', read, expect.anything());
+    for (const read of ['holes', 'roundCache', 'd1Benchmarks', 'coaches']) expect(logServer).toHaveBeenCalledWith('home', read, expect.anything());
   });
 });
 

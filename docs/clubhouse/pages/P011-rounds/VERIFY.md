@@ -84,10 +84,9 @@ skeleton, not built), 110702 (offline: round entry's Start and Save for later ar
 hole's Try again are not), 110803 and 110804 (the player filter and the server action's checks, read not run), 111201
 and 111202 (a failed Start keeps the setup; a failed hole save keeps the shots), 111809 (axe, a script), 111810 (the
 scorecard's focusable region), 111901 and 111903 (the phone builds), 112001 (Esc) and 112101 (the read order). The
-catalog rows are the other contracts; those marked `preview` name no test: CH-11004, CH-11006, CH-11105, CH-11207,
-CH-11404, CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707, CH-11806, CH-11807, CH-11808 and CH-11901 (CH-11004
-and CH-11006 are now forced by round entry's tests, which still say `preview` in the catalog's test column until that
-column is brought current). CH-11601 stays `reserved` in the registry because its code string is only in `rounds.css`
+catalog rows are the other contracts; those marked `preview` name no test: CH-11004, CH-11105, CH-11207, CH-11404,
+CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707, CH-11806, CH-11807, CH-11808 and CH-11901. CH-11006 is forced
+by round entry's tests and its row now names them. CH-11601 stays `reserved` in the registry because its code string is only in `rounds.css`
 (the registry scans `.ts` and `.tsx`).
 
 A hand contract that lists more than one test file becomes `implemented` only when every listed file carries its Bridge ID.
@@ -126,9 +125,9 @@ Result:       built to the approved spec and seen at 390; 430px is not recorded 
 | Empty | CH-11301 to CH-11312, 110413 | tests, `?state=empty`, `noseason`, setup fixtures | distinct from a failed read; the first-run page needs every read answered |
 | Validation | CH-11101 to CH-11104, CH-11106 to CH-11109, 110510 | tests | one thing named beside the disabled control; nothing sent |
 | Server failure | CH-11001, CH-11002, CH-11003, CH-11005, CH-11007, CH-11201 to CH-11206, CH-11208 to CH-11211 | tests, `?state=failed`, `unfinished-failed`, `failwrites`, `failcourses`, `checkpointfail`, `submitfail` | toast or notice with its code; the card stays; Try again asks again |
-| Failure, preview only | CH-11004, CH-11006, CH-11207 | preview only | not forced by a test |
+| Failure, preview only | CH-11004, CH-11207 | preview only | not forced by a test |
 | Retry | 111401 to 111403 | tests | Discard's Retry removes the card, Start's Retry opens the round, a hole save and a submit run again |
-| Offline | 110702 | not forced | **not observed**: no P011 test or browser run went offline |
+| Offline | 110702, CH-1903 | `round-entry-wiring.test` (Start, Save for later) | round entry's Start and Save for later send nothing and say so; a browser that says offline but reaches the server goes ahead. **Not observed**: the library's Discard and the hole's Try again offline, and no browser run went offline |
 | Permission | 110801, 110802, 110805 | tests | a coach renders nothing on the library; another player's or a missing round is one "not here" page; a closed qualifier can't be chosen |
 | Permission, read only | 110803, 110804 | read, not run | reserved: no test forces the player filter or the server action's refusals |
 | Partial read | 110619 | tests | each failed read flags only its part; the rest renders |
