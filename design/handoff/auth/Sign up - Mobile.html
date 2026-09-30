@@ -1,0 +1,79 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Sign up (mobile)</title>
+<meta name="design_doc_mode" content="canvas">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="src/depth.css">
+<link rel="stylesheet" href="../cal.css">
+<link rel="stylesheet" href="../msg.css">
+<link rel="stylesheet" href="../roster.css">
+<link rel="stylesheet" href="../qual.css">
+<link rel="stylesheet" href="../qual-mobile.css">
+<link rel="stylesheet" href="../coachhelm2.css">
+<link rel="stylesheet" href="../m.css">
+<link rel="stylesheet" href="../m-home.css">
+<link rel="stylesheet" href="../sidebar.css">
+<link rel="stylesheet" href="../player-home.css">
+<link rel="stylesheet" href="../m-player-home.css">
+<script src="src/gh-core.js"></script>
+<link rel="stylesheet" href="../gh-polish.css">
+<link rel="stylesheet" href="src/login.css">
+<link rel="stylesheet" href="src/ox.css">
+<style>a{color:var(--green-700)}a:hover{color:var(--green-800)}
+.lgm-replay{all:unset;cursor:pointer;position:absolute;right:0;top:0;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:#12110E;color:#F4F1E8;font:600 12.5px/1 var(--font-sans)}
+.lgm-replay:hover{background:#0B3A25}</style>
+<script>(()=>{const z=new URLSearchParams(location.search).get('zoom');if(z)document.documentElement.style.zoom=z})()</script>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0B3A25"/><circle cx="50" cy="50" r="22" fill="none" stroke="#E6D3A2" stroke-width="4"/><path d="M50 30v40M30 50h40" stroke="#E6D3A2" stroke-width="4"/></svg></template>
+</head><body><div id="root"></div>
+<script type="text/babel" src="../ios-frame.jsx"></script>
+<script type="text/babel" src="src/scene.jsx"></script>
+<script type="text/babel" src="src/ox-steps.jsx"></script>
+<script type="text/babel" src="src/ox.jsx"></script>
+<script type="text/babel">
+const B = [
+  ['intro', 'Welcome', 'Fully interactive. Try K7PQX4MN, S4VN8QRT or HELM2026'],
+  ['code-ok', 'Team code matched', 'Team revealed with the roster'],
+  ['role', 'Player or assistant', 'One tap chooses and moves on'],
+  ['name', 'Your name', 'Big type, greets you by name'],
+  ['grad', 'Player · Class year', 'Year tiles with class labels'],
+  ['game', 'Player · Your game', 'Handicap dial, hand, hometown'],
+  ['photo', 'Player · Photo', 'Live roster preview'],
+  ['done', 'Player · On the roster', 'Member card issued'],
+  ['pending', 'Assistant · Waiting', 'Approval timeline'],
+  ['program', 'Head coach · Program', 'Division tiles, team'],
+  ['cdone', 'Head coach · Team code', 'Share code, member card'],
+  ['rwho', 'Request · Who', 'Coach, AD or player'],
+  ['sent', 'Request · Sent', 'Summary of the request'],
+  ['code:bad', 'Error · Wrong code', 'Slots shake and turn red'],
+  ['code:network', 'Error · Offline', 'Code check could not reach the server'],
+  ['account:exists', 'Error · Email in use', 'Tap Create account to see it'],
+  ['game:state', 'Error · State', 'Two-letter state required'],
+  ['done:joinfail', 'Error · Couldn’t join', 'Profile saved, team join failed'],
+  ['code:empty', 'Empty · New team', 'Code matched, no players yet'],
+  ['done:empty', 'Empty · First player', 'First on the roster'],
+];
+const ONLY = new URLSearchParams(location.search).get('board');
+function Board({ i, id, l, s }) {
+  const [k, setK] = React.useState(0);
+  const ref = React.useRef(null);
+  React.useEffect(() => { if (i === 0) return; const t = setTimeout(() => ref.current && ref.current.querySelectorAll('.gs svg').forEach((v) => v.pauseAnimations && v.pauseAnimations()), 400); return () => clearTimeout(t); }, [k]);
+  return (
+    <div ref={ref} className="qm-board" data-screen-label={String(i + 1).padStart(2, '0') + ' ' + l} style={{ left: 60 + (ONLY == null ? i : 0) * 482, top: 60 }}>
+      <p className="qm-board__l">{l}</p><p className="qm-board__s">{s}</p>
+      <button type="button" className="lgm-replay" onClick={() => setK(k + 1)}>Reset</button>
+      <IOSDevice><div style={{ position: 'absolute', inset: 0 }} className={i === 0 ? '' : 'obm-still'}><OnboardX mobile key={k} preset={id} /></div></IOSDevice>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<>{B.map(([id, l, s], i) => (ONLY == null || +ONLY === i) && <Board key={id} i={i} id={id} l={l} s={s} />)}</>);
+</script></body></html>
