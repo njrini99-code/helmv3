@@ -214,17 +214,17 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES }: { data: ChC
                   <>
                     <FocusCard key={cur.top.id} ins={cur.top} who={firstName(cur.name)} />
                     <div className="ch-hl-cact">
-                      {!cur.top.strength &&
-                        (mine ? (
-                          <span className="ch-hl-done" role="status" data-ch-code="CH-13601">
-                            <Icon icon={Check} size={15} />
-                            Assigned as {firstName(cur.name)}’s focus
-                          </span>
-                        ) : (
-                          <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
-                            {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : 'Assign as focus'}
-                          </Button>
-                        ))}
+                      {/* A strength is assignable too, as a keep-doing focus (the board draws it on Theo’s card). */}
+                      {mine ? (
+                        <span className="ch-hl-done" role="status" data-ch-code="CH-13601">
+                          <Icon icon={Check} size={15} />
+                          Assigned as {firstName(cur.name)}’s focus
+                        </span>
+                      ) : (
+                        <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
+                          {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : 'Assign as focus'}
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         leftIcon={Archive}
@@ -237,7 +237,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES }: { data: ChC
                       >
                         {dismiss.pending ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
                       </Button>
-                      {!cur.top.strength && mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
+                      {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
                     </div>
                   </>
                 )}

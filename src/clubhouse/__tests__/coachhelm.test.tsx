@@ -803,13 +803,16 @@ describe('CoachHelm for the coach, on screen', () => {
     }
   });
 
-  it('130806 a top insight that is working is not assigned as a focus, but it can be dismissed', async () => {
+  it('130806 a top insight that is working can be assigned as a keep-doing focus, as the board draws it on Theo (Q-80), or dismissed', async () => {
     const u = user();
-    showCoach();
+    const w = okWrites();
+    showCoach(PREVIEW_HELM_COACH, w);
     await pick(u, 'Theo Marchetti');
-    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
     expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Working')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
+    await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
+    expect(w.assign).toHaveBeenCalledWith(expect.objectContaining({ playerId: 'pl-theo', title: 'Double bogey-or-worse rate: 3.1%' }));
+    await expectCode('CH-13601', /Assigned as Theo’s focus/);
   });
 
   it('CH-13310 players with no insight yet are counted under the list', () => {

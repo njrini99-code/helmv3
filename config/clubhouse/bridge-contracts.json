@@ -11656,8 +11656,8 @@
     "page": "P013",
     "category": 8,
     "item": 6,
-    "name": "ASSIGN_IS_OFFERED_ONLY_FOR_A_FINDING_NOT_YET_MADE",
-    "meaning": "Assign as focus is offered only when the chosen player's top insight is a finding and no focus has been made from it. One that is working can be dismissed but not assigned. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds).",
+    "name": "ASSIGN_IS_OFFERED_ONLY_FOR_AN_INSIGHT_NOT_YET_MADE",
+    "meaning": "Assign as focus is offered when no focus has been made from the chosen player's top insight. One that is working (a strength) is offered too, as a keep-doing focus, as the board draws it on Theo's card (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds).",
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/data/coachhelm.ts#assignedByInsight",
     "tests": [
