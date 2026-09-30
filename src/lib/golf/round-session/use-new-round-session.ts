@@ -28,7 +28,9 @@ import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
+import { useToast } from '@/components/ui/sonner';
 import type { HoleConfig } from '@/lib/types/golf-course';
+import { useMobileNav } from '@/contexts/mobile-nav-context';
 import {
   emergencySave,
   loadLatestEmergencySave,
@@ -113,27 +115,17 @@ export interface NewRoundClientProps {
  * The new-round engine: setup, holes, tracking, autosave, recovery and submit, without the screen that draws it.
  * Moved out of NewRoundClient unchanged (ROUNDS_PLAN step 4a), so a second renderer can drive the same engine.
  */
-/**
- * What the engine asks of the screen that draws it. The legacy screen passes `useToast()` and `useMobileNav()`'s
- * functions each render, as the engine used to call them itself; a second renderer passes its own.
- */
-export interface NewRoundSessionPorts {
-  showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => unknown;
-  hideMobileNav: () => void;
-  showMobileNav: () => void;
-}
-
-export function useNewRoundSession({ playerId, ports }: NewRoundClientProps & { ports: NewRoundSessionPorts }) {
+export function useNewRoundSession({ playerId }: NewRoundClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { showToast } = ports;
+  const { showToast } = useToast();
   // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
   // not as a gate here — starting a New Round lands straight on the course
   // carousel. There is no in-flow resume prompt (the old prompt state was never
   // reachable), so this page no longer fetches the in-progress round.
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
-  const { hideMobileNav, showMobileNav } = ports;
+  const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
   useEffect(() => {
     hideMobileNav();
     return () => showMobileNav();
