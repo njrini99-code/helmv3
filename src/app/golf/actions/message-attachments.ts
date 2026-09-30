@@ -6,6 +6,8 @@ import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { notifyGolfMessageRecipients } from '@/lib/notifications/golf-message-fanout';
 import { describeError } from '@/lib/utils/describe-error';
+import { getGolfSessionProfile } from '@/lib/auth/session';
+import { isClubhouseFor } from '@/clubhouse/gate';
 
 /**
  * Attachment data from upload
@@ -340,6 +342,10 @@ export async function getGolfMessageAttachments(messageId: string): Promise<{
  * against golf_conversation_participants before anything is read, and the
  * read itself is RLS-scoped ("Users can view attachments in their
  * conversations"). Files on deleted messages are left out.
+ *
+ * HELD (D-61, docs/clubhouse/held/features/conversation-files.md): a new
+ * server capability, so it answers only where the Clubhouse UI is on for the
+ * caller, and refuses everywhere else until the owner releases it.
  */
 async function getGolfConversationFilesImpl(conversationId: string): Promise<{
   files?: Array<{
@@ -361,6 +367,11 @@ async function getGolfConversationFilesImpl(conversationId: string): Promise<{
     } = await supabase.auth.getUser();
     if (!user) {
       return { error: 'Unauthorized' };
+    }
+
+    const session = await getGolfSessionProfile();
+    if (!isClubhouseFor(session?.role)) {
+      return { error: 'Not available' };
     }
 
     const { data: membership, error: membershipError } = await supabase

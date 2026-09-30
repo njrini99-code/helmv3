@@ -782,13 +782,15 @@ Contract changes on 2026-09-29 (desktop and phone alike):
   can change members") before the insert, which RLS bounds again (the three axes above). A failed add is CH-7018;
   a duplicate insert (`23505`) counts as done. Removing someone else is not offered in Clubhouse.
 
-`getGolfConversationFiles(conversationId)` (D-48) lists a conversation's shared files for Details. Contract: the
+`getGolfConversationFiles(conversationId)` (D-48) lists a conversation's shared files for Details. It is HELD
+(D-61, `docs/clubhouse/held/features/conversation-files.md`): unless `isClubhouseFor(role)` is true for the
+caller it returns "Not available" before any read. Contract otherwise: the
 caller must be a row in `golf_conversation_participants` for that conversation, checked before any attachment is
 read (a stranger and a non-existent id both get "Not a participant"); the read runs on the RLS client; files on
 deleted messages are filtered in the query, newest first, capped at 100; it returns metadata only (id, message id,
 name, MIME type, size, sent at, sender), never a storage path or signed URL. Opening a file still goes through
 `getGolfMessageAttachments` for that one message. Test:
-`src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts` (6 cases: non-participant and
+`src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts` (7 cases: the HELD gate, non-participant and
 signed-out refusals, metadata only, the deleted-message filter in the query, one conversation per call, a failed
 read logged). A security review (2026-09-29) found no Critical or High issue.
 
@@ -798,4 +800,9 @@ Clubhouse work, both confirmed live on 2026-09-29: the `golf_message_attachments
 deleted message; and `anon` holds 7 table grants on `golf_message_attachments` (not exploitable today: every
 policy is `TO authenticated`). The owner's decision: after Clubhouse, a forward-only migration revokes the `anon`
 grants and excludes deleted messages from the SELECT policy. It is not written or applied yet; the owner decides
-on apply (`docs/clubhouse/PROGRESS.md`, Data gaps).
+on apply (`docs/clubhouse/held/data/message-attachments-hardening.md`, `docs/clubhouse/PROGRESS.md` Data gaps).
+
+**Foundation V2 classification (D-61, 2026-09-29).** D-45 (coaches in new groups) and D-47 (the creator adds
+members) are EXISTING: they call `createGolfTeamBroadcast`, `addGolfGroupMember` and `getGolfGroupAddCandidates`,
+which predate Clubhouse (79f6e1a07) and which Fairway's `GroupDetailsSheet` already uses; no server action or
+query changed, and the policies they rest on are applied in production. D-48 is HELD-FEATURE, gated as above.

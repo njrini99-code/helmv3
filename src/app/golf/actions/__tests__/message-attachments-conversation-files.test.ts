@@ -10,6 +10,8 @@
 //      this action (team-communications: attachments must not expose storage
 //      paths broadly); opening a file signs it per message instead.
 //   3. Files on deleted messages are left out.
+//   4. It is HELD (D-61): it answers only where the Clubhouse UI is on for the
+//      caller's role, and refuses before any read everywhere else.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -22,12 +24,17 @@ const mocks = vi.hoisted(() => ({
   notFilters: [] as unknown[][],
   eqFilters: [] as unknown[][],
   logServerError: vi.fn(async () => undefined),
+  clubhouse: true,
+  role: 'coach' as 'coach' | 'player' | null,
+  isClubhouseFor: vi.fn((role: string | null | undefined) => (role === 'coach' || role === 'player') && mocks.clubhouse),
 }));
 
 vi.mock('next/server', () => ({ after: (fn: () => unknown) => void fn() }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: mocks.logServerError }));
 vi.mock('@/lib/admin/observed-action', () => ({ withAdminObserved: (_n: string, _m: unknown, fn: unknown) => fn }));
 vi.mock('@/lib/notifications/golf-message-fanout', () => ({ notifyGolfMessageRecipients: vi.fn() }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: mocks.isClubhouseFor }));
+vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn(async () => ({ userId: 'u-1', role: mocks.role })) }));
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: mocks.getUser },
@@ -71,6 +78,22 @@ describe('getGolfConversationFiles', () => {
     mocks.attachmentReads = 0;
     mocks.notFilters = [];
     mocks.eqFilters = [];
+    mocks.clubhouse = true;
+    mocks.role = 'coach';
+    mocks.isClubhouseFor.mockClear();
+  });
+
+  it('is HELD: refuses before any read unless the Clubhouse UI is on for the caller', async () => {
+    mocks.clubhouse = false;
+    const res = await getGolfConversationFiles('c-1');
+    expect(res).toEqual({ error: 'Not available' });
+    expect(mocks.isClubhouseFor).toHaveBeenCalledWith('coach');
+    expect(mocks.attachmentReads).toBe(0);
+    mocks.clubhouse = true;
+    mocks.role = null;
+    expect(await getGolfConversationFiles('c-1')).toEqual({ error: 'Not available' });
+    mocks.role = 'player';
+    expect((await getGolfConversationFiles('c-1')).error).toBeUndefined();
   });
 
   it('refuses someone who is not in the conversation, before reading any file', async () => {
