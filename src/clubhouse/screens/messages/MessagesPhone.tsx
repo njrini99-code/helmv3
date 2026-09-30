@@ -150,6 +150,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
             }}
             firstMessage={firstMessage ?? undefined}
             onFirstSent={() => setFirstMessage(null)}
+            covered={details}
           />
         )}
         {top === "announcement" && ann && (
@@ -301,6 +302,7 @@ function PhoneThread({
   onDetails,
   firstMessage,
   onFirstSent,
+  covered,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
@@ -308,6 +310,8 @@ function PhoneThread({
   onDetails: () => void;
   firstMessage?: string;
   onFirstSent: () => void;
+  /** Details is pushed over the thread. */
+  covered: boolean;
 }) {
   const toast = useToast();
   const [acting, setActing] = useState<ChMsg | null>(null);
@@ -336,7 +340,7 @@ function PhoneThread({
     }
   };
   return (
-    <PhoneScreen labelledBy={titleId} className="ch-msp-thread" keyboardAware>
+    <PhoneScreen labelledBy={titleId} className="ch-msp-thread" keyboardAware covered={covered}>
       <PhoneBar
         lead
         titleId={titleId}

@@ -18,7 +18,8 @@ const BASE = process.env.CH_BASE ?? 'http://localhost:3100';
 /**
  * Every preview screen and the states that change what is on the page. An
  * optional third entry opens something first: `{ wide, phone }` selectors
- * clicked at 1280px and at 390px.
+ * clicked at 1280px and at 390px (an array is clicked in order, to reach a
+ * screen two taps deep on the phone).
  */
 export const CH_A11Y_PAGES = [
   ['shell', '/clubhouse-preview/settings', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: '.ch-tabbar button[aria-controls="ch-more"]' }],
@@ -65,6 +66,12 @@ export const CH_A11Y_PAGES = [
   ['messages', '/clubhouse-preview/messages?state=announcement'],
   ['messages', '/clubhouse-preview/messages?state=ann-failed'],
   ['messages', '/clubhouse-preview/messages', { wide: 'button[aria-label="Details"]', phone: 'button[aria-label="Details"]' }],
+  ['messages', '/clubhouse-preview/messages?state=rail'],
+  ['messages', '/clubhouse-preview/messages?state=rail', { wide: 'button[aria-label="New message"]', phone: 'button[aria-label="New message"]' }],
+  ['messages', '/clubhouse-preview/messages?state=rail', { phone: ['button[aria-label="New message"]', '.ch-msp-new button:has-text("Announcement")'] }],
+  ['messages', '/clubhouse-preview/messages-player?state=rail', { phone: 'button[aria-label="New message"]' }],
+  ['messages', '/clubhouse-preview/messages?state=files-failed', { phone: 'button[aria-label="Details"]' }],
+  ['messages', '/clubhouse-preview/messages', { phone: ['button[aria-label="Details"]', '.ch-msp-details .ch-msp-link:has-text("Add")'] }],
   ['settings', '/clubhouse-preview/settings'],
   ['settings', '/clubhouse-preview/settings?section=notifications'],
   ['settings', '/clubhouse-preview/settings?section=team'],
@@ -105,10 +112,13 @@ async function main() {
         await tab.close();
         continue;
       }
-      if (opener) await tab.click(opener);
-      await tab.waitForTimeout(400);
+      for (const step of [opener ?? []].flat()) {
+        await tab.click(step);
+        await tab.waitForTimeout(400);
+      }
+      if (!opener) await tab.waitForTimeout(400);
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
-      const label = `${page.padEnd(12)} ${width}px ${path}${opener ? ` (opened ${opener})` : ''}`;
+      const label = `${page.padEnd(12)} ${width}px ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
       let res;
       try {
         res = await new AxeBuilder({ page: tab }).include('.ch-root').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();

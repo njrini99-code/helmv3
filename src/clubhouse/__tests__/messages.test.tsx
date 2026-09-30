@@ -682,6 +682,8 @@ describe('Messages · phone', () => {
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     const details = await screen.findByRole('region', { name: 'Details' });
     expect(within(details).getByRole('button', { name: 'Back to Chat' })).toBeTruthy();
+    // The thread under Details is out of reach until Details pops.
+    expect(thread.hasAttribute('inert')).toBe(true);
   });
 
   it('CH-7020 copying a message that cannot be copied says so', async () => {

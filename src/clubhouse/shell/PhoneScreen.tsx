@@ -20,6 +20,7 @@ export function PhoneScreen({
   children,
   code,
   keyboardAware = false,
+  covered = false,
 }: {
   /** The id of the screen's title in its `PhoneBar`. */
   labelledBy: string;
@@ -33,6 +34,8 @@ export function PhoneScreen({
    * scroll fields into view itself (`data-fw-keyboard-aware`).
    */
   keyboardAware?: boolean;
+  /** Another screen is pushed over this one: it is inert until that one pops. */
+  covered?: boolean;
 }) {
   usePhoneImmersive(true);
   const reduced = useChReducedMotion();
@@ -51,6 +54,7 @@ export function PhoneScreen({
       className={'ch-pscreen' + (className ? ` ${className}` : '')}
       aria-labelledby={labelledBy}
       data-ch-code={code}
+      inert={covered || undefined}
       tabIndex={-1}
       initial={reduced ? { opacity: 0 } : { x: '100%' }}
       animate={reduced ? { opacity: 1 } : { x: 0 }}
