@@ -21,13 +21,13 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Doc
 | --- | --- | --- |
 | Baseline | **Passed** | §1 |
 | Complete shell swap | **Open**: route gaps in §3; the owner decides build, alias or retire (after this audit) | route table §3 |
-| Round preservation | **Open**: F-02 (recovery unreachable with flag on) is still open; F-14 (sync engine not started) is fixed | F-02, F-14 |
+| Round preservation | **Database contracts Passed**: CI pgTAP at `c0f1b17fe` (every migration applied, held included) passed `golf_round_lifecycle_contract` (direct writes cannot complete a round; completed history cannot be edited; only the atomic path completes), `golf_round_submit_identity` (a stale retry cannot retarget a round's type, qualifier or slot), `golf_qualifier_round_slot_integrity` (no duplicate active qualifier round) and `golf_atomic_snapshot_integrity`. Client fault paths are covered by fake-backed Clubhouse tests (`round-entry-*`). **Open**: F-02 (recovery unreachable with the flag on); F-14 fixed | F-02, F-14 |
 | Calendar | **Blocked / not exercised** at runtime (no isolated DB session run yet); source reviewed; deep link `?event=` wired | §3 notifications |
 | Stats and visuals | **Source reviewed**; parity register `pages/P005-stats-player/PARITY.md` (87 rows); formula fixtures not rerun at the train SHA | PARITY.md |
 | Qualifiers | **Open**: F-03 tie inconsistency, source-confirmed; the tie policy is an owner decision | F-03 |
 | Messages | Deep link `?conversation=` verified in source and by `messages.test.tsx`; two-session realtime **not exercised** | §3 |
 | CoachHelm | **Open**: F-04 views not rebuilt | F-04 |
-| Migrations | **Passed (review)**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback | §5 |
+| Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
 | Phone/accessibility | **Blocked / not exercised**: needs the owner's iPhone pass on the preview | — |
 | Build/regression | Local `test:all`: 13 failures in 8 files, fixed (F-15..F-20). First CI run on #2110 added F-21..F-25, all fixed or owner-decided; `next build` exit 0 locally | §4 |
 | Cutover/rollback | Release package in §6; rollback = flag off (Clubhouse) or redeploy `6ee77e98e` (owner) | §6 |
@@ -103,6 +103,7 @@ Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias dro
 | F-23 | P2 (CI) | Reproduced (#2110) | Semgrep's definer rule mis-anchors on a header comment in held `20260930150000` (the function does set `search_path`). | Owner chose an inline `nosemgrep` (Q-107) |
 | F-24 | P2 (CI) | Reproduced (#2110) | Markdown lint up about 13.6k across Clubhouse docs, 11.6k of it long table lines. | Blank-line rules auto-fixed; the owner approved a one-time `markdown:ratchet --update` (Q-107) |
 | F-25 | P3 (CI) | Reproduced (#2110) | Calendar test 10703 loops every write scenario and passed the 5s default on CI. | 20s timeout on that test, assertions unchanged |
+| F-26 | P3 (CI) | Reproduced (CodeQL on #2110) | `scripts/clubhouse/registry.mjs` escaped `\|` in table cells without escaping `\\` first (`js/incomplete-sanitization`, two sites). | **Fixed** `1db53f553`; no generated doc changed; registry tests 15/15 |
 
 ## 5. Schema compatibility (flag-off deploy with no migration applied)
 
