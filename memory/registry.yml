@@ -431,6 +431,9 @@ features:
         - src/components/fairway/pages/rounds/**
         - src/components/fairway/pages/rounds-new/**
         - src/components/fairway/pages/rounds-recover/**
+        # The shot screen's logic, shared by the Fairway and Clubhouse
+        # renderers; mapped by name like the other golf hooks.
+        - src/hooks/golf/use-shot-tracking.ts
         - src/components/fairway/pages/rounds-tracking/**
       api:
         - src/app/api/golf/rounds/**

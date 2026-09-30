@@ -16,7 +16,7 @@
  * resolved status if `currentHoleIndexRef.current` (the LIVE value, read at
  * resolution time) still matches it.
  *
- * Source-inspection: `FairwayShotTracking.tsx` has many sub-hooks (penalty,
+ * Source-inspection: `use-shot-tracking.ts` has many sub-hooks (penalty,
  * edit, undo, autosave) that would need extensive mocking to exercise this
  * exact async race through a real render; the guard's presence and its
  * placement around both the success and failure status updates is what

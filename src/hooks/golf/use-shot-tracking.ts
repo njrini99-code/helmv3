@@ -18,7 +18,6 @@ import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
 
-
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
 
@@ -102,8 +101,11 @@ export function resolveDistanceAfterShot(params: {
   return { distanceAfter, unitAfter };
 }
 
-
-/** What a renderer supplies: its own haptic (Fairway and Clubhouse each have one). */
+/**
+ * What a renderer supplies: its own haptic (Fairway and Clubhouse each have
+ * one). Pass a stable function (module-level): it is a dependency of the
+ * navigation callbacks, so an inline arrow would recreate them every render.
+ */
 export interface ShotTrackingPorts {
   haptic: (kind: 'checkpoint') => unknown;
 }

@@ -4,20 +4,13 @@
  * ============================================================================
  * Fairway · Rounds · Tracking — FairwayShotTracking (logic-bearing parent)
  * ----------------------------------------------------------------------------
- * The flag-gated "Fairway" presentation-only re-skin of
- * src/components/golf/ShotTrackingComprehensive.tsx. It implements the IDENTICAL
- * ShotTrackingProps interface and copies ALL LOGIC VERBATIM — the same hooks in
- * the same order BEFORE the `!currentHole` early return (Rules of Hooks), the
- * same local helpers (handleNextShot, handleSelectShot, handleNavigateToHole,
- * completeHole, getClubType, isReadyForNextShot, hasUnsavedInput,
- * confirmDiscardAndNavigate, updateEditForm), the same refs
- * (isProcessingShotRef, distanceInputRef, shotHistoryRefs), and the
- * pendingNavHoleIndex state. ONLY the JSX + Fairway tokens differ.
- *
- * The ShotRecord build in handleNextShot is preserved BYTE-FOR-BYTE, including
- * the isProcessingShotRef double-tap guard, the bail-on-zero distance, the
- * haptics, the onSaveShot call, completeHole-on-hole, and the queueMicrotask
- * guard release. Result selection ONLY ever dispatches HANDLE_RESULT_SELECT.
+ * The Fairway renderer of the shot screen. Its logic (the state machine and
+ * sub-hooks, handleNextShot with its ShotRecord build, double-tap guard and
+ * checkpoint, isReadyForNextShot, hole navigation with the unsaved-input
+ * prompt) lives in `useShotTracking` (src/hooks/golf/use-shot-tracking.ts),
+ * moved there unchanged so the Clubhouse renderer shares it. This file keeps
+ * the swipe between holes, updateEditForm and the JSX. Result selection ONLY
+ * ever dispatches HANDLE_RESULT_SELECT (through handleResultSelect).
  * ========================================================================== */
 
 import { useShotTracking, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';

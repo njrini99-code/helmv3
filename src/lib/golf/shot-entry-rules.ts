@@ -1,14 +1,24 @@
+import type { EditFormData } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
-import { deriveScoreAndPutts, validateHoleTotals, validateShot, type RoundEntryIssue, type ValidatableShot } from '@/lib/golf/round-entry-validation';
+import {
+  deriveScoreAndPutts,
+  validateHoleTotals,
+  validateShot,
+  validateShotContinuity,
+  type RoundEntryIssue,
+  type ValidatableShot,
+} from '@/lib/golf/round-entry-validation';
 import type { ApproachMissDirection, PuttMissTag, RoundHole, ShotRecord } from '@/lib/types/golf';
 
 /**
  * The shot entry's rules, as pure functions: which results a shot offers,
  * what still blocks recording it, and whether it is plausible. They mirror
  * the Fairway entry's inline logic (components/fairway/pages/rounds-tracking/
- * FairwayShotEntry.tsx) and `isReadyForNextShot` in useShotTracking, word for
- * word, so every renderer gates a shot the same way. The Fairway entry moves
- * onto these with the engine moves (docs/clubhouse/ROUNDS_PLAN.md, step 4).
+ * FairwayShotEntry.tsx, PuttMissTagSelector, FairwayEditShotModal) and
+ * `isReadyForNextShot` in useShotTracking, so every renderer gates a shot the
+ * same way. The Fairway entry moves onto these with the engine moves
+ * (docs/clubhouse/ROUNDS_PLAN.md, step 4). `editedShotIssues` already lives
+ * here; the Fairway edit modal re-exports it.
  */
 
 export type ShotResult = NonNullable<ShotRecord['result']>;
@@ -21,7 +31,7 @@ export interface ShotResultOption {
   note: string | null;
 }
 
-/** The results a shot offers, in order (the Fairway entry's option sets). */
+/** The results a shot offers, in order (the Fairway entry's option sets). Its "(ace!)" is "ace" here: Clubhouse copy has no exclamation marks. */
 export function shotResultOptions(p: { isPutting: boolean; isTeeShot: boolean; par: number; currentShot: number }): ShotResultOption[] {
   const firstShotPar3 = p.currentShot === 1 && p.par === 3;
   let values: ShotResult[];
@@ -98,8 +108,9 @@ export function shotPlausibility(s: ShotEntryInput, ready: boolean): RoundEntryI
 
 /**
  * The one requirement still missing, in words, or null when the shot can be
- * recorded. The order mirrors isReadyForNextShot so the hint can never
- * disagree with the disabled button. `plausibility` is the issue from
+ * recorded. It checks the same conditions as isReadyForNextShot (in the
+ * Fairway entry's order: miss direction before distance), so the hint can
+ * never disagree with the disabled button. `plausibility` is the issue from
  * shotPlausibility; `confirmed` is true once the player confirmed a warning.
  */
 export function nextShotBlocker(s: ShotEntryInput, ready: boolean, plausibility: RoundEntryIssue | null, confirmed: boolean): string | null {
@@ -128,4 +139,119 @@ export function nextShotBlocker(s: ShotEntryInput, ready: boolean, plausibility:
     }
   }
   return 'Complete the required fields above';
+}
+
+/**
+ * The key a confirmed plausibility warning is held under (Fairway's
+ * confirmedIssueKey): changing the hole, the shot, the rule, the result or the
+ * distance re-arms the confirm, so one confirm never carries to another shot.
+ */
+export function plausibilityKey(holeNumber: number, currentShot: number, issue: RoundEntryIssue | null, result: string | null, distanceAfterShot: string): string | null {
+  return issue ? `${holeNumber}:${currentShot}:${issue.rule}:${result}:${distanceAfterShot}` : null;
+}
+
+/** Toggling a putt miss tag (PuttMissTagSelector): low and high (the read), short and long (the speed) exclude each other. */
+export function togglePuttMissTag(selected: readonly PuttMissTag[], tag: PuttMissTag): PuttMissTag[] {
+  if (selected.includes(tag)) return selected.filter((t) => t !== tag);
+  const other: Record<PuttMissTag, PuttMissTag> = { low: 'high', high: 'low', short: 'long', long: 'short' };
+  return [...selected.filter((t) => t !== other[tag]), tag];
+}
+
+/**
+ * What choosing a result in the edit sheet changes (FairwayEditShotModal's
+ * derivation block): the unit after is fixed by context (green or holed in
+ * feet, else yards, a putt that rolled off stays in feet), an approach's miss
+ * lie follows the result, and a green or holed result clears the miss data.
+ */
+export function editResultUpdates(result: ShotResult, shotType: ShotRecord['shotType']): Partial<EditFormData> {
+  const updates: Partial<EditFormData> = { result };
+  if (result === 'green') {
+    updates.distanceUnitAfter = 'feet';
+  } else if (result === 'hole') {
+    updates.distanceToHoleAfter = '0';
+    updates.distanceUnitAfter = 'feet';
+  } else {
+    updates.distanceUnitAfter = shotType === 'putting' ? 'feet' : 'yards';
+  }
+  if (shotType === 'approach' || shotType === 'around_green') {
+    if (result === 'rough' || result === 'other') updates.approachMissLieType = 'rough';
+    else if (result === 'sand') updates.approachMissLieType = 'bunker';
+    else if (result === 'fairway') updates.approachMissLieType = 'fairway';
+    else updates.approachMissLieType = undefined;
+  }
+  if (result === 'green' || result === 'hole') {
+    updates.missDirection = null;
+    updates.approachMissDirection = null;
+    updates.approachMissLieType = undefined;
+    updates.puttMissTags = [];
+  }
+  return updates;
+}
+
+/** The hole an edited shot belongs to — what the shared shot rules judge against. */
+export interface EditShotHoleContext {
+  holeNumber: number;
+  par: number;
+  yardage?: number | null;
+}
+
+/**
+ * RE-S5: the edit modal saved whatever was typed — a negative distance, or a
+ * shot that left the ball further away — with no check at all, while the live
+ * entry panel ran the shared rules on the same shot. Run those rules here too:
+ * malformed or negative distances block; the shared `confirm` rules (further
+ * away than before, a shot that doesn't start where the last one finished, a
+ * 400+ yd drive onto the green) ask once; the shared `block` rules block.
+ */
+export function editedShotIssues(
+  form: EditFormData,
+  shot: ShotRecord,
+  hole?: EditShotHoleContext,
+  shotHistory?: readonly ShotRecord[],
+): RoundEntryIssue[] {
+  if (form.isPenalty || shot.isPenalty) return [];
+  const blockMsg = (message: string): RoundEntryIssue => ({
+    rule: 'distance_not_decreasing',
+    severity: 'block',
+    message,
+    holeNumber: hole?.holeNumber,
+    shotNumber: shot.shotNumber,
+  });
+  const before = Number.parseFloat(form.distanceToHoleBefore);
+  if (form.distanceToHoleBefore.trim() === '' || !Number.isFinite(before)) {
+    return [blockMsg('Enter the distance to the hole before this shot.')];
+  }
+  if (before < 0) return [blockMsg("The distance before the shot can't be negative.")];
+  const holed = form.result === 'hole';
+  const after = holed ? 0 : Number.parseFloat(form.distanceToHoleAfter);
+  if (!holed && (form.distanceToHoleAfter.trim() === '' || !Number.isFinite(after))) {
+    return [blockMsg('Enter the distance to the hole after this shot.')];
+  }
+  if (after < 0) return [blockMsg("The distance after the shot can't be negative.")];
+  if (!hole) return [];
+
+  const candidate: ValidatableShot = {
+    shotNumber: shot.shotNumber,
+    shotType: shot.shotType,
+    distanceToHoleBefore: before,
+    distanceUnitBefore: form.distanceUnitBefore,
+    result: form.result,
+    distanceToHoleAfter: after,
+    distanceUnitAfter: form.distanceUnitAfter,
+    isPenalty: form.isPenalty,
+    lieBefore: form.lieBefore,
+    missDirection: form.missDirection,
+    approachMissDirection: form.approachMissDirection,
+    puttMissTags: form.puttMissTags,
+  };
+  const issues = validateShot(candidate, hole);
+  if (shotHistory && shotHistory.length > 1) {
+    const chain = shotHistory.map((s) => (s.shotNumber === shot.shotNumber ? candidate : (s as ValidatableShot)));
+    issues.push(
+      ...validateShotContinuity(chain, hole).filter(
+        (i) => i.shotNumber === shot.shotNumber || i.shotNumber === shot.shotNumber + 1,
+      ),
+    );
+  }
+  return issues;
 }
