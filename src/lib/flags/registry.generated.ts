@@ -287,7 +287,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "golf_clubhouse_ui",
     owner: "golf/clubhouse",
-    purpose: "Renders the Clubhouse coach shell and rebuilt screens (src/clubhouse) in place of the Fairway dashboard shell for coaches. Routes not yet rebuilt show a \"not rebuilt yet\" placeholder inside the Clubhouse shell.",
+    purpose: "Renders the Clubhouse shell and rebuilt screens (src/clubhouse) in place of the Fairway dashboard shell for coaches and players. Routes not yet rebuilt show a \"not rebuilt yet\" placeholder inside the Clubhouse shell.",
     type: "release",
     status: "active",
     created_at: "2026-09-29",
@@ -299,7 +299,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
       development: true,
     },
     kill_switch_behavior: null,
-    cleanup_plan: "When every coach screen is rebuilt and the owner turns production on, delete the Fairway coach shell branch and this flag in the same change.",
+    cleanup_plan: "Not on the day production is turned on. Retire the Fairway shell and this flag in their own reviewed change, only after every coach and player route in docs/clubhouse/SWAP_AUDIT.md has a Clubhouse destination, no local round recovery depends on Fairway, and an observation window with a known rollback deployment has passed.",
   },
   {
     feature_id: "verification_ensemble",
