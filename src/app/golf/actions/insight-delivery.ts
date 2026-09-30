@@ -786,12 +786,14 @@ async function getInsightsForCoachWithMetaImpl(
   // argument: otherwise any account could record exposures under another
   // coach's name. (Some callers pass the auth user id here; the reads are RLS
   // scoped either way.)
-  const { data: self } = await supabase
+  const { data: self, error: selfError } = await supabase
     .from('golf_coaches')
     .select('id')
     .eq('user_id', user.id)
     .maybeSingle();
-  const exposureCoachId: string | null = self?.id ?? null;
+  // A failed read records exposures with no coach rather than a guessed one;
+  // the feed itself does not depend on this row.
+  const exposureCoachId: string | null = selfError ? null : (self?.id ?? null);
 
   // Player filter → authorization path. Without a player_id the RLS policies
   // on `golf_coach_insights` restrict reads to teams the coach staffs, which
