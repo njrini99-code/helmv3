@@ -35,7 +35,10 @@ function Mark({ v }: { v: boolean | null }) {
   return <i className={'ch-rv-yn' + (v ? ' is-y' : ' is-n')} aria-label={v ? 'Hit' : 'Missed'} />;
 }
 
-/** One nine of the review's card: tap a hole number or its score to see its shots. */
+/**
+ * One nine of the review's card: tap a hole number to see its shots. CH-11704: a pick is a selection tap.
+ * CH-11804: a captioned table, a pressed button per hole, and marks read as Hit, Missed or Not applicable.
+ */
 function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes: ChReviewHole[]; sel: number; onPick: (n: number) => void }) {
   if (!holes.length) return null;
   const sum = (k: 'par' | 'score' | 'putts') => (holes.every((h) => h[k] != null) ? holes.reduce((a, h) => a + (h[k] as number), 0) : null);

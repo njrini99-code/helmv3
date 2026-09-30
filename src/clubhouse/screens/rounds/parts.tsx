@@ -25,7 +25,7 @@ export function TypePill({ type }: { type: ChRoundType | null }) {
   return type ? <span className={`ch-rd-pill is-${type}`}>{TYPE_LABEL[type]}</span> : null;
 }
 
-/** The in-progress card's hole strip: scored holes marked against par, the next hole ringed. */
+/** The in-progress card's hole strip: scored holes marked against par, the next hole ringed. CH-11802: hidden from screen readers; the card says it in words. */
 function Strip({ holes, played, next }: { holes: number; played: ChUnfinishedRound['played']; next: number | null }) {
   const byHole = new Map(played.map((h) => [h.n, h]));
   return (
@@ -105,6 +105,7 @@ export function UnfinishedCard({
             )}
           </span>
           {startHref && (
+            // CH-11703: Start a round, Continue and Submit are primary taps (light).
             <Link href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               Start a round
               <Icon icon={ArrowRight} size={15} />
@@ -155,7 +156,7 @@ export function UnfinishedCard({
   );
 }
 
-/** Strokes over par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). */
+/** Strokes over par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). CH-11803: one labelled image; each bar has a title. */
 export function Ribbon({ rounds, avg }: { rounds: ChRoundsSeason['ribbon']; avg: number }) {
   const maxOver = Math.max(1, ...rounds.map((x) => x.toPar));
   const maxUnder = Math.max(0, ...rounds.map((x) => -x.toPar));
@@ -297,7 +298,10 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
   );
 }
 
-/** One round in the book (rounds-flow.jsx `rf-sc`): date, course and tee, Out · In · Tot, the three meters, to par. */
+/**
+ * One round in the book (rounds-flow.jsx `rf-sc`): date, course and tee, Out · In · Tot, the three meters, to par.
+ * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap.
+ */
 export function RoundRow({ r, href }: { r: ChLibraryRound; href: string | null }) {
   const under = r.toPar != null && r.toPar < 0;
   const body = (

@@ -507,6 +507,7 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);
 }
+/* CH-11601: a round that opens its review lifts and rings green on hover (quick). */
 a.ch-rd-sc:hover {
   transform: translateY(-1px);
   box-shadow:
