@@ -401,6 +401,7 @@ describe('Shell · navigation and accessibility', () => {
   it('CH-1802 a More sheet row with a count is named with a space between its parts ("Messages 3 new")', async () => {
     const user = userEvent.setup();
     badgeState.messages = 3;
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
     await user.click(screen.getByRole('button', { name: /^More/ }));
     await expectCode('CH-1802');
@@ -435,6 +436,7 @@ describe('Shell · navigation and accessibility', () => {
   it('CH-1802 the v2 More sheet: who you are (to Settings), the next event under Calendar, then Settings, Help and Sign out', async () => {
     const user = userEvent.setup();
     const withEvent = { ...shell, nextEvent: { id: 'e1', title: 'Pinehurst qualifier', whenLabel: 'Thursday', metaLabel: 'Thu, Oct 16', ready: null } };
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<TabBar pathname="/golf/dashboard" shell={withEvent} role="player" user={{ name: 'Maya Reyes', teamName: 'Varsity' }} />);
     await user.click(screen.getByRole('button', { name: /^More/ }));
     const sheet = (await screen.findByRole('dialog', { name: 'More' })) as HTMLElement;
@@ -450,6 +452,7 @@ describe('Shell · navigation and accessibility', () => {
     const user = userEvent.setup();
     signOutSpy.mockReset();
     signOutSpy.mockRejectedValueOnce(new Error('network'));
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="player" user={{ name: 'Theo Marchetti' }} />);
     await user.click(screen.getByRole('button', { name: /^More/ }));
     await user.click(await screen.findByRole('button', { name: 'Sign out' }));
@@ -460,6 +463,7 @@ describe('Shell · navigation and accessibility', () => {
 
   it('CH-1802 the More sheet takes focus, keeps Tab inside, and gives it back on Esc', async () => {
     const user = userEvent.setup();
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
     const more = screen.getByRole('button', { name: 'More' });
     await user.click(more);
@@ -491,6 +495,7 @@ describe('Shell · navigation and accessibility', () => {
 
     it('the More sheet springs back short of 80px, and closes past it with the medium settle (commit, D-70)', async () => {
       const user = userEvent.setup();
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
       wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
       const more = screen.getByRole('button', { name: 'More' });
       await user.click(more);
@@ -604,6 +609,7 @@ describe('Shell · navigation and accessibility', () => {
 
   it('CH-1701 changing tabs ticks; the current tab does not', async () => {
     const user = userEvent.setup();
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
     const tabs = screen.getAllByRole('link');
     const current = tabs.find((t) => t.getAttribute('aria-current') === 'page')!;
@@ -644,6 +650,7 @@ describe('Shell · phone chrome', () => {
 
   it('CH-1808 11901 each role gets its own phone tabs, and More carries the Messages unread count', () => {
     badgeState.messages = 3;
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     const { unmount } = wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
     const bar = code('CH-1808')!;
     const names = [...bar.querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label') ?? el.querySelector('.ch-tab__label')!.textContent);
@@ -652,6 +659,7 @@ describe('Shell · phone chrome', () => {
     unmount();
     badgeState.messages = 0;
     // Player: Home, CoachHelm, Rounds, Team Hub, More.
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<TabBar pathname="/golf/dashboard/team-hub" shell={shell} role="player" />);
     const labels = [...code('CH-1808')!.querySelectorAll('.ch-tab__label')].map((el) => el.textContent);
     expect(labels).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'More']);

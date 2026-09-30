@@ -1268,6 +1268,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/recruit-documents-limits.ts",
+        "pattern": "src/app/golf/actions/recruit-documents-limits.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/recruit-documents.ts",
         "pattern": "src/app/golf/actions/recruit-documents.ts",
         "category": "actions"
@@ -2097,6 +2102,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/clubhouse/__tests__/recruiting-upload.test.tsx",
+        "pattern": "src/clubhouse/__tests__/recruiting-upload.test.tsx",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/clubhouse/__tests__/recruiting.test.tsx",
         "pattern": "src/clubhouse/__tests__/recruiting.test.tsx",
         "category": "tests"
@@ -2239,6 +2249,16 @@
       {
         "id": "tests:src/test/golf/actions/coachhelm-analytics.test.ts",
         "pattern": "src/test/golf/actions/coachhelm-analytics.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/test/golf/actions/recruit-document-upload.test.ts",
+        "pattern": "src/test/golf/actions/recruit-document-upload.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/test/golf/actions/recruiting-create.test.ts",
+        "pattern": "src/test/golf/actions/recruiting-create.test.ts",
         "category": "tests"
       },
       {
@@ -19514,6 +19534,18 @@
     },
     {
       "source": "recruiting",
+      "target": "actions:src/app/golf/actions/recruit-documents-limits.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/recruit-documents-limits.ts"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
       "target": "actions:src/app/golf/actions/recruit-documents.ts",
       "kind": "feature_action",
       "evidence": [
@@ -19694,6 +19726,18 @@
     },
     {
       "source": "recruiting",
+      "target": "tests:src/clubhouse/__tests__/recruiting-upload.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/recruiting-upload.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
       "target": "tests:src/clubhouse/__tests__/recruiting.test.tsx",
       "kind": "feature_test",
       "evidence": [
@@ -19701,6 +19745,30 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/__tests__/recruiting.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "tests:src/test/golf/actions/recruit-document-upload.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/golf/actions/recruit-document-upload.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "tests:src/test/golf/actions/recruiting-create.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/golf/actions/recruiting-create.test.ts"
         }
       ]
     },
@@ -22483,17 +22551,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
           "anchor": "src/lib/email/outbound-gate"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "golf_recruit_documents",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260614020000_recruit_documents.sql"
         }
       ]
     },

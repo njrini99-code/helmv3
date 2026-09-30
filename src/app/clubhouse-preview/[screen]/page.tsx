@@ -361,6 +361,7 @@ export default async function ClubhousePreview({
     },
     'messages-player': {
       path: '/golf/dashboard/messages',
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
       node: <PreviewMessages state={state} role="player" />,
     },
     coachhelm: {

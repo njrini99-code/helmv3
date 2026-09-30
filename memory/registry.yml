@@ -1188,7 +1188,10 @@ features:
         - src/lib/golf/nav-registry.ts
       db:
         - supabase/migrations/*task*.sql
-        - supabase/migrations/*document*.sql
+        # Team documents only: `*document*` also matched recruiting's recruit_documents files.
+        - supabase/migrations/*golf_document*.sql
+        - supabase/migrations/*baseball_documents*.sql
+        - supabase/migrations/*documents_storage*.sql
         - supabase/migrations/*travel*.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts

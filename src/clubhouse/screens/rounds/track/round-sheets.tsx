@@ -77,6 +77,7 @@ function CardNine({ label, holes, current }: { label: 'Out' | 'In'; holes: ChCar
 export function Scorecard({ holes, current }: { holes: ChCardHole[]; current: number | null }) {
   // It scrolls sideways on a phone, so it takes focus for the arrow keys (axe scrollable-region-focusable).
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- axe scrollable-region-focusable: a keyboard user must reach a region that scrolls
     <div className="ch-rt-mcw" tabIndex={0} role="region" aria-label="Scorecard">
       <CardNine label="Out" holes={holes.slice(0, 9)} current={current} />
       <CardNine label="In" holes={holes.slice(9, 18)} current={current} />

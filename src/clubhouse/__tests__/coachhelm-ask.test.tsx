@@ -105,6 +105,7 @@ const tree = (load: ChAskLoad, chat: Fake, initial?: Parameters<typeof Ask>[0]['
   <LazyMotion features={domAnimation}>
     <ToastProvider>
       <PhoneChromeProvider>
+        {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
         <ClubhouseMarker role="coach">
           <div className="ch-root" data-ui="clubhouse">
             <SlotHost />

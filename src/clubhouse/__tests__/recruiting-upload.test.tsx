@@ -85,6 +85,7 @@ const tree = (data: ChRecruiting, w: Fake, initial?: RecInitial) => (
   <LazyMotion features={domAnimation}>
     <ToastProvider>
       <PhoneChromeProvider>
+        {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
         <ClubhouseMarker role="coach">
           <div className="ch-root" data-ui="clubhouse">
             <SlotHost />

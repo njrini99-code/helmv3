@@ -47,6 +47,7 @@ describe('Clubhouse in the iOS app', () => {
       <LazyMotion features={domAnimation}>
         <div className="ch-root" data-ui="clubhouse">
           <NativeSwipeBackBridge />
+          {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
           <TabBar pathname="/golf/dashboard" shell={PREVIEW_SHELL} role="coach" />
         </div>
       </LazyMotion>,

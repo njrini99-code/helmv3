@@ -174,6 +174,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
         blocked={Boolean(pending)}
         onSend={send}
         onStop={chat.stop}
+        // eslint-disable-next-line jsx-a11y/no-autofocus -- a component prop; the composer focuses itself in an effect
         autoFocus={variant === 'hero'}
         fresh={showHome}
       />

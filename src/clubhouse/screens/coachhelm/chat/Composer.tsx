@@ -245,7 +245,6 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           autoComplete="off"
           aria-describedby={blocked ? `${listId}-blocked` : undefined}
           aria-controls={pickerOpen ? `${listId}-list` : undefined}
-          aria-expanded={pickerOpen || undefined}
           onChange={(e) => {
             setValue(e.target.value);
             setDismissed(false);

@@ -369,6 +369,7 @@ describe('Round review route', () => {
 describe('Round review · loading', () => {
   it('CH-11406 inside Clubhouse the review loads in its own shape; outside it, Fairway keeps its skeleton', () => {
     const { unmount } = render(
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
       <ClubhouseMarker role="player">
         <ReviewLoading />
       </ClubhouseMarker>,
