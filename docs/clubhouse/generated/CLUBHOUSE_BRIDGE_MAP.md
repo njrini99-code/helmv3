@@ -74,6 +74,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 89 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 |  | 5 | 3 | 12 | 12 | 28 | 1 | 2 |  | 1 | 4 | 1 |  |  |  | 2 | 3 | 3 |  |  |  |  |  |  |  | 77 |
+| P010 |  | 4 |  | 9 | 8 | 16 |  |  |  |  | 3 |  |  |  |  |  | 2 | 2 |  |  |  |  |  |  |  | 44 |
 
 ## P001 Shell
 
@@ -692,6 +693,55 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 91801 | CH-09801 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 91802 | CH-09802 | 18 Accessibility | `THE_LEADERBOARD_AND_ROUND_BY_ROUND_ARE` | reserved | The leaderboard and round-by-round are tables (rows, column headers, a row header per player); each row's scorecards open from a button with aria-expanded, and each scorecard is a table with a caption |
 | 91803 | CH-09803 | 18 Accessibility | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | implemented | A live update to the standings is announced |
+
+## P010 Team Hub
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 100201 | CH-10401 | 02 Initial loading / skeleton | `FILES_ARE_UPLOADING` | implemented | Files are uploading |
+| 100202 | CH-10402 | 02 Initial loading / skeleton | `A_POST_IS_BEING_SENT` | implemented | A post is being sent |
+| 100203 | CH-10403 | 02 Initial loading / skeleton | `A_TRIP_IS_BEING_SAVED` | implemented | A trip is being saved |
+| 100204 | CH-10404 | 02 Initial loading / skeleton | `A_TASK_IS_BEING_ASSIGNED` | implemented | A task is being assigned |
+| 100401 | CH-10301 | 04 Empty | `NO_EVENTS_NEED_A_REPLY` | implemented | No events need a reply |
+| 100402 | CH-10302 | 04 Empty | `NO_UPDATES` | implemented | No updates |
+| 100403 | CH-10303 | 04 Empty | `NO_TASKS` | implemented | No tasks |
+| 100404 | CH-10304 | 04 Empty | `NO_DOCUMENTS` | implemented | No documents |
+| 100405 | CH-10305 | 04 Empty | `A_COACH_WITH_NOTHING_POSTED` | implemented | A coach with nothing posted (v2 first run, gh-states EMPTY.hub.coach) |
+| 100406 | CH-10306 | 04 Empty | `A_PLAYER_WITH_NOTHING_FROM_THEIR_COACHES` | implemented | A player with nothing from their coaches (EMPTY.hub.player) |
+| 100407 | CH-10307 | 04 Empty | `NO_ANNOUNCEMENTS` | implemented | No announcements |
+| 100408 | CH-10308 | 04 Empty | `NO_TRIPS` | implemented | No trips |
+| 100409 | CH-10309 | 04 Empty | `NO_TEAM` | implemented | No team |
+| 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting with a headline under three characters |
+| 100502 | CH-10102 | 05 Validation | `POSTING_TO_CHOSEN_PLAYERS_WITH_NONE_CHOSEN` | implemented | Posting to chosen players with none chosen |
+| 100503 | CH-10103 | 05 Validation | `A_TRIP_WITH_A_NAME_UNDER_THREE` | implemented | A trip with a name under three characters |
+| 100504 | CH-10104 | 05 Validation | `A_TRIP_WITH_NO_DESTINATION` | implemented | A trip with no destination |
+| 100505 | CH-10105 | 05 Validation | `A_TRIP_WITH_NO_DEPARTURE_DAY` | implemented | A trip with no departure day |
+| 100506 | CH-10106 | 05 Validation | `A_RETURN_BEFORE_THE_DEPARTURE` | implemented | A return before the departure |
+| 100507 | CH-10107 | 05 Validation | `A_TASK_WITH_A_NAME_UNDER_THREE` | implemented | A task with a name under three characters |
+| 100508 | CH-10108 | 05 Validation | `A_TASK_FOR_NOBODY` | implemented | A task for nobody |
+| 100601 | CH-10001 | 06 Server / system error | `A_PLAYERS_RSVP_REPLY_FAILS` | implemented | A player's RSVP reply fails |
+| 100602 | CH-10002 | 06 Server / system error | `ACKNOWLEDGING_A_POST_FAILS` | implemented | Acknowledging a post fails |
+| 100603 | CH-10003 | 06 Server / system error | `CHECKING_OFF_A_TASK_FAILS` | implemented | Checking off a task fails |
+| 100604 | CH-10004 | 06 Server / system error | `A_FILE_WONT_OPEN` | implemented | A file won't open |
+| 100605 | CH-10005 | 06 Server / system error | `POSTING_AN_ANNOUNCEMENT_FAILS` | implemented | Posting an announcement fails |
+| 100606 | CH-10006 | 06 Server / system error | `SAVING_A_TRIP_FAILS` | implemented | Saving a trip fails |
+| 100607 | CH-10007 | 06 Server / system error | `ASSIGNING_A_TASK_FAILS` | implemented | Assigning a task fails |
+| 100608 | CH-10008 | 06 Server / system error | `UPLOADING_A_FILE_FAILS` | implemented | Uploading a file fails |
+| 100609 | CH-10009 | 06 Server / system error | `DELETING_A_POST_TASK_OR_FILE_FAILS` | implemented | Deleting a post, task or file fails |
+| 100610 | CH-10201 | 06 Server / system error | `RSVPS_DONT_LOAD` | implemented | RSVPs don't load |
+| 100611 | CH-10202 | 06 Server / system error | `UPDATES_DONT_LOAD` | implemented | Updates don't load |
+| 100612 | CH-10203 | 06 Server / system error | `TASKS_DONT_LOAD` | implemented | Tasks don't load |
+| 100613 | CH-10204 | 06 Server / system error | `DOCUMENTS_DONT_LOAD` | implemented | Documents don't load |
+| 100614 | CH-10205 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
+| 100615 | CH-10206 | 06 Server / system error | `ANNOUNCEMENTS_DONT_LOAD` | implemented | Announcements don't load |
+| 100616 | CH-10207 | 06 Server / system error | `TRAVEL_DOESNT_LOAD` | implemented | Travel doesn't load |
+| 101101 | CH-10501 | 11 Destructive | `DELETING_AN_ANNOUNCEMENT` | implemented | Deleting an announcement |
+| 101102 | CH-10502 | 11 Destructive | `DELETING_A_TASK` | implemented | Deleting a task |
+| 101103 | CH-10503 | 11 Destructive | `DELETING_A_FILE` | implemented | Deleting a file |
+| 101701 | CH-10701 | 17 Haptic | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | implemented | A tab, an RSVP reply, an audience or transport choice, a player chip |
+| 101702 | CH-10702 | 17 Haptic | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | implemented | Delete (before the question), a form sent with a mistake |
+| 101801 | CH-10801 | 18 Accessibility | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | implemented | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |
+| 101802 | CH-10802 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 
 ## Tombstones
 

@@ -1,0 +1,56 @@
+{
+  "id": "P010",
+  "name": "Team Hub",
+  "slug": "hub",
+  "bridgeNamespace": 10,
+  "routes": [
+    "/golf/dashboard/team-hub"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "player_hub",
+    "team_communications",
+    "team_operations"
+  ],
+  "progressRow": "Team Hub",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md)",
+    "desktop": [
+      "design/handoff/Coach - Team Hub.html",
+      "design/handoff/Player - Team Hub.html",
+      "design/handoff/hub.jsx",
+      "design/handoff/hub.css",
+      "design/handoff/hub-data.js"
+    ],
+    "phone": [
+      "design/handoff/Coach and Player - Team Hub - Mobile.html",
+      "design/handoff/hub.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/hub",
+    "loader": "src/clubhouse/data/hub.ts",
+    "route": "src/clubhouse/routes/hub.tsx",
+    "styles": "src/clubhouse/styles/hub.css",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/hub.md",
+  "checklist": "docs/clubhouse/screens/team-hub.md",
+  "phoneSpec": "docs/clubhouse/phone/team-hub.md",
+  "actions": [],
+  "held": []
+}

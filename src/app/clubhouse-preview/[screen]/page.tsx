@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { ClubhouseFrame } from '@/clubhouse/shell/ClubhouseFrame';
 import { CoachHome } from '@/clubhouse/screens/home/CoachHome';
 import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
+import { PreviewHub } from '@/clubhouse/preview/PreviewHub';
+import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '@/clubhouse/preview/fixtures-hub';
 import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS } from '@/clubhouse/preview/fixtures-player-home';
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 import { PreviewError } from '@/clubhouse/preview/PreviewError';
@@ -51,6 +53,7 @@ import {
  *
  *   /clubhouse-preview/home   ?state=empty | noevents | failed | loading | error   (empty is the first-run page)
  *   /clubhouse-preview/home-player ?state=empty | noevents | failed | loading   (Theo; empty is the first-run page)
+ *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
@@ -68,11 +71,11 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section, q } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q, tab } = await searchParams;
   const qDetail = (role: 'coach' | 'player') => {
     const d = previewDetail(DETAIL_INDEX[q ?? 'live'] ?? 0, role);
     if (state === 'failed') return { ...d, entriesError: true, board: null, entrants: 0 };
@@ -122,6 +125,14 @@ export default async function ClubhousePreview({
             now={PREVIEW_HOME_NOW}
           />
         ),
+    },
+    hub: {
+      path: '/golf/dashboard/team-hub',
+      node: <PreviewHub data={state === 'empty' ? PREVIEW_HUB_COACH_EMPTY : state === 'failed' ? PREVIEW_HUB_COACH_FAILED : PREVIEW_HUB_COACH} state={state} tab={tab} />,
+    },
+    'hub-player': {
+      path: '/golf/dashboard/team-hub',
+      node: <PreviewHub data={state === 'empty' ? PREVIEW_HUB_PLAYER_EMPTY : state === 'failed' ? PREVIEW_HUB_PLAYER_FAILED : PREVIEW_HUB_PLAYER} state={state} tab={tab} />,
     },
     roster: {
       path: '/golf/dashboard/roster',
@@ -228,7 +239,7 @@ export default async function ClubhousePreview({
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const user = screen === 'home-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const user = screen === 'home-player' || screen === 'hub-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
 
   return (
     <PreviewBell state={bell}>

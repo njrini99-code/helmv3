@@ -25,6 +25,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Settings** `/settings` — Account, notifications, team and invite code, CoachHelm settings, preferences
 - [x] **Settings: notifications** `/settings/notifications` — Old deep link; opens the Notifications section
 - [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link; opens the CoachHelm section
+- [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks with completion, shared documents, this week's RSVPs (`TeamHub` coach view, 2026-09-30; the Fairway page is player-only)
 - [ ] **Announcements** `/announcements` — Team news with read acknowledgements (Clubhouse has them inside Messages)
 - [ ] **CoachHelm Brief** `/intelligence` — AI coaching brief: signals, patterns, predictions and focus areas across the team
 - [ ] **Ask CoachHelm** `/coachhelm/chat` — Chat with the AI about the program, grounded in rounds and schedule
@@ -50,12 +51,13 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Settings** `/settings` — Account, notifications, preferences, joining a team
 - [x] **Settings: notifications** `/settings/notifications` — Old deep link; opens the Notifications section
 - [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link; opens the CoachHelm section
+- [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks with completion, shared documents, this week's RSVPs (`TeamHub` coach view, 2026-09-30; the Fairway page is player-only)
 - [x] **Home** `/` — Their day: next event with a countdown, the latest round, scoring and the parts of the game (`PlayerHome`, 2026-09-30; spec `design/handoff/Player - Home.html`, phone `phone/home-player.md`)
 - [ ] **CoachHelm** `/coachhelm` — Their AI coach: Game, Plan (development), Profile and Standing views
 - [ ] **My rounds** `/rounds` — Their round history and each round's detail (with `/rounds/[id]`)
 - [ ] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring during a round (with `/rounds/continue/[id]`, `/rounds/recover`)
 - [ ] **Round review** `/rounds/[id]/review` — AI analysis of a round they played
-- [ ] **Team Hub** `/team-hub` — Their team at a glance: tasks, announcements, travel, classes, teammates
+- [x] **Team Hub** `/team-hub` — Their team at a glance: RSVPs, announcements to acknowledge, trips, tasks, documents (`TeamHub`, 2026-09-30; spec `phone/team-hub.md`)
 - [x] **My Qualifiers** `/my-qualifiers` — The qualifiers they're entered in and where they stand
 - [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only: standings with their row marked, and the squad once confirmed (with `/[id]`)
 - [ ] **Roster** `/roster` — Their teammates
