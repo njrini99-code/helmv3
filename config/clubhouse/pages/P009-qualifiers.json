@@ -8,6 +8,7 @@
     "/golf/dashboard/qualifiers/new",
     "/golf/dashboard/qualifiers/[id]",
     "/golf/dashboard/qualifiers/[id]/edit",
+    "/golf/dashboard/qualifiers/[id]/selection",
     "/golf/dashboard/my-qualifiers"
   ],
   "roles": [
@@ -21,11 +22,11 @@
   "status": {
     "design": "approved",
     "implementation": "in_progress",
-    "contract": "partial",
+    "contract": "complete",
     "bridge": "reserved",
     "data": "existing",
     "verification": "partial",
-    "docs": "missing"
+    "docs": "current"
   },
   "design": {
     "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
@@ -48,13 +49,299 @@
     "styles": "src/clubhouse/styles/qualifiers.css",
     "tests": [
       "src/clubhouse/__tests__/qualifiers.test.tsx",
-      "src/app/golf/actions/__tests__/qualifier-setup.test.ts"
+      "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
+      "src/app/golf/actions/__tests__/qualifying-coach-gate.test.ts",
+      "src/app/golf/actions/__tests__/golf-qualifier-manual-close.test.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/qualifiers.md",
   "checklist": "docs/clubhouse/screens/qualifiers.md",
   "phoneSpec": "docs/clubhouse/phone/qualifiers.md",
-  "actions": [],
+  "actions": [
+    {
+      "id": "ACT-P009-CREATE",
+      "label": "Create a qualifier",
+      "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm",
+      "handler": "create.run",
+      "service": "src/app/golf/actions/golf.ts#createGolfQualifier",
+      "data": [
+        "golf_qualifiers",
+        "golf_qualifier_entries",
+        "golf_qualifier_round_courses"
+      ],
+      "bridge": {
+        "validation": 90510,
+        "success": 90901,
+        "opens": 90902,
+        "failure": 90601,
+        "kept": 91202,
+        "retry": 91401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P009-SAVE-EDIT",
+      "label": "Save an edited qualifier",
+      "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm",
+      "handler": "save.run",
+      "service": "src/clubhouse/screens/qualifiers/writes.ts#runEditPlan",
+      "data": [
+        "golf_qualifiers",
+        "golf_qualifier_round_courses",
+        "golf_qualifier_entries"
+      ],
+      "bridge": {
+        "validation": 90510,
+        "locked": 90513,
+        "squadFixed": 90514,
+        "success": 90901,
+        "opens": 90902,
+        "failure": 90602,
+        "partial": 90622,
+        "kept": 91202,
+        "retry": 91401,
+        "permission": 90811,
+        "held": 92302,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "src/app/golf/actions/__tests__/qualifier-setup.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-CLOSE",
+      "label": "Close a qualifier",
+      "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
+      "handler": "close.run",
+      "service": "src/app/golf/actions/golf.ts#updateQualifierStatus",
+      "data": [
+        "golf_qualifiers"
+      ],
+      "bridge": {
+        "confirm": 91101,
+        "loading": 90302,
+        "success": 90901,
+        "failure": 90603,
+        "notice": 91001,
+        "retry": 91401,
+        "refresh": 91501,
+        "permission": 90812,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "src/app/golf/actions/__tests__/golf-qualifier-manual-close.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-REOPEN",
+      "label": "Reopen a qualifier",
+      "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
+      "handler": "reopen.run",
+      "service": "src/app/golf/actions/golf.ts#updateQualifierStatus",
+      "data": [
+        "golf_qualifiers"
+      ],
+      "bridge": {
+        "loading": 90303,
+        "success": 90901,
+        "failure": 90604,
+        "retry": 91401,
+        "refresh": 91501,
+        "permission": 90812,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "src/app/golf/actions/__tests__/golf-qualifier-manual-close.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-START-SELECTING",
+      "label": "Start selecting",
+      "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#QualifierSelection",
+      "handler": "start.run",
+      "service": "src/app/golf/actions/v3/qualifying.ts#advanceSelectionState",
+      "data": [
+        "golf_qualifiers"
+      ],
+      "bridge": {
+        "confirm": 91102,
+        "loading": 90205,
+        "success": 90901,
+        "failure": 90623,
+        "refusal": 90809,
+        "retry": 91401,
+        "refresh": 91501,
+        "permission": 90810,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "src/app/golf/actions/__tests__/qualifying-coach-gate.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-SET-PICK",
+      "label": "Save a coach’s pick",
+      "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#PickDialog",
+      "handler": "act.run",
+      "service": "src/app/golf/actions/v3/qualifying.ts#setQualifierCoachPick",
+      "data": [
+        "golf_qualifier_selections"
+      ],
+      "bridge": {
+        "validationReason": 90511,
+        "validationPlayer": 90512,
+        "empty": 90411,
+        "loading": 90205,
+        "success": 90901,
+        "failure": 90624,
+        "refusal": 90809,
+        "kept": 91203,
+        "retry": 91401,
+        "refresh": 91501,
+        "permission": 90810,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "src/app/golf/actions/__tests__/qualifying-coach-gate.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-REMOVE-PICK",
+      "label": "Remove a coach’s pick",
+      "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#QualifierSelection",
+      "handler": "remove.run",
+      "service": "src/app/golf/actions/v3/qualifying.ts#removeQualifierCoachPick",
+      "data": [
+        "golf_qualifier_selections"
+      ],
+      "bridge": {
+        "confirm": 91103,
+        "loading": 90205,
+        "success": 90901,
+        "failure": 90625,
+        "retry": 91401,
+        "refresh": 91501,
+        "permission": 90810,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "src/app/golf/actions/__tests__/qualifying-coach-gate.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-CONFIRM-SQUAD",
+      "label": "Confirm the squad",
+      "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#QualifierSelection",
+      "handler": "confirm.run",
+      "service": "src/app/golf/actions/v3/qualifying.ts#confirmQualifierSelection",
+      "data": [
+        "golf_qualifier_selections",
+        "golf_qualifiers"
+      ],
+      "bridge": {
+        "confirm": 91104,
+        "loading": 90205,
+        "success": 90901,
+        "opens": 90902,
+        "failure": 90626,
+        "refusal": 90809,
+        "readOnly": 90701,
+        "retry": 91401,
+        "refresh": 91501,
+        "permission": 90810,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx",
+        "src/app/golf/actions/__tests__/qualifying-coach-gate.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-SEARCH-COURSES",
+      "label": "Search the course library for a round",
+      "component": "src/clubhouse/screens/qualifiers/CoursePicker.tsx#CoursePicker",
+      "handler": "writes.courses",
+      "service": "src/app/golf/actions/course-library.ts#listCoursesStrict",
+      "data": [
+        "golf_courses",
+        "golf_team_saved_courses"
+      ],
+      "bridge": {
+        "loading": 90204,
+        "empty": 90409,
+        "failure": 90613,
+        "debounce": 92102
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P009-LIST-TEES",
+      "label": "List a course’s tee sets",
+      "component": "src/clubhouse/screens/qualifiers/CoursePicker.tsx#CoursePicker",
+      "handler": "writes.tees",
+      "service": "src/app/golf/actions/course-library.ts#getCourseDetail",
+      "data": [
+        "golf_courses",
+        "golf_course_tees"
+      ],
+      "bridge": {
+        "loading": 90204,
+        "empty": 90410,
+        "failure": 90614
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P009-OPEN-SCORECARDS",
+      "label": "Open a player’s scorecards",
+      "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#Leaderboard",
+      "handler": "toggle",
+      "service": null,
+      "data": [
+        "golf_holes"
+      ],
+      "bridge": {
+        "empty": 90407,
+        "failure": 90609,
+        "permission": 90806,
+        "keyboard": 92003,
+        "kept": 91204
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P009-LIVE-STANDINGS",
+      "label": "Read the standings again as rounds are signed",
+      "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
+      "handler": "useLiveStandings",
+      "service": "src/clubhouse/screens/qualifiers/live.ts#useLiveStandings",
+      "data": [
+        "golf_rounds"
+      ],
+      "bridge": {
+        "refresh": 90304,
+        "announced": 91803
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifiers.test.tsx"
+      ]
+    }
+  ],
   "held": [
     "docs/clubhouse/held/features/qualifier-squad-and-entrants.md",
     "docs/clubhouse/held/data/qualifier-db-hardening.md"

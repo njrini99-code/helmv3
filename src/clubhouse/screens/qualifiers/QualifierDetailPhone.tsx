@@ -94,7 +94,7 @@ export function QualifierDetailPhone({
           <Icon icon={Lock} size={16} />
           <p>
             <b>{coach ? 'Closed to new rounds.' : 'This qualifier is closed.'}</b>
-            {coach ? 'Players can’t enter or submit rounds in it until you reopen it.' : 'These are the final standings.'}
+            {coach ? 'Players can’t enter or submit rounds in it, including rounds already started, until you reopen it.' : 'These are the final standings.'}
           </p>
         </div>
       )}

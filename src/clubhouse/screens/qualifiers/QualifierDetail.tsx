@@ -14,7 +14,7 @@ import { Modal } from '../../ui/Modal';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { useAction } from '../../lib/use-action';
+import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
@@ -42,29 +42,48 @@ export function QualifierDetail({ data, writes = LIVE_WRITES, live = true }: { d
   useEffect(() => setStatus(data.status), [data.status]);
   useLiveStandings(data.id, live && status === 'in_progress');
 
-  const close = useAction('qualifiers.close', () => writes.setStatus(data.id, 'completed'), {
-    done: 'Qualifier closed · no new rounds accepted',
-    failed: `Couldn’t close ${data.name}`,
-    hint: 'It is still open, and players can still enter rounds. Try again.',
-    code: 'CH-09003',
-  });
-  const reopen = useAction('qualifiers.reopen', () => writes.setStatus(data.id, 'in_progress'), {
-    done: 'Qualifier reopened · players can enter rounds',
-    failed: `Couldn’t reopen ${data.name}`,
-    hint: 'It is still closed. Try again.',
-    code: 'CH-09004',
-  });
+  // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
+  // (which runs the action again) finishes the job too: the pill changes, the question closes, the page re-reads.
+  const close = useAction(
+    'qualifiers.close',
+    async () => {
+      const res = await writes.setStatus(data.id, 'completed');
+      if (normalise(res).success) {
+        setStatus('completed');
+        setConfirmClose(false);
+        router.refresh();
+      }
+      return res;
+    },
+    {
+      done: 'Qualifier closed · no new rounds accepted',
+      failed: `Couldn’t close ${data.name}`,
+      hint: 'It is still open, and players can still enter rounds. Try again.',
+      code: 'CH-09003',
+    },
+  );
+  const reopen = useAction(
+    'qualifiers.reopen',
+    async () => {
+      const res = await writes.setStatus(data.id, 'in_progress');
+      if (normalise(res).success) {
+        setStatus('in_progress');
+        router.refresh();
+      }
+      return res;
+    },
+    {
+      done: 'Qualifier reopened · players can enter rounds',
+      failed: `Couldn’t reopen ${data.name}`,
+      hint: 'It is still closed. Try again.',
+      code: 'CH-09004',
+    },
+  );
 
   const b = data.board;
   const topScore = Math.max(0, data.squad - data.picks);
   const phone = useChPhone();
-  const reopenNow = async () => {
-    const res = await reopen.run();
-    if (res.success) {
-      setStatus('in_progress');
-      router.refresh();
-    }
-  };
+  const reopenNow = () => void reopen.run();
 
   const closeConfirm = (
     <Modal
@@ -84,14 +103,7 @@ export function QualifierDetail({ data, writes = LIVE_WRITES, live = true }: { d
             variant="primary"
             disabled={close.pending}
             feel={null}
-            onClick={async () => {
-              const res = await close.run();
-              if (res.success) {
-                setStatus('completed');
-                setConfirmClose(false);
-                router.refresh();
-              }
-            }}
+            onClick={() => void close.run()}
           >
             {close.pending ? <span data-ch-code="CH-09405">Closing</span> : 'Close qualifier'}
           </Button>
@@ -110,7 +122,7 @@ export function QualifierDetail({ data, writes = LIVE_WRITES, live = true }: { d
             chTrail('qualifiers close ask');
             setConfirmClose(true);
           }}
-          onReopen={() => void reopenNow()}
+          onReopen={reopenNow}
           reopenPending={reopen.pending}
         />
         {closeConfirm}
@@ -162,7 +174,7 @@ export function QualifierDetail({ data, writes = LIVE_WRITES, live = true }: { d
                 variant="ghost"
                 leftIcon={LockOpen}
                 disabled={reopen.pending}
-                onClick={() => void reopenNow()}
+                onClick={reopenNow}
               >
                 {reopen.pending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
               </Button>

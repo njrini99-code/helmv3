@@ -11,7 +11,7 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { useAction } from '../../lib/use-action';
+import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
@@ -59,24 +59,63 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const nobody = onScore.length + picks.length === 0;
   const canConfirm = state === 'closed' && picksReady && !nobody;
 
-  const start = useAction('qualifiers.startSelecting', () => startSelecting(data.id, state, writes.advance), {
-    done: 'Selecting is open · choose your picks',
-    failed: 'Couldn’t start selecting',
-    hint: 'Nothing changed. Try again.',
-    code: 'CH-09005',
-  });
-  const confirm = useAction('qualifiers.confirmSquad', () => writes.confirm(data.id), {
-    done: `Squad confirmed · ${plural(onScore.length + picks.length, 'player')} told`,
-    failed: 'Couldn’t confirm the squad',
-    hint: 'Nothing was confirmed and nobody was told. Try again.',
-    code: 'CH-09008',
-  });
-  const remove = useAction('qualifiers.removePick', (c: ChQCandidate) => writes.removePick(data.id, c.playerId), (c: ChQCandidate) => ({
-    done: `${c.name} removed as a pick`,
-    failed: `Couldn’t remove ${c.name} as a pick`,
-    hint: 'They are still a pick. Try again.',
-    code: 'CH-09007',
-  }));
+  // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
+  // (which runs the action again) finishes the job too: the step moves on, the question closes, the page re-reads.
+  const start = useAction(
+    'qualifiers.startSelecting',
+    async () => {
+      const res = await startSelecting(data.id, state, writes.advance);
+      if (normalise(res).success) {
+        setState('closed');
+        setAsking(null);
+        router.refresh();
+      }
+      return res;
+    },
+    {
+      done: 'Selecting is open · choose your picks',
+      failed: 'Couldn’t start selecting',
+      hint: 'Nothing changed. Try again.',
+      code: 'CH-09005',
+    },
+  );
+  const confirm = useAction(
+    'qualifiers.confirmSquad',
+    async () => {
+      const res = await writes.confirm(data.id);
+      if (normalise(res).success) {
+        setState('selected');
+        setAsking(null);
+        router.push(detailHref);
+        router.refresh();
+      }
+      return res;
+    },
+    {
+      done: `Squad confirmed · ${plural(onScore.length + picks.length, 'player')} told`,
+      failed: 'Couldn’t confirm the squad',
+      hint: 'Nothing was confirmed and nobody was told. Try again.',
+      code: 'CH-09008',
+    },
+  );
+  const remove = useAction(
+    'qualifiers.removePick',
+    async (c: ChQCandidate) => {
+      const res = await writes.removePick(data.id, c.playerId);
+      if (normalise(res).success) {
+        setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, pick: null } : x)));
+        setRemoving(null);
+        router.refresh();
+      }
+      return res;
+    },
+    (c: ChQCandidate) => ({
+      done: `${c.name} removed as a pick`,
+      failed: `Couldn’t remove ${c.name} as a pick`,
+      hint: 'They are still a pick. Try again.',
+      code: 'CH-09007',
+    }),
+  );
 
   const next = stage === 0 ? 'start' : stage === 1 ? 'confirm' : null;
   const primary =
@@ -266,14 +305,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
               variant="primary"
               feel={null}
               disabled={start.pending}
-              onClick={async () => {
-                const res = await start.run();
-                if (res.success) {
-                  setState('closed');
-                  setAsking(null);
-                  router.refresh();
-                }
-              }}
+              onClick={() => void start.run()}
             >
               {start.pending ? <span data-ch-code="CH-09408">Starting</span> : 'Start selecting'}
             </Button>
@@ -297,15 +329,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
               variant="primary"
               feel={null}
               disabled={confirm.pending}
-              onClick={async () => {
-                const res = await confirm.run();
-                if (res.success) {
-                  setState('selected');
-                  setAsking(null);
-                  router.push(detailHref);
-                  router.refresh();
-                }
-              }}
+              onClick={() => void confirm.run()}
             >
               {confirm.pending ? <span data-ch-code="CH-09408">Confirming</span> : 'Confirm squad'}
             </Button>
@@ -329,15 +353,8 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
               variant="danger"
               feel={null}
               disabled={remove.pending}
-              onClick={async () => {
-                const c = removing;
-                if (!c) return;
-                const res = await remove.run(c);
-                if (res.success) {
-                  setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, pick: null } : x)));
-                  setRemoving(null);
-                  router.refresh();
-                }
+              onClick={() => {
+                if (removing) void remove.run(removing);
               }}
             >
               {remove.pending ? <span data-ch-code="CH-09408">Removing</span> : 'Remove'}
@@ -421,12 +438,21 @@ function PickDialog({
     setTried(false);
   }, [open, fixed]);
   const who = fixed ?? eligible.find((c) => c.playerId === picked) ?? null;
-  const act = useAction('qualifiers.setPick', (c: ChQCandidate, r: string) => save(c, r), (c: ChQCandidate) => ({
-    done: `${c.name} picked`,
-    failed: `Couldn’t pick ${c.name}`,
-    hint: 'Nothing changed. Try again.',
-    code: 'CH-09006',
-  }));
+  // The pick is recorded by the action, so the toast's Retry records it too.
+  const act = useAction(
+    'qualifiers.setPick',
+    async (c: ChQCandidate, r: string) => {
+      const res = await save(c, r);
+      if (normalise(res).success) onSaved(c, r);
+      return res;
+    },
+    (c: ChQCandidate) => ({
+      done: `${c.name} picked`,
+      failed: `Couldn’t pick ${c.name}`,
+      hint: 'Nothing changed. Try again.',
+      code: 'CH-09006',
+    }),
+  );
   const noWho = tried && !who;
   const noReason = tried && !reason.trim();
   const options = useMemo(() => eligible, [eligible]);
@@ -448,11 +474,10 @@ function PickDialog({
             variant="primary"
             leftIcon={Check}
             disabled={act.pending}
-            onClick={async () => {
+            onClick={() => {
               setTried(true);
               if (!who || !reason.trim()) return;
-              const res = await act.run(who, reason.trim());
-              if (res.success) onSaved(who, reason.trim());
+              void act.run(who, reason.trim());
             }}
           >
             {act.pending ? <span data-ch-code="CH-09408">Saving</span> : 'Save pick'}

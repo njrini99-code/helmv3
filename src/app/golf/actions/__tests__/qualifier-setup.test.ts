@@ -49,7 +49,7 @@ beforeEach(() => {
 });
 
 describe('HELD gate (D-61)', () => {
-  it('refuses both actions before any read while the Clubhouse UI is off', async () => {
+  it('92302 refuses both actions before any read while the Clubhouse UI is off', async () => {
     clubhouse.on = false;
     const from = vi.spyOn(fake, 'from');
     const refusal = { success: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
@@ -71,7 +71,7 @@ describe('setQualifierSquadSize', () => {
     expect([row.selection_slots_total, row.selection_slots_coach_pick]).toEqual([6, 2]);
   });
 
-  it('refuses a caller who does not coach the team, before any write', async () => {
+  it('90811 refuses a caller who does not coach the team, before any write', async () => {
     access.result = { allowed: false, reason: 'denied' };
     const res = await setQualifierSquadSize(Q, { total: 6, coachPicks: 2 });
     expect(res).toEqual({ success: false, error: 'Only a coach of this team can change this qualifier.' });
@@ -79,7 +79,7 @@ describe('setQualifierSquadSize', () => {
     expect(row.selection_slots_total).toBe(5);
   });
 
-  it('refuses a signed-out caller and a malformed id', async () => {
+  it('90811 refuses a signed-out caller and a malformed id', async () => {
     fake = createFakeSupabase({ user: null, tables: {} });
     expect((await setQualifierSquadSize(Q, { total: 5, coachPicks: 1 })).success).toBe(false);
     expect(await setQualifierSquadSize('not-a-uuid', { total: 5, coachPicks: 1 })).toEqual({ success: false, error: 'That qualifier link isn’t valid.' });
@@ -196,7 +196,7 @@ describe('setQualifierEntrants', () => {
     expect((await setQualifierEntrants(Q, [p(1)])).success).toBe(false);
   });
 
-  it('refuses an empty or malformed list and a caller who does not coach the team', async () => {
+  it('90811 refuses an empty or malformed list and a caller who does not coach the team', async () => {
     expect(await setQualifierEntrants(Q, [])).toEqual({ success: false, error: 'Choose at least one player.' });
     expect(await setQualifierEntrants(Q, ['not-a-uuid'])).toEqual({ success: false, error: 'That player list isn’t valid. Reload and try again.' });
     access.result = { allowed: false, reason: 'unavailable' };

@@ -59,7 +59,7 @@ Types come from `src/lib/types/database.ts` and were checked against the live sc
 | Pick reasoning (9) | `golf_qualifier_selections.coach_reasoning` | Coach only (Q-14). |
 | Coach's pick "Open" slots (4) | `selection_slots_coach_pick` minus `coach_pick` rows | |
 | Top-score line, travel cut (1, 4) | slot counts | |
-| "Updates as rounds are signed" (4) | `useQualifierRealtime` (existing channel on `golf_qualifier_entries`, `golf_rounds`, `golf_qualifiers`) | No new subscription. |
+| "Updates as rounds are signed" (4) | `useLiveStandings` (`screens/qualifiers/live.ts`): a channel `ch-qualifier-<id>` on `golf_rounds` for the qualifier, live qualifiers only; after 800ms of quiet the server reads the page again | Built as one subscription on one table. The first plan reused `useQualifierRealtime` on `golf_qualifier_entries`, `golf_rounds` and `golf_qualifiers`; an entry or a pick changing does not refresh the page. |
 | "No rounds submitted" rows (4) | entries with no completed round | Shown after the ranked rows, never ranked. |
 | Scorecard: Round N, course · date, 18 holes (5) | `golf_rounds.qualifier_round_number`, `course_name`, `round_date`; `golf_holes.hole_number`, `par`, `score` | Data gap: 14 of 215 rounds have no hole rows, 33 have fewer than 18 scored holes. |
 | Round-by-round R1..Rn, Total, To par (4) | `golf_rounds.total_score` by `qualifier_round_number` | Coach only, as today. |

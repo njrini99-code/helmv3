@@ -11,7 +11,7 @@ import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { useAction } from '../../lib/use-action';
+import { normalise, useAction } from '../../lib/use-action';
 import { chTrail } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
@@ -65,10 +65,12 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   // Without the players, a save could enter or drop someone by mistake.
   const blocked = data.playersError;
 
+  // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
+  // (which runs the action again) finishes the job too: the new qualifier opens, and nobody is left to create it twice.
   const create = useAction(
     'qualifiers.create',
-    () =>
-      writes.create({
+    async () => {
+      const res = await writes.create({
         name: v.name.trim(),
         description: v.description.trim() || undefined,
         courseName: v.course.trim() || undefined,
@@ -83,7 +85,10 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         roundCourses: [...courses.values()]
           .filter((c) => c.number <= rounds && c.courseName)
           .map((c) => ({ roundNumber: c.number, courseId: c.courseId, courseName: c.courseName, teeId: c.teeId })),
-      }),
+      });
+      if (normalise(res).success) router.push(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
+      return res;
+    },
     () => ({
       done: `Qualifier created · ${plural(v.playerIds.length, 'player')} entered`,
       failed: 'Couldn’t create the qualifier',
@@ -120,6 +125,10 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       setSaveNote(null);
       const res = await writes.saveEdit(data.id as string, plan);
       if (!res.success && res.error) setSaveNote(res.error);
+      if (normalise(res).success) {
+        router.push(doneHref);
+        router.refresh();
+      }
       return res;
     },
     { done: 'Qualifier saved', failed: 'Couldn’t save the qualifier', hint: 'Check the form and save again.', code: 'CH-09002' },
@@ -135,16 +144,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       if (first) document.getElementById(FIELD_ID[first])?.focus();
       return;
     }
-    if (editing) {
-      const res = await save.run();
-      if (res.success) {
-        router.push(doneHref);
-        router.refresh();
-      }
-    } else {
-      const res = await create.run();
-      if (res.success) router.push(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
-    }
+    if (editing) await save.run();
+    else await create.run();
   };
 
   const phone = useChPhone();
