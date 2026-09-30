@@ -9,7 +9,7 @@ this file covers what those boards show. Anything the drawing doesn't show is ma
 `MOBILE.md` or from the desktop behaviour.
 
 Where the design disagrees with D-3 or the old draft of this file, the disagreement is listed at the
-end and sent to the owner as Q-5 to Q-12 in `PROGRESS.md`. **None of them is decided here.** Until the
+end and sent to the owner as Q-21 to Q-23 in `PROGRESS.md`. **None of them is decided here.** Until the
 owner answers, the tab bar keeps D-3.
 
 It applies below 820px and in the iOS app: iPhone only, portrait, light theme (D-22). The frames are
@@ -19,7 +19,7 @@ depends on the width.
 ## Design versus device chrome
 
 - `MSafari`, the address pill and toolbar under every board, is Safari's own chrome and not app UI.
-  The iOS app has no such bar (Q-9).
+  The iOS app has no such bar (Q-23).
 - `ios-frame.jsx` draws three device parts that the app doesn't draw either: the status bar, the
   Dynamic Island and the home indicator. In the design, the status bar's space is the top bar's
   54px top padding.
@@ -39,7 +39,7 @@ depends on the width.
   to `--ch-bg-hover` while pressed.
 - A caption or empty line (`.qm-empty`) uses `--ch-type-caption` in `--ch-text-tertiary`.
 - Avatars are always one calm neutral on the phone (`.qm .fw-avatar`, added in ccbd33465): background
-  #E9E3D3, initials #5A4E36, ring `rgb(90 78 54 / .22)`. Clubhouse's `Avatar` has five tones (Q-10).
+  #E9E3D3, initials #5A4E36, ring `rgb(90 78 54 / .22)`. Clubhouse's `Avatar` has five tones (Q-23).
 
 ## Top bar (`MTop`, `.qm-top`)
 
@@ -60,7 +60,7 @@ bar that never renders. The rendered bar:
 
 - None of the Messages boards has a large title. The `.m-top--lg` class exists but is unused.
 - The phone bar has no Settings gear and no breadcrumbs, although the desktop `TopBar` has both
-  (Q-8).
+  (Q-22).
 - The bell is the desktop `Bell`: same feed, same actions (D-17).
 
 ## Tab bar (`MTabs`, `.qm-tabs`)
@@ -68,7 +68,7 @@ bar that never renders. The rendered bar:
 - Five equal columns. The design draws one set: Home (`house`), Helm (`sparkles`), Rounds (`flag`),
   Stats (`chart-column`), More (`layout-grid`).
   - The boards show a head coach's account, and no player tab bar is drawn.
-  - Helm is CoachHelm. Neither CoachHelm nor Rounds is rebuilt (Q-5).
+  - Helm is CoachHelm. Neither CoachHelm nor Rounds is rebuilt (Q-21).
 - Surface:
   - ivory at 92% (`rgb(253 252 248 / .92)`) under a 34px blur, saturate 170%
   - a hairline on top
@@ -77,25 +77,25 @@ bar that never renders. The rendered bar:
   - at least 46px tall
   - a 21px icon over a 500 10.5px label, 3px apart
   - inactive: `--ch-text-tertiary`
-  - active: icon and label in `--ch-green-700`, with no chip and no change of weight (Q-6)
+  - active: icon and label in `--ch-green-700`, with no chip and no change of weight (Q-21)
 - Badge (`.m-tabdot`): at least 15px wide, radius 8, `--ch-green-600`, white 600 9.5px, offset −4px
-  from the top and −9px from the right. It is drawn only on More, as 3 (Q-7).
+  from the top and −9px from the right. It is drawn only on More, as 3 (Q-22).
 - The bar shows on tab-level screens, including the Messages inbox. It is hidden on New message, on a
   thread and on Details.
 - In the drawing the bar sits on Safari's toolbar. In the app it pads by
-  `env(safe-area-inset-bottom)`, which is 34px on Face ID iPhones. Capture 90 shows that (Q-9).
+  `env(safe-area-inset-bottom)`, which is 34px on Face ID iPhones. Capture 90 shows that (Q-23).
 - Haptic: `select` on a change of tab, never on the tab already open (as built).
 
 ## More
 
 - The Messages inbox has a "‹ More" back link, and the More tab is active under it. So More is a
   screen, the root of its own tab, and Messages is pushed from it. Today More is a sheet (CH-1802),
-  and the old draft also made it a sheet (Q-8).
+  and the old draft also made it a sheet (Q-22).
 - `m.css` styles two parts of that screen:
   - `.m-me`, a profile card: surface, radius 16, `--ch-shadow-sm`, a 15px name over a caption
   - `.m-more`, rows at least 54px tall with a 32px icon tile (radius 9, `--ch-bg-subtle`) and a 500
     label
-- No board draws the More screen itself, so its contents and order are not specified (Q-8).
+- No board draws the More screen itself, so its contents and order are not specified (Q-22).
 
 ## Sheets (`MSheet`)
 
@@ -149,7 +149,7 @@ The prototype responds to clicks only. The drawing shows none of these gestures;
 | Drag a sheet down past the threshold | Sheets | `press`, as the More sheet does today |
 | Long press | A message bubble (Messages) | `press` when the menu opens |
 | Destructive confirm | Leave group, Delete message | `warning` on the destructive button, then `commit` |
-| Pull to refresh | Lists | Light, at the threshold. Still waits for a drawing (Q-12) |
+| Pull to refresh | Lists | Light, at the threshold. Still waits for a drawing (Q-23) |
 
 ## Motion
 
@@ -183,40 +183,40 @@ Each keeps its drawn size and gets a 44px hit area, as `MOBILE.md` requires.
 | `rgb(21 90 57 / .18)` | Token edge | `--ch-green-600` at 18% |
 | `#fff` | Composer field, badge text | `--ch-ivory-0` or `--ch-text-on-accent` |
 | `var(--ink-200, #D9D5CB)` | Send, off | The design system has no `--ink-200`. The nearest is `--ch-ivory-300` (#DCD6C8) |
-| `var(--danger-600, #B3261E)` | Leave group, Delete conversation | `--ch-danger-600` (#B03A2E), the same red as `--ch-score-under` (Q-11) |
+| `var(--danger-600, #B3261E)` | Leave group, Delete conversation | `--ch-danger-600` (#B03A2E), the same red as `--ch-score-under` (Q-23) |
 | `rgb(28 25 18 / .05)` | Search field | No token; `--ch-bg-inset` looks the same |
 | `rgb(28 25 18 / .06)`, `/ .18` | Sheet close, grab | Ink at 6% and 18%. No token |
 | `rgb(20 18 12 / .34)` | Sheet scrim | The existing `.ch-scrim` (`rgb(20 20 18 / .32)`) |
 | `#F4F2EA` | Sheet footer | `--ch-ivory-100` |
-| `#E9E3D3`, `#5A4E36` | Phone avatar | No tokens. The nearest are `--ch-ivory-200` and `--ch-champagne-500`. They go into the design system first (Q-10) |
+| `#E9E3D3`, `#5A4E36` | Phone avatar | No tokens. The nearest are `--ch-ivory-200` and `--ch-champagne-500`. They go into the design system first (Q-23) |
 
 ## Where the design contradicts D-3 or the old draft
 
 None of these is resolved here. Each one is an owner question in `PROGRESS.md`.
 
-1. **Tab contents (Q-5).**
+1. **Tab contents (Q-21).**
    - D-3 and the build:
      - coach: Home, Calendar, Messages, Roster, More
      - player: Home, Calendar, Messages, My stats, More
    - The design: Home, Helm, Rounds, Stats, More, with no player set drawn. Helm and Rounds aren't
      rebuilt, and `rebuiltHref` hides links to screens that aren't.
-2. **Tab bar style (Q-6).** D-3 is a green bar with the raised ivory pass on the active tab and a
+2. **Tab bar style (Q-21).** D-3 is a green bar with the raised ivory pass on the active tab and a
    champagne badge, and that is what's built. The design is an ivory glass bar with green text on the
    active tab and a green badge.
-3. **Where Messages lives (Q-7).** Built, and in the old draft, Messages is a tab with its own badge.
+3. **Where Messages lives (Q-22).** Built, and in the old draft, Messages is a tab with its own badge.
    In the design it opens from More, and the badge sits on More.
-4. **More (Q-8).** Built, and in the old draft, More is a sheet with drag to dismiss. The design makes
+4. **More (Q-22).** Built, and in the old draft, More is a sheet with drag to dismiss. The design makes
    it a pushed stack, but doesn't draw it.
-5. **Top bar (Q-8).**
+5. **Top bar (Q-22).**
    - The old draft: a 48px bar with a large title that collapses on scroll.
    - The build: breadcrumbs, the bell and Settings.
    - The design: a 44px bar with a centred title and a back link on pushed screens, and no Settings.
-6. **Safari bar (Q-9).** It is drawn on every board and is not app UI.
-7. **Avatars (Q-10).** Clubhouse coins have five tones. On the phone the design uses one neutral.
-8. **Red for destructive actions (Q-11).** The doctrine keeps red for under par and the pin flag. The
+6. **Safari bar (Q-23).** It is drawn on every board and is not app UI.
+7. **Avatars (Q-23).** Clubhouse coins have five tones. On the phone the design uses one neutral.
+8. **Red for destructive actions (Q-23).** The doctrine keeps red for under par and the pin flag. The
    design colours Leave group and Delete conversation with the danger red, as desktop Clubhouse
    already does for its danger buttons.
-9. **Pull to refresh and the push soft ask (Q-12).** D-22 says both wait for the foundation design.
+9. **Pull to refresh and the push soft ask (Q-23).** D-22 says both wait for the foundation design.
    The design draws neither.
 10. **What the old draft said that the design doesn't show:**
     - Details and New message opening as sheets. The design pushes both as screens.
