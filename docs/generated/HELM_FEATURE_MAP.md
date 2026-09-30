@@ -292,7 +292,7 @@ is a second thing to keep true.
 - **Code:** `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts`, `src/lib/admin/triage-*.ts` … and 8 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md`
-- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified)
+- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified), `retired-runner-key-heartbeat-2026-09-30` (verified)
 - **History:** `memory/ledgers/changes/admin_selfheal.md`
 
 ## `admin_replay_lab`

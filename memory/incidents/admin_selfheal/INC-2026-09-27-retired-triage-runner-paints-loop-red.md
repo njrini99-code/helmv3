@@ -2,7 +2,7 @@
 
 - Feature: `admin_selfheal`
 - Surface: `/admin/errors` loop view (self-heal circuit), and repair-contract STEP 0b
-- Status: FIXED in 2bb8e2202 on `agent/health-20260927-0547`; PR pending merge, then deploy
+- Status: FIXED on main in 1a326692d (#2081), awaiting deploy; RECURRED 2026-09-30 under `metadata.runner`, fixed in ec225fe22 (#2103, pending merge)
 - Risk: R1. Read-model only. No schema, RLS, grant or data change.
 - Signal: `background_job_logs` `selfheal-triage` rows with `status = 'failed'` and `metadata.method = 'claude-code-cloud-session'` at 2026-09-25 09:05Z, 2026-09-26 09:09Z and 2026-09-27 09:20Z, each a few minutes after a completed `vercel-cron` Diagnose run.
 
@@ -23,6 +23,24 @@ the whole loop red, while the real runner was healthy.
   count; if every row in view is retired, the newest is returned (never
   `never-ran`).
 - repair-contract STEP 0b's freshness query applies the same filter.
+
+## Recurrence 2026-09-30 (same root cause, new key)
+
+At 2026-09-30 09:18Z the retired task wrote its `failed` row as
+`metadata.runner = 'claude-code-cloud-session'` with **no** `method` key,
+20 seconds after the completed `vercel-cron` Diagnose run (09:17:41Z). The
+method-only match did not recognise it, so the row would again decide
+Diagnose's status, and repair-contract STEP 0b's SQL would refuse to run.
+
+Fix: `selectStageHeartbeat` treats a row as retired when either
+`metadata.method` or `metadata.runner` names a retired runner; STEP 0b's SQL
+filters both keys. A live `runner` (e.g. `desktop-routine`) still counts.
+Regression test: "recognises a retired runner that names itself in
+metadata.runner" fails on c70bd65ef and passes with the fix. Replay:
+`replay/manifests/retired-runner-key-heartbeat-2026-09-30.yml`.
+
+Neither fix is live yet: production serves 6ee77e98 (2026-09-23), which
+predates #2081 too.
 
 ## Still open (owner)
 
