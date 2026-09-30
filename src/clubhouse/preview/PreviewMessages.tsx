@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { MessagesView, type ChMessagesApi } from '../screens/messages/MessagesView';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
@@ -122,6 +122,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const files = useCallback(async (id: string) => (state === 'files-failed' ? null : (previewFiles[id] ?? [])), [state]);
   const addCandidates = useCallback(async () => (state === 'add-failed' ? null : previewCandidates), [state]);
 
+  const drafts = useRef(new Map<string, string>());
   const members: ChMember[] = useMemo(
     () => [{ userId: 'me', name: 'Maya Reyes', subtitle: 'Head coach', role: 'coach' as const }, ...people.map((p) => ({ userId: p.userId, name: p.name, subtitle: p.subtitle, role: p.role }))],
     [],
@@ -136,6 +137,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     convsLoading: state === 'loading',
     convsError: state === 'failed',
     refetchConvs: () => toast({ title: 'Refreshed' }),
+    drafts: drafts.current,
     selectedId,
     select: (id) => {
       setSelectedId(id);

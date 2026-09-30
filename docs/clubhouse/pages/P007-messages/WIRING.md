@@ -35,7 +35,7 @@ Contract outcomes: CONTRACT.md (Bridge IDs 7ccii, catalog CH-7xxx)
 ↓
 Bridge: recorded, not wired (D-68)
 ↓
-Tests: src/clubhouse/__tests__/messages.test.tsx (48 cases), message-attachments-conversation-files.test.ts
+Tests: src/clubhouse/__tests__/messages.test.tsx (53 cases), message-attachments-conversation-files.test.ts
 ```
 
 ## Actions

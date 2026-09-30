@@ -8,7 +8,10 @@ Machine-checked by clubhouse:check (scripts/clubhouse/registry.mjs, D-69):
 - a DEFINED section names at least one Bridge ID (this page's, or the shell's P001 IDs it inherits);
 - every Bridge ID of this page (config/clubhouse/bridge-contracts.json) is listed under its category.
 A contract with no catalog row (success, observability, tests) is added to
-bridge-contracts.json by hand with the next free item, without a chCode.
+bridge-contracts.json by hand with the next free item, without a chCode, and a
+`tests` list naming its Bridge ID; without one it stays reserved.
+Write the Status line and notes only: `node scripts/clubhouse/registry.mjs sync`
+writes each section's table from the registry and keeps the notes.
 -->
 
 ## 01 — Default / core UI

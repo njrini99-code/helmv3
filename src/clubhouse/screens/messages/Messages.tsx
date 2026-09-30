@@ -52,6 +52,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
   const handledParams = useRef(false);
+  /** Unsent drafts by conversation, so switching threads never loses what was written (71202). */
+  const drafts = useRef(new Map<string, string>());
   const [paramsDone, setParamsDone] = useState(false);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
@@ -437,6 +439,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     convsLoading: loading,
     convsError: !!error && !conversations.length,
     refetchConvs: () => void refetch(),
+    drafts: drafts.current,
     selectedId,
     select,
     msgs: chMsgs,

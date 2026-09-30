@@ -83,7 +83,15 @@ the manifest's `status.docs` to `current`. From then on:
   notices with Try again, its validation, and its offline and permission
   states.
 - A contract with no catalog row (a success, an observability rule, a test)
-  is added to `bridge-contracts.json` by hand, without a `chCode`.
+  is added to `bridge-contracts.json` by hand, without a `chCode`, with the
+  next free item in its category. It is `implemented` only with a `tests`
+  list whose files exist and name its Bridge ID in a test title; otherwise it
+  stays `reserved` (checked). Grep the page's own code for every claim: on
+  Messages, two of the first twenty were wrong.
+- Write only each category's `Status:` line and its notes. `registry.mjs
+  sync` writes the contract tables (and the shell line where a section
+  names the shell's contracts) from the registry, keeping the notes, so the
+  file can't fall behind the catalog (checked).
 - `WIRING.md` maps each action: control, component, handler, hook, server
   action, data, contract outcomes, tests. Meaningful actions get an
   `ACT-P###-NAME` in the manifest, whose Bridge outcomes must exist (checked).

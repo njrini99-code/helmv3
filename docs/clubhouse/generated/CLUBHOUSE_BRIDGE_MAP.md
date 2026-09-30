@@ -71,7 +71,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P004 |  | 1 | 1 | 9 |  | 11 | 2 |  |  |  |  |  |  |  |  | 2 | 2 | 4 |  |  |  |  |  |  |  | 32 |
 | P005 |  |  | 2 | 5 | 1 | 9 |  | 2 |  |  |  |  |  |  |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 29 |
 | P006 |  | 5 | 1 | 7 | 4 | 24 |  |  |  |  | 2 | 1 |  |  |  | 3 | 3 | 4 |  |  |  |  |  |  |  | 54 |
-| P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 1 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 88 |
+| P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 89 |
 | P008 |  | 1 | 3 | 4 | 15 | 36 |  |  |  | 1 | 5 | 3 | 1 |  |  | 8 | 7 | 7 |  |  |  |  |  |  |  | 91 |
 | P009 |  | 4 | 3 | 10 | 10 | 22 |  | 2 |  | 1 | 1 | 1 |  |  |  | 2 | 2 | 3 |  |  |  |  |  |  |  | 61 |
 
@@ -409,6 +409,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71101 | CH-7501 | 11 Destructive | `DELETE_A_MESSAGE` | implemented | Delete a message |
 | 71102 | CH-7502 | 11 Destructive | `LEAVE_A_GROUP` | implemented | Leave a group |
 | 71201 |  | 12 State preservation | `DRAFT_KEPT_ON_FAILURE` | implemented | A send that fails puts the text and files back in the composer; nothing the person wrote is lost. |
+| 71202 |  | 12 State preservation | `DRAFT_KEPT_ACROSS_THREADS` | implemented | An unsent draft is kept per conversation: switching to another thread and back finds it where it was; a send that lands clears it. |
 | 71301 |  | 13 Optimistic UI | `OPTIMISTIC_SEND` | implemented | A sent message appears at once under its final id and is reconciled in place when the server echoes it; a refused send stays in the thread marked Not sent (CH-7016), never silently removed. |
 | 71401 |  | 14 Retry / recovery | `RETRY_FAILED_SEND` | implemented | Retry re-sends a refused message under the same id, so pressing it twice can never post twice; Discard removes it. |
 | 71402 |  | 14 Retry / recovery | `TRY_AGAIN_SECTION_READ` | implemented | Try again on a section that did not load re-reads only that section (conversations, a thread, members, files, announcements) and keeps the rest of the page as it was. |

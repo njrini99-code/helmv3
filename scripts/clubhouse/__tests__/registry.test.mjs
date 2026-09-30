@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
+import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, renderContract, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
 
 const map = {
   categories: {},
@@ -107,4 +107,32 @@ test('an orphan HOLD-headed migration that no page claims fails', () => {
 
 test('names are readable constants', () => {
   assert.equal(nameFrom('A message’s send can’t be confirmed (phone)'), 'A_MESSAGES_SEND_CANT_BE_CONFIRMED');
+});
+
+test('a contract with no catalog code is implemented only with a test file that names its ID', () => {
+  const c = ctx();
+  const hand = { id: 72001, page: 'P007', category: 20, item: 1, name: 'ENTER_TO_SEND', meaning: 'x', status: 'implemented' };
+  const files = { 't.test.tsx': "it('72001 Enter sends', …)", 'other.test.tsx': "it('sends', …)" };
+  const run = (rec) => checkRegistry({ ...c, bridge: [...c.bridge, rec], exists: (p) => p in files || !p.endsWith('.tsx'), read: (p) => files[p] ?? '' });
+  assert.ok(run(hand).some((x) => x.includes('names no test')));
+  assert.ok(run({ ...hand, tests: ['missing.test.tsx'] }).some((x) => x.includes('does not exist')));
+  assert.ok(run({ ...hand, tests: ['other.test.tsx'] }).some((x) => x.includes('does not name 72001')));
+  assert.equal(run({ ...hand, tests: ['t.test.tsx'] }).filter((x) => x.includes('72001')).length, 0);
+  assert.equal(run({ ...hand, status: 'reserved' }).filter((x) => x.includes('72001')).length, 0);
+});
+
+test('renderContract rebuilds the tables from the registry and keeps the written notes', () => {
+  const cats = Object.fromEntries(Array.from({ length: CATEGORY_COUNT }, (_, i) => [i + 1, `Cat ${i + 1}`]));
+  const bridge = [
+    { id: 70401, page: 'P007', category: 4, item: 1, name: 'NONE_YET', chCode: 'CH-7301', meaning: 'No conversations', status: 'implemented' },
+    { id: 10401, page: 'P001', category: 4, item: 1, name: 'NOT_REBUILT', chCode: 'CH-1301', meaning: 'x', status: 'implemented' },
+  ];
+  const existing = '# P007 — Messages: page contract\n\nPreamble.\n\n## 01 — Cat 1\n\nStatus: N/A — nothing\n\n## 04 — Cat 4\n\nStatus: DEFINED\n\nFirst-run and filtered.\n\n| old | table |\n\nFrom the shell (P001): stale.\n';
+  const out = renderContract({ m: { id: 'P007', name: 'Messages' }, bridge, cats, existing });
+  assert.ok(out.startsWith('# P007 — Messages: page contract\n\nPreamble.'));
+  assert.ok(out.includes('## 04 — Cat 4\n\nStatus: DEFINED\n\nFirst-run and filtered.\n\n| Bridge ID |'));
+  assert.ok(out.includes('| 70401 | CH-7301 | `NONE_YET` | No conversations |'));
+  assert.ok(out.includes('From the shell (P001): 10401 CH-1301.'));
+  assert.ok(!out.includes('| old | table |'));
+  assert.ok(out.includes('## 25 — Cat 25\n\nStatus:'));
 });

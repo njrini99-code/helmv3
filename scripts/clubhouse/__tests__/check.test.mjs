@@ -80,7 +80,7 @@ test('tracker: a started screen needs a checklist file', () => {
   assert.ok(v.some((x) => x.includes('roster.md is missing')));
 });
 
-test('catalog: every number is catalogued once, in its block, used and tested', () => {
+test('72401 catalog: every number is catalogued once, in its block, used and tested', () => {
   const catalogs = {
     'docs/clubhouse/catalog/settings.md': [
       '| CH-8001 | a | b | c | settings.test |',

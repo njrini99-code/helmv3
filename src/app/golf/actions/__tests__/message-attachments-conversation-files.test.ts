@@ -83,7 +83,7 @@ describe('getGolfConversationFiles', () => {
     mocks.isClubhouseFor.mockClear();
   });
 
-  it('is HELD: refuses before any read unless the Clubhouse UI is on for the caller', async () => {
+  it('72302 is HELD: refuses before any read unless the Clubhouse UI is on for the caller', async () => {
     mocks.clubhouse = false;
     const res = await getGolfConversationFiles('c-1');
     expect(res).toEqual({ error: 'Not available' });

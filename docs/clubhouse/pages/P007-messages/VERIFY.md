@@ -27,7 +27,7 @@ Date:       2026-09-29
 
 | Test | Contract | Result |
 | --- | --- | --- |
-| `src/clubhouse/__tests__/messages.test.tsx` (48 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 (706xx, 705xx, 704xx, 702xx, 711xx), plus 7604, 7704, 7804 | pass (`npx vitest run src/clubhouse` 377/377) |
+| `src/clubhouse/__tests__/messages.test.tsx` (53 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 (706xx, 705xx, 704xx, 702xx, 711xx), plus 7604, 7704, 7804 | pass (`npx vitest run src/clubhouse` 382/382, 2026-09-30) |
 | `src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts` (7 cases) | 72302, 70630 | pass |
 | `src/clubhouse/__tests__/shell.test.tsx` | the shell contracts this page inherits (10703, 10702, 11611, 11811 and the rest) | pass |
 
@@ -69,11 +69,12 @@ never observed is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 ## Accessibility
 
 ```text
-Keyboard:       Enter and Shift+Enter tested; sheets trap Tab and close on Esc (shell tests). A full keyboard walk
-                at 1280 and 390 is open.
+Keyboard:       Enter sends and Shift+Enter adds a line (messages.test 72001); Esc closes a sheet (shell.test).
+                Not tested: that a sheet keeps Tab inside it. A full keyboard walk at 1280 and 390 is open.
 VoiceOver:      the long press has a Message actions button (CH-7804); not tried on a device.
 Focus:          a pushed screen takes focus on its title (CH-1809).
-Reduced motion: pushes and sheets fade and don't drag (shell tests); v2 reveal and press off (motion.test).
+Reduced motion: a sheet doesn't drag (shell.test); the press is off (motion.test); the reveal, skeleton fade and
+                shimmer are off (browser check, 2026-09-29). That pushes and sheets fade instead is not tested.
 Contrast:       clubhouse:a11y (axe, WCAG 2.2 AA) ran for messages at 1280 and 390 before the v2 changes; rerun open.
 Text scaling:   not checked.
 ```
@@ -95,6 +96,6 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 - Forced send, edit, delete and leave failures against a live session.
 - The full keyboard walk; `clubhouse:a11y` rerun after the v2 changes; LCP and layout shift.
 - The Messages e2e (it signs in to production, so the owner decides when).
-- **Behaviour gap, not a test gap:** an unsent draft is lost when you switch threads (the composer is
-  keyed to the conversation). CONTRACT.md category 12.
+- Fixed 2026-09-30: an unsent draft used to be lost when you switched threads. Drafts are now kept per
+  conversation by the container (71202), and the test fails with the fix taken out (checked).
 - v2 draws the no-conversations state as a whole-page empty (D-71); the rail version is what is built.

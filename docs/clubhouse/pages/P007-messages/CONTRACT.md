@@ -180,11 +180,12 @@ Delete a message and Leave a group ask first (71101, 71102) and fire the warning
 
 Status: DEFINED
 
-A failed send puts the text and files back (71201). Gap: the composer is keyed to the open conversation, so an unsent draft is lost when you switch threads. Not built; logged as a gap in VERIFY.md.
+A failed send puts the text and files back (71201). An unsent draft is kept per conversation, so switching threads and back finds it where it was (71202; fixed 2026-09-30, it used to be lost).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 71201 | — | `DRAFT_KEPT_ON_FAILURE` | A send that fails puts the text and files back in the composer; nothing the person wrote is lost. |
+| 71202 | — | `DRAFT_KEPT_ACROSS_THREADS` | An unsent draft is kept per conversation: switching to another thread and back finds it where it was; a send that lands clears it. |
 
 ## 13 — Optimistic UI
 
@@ -302,7 +303,6 @@ Status: DEFINED
 
 The shell records rage, dead and slow clicks for every page (12201 to 12203). Messages adds no events of its own.
 
-
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 ## 23 — Logging / observability
@@ -329,4 +329,3 @@ Every catalog code is forced by a named test (72401); `clubhouse:check` fails a 
 ## 25 — Helm Bridge action
 
 Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (focus the composer, open New message, retry the last send) are defined when the Bridge is.
-

@@ -196,13 +196,14 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7002', /Couldn't start the conversation/);
   });
 
-  it('CH-7004 CH-7005 a send that throws keeps the draft; a network error says to check first', async () => {
+  it('CH-7004 CH-7005 71201 a send that throws keeps the draft; a network error says to check first', async () => {
     const user = userEvent.setup();
     live.msgs.sendMessage.mockRejectedValueOnce(new Error('refused'));
     show();
     const box = await screen.findByRole('textbox', { name: /Message Varsity team/ });
     await user.type(box, 'Bring rain gear{Enter}');
     await expectCode('CH-7004', /Couldn't send the message/);
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Bring rain gear'));
     live.msgs.sendMessage.mockRejectedValueOnce(new Error('network timeout'));
     await user.click(screen.getByRole('button', { name: 'Send' }));
     await expectCode('CH-7005', /Couldn't confirm this message sent/);
@@ -288,7 +289,7 @@ describe('Messages · reads that fail', () => {
     await expectCode('CH-7202', /This conversation didn't load/);
   });
 
-  it('CH-7203 message search does not load, with Try again', async () => {
+  it('CH-7203 71402 message search does not load, with Try again', async () => {
     const user = userEvent.setup();
     a.searchGolfMessages.mockRejectedValueOnce(new Error('boom'));
     show();
@@ -386,7 +387,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     await expectCode('CH-7104', /Name the group/);
   });
 
-  it('CH-7016 CH-7017 a message that did not send says so in the thread, with Retry', async () => {
+  it('CH-7016 CH-7017 71401 a message that did not send says so in the thread, with Retry', async () => {
     const user = userEvent.setup();
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }, { ...mine, id: 'f2', content: 'Second', sendFailed: true, sendOutcome: 'unknown' }];
     show();
@@ -622,7 +623,7 @@ describe('Messages · group members (D-45, D-47)', () => {
     await expectCode('CH-7307', /Everyone on the team is already in this group/);
   });
 
-  it('CH-7018 adding someone who cannot be added says so; a success names them', async () => {
+  it('CH-7018 70902 adding someone who cannot be added says so; a success names them', async () => {
     const user = userEvent.setup();
     a.getGolfGroupAddCandidates.mockResolvedValue({ candidates: [nora] });
     a.addGolfGroupMember.mockResolvedValueOnce({ error: 'nope' }).mockResolvedValueOnce({ success: true });
@@ -658,7 +659,7 @@ describe('Messages · phone', () => {
     return screen.findByRole('region', { name: /Varsity team/ });
   };
 
-  it('CH-7804 CH-7704 the inbox pushes a named thread; a message opens its actions by long press or its button', async () => {
+  it('CH-7804 CH-7704 71901 the inbox pushes a named thread; a message opens its actions by long press or its button', async () => {
     const user = userEvent.setup();
     showPhone();
     const thread = await openThread(user);
@@ -764,6 +765,64 @@ describe('Messages · phone', () => {
     expect(live.msgs.sendMessage).toHaveBeenCalledWith('5 works. Bay 4.');
     const box = await screen.findByRole('textbox', { name: /Message Jonah/ });
     expect((box as HTMLTextAreaElement).value).toBe('5 works. Bay 4.');
+  });
+});
+
+describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messages/CONTRACT.md)', () => {
+  const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: { content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' }, creator_id: 'me' };
+
+  it('70101 desktop opens the newest thread beside the rail without marking it read', async () => {
+    live.msgs.markRead.mockClear();
+    show();
+    expect(await screen.findByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+    expect(live.msgs.markRead).not.toHaveBeenCalled();
+  });
+
+  it('70102 a ?conversation= link opens that thread and cleans the address', async () => {
+    live.convs.conversations = [team, dm];
+    params.current = new URLSearchParams('conversation=dm');
+    router.replace.mockClear();
+    show();
+    expect(await screen.findByRole('textbox', { name: /Message Jonah$/ })).toBeTruthy();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
+  });
+
+  it('70901 72001 Enter sends with the success haptic and no toast; Shift+Enter adds a line instead', async () => {
+    const user = userEvent.setup();
+    show();
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    await user.type(box, 'Bus at 6{Shift>}{Enter}{/Shift}Bring water');
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    expect(box.value).toBe('Bus at 6\nBring water');
+    await user.type(box, '{Enter}');
+    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Bus at 6\nBring water'));
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+    expect(box.value).toBe('');
+    expect(document.querySelector('[data-ch-code^="CH-70"]')).toBeNull();
+  });
+
+  it('71202 an unsent draft survives switching to another thread and back', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [team, dm];
+    show();
+    const box = await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    await user.type(box, 'Half-written note');
+    await user.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
+    const other = (await screen.findByRole('textbox', { name: /Message Jonah$/ })) as HTMLTextAreaElement;
+    expect(other.value).toBe('');
+    await user.click(screen.getAllByRole('button', { name: /Varsity team/ })[0]!);
+    expect(((await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement).value).toBe('Half-written note');
+  });
+
+  it('72301 a failed change is reported with its messages surface before the toast', async () => {
+    const { chReport } = await import('../lib/track');
+    vi.mocked(chReport).mockClear();
+    live.convs.conversations = [team];
+    a.createGolfConversation.mockRejectedValueOnce(new Error('boom'));
+    params.current = new URLSearchParams('player=p-jonah');
+    show();
+    await expectCode('CH-7002');
+    expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'messages.startDirect' }));
   });
 });
 

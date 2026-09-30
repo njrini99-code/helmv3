@@ -106,6 +106,12 @@ export interface ChMessagesApi {
   convsError: boolean;
   refetchConvs: () => void;
 
+  /**
+   * Unsent drafts by conversation id, kept by the container so switching
+   * threads never loses what was written (P007 71202). Cleared when a send lands.
+   */
+  drafts: Map<string, string>;
+
   selectedId: string | null;
   select: (id: string | null) => void;
 
@@ -779,7 +785,12 @@ export function Composer({
   /** Send `initialDraft` as soon as the thread opens; a failure leaves it in the box (CH-7004). */
   autoSend?: boolean;
 }) {
-  const [draft, setDraft] = useState(initialDraft ?? "");
+  const [draft, setDraftState] = useState(initialDraft ?? api.drafts.get(conv.id) ?? "");
+  const setDraft = (text: string) => {
+    setDraftState(text);
+    if (text) api.drafts.set(conv.id, text);
+    else api.drafts.delete(conv.id);
+  };
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);

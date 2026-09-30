@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 211 | 12 | 47 | 81 |
+| `UNKNOWN` | 217 | 12 | 48 | 79 |
 
 ## Files
 
@@ -667,9 +667,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
-| `docs/clubhouse/HANDOFF.md` | current | - | - | - | 1 |
+| `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
@@ -703,6 +703,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
