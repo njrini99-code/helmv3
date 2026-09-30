@@ -377,6 +377,19 @@
       animation-name: ch-fade;
     }
   }
+  /* Owner, 2026-09-30: small controls are drawn bigger on the phone. Segments are at least 44 wide and
+     36 tall (34 for the small ones), pills 36 tall; the hit area below still reaches 44 around them. */
+  .ch-root .ch-seg .ch-seg__b {
+    min-width: 44px;
+    height: 36px;
+  }
+  .ch-root .ch-seg--sm .ch-seg__b {
+    height: 34px;
+  }
+  .ch-root .ch-pill {
+    height: 36px;
+    line-height: 36px;
+  }
   /* Every control's hit area reaches 44 x 44 on the phone without changing how it is drawn (a 26px
      segment, a 30px small button, a 36px pill). Zero specificity, so a page's own hit area wins. */
   :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x) {
