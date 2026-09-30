@@ -1,5 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Flag, Minus } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
 import { Icon } from '../../ui/Icon';
 import { monotonePath } from '../../lib/chart';
@@ -216,18 +216,34 @@ export function SgBars({ rows }: { rows: Array<{ label: string; value: number | 
   );
 }
 
-/** You against the team and the Tour, as a scorecard table. */
+/**
+ * You against the team and the Tour, as a scorecard table. Rows may be grouped under headings (the standing board:
+ * strokes gained, scoring, putting ...); a row under its sample floor says what it needs (CH-5318).
+ */
 export function FieldTable({
   rows,
   showTeam,
 }: {
-  rows: Array<{ label: string; you: number | null; team: number | null; bench: number | null; unit: '' | '%'; digits: number; lowerIsBetter: boolean; sg?: boolean }>;
+  rows: Array<{
+    label: string;
+    group?: string;
+    you: number | null;
+    team: number | null;
+    bench: number | null;
+    unit: '' | '%' | ' ft';
+    digits: number;
+    lowerIsBetter: boolean;
+    sg?: boolean;
+    signed?: boolean;
+    floor?: string;
+  }>;
   showTeam: boolean;
 }) {
   // Strokes gained reads with its sign and is green when gained, amber when lost (against the Tour); every other row is better or worse than its reference.
-  const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : r.sg ? formatSigned(v, r.digits) : `${v.toFixed(r.digits)}${r.unit}`);
+  const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : r.sg || r.signed ? `${formatSigned(v, r.digits)}${r.unit}` : `${v.toFixed(r.digits)}${r.unit}`);
   const signTone = (v: number | null, r: (typeof rows)[number]) => (r.sg && v != null ? (v >= 0 ? 'ch-gain' : 'ch-loss') : '');
   const hasBench = rows.some((r) => r.bench != null);
+  const cols = 2 + (showTeam ? 1 : 0) + (hasBench ? 1 : 0);
   return (
     <table className="ch-ft">
       <thead>
@@ -239,18 +255,35 @@ export function FieldTable({
         </tr>
       </thead>
       <tbody>
-        {rows.map((r) => {
-          const ref = showTeam ? r.team : r.bench;
+        {rows.map((r, i) => {
+          // Better or worse than the team where a coach has one, and than the Tour where the row has no team figure.
+          const ref = showTeam ? (r.team ?? r.bench) : r.bench;
           const good = r.you != null && ref != null ? (r.lowerIsBetter ? r.you <= ref : r.you >= ref) : null;
           return (
-            <tr key={r.label}>
-              <td>{r.label}</td>
-              <td className="ch-ft__you">
-                <span className={`ch-num ${r.sg ? signTone(r.you, r) : good == null ? '' : good ? 'ch-gain' : 'ch-loss'}`}>{fmt(r.you, r)}</span>
-              </td>
-              {showTeam && <td className="ch-num">{fmt(r.team, r)}</td>}
-              {hasBench && <td className="ch-num">{fmt(r.bench, r)}</td>}
-            </tr>
+            <Fragment key={r.label}>
+              {r.group && r.group !== rows[i - 1]?.group && (
+                <tr className="ch-ft__g">
+                  <th colSpan={cols} scope="colgroup">
+                    {r.group}
+                  </th>
+                </tr>
+              )}
+              <tr>
+                <td>
+                  {r.label}
+                  {r.you == null && r.floor && (
+                    <em className="ch-ft__floor" data-ch-code="CH-5318">
+                      {r.floor}
+                    </em>
+                  )}
+                </td>
+                <td className="ch-ft__you">
+                  <span className={`ch-num ${r.sg ? signTone(r.you, r) : good == null ? '' : good ? 'ch-gain' : 'ch-loss'}`}>{fmt(r.you, r)}</span>
+                </td>
+                {showTeam && <td className="ch-num">{fmt(r.team, r)}</td>}
+                {hasBench && <td className="ch-num">{fmt(r.bench, r)}</td>}
+              </tr>
+            </Fragment>
           );
         })}
       </tbody>
@@ -305,26 +338,35 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
   );
 }
 
-export function ScoreMix({ d }: { d: { eagle: number; birdie: number; par: number; bogey: number; double: number } }) {
-  const segs: Array<[string, number, string]> = [
-    ['Eagle+', d.eagle, 'is-eagle'],
-    ['Birdie', d.birdie, 'is-birdie'],
-    ['Par', d.par, 'is-par'],
-    ['Bogey', d.bogey, 'is-bogey'],
-    ['Double+', d.double, 'is-double'],
+type Mix = { eagle: number; birdie: number; par: number; bogey: number; double: number };
+
+/** The mix of holes: per round, and with `totals` the holes behind it and each result's share ("46 of 180 holes"). */
+export function ScoreMix({ d, totals }: { d: Mix; totals?: Mix }) {
+  const segs: Array<[string, number, string, number | null]> = [
+    ['Eagle+', d.eagle, 'is-eagle', totals?.eagle ?? null],
+    ['Birdie', d.birdie, 'is-birdie', totals?.birdie ?? null],
+    ['Par', d.par, 'is-par', totals?.par ?? null],
+    ['Bogey', d.bogey, 'is-bogey', totals?.bogey ?? null],
+    ['Double+', d.double, 'is-double', totals?.double ?? null],
   ];
   const tot = segs.reduce((a, s) => a + s[1], 0) || 1;
+  const holes = totals ? totals.eagle + totals.birdie + totals.par + totals.bogey + totals.double : 0;
   return (
     <div className="ch-mix">
       <div className="ch-mix__bar" role="img" aria-label={segs.map(([l, v]) => `${l} ${v.toFixed(1)}`).join(', ')}>
         {segs.map(([l, v, c]) => (v > 0 ? <span key={l} className={`ch-mix__s ${c}`} style={{ flex: v / tot }} /> : null))}
       </div>
       <div className="ch-mix__k">
-        {segs.map(([l, v, c]) => (
+        {segs.map(([l, v, c, n]) => (
           <span key={l}>
             <i className={c} />
             <b className="ch-num">{v < 0.1 && v > 0 ? v.toFixed(2) : v.toFixed(1)}</b>
             {l}
+            {n != null && holes > 0 && (
+              <small className="ch-num">
+                {n} of {holes} holes · {Math.round((n / holes) * 100)}%
+              </small>
+            )}
           </span>
         ))}
       </div>

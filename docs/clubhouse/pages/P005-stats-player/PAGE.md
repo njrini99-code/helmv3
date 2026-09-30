@@ -43,7 +43,10 @@ Share the link (coach) and open all rounds.
 1. Who and four numbers: scoring average, handicap, strokes gained a round, rounds this season.
 2. Overview: five figure cards, the scoring chart and strokes gained by leg, and the comparison table
    (against the team for a coach, against the Tour for a player).
-3. Game detail (Scoring, Off the tee, Approach, Short game, Putting), Rounds, Development.
+3. Game detail (Scoring, Off the tee, Approach, Short game, Putting: each a sentence, four figures, the rounds
+   it counts, the panels, and a More detail disclosure with the rest of the area), Rounds (score by round, personal
+   bests, this window against the one before, and the rounds table), Development. Everything the production
+   player stats page shows is here or named with a reason in PARITY.md.
 
 ### User should notice first
 

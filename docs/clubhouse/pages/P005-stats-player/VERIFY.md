@@ -124,6 +124,18 @@ Notes:             first-load JS and LCP after the v2 reveal are open (D-27, CH-
 | Axe | `node scripts/clubhouse/a11y.mjs stats-player` | clean (1280 and 390px) |
 | Look | the preview at 1280 and 390px, read by eye | hero chip, phone panel and round rows draw as built |
 
+## Parity pass (2026-09-30)
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npx vitest run src/clubhouse` (once) | 30 files, 1531 tests pass (exit 0). stats-parity.test has 44 cases; the stats-player, strokes-gained and player-home tests were updated where the contract moved (the window's round ids go to `getDetailedStats`; the nine-band curve; the grouped table) |
+| Mutations | `scratchpad/sg-build/mutate.py muts_parity.py` | 33 mutations of the new behaviour (figures, floors, edges, the window's ids, the Tour basis, states, colours, the phone), 32 caught; the survivor is a second guard behind a first (a player's team pool is cut by `teamWin` and by `teamRate`) |
+| Types | `npm run -s typecheck:fast` | exit 0 |
+| Lint | `npx eslint` on the changed data, screen, fixture and test files | exit 0 |
+| Clubhouse | `npm run -s clubhouse:check` | no source, test or catalog-use violation; the registry is out of date with the thirteen new catalog rows and P014's (the lead's sync) |
+| Native-feel | `CH_BASE=http://localhost:3107 node scripts/clubhouse/native.mjs stats-player` (390 and 430px) | exit 0, clean. First run found the Game detail chips' hit area clipped to 36px by the nav padding; `.ch-gd__nav` padding is now `4px 14px 6px` and the shell's 44px `.ch-pill::after` reaches |
+| Axe | `node scripts/clubhouse/a11y.mjs stats-player` (1280 and 390px) | exit 0, 16 pages clean; the phone runs open each section's More detail (`a11y.mjs` has five new entries) |
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390 and 430.

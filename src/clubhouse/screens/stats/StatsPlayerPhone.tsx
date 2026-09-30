@@ -20,7 +20,9 @@ import { sgBaseline } from '../../lib/sg';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
 import { SgBars, SgChangeChip } from './charts';
+import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
+import { RoundsExtra } from './RoundsExtra';
 import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
 import { ProposalAnswer } from './ProposalAnswer';
@@ -145,7 +147,7 @@ export function StatsPlayerPhone({
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn't load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} puttBands={data.puttBands} phone />
+          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} puttBands={data.puttBands} onRetry={onRetry} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState
@@ -163,6 +165,7 @@ export function StatsPlayerPhone({
       </SectionBoundary>
 
       <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
+        {data.rounds.length > 0 && <RoundsExtra x={data.extra} win={data.window} phone />}
         <Rounds rounds={data.rounds} open={initialTab === 'rounds'} />
       </SectionBoundary>
 
@@ -294,7 +297,7 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
               <li key={r.id} className="ch-spm-round">
                 <span className="ch-stm-row__b">
                   <b>{r.course}</b>
-                  <span className="ch-num">{[r.date, r.gir ? `GIR ${r.gir}` : null, r.putts != null ? `${r.putts} putts` : null].filter(Boolean).join(' · ')}</span>
+                  <span className="ch-num">{[r.date, r.type ? ROUND_TYPE[r.type] : null, r.gir ? `GIR ${r.gir}` : null, r.putts != null ? `${r.putts} putts` : null].filter(Boolean).join(' · ')}</span>
                 </span>
                 <span className="ch-stm-row__v ch-num">
                   <b>{r.score}</b>

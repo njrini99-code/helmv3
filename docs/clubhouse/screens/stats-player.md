@@ -16,6 +16,13 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - `SectionBoundary` wraps each section in a `Suspense`, so a section that crashes on the server render no longer fails the page (D-24). cee2c2024
 - The shell loads `domMax` lazily, so `layoutId` slides now run: the tab and window switch pills slide (220ms), unless motion is reduced (D-25). 576a6331c, 314b03055
 
+## parity (2026-09-30, `docs/clubhouse/pages/P005-stats-player/PARITY.md`)
+- [x] Every production player-stats figure is shown, or named with a reason ("not shown because"); the Tour is the only benchmark (Q-88)
+- [x] Every section says which rounds it counts (the window's own 18-hole rounds) and every shot-level figure reads exactly those rounds
+- [x] Every new panel has an empty or low-sample state with a catalog code and a test (CH-5209 to CH-5212, CH-5311 to CH-5319)
+- [x] A player's view shows no team figure on any new row (Q-91)
+- [x] Native-feel and axe scans of the new sections at 390, 430 and 1280px (`native.mjs` and `a11y.mjs` on stats-player, exit 0; see VERIFY.md)
+
 ## spec
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md

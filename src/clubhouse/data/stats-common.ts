@@ -2,9 +2,8 @@ import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import type { StatsFilter } from '@/app/golf/actions/stats-data-types';
 import { chLogServer } from '../lib/track-server';
-import { isFull18, seasonStartDate, type ChRound } from './season';
+import { isFull18, type ChRound } from './season';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -20,13 +19,6 @@ export const WINDOW_LABEL: Record<ChWindow, string> = {
   season: 'This season',
   qualifiers: 'Qualifier rounds',
 };
-
-/** The same window, expressed for getDetailedStats (shot-level stats). */
-export function windowFilter(w: ChWindow): StatsFilter {
-  if (w === 'last10') return { preset: 'last10' };
-  if (w === 'qualifiers') return { roundType: 'qualifier', preset: 'custom', startDate: seasonStartDate() };
-  return { preset: 'custom', startDate: seasonStartDate() };
-}
 
 const QUALIFIER_TYPES = new Set(['qualifier', 'qualifying']);
 
@@ -77,6 +69,9 @@ export interface ChRoundCache {
   sand_attempts: number | null;
   sand_saves: number | null;
   three_putts: number | null;
+  penalty_strokes: number | null;
+  double_bogeys: number | null;
+  triple_plus: number | null;
 }
 
 /** Per-round cached aggregates (GIR, fairways, scrambling, birdies...) keyed by round id. */
@@ -92,7 +87,7 @@ export async function loadRoundCache(
       supabase
         .from('golf_round_stats_cache')
         .select(
-          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts',
+          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, penalty_strokes, double_bogeys, triple_plus',
         )
         .in('round_id', ids),
     ),
@@ -178,20 +173,46 @@ export interface ChPuttBand {
   bench: number | null;
 }
 
-/** Make rate by distance: the bands golf_pga_standards grades (3-5 up to 25+), so a band's Tour mark is the same distances. */
-export const PUTT_BANDS: Array<{ label: string; lo: number; hi: number; metric: string | null }> = [
-  { label: '0–3 ft', lo: 0, hi: 3, metric: null },
-  { label: '3–5 ft', lo: 3, hi: 5, metric: 'putts_made_3_5ft_pct' },
-  { label: '5–10 ft', lo: 5, hi: 10, metric: 'putts_made_5_10ft_pct' },
-  { label: '10–15 ft', lo: 10, hi: 15, metric: 'putts_made_10_15ft_pct' },
-  { label: '15–25 ft', lo: 15, hi: 25, metric: 'putts_made_15_25ft_pct' },
-  { label: '25+ ft', lo: 25, hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
+interface PuttBandDef {
+  label: string;
+  /** Upper edge in feet, inclusive: "3–5 ft" is (3, 5], as the calculator and the cache writer cut them. The last band is open. */
+  hi: number;
+  /** The golf_pga_standards metric whose Tour make rate grades this band; null where the tour publishes none. */
+  metric: string | null;
+}
+
+/** Make rate by distance in the bands golf_pga_standards grades (3–5 up to 25+), so a band's Tour mark is the same distances. */
+export const PUTT_BANDS: PuttBandDef[] = [
+  { label: '0–3 ft', hi: 3, metric: null },
+  { label: '3–5 ft', hi: 5, metric: 'putts_made_3_5ft_pct' },
+  { label: '5–10 ft', hi: 10, metric: 'putts_made_5_10ft_pct' },
+  { label: '10–15 ft', hi: 15, metric: 'putts_made_10_15ft_pct' },
+  { label: '15–25 ft', hi: 25, metric: 'putts_made_15_25ft_pct' },
+  { label: '25+ ft', hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
+];
+
+/**
+ * The calculator's nine bands (Putting by distance on the production page). The Tour publishes five standards, so
+ * 15–20 and 20–25 ft are graded against the 15–25 standard and the last three against the 25+ standard, as
+ * production's own table does; 0–3 ft has none.
+ */
+export const PUTT_BANDS_NINE: PuttBandDef[] = [
+  { label: '0–3 ft', hi: 3, metric: null },
+  { label: '3–5 ft', hi: 5, metric: 'putts_made_3_5ft_pct' },
+  { label: '5–10 ft', hi: 10, metric: 'putts_made_5_10ft_pct' },
+  { label: '10–15 ft', hi: 15, metric: 'putts_made_10_15ft_pct' },
+  { label: '15–20 ft', hi: 20, metric: 'putts_made_15_25ft_pct' },
+  { label: '20–25 ft', hi: 25, metric: 'putts_made_15_25ft_pct' },
+  { label: '25–30 ft', hi: 30, metric: 'putts_made_25_plus_ft_pct' },
+  { label: '30–35 ft', hi: 35, metric: 'putts_made_25_plus_ft_pct' },
+  { label: '35+ ft', hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
 ];
 
 /** The putts in `rows` counted into the bands, with each band's Tour make rate where there is one. */
-export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>): ChPuttBand[] {
-  return PUTT_BANDS.map((b) => {
-    const inBand = rows.filter((r) => r.feet >= b.lo && r.feet < b.hi);
+export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>, bands: PuttBandDef[] = PUTT_BANDS): ChPuttBand[] {
+  return bands.map((b, i) => {
+    const lo = i ? bands[i - 1]!.hi : -Infinity;
+    const inBand = rows.filter((r) => r.feet > lo && r.feet <= b.hi);
     return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, bench: b.metric ? (bench.get(b.metric) ?? null) : null };
   });
 }

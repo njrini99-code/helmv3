@@ -21,7 +21,11 @@ const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFa
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
 const detailed = vi.hoisted(() => vi.fn());
-vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed }));
+const noSpray = vi.hoisted(() => {
+  const group = (family: string) => ({ family, totalShots: 0, plottedShots: 0, averageForwardDistance: null, averageRemainingDistance: null, playableCount: 0, troubleCount: 0, penaltyCount: 0, dominantSector: null, points: [], summaryBands: [] });
+  return vi.fn(async () => ({ driving: group('driving'), approach: group('approach'), scope: { roundId: 'overall', roundsIncluded: 0, filterApplied: false } }));
+});
+vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed, getSprayChartData: noSpray }));
 
 import { loadPlayerProfile, type ChPlayerProfile } from '../data/stats-player';
 import { loadTeamStats, type ChTeamStats } from '../data/stats-team';
@@ -452,7 +456,10 @@ describe('player loader', () => {
     expect(rows[1]).toMatchObject({ you: 1.5, team: 0.75 });
     // Around the green has no value on any round: a dash for both, never zero.
     expect(rows[3]).toMatchObject({ you: null, team: null });
-    expect(data.comparisons.slice(5).map((r) => r.label)).toEqual(['Scoring avg', 'Fairways hit', 'Greens in regulation', 'Putts per round', 'Scrambling']);
+    // After the five strokes gained rows come the standing rows, in groups; every row says which group it is in.
+    expect(data.comparisons.slice(5).map((r) => r.label)).toEqual(expect.arrayContaining(['Scoring avg', 'Fairways hit', 'Greens in regulation', 'Putts per round', 'Scrambling']));
+    expect(data.comparisons.every((r) => !!r.group)).toBe(true);
+    expect(rows.every((r) => r.group === 'Strokes gained')).toBe(true);
     expect(data.tour).toBe('pga');
   });
 
@@ -555,8 +562,10 @@ describe('player profile · desktop', () => {
 
   it('the comparison table leads with strokes gained: signed, green for a gain and amber for a loss, the team’s figure beside it for a coach', () => {
     showPlayer(player());
-    const rows = [...document.querySelectorAll('table.ch-ft tbody tr')];
+    // A group heading is a row of its own; the figures are the rows with cells.
+    const rows = [...document.querySelectorAll('table.ch-ft tbody tr')].filter((r) => r.querySelector('td'));
     expect(rows.slice(0, 5).map((r) => r.querySelector('td')!.textContent)).toEqual(['SG total', 'SG off the tee', 'SG approach', 'SG around green', 'SG putting']);
+    expect(document.querySelector('table.ch-ft tbody tr.ch-ft__g')!.textContent).toBe('Strokes gained');
     const total = rows[0]!.querySelectorAll('td');
     expect(total[1]!.textContent).toBe('−0.9');
     expect(total[1]!.querySelector('span')!.className).toContain('ch-loss');
@@ -573,8 +582,8 @@ describe('player profile · desktop', () => {
       }),
     );
     const table = document.querySelector('table.ch-ft')!;
-    expect([...table.querySelectorAll('th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour']);
-    const total = table.querySelector('tbody tr')!.querySelectorAll('td');
+    expect([...table.querySelectorAll('thead th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour']);
+    const total = [...table.querySelectorAll('tbody tr')].find((r) => r.querySelector('td'))!.querySelectorAll('td');
     expect([total[0]!.textContent, total[1]!.textContent, total[2]!.textContent]).toEqual(['SG total', '−0.9', '—']);
   });
 });
@@ -662,26 +671,33 @@ describe('player profile · phone', () => {
 /* ─── Make rate by distance ─── */
 
 describe('make rate by distance (Game detail)', () => {
-  it('reaches 25+ feet with the window’s putts, in the team page’s bands', async () => {
+  it('reaches 35+ feet in the calculator’s nine bands, from the window’s putts with exact counts', async () => {
     const user = userEvent.setup();
     showPlayer(player());
     await user.click(screen.getByRole('tab', { name: /Game detail/ }));
     const curve = document.querySelector('svg.ch-mk')!;
-    expect(curve.getAttribute('aria-label')).toContain('25+ feet 3%');
-    expect(curve.getAttribute('aria-label')).toContain('15–25 feet 11%');
-    expect(curve.textContent).toContain('34 putts');
-    expect(curve.textContent).toContain('25+ ft');
+    const label = curve.getAttribute('aria-label')!;
+    expect(label.split(', ')).toHaveLength(9);
+    expect(label).toContain('15–20 feet 12%');
+    expect(label).toContain('25–30 feet 6%');
+    expect(label).toContain('35+ feet 0%');
+    expect(curve.textContent).toContain('16 putts');
+    expect(curve.textContent).toContain('35+ ft');
     // The Putting section's own total counts every putt; the curve counts the ones logged with a distance, and says so.
-    expect(curve.closest('.ch-gm-p')!.querySelector('.ch-gm-p__n')!.textContent).toContain('Counts are putts logged with a distance.');
+    const note = curve.closest('.ch-gm-p')!.querySelector('.ch-gm-p__n')!.textContent!;
+    expect(note).toContain('Counts are putts logged with a distance.');
+    // The Tour publishes five averages, so the nine bands share them, and the note says so.
+    expect(note).toContain('15 to 25 feet share one');
   });
 
-  it('without the window’s putts the curve stops where the shot stats do, at 20 feet', async () => {
+  it('CH-5211 without the window’s putts the curve stops where the shot stats do, at 20 feet, and says the putts did not load', async () => {
     const user = userEvent.setup();
-    showPlayer(player({ puttBands: null }));
+    showPlayer(player({ extra: { ...PREVIEW_PLAYER.extra, puttBandsNine: null, puttsError: true } }));
     await user.click(screen.getByRole('tab', { name: /Game detail/ }));
     const curve = document.querySelector('svg.ch-mk')!;
     expect(curve.getAttribute('aria-label')).toContain('15–20 feet');
-    expect(curve.getAttribute('aria-label')).not.toContain('25+');
+    expect(curve.getAttribute('aria-label')).not.toContain('25');
+    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load.");
   });
 });
 

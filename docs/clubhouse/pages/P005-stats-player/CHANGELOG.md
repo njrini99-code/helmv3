@@ -2,6 +2,20 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Parity with the production player stats page: every production figure is shown, or named with a reason (PARITY.md)
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (catalog CH-5209 to CH-5212, CH-5311 to CH-5319)
+Data impact:    none (reads only: golf_holes and two golf_shots reads for the window's rounds, one getSprayChartData call; no migration)
+```
+
+- **Issue.** The owner: "scrambling, GIR, putting, all of it needs to be in there." Clubhouse showed four figures and two or three visuals per area; the production page shows the rest of each area (score mix counts, outcomes by par, round types, streaks, toughest holes, fairways by tee type, tee miss by club, where tee shots and approaches finish, GIR by par, strokes to hole out, misses by distance, chip proximity, up and down by miss direction, nine putting bands with their leave and efficiency, the break matrix, misses by break, the practice target, the Tour table, personal bests, this window against the one before, the standing strips). Under it all, Game detail's shot-level figures and the headline figures counted different rounds: a date preset (9-hole rounds included, not bounded to the season) against the 18-hole window.
+- **Fix.** PARITY.md lists every production figure with its file and line and where Clubhouse shows it (shown, added, or not shown because). Each Game detail section gains a line saying which rounds it counts and a More detail disclosure (open on the desktop, closed on the phone) with the area's remaining figures; the Rounds tab gains the score of every round on a line, the personal bests and this window against the one before; the Overview table becomes the standing board (rows grouped, the Tour's value where there is one, a coach's team figure where the window's round cache has it, a floor note under a row with no sample); each round names its type. Every shot-level figure is read for exactly the window's own 18-hole rounds (their ids go to `getDetailedStats`, the putts, the holes, the approaches and the spray read).
+- **Two corrections on the way.** Approach proximity is graded against the Tour on the Tour's basis (every approach, hit or missed, lay-ups left out, 10 shots a range); the old comparison set the green-hit finish against it, which flattered a player who misses greens, so the seven-band ladder keeps its values and loses its Tour tick. Putt bands are cut as the calculator cuts them, (3, 5], where they were [3, 5) (a putt of exactly 3 or 5 feet is common); Team stats' bands move with them.
+- **Not built.** Priorities and the putting cost line (they grade against `COLLEGE_BENCHMARKS`), the putting sheet's D1 column (Q-88), college shading and hand-picked bands (values shown, ungraded), CoachHelm's patterns (P013), a plotted spray (production's dots are synthetic: counts shown), a team percentile (computed, never shown), the round-scope picker (next: the shared round filter).
+- **Checked.** stats-parity.test (44 cases: the figures from rounds, holes and shots, the reads and their failures, every More detail panel, each new state by its code, the Rounds tab, the standing table, no D1 or college, the phone); 33 mutations, 32 caught (the one left is a second guard behind a first, so each alone survives by design: a player's team pool is cut by `teamWin` and again by `teamRate`).
+
 ## 2026-09-30 — The Tour is the only benchmark (Q-88): no D1 anywhere
 
 ```text

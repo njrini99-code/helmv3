@@ -55,6 +55,8 @@ export const CH_A11Y_PAGES = [
   ['stats-player', '/clubhouse-preview/player', { wide: '#tab-game' }],
   ['stats-player', '/clubhouse-preview/player', { wide: '#tab-rounds' }],
   ['stats-player', '/clubhouse-preview/player', { wide: '#tab-dev' }],
+  // The phone shows one Game detail section at a time with More detail closed: open each section's detail.
+  ...[1, 2, 3, 4, 5].map((n) => ['stats-player', '/clubhouse-preview/player', { phone: [...(n > 1 ? [`.ch-gd__nav .ch-pill:nth-child(${n})`] : []), '.ch-gd .ch-gx-more > summary'] }]),
   ['calendar', '/clubhouse-preview/calendar'],
   ['calendar', '/clubhouse-preview/calendar?view=month'],
   ['calendar', '/clubhouse-preview/calendar?view=agenda'],

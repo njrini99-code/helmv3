@@ -67,7 +67,10 @@ The tab strip, the Game detail chips and the phone's All N rounds are local stat
 | Path | Purpose | States |
 | --- | --- | --- |
 | `screens/stats/StatsPlayer.tsx` | The container: hero, tabs, window switch, `Overview`, `RoundsTable`, `Development`, `FocusAreaSheet`, `formNote` | 50101 to 50104, 50301, 50302, 50401 to 50405, 50501, 50601 to 50608, 51601, 51602, 51701, 51702, CH-5901, CH-5902 |
-| `screens/stats/GameDetail.tsx` | Game detail's five sections (chips on the phone) | 51701 |
+| `screens/stats/GameDetail.tsx` | Game detail's five sections (chips on the phone): lead, four figures, the rule line, the panels, More detail | 51701, CH-5211, CH-5316, CH-5319 |
+| `screens/stats/GameMore.tsx` | The five sections' More detail panels (scoring, off the tee, approach, short game, putting) | CH-5209, CH-5210, CH-5212, CH-5311, CH-5312, CH-5314, CH-5315, CH-5317 |
+| `screens/stats/detail.tsx` | `Panel`, `Empty`, `Rule`, `More` (a native disclosure), `Tiles`, `DataTable`, `RoundLine`, `SectorGrid` | CH-5317 |
+| `screens/stats/RoundsExtra.tsx` | The Rounds tab's score by round, personal bests and this window against the one before (a card on the desktop, a panel on the phone) | CH-5313, CH-5314 |
 | `screens/stats/StatsPlayerPhone.tsx` | The phone profile: header, three figures, chips, scoring line, rounds, development, Share | 50610, 51901, 51807 |
 | `screens/stats/charts.tsx` | `FigureCards`, `FieldTable`, `LegRoute`, `ScoreBoardTrend`, `YardagePage`, the ladders and compares (shared with Team stats) | 51803 |
 | `screens/stats/StatsSkeleton.tsx` | The route skeleton (shared with Team stats) | CH-4401 |
@@ -90,9 +93,12 @@ There are no realtime hooks: the page is read once per render, and again after a
 | --- | --- | --- | --- |
 | loadPlayerProfile | `src/clubhouse/data/stats-player.ts` | Existing | the profile, in the coach or player view |
 | createFocusArea | `src/app/golf/actions/development.ts` | Existing | a coach proposes a focus area (status proposed) |
-| getDetailedStats | `src/app/golf/actions/stats-data.ts` | Existing | shot-level detail; answers empty unless the caller is the player or their coach |
+| getDetailedStats | `src/app/golf/actions/stats-data.ts` | Existing | shot-level detail for exactly the window's round ids (not a date preset); answers empty unless the caller is the player or their coach |
+| getSprayChartData | `src/app/golf/actions/stats-data.ts` | Existing | where tee shots and approaches finish, by sector, for the window's round ids (the dots are dropped; only counts and averages pass on) |
+| loadHoles, loadApproachShots, approachBands, loadSpray | `src/clubhouse/data/stats-detail.ts` | New | the window's scored holes, its approach shots (aggregated by the production leak map's own `aggregateApproachBuckets`), and the spray counts |
+| personalBests, perRoundSeries, windowCompare, pressureGap, openingDelta, toughestHoles | `src/clubhouse/data/stats-figures.ts` | New (pure) | the figures computed from round rows and hole scores, with production's formulas (`getTrendAnalysis`, `getWorstHoleAnalysis` with `rankHoleAnalyses`, the standing refresh's floors) |
 | loadSeasonRounds, summarizePlayer | `src/clubhouse/data/season.ts` | Existing (shared with Home, Roster, Team stats) | the season's countable rounds |
-| roundsInWindow, loadRoundCache, loadTourBenchmarks, parseWindow, windowFilter | `src/clubhouse/data/stats-common.ts` | Existing (shared with Team stats) | windows, per-round figures, Tour benchmarks |
+| roundsInWindow, loadRoundCache, loadTourBenchmarks, parseWindow, bandPutts | `src/clubhouse/data/stats-common.ts` | Existing (shared with Team stats) | windows, per-round figures, Tour benchmarks, the putt bands (upper edge inclusive: (3, 5], as the calculator cuts them; six for Team stats, nine for the player page) |
 | resolveClubhouseTeam | `src/clubhouse/routes/team.ts` | Existing | the caller's own team |
 
 ## Data resources
@@ -103,8 +109,11 @@ There are no realtime hooks: the page is read once per render, and again after a
 Tables:   golf_teams (gender), golf_players (id, names, graduation_year, hometown, state, handicap),
           golf_team_members (the roster check: this team, this player, active or inactive; for a coach also
           the active team), golf_rounds (the player's season, and for a coach the active team's),
-          golf_round_stats_cache, golf_pga_standards, golf_shots (putt distance and result, for the make-rate
-          bands), golf_player_focus_areas (active and proposed, 20),
+          golf_round_stats_cache (the window's rounds: greens, fairways, putts, scrambles, sand saves, three-putts,
+          penalty strokes, doubles and triples), golf_pga_standards, golf_shots (putt distance and result, for
+          the make-rate bands; every approach with a distance before and after, for proximity against the Tour),
+          golf_holes (hole, par and score of the window's rounds, for the toughest holes and the opening hole),
+          golf_player_focus_areas (active and proposed, 20),
           golf_goals (20); shot-level tables through getDetailedStats
 RPCs:     none from this page (getDetailedStats checks access through the verify_coach_owns_player RPC)
 Storage:  none
@@ -135,3 +144,18 @@ None.
   `bandPutts` in `stats-common.ts`, shared with Team stats), each round's `sgLegs` and the strokes gained rows
   of `comparisons` (`sg: true`; a player's `team` is always null). `lib/sg.ts` holds the baseline label, the bar
   scale and the tint. No new table or column.
+- Parity with the production page (2026-09-30, PARITY.md): `loadPlayerProfile` now asks `getDetailedStats` for
+  the window's round ids (the same 18-hole rounds the Rounds table lists, newest 100 at most) instead of a date
+  preset, reads the window's holes, approach shots and spray in the same pass (each failing on its own:
+  `extra.holesError`, `approachError`, `puttsError`, `sprayError`), and returns `extra` (bests, the per-round
+  series, this window against the one before, the pressure gap, the opening hole, the toughest holes, approach
+  proximity against the Tour, where shots finish, the nine putt bands). `comparisons` gains `group`, `signed`
+  and `floor` and the standing rows (par scoring, big numbers, proximity, scrambling by lie, sand saves,
+  three-putts, make rates, penalty strokes, pressure gap, opening hole). The shot-level reads add golf_holes
+  and two golf_shots reads (putts, approaches) and one `getSprayChartData` call per page; no new table or column.
+  The team figures on the new rows are pooled from the window's round cache for a coach only.
+- `bandPutts` changed its edges from [3, 5) to (3, 5], the calculator's own cut, so Team stats' bands move a
+  little too (a putt of exactly 3 or 5 feet is common). `windowFilter` is gone: nothing passes a date preset to
+  `getDetailedStats` any more.
+- `ApproachDrill` in production shades its efficiency matrix with hard-coded college targets, `PuttingBenchmarkSheet`
+  carries a D1 column and `COLLEGE_BENCHMARKS` ranks the weaknesses: none of them is reproduced here (Q-88).

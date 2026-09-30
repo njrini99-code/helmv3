@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
@@ -12,16 +13,33 @@ import {
   loadRoundCache,
   perRound,
   previousWindow,
+  PUTT_BANDS_NINE,
   rate,
   roundsInWindow,
   sgChange,
   tourForGender,
-  windowFilter,
   type ChPuttBand,
   type ChRoundCache,
   type ChSgChange,
   type ChWindow,
 } from './stats-common';
+import { approachBands, loadApproachShots, loadHoles, loadSpray, type ChApproachBand, type ChSpray } from './stats-detail';
+import {
+  openingDelta,
+  perRoundSeries,
+  personalBests,
+  pressureGap,
+  toughestHoles,
+  windowCompare,
+  type ChBests,
+  type ChCompare,
+  type ChPressure,
+  type ChSeries,
+  type ChToughest,
+} from './stats-figures';
+
+/** The most rounds the shot-level reads take: getDetailedStats' own bound (an explicit round list is cut to it). */
+export const DETAIL_MAX_ROUNDS = 100;
 
 /**
  * Player profile (Clubhouse Stats). Shared by coaches and players with the
@@ -40,6 +58,8 @@ export interface ChProfileRound {
   id: string;
   course: string;
   date: string;
+  /** practice, qualifier or tournament (a legacy "qualifying" reads as qualifier); null where the round has no type. */
+  type: 'practice' | 'qualifier' | 'tournament' | null;
   score: number;
   toPar: number | null;
   gir: string | null;
@@ -51,15 +71,45 @@ export interface ChProfileRound {
 
 export interface ChComparison {
   label: string;
+  /** The heading the row sits under in the table (Strokes gained, Scoring, Putting ...). */
+  group: string;
   you: number | null;
   team: number | null;
   /** The Tour's average for the stat where golf_pga_standards has one; null draws no column value. */
   bench: number | null;
-  unit: '' | '%';
+  unit: '' | '%' | ' ft';
   digits: number;
   lowerIsBetter: boolean;
   /** Strokes gained: shown with a sign, gain green and loss amber, against the Tour (there is no D1 strokes gained). */
   sg?: boolean;
+  /** Shown with a sign and coloured by better or worse against its reference (the pressure gap, the opening hole). */
+  signed?: boolean;
+  /** What the row needs before it has a value, said under its label while it has none (CH-5318). */
+  floor?: string;
+}
+
+/** What the profile's Game detail and Rounds tab show beyond the shot-level figures (the parity pass, PARITY.md). */
+export interface ChProfileExtra {
+  bests: ChBests;
+  series: ChSeries;
+  /** This window against the one before it; null for Season and Qualifiers (no earlier window by design) and when there are fewer than three earlier rounds. */
+  compare: ChCompare | null;
+  pressure: ChPressure;
+  /** Hole 1 against holes 2 to 18; null when the hole read failed. */
+  opening: { delta: number | null; rounds: number } | null;
+  toughest: ChToughest | null;
+  holesError: boolean;
+  /** Approach proximity against the Tour in the production's three bands; null when the read failed or there are no approaches. */
+  approach: ChApproachBand[] | null;
+  approachError: boolean;
+  spray: ChSpray | null;
+  sprayError: boolean;
+  /** The nine putting bands (the calculator's), each graded against the Tour where it publishes a standard; null when there are no putts or the read failed. */
+  puttBandsNine: ChPuttBand[] | null;
+  /** The putt read failed: the make-rate curve stops at 20 feet and says so. */
+  puttsError: boolean;
+  /** The window has more 18-hole rounds than the shot-level reads take (the newest 100 are read). */
+  truncated: boolean;
 }
 
 export interface ChPlayerProfile {
@@ -83,6 +133,7 @@ export interface ChPlayerProfile {
   sgChange: ChSgChange;
   /** Make rate by distance from the shots in the window (the team page's bands); null when there are none or the read failed. */
   puttBands: ChPuttBand[] | null;
+  extra: ChProfileExtra;
   rounds: ChProfileRound[];
   comparisons: ChComparison[];
   stats: GolfStats | null;
@@ -139,15 +190,8 @@ export async function loadPlayerProfile(input: {
     teamIds = [...new Set([input.playerId, ...(data ?? []).map((m) => m.player_id)])];
   }
 
-  const [seasonRes, detail, bench, focusRes, goalsRes] = await Promise.all([
+  const [seasonRes, bench, focusRes, goalsRes] = await Promise.all([
     loadSeasonRounds(supabase, teamIds, { surface: 'stats' }),
-    getDetailedStats(input.playerId, 'overall', windowFilter(input.window)).then(
-      (s) => ({ stats: s, error: false }),
-      (e: unknown) => {
-        chLogServer('stats', 'detailedStats', e, 'stats_analytics');
-        return { stats: null, error: true };
-      },
-    ),
     tour ? loadTourBenchmarks(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>()),
     supabase
       .from('golf_player_focus_areas')
@@ -174,10 +218,25 @@ export async function loadPlayerProfile(input: {
 
   // Team rounds in the same window, for coach comparisons only.
   const teamWin = input.viewer === 'coach' ? teamIds.flatMap((id) => roundsInWindow(byPlayer.get(id) ?? [], input.window)) : [];
-  const [cache, putts] = await Promise.all([
+  // Every shot-level figure counts exactly the window's own 18-hole rounds (the ones the Rounds table lists), newest 100 at most:
+  // the detail read is given these ids instead of a date preset, which would count 9-hole rounds and a different set.
+  const scopeIds = winRounds.slice(0, DETAIL_MAX_ROUNDS).map((r) => r.id);
+  const [detail, cache, putts, holes, approachShots, sprayRead] = await Promise.all([
+    scopeIds.length
+      ? getDetailedStats(input.playerId, scopeIds).then(
+          (s) => ({ stats: s, error: false }),
+          (e: unknown) => {
+            chLogServer('stats', 'detailedStats', e, 'stats_analytics');
+            return { stats: null, error: true };
+          },
+        )
+      : Promise.resolve({ stats: null, error: false }),
     loadRoundCache(supabase, [...winRounds, ...teamWin].map((r) => r.id), 'stats'),
     // The same shot-level bands as Team stats, so the make-rate curve reaches 25+ feet with exact counts.
-    loadPutts(supabase, winRounds.map((r) => r.id)),
+    loadPutts(supabase, scopeIds),
+    loadHoles(supabase, scopeIds),
+    loadApproachShots(supabase, scopeIds),
+    scopeIds.length ? loadSpray(input.playerId, scopeIds) : Promise.resolve({ spray: null, error: false }),
   ]);
   const rows = (ids: string[]) => ids.map((id) => cache.byRound.get(id)).filter((x): x is ChRoundCache => !!x);
   const mineCache = rows(winRounds.map((r) => r.id));
@@ -186,7 +245,6 @@ export async function loadPlayerProfile(input: {
   const t = input.viewer === 'coach';
 
   // CH-5208: without Tour benchmarks the Tour column reads "—"; nothing is compared with a benchmark it doesn't have.
-  const benchGir = bench.get('gir_pct') ?? null;
   // Strokes gained against the Tour (its benchmark is zero by definition), with the team's pooled mean for a coach; a player is never compared with teammates.
   const sgPool = (pick: (r: ChRound) => number | null) => {
     const v = teamWin.map(pick).filter((x): x is number => x != null);
@@ -194,6 +252,7 @@ export async function loadPlayerProfile(input: {
   };
   const sgRow = (label: string, you: number | null, pick: (r: ChRound) => number | null): ChComparison => ({
     label,
+    group: 'Strokes gained',
     you,
     team: t ? sgPool(pick) : null,
     bench: null,
@@ -202,28 +261,96 @@ export async function loadPlayerProfile(input: {
     lowerIsBetter: false,
     sg: true,
   });
+
+  // getDetailedStats answers a failed read with zeroed stats. Rounds in the
+  // window with no rounds in the detail means the detail read failed.
+  const detailFailed = detail.error || (winRounds.length > 0 && (detail.stats?.roundsPlayed ?? 0) === 0);
+  if (detailFailed && !detail.error) chLogServer('stats', 'detailedStatsEmpty', `no detail for ${winRounds.length} rounds`, 'stats_analytics');
+  const s = detailFailed ? null : detail.stats;
+
+  // Strokes gained against the previous 10 rounds; only the last-10 window has one.
+  const prevList = previousWindow(mine, input.window);
+  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizePlayer(prevList).sgPerRound : null, input.window, Math.max(0, mine.filter(isFull18).length - 10));
+  const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
+  const puttBandsNine = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench, PUTT_BANDS_NINE);
+  const approach = approachShots.error || !approachShots.rows.length ? null : approachBands(approachShots.rows, bench);
+  const pressure = pressureGap(winRounds);
+  const opening = holes.error ? null : openingDelta(holes.rows);
+  const toughest = holes.error ? null : toughestHoles(holes.rows);
+
+  // Standing, in the window: the same metrics production grades against the Tour (and, for a coach, against the team where the window's own
+  // round cache has the figure). A figure with no sample or no Tour value is null, never a zero.
+  const teamRate = (made: keyof ChRoundCache, total: keyof ChRoundCache) => (t ? rate(teamCache, made, total) : null);
+  const teamPer = (key: keyof ChRoundCache) => (t ? perRound(teamCache, key) : null);
+  const bigNumbersPct = (cacheRows: ChRoundCache[]) => {
+    const vals = cacheRows.filter((r) => r.double_bogeys != null && r.triple_plus != null);
+    return vals.length ? (vals.reduce((a, r) => a + (r.double_bogeys as number) + (r.triple_plus as number), 0) / (vals.length * 18)) * 100 : null;
+  };
+  const parAvg = (p: 3 | 4 | 5) => {
+    const d = s?.scoringByPar?.[`par${p}` as const];
+    return d && d.total > 0 && d.avgToPar != null ? p + d.avgToPar : null;
+  };
+  const band = (label: string) => puttBands?.find((b) => b.label === label);
+  const makeRate = (label: string) => {
+    const b = band(label);
+    return b && b.attempts >= 10 ? (b.made / b.attempts) * 100 : null;
+  };
+  const prox = (label: string) => approach?.find((b) => b.label === label)?.value ?? null;
+  const row = (
+    group: string,
+    label: string,
+    you: number | null,
+    team: number | null,
+    benchMetric: string | null,
+    unit: ChComparison['unit'],
+    digits: number,
+    lowerIsBetter: boolean,
+    opts: { signed?: boolean; floor?: string } = {},
+  ): ChComparison => ({
+    label,
+    group,
+    you,
+    team,
+    bench: benchMetric ? (bench.get(benchMetric) ?? null) : null,
+    unit,
+    digits,
+    lowerIsBetter,
+    ...(opts.signed ? { signed: true } : {}),
+    ...(opts.floor ? { floor: opts.floor } : {}),
+  });
+  const PROX_FLOOR = 'Needs 10 approaches from the range.';
+  const BAND_FLOOR = 'Needs 10 putts in the band.';
   const comparisons: ChComparison[] = [
     sgRow('SG total', win.sgPerRound, (r) => r.strokes_gained_total),
     sgRow('SG off the tee', win.sgLegs.tee, (r) => r.strokes_gained_tee),
     sgRow('SG approach', win.sgLegs.approach, (r) => r.strokes_gained_approach),
     sgRow('SG around green', win.sgLegs.around, (r) => r.strokes_gained_around_green),
     sgRow('SG putting', win.sgLegs.putting, (r) => r.strokes_gained_putting),
-    { label: 'Scoring avg', you: win.avg, team: teamAvg, bench: null, unit: '', digits: 1, lowerIsBetter: true },
-    { label: 'Fairways hit', you: rate(mineCache, 'fairways_hit', 'fairways_total'), team: t ? rate(teamCache, 'fairways_hit', 'fairways_total') : null, bench: null, unit: '%', digits: 0, lowerIsBetter: false },
-    { label: 'Greens in regulation', you: rate(mineCache, 'greens_hit', 'greens_total'), team: t ? rate(teamCache, 'greens_hit', 'greens_total') : null, bench: benchGir, unit: '%', digits: 0, lowerIsBetter: false },
-    { label: 'Putts per round', you: perRound(mineCache, 'total_putts'), team: t ? perRound(teamCache, 'total_putts') : null, bench: null, unit: '', digits: 1, lowerIsBetter: true },
-    { label: 'Scrambling', you: rate(mineCache, 'scrambles_converted', 'scramble_attempts'), team: t ? rate(teamCache, 'scrambles_converted', 'scramble_attempts') : null, bench: null, unit: '%', digits: 0, lowerIsBetter: false },
+    row('Scoring', 'Scoring avg', win.avg, teamAvg, null, '', 1, true),
+    row('Scoring', 'Par 3 scoring', parAvg(3), null, 'scoring_par_3', '', 2, true),
+    row('Scoring', 'Par 4 scoring', parAvg(4), null, 'scoring_par_4', '', 2, true),
+    row('Scoring', 'Par 5 scoring', parAvg(5), null, 'scoring_par_5', '', 2, true),
+    row('Scoring', 'Big numbers', bigNumbersPct(mineCache), t ? bigNumbersPct(teamCache) : null, 'big_number_rate', '%', 1, true),
+    row('Driving', 'Fairways hit', rate(mineCache, 'fairways_hit', 'fairways_total'), teamRate('fairways_hit', 'fairways_total'), null, '%', 0, false),
+    row('Approach', 'Greens in regulation', rate(mineCache, 'greens_hit', 'greens_total'), teamRate('greens_hit', 'greens_total'), 'gir_pct', '%', 0, false),
+    row('Approach', 'Proximity 50–125 yd', prox('50-125 yd'), null, 'approach_proximity_50_125ft', ' ft', 0, true, { floor: PROX_FLOOR }),
+    row('Approach', 'Proximity 125–175 yd', prox('125-175 yd'), null, 'approach_proximity_125_175ft', ' ft', 0, true, { floor: PROX_FLOOR }),
+    row('Approach', 'Proximity 175+ yd', prox('175+ yd'), null, 'approach_proximity_175_plus_ft', ' ft', 0, true, { floor: PROX_FLOOR }),
+    row('Short game', 'Scrambling', rate(mineCache, 'scrambles_converted', 'scramble_attempts'), teamRate('scrambles_converted', 'scramble_attempts'), null, '%', 0, false),
+    row('Short game', 'Scrambling from the fairway', s?.scramblingPctFairway ?? null, null, 'scrambling_pct_fairway', '%', 0, false),
+    row('Short game', 'Scrambling from the rough', s?.scramblingPctRough ?? null, null, 'scrambling_pct_rough', '%', 0, false),
+    row('Short game', 'Sand saves', rate(mineCache, 'sand_saves', 'sand_attempts'), teamRate('sand_saves', 'sand_attempts'), 'scrambling_pct_sand', '%', 0, false),
+    row('Putting', 'Putts per round', perRound(mineCache, 'total_putts'), teamPer('total_putts'), null, '', 1, true),
+    row('Putting', '3-putts per round', perRound(mineCache, 'three_putts'), teamPer('three_putts'), null, '', 2, true),
+    row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
+    row('Putting', 'Make 5–10 ft', makeRate('5–10 ft'), null, 'putts_made_5_10ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
+    row('Putting', 'Make 10–15 ft', makeRate('10–15 ft'), null, 'putts_made_10_15ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
+    row('Putting', 'Make 15–25 ft', makeRate('15–25 ft'), null, 'putts_made_15_25ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
+    row('Putting', 'Make 25+ ft', makeRate('25+ ft'), null, 'putts_made_25_plus_ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
+    row('Course management', 'Penalty strokes', perRound(mineCache, 'penalty_strokes'), teamPer('penalty_strokes'), 'penalty_rate_per_round', '', 1, true),
+    row('Pressure', 'Pressure gap', pressure.gap, null, 'practice_tournament_delta', '', 1, true, { signed: true, floor: 'Needs 3 tournament or qualifier rounds and 3 practice rounds.' }),
+    row('Pressure', 'Opening hole', opening?.delta ?? null, null, 'opening_hole_delta', '', 1, true, { signed: true, floor: 'Needs 5 rounds scored hole by hole.' }),
   ];
-
-  // getDetailedStats answers a failed read with zeroed stats. Rounds in the
-  // window with no rounds in the detail means the detail read failed.
-  const detailFailed = detail.error || (winRounds.length > 0 && (detail.stats?.roundsPlayed ?? 0) === 0);
-  if (detailFailed && !detail.error) chLogServer('stats', 'detailedStatsEmpty', `no detail for ${winRounds.length} rounds`, 'stats_analytics');
-
-  // Strokes gained against the previous 10 rounds; only the last-10 window has one.
-  const prevList = previousWindow(mine, input.window);
-  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizePlayer(prevList).sgPerRound : null, input.window, Math.max(0, mine.filter(isFull18).length - 10));
-  const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
 
   let nav: ChPlayerProfile['nav'] = null;
   if (input.viewer === 'coach') {
@@ -258,12 +385,29 @@ export async function loadPlayerProfile(input: {
     tour,
     sgChange: sgDelta,
     puttBands,
+    extra: {
+      bests: personalBests(winRounds),
+      series: perRoundSeries(winRounds),
+      compare: windowCompare(winRounds, prevList),
+      pressure,
+      opening,
+      toughest,
+      holesError: holes.error,
+      approach,
+      approachError: approachShots.error,
+      spray: sprayRead.spray,
+      sprayError: sprayRead.error,
+      puttBandsNine,
+      puttsError: putts.error,
+      truncated: winRounds.length > DETAIL_MAX_ROUNDS,
+    },
     rounds: winRounds.map((r) => {
       const c = cache.byRound.get(r.id);
       return {
         id: r.id,
         course: r.course_name ?? 'Course not recorded',
         date: shortDate(r.round_date),
+        type: r.round_type ? roundTypeFromDb(r.round_type) : null,
         score: r.total_score as number,
         toPar: r.score_to_par,
         gir: c?.greens_total ? `${c.greens_hit ?? 0}/${c.greens_total}` : r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
@@ -273,7 +417,7 @@ export async function loadPlayerProfile(input: {
       };
     }),
     comparisons,
-    stats: detailFailed ? null : detail.stats,
+    stats: s,
     statsError: detailFailed,
     bench: Object.fromEntries(bench),
     focusAreas: (focusRes.data ?? []).map((f) => ({

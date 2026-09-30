@@ -29,7 +29,10 @@ vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 const detailed = vi.hoisted(() => vi.fn());
-vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed }));
+const getSpray = vi.hoisted(() => vi.fn());
+vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed, getSprayChartData: getSpray }));
+const emptyGroup = (family: 'driving' | 'approach') => ({ family, totalShots: 0, plottedShots: 0, averageForwardDistance: null, averageRemainingDistance: null, playableCount: 0, troubleCount: 0, penaltyCount: 0, dominantSector: null, points: [], summaryBands: [] });
+const emptySpray = () => ({ driving: emptyGroup('driving'), approach: emptyGroup('approach'), scope: { roundId: 'overall', roundsIncluded: 0, filterApplied: false } });
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { ChPlayerProfile } from '../data/stats-player';
@@ -360,7 +363,11 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(screen.getByRole('heading', { level: 2, name: 'Approach' })).toBeTruthy();
     expect(screen.queryByRole('heading', { level: 2, name: 'Scoring' })).toBeNull();
-    expect(screen.getByText('Proximity to the hole')).toBeTruthy();
+    expect(screen.getByText('Proximity against the Tour')).toBeTruthy();
+    expect(screen.getByText('Finish when the green is hit')).toBeTruthy();
+    // More detail is closed on the phone (and open on the desktop): the disclosure is a real details element.
+    const more = document.querySelector('details.ch-gx-more') as HTMLDetailsElement;
+    expect(more.open).toBe(false);
     hapticSpy.mockClear();
     await user.click(screen.getByRole('button', { name: 'Approach' }));
     expect(hapticSpy).not.toHaveBeenCalled();
@@ -610,6 +617,8 @@ describe('Stats player · the loader', () => {
     tables.current = profileTables();
     detailed.mockReset();
     detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 1 });
+    getSpray.mockReset();
+    getSpray.mockResolvedValue(emptySpray());
   });
 
   it('50611 CH-5306 a player or membership read that fails raises the route error view; it is never shown as "not on your team"', async () => {
@@ -659,7 +668,8 @@ describe('Stats player · the loader', () => {
     expect(profile!.comparisons.every((c) => c.team == null)).toBe(true);
     expect(roundReads.flat()).toContainEqual(['in', ['player_id', [OWN]]]);
     expect(JSON.stringify(roundReads)).not.toContain('someone-else');
-    expect(detailed).toHaveBeenCalledWith(OWN, 'overall', expect.anything());
+    // The detail is asked for exactly the window's own rounds (their ids), not a date preset.
+    expect(detailed).toHaveBeenCalledWith(OWN, ['r1']);
   });
 
   it('50805 CH-5202 shot detail the server refuses (it answers empty for a caller who is not the player or their coach) shows as "didn\'t load", never as zeros', async () => {
@@ -673,12 +683,45 @@ describe('Stats player · the loader', () => {
     const thrown = await loadAs();
     expect(thrown!.statsError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('stats', 'detailedStats', expect.anything(), 'stats_analytics');
-    // The id the server is asked about is the profile's, and the window travels as its filter.
+    // The id the server is asked about is the profile's, and the window travels as its round ids.
     detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 1 });
     await loadAs('coach', OTHER, 'last10');
-    expect(detailed).toHaveBeenLastCalledWith(OTHER, 'overall', { preset: 'last10' });
-    await loadAs('coach', OTHER, 'qualifiers');
-    expect(detailed).toHaveBeenLastCalledWith(OTHER, 'overall', expect.objectContaining({ roundType: 'qualifier' }));
+    expect(detailed).toHaveBeenLastCalledWith(OTHER, ['r1']);
+    // A window with no rounds asks for nothing: no detail, and no "didn't load" for a read that was never made.
+    detailed.mockClear();
+    const none = await loadAs('coach', OTHER, 'qualifiers');
+    expect(detailed).not.toHaveBeenCalled();
+    expect(none!.stats).toBeNull();
+    expect(none!.statsError).toBe(false);
+  });
+
+  it('every shot-level figure counts the window’s own 18-hole rounds: the same ids go to the detail, the putts, the holes, the approaches and where shots finish; nine-hole rounds and other windows stay out', async () => {
+    const at = (id: string, day: number, type: string, holes = 18) => ({ id, player_id: OTHER, round_date: `2026-09-${String(day).padStart(2, '0')}`, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: holes, status: 'completed', round_type: type });
+    const rounds = [...Array.from({ length: 12 }, (_, i) => at(`r${i + 1}`, 28 - i, i === 2 || i === 5 ? 'qualifier' : 'practice')), at('nine', 29, 'practice', 9)];
+    const idsIn = (f: Filters) => f.find(([k, a]) => k === 'in' && a[0] === 'round_id')?.[1][1] as string[] | undefined;
+    const reads: Record<string, string[]> = {};
+    const seen = (table: string) => (f: Filters) => {
+      const ids = idsIn(f);
+      if (ids) reads[table] = ids;
+      return { data: [] };
+    };
+    const spray = getSpray;
+    tables.current = profileTables({ golf_rounds: { data: rounds }, golf_holes: seen('holes'), golf_shots: seen('shots') });
+    detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 10 });
+    const last10 = (await loadAs('coach', OTHER, 'last10'))!;
+    const newest10 = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9', 'r10'];
+    expect(last10.rounds.map((r) => r.id)).toEqual(newest10);
+    expect(detailed).toHaveBeenLastCalledWith(OTHER, newest10);
+    expect(spray).toHaveBeenLastCalledWith(OTHER, newest10);
+    expect(reads.holes).toEqual(newest10);
+    expect(reads.shots).toEqual(newest10);
+    // Qualifiers: only the qualifier rounds, and only theirs.
+    const quals = (await loadAs('coach', OTHER, 'qualifiers'))!;
+    expect(quals.rounds.map((r) => r.id)).toEqual(['r3', 'r6']);
+    expect(detailed).toHaveBeenLastCalledWith(OTHER, ['r3', 'r6']);
+    expect(spray).toHaveBeenLastCalledWith(OTHER, ['r3', 'r6']);
+    expect(reads.holes).toEqual(['r3', 'r6']);
+    expect(JSON.stringify(detailed.mock.calls)).not.toContain('nine');
   });
 
   it("CH-5208 the Tour column: read from the team's tour; without the benchmarks, or without the team's own row, nothing is compared with a benchmark it does not have", async () => {
@@ -725,7 +768,7 @@ describe('Stats player · the loader', () => {
       reads[table] = (reads[table] ?? 0) + 1;
       return typeof answer === 'function' ? answer(f) : answer;
     };
-    tables.current = Object.fromEntries(Object.entries(profileTables()).map(([table, answer]) => [table, count(table, answer)]));
+    tables.current = Object.fromEntries(Object.entries({ ...profileTables(), golf_holes: { data: [] }, golf_shots: { data: [] } }).map(([table, answer]) => [table, count(table, answer)]));
     await loadAs('coach', OTHER, 'last10');
     expect(reads).toEqual({
       golf_teams: 1,
@@ -736,8 +779,12 @@ describe('Stats player · the loader', () => {
       golf_pga_standards: 1,
       golf_player_focus_areas: 1,
       golf_goals: 1,
+      // The window's own rounds: every hole once, and the shots twice (the putts, and the approaches).
+      golf_holes: 1,
+      golf_shots: 2,
     });
     expect(detailed).toHaveBeenCalledTimes(1);
+    expect(getSpray).toHaveBeenCalledTimes(1);
     // A failed rounds read is flagged, never thrown, and the rest of the page loads.
     tables.current = profileTables({ golf_rounds: { error: { message: 'boom' } } });
     const partial = await loadAs();

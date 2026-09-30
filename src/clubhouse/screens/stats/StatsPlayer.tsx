@@ -32,7 +32,9 @@ import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
 import { LEGS_LIST } from './legs';
 import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, SgChangeChip, YardagePage } from './charts';
+import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
+import { RoundsExtra } from './RoundsExtra';
 import { ProposalAnswer } from './ProposalAnswer';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { WINDOW_WORDS, WindowSwitch } from './WindowSwitch';
@@ -275,7 +277,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 onRetry={() => router.refresh()}
               />
             ) : data.stats && data.stats.roundsPlayed > 0 ? (
-              <GameDetail s={data.stats} bench={data.bench} first={first} rounds={w.rounds} puttBands={data.puttBands} />
+              <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={first} rounds={w.rounds} window={data.window} puttBands={data.puttBands} onRetry={() => router.refresh()} />
             ) : (
               <div className="ch-st-card">
                 <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -286,6 +288,11 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 
         {tab === 'rounds' && (
           <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
+            {data.rounds.length > 0 && (
+              <div className="ch-st-grid2">
+                <RoundsExtra x={data.extra} win={data.window} />
+              </div>
+            )}
             <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} />
           </SectionBoundary>
         )}
@@ -368,6 +375,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       <YardagePage
         title={coach ? `${first} vs. team` : 'You vs. the Tour'}
         meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `Tour averages where the benchmark exists · strokes gained ${baseline.vs}`}
+        note={`${coach ? "Team values are pooled from the active players' rounds in the same window, where the round cache has the figure. " : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
       >
         <FieldTable rows={data.comparisons} showTeam={coach} />
       </YardagePage>
@@ -419,6 +427,7 @@ function RoundsTable({ rounds, role, tour }: { rounds: ChPlayerProfile['rounds']
                       r.course
                     );
                   })()}
+                  {r.type && <em className={`ch-gx-type is-${r.type}`}>{ROUND_TYPE[r.type]}</em>}
                 </span>
                 <span role="cell" className="ch-n2">{r.date}</span>
                 <span role="cell" className="r ch-num ch-n">{r.score}</span>
