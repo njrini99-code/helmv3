@@ -61,7 +61,7 @@ they return.
 ## phone-spec
 - [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (`phone/messages.md` maps the six boards of `design/handoff/mobile/Messages Mobile.html` and `m-msg.jsx` to components, loader fields, hooks and actions, for coach and player. Rendered at 390 × 844 on 2026-09-29, captures `messages-01..22`, beside our preview at 390px, `messages-preview-*`)
 - [x] The owner approved it (the file says `Status: approved`). The handoff in `design/handoff/mobile/` is the approval (D-22)
-- [ ] Every design/data gap is answered as an owner decision in `PROGRESS.md` (`MOBILE.md` step 1). Open: Q-24 to Q-29 (announcements, group naming and membership, quick groups, unread count, and the details controls with no backend)
+- [ ] Every design/data gap is answered as an owner decision in `PROGRESS.md` (`MOBILE.md` step 1). Open: Q-48 to Q-64 (announcements, group naming and membership, quick groups, unread count, and the details controls with no backend)
 
 ## phone
 - [ ] Built at 390px and 430px, respecting the safe areas

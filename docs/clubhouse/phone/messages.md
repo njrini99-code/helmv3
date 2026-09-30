@@ -16,7 +16,7 @@ The phone uses the same container, hooks, actions and catalog as desktop (`MOBIL
 - Every CH-7xxx number keeps its meaning.
 
 Anything the design shows without a backend is listed under "Gaps" and is hidden until the owner
-decides. The open questions are Q-24 to Q-29 in `PROGRESS.md`. **None of them is decided here.**
+decides. The open questions are Q-48 to Q-64 in `PROGRESS.md`. **None of them is decided here.**
 
 ## Screens and navigation
 
@@ -37,7 +37,7 @@ They reuse:
 
 - from `MessagesView.tsx`: `Bubble`'s parts, `Attachments`, `Composer` and `MessageHits`. These are
   module-private today, and exporting them changes no behaviour.
-- from `announcements.tsx`: `AnnouncementsSection` and `AnnouncementPane`, if Q-24 keeps them
+- from `announcements.tsx`: `AnnouncementsSection` and `AnnouncementPane`, if Q-48 keeps them
 - from `model.ts`: `filterConvs`, `sectionOf`, `railTime`, `threadItems`, `clock`, `dayLabel` and
   `firstName`
 - from `ui/`: `Avatar`, `Icon`, `SearchField`, `Switch`, `InlineNotice`, `EmptyState`, `Skeleton`,
@@ -49,15 +49,15 @@ They reuse:
 | --- | --- | --- |
 | Top bar: "‹ More", "Messages", compose icon | The foundation's pushed top bar. Compose opens New message | Desktop's `onNew` |
 | Search, "Search messages" (a static field in the prototype) | `SearchField` | `filterConvs` on title and last text, then `MessageHits` → `searchGolfMessages(q, teamId)` from 2 characters (CH-7203, CH-7303, CH-7404) |
-| Chips: All, "Unread · 4", Groups | A new phone chip row. Desktop uses `Segmented` | `filterConvs` filter. The design's 4 is the unread messages added up (3 + 1); desktop counts conversations (2) (Q-28) |
+| Chips: All, "Unread · 4", Groups | A new phone chip row. Desktop uses `Segmented` | `filterConvs` filter. The design's 4 is the unread messages added up (3 + 1); desktop counts conversations (2) (Q-52) |
 | Sections: Today, This week, Earlier | `PhoneInbox` | `sectionOf(lastAt, now, timeZone)` |
-| Row: a 44px avatar, or a green group mark with an ivory icon | `Avatar`, group mark. Every avatar in the inbox, the thread and Details is the phone's one neutral coin, #E9E3D3 with #5A4E36 initials (`m.css`, ccbd33465; `foundation.md`; Q-23) | `ChConv.group`. The design gives the travel group a bus icon; nothing stores a group type, so every group uses the people mark (Q-29) |
+| Row: a 44px avatar, or a green group mark with an ivory icon | `Avatar`, group mark. Every avatar in the inbox, the thread and Details is the phone's one neutral coin, #E9E3D3 with #5A4E36 initials (`m.css`, ccbd33465; `foundation.md`; Q-45) | `ChConv.group`. The design gives the travel group a bus icon; nothing stores a group type, so every group uses the people mark (Q-64) |
 | Row: title (600 when unread), time (green 600 when unread), a two-line preview with "Sender:" | `PhoneInbox` | `title`, `railTime(lastAt)` in `ch-num`, `lastText`, `lastSenderId` → "You" or a first name. The prefix follows desktop: groups, or your own last message. The design is inconsistent here: it prefixes "Dan:" but not Jonah |
 | Row: unread count, a 20px green-600 pill | `PhoneInbox` | `ChConv.unread` from `useGolfConversations` |
 | Tap a row | Pushes the thread, with a `select` haptic (CH-7703) | `api.select(id)` |
-| Tab bar with More active and a badge on More | Foundation | The notification badge bundle (`badges.messages`) rolls up into More (Q-22) |
-| Not drawn: the announcements section above Today (desktop, D-16) | `AnnouncementsSection` | `getAnnouncementsWithMeta` (Q-24) |
-| Not drawn: pull to refresh | — | Waits (Q-23). Realtime already keeps the list current |
+| Tab bar with More active and a badge on More | Foundation | The notification badge bundle (`badges.messages`) rolls up into More (Q-42) |
+| Not drawn: the announcements section above Today (desktop, D-16) | `AnnouncementsSection` | `getAnnouncementsWithMeta` (Q-48) |
+| Not drawn: pull to refresh | — | Waits (Q-47). Realtime already keeps the list current |
 
 States keep their numbers:
 
@@ -75,22 +75,22 @@ A pushed full screen with no tab bar. Desktop uses a modal instead.
 
 | Element (design) | Component | Data or action |
 | --- | --- | --- |
-| "Cancel", "New message", then "Next" (one person) or "Create group" (two or more), inert with nobody chosen | Pushed top bar with a text action | Next: `api.startDirect(userId)` → `createGolfConversation`. Create group: `api.createGroup` → `createGolfTeamBroadcast` (Q-25) |
+| "Cancel", "New message", then "Next" (one person) or "Create group" (two or more), inert with nobody chosen | Pushed top bar with a text action | Next: `api.startDirect(userId)` → `createGolfConversation`. Create group: `api.createGroup` → `createGolfTeamBroadcast` (Q-49, Q-50) |
 | To field: first-name tokens with ×, and "Name or group" | `PhoneNewMessage` | `api.directory` (`loadMessagesDirectory`: the program's coaches, then the team's players) |
-| Quick groups: Whole team "6 players · 2 coaches", Pinehurst travel squad, Seniors. Hidden while typing | `PhoneNewMessage` | Whole team: a broadcast to every player. Seniors: players whose `graduation_year` makes them seniors (`classYearLabel`). Travel squad: no source (Q-25) |
+| Quick groups: Whole team "6 players · 2 coaches", Pinehurst travel squad, Seniors. Hidden while typing | `PhoneNewMessage` | Whole team: a broadcast to every player. Seniors: players whose `graduation_year` makes them seniors (`classYearLabel`). Travel squad: no source (Q-51) |
 | People: 40px avatar, name, role, 22px check circle | `PhoneNewMessage` | `ChPerson.name` and `subtitle` (coach title, or class label) |
 | "Results" while typing | `PhoneNewMessage` | Name filter over the directory, as on desktop |
-| Hint: "Messages to 2 people start a new group. You can name it after sending." | `PhoneNewMessage` | No rename action exists (Q-25) |
+| Hint: "Messages to 2 people start a new group. You can name it after sending." | `PhoneNewMessage` | No rename action exists (Q-49) |
 | Composer: "Message Jonah", "Message 2 people", "Choose who to message" | `Composer` | The first message goes after the conversation exists: `startDirect` or `createGroup`, then `api.send` (or `sendFiles`) on the new id. If the conversation is created but the message fails, the draft stays in the thread's composer (a phone-only state; its number is given at build) |
 
-- Desktop's Direct / Group / Announcement choice isn't drawn (Q-24).
-- Desktop requires a group name up front (CH-7104). The design names the group after sending (Q-25).
+- Desktop's Direct / Group / Announcement choice isn't drawn (Q-48).
+- Desktop requires a group name up front (CH-7104). The design names the group after sending (Q-49).
 
 States keep their numbers:
 
 - CH-7205: the team list didn't load
 - CH-7105: nobody chosen
-- CH-7104: group name, if Q-25 keeps it
+- CH-7104: group name, if Q-49 keeps it
 - CH-7002 and CH-7003: the toasts
 
 The no-match line stays as on desktop.
@@ -99,14 +99,14 @@ The no-match line stays as on desktop.
 
 | Element (design) | Component | Data or action |
 | --- | --- | --- |
-| Header: a chevron, a 30px avatar or group mark, the title, and the subline ("8 members", or a class line). The block and the info button open Details | Conversation top bar | `memberCount`, `subtitle`. Desktop's subline adds the first three first names, and its coach calendar shortcut moves to Details › Schedule (Q-27) |
+| Header: a chevron, a 30px avatar or group mark, the title, and the subline ("8 members", or a class line). The block and the info button open Details | Conversation top bar | `memberCount`, `subtitle`. Desktop's subline adds the first three first names, and its coach calendar shortcut moves to Details › Schedule (Q-54) |
 | Day separator ("Yesterday", "Today") | `PhoneThread` | `threadItems` → `dayLabel` |
 | Bubbles, up to 78% wide. Yours: `--ch-green-700` with `--ch-ivory-100` text. Theirs: surface with a hairline. Radius 18 | `Bubble` markup, laid out for phone | `ChMsg` from `useGolfMessages` |
 | Group: the first name above a run, and a 28px avatar on the run's first bubble | `Bubble` | `personOf(senderId)`. Desktop puts the avatar on a run's last bubble |
 | Time under the last bubble of a run | `Bubble` | `clock(at)`, with " · Edited" and " · Seen" as on desktop |
-| Reaction chips (icon and count) | `Bubble` | `api.reactions` (`useMessageReactions`), the six stored reactions (D-14). The design's check reaction isn't one of them (Q-29) |
+| Reaction chips (icon and count) | `Bubble` | `api.reactions` (`useMessageReactions`), the six stored reactions (D-14). The design's check reaction isn't one of them (Q-64) |
 | File card: name and "PDF · 48 KB" | `Attachments` | `getGolfMessageAttachments` (CH-7209, CH-7408) |
-| Event card: "1:1 with Jonah · Today · 4:45 – 5:30 PM · Range bay 4" | — | Hidden. `golf_messages.kind` allows `event`, but all 215 production messages are `text` and nothing writes the other kinds (Q-29) |
+| Event card: "1:1 with Jonah · Today · 4:45 – 5:30 PM · Range bay 4" | — | Hidden. `golf_messages.kind` allows `event`, but all 215 production messages are `text` and nothing writes the other kinds (Q-64) |
 | Composer: "+" (44px), a rounded field, and a 34px send button (off: `--ch-ivory-300`; green-600 once there's a draft, capture 15) | `Composer`, without its desktop hint line | `api.send` or `api.sendFiles`. The file input offers the iOS picker (photos, camera, files). Covers CH-7004, 7005, 7006, 7101, 7016 and 7017 |
 
 Not drawn, so these follow desktop, laid out for the phone:
@@ -136,22 +136,22 @@ A pushed screen: "‹ Chat", "Details", and Edit on groups.
 | Element (design) | Component | Data or action |
 | --- | --- | --- |
 | Hero: a 72px group mark or avatar, the title, and "8 members · created by you" or a class line | `PhoneDetails` | `memberCount`. "Created by you" when `creatorId` is the viewer; otherwise the creator's name from the directory. Direct: `subtitle` |
-| Tile: Call | — | Hidden (Q-26) |
-| Tile: Schedule | Link | Coach only: `/golf/dashboard/calendar?new=1`, the editor Home already opens. No way to prefill invitees exists (Q-27) |
-| Tile: Mute / Muted | `PhoneDetails` | `setGolfConversationMute(id, muted, hours)`, read with `getGolfConversationMute` (CH-7011, CH-7208, CH-7407) (Q-27) |
-| Tile: Search | — | Hidden. `searchGolfMessages` can't be narrowed to one conversation (Q-26) |
-| Pinned | — | Hidden (Q-26) |
-| Members, with Add (groups) | `PhoneDetails` | `api.members` → `getGolfConversationParticipantIdentities` (CH-7204, CH-7405). Add: `getGolfGroupAddCandidates` and `addGolfGroupMember`, for the group's creator only (Q-27) |
-| Member row: avatar, name "(you)", role · Admin | `PhoneDetails` | `ChMember.subtitle`. "Admin" marks the creator only, as on desktop. The design also marks the assistant coach (Q-29) |
-| Member row: message icon | `PhoneDetails` | `api.startDirect(userId)`. As drawn, it isn't on your own row. It is drawn on the other person in a direct thread too, where it can only lead back to this conversation (Q-29) |
+| Tile: Call | — | Hidden (Q-53) |
+| Tile: Schedule | Link | Coach only: `/golf/dashboard/calendar?new=1`, the editor Home already opens. No way to prefill invitees exists (Q-54) |
+| Tile: Mute / Muted | `PhoneDetails` | `setGolfConversationMute(id, muted, hours)`, read with `getGolfConversationMute` (CH-7011, CH-7208, CH-7407) (Q-56) |
+| Tile: Search | — | Hidden. `searchGolfMessages` can't be narrowed to one conversation (Q-55) |
+| Pinned | — | Hidden (Q-57) |
+| Members, with Add (groups) | `PhoneDetails` | `api.members` → `getGolfConversationParticipantIdentities` (CH-7204, CH-7405). Add: `getGolfGroupAddCandidates` and `addGolfGroupMember`, for the group's creator only (Q-61) |
+| Member row: avatar, name "(you)", role · Admin | `PhoneDetails` | `ChMember.subtitle`. "Admin" marks the creator only, as on desktop. The design also marks the assistant coach (Q-64) |
+| Member row: message icon | `PhoneDetails` | `api.startDirect(userId)`. As drawn, it isn't on your own row. It is drawn on the other person in a direct thread too, where it can only lead back to this conversation (Q-64) |
 | People (direct): you and them | `PhoneDetails` | The viewer, and `memberIds[0]` from the directory |
-| Files: a count, and a list or "No files shared yet." | — | Hidden (Q-26) |
-| Switch: Mute notifications | `Switch` | The same call as the Mute tile (Q-27) |
-| Switch: Only coaches can post | — | Hidden (Q-26) |
-| Leave group (groups) | Row, in `--ch-danger-600` | `api.leave` → `leaveGolfGroup` (CH-7502, CH-7010). Desktop hides it from the creator; the design shows it on "created by you" (Q-27) |
-| Delete conversation (direct) | — | Hidden (Q-26) |
-| Edit (groups) | — | Hidden (Q-26) |
-| Not drawn: View stats (a coach, in a player's direct details) | Row | `rebuiltHref('/golf/dashboard/stats')?player=` (Q-29) |
+| Files: a count, and a list or "No files shared yet." | — | Hidden (Q-58) |
+| Switch: Mute notifications | `Switch` | The same call as the Mute tile (Q-56) |
+| Switch: Only coaches can post | — | Hidden (Q-59) |
+| Leave group (groups) | Row, in `--ch-danger-600` | `api.leave` → `leaveGolfGroup` (CH-7502, CH-7010). Desktop hides it from the creator; the design shows it on "created by you" (Q-62) |
+| Delete conversation (direct) | — | Hidden (Q-63) |
+| Edit (groups) | — | Hidden (Q-60) |
+| Not drawn: View stats (a coach, in a player's direct details) | Row | `rebuiltHref('/golf/dashboard/stats')?player=` (Q-64) |
 
 States: CH-7213 when Details crashes.
 
@@ -164,10 +164,10 @@ Every board shows a head coach. The player's view below comes from D-15 and the 
 | Inbox, search, filters, mute, reactions, editing and deleting your own messages | Yes | Yes | The existing hooks and actions |
 | Start a direct thread | With players and the program's coaches | With their coaches and teammates | The loader's directory; `createGolfConversation` checks the audience |
 | Quick groups, pick several people, Create group | Yes | No: one person at a time, no quick groups | D-15. `createGolfTeamBroadcast` accepts coaches only |
-| Post an announcement | Yes, if Q-24 keeps it | No. They acknowledge announcements and mark tasks done | D-16 |
+| Post an announcement | Yes, if Q-48 keeps it | No. They acknowledge announcements and mark tasks done | D-16 |
 | Schedule | Yes | No | The Calendar editor is coach-only (`?new=1` opens it for coaches) |
 | Add member | The group's creator | No: players can't create team groups | `loadGolfGroupIOwn` in `addGolfGroupMember` |
-| Leave group | If they didn't create it | Yes | The desktop rule (Q-27) |
+| Leave group | If they didn't create it | Yes | The desktop rule (Q-62) |
 | View stats | A player's direct details | No | Desktop |
 | Message a member from Details | Yes | Teammates and coaches | `startDirect` |
 
@@ -175,21 +175,21 @@ Every board shows a head coach. The player's view below comes from D-15 and the 
 
 | Design shows | What exists | What it needs | Until then |
 | --- | --- | --- | --- |
-| Call | `phone` on `golf_players` and `golf_coaches`. Not loaded, and minors' PII | An owner decision; a loader field if yes | Hidden (Q-26) |
-| Schedule with the people in the chat | `calendar?new=1` opens an empty editor | Invitee prefill: a Calendar change, no migration | Link without invitees, coach only (Q-27) |
-| Search inside a thread | `searchGolfMessages(q, teamId)`, capped at 50 results team-wide | A conversation parameter on the action. No migration. Filtering the 50 on the client would drop matches | Hidden (Q-26) |
-| Pinned | `golf_messages.pinned_at` and `pinned_by` exist, with 0 pinned rows. The update policy is sender-only | A pin action. A migration for coaches to pin other people's messages | Hidden (Q-26) |
-| Files list | 13 attachments in production, readable one message at a time (`getGolfMessageAttachments`) | A read action for a conversation's files. RLS already allows it; no migration | Hidden (Q-26) |
-| Only coaches can post | Nothing | A column on `golf_conversations` and a change to the `golf_messages` insert policy: a migration, written and never applied by an agent | Hidden (Q-26) |
-| Edit group | `golf_conversations_update_v2` lets any participant update the row. No action exists | A drawing of what Edit covers, and a rename action limited to the creator | Hidden (Q-26) |
-| Name a group after sending | Broadcasts need a title, and are de-duplicated by it | The same rename action | Name first (CH-7104) or decide (Q-25) |
-| An assistant coach in a new group; "2 coaches" on Whole team | `createGolfTeamBroadcast` adds players only; `addGolfGroupMember` can add a coach afterwards | Two calls in one flow, with a failure state for the second | Players only (Q-25) |
-| Travel squad | No membership source (the itineraries hold `room_assignments` JSON; events hold invitees) | An owner decision on the source | Hidden (Q-25) |
-| Delete conversation | No delete policy on `golf_conversations` | Defined semantics, and an action | Hidden (Q-26) |
-| Event card in a thread | `kind = 'event'` allowed, with 0 rows and no writer | A writer (Calendar to Messages) and rendering in the hook | Hidden (Q-29) |
-| Group icon by type (bus) | No group type | A column | People mark (Q-29) |
-| Check reaction | Six stored reactions (D-14) | A new stored value | Not offered (Q-29) |
-| "Admin" on the assistant coach | Only the creator can manage members | — | Creator only (Q-29) |
+| Call | `phone` on `golf_players` and `golf_coaches`. Not loaded, and minors' PII | An owner decision; a loader field if yes | Hidden (Q-53) |
+| Schedule with the people in the chat | `calendar?new=1` opens an empty editor | Invitee prefill: a Calendar change, no migration | Link without invitees, coach only (Q-54) |
+| Search inside a thread | `searchGolfMessages(q, teamId)`, capped at 50 results team-wide | A conversation parameter on the action. No migration. Filtering the 50 on the client would drop matches | Hidden (Q-55) |
+| Pinned | `golf_messages.pinned_at` and `pinned_by` exist, with 0 pinned rows. The update policy is sender-only | A pin action. A migration for coaches to pin other people's messages | Hidden (Q-57) |
+| Files list | 13 attachments in production, readable one message at a time (`getGolfMessageAttachments`) | A read action for a conversation's files. RLS already allows it; no migration | Hidden (Q-58) |
+| Only coaches can post | Nothing | A column on `golf_conversations` and a change to the `golf_messages` insert policy: a migration, written and never applied by an agent | Hidden (Q-59) |
+| Edit group | `golf_conversations_update_v2` lets any participant update the row. No action exists | A drawing of what Edit covers, and a rename action limited to the creator | Hidden (Q-60) |
+| Name a group after sending | Broadcasts need a title, and are de-duplicated by it | The same rename action | Name first (CH-7104) or decide (Q-49) |
+| An assistant coach in a new group; "2 coaches" on Whole team | `createGolfTeamBroadcast` adds players only; `addGolfGroupMember` can add a coach afterwards | Two calls in one flow, with a failure state for the second | Players only (Q-50) |
+| Travel squad | No membership source (the itineraries hold `room_assignments` JSON; events hold invitees) | An owner decision on the source | Hidden (Q-51) |
+| Delete conversation | No delete policy on `golf_conversations` | Defined semantics, and an action | Hidden (Q-63) |
+| Event card in a thread | `kind = 'event'` allowed, with 0 rows and no writer | A writer (Calendar to Messages) and rendering in the hook | Hidden (Q-64) |
+| Group icon by type (bus) | No group type | A column | People mark (Q-64) |
+| Check reaction | Six stored reactions (D-14) | A new stored value | Not offered (Q-64) |
+| "Admin" on the assistant coach | Only the creator can manage members | — | Creator only (Q-64) |
 
 ## Phone-only states (numbered at build, not now)
 
@@ -198,7 +198,7 @@ Catalog rows are added when the code and the tests exist, so that `clubhouse:che
 - the long-press action sheet
 - push and pop
 - "conversation created, first message not sent" from New message
-- pull to refresh, if Q-23 allows it
+- pull to refresh, if Q-47 allows it
 
 ## Today at 390px (captures `messages-preview-*`)
 
@@ -229,7 +229,7 @@ at 390 × 844 @2x, and our preview at 390 × 844 for coach and player.
 | `messages-17`, `18` | Chat details: top; scrolled (Files, Mute, Delete conversation) |
 | `messages-19` to `21` | Pinehurst travel: a thread with a file and two reactions; its details, top and scrolled |
 | `messages-22` | A direct thread with the assistant coach |
-| `messages-90-derived-inbox-without-safari.png` | Not in the design: the Inbox with Safari removed and the tab bar padded 34px for the home indicator (Q-23) |
+| `messages-90-derived-inbox-without-safari.png` | Not in the design: the Inbox with Safari removed and the tab bar padded 34px for the home indicator (Q-44) |
 | `messages-preview-{coach,player}-*` | Our preview today: the list, threads, details, New message, the More sheet, and an announcement |
 
 No board has an open sheet, a keyboard, or an empty, loading or failed state. Those follow the

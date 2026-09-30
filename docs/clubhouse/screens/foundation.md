@@ -51,7 +51,7 @@ Route: (shell, tokens, primitives)   Surface tag: `shell`
 ## phone-spec
 - [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (`phone/foundation.md` maps `design/handoff/mobile/m-shell.jsx`, `m.css` and `qual-mobile.css`: top bar, tab bar, More, sheets, safe areas, keyboard, gestures and haptics, and colour tokens. Rendered at 390 × 844 on 2026-09-29, captures `messages-00..22` and `messages-90`)
 - [x] The owner approved it (the file says `Status: approved`). The handoff in `design/handoff/mobile/` is the approval (D-22)
-- [ ] Every design/data gap is answered as an owner decision in `PROGRESS.md` (`MOBILE.md` step 1). Open: Q-21 to Q-23 (tab contents and style versus D-3, Messages under More, More as a screen, Safari bar, avatars, destructive red, pull to refresh)
+- [ ] Every design/data gap is answered as an owner decision in `PROGRESS.md` (`MOBILE.md` step 1). Open: Q-40 to Q-47 (tab contents and style versus D-3, Messages under More, More as a screen, Safari bar, avatars, destructive red, pull to refresh)
 
 ## phone
 - [ ] Built at 390px and 430px, respecting the safe areas
