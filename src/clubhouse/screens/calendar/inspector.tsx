@@ -19,6 +19,7 @@ import {
   Text,
   TriangleAlert,
   UserRound,
+  Users,
   BookOpen,
   type LucideIcon,
 } from 'lucide-react';
@@ -81,6 +82,8 @@ export interface InspCtx {
   onCancel: (e: ChCalEvent) => void;
   /** Duplicate: New event seeded from this one (coach). Absent where the editor isn't offered. */
   onDuplicate?: (e: ChCalEvent) => void;
+  /** Compare schedules (a class, coach): New event on that day with the class's player invited, so Find a time shows them side by side. */
+  onFind?: (date: string, invite: string[]) => void;
   refresh: () => void;
 }
 
@@ -514,6 +517,13 @@ function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
           {mine ? 'Teammates never see your classes. Coaches see them so practice avoids them.' : 'Only coaches see class details. Teammates never see another player’s classes.'}
         </p>
       </div>
+      {!mine && owner && ctx.onFind && (
+        <div className="ch-in__sec">
+          <Button leftIcon={Users} onClick={() => ctx.onFind!(e.date, [owner.id])}>
+            Compare schedules
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

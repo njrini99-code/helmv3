@@ -321,6 +321,7 @@ export function Calendar({
     onEdit: (e, proposal) => setEditor({ event: e, proposal }),
     onCancel: (e) => setCancelling(e),
     onDuplicate: (e) => setEditor({ event: null, copyOf: e }),
+    onFind: (date, invite) => setEditor({ event: null, date, invite }),
     refresh,
   };
 

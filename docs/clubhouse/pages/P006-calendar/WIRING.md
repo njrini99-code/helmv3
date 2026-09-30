@@ -67,6 +67,7 @@ marks an action a player cannot use (60801): the control is not drawn, and the s
 | ACT-P006-COPY-CALENDAR-LINK | Copy link | `copy` | the clipboard | — | fails 60604 |
 | ACT-P006-COPY-EVENT-LINK | Event actions › Copy link | `copyLink` | the clipboard | — | fails 60612 |
 | ACT-P006-DUPLICATE-EVENT | Event actions › Duplicate (coach) | `onDuplicate` → `EventEditor` seeded with `copyOf` | `createGolfEvent` (on Publish) | golf_events, golf_event_attendees | the New event contracts: name 60503 · lands 60901 |
+| ACT-P006-COMPARE-SCHEDULES | Class detail › Compare schedules (coach) | `onFind` → `EventEditor` seeded with the day and the class's player | `createGolfEvent` (on Publish) | golf_events | the New event contracts |
 | ACT-P006-PRINT | More › Print week (Print day, month, agenda) | `window.print` | the browser | — | none (the print rules in calendar.css and shell.css) |
 | ACT-P006-NAVIGATE | Previous, Next, Today, the view switch, the title's date panel, a day header, a month cell | `go`, `step`, `goToday` | `loadCalendar` through the page, past the window | golf_events and the other loader tables | address 60102 · window 60302 · follows 60303 · busy 60301 · keys 62001 · fails 60613 |
 | ACT-P006-OPEN-EVENT | An event on the grid, in the agenda, in Summary, or by `?event=` | `open` | — | — | address 60102 · left the range 60405 |

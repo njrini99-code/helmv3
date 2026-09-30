@@ -174,6 +174,17 @@ describe('Calendar · saves that fail', () => {
     expect(hapticSpy).toHaveBeenCalledWith('warning');
   });
 
+  it("a class's Compare schedules (coach) opens New event on the class's day with only its player invited, so Find a time sets them side by side", async () => {
+    const user = userEvent.setup();
+    wrap(cal(), { initialEvent: 'c2' });
+    await user.click(await screen.findByRole('button', { name: 'Compare schedules' }));
+    await screen.findByRole('button', { name: 'Publish event' });
+    expect(screen.getByText(/^Find a time · /).textContent).toMatch(/14$/);
+    const invited = screen.getAllByRole('checkbox', { checked: true }).map((c) => c.closest('label')?.textContent ?? '');
+    expect(invited).toHaveLength(1);
+    expect(invited[0]).toMatch(/Jonah/);
+  });
+
   it("Duplicate opens New event with the event's title, type, day, time, place and invitees, and publishes a new event", async () => {
     const user = userEvent.setup();
     a.createGolfEvent.mockResolvedValue({ success: true });
