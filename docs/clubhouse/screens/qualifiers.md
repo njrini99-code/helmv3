@@ -120,43 +120,43 @@ Missing actions:
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (D-30 to D-33; Q-16, the phone frame, belongs to phone-spec)
 
 ## desktop
-- [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
-- [ ] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
-- [ ] Numbers are tabular, with a true minus, `E` for even and `—` for no data
-- [ ] Red appears only for under par and the pin flag; gains are green and losses amber
-- [ ] Copy is in sentence case, in the head-pro voice, and actions are a verb plus an object
-- [ ] Controls that point at an unbuilt screen are hidden via `rebuiltHref`, never dead
-- [ ] A narrow canvas (container below 860px) reflows without horizontal page scroll
+- [x] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth): 38 states at each width, side by side with the prototype captures; the differences left are decisions, logged in PROGRESS.md
+- [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
+- [x] Numbers are tabular, with a true minus, `E` for even and `—` for no data
+- [x] Red appears only for under par and the pin flag; gains are green and losses amber
+- [x] Copy is in sentence case, in the head-pro voice, and actions are a verb plus an object
+- [x] Controls that point at an unbuilt screen are hidden via `rebuiltHref`, never dead (Enter round and the selection workspace aren't rendered; every link stays inside the rebuilt Qualifiers routes)
+- [x] A narrow canvas (container below 860px) reflows without horizontal page scroll (checked at 924px on every captured state: no page, canvas or panel overflow)
 
 ## wired
-- [ ] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
-- [ ] Reads go through the RLS-scoped client, with no service role for a user's own data
-- [ ] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
-- [ ] Null, zero and "early read" render differently, and windows and samples are stated
-- [ ] Dates and times are resolved in the team's timezone on the server, with no hydration mismatch
-- [ ] Unit tests cover the loader's derivations
+- [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall; the course picker looks courses up on demand, and a live qualifier refreshes on new rounds)
+- [x] Reads go through the RLS-scoped client, with no service role for a user's own data (the setup actions too)
+- [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
+- [x] Null, zero and "early read" render differently, and windows and samples are stated (`—`, `E`, `0/3`, "No rounds yet"; the average says it counts 18-hole rounds)
+- [x] Dates and times are resolved in the team's timezone on the server, with no hydration mismatch (qualifier dates are calendar dates, formatted the same on server and client; no times are shown)
+- [x] Unit tests cover the loader's derivations
 
 ## states
-- [ ] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
-- [ ] Empty (first run): says what will appear here and the one next step
-- [ ] Empty (filtered or no results): distinct from first run, and offers to clear filters
-- [ ] Partial failure: each section has its own failure flag and shows an inline notice with Try again; the rest of the page still works
-- [ ] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
-- [ ] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
-- [ ] Not found and no access: plain words and a way back
-- [ ] Offline or slow network: the action says so instead of spinning forever
-- [ ] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event
-- [ ] Forms: inline field messages, focus moves to the first invalid field, and double submit is prevented
-- [ ] Destructive actions: a confirm step or Undo
-- [ ] Optimistic updates roll back on failure and tell the coach
+- [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
+- [x] Empty (first run): says what will appear here and the one next step
+- [x] Empty (filtered or no results): distinct from first run, and offers to clear filters
+- [x] Partial failure: each section has its own failure flag and shows an inline notice with Try again; the rest of the page still works (the form's round courses, CH-09217, has no Try again on purpose: a refresh mid-edit would drop the coach's changes)
+- [x] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
+- [x] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
+- [x] Not found and no access: plain words and a way back
+- [x] Offline or slow network: the action says so instead of spinning forever
+- [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event
+- [x] Forms: inline field messages, focus moves to the first invalid field, and double submit is prevented
+- [x] Destructive actions: a confirm step or Undo
+- [x] Optimistic updates roll back on failure and tell the coach (none: every write waits for the server; a partial edit save says what saved, CH-09902)
 
 ## error-tracking
-- [ ] Server read failures are logged with `chLogServer('<screen>', '<read>')`
-- [ ] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
-- [ ] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
-- [ ] No `catch` swallows an error without reporting or handling it on screen
-- [ ] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [ ] Every failure path was forced once locally and seen in the console or Sentry
+- [x] Server read failures are logged with `chLogServer('<screen>', '<read>')`
+- [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
+- [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
+- [x] No `catch` swallows an error without reporting or handling it on screen
+- [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
+- [x] Every failure path was forced once locally and seen in the console or Sentry (each numbered failure in qualifiers.test; close, save and course lookup in the preview console, with outbound reports blocked)
 
 ## phone-spec
 - [x] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/mobile/` (or is a draft the owner approved), and maps each screen to components
@@ -170,25 +170,25 @@ Missing actions:
 - [ ] Checked on a real iPhone through `npm run ios:dev` (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics felt
 
 ## motion
-- [ ] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
-- [ ] Press scales to 0.985 on every tappable surface
-- [ ] No count-ups and no entrance staggers; data is final on mount
-- [ ] Reduced motion is honoured through `useChReducedMotion`
-- [ ] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
+- [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
+- [x] Press scales to 0.985 on every tappable surface
+- [x] No count-ups and no entrance staggers; data is final on mount
+- [x] Reduced motion is honoured through `useChReducedMotion` (Qualifiers has no JS motion; its CSS transitions fall under base.css's reduced-motion rule)
+- [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes (warning before Close and Discard)
 
 ## accessibility
-- [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
-- [ ] Landmarks, headings in order, table roles, and labels on icon buttons
-- [ ] Charts have a text equivalent (aria-label or a view-as-table path)
-- [ ] Status changes are announced (aria-live) and errors use role=alert
-- [ ] Text contrast meets WCAG AA on every surface
+- [x] Full keyboard path, with visible focus and no traps; Esc closes overlays
+- [x] Landmarks, headings in order, table roles, and labels on icon buttons
+- [x] N/A: no charts (scorecards are tables)
+- [x] Status changes are announced (aria-live) and errors use role=alert
+- [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [ ] No request waterfall on the server, with independent reads in parallel
-- [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
-- [ ] No layout shift after first paint
+- [x] No request waterfall on the server, with independent reads in parallel
+- [x] Client JS is limited to the interactive islands, and animation code is loaded lazily (the list, detail and form are client components, interactive throughout; Qualifiers loads no animation or chart library)
+- [x] No layout shift after first paint (CLS 0.0001 or less on seven preview states)
 
 ## verified
-- [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
+- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

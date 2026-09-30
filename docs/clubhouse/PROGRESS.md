@@ -74,7 +74,7 @@ Starting the next session:
 | Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Messages | /golf/dashboard/messages (coach and player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Settings | /golf/dashboard/settings (coach and player) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
-| Qualifiers | /golf/dashboard/qualifiers with /new, /[id], /[id]/edit (coach; list and detail also player), /golf/dashboard/my-qualifiers (player) | done | todo | todo | todo | todo | doing | todo | todo | todo | todo | todo |
+| Qualifiers | /golf/dashboard/qualifiers with /new, /[id], /[id]/edit (coach; list and detail also player), /golf/dashboard/my-qualifiers (player) | done | done | done | done | done | doing | todo | done | done | done | doing |
 | CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role) | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
@@ -248,3 +248,24 @@ Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 20
   - The only console warning is a missing React key inside the bundle's `RoundStrip`. Captures are kept outside the repo.
   - Checked read-only against the live schema: columns, CHECK constraints, RLS on the four qualifier tables and on `golf_rounds` and `golf_holes`, and aggregate counts with no names.
   - The design system was not compared with the design project (no DesignSync access in this session).
+- 2026-09-29 · Qualifiers · desktop, wired, states, error-tracking, motion, accessibility and performance done; verified doing (a real coach account and owner review left). Coach and player, list, detail, create and edit.
+  - Gates: typecheck:fast 0; eslint on the 31 changed files 0 (one warning, already in the preview page); vitest `src/clubhouse` plus the setup actions 342/342, exit 0; clubhouse:check 0; knowledge:check 0; `npm run build` 0 (the later commits change only CSS and markup); `clubhouse:a11y` against my own server on :3102 clean, 156 pages, 53 of them Qualifiers.
+  - Compared 38 states at 1280 and 924 with the prototype captures. Fixed on the way: the heading size, the section-head spacing, the squad readout running out of its box, the textarea height, and a two-line "No rounds submitted".
+  - Differences left, all decisions:
+    - standings rank by to par, then strokes (D-33), so a player at +8 after one round sits above one at +10 after two;
+    - Avg moved into the scorecards tray, and a Status column was added;
+    - Course per round shows the tee and par, not a date;
+    - no selection workspace button (D-32), and Lineups is hidden in the nav (D-33);
+    - players are listed by last name;
+    - a long date range wraps instead of being cut off;
+    - not reproduced: the empty help line the design system keeps under every field, and the pin icon in the Course field.
+  - Browser checks:
+    - the keyboard reaches every control, and Esc closes the Close dialog and the course picker, returning focus;
+    - the close, save and course-lookup failures were forced in the preview and seen in the console, with outbound reports blocked;
+    - layout shift was 0.0001 or less on seven states.
+  - Security review of the new setup actions: RLS client only, no service role, and verifyTeamAccess before any write, all met. Fixed from the review:
+    - the squad size can't change under a confirm that lands at the same moment;
+    - a player with a round in any status stays entered;
+    - players never fetch the pick reasoning;
+    - refusals no longer file as faults.
+  - Left for a migration (owner): players can read `coach_reasoning` in the database, the entry-insert policy doesn't check the player's team, and the stranding trigger runs as the caller. These are logged in `memory/features/qualifiers.md`.
