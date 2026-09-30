@@ -377,6 +377,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/golf/(dashboard)/dashboard/classes/**",
+        "pattern": "src/app/golf/(dashboard)/dashboard/classes/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/coachhelm/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/coachhelm/**",
         "category": "routes"
@@ -535,6 +540,11 @@
         "id": "routes:src/app/golf/join/**",
         "pattern": "src/app/golf/join/**",
         "category": "routes"
+      },
+      {
+        "id": "routes:src/clubhouse/routes/classes.tsx",
+        "pattern": "src/clubhouse/routes/classes.tsx",
+        "category": "routes"
       }
     ],
     "components": [
@@ -554,6 +564,16 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/data/classes-shape.ts",
+        "pattern": "src/clubhouse/data/classes-shape.ts",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/data/classes.ts",
+        "pattern": "src/clubhouse/data/classes.ts",
+        "category": "components"
+      },
+      {
         "id": "components:src/clubhouse/data/qualifiers.ts",
         "pattern": "src/clubhouse/data/qualifiers.ts",
         "category": "components"
@@ -561,6 +581,11 @@
       {
         "id": "components:src/clubhouse/routes/qualifiers.tsx",
         "pattern": "src/clubhouse/routes/qualifiers.tsx",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/screens/classes/**",
+        "pattern": "src/clubhouse/screens/classes/**",
         "category": "components"
       },
       {
@@ -776,6 +801,11 @@
       {
         "id": "components:src/components/providers/CapacitorProvider.tsx",
         "pattern": "src/components/providers/CapacitorProvider.tsx",
+        "category": "components"
+      },
+      {
+        "id": "components:src/hooks/golf/use-shot-tracking.ts",
+        "pattern": "src/hooks/golf/use-shot-tracking.ts",
         "category": "components"
       }
     ],
@@ -2029,6 +2059,11 @@
       {
         "id": "tests:src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
         "pattern": "src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/classes.test.tsx",
+        "pattern": "src/clubhouse/__tests__/classes.test.tsx",
         "category": "tests"
       },
       {
@@ -11980,6 +12015,42 @@
     },
     {
       "source": "calendar_events",
+      "target": "components:src/clubhouse/data/classes-shape.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/classes-shape.ts"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
+      "target": "components:src/clubhouse/data/classes.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/classes.ts"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
+      "target": "components:src/clubhouse/screens/classes/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/classes/**"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
       "target": "components:src/components/fairway/controls/wheel-picker.*",
       "kind": "feature_component",
       "evidence": [
@@ -12124,6 +12195,30 @@
     },
     {
       "source": "calendar_events",
+      "target": "routes:src/app/golf/(dashboard)/dashboard/classes/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/(dashboard)/dashboard/classes/**"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
+      "target": "routes:src/clubhouse/routes/classes.tsx",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/routes/classes.tsx"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
       "target": "services:src/lib/calendar/**",
       "kind": "feature_service",
       "evidence": [
@@ -12131,6 +12226,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/calendar/**"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
+      "target": "tests:src/clubhouse/__tests__/classes.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/classes.test.tsx"
         }
       ]
     },
@@ -15924,6 +16031,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/fairway/pages/rounds/**"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "components:src/hooks/golf/use-shot-tracking.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/use-shot-tracking.ts"
         }
       ]
     },

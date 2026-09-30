@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 34 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/components/fairway/pages/rounds-tracking/**` … and 35 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md`
 - **Repair units:** `player-lookup-maybe-single-2026-09-25` (verified)
@@ -135,7 +135,7 @@ is a second thing to keep true.
 **Calendar And Events** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/calendar-events.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/components/golf/calendar/**`, `src/components/fairway/pages/calendar/**`, `src/components/fairway/controls/wheel-picker.*`, `src/app/api/calendar/**`, `src/app/golf/actions/attendance.ts` … and 20 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/app/golf/(dashboard)/dashboard/classes/**`, `src/clubhouse/routes/classes.tsx`, `src/components/golf/calendar/**`, `src/clubhouse/screens/classes/**`, `src/clubhouse/data/classes.ts` … and 26 more in the registry
 - **Telemetry:** `calendar_events` (golfhelm, high), `academics_classes` (golfhelm, low)
 - **Incidents:** `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md`
 - **Repair units:** none in the queue

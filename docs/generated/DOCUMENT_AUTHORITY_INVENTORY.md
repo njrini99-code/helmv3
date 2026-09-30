@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 271 | 12 | 57 | 82 |
+| `UNKNOWN` | 283 | 12 | 58 | 82 |
 
 ## Files
 
@@ -674,6 +674,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/classes.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/coachhelm.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/hub.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/messages.md` | current | - | - | - | - |
@@ -760,7 +762,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P009-qualifiers/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P010-hub/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/classes.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/coachhelm.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
@@ -773,6 +783,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/team-hub.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/classes.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/coachhelm.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/home.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/messages.md` | current | - | - | - | - |
