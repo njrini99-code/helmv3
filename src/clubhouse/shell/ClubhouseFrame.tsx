@@ -17,6 +17,7 @@ import { RouteFrame } from './RouteFrame';
 import { NotRebuilt } from './NotRebuilt';
 import { ClubhouseMarker } from './context';
 import { CrumbProvider } from './crumbs';
+import { PhoneChromeProvider, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
@@ -52,29 +53,46 @@ export function ClubhouseFrame({
   return (
     <ClubhouseMarker>
       <LazyMotion features={domAnimation} strict>
-        {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-        <div className={`ch-root ${clubhouseFontVariables}`} data-ui="clubhouse" data-motion={showAnimations ? undefined : 'off'}>
-          <ToastProvider>
-            <CrumbProvider>
-              {/* The first Tab on any page: jump past the navigation to the page itself. */}
-              <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
-                Skip to content
-              </a>
-              <div className="ch-app">
-                <Sidebar userData={userData} shell={shell} pathname={pathname} />
-                <div className="ch-canvas" id="ch-canvas">
-                  <TopBar item={item} pathname={pathname} />
-                  <OfflineBanner />
-                  <RouteFrame routeKey={pathname}>
-                    {rebuilt ? children : <NotRebuilt label={item?.label ?? 'This page'} />}
-                  </RouteFrame>
+        <PhoneChromeProvider>
+          {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
+          <FrameRoot motionOff={!showAnimations}>
+            <ToastProvider>
+              <CrumbProvider>
+                {/* The first Tab on any page: jump past the navigation to the page itself. */}
+                <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                  Skip to content
+                </a>
+                <div className="ch-app">
+                  <Sidebar userData={userData} shell={shell} pathname={pathname} />
+                  <div className="ch-canvas" id="ch-canvas">
+                    <TopBar item={item} pathname={pathname} />
+                    <OfflineBanner />
+                    <RouteFrame routeKey={pathname}>
+                      {rebuilt ? children : <NotRebuilt label={item?.label ?? 'This page'} />}
+                    </RouteFrame>
+                  </div>
                 </div>
-              </div>
-              <TabBar pathname={pathname} shell={shell} role={role} />
-            </CrumbProvider>
-          </ToastProvider>
-        </div>
+                <TabBar pathname={pathname} shell={shell} role={role} />
+              </CrumbProvider>
+            </ToastProvider>
+          </FrameRoot>
+        </PhoneChromeProvider>
       </LazyMotion>
     </ClubhouseMarker>
+  );
+}
+
+/** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
+function FrameRoot({ motionOff, children }: { motionOff: boolean; children: ReactNode }) {
+  const { immersive } = usePhoneChromeState();
+  return (
+    <div
+      className={`ch-root ${clubhouseFontVariables}`}
+      data-ui="clubhouse"
+      data-motion={motionOff ? 'off' : undefined}
+      data-phone-immersive={immersive ? '' : undefined}
+    >
+      {children}
+    </div>
   );
 }

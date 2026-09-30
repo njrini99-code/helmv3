@@ -59,7 +59,10 @@ export function checkSource(file, raw) {
 
   // 1. Isolation
   scan(/@\/components\/fairway|@\/lib\/fairway|@\/lib\/redesign|fairwayScope|FAIRWAY_SCOPE|fairway-ds/g, 'imports or references the Fairway UI');
-  scan(/var\(--(?!ch-)[a-z]/g, 'reads a non-Clubhouse custom property (use --ch-*)');
+  // `--keyboard-height` is the iOS shell's keyboard contract (CapacitorProvider,
+  // memory/features/ios-native-shell.md): MOBILE.md requires a phone composer or
+  // sheet footer to lift by it, so it is the one foreign property allowed.
+  scan(/var\(--(?!ch-|keyboard-height\b)[a-z]/g, 'reads a non-Clubhouse custom property (use --ch-*)');
   scan(/--fw-/g, 'references a Fairway token');
 
   // 2. Doctrine

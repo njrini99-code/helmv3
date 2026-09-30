@@ -794,7 +794,7 @@
 }
 @media (max-width: 820px) {
   .ch-ms {
-    height: calc(100dvh - 48px - env(safe-area-inset-top) - var(--ch-tabbar-h) - env(safe-area-inset-bottom));
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--ch-tabbar-h) - env(safe-area-inset-bottom));
   }
 }
 
