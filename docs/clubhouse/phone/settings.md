@@ -1,6 +1,6 @@
 # Phone design: Settings (coach and player)
 
-Status: draft (awaiting owner approval)
+Status: approved by the owner 2026-09-30, from the mockups at https://claude.ai/artifact/CLN6ENqA9BEqJ2Vom6mev2 (coach and player roots, Notifications and its per-kind sheet, Team, CoachHelm with the reorder, the edit-profile sheet, and the destructive action sheet). Where this text and the mockups differ, the mockups win.
 
 The native pattern: a grouped list that pushes to each section, like the iOS Settings app, in Clubhouse styling.
 
