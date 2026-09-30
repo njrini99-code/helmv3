@@ -1,3 +1,6 @@
+-- STATUS: WRITTEN — HOLD — NOT APPLIED
+-- Held data plan: docs/clubhouse/held/data/qualifier-db-hardening.md
+--
 -- D-35 (owner, 2026-09-29): close the older Qualifiers database gaps the
 -- Clubhouse security review found. WRITTEN, NOT APPLIED; owner applies.
 --

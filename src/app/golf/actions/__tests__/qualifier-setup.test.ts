@@ -2,12 +2,14 @@
  * The Edit qualifier setup actions (D-32): squad size and entrants. Each one
  * checks the caller coaches the qualifier's team before any write, refuses
  * what would break the standings or a confirmed squad, and never calls a
- * write that matched no row "saved".
+ * write that matched no row "saved". Both are HELD (D-61): with the
+ * Clubhouse UI off they refuse before any read.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
 
 let fake: FakeSupabase;
+const clubhouse = vi.hoisted(() => ({ on: true }));
 const access = vi.hoisted(() => ({ result: { allowed: true, reason: 'coach' } as { allowed: boolean; reason?: string } }));
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(async () => fake) }));
@@ -16,6 +18,7 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => 
 vi.mock('@/lib/admin/observed-action', () => ({
   withAdminObserved: <T extends (...args: never[]) => unknown>(_name: string, _options: unknown, action: T) => action,
 }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(() => clubhouse.on) }));
 vi.mock('@/lib/auth/verify-player-access', () => ({ verifyTeamAccess: vi.fn(async () => access.result) }));
 
 import { setQualifierEntrants, setQualifierSquadSize } from '../qualifier-setup';
@@ -39,9 +42,24 @@ function world(over: { selection_state?: string; entries?: string[]; members?: s
 }
 
 beforeEach(() => {
+  clubhouse.on = true;
   access.result = { allowed: true, reason: 'coach' };
   vi.mocked(verifyTeamAccess).mockClear();
   world();
+});
+
+describe('HELD gate (D-61)', () => {
+  it('refuses both actions before any read while the Clubhouse UI is off', async () => {
+    clubhouse.on = false;
+    const from = vi.spyOn(fake, 'from');
+    const refusal = { success: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
+    expect(await setQualifierSquadSize(Q, { total: 6, coachPicks: 2 })).toEqual(refusal);
+    expect(await setQualifierEntrants(Q, [p(1), p(3)])).toEqual(refusal);
+    expect(from).not.toHaveBeenCalled();
+    expect(verifyTeamAccess).not.toHaveBeenCalled();
+    const row = (await fake.from('golf_qualifiers').select('*').eq('id', Q).single()).data as { selection_slots_total: number };
+    expect(row.selection_slots_total).toBe(5);
+  });
 });
 
 describe('setQualifierSquadSize', () => {

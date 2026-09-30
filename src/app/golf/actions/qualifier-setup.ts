@@ -14,6 +14,11 @@
  *   - take out a player who has a round (any status) in the qualifier, or a
  *     selection row (a top-score place or a coach's pick, confirmed or not)
  *
+ * HELD (D-61, docs/clubhouse/held/features/qualifier-squad-and-entrants.md):
+ * new server capabilities, so both answer only while the Clubhouse UI is on
+ * (`golf_clubhouse_ui`), and refuse before any read everywhere else until the
+ * owner releases them.
+ *
  * Refusals are expected outcomes, so the wrapper doesn't file them
  * (`observeSoftFailures: false`); real read and write failures are logged
  * here with `logServerError`, and thrown errors still reach the wrapper.
@@ -28,6 +33,7 @@ import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { describeError } from '@/lib/utils/describe-error';
 import { isUuid } from '@/lib/utils/uuid';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { isClubhouseFor } from '@/clubhouse/gate';
 
 export type QualifierSetupResult<T = undefined> = { success: true; data: T } | { success: false; error: string };
 
@@ -41,6 +47,8 @@ const SQUAD_MAX = 12;
 
 async function coachOfQualifier(qualifierId: string, action: string): Promise<Gate> {
   if (!isUuid(qualifierId)) return { ok: false, error: 'That qualifier link isn’t valid.' };
+  // HELD gate (D-61): the coach check below still decides who may edit.
+  if (!isClubhouseFor('coach')) return { ok: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
   const supabase = await createClient();
   const {
     data: { user },
