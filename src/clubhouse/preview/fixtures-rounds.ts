@@ -52,8 +52,9 @@ const NINE = toLibraryRound({
 const WITH_NINE = [...LIST.slice(0, 4), ...(NINE ? [NINE] : []), ...LIST.slice(4)];
 
 // The in-progress round on the board: Finley GC, Blue, practice, holes 1–3 scored (4, 6, 3 on par 4, 5, 3).
+// Ids are uuids, since the library draws Continue only for an address the shell lists as rebuilt (nav.rebuiltHref).
 export const PREVIEW_UNFINISHED: ChUnfinishedRound = {
-  id: 'u1',
+  id: previewRoundId(31),
   course: 'Finley GC',
   tee: 'Blue tees',
   teeColor: 'blue',
@@ -88,10 +89,10 @@ export const PREVIEW_ROUNDS_UNFINISHED_FAILED = lib(WITH_NINE, [], { unfinished:
 /** Three unfinished rounds, the oldest with every hole scored (ready to submit). */
 export const PREVIEW_ROUNDS_MANY = lib(WITH_NINE, [
   PREVIEW_UNFINISHED,
-  { ...PREVIEW_UNFINISHED, id: 'u2', course: 'Hope Valley CC', date: '2026-10-02', played: [], toParThru: null, nextHole: 1 },
+  { ...PREVIEW_UNFINISHED, id: previewRoundId(32), course: 'Hope Valley CC', date: '2026-10-02', played: [], toParThru: null, nextHole: 1 },
   {
     ...PREVIEW_UNFINISHED,
-    id: 'u3',
+    id: previewRoundId(33),
     course: 'Governors Club',
     date: '2026-09-29',
     played: Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 })),

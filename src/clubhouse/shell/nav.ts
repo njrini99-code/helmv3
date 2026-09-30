@@ -121,7 +121,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/team-hub',
     ...SETTINGS_ROUTES,
   ],
-  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/rounds', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
+  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
 };
 
 /**
@@ -135,11 +135,14 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
 
 /**
  * Rebuilt addresses whose parent isn't rebuilt for that role. A coach has no
- * Rounds library in v2, but opens a player's round review from Stats.
+ * Rounds library in v2, but opens a player's round review from Stats. A player
+ * also continues a round, /rounds/continue/[id] (P011, over the round engine;
+ * /rounds/new is a rebuilt route above). /rounds/recover stays Fairway's, so it
+ * is not rebuilt.
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i],
-  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i],
+  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i],
 };
 
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {

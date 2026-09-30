@@ -278,8 +278,12 @@ export function RoundCompleteSheet({
 /**
  * CH-11603: submitting the round, over the screen. It names what is really
  * happening (the shot count) instead of timing fake steps (Q-72d); the spinner
- * stops with reduced motion. Posted: success, and the round's review.
- * Failed (CH-11005): the round stays saved on the device, with Try again.
+ * stops with reduced motion. Posted: success, and the round's review (the round
+ * screen opens it after a beat). Failed (CH-11005): the round stays saved on the
+ * device, with Try again, and Go back to the finish sheet when the round screen
+ * gives it a way (`onGoBack`), so a failure that retrying won't clear isn't a
+ * dead end. Saving for over 15 seconds (CH-11909): `slowHref` says it is taking
+ * longer and names a way out to Rounds, where the saved round waits.
  */
 export function SubmitOverlay({
   state,
@@ -289,6 +293,8 @@ export function SubmitOverlay({
   reviewHref,
   error,
   onRetry,
+  onGoBack,
+  slowHref = null,
 }: {
   state: 'saving' | 'done' | 'failed';
   course: string;
@@ -297,6 +303,8 @@ export function SubmitOverlay({
   reviewHref: string | null;
   error: string | null;
   onRetry: () => void;
+  onGoBack?: () => void;
+  slowHref?: string | null;
 }) {
   const reduced = useChReducedMotion();
   return (
@@ -307,6 +315,12 @@ export function SubmitOverlay({
             <span className={'ch-rt-spin ch-rt-spin--lg' + (reduced ? ' is-still' : '')} aria-hidden="true" />
             <b>Submitting round</b>
             <span className="ch-rt-subm__m">Saving {shots} shots, updating your stats and writing the round recap. Keep this screen open.</span>
+            {slowHref && (
+              <span className="ch-rt-subm__m" data-ch-code="CH-11909">
+                This is taking longer than usual. Your round is saved on this device, and it is waiting in{' '}
+                <a href={slowHref}>Rounds</a>.
+              </span>
+            )}
           </>
         )}
         {state === 'done' && (
@@ -336,6 +350,11 @@ export function SubmitOverlay({
             <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>
               <span>Try again</span>
             </button>
+            {onGoBack && (
+              <button type="button" className="ch-btn ch-btn--ghost" onClick={onGoBack}>
+                <span>Go back</span>
+              </button>
+            )}
           </>
         )}
       </div>

@@ -10,17 +10,18 @@ for Review, Setup and Tracking; see the gaps below).
 | --- | --- | --- |
 | Library `/golf/dashboard/rounds` | yes (player, behind `golf_clubhouse_ui`) | unit tests, the dev preview, headless Chromium at 1280 and 390, axe |
 | Review `/golf/dashboard/rounds/[id]` | yes (player and coach, behind the flag) | unit tests, the dev preview, headless Chromium at 1280 and 390, axe |
-| Setup | **no** (preview only, `/clubhouse-preview/setup`) | unit tests against fake ports, the dev preview, real Chromium at 390 (the dock read "Finley GC · Blue · 18 holes · Par 72"), axe; never against the real ports, which do not exist yet |
-| Shot screen | **no** (preview only, `/clubhouse-preview/track`) | unit tests driving the real `useShotTracking`, the dev preview with a stand-in round screen, real Chromium at 390 (a shot was recorded), axe; never behind the real engine |
+| Setup `/golf/dashboard/rounds/new` | yes (player, behind `golf_clubhouse_ui`) | unit tests with the **real new-round engine** and the real setup over mocked server actions (`round-entry-wiring.test`), the page's flag gate (`round-entry-routes.test`), the dev preview (fake ports), real Chromium at 390 on the preview (the dock read "Finley GC · Blue · 18 holes · Par 72"), axe on the preview |
+| Shot screen `/golf/dashboard/rounds/new` and `/rounds/continue/[id]` | yes (player, behind the flag) | unit tests with the real new-round and continue engines driving the real `RoundRuntime` (a stub `RoundTracking` in the wiring tests; the real one in `round-tracking.test`), the dev preview, real Chromium at 390 on the preview (a shot was recorded), axe on the preview |
 
-Nothing about setup or the shot screen has run against a live account, a routed page, or the round engine.
+Round entry has been run against the round engine in unit tests, and its pages against a faked Supabase. It has **not**
+been seen in a browser on its routed addresses (the flag is off and was not flipped for this work), run against a live
+account, or run on an iPhone.
 
 ## Current verification status
 
 ```text
 Status:     partial
-Commit/PR:  agent/clubhouse (the Rounds code is committed there; this docs pass, the manifest change and the sidecar
-            are uncommitted at the time of writing)
+Commit/PR:  agent/clubhouse (draft PR #2102, stacked on #2104): round entry wiring, local commit, not pushed
 Date:       2026-09-30
 ```
 
@@ -28,12 +29,11 @@ Date:       2026-09-30
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Typecheck | `npm run -s typecheck:fast` | not run in this pass (docs only) |
-| Lint | `npx eslint` | not run in this pass (docs only) |
-| Clubhouse check | `npm run -s clubhouse:check` | exit 1, 55 violations, every one P011's and caused by the sidecar not being merged yet: 50 "category NN names 11xxxx, which is not in bridge-contracts.json", 3 action ids not found (110901, 111401, 111402), "P011-rounds/CONTRACT.md is stale" and "CLUBHOUSE_ACTION_MAP.md is stale" (the action's component path was edited after the last sync). The 34 subtests of the check's own suite passed. Expected until the merge pass runs `registry.mjs sync`. (During this pass another session changed `bridge-contracts.json` and re-synced `generated/`; this pass touched neither.) |
-| Registry and contract check | a read-only simulation of `checkRegistry` and `checkContract` with the 44 hand contracts merged into the registry in memory (a throwaway script, not committed) | 0 violations for P011; CONTRACT.md is exactly what `renderContract` writes for the merged registry; the merged records survive `syncBridge` unchanged. The real run is the merge pass's |
-| Knowledge check | `npm run -s docs:check` | not run |
-| Build | `npm run build` | not run: no `'use server'` file changed in this pass, and no Rounds build was run here |
+| Typecheck | `npm run -s typecheck:fast` | exit 0 |
+| Lint | `npx eslint` on every source and test file this work changed (the entry folder, the routes, the pages, `nav.ts`, `use-action.ts`, setup's `shape.ts` and `RoundSetup.tsx`, `round-sheets.tsx`, the skeleton, the fixtures and the touched tests) | exit 0, no warnings on the new files (two older warnings remain in `round-sheets.tsx`, `tabIndex` on the scorecard region, and `round-review.test.tsx`, a `role` prop on a test helper) |
+| Clubhouse check | `npm run -s clubhouse:check` after `node scripts/clubhouse/registry.mjs sync` (1079 Bridge IDs, 0 new) | exit 0, 281 files |
+| Knowledge check | `npm run -s docs:check` | exit 0 after `npm run knowledge:doc-inventory` regenerated `DOCUMENT_AUTHORITY_INVENTORY.md` (the files this work adds count as tracked only once committed) |
+| Build | `next build --webpack` (what `npm run build` runs), with a 9 GB heap under a memory watchdog | exit 0, compiled in 6.7 min, both routes in the route table (`ƒ /golf/dashboard/rounds/new`, `ƒ /golf/dashboard/rounds/continue/[id]`). A first attempt with a 6 GB heap ran out of memory before compiling. Run on the tree before the last `useAction` edit (the gate became a ref); no `'use server'` file changed |
 
 ## Automated tests
 
@@ -44,29 +44,53 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/round-setup.test.tsx` (19 cases) | CH-11007, CH-11107 to CH-11109, CH-11208 to CH-11211, CH-11309 to CH-11312, CH-11403, CH-11510, CH-11511, and by phrase 110103, 110110, 110111, 110113, 110510, 110805, 111401, 111402, 111503 | pass |
 | `src/clubhouse/__tests__/round-tracking.test.tsx` (21 cases) | CH-11002, CH-11003, CH-11005, CH-11101 to CH-11104, CH-11106, CH-11308, CH-11402, CH-11502 to CH-11509, CH-11603, CH-11705, CH-11805, and by phrase 110104, 110112, 110902, 111403 | pass |
 | `src/lib/golf/__tests__/shot-entry-rules.test.ts` (11 cases) | the shared rules behind CH-11101 to CH-11106 and the edit sheet's rules | pass |
+| `src/clubhouse/__tests__/round-entry.test.tsx` (38 cases) | the entry-state components (Q-81): CH-11008 to CH-11013, CH-11512 to CH-11517, CH-11708, CH-11709, CH-11902 | pass |
+| `src/clubhouse/__tests__/round-entry-wiring.test.tsx` (27 cases) | the **real new-round engine** behind the real setup, over mocked server actions: CH-11007, CH-11014 to CH-11016, CH-11907, CH-11514, CH-11515, CH-11009, CH-1903, CH-11512, CH-11008, CH-11513, CH-11010, CH-11006, CH-11902, CH-11013, CH-11516, CH-11012, CH-11517, CH-11407; and by phrase 110103, 110110, 110113, 111404 | pass |
+| `src/clubhouse/__tests__/round-entry-continue.test.tsx` (8 cases) | the **real continue engine**: CH-11512, CH-11513, CH-11010, CH-11902, CH-11006, CH-11518, CH-11519, CH-11516, CH-11012 | pass |
+| `src/clubhouse/__tests__/round-entry-routes.test.tsx` (33 cases) | the rebuilt list and the library's links (110105, 110109), the two pages' flag gate and the loading switch (110114, flag on and off, through a faked Supabase), `useAction`'s options and its gate (a run kept from a render that saw the action pending still runs, and two calls in one tick run it once: 111404), the setup reads (`toStartForm`, `startRefusal`: CH-11014 to CH-11016, CH-11907, CH-11208 to CH-11211, CH-11311), the engine's notices (CH-11903 to CH-11908), `RoundRuntime` over a fake session (CH-11909, CH-11910, CH-11603 and 110902 once, CH-11902) | pass |
 
-The five files were run together in this pass: `npx vitest run` on them, exit 0, 5 files, 120 of 120 tests. The
-mutation checks in the tracker are not re-run here: `PROGRESS.md` (2026-09-30) records 20 of 20 mutations killed on
-the library, 21 of 21 on the review, 17 of 18 on setup (the survivor, the tee list's stale-read guard, is unreachable
+The four library, review, setup and tracking files were run together with the whole Clubhouse suite in this pass:
+`npx vitest run src/clubhouse`, exit 0, 28 files, 1413 of 1413 tests (the suite also holds other pages' files).
+The engine's own tests and the pages' source-text tests were run as well: `src/lib/golf/round-session`, the
+`rounds/new` and `rounds/continue` client tests, `round-start-guard-signal`, `new-round-setup-restore-signal`,
+`nav-registry`, `id-pages-validate-uuid`, `golf-conditional-redirect`, `error-logging` and the recover page's test,
+35 files, 436 of 436, exit 0; none of the engine files was edited.
+
+**Mutations (round entry).** Each was applied to the source, the tests that should catch it were run, and the source
+was put back (a backup and restore script, not committed). All killed: a start refused as in_progress_exists drawn as a
+failed start; the conflict dialog not opening after the discard question; the Start port reading the engine of an
+earlier render; no in-flight guard on Save for later; engine errors drawn instead of captured (double message); one
+conflict wording for both engines; the closed-qualifier sheet not opening; a qualifier round in progress not opening;
+no offline check on Start; useAction gating on the render's `pending` instead of a ref (two tests); no guard on Restore; state-reported failures not picked up; the round's review not opened
+after a post (equivalent after a refactor: the guard moved into the effect's deps); the player's `/rounds/continue`
+pattern removed from the shell; Continue's Submit bypassing the qualifier round number; each page's flag gate (flag
+on, flag off, the coach's message); a handled refusal drawing a toast; a final refusal keeping Retry. One was found
+to be a real bug by the test written to kill it (the round-posted timer was lost when the router's identity changed)
+and fixed. Not run: the qualifier preselect effect. One test (CH-11517) failed only when the machine was busy: the
+toast stack moves into whichever dialog is open and re-creates its buttons, so a click on a button just replaced did
+nothing; the test now clicks the Retry that is there until the discard has run again, and the describe that plays a
+whole round has a 20 s timeout. It passed 5 of 5 under five parallel runs after that.
+
+The earlier tracker record of mutations stands for the other files (`PROGRESS.md`, 2026-09-30): 20 of 20 on the library,
+21 of 21 on the review, 17 of 18 on setup (the survivor, the tee list's stale-read guard, is unreachable
 by going back, which remounts the list) and 20 of 21 on the shot screen (the survivor, the quick pick's unit dispatch,
-is equivalent: the engine derives the stored unit), at the test counts of that day (the library now has 40 cases, not 39).
+is equivalent: the engine derives the stored unit).
 
-**Contracts a test covers, and those it does not.** Of the 44 hand contracts (all `reserved`), 32 have a test that would
-prove them once its title carries the Bridge ID: 110101 to 110113 (all of category 01), 110413, 110510, 110619, 110801,
-110802, 110805, 110901, 110902, 111301, 111401 to 111403, 111501 to 111503, 111811, 111902, 112301 and 112401. **12 have no
-covering test**: 110206 (the review's skeleton, not built), 110702 (offline), 110803 and 110804 (the player filter and the
-server action's checks, read not run), 111201 and 111202 (a failed Start keeps the setup; a failed hole save keeps the
-shots), 111809 (axe, a script), 111810 (the scorecard's focusable region), 111901 and 111903 (the phone builds), 112001
-(Esc) and 112101 (the read order). None of the 44 is `implemented` yet, because no test title carries a Bridge ID (the
-lead adds them). The catalog rows are the other 74 contracts; 15 of those are marked `preview` (no test is named for them):
-CH-11004, CH-11006, CH-11105, CH-11207, CH-11404, CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707, CH-11806,
-CH-11807, CH-11808 and CH-11901. Two notes on those: CH-11705's test column says `preview`, but the first shot-recording
-test names it in its title; and CH-11601 stays `reserved` in the registry because its code string is only in `rounds.css`
+**Contracts a test covers, and those it does not.** Of the 46 hand contracts, 34 are `implemented`: every test file each
+lists names its Bridge ID in a title (the 32 of the contract pass, plus 110114 `ROUND_ENTRY_FOLLOWS_THE_FLAG` and 111404
+`A_RETRY_RUNS_THE_ROUND_AS_IT_IS_NOW`, both proved by the round-entry tests). 110103, 110104, 110105, 110109, 110110,
+110902 and 112401 gained round-entry test files. **12 stay `reserved` with no covering test**: 110206 (the review's
+skeleton, not built), 110702 (offline: round entry's Start and Save for later are forced, the library's Discard and the
+hole's Try again are not), 110803 and 110804 (the player filter and the server action's checks, read not run), 111201
+and 111202 (a failed Start keeps the setup; a failed hole save keeps the shots), 111809 (axe, a script), 111810 (the
+scorecard's focusable region), 111901 and 111903 (the phone builds), 112001 (Esc) and 112101 (the read order). The
+catalog rows are the other contracts; those marked `preview` name no test: CH-11004, CH-11006, CH-11105, CH-11207,
+CH-11404, CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707, CH-11806, CH-11807, CH-11808 and CH-11901 (CH-11004
+and CH-11006 are now forced by round entry's tests, which still say `preview` in the catalog's test column until that
+column is brought current). CH-11601 stays `reserved` in the registry because its code string is only in `rounds.css`
 (the registry scans `.ts` and `.tsx`).
 
 A hand contract that lists more than one test file becomes `implemented` only when every listed file carries its Bridge ID.
-Nine list several: 110105, 110619, 110801, 111401, 111402, 111501, 111811 and 112301 (two or three files each) and 112401
-(all four). The handoff's test map (not committed) gives the phrase to tag in each file.
 
 ## Visual verification
 
@@ -110,7 +134,16 @@ Result:       built to the approved spec and seen at 390; 430px is not recorded 
 | Partial read | 110619 | tests | each failed read flags only its part; the rest renders |
 | Destructive | CH-11501, CH-11502, CH-11504, CH-11505, CH-11507 | tests | asks first; the card leaves only when the server has deleted it |
 | Optimistic | n/a | n/a | nothing on the page is optimistic (111301) |
-| Not-rebuilt notice at `/rounds/new` and `/rounds/continue/[id]` | 110105, 110109 | read from `nav.isRebuilt` and `ClubhouseFrame` | **not observed in a browser** |
+| Round entry: recovery | CH-11512, CH-11513, CH-11008 | `round-entry-wiring.test`, `round-entry-continue.test` (a device copy newer than the server's) | Restore writes the round once (two quick taps, one write); a failed restore stays in the dialog; Discard saved shots asks first and removes only the device copy |
+| Round entry: a round already in progress | CH-11514, CH-11515, CH-11009, CH-11907 | `round-entry-wiring.test` | resume opens that round; Start a new round keeps it and starts another; Discard asks, then deletes it and starts this one; a qualifier round in progress opens instead of failing |
+| Round entry: a start refused | CH-11007, CH-11014 to CH-11016, CH-1903 | `round-entry-wiring.test` | a toast with Retry (a server rejection, an unverified qualifier), none (a qualifier no longer open), or Start anyway (a completed round on that course and day); offline sends nothing, and a browser that says offline but reaches the server goes ahead |
+| Round entry: Save for later and Discard fail | CH-11010, CH-11006, CH-11011 | `round-entry-wiring.test`, `round-entry-continue.test` | one toast with Retry (never the engine's own toast too); Retry saves with the round as it is now and never twice (111404); a failed Discard stays in its question with the reason |
+| Round entry: reload | CH-11902 | `round-entry-wiring.test`, `round-entry-continue.test` | a save refused for a round changed elsewhere is the Reload toast and banner, with no Retry |
+| Round entry: a closed qualifier | CH-11516, CH-11517, CH-11012, CH-11906, CH-11011 | `round-entry-wiring.test`, `round-entry-continue.test` | Submit opens Save as practice with the server's sentence (never CH-11005); a failed change stays on the sheet; Discard asks first and its failure is a toast with Retry |
+| Round entry: submit | CH-11005, CH-11603, CH-11905, CH-11909, 110902 | `round-entry-routes.test` (a fake session), the engines | posted ticks the haptic once and opens the review after 2.5 s; a submit that could not reach the server says it is saved on this device and opens Rounds; slow after 15 s says so |
+| Round entry: skeleton | CH-11407 | tests (the loading switch, the skeleton before the day and the qualifiers are read) | a page-shaped skeleton in the shell; Fairway's with the flag off |
+| Round entry routes, flag on and off | 110114 | `round-entry-routes.test` | flag on: Clubhouse's screens (player); flag off and a coach: Fairway's client and the legacy message, as before |
+| The rebuilt list and the library's links | 110105, 110109 | `round-entry-routes.test`, `rounds.test` | New round, Start a round and Continue are drawn for a player and never for a coach; `/rounds/recover` is not linked |
 
 ## Accessibility
 
@@ -163,9 +196,15 @@ Notes:             first-load JS and LCP (CH-1954) are open
 
 - The iPhone pass through `npm run ios:dev`, a browser pass with a real player and a real coach account (the library, the
   review and Discard against a live session), and the Chromium pass at 430px.
-- `npm run build`, typecheck and lint for this pass; nothing here changed a `'use server'` surface.
-- Setup and the shot screen against the real ports and the engine: none exists until the engine move (ROUNDS_PLAN step 4).
-  Until then no routed page starts or continues a round for a Clubhouse player.
+- The build ran once, before the last `useAction` edit; run it again with the stacked PRs' tip.
+- Round entry on its routed addresses: a browser pass with a real player account and the flag on (a round started,
+  saved for later, continued, submitted, a round recovered from the device, a closed qualifier), Chromium at 390 and
+  430px, and the iPhone pass through `npm run ios:dev`. The tests run the real engines but fake the server actions,
+  the session and the shot screen (a stub in the wiring tests). Nothing was flipped: the flag is off in production.
+- Offline on the library's Discard and the hole's Try again (110702 stays reserved; round entry's Start and Save for
+  later are forced offline), a failed Start keeping every field (111201), and the qualifier preselect effect.
+- `/rounds/recover` has no Clubhouse screen (no board): a round the device holds that the server never got is
+  offered from Rounds' Continue (CH-11512), not from recover. The entry routes' `error.tsx` files are still Fairway's.
 - Offline (110702), Esc (112001), the read order (112101), a failed Start keeping the setup (111201) and a failed hole save
   keeping the shots (111202) have no test; the review's skeleton (110206) is not built.
 - Found and not fixed (see the report to the parent):

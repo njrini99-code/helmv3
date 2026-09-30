@@ -9206,11 +9206,12 @@
     "category": 1,
     "item": 3,
     "name": "SETUP_READY",
-    "meaning": "A new round's setup (preview only until the engine move) opens on the green band with its steps (Course, Scorecard, Track), the course card (\"Choose a course\", Browse courses), an open qualifier when there is one, Round details (type, date, holes), the scorecard's place held (\"Your scorecard appears here once you pick a course and tees.\") and the dock, whose Start round is off and names why (\"Choose a course to start\"). Picking tees reads that tee's holes and fills the scorecard; a hole changed for this round is counted and marked (\"1 hole edited for this round\"), edits never leave this round, and the dock then reads \"Course · Tee · N holes · Par P\".",
+    "meaning": "A new round's setup (at /golf/dashboard/rounds/new, over the new-round engine; also the dev preview) opens on the green band with its steps (Course, Scorecard, Track), the course card (\"Choose a course\", Browse courses), an open qualifier when there is one, Round details (type, date, holes), the scorecard's place held (\"Your scorecard appears here once you pick a course and tees.\") and the dock, whose Start round is off and names why (\"Choose a course to start\"). Picking tees reads that tee's holes and fills the scorecard; a hole changed for this round is counted and marked (\"1 hole edited for this round\"), edits never leave this round, and the dock then reads \"Course · Tee · N holes · Par P\".",
     "status": "implemented",
-    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/setup/HoleConfig.tsx#HoleConfig; src/clubhouse/screens/rounds/setup/shape.ts",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/setup/HoleConfig.tsx#HoleConfig; src/clubhouse/screens/rounds/setup/shape.ts; src/clubhouse/screens/rounds/entry/NewRound.tsx#NewRound",
     "tests": [
-      "src/clubhouse/__tests__/round-setup.test.tsx"
+      "src/clubhouse/__tests__/round-setup.test.tsx",
+      "src/clubhouse/__tests__/round-entry-wiring.test.tsx"
     ]
   },
   {
@@ -9219,9 +9220,9 @@
     "category": 1,
     "item": 4,
     "name": "TRACKING_READY",
-    "meaning": "The shot screen (preview only until the engine move) opens on the hole it is given: the top bar with Exit and Scorecard, the hole strip, the hole hero (hole number, par, yards, \"Shot N\" and the distance to the pin), the hole map and the shot log, and the shot entry, whose Next shot is off with the one thing missing named above it. Every rule and write is useShotTracking, the hook the Fairway screen runs; the round screen around it owns Exit, the scorecard, Round complete and Submit.",
+    "meaning": "The shot screen (inside the round screen at /rounds/new and /rounds/continue/[id]) opens on the hole it is given: the top bar with Exit and Scorecard, the hole strip, the hole hero (hole number, par, yards, \"Shot N\" and the distance to the pin), the hole map and the shot log, and the shot entry, whose Next shot is off with the one thing missing named above it. Every rule and write is useShotTracking, the hook the Fairway screen runs; the round screen around it owns Exit, the scorecard, Round complete and Submit.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/screens/rounds/track/ShotEntry.tsx#ShotEntry; src/hooks/golf/use-shot-tracking.ts#useShotTracking",
+    "where": "src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/screens/rounds/track/ShotEntry.tsx#ShotEntry; src/hooks/golf/use-shot-tracking.ts#useShotTracking; src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
     "tests": [
       "src/clubhouse/__tests__/round-tracking.test.tsx"
     ]
@@ -9232,12 +9233,13 @@
     "category": 1,
     "item": 5,
     "name": "UNBUILT_TARGETS_ARE_NOT_DRAWN",
-    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are not rebuilt (the shell draws its not-rebuilt notice there), so none is drawn today; every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
+    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds, and /rounds/recover stays Fairway's, so nothing links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES",
     "tests": [
       "src/clubhouse/__tests__/rounds.test.tsx",
-      "src/clubhouse/__tests__/round-review.test.tsx"
+      "src/clubhouse/__tests__/round-review.test.tsx",
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx"
     ]
   },
   {
@@ -9246,7 +9248,7 @@
     "category": 1,
     "item": 6,
     "name": "UNFINISHED_ROUNDS_ARE_LISTED",
-    "meaning": "The newest unfinished round fills the card; every other one is listed under \"N more unfinished rounds\" with Discard and, once round entry is rebuilt, Continue or Submit. A round whose every hole has a score reads \"Ready to submit\" (the card says \"Submit round\"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one.",
+    "meaning": "The newest unfinished round fills the card; every other one is listed under \"N more unfinished rounds\" with Discard, Continue or Submit. A round whose every hole has a score reads \"Ready to submit\" (the card says \"Submit round\"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/parts.tsx#UnfinishedCard; src/clubhouse/data/rounds.ts#loadUnfinished",
     "tests": [
@@ -9285,11 +9287,12 @@
     "category": 1,
     "item": 9,
     "name": "A_ROUND_STILL_BEING_PLAYED_GOES_TO_BE_CONTINUED",
-    "meaning": "Opening a round that is still in progress at /rounds/[id] redirects to /rounds/continue/[id], as the legacy page does. That screen is not rebuilt, so a Clubhouse player sees the shell's not-rebuilt notice there until the engine move.",
+    "meaning": "Opening a round that is still in progress at /rounds/[id] redirects to /rounds/continue/[id], as the legacy page does. A Clubhouse player lands on the rebuilt Continue screen, which draws the round the page loaded over the continue engine.",
     "status": "implemented",
-    "where": "src/clubhouse/routes/round-review.tsx#ClubhouseRoundReviewRoute",
+    "where": "src/clubhouse/routes/round-review.tsx#ClubhouseRoundReviewRoute; src/clubhouse/routes/round-continue.tsx#ClubhouseContinueRoundRoute",
     "tests": [
-      "src/clubhouse/__tests__/round-review.test.tsx"
+      "src/clubhouse/__tests__/round-review.test.tsx",
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx"
     ]
   },
   {
@@ -9298,11 +9301,13 @@
     "category": 1,
     "item": 10,
     "name": "START_HANDS_THE_WHOLE_FORM_TO_THE_ROUND_SCREEN",
-    "meaning": "Start round hands the round screen's port one form: the course and tee ids (or the course typed by hand), the round type, the date, 9 or 18 holes and which nine, every hole's par and yardage as edited, the qualifier and the round it counts as, and whether to save a typed course. It goes through useAction; the round opens (onStarted) only when the port answers with the new round's id, and that follow-up is inside the action, so a Retry opens it too (111401).",
+    "meaning": "Start round hands the round screen's port one form: the course and tee ids (or the course typed by hand), the round type, the date, 9 or 18 holes and which nine, every hole's par and yardage as edited, the qualifier and the round it counts as, and whether to save a typed course. It goes through useAction; the round opens (onStarted) only when the port answers with the new round's id, and that follow-up is inside the action, so a Retry opens it too (111401). The port is the round screen's: the new-round engine's start(form) (setup-reads#toStartForm), which checks the form, the hole rules and, for a qualifier round, the server's answer before it starts, and then runs the round under that form. Each refusal has its own state: the conflict dialog (CH-11514), a qualifier round in progress that opens (CH-11907), a toast with no Retry (CH-11014), with Retry (CH-11007, CH-11015) or with Start anyway (CH-11016).",
     "status": "implemented",
-    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (start); src/clubhouse/screens/rounds/setup/shape.ts#ChSetupPorts",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (start); src/clubhouse/screens/rounds/setup/shape.ts#ChSetupPorts; src/clubhouse/screens/rounds/entry/setup-reads.ts#startRefusal",
     "tests": [
-      "src/clubhouse/__tests__/round-setup.test.tsx"
+      "src/clubhouse/__tests__/round-setup.test.tsx",
+      "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx"
     ]
   },
   {
@@ -9342,6 +9347,19 @@
     "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (playQualifier)",
     "tests": [
       "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 110114,
+    "page": "P011",
+    "category": 1,
+    "item": 14,
+    "name": "ROUND_ENTRY_FOLLOWS_THE_FLAG",
+    "meaning": "/golf/dashboard/rounds/new and /golf/dashboard/rounds/continue/[id] draw Clubhouse's screens for a player when golf_clubhouse_ui is on: the pages branch on isClubhouseFor('player'), Continue's page loads the round once (its owner, that it is still in progress, its holes, shots and yardages, the qualifier round numbers left to choose) and hands it to Clubhouse, and each route's loading is Clubhouse's skeleton inside the shell (CH-11407). With the flag off the Fairway client renders exactly as before, with its round-type editor. A coach on /rounds/new keeps the legacy message. The Fairway-only type editor is not passed to Clubhouse.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx; src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx; src/clubhouse/routes/round-new.tsx#ClubhouseNewRoundRoute; src/clubhouse/routes/round-continue.tsx#ClubhouseContinueRoundRoute",
+    "tests": [
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx"
     ]
   },
   {
@@ -9417,6 +9435,17 @@
     "name": "A_ROUNDS_REVIEW_IS_LOADING",
     "chCode": "CH-11406",
     "meaning": "A round's review is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110208,
+    "page": "P011",
+    "category": 2,
+    "item": 8,
+    "name": "ROUND_ENTRY_IS_ON_ITS_WAY_THE",
+    "chCode": "CH-11407",
+    "meaning": "Round entry is on its way: the address's own loading, and, on /rounds/new, the beat before the device's day and the player's qualifiers are read",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -9967,6 +9996,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110626,
+    "page": "P011",
+    "category": 6,
+    "item": 26,
+    "name": "STARTING_A_QUALIFIER_ROUND_THAT_IS_NO",
+    "chCode": "CH-11014",
+    "meaning": "Starting a qualifier round that is no longer open to the player (played already, or past the qualifier's rounds)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110627,
+    "page": "P011",
+    "category": 6,
+    "item": 27,
+    "name": "THE_QUALIFIERS_NEXT_ROUND_COULDNT_BE_CHECKED",
+    "chCode": "CH-11015",
+    "meaning": "The qualifier's next round couldn't be checked before starting (offline, signed out, not entered)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110628,
+    "page": "P011",
+    "category": 6,
+    "item": 28,
+    "name": "STARTING_A_ROUND_ON_A_COURSE_AND",
+    "chCode": "CH-11016",
+    "meaning": "Starting a round on a course and day that already has a completed round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -9983,7 +10045,7 @@
     "category": 7,
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
-    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). No P011 test forces offline; the shell's tests cover useAction's refusal.",
+    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal.",
     "status": "reserved",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview"
   },
@@ -9995,6 +10057,94 @@
     "name": "THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND",
     "chCode": "CH-11902",
     "meaning": "The round changed on another device and this one stopped saving",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110704,
+    "page": "P011",
+    "category": 7,
+    "item": 4,
+    "name": "THE_ENGINE_REPORTS_THAT_AUTO_SAVE_IS",
+    "chCode": "CH-11903",
+    "meaning": "The engine reports that auto-save is having trouble (\"Auto-save is having trouble. …\", both engines)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110705,
+    "page": "P011",
+    "category": 7,
+    "item": 5,
+    "name": "THE_DEVICE_COULDNT_KEEP_ITS_QUICK_LOCAL",
+    "chCode": "CH-11904",
+    "meaning": "The device couldn't keep its quick local backup",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110706,
+    "page": "P011",
+    "category": 7,
+    "item": 6,
+    "name": "A_SUBMIT_COULDNT_REACH_THE_SERVER_AND",
+    "chCode": "CH-11905",
+    "meaning": "A submit couldn't reach the server, and the round is saved on the device",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110707,
+    "page": "P011",
+    "category": 7,
+    "item": 7,
+    "name": "A_CLOSED_QUALIFIER_ROUND_IS_CHANGED_TO",
+    "chCode": "CH-11906",
+    "meaning": "A closed-qualifier round is changed to practice",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110708,
+    "page": "P011",
+    "category": 7,
+    "item": 8,
+    "name": "STARTING_A_QUALIFIER_ROUND_FINDS_THE_PLAYERS",
+    "chCode": "CH-11907",
+    "meaning": "Starting a qualifier round finds the player's own round in progress for that qualifier",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110709,
+    "page": "P011",
+    "category": 7,
+    "item": 9,
+    "name": "ANY_OTHER_NOTE_AN_ENGINE_RAISES",
+    "chCode": "CH-11908",
+    "meaning": "Any other note an engine raises (an error outside an action, or a wording this screen doesn't know)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110710,
+    "page": "P011",
+    "category": 7,
+    "item": 10,
+    "name": "THE_SUBMIT_HAS_TAKEN_OVER_15_SECONDS",
+    "chCode": "CH-11909",
+    "meaning": "The submit has taken over 15 seconds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110711,
+    "page": "P011",
+    "category": 7,
+    "item": 11,
+    "name": "EVERY_HOLE_IS_IN_BUT_THE_FINISH",
+    "chCode": "CH-11910",
+    "meaning": "Every hole is in but the finish sheet was closed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -10077,11 +10227,12 @@
     "category": 9,
     "item": 2,
     "name": "ROUND_POSTED_SAYS_SO",
-    "meaning": "A submitted round says \"Round posted\" with the course, names the coach (\"Coach Reyes can see it now.\", else \"Your coach can see it now.\") and links View round review (a preview-only surface until the engine move). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005).",
+    "meaning": "A submitted round says \"Round posted\" with the course, names the coach (\"Coach Reyes can see it now.\", else \"Your coach can see it now.\") and links View round review (the round screen ticks the success haptic once and opens it after two and a half seconds). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005).",
     "status": "implemented",
-    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#SubmitOverlay",
+    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#SubmitOverlay; src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
     "tests": [
-      "src/clubhouse/__tests__/round-tracking.test.tsx"
+      "src/clubhouse/__tests__/round-tracking.test.tsx",
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx"
     ]
   },
   {
@@ -10272,6 +10423,28 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 111118,
+    "page": "P011",
+    "category": 11,
+    "item": 18,
+    "name": "A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND",
+    "chCode": "CH-11518",
+    "meaning": "A saved qualifier round with no round number (it predates the durable number) is finished and submitted",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111119,
+    "page": "P011",
+    "category": 11,
+    "item": 19,
+    "name": "THE_SAME_AND_NO_ROUND_IS_LEFT",
+    "chCode": "CH-11519",
+    "meaning": "The same, and no round is left to choose",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 111201,
     "page": "P011",
     "category": 12,
@@ -10339,11 +10512,25 @@
     "category": 14,
     "item": 3,
     "name": "HOLE_SAVE_AND_SUBMIT_TRY_AGAIN_RUN_AGAIN",
-    "meaning": "On the shot screen, Try again on a hole that did not save runs the hole's checkpoint again (the round moves on only when it lands), and Try again on a failed submit runs the submit again (preview-only surfaces until the engine move). Offline, the first only warns (110702).",
+    "meaning": "On the shot screen, Try again on a hole that did not save runs the hole's checkpoint again (the round moves on only when it lands), and Try again on a failed submit runs the submit again (the round screen runs the engine's hole checkpoint and submit). Offline, the first only warns (110702).",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/clubhouse/screens/rounds/track/round-sheets.tsx#SubmitOverlay",
     "tests": [
       "src/clubhouse/__tests__/round-tracking.test.tsx"
+    ]
+  },
+  {
+    "id": 111404,
+    "page": "P011",
+    "category": 14,
+    "item": 4,
+    "name": "A_RETRY_RUNS_THE_ROUND_AS_IT_IS_NOW",
+    "meaning": "A toast's Retry (Save for later CH-11010, a closed-qualifier Discard CH-11011, Start CH-11007) runs the action again against the round as it is now, not as it was when the toast was made: the setup's Start and every action of the round call the latest engine through a ref, so a Retry saves with the current round id and a second Start after the duplicate warning is the confirming one. An action that is already running is never started twice, by a Retry that meets a tap or by two quick taps (Save for later, Discard, Change to practice, Restore). Each holds its own in-flight ref, because the toast's closure carries the state of the render it was made in. useAction's own gate is a ref for the same reason: a Retry or a quick second call reaches a `run` from an earlier render, whose `pending` is stale.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime; src/clubhouse/screens/rounds/entry/NewRound.tsx#NewRound; src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx"
     ]
   },
   {
@@ -10713,14 +10900,18 @@
     "category": 24,
     "item": 1,
     "name": "TESTS_NAME_CONTRACTS",
-    "meaning": "The page's four test files (rounds.test, round-review.test, round-setup.test and round-tracking.test) name in a test title every P011 catalog code of kinds 0 to 5 that is not marked preview (clubhouse:check enforces it), and every hand contract they prove by its Bridge ID. Until those titles carry the Bridge IDs this stays reserved.",
+    "meaning": "The page's test files (rounds.test, round-review.test, round-setup.test, round-tracking.test and round-entry.test, and, through the real engines, round-entry-wiring.test, round-entry-continue.test and round-entry-routes.test) name in a test title every P011 catalog code of kinds 0 to 5 that is not marked preview (clubhouse:check enforces it), and every hand contract they prove by its Bridge ID.",
     "status": "implemented",
-    "where": "src/clubhouse/__tests__/rounds.test.tsx; src/clubhouse/__tests__/round-review.test.tsx; src/clubhouse/__tests__/round-setup.test.tsx; src/clubhouse/__tests__/round-tracking.test.tsx",
+    "where": "src/clubhouse/__tests__/rounds.test.tsx; src/clubhouse/__tests__/round-review.test.tsx; src/clubhouse/__tests__/round-setup.test.tsx; src/clubhouse/__tests__/round-tracking.test.tsx; src/clubhouse/__tests__/round-entry.test.tsx; src/clubhouse/__tests__/round-entry-wiring.test.tsx; src/clubhouse/__tests__/round-entry-continue.test.tsx; src/clubhouse/__tests__/round-entry-routes.test.tsx",
     "tests": [
       "src/clubhouse/__tests__/rounds.test.tsx",
       "src/clubhouse/__tests__/round-review.test.tsx",
       "src/clubhouse/__tests__/round-setup.test.tsx",
-      "src/clubhouse/__tests__/round-tracking.test.tsx"
+      "src/clubhouse/__tests__/round-tracking.test.tsx",
+      "src/clubhouse/__tests__/round-entry.test.tsx",
+      "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+      "src/clubhouse/__tests__/round-entry-continue.test.tsx",
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx"
     ]
   },
   {

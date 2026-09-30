@@ -5,7 +5,9 @@
   "bridgeNamespace": 11,
   "routes": [
     "/golf/dashboard/rounds",
-    "/golf/dashboard/rounds/[id]"
+    "/golf/dashboard/rounds/[id]",
+    "/golf/dashboard/rounds/new",
+    "/golf/dashboard/rounds/continue/[id]"
   ],
   "roles": [
     "coach",
@@ -51,6 +53,10 @@
       "src/clubhouse/__tests__/round-review.test.tsx",
       "src/clubhouse/__tests__/round-tracking.test.tsx",
       "src/clubhouse/__tests__/round-setup.test.tsx",
+      "src/clubhouse/__tests__/round-entry.test.tsx",
+      "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+      "src/clubhouse/__tests__/round-entry-continue.test.tsx",
+      "src/clubhouse/__tests__/round-entry-routes.test.tsx",
       "src/lib/golf/__tests__/shot-entry-rules.test.ts"
     ]
   },
@@ -93,6 +99,111 @@
       "tests": [
         "src/clubhouse/__tests__/rounds.test.tsx",
         "src/clubhouse/__tests__/round-review.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P011-START",
+      "label": "Start a round (player)",
+      "component": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
+      "handler": "start.run (useAction rounds.start) -> ports.start -> useNewRoundSession start(form)",
+      "service": "src/lib/golf/round-session/use-new-round-session.ts#start",
+      "data": [
+        "golf_rounds",
+        "the player's saved courses (a typed course, when saved)"
+      ],
+      "bridge": {
+        "failure": 110614,
+        "recovery": 111404,
+        "validation": 110510,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+        "src/clubhouse/__tests__/round-entry-routes.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P011-SAVE-FOR-LATER",
+      "label": "Save the round for later (Exit sheet, closed-qualifier sheet)",
+      "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
+      "handler": "save.run (useAction rounds.saveForLater) -> engine handleSaveForLater / handleSubmitSaveAndExit",
+      "service": "src/app/golf/actions/golf.ts#savePartialRound",
+      "data": [
+        "golf_rounds",
+        "golf_holes",
+        "golf_shots",
+        "the device emergency copy"
+      ],
+      "bridge": {
+        "failure": 110622,
+        "recovery": 111404,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+        "src/clubhouse/__tests__/round-entry-continue.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P011-DISCARD-ROUND",
+      "label": "Discard the round in play (Exit sheet, closed-qualifier sheet)",
+      "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
+      "handler": "discard.run (useAction rounds.discardRound) -> engine handleDeleteRound / handleSubmitDiscard",
+      "service": "src/app/golf/actions/golf.ts#deleteInProgressRound",
+      "data": [
+        "golf_rounds (holes and shots cascade)",
+        "the device emergency copy"
+      ],
+      "bridge": {
+        "confirm": 111107,
+        "failure": 110612,
+        "recovery": 111404,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+        "src/clubhouse/__tests__/round-entry-continue.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P011-SAVE-AS-PRACTICE",
+      "label": "Change a closed-qualifier round to practice",
+      "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
+      "handler": "practice.run (useAction rounds.saveAsPractice) -> engine handleSaveAsPractice",
+      "service": "src/app/golf/actions/round-type.ts#updateRoundType",
+      "data": [
+        "golf_rounds (round_type, qualifier link)"
+      ],
+      "bridge": {
+        "failure": 110624,
+        "recovery": 111404
+      },
+      "tests": [
+        "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+        "src/clubhouse/__tests__/round-entry-continue.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P011-SUBMIT-ROUND",
+      "label": "Submit the finished round",
+      "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
+      "handler": "RoundCompleteSheet onSubmit -> engine handleRoundSubmit / requestRoundSubmission",
+      "service": "src/app/golf/actions/golf.ts#submitGolfRoundComprehensive",
+      "data": [
+        "golf_rounds",
+        "golf_holes",
+        "golf_shots",
+        "the player stats cache"
+      ],
+      "bridge": {
+        "success": 110902,
+        "failure": 110611,
+        "recovery": 111403
+      },
+      "tests": [
+        "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
+        "src/clubhouse/__tests__/round-entry-continue.test.tsx",
+        "src/clubhouse/__tests__/round-entry-routes.test.tsx"
       ]
     }
   ],

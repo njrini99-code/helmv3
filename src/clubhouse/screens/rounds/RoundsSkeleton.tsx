@@ -41,3 +41,18 @@ export function RoundReviewSkeleton() {
     </main>
   );
 }
+
+/** Route loading for round entry, a new round and a round to continue (CH-11407): the header, the course card, the round's details and the scorecard, in place. */
+export function RoundEntrySkeleton() {
+  return (
+    <main className="ch-rd" aria-busy="true" aria-label="Loading your round" data-ch-code="CH-11407">
+      <Skeleton width={96} height={34} radius={17} />
+      <Skeleton width="100%" height={150} radius={20} />
+      <div className="ch-rd-hero">
+        <Skeleton width="100%" height={260} radius={20} />
+        <Skeleton width="100%" height={260} radius={20} />
+      </div>
+      <Skeleton width="100%" height={64} radius={16} />
+    </main>
+  );
+}

@@ -31,12 +31,6 @@ const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
 const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
-// Round entry isn't rebuilt yet, so Start a round is the Rounds library. `links.all` stands in for the day it is.
-const links = vi.hoisted(() => ({ all: false }));
-vi.mock('../shell/nav', async (orig) => {
-  const real = await orig<typeof import('../shell/nav')>();
-  return { ...real, rebuiltHref: (href: string, role?: 'coach' | 'player') => (links.all ? href : real.rebuiltHref(href, role)) };
-});
 
 import GolfCoachHelmPage from '@/app/golf/(dashboard)/dashboard/coachhelm/page';
 import { createFocusAreaFromInsightV2 } from '@/app/golf/actions/development';
@@ -107,7 +101,6 @@ const inList = (heading: string) => within(screen.getByRole('region', { name: he
 
 beforeEach(() => {
   gate.on = true;
-  links.all = false;
   hapticSpy.mockClear();
   router.refresh.mockClear();
   logServer.mockClear();
@@ -483,16 +476,11 @@ describe('CoachHelm for the player, on screen', () => {
     expect(document.querySelector('.ch-hl-focus')!.closest('[aria-live="polite"]')).not.toBeNull();
   });
 
-  it('CH-13301 no round posted yet: the first-run page names what will appear, with the Rounds library until round entry is rebuilt', async () => {
+  it('CH-13301 no round posted yet: the first-run page names what will appear, and Start a round opens round entry', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_NO_ROUNDS);
     await expectCode('CH-13301', /Post a round to start CoachHelm.*one thing to work on this week shows up here/);
-    expect(screen.getByRole('link', { name: 'Open Rounds' }).getAttribute('href')).toBe('/golf/dashboard/rounds');
-  });
-
-  it('CH-13301 with round entry rebuilt, the first run offers Start a round', () => {
-    links.all = true;
-    showPlayer(PREVIEW_HELM_PLAYER_NO_ROUNDS);
     expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(screen.queryByRole('link', { name: 'Open Rounds' })).toBeNull();
   });
 
   it('CH-13302 rounds posted but no insight yet: it says how many, that CoachHelm needs enough to find a pattern, and no threshold', async () => {

@@ -358,7 +358,7 @@ describe('Round review route', () => {
   it('110801 110105 the review is rebuilt for both roles; the coach’s Rounds library is not', () => {
     const id = PREVIEW_REVIEW_ROUND.id;
     expect([isRebuilt(`/golf/dashboard/rounds/${id}`, 'coach'), isRebuilt(`/golf/dashboard/rounds/${id}`, 'player')]).toEqual([true, true]);
-    expect([isRebuilt('/golf/dashboard/rounds', 'coach'), isRebuilt(`/golf/dashboard/rounds/${id}/review`, 'player'), isRebuilt('/golf/dashboard/rounds/new', 'player')]).toEqual([
+    expect([isRebuilt('/golf/dashboard/rounds', 'coach'), isRebuilt(`/golf/dashboard/rounds/${id}/review`, 'player'), isRebuilt('/golf/dashboard/rounds/new', 'coach')]).toEqual([
       false,
       false,
       false,

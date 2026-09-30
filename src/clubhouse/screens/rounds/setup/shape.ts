@@ -88,13 +88,31 @@ export interface ChSetupForm {
 
 export type ChResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
+/**
+ * A start that did not open a round. The words are the engine's own sentence. Without a `kind` it is a plain failure
+ * (CH-11007: a toast with Retry); with one, the screen does what the reason calls for:
+ *  - `handled`: another surface owns the outcome (the round already in progress asks what to do, or the qualifier's
+ *    round in progress opened), so setup says nothing;
+ *  - `final`: trying again can't change the answer, so the toast has no Retry.
+ * `code` and `retry` name a failure toast that isn't CH-11007's, and what its action says instead of "Retry".
+ */
+export interface ChStartFailure {
+  ok: false;
+  error: string;
+  kind?: 'handled' | 'final';
+  code?: string;
+  retry?: string;
+}
+
+export type ChStartResult = { ok: true; data: { roundId: string } } | ChStartFailure;
+
 /** What the round screen supplies. */
 export interface ChSetupPorts {
   listCourses: () => Promise<ChResult<ChSetupCourse[]>>;
   listTees: (courseId: string) => Promise<ChResult<ChSetupTee[]>>;
   teeHoles: (teeId: string) => Promise<ChResult<ChSetupHole[]>>;
   /** Creates the round; resolves once it is saved (then the round screen opens tracking). */
-  start: (form: ChSetupForm) => Promise<ChResult<{ roundId: string }>>;
+  start: (form: ChSetupForm) => Promise<ChStartResult>;
 }
 
 /** The holes this round plays: all of them, or the chosen nine of an 18-hole card. */

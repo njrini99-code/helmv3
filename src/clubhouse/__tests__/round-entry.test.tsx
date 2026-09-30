@@ -63,7 +63,7 @@ const recovery = (over: Partial<Parameters<typeof RecoveryDialog>[0]> = {}) => (
   ...over,
 });
 
-describe('Recovery: a saved round found on this device', () => {
+describe('112401 Recovery: a saved round found on this device', () => {
   it('CH-11512 says what was found and when, and Restore hands it back with the light haptic', async () => {
     const user = userEvent.setup();
     const p = recovery();

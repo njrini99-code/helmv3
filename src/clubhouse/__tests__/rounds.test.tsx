@@ -20,12 +20,6 @@ const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
 const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => (teamOf.current instanceof Error ? Promise.reject(teamOf.current) : Promise.resolve(teamOf.current)) }));
-// Review, New round and Continue aren't rebuilt yet, so their controls aren't drawn. `links.all` stands in for the day they are.
-const links = vi.hoisted(() => ({ all: false }));
-vi.mock('../shell/nav', async (orig) => {
-  const real = await orig<typeof import('../shell/nav')>();
-  return { ...real, rebuiltHref: (href: string, role?: 'coach' | 'player') => (links.all ? href : real.rebuiltHref(href, role)) };
-});
 
 import { deleteInProgressRound } from '@/app/golf/actions/golf';
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
@@ -69,7 +63,6 @@ function show(data: ChRoundsLibrary, w: ChRoundsWrites = { discard: vi.fn(() => 
 }
 
 beforeEach(() => {
-  links.all = false;
   hapticSpy.mockClear();
   router.refresh.mockClear();
   logServer.mockClear();
@@ -88,29 +81,28 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.getByText('Since August 1 · 8 counted rounds')).toBeTruthy();
   });
 
-  it('110105 draws no control whose screen is not rebuilt yet: no New round or Continue; every round opens its review', () => {
+  it('110105 draws a control only for a screen that is rebuilt: New round and Continue (round entry is), and every round opens its review', () => {
     show(PREVIEW_ROUNDS);
-    expect(screen.queryByRole('link', { name: /New round/ })).toBeNull();
-    expect(screen.queryByRole('link', { name: /Continue at hole/ })).toBeNull();
-    const all = screen.getAllByRole('link');
-    expect(all.every((l) => /^\/golf\/dashboard\/rounds\/a0000000-/.test(l.getAttribute('href') ?? ''))).toBe(true);
-    expect(all).toHaveLength(PREVIEW_ROUNDS.rounds.list.length);
+    expect(screen.getByRole('link', { name: /New round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(screen.getByRole('link', { name: /Continue at hole/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_UNFINISHED.id}`);
+    const reviews = screen.getAllByRole('link').filter((l) => /^\/golf\/dashboard\/rounds\/a0000000-/.test(l.getAttribute('href') ?? ''));
+    expect(reviews).toHaveLength(PREVIEW_ROUNDS.rounds.list.length);
   });
 
   it('110105 a round whose review can’t be opened is still there to read, as one named group', () => {
     const odd = { ...PREVIEW_ROUNDS_IDLE.rounds.list[0]!, id: 'not-a-round-id' };
     show({ ...PREVIEW_ROUNDS_IDLE, rounds: { list: [odd], error: false } });
     expect(screen.getByRole('group', { name: 'Sep 26, Finley GC, 72 (E)' })).toBeTruthy();
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    // Its row is not a link; only the page's own controls (New round, Continue) are.
+    expect(screen.queryByRole('link', { name: /Sep 26, Finley GC/ })).toBeNull();
   });
 
-  it('CH-11703 once round entry is rebuilt: New round, and Continue at the next hole with the press haptic', async () => {
-    links.all = true;
+  it('CH-11703 New round, and Continue at the next hole with the press haptic', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS);
     expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     const go = screen.getByRole('link', { name: /Continue at hole 4/ });
-    expect(go.getAttribute('href')).toBe('/golf/dashboard/rounds/continue/u1');
+    expect(go.getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_UNFINISHED.id}`);
     await user.click(go);
     expect(hapticSpy).toHaveBeenCalledWith('press');
   });
@@ -142,22 +134,20 @@ describe('112401 Rounds library, on screen', () => {
   });
 
   it('110106 a round with every hole scored reads Ready to submit, and its link says Submit round', () => {
-    links.all = true;
     const done = PREVIEW_ROUNDS_MANY.unfinished.list[2]!;
     show({ ...PREVIEW_ROUNDS_MANY, unfinished: { list: [done], error: false } });
     expect(screen.getByText('Ready to submit')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Submit round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/continue/u3');
+    expect(screen.getByRole('link', { name: /Submit round/ }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
     expect(document.querySelector('.ch-rd-strip .is-next')).toBeNull();
   });
 
   it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Submit', () => {
-    links.all = true;
     show(PREVIEW_ROUNDS_MANY);
     const more = screen.getByRole('region', { name: '2 more unfinished rounds' });
     expect(within(more).getByText('Oct 2 · not started')).toBeTruthy();
     expect(within(more).getByText('Sep 29 · through 18')).toBeTruthy();
-    expect(within(more).getByRole('link', { name: 'Submit' }).getAttribute('href')).toBe('/golf/dashboard/rounds/continue/u3');
-    expect(within(more).getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe('/golf/dashboard/rounds/continue/u2');
+    expect(within(more).getByRole('link', { name: 'Submit' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[2]!.id}`);
+    expect(within(more).getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${PREVIEW_ROUNDS_MANY.unfinished.list[1]!.id}`);
   });
 
   it('CH-11304 with no round in progress: the idle card and the last round', async () => {
@@ -166,18 +156,12 @@ describe('112401 Rounds library, on screen', () => {
     expect(document.querySelectorAll('.ch-rd-strip.is-ghost span')).toHaveLength(18);
   });
 
-  it('CH-11301 nothing posted and nothing in progress: the first-run page, with Start a round once entry is rebuilt', async () => {
+  it('CH-11301 nothing posted and nothing in progress: the first-run page, with Start a round (and no second New round)', async () => {
     show(PREVIEW_ROUNDS_EMPTY);
     await expectCode('CH-11301', /No rounds yet.*Track your first round shot by shot/);
-    expect(screen.queryByRole('link', { name: 'Start a round' })).toBeNull();
-    expect(screen.queryByRole('searchbox')).toBeNull();
-  });
-
-  it('CH-11301 with round entry rebuilt, the first-run page offers Start a round (and no second New round)', () => {
-    links.all = true;
-    show(PREVIEW_ROUNDS_EMPTY);
     expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
+    expect(screen.queryByRole('searchbox')).toBeNull();
   });
 
   it('111402 CH-11201 the posted rounds fail to load: said so, Try again asks the server again, never "no rounds"', async () => {
@@ -233,7 +217,7 @@ describe('112401 Rounds library, on screen', () => {
     await expectCode('CH-11303', /No rounds at “Pinehurst”/);
     await user.clear(search);
     await user.type(search, 'hope');
-    expect(screen.getAllByRole('link').map((g) => g.getAttribute('aria-label'))).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
+    expect(screen.getAllByRole('link').map((g) => g.getAttribute('aria-label')).filter(Boolean)).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
   });
 
   it('110108 groups by month (newest first) or by course, each with its count and low', async () => {
@@ -303,7 +287,7 @@ describe('Discarding an unfinished round', () => {
     expect(hapticSpy).toHaveBeenNthCalledWith(1, 'warning');
     await expectCode('CH-11501', /Discard this round\?.*Every shot from Finley GC on Oct 14 is deleted\. This can't be undone\./);
     await user.click(screen.getByRole('button', { name: 'Discard round' }));
-    expect(w.discard).toHaveBeenCalledWith('u1', 'p1');
+    expect(w.discard).toHaveBeenCalledWith(PREVIEW_UNFINISHED.id, 'p1');
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
     expect(await screen.findByText('Round discarded')).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('success');

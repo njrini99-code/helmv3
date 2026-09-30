@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'lucide-react';
 import type { ChRoundType } from '../../../data/rounds-shape';
@@ -13,7 +13,7 @@ import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { AddCourseSheet } from './AddCourseSheet';
 import { CoursePicker } from './CoursePicker';
 import { HoleConfig } from './HoleConfig';
-import { holesForRound, parOf, setupBlocker, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier } from './shape';
+import { holesForRound, parOf, setupBlocker, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier, type ChStartFailure, type ChStartResult } from './shape';
 import '../../../styles/rounds-setup.css';
 
 const STEPS = ['Course', 'Scorecard', 'Track'] as const;
@@ -29,6 +29,13 @@ export interface RoundSetupProps {
   backHref: string;
   /** The round is saved: the round screen opens tracking. */
   onStarted: (roundId: string) => void;
+  /** A qualifier to play when the page opens (`?qualifier=`): chosen once, when it is in `qualifiers` with a round open. */
+  preselectQualifierId?: string | null;
+  /**
+   * Whether Start counts as offline, in place of `navigator.onLine` alone. The round engine reads the connection probe
+   * as well (WKWebView reports false on reachable networks) and refuses an offline start itself, with its own words.
+   */
+  isOffline?: () => boolean;
 }
 
 type HolesLoad = { state: 'idle' } | { state: 'loading' } | { state: 'failed'; error: string };
@@ -39,7 +46,7 @@ type HolesLoad = { state: 'idle' } | { state: 'loading' } | { state: 'failed'; e
  * screen draws; the round screen's ports read the course library and start
  * the round (docs/clubhouse/ROUNDS_PLAN.md).
  */
-export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: RoundSetupProps) {
+export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, preselectQualifierId = null, isOffline }: RoundSetupProps) {
   const [form, setForm] = useState<ChSetupForm>({
     pick: null,
     type: 'practice',
@@ -86,22 +93,45 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
     void loadHoles(tee.id);
   };
 
-  const playQualifier = (q: ChSetupQualifier) => {
-    haptic('select');
+  const applyQualifier = (q: ChSetupQualifier) => {
     set({ type: 'qualifier', qualifierId: q.id, qualifierRound: q.nextRound });
     if (q.courseName && q.teeId && q.teeName) pickTee({ id: q.courseId, name: q.courseName, place: null }, { id: q.teeId, name: q.teeName, color: null, rating: null, slope: null, yards: null });
   };
+  const playQualifier = (q: ChSetupQualifier) => {
+    haptic('select');
+    applyQualifier(q);
+  };
 
   // CH-11007: starting fails; the toast's Retry starts it again, and what follows (opening tracking) happens inside the action, so Retry finishes the job.
-  const start = useAction(
+  // A refusal that says what it is (`kind`, `code`, `retry`) changes the toast, or hands the outcome to the surface that owns it.
+  const start = useAction<[ChSetupForm], ChStartResult>(
     'rounds.start',
-    async (f: ChSetupForm) => {
+    async (f) => {
       const r = await ports.start(f);
       if (r.ok) onStarted(r.data.roundId);
-      return r.ok ? { success: true, data: r.data } : { success: false, error: r.error };
+      return r.ok ? { success: true, data: r } : { success: false, error: r.error, data: r };
     },
-    (f: ChSetupForm) => ({ done: '', failed: `Couldn't start your round at ${f.pick?.courseName ?? 'the course'}`, hint: 'Nothing was saved yet. Try again in a moment.', code: 'CH-11007' }),
+    (f) => ({ done: '', failed: `Couldn't start your round at ${f.pick?.courseName ?? 'the course'}`, hint: 'Nothing was saved yet. Try again in a moment.', code: 'CH-11007', offline: isOffline }),
+    (result, c) => {
+      const f = result.success ? null : (result.data as ChStartFailure | undefined);
+      if (!f) return c;
+      if (f.kind === 'handled') return { ...c, quiet: true };
+      if (!f.kind && !f.code && !f.retry) return c;
+      return { ...c, hint: f.error, code: f.code ?? c.code, retry: f.kind === 'final' ? (false as const) : f.retry };
+    },
   );
+
+  // The page opened on a qualifier (`?qualifier=`): play it, once, as soon as the list says it has a round open.
+  const preselected = useRef(false);
+  const applyPreselected = useRef(applyQualifier);
+  applyPreselected.current = applyQualifier;
+  useEffect(() => {
+    if (preselected.current || !preselectQualifierId || !qualifiers) return;
+    const q = qualifiers.find((x) => x.id === preselectQualifierId && x.nextRound != null);
+    if (!q) return;
+    preselected.current = true;
+    applyPreselected.current(q);
+  }, [preselectQualifierId, qualifiers]);
 
   const blocker = holesLoad.state === 'loading' ? 'Loading the scorecard' : holesLoad.state === 'failed' ? 'The scorecard didn’t load' : setupBlocker(form, today);
   const open = qualifiers?.filter((q) => q.nextRound != null) ?? [];

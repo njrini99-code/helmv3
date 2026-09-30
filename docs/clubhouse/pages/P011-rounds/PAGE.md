@@ -2,8 +2,8 @@
 
 One page for a player's rounds: the library (the round in progress, the season's scoring and every posted
 round), a round's review for the player and the coach of their team, a new round's setup, and the shot
-screen. The library and the review are routed today. Setup and the shot screen are built and previewed but
-not routed: they sit behind a neutral contract until the engine moves (see "What is live" below).
+screen. All four are routed: the library and the review, and round entry (setup, then the shot screen) over the
+round engine (see "What is live" below).
 
 ## Identity
 
@@ -12,8 +12,8 @@ Page ID:            P011
 Page Name:          Rounds
 Route:              /golf/dashboard/rounds (the library, player)
                     /golf/dashboard/rounds/[id] (a round's review, player and coach of the player's team)
-                    not routed yet: /golf/dashboard/rounds/new (setup, then the shot screen) and
-                    /golf/dashboard/rounds/continue/[id]
+                    /golf/dashboard/rounds/new (setup, then the shot screen, player)
+                    /golf/dashboard/rounds/continue/[id] (the shot screen for a round in progress, player)
 Bridge Namespace:   11 (Bridge IDs 11ccii, D-68; catalog codes CH-11xxx)
 Roles:              player (library, setup, shot screen); player and coach (review)
 Implementation Root: src/clubhouse/screens/rounds (setup/ and track/ inside it)
@@ -29,16 +29,15 @@ production.
 | --- | --- | --- | --- | --- | --- |
 | Library | `/golf/dashboard/rounds` | player (a coach keeps the Fairway page) | **routed** through `ClubhouseRoundsRoute` | `RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton` | `/clubhouse-preview/rounds` |
 | Review | `/golf/dashboard/rounds/[id]` | the player who played it, a coach of their team | **routed** through `ClubhouseRoundReviewRoute` | `RoundReview`, `ReviewLoadFailed` | `/clubhouse-preview/round` |
-| Setup | will be `/golf/dashboard/rounds/new` | player | **preview only**: no route renders it; it draws against `ChSetupPorts` (list courses, list tees, a tee's holes, start) that the round screen supplies once the engine moves | `setup/` (`RoundSetup`, `CoursePicker`, `AddCourseSheet`, `HoleConfig`, `shape`) | `/clubhouse-preview/setup` |
-| Shot screen | will be the tracking phase of `/rounds/new` and `/rounds/continue/[id]` | player | **preview only**: built on `useShotTracking` and `shot-entry-rules`, the Fairway screen's own logic moved unchanged; the round's sheets (Exit, Scorecard, Round complete, Submitting) are driven by props and played by `PreviewTracking` | `track/` (`RoundTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `parts`, `labels`) | `/clubhouse-preview/track` |
+| Setup | `/golf/dashboard/rounds/new` | player | **routed** through `ClubhouseNewRoundRoute` (`NewRound` over `useNewRoundSession`); it draws against `ChSetupPorts`, which `entry/setup-reads.ts` and the engine's `start(form)` supply | `setup/` (`RoundSetup`, `CoursePicker`, `AddCourseSheet`, `HoleConfig`, `shape`), `entry/` (`NewRound`, `setup-reads`) | `/clubhouse-preview/setup` |
+| Shot screen | the tracking phase of `/rounds/new`, and `/rounds/continue/[id]` | player | **routed** through `NewRound` and `ClubhouseContinueRoundRoute` (`ContinueRound` over `useContinueRoundSession`); built on `useShotTracking` and `shot-entry-rules`, the Fairway screen's own logic moved unchanged; the round's sheets (Exit, Scorecard, Round complete, Submitting, the closed-qualifier sheets) are driven by `RoundRuntime` | `track/` (`RoundTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `parts`, `labels`), `entry/` (`RoundRuntime`, `ports`, `session`, `QualifierRoundSheet`) | `/clubhouse-preview/track` |
 
-The plan and its order are in `docs/clubhouse/ROUNDS_PLAN.md` (steps 3 and 4: the renderer first, the engine
-move last, one engine per commit). Until step 4, `/rounds/new` and `/rounds/continue/[id]` are not in the
-shell's rebuilt list, so a player with the flag on sees the shell's not-rebuilt notice there, never the legacy
-entry. The library therefore draws no New round, Start a round or Continue control, and Home's and
-CoachHelm's "post a round" links stay hidden for the same reason (`nav.rebuiltHref`). A player with the flag
-on can review and discard rounds but cannot start or continue one until the engine move lands. `/rounds/recover`
-and `/rounds/[id]/review` (CoachHelm's AI review) are not part of this page and stay as they are.
+The plan and its order are in `docs/clubhouse/ROUNDS_PLAN.md` (the renderer first, the engine move, then the
+wiring: #2104 moved the engines to `src/lib/golf/round-session/`, and round entry is wired to them here). Both
+entry routes are in the shell's rebuilt list for a player, so the library's New round, Start a round and Continue,
+and Home's and CoachHelm's "post a round" links, are drawn (`nav.rebuiltHref`); a coach's are not. With the flag
+off the pages render Fairway's clients exactly as before. `/rounds/recover` and `/rounds/[id]/review`
+(CoachHelm's AI review) are not part of this page and stay as they are; nothing in Clubhouse links to recover.
 
 ## Purpose
 
@@ -55,8 +54,7 @@ season add up. Coach: open a player's round and see the card, the figures and th
 
 ### Primary action
 
-Library: Start a round (or Continue at hole N when one is in progress), once round entry is rebuilt. Until
-then the library's one live action is Discard. Review: read; the hole picker is the interaction. Setup: Start
+Library: Start a round (or Continue at hole N when one is in progress). Review: read; the hole picker is the interaction. Setup: Start
 round. Shot screen: Next shot (Hole out on the last putt).
 
 ### Secondary actions
@@ -119,9 +117,9 @@ with the viewer's role); the review's Back goes to Rounds, or for a coach to tha
 
 ### Exits to
 
-A round's review (from the library), Rounds (from a review), Stats (from a coach's review), and once they are
-rebuilt `/rounds/new` and `/rounds/continue/[id]` (the library's New round, Start a round and Continue, Home's
-and CoachHelm's post-a-round links). A round still being played that is opened at `/rounds/[id]` goes to
+A round's review (from the library), Rounds (from a review), Stats (from a coach's review), and
+`/rounds/new` and `/rounds/continue/[id]` (the library's New round, Start a round and Continue, Home's
+and CoachHelm's post-a-round links). A posted round opens its review; a round that could not reach the server opens Rounds. A round still being played that is opened at `/rounds/[id]` goes to
 `/rounds/continue/[id]`, as on the legacy page.
 
 ## Ownership
@@ -140,8 +138,8 @@ Data:            golf_round_lifecycle: golf_rounds, golf_holes, golf_shots, golf
 
 ```text
 Design:         approved
-Implementation: in_progress (library and review routed; setup and shot screen built, preview only; gates in
-                PROGRESS.md; the engine move is open)
+Implementation: in_progress (library, review and round entry routed over the round engine, behind the flag; gates in
+                PROGRESS.md; not yet seen in a browser against a live account or on an iPhone)
 Contract:       complete (CONTRACT.md: all 25 categories answered; all 44 hand contracts are reserved until the tests
                 name their Bridge IDs; 32 name a covering test and 12 have none, VERIFY.md)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)

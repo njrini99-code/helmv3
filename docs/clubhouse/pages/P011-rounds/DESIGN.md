@@ -175,8 +175,8 @@ and distance, or per hole (owner decisions pending).
 
 A coach Rounds library (v2 has none), the offline recovery page (`/rounds/recover`, legacy until a board exists),
 the CoachHelm filmstrip and AI review at `/rounds/[id]/review` (CoachHelm's), writing a coach's note, marking a
-round as viewed, a course photo, and any schema change. The engine move (ROUNDS_PLAN step 4) is not part of this
-page's build.
+round as viewed, a course photo, and any schema change. The engine move (ROUNDS_PLAN step 4, #2104) is not part of
+this page's build; wiring the round screens to it is.
 
 ## Fresh-build confirmation
 

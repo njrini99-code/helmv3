@@ -56,7 +56,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Home** `/` — Their day: next event with a countdown, the latest round, scoring and the parts of the game (`PlayerHome`, 2026-09-30; spec `design/handoff/Player - Home.html`, phone `phone/home-player.md`)
 - [x] **CoachHelm** `/coachhelm` — Their AI coach: one thing to work on this week, then the other things worth knowing and what is working (`CoachHelm`, 2026-09-30; spec `phone/coachhelm.md`; the Fairway page's Plan, Profile and Standing views are not part of the board and are not built)
 - [x] **My rounds** `/rounds` — Their round history and each round's detail (with `/rounds/[id]`)
-- [ ] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring during a round (with `/rounds/continue/[id]`, `/rounds/recover`)
+- [x] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring during a round (with `/rounds/continue/[id]`, over the round engine, 2026-09-30; `/rounds/recover` stays Fairway's, so a submit that could not reach the server lands on Rounds; spec `design/handoff/Player - Rounds.html`, phone `phone/rounds.md`)
 - [ ] **Round review** `/rounds/[id]/review` — AI analysis of a round they played
 - [x] **Team Hub** `/team-hub` — Their team at a glance: RSVPs, announcements to acknowledge, trips, tasks, documents (`TeamHub`, 2026-09-30; spec `phone/team-hub.md`)
 - [x] **My Qualifiers** `/my-qualifiers` — The qualifiers they're entered in and where they stand

@@ -16,7 +16,7 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 | P008 | Settings | `/golf/dashboard/settings`<br>`/golf/dashboard/settings/notifications`<br>`/golf/dashboard/settings/coaching-intelligence` | coach, player | settings_preferences, auth_onboarding_join, coachhelm_ai | draft | in_progress | complete | reserved | existing | partial | current |
 | P009 | Qualifiers | `/golf/dashboard/qualifiers`<br>`/golf/dashboard/qualifiers/new`<br>`/golf/dashboard/qualifiers/[id]`<br>`/golf/dashboard/qualifiers/[id]/edit`<br>`/golf/dashboard/qualifiers/[id]/selection`<br>`/golf/dashboard/my-qualifiers` | coach, player | qualifiers | approved | in_progress | complete | reserved | existing | partial | current |
 | P010 | Team Hub | `/golf/dashboard/team-hub` | coach, player | player_hub, team_communications, team_operations | approved | in_progress | complete | reserved | existing | partial | current |
-| P011 | Rounds | `/golf/dashboard/rounds`<br>`/golf/dashboard/rounds/[id]` | coach, player | golf_round_lifecycle | approved | in_progress | complete | reserved | existing | partial | current |
+| P011 | Rounds | `/golf/dashboard/rounds`<br>`/golf/dashboard/rounds/[id]`<br>`/golf/dashboard/rounds/new`<br>`/golf/dashboard/rounds/continue/[id]` | coach, player | golf_round_lifecycle | approved | in_progress | complete | reserved | existing | partial | current |
 | P012 | Classes | `/golf/dashboard/classes` | player | calendar_events | approved | in_progress | complete | reserved | existing | partial | current |
 | P013 | CoachHelm | `/golf/dashboard/coachhelm` | coach, player | coachhelm_ai, player_coachhelm_development, coach_intelligence_triage | approved | in_progress | complete | reserved | existing | partial | current |
 
