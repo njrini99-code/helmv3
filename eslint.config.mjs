@@ -258,8 +258,6 @@ export default tseslint.config(
       "src/components/fairway/**/*.{ts,tsx}",
       "src/components/golf/**/*.{ts,tsx}",
       "src/app/golf/**/*.{ts,tsx}",
-      // The round engine left src/app/golf for src/lib/golf (ROUNDS_PLAN step 4b); its bans came with it.
-      "src/lib/golf/round-session/**/*.{ts,tsx}",
     ],
     ignores: [
       "src/components/golf/calendar/**",

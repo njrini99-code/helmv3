@@ -1880,11 +1880,6 @@
         "category": "services"
       },
       {
-        "id": "services:src/lib/golf/round-session/**",
-        "pattern": "src/lib/golf/round-session/**",
-        "category": "services"
-      },
-      {
         "id": "services:src/lib/native/**",
         "pattern": "src/lib/native/**",
         "category": "services"
@@ -20400,51 +20395,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/app/golf/actions/golf"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/app/golf/actions/course-library"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/lib/golf/round-missing-recovery"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/lib/golf/round-write-outcome"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/app/golf/actions/round-type"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/lib/golf/local-day"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/lib/golf/new-round-pick-cache"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/lib/golf/new-round-setup-restore-signal"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/round-session/use-new-round-session.ts",
-          "anchor": "src/lib/golf/round-start-guard-signal"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/offline/partial-save-beacon.ts",
           "anchor": "src/app/golf/actions/golf"
         },
@@ -20511,18 +20461,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/coachhelm/v2/shot-analysis/**"
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "services:src/lib/golf/round-session/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/golf/round-session/**"
         }
       ]
     },
