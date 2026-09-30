@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
+| `GENERATED_TRUTH` | 25 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 205 | 12 | 46 | 87 |
+| `UNKNOWN` | 205 | 12 | 46 | 81 |
 
 ## Files
 
@@ -271,6 +271,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | - |
+| `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md` | generated | - | - | - | - |
+| `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md` | generated | - | - | - | - |
+| `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | - |
+| `docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md` | generated | - | - | - | - |
+| `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | - |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
@@ -660,9 +665,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
-| `docs/clubhouse/HANDOFF.md` | current | - | - | - | 5 |
+| `docs/clubhouse/HANDOFF.md` | current | - | - | - | 2 |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 3 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |

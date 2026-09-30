@@ -27,14 +27,17 @@ rejected the result; this tree exists so that cannot happen again.
   - Motion uses 90, 150, 220 and 360ms with `cubic-bezier(.2,.8,.2,1)`, and a 0.985 press. No count-ups, no entrance staggers.
   - No emoji and no exclamation marks.
 - **Haptics:** only through `src/clubhouse/lib/haptics.ts`.
-- **Phone:** iPhone only. The owner's design in `design/handoff/mobile/` is
-  the phone spec; without one, a draft in `docs/clubhouse/phone/<screen>.md`
+- **Phone:** iPhone only. The owner's phone board (`… - Mobile.html` in
+  `design/handoff/`; v1 boards in `design/handoff/mobile/`) is the phone spec; without one, a draft in `docs/clubhouse/phone/<screen>.md`
   needs owner approval before it is built. It is never a shrunken desktop.
   Follow `docs/clubhouse/MOBILE.md`, and never commit a native config that
   points anywhere but production.
 - **New design:** follow `docs/clubhouse/README.md` step by step. The
   screen checklist is `docs/clubhouse/SCREENS.md`.
 - **Tracker:** `docs/clubhouse/PROGRESS.md`. Move a gate only with evidence.
+  Each page also has a manifest (`config/clubhouse/pages/`), six page docs
+  (layout in `docs/clubhouse/README.md`) and numbered contracts (D-60, D-68, D-69);
+  after a catalog change run `node scripts/clubhouse/registry.mjs sync`.
 - **Before you report work done,** run `npm run clubhouse:check`.
 - **Reviews:** `ui-polish-reviewer` reviews against Fairway. Don't use it here;
   review against the handoff screenshots instead.
