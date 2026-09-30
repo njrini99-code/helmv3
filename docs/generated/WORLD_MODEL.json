@@ -1830,6 +1830,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/round-session/**",
+        "pattern": "src/lib/golf/round-session/**",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/native/**",
         "pattern": "src/lib/native/**",
         "category": "services"
@@ -16304,6 +16309,23 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "shot_tracking",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/new-round-setup-restore-signal.ts",
+          "anchor": "src/lib/golf/round-session/routes"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-start-guard-signal.ts",
+          "anchor": "src/lib/golf/round-session/routes"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "stats_analytics",
       "kind": "feature_relation",
       "evidence": [
@@ -20104,6 +20126,76 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/round-session/start-form.ts",
+          "anchor": "src/lib/golf/local-day"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-continue-round-session.ts",
+          "anchor": "src/app/golf/actions/golf"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-continue-round-session.ts",
+          "anchor": "src/lib/golf/round-missing-recovery"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-continue-round-session.ts",
+          "anchor": "src/lib/golf/round-write-outcome"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-continue-round-session.ts",
+          "anchor": "src/app/golf/actions/round-type"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/app/golf/actions/golf"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/app/golf/actions/course-library"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/round-missing-recovery"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/round-write-outcome"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/app/golf/actions/round-type"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/local-day"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/new-round-pick-cache"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/new-round-setup-restore-signal"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-new-round-session.ts",
+          "anchor": "src/lib/golf/round-start-guard-signal"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/offline/partial-save-beacon.ts",
           "anchor": "src/app/golf/actions/golf"
         },
@@ -20122,6 +20214,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-session/use-continue-round-session.ts",
+          "anchor": "src/lib/observability/client-breadcrumbs"
         }
       ]
     },
@@ -20170,6 +20274,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/coachhelm/v2/shot-analysis/**"
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
+      "target": "services:src/lib/golf/round-session/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/round-session/**"
         }
       ]
     },

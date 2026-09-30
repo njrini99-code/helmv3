@@ -285,7 +285,7 @@ Use `memory/context/golfhelm-database.md` for exact columns.
     - The Rounds dashboard also flags an `in_progress` round whose every hole
       already carries a durable `golf_holes` score with a "Ready to submit"
       pill and a "Finish submitting" CTA instead of "In progress"/"Continue"
-      — same destination, since `continue-round-client.tsx`'s own mount
+      — same destination, since the continue engine's (`use-continue-round-session.ts`) own mount
       effect ("If ALL holes are already scored on mount") already re-opens
       the submit dialog once it independently sees every hole scored. This
       deliberately reads `golf_holes`, not `draft_data.submissionBackup`

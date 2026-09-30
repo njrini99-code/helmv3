@@ -23,10 +23,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(
-  new URL('./continue-round-client.tsx', import.meta.url),
-  'utf8',
-);
+const source = [
+  // The engine moved to use-continue-round-session.ts (ROUNDS_PLAN step 5b); its text comes first, as it did in the component.
+  readFileSync(new URL('../../../../../../../lib/golf/round-session/use-continue-round-session.ts', import.meta.url), 'utf8'),
+  readFileSync(new URL('./continue-round-client.tsx', import.meta.url), 'utf8'),
+].join('\n');
 
 function slice(fromMarker: string, toMarker: string): string {
   const from = source.indexOf(fromMarker);
@@ -44,7 +45,7 @@ describe('Continue Round — round_missing recovery', () => {
     // The expected-updated-at belongs to the row that is gone; sending it
     // against the fresh row would come back as a spurious conflict.
     expect(recreate).toContain('lastServerUpdatedAtRef.current = recreated.data.updatedAt');
-    expect(recreate).toContain('router.replace(`/golf/dashboard/rounds/continue/${recreated.data.roundId}`)');
+    expect(recreate).toContain('router.replace(routesRef.current.continueRound(recreated.data.roundId))');
   });
 
   it('the completed-hole checkpoint uses the shared re-create path instead of its own copy', () => {
