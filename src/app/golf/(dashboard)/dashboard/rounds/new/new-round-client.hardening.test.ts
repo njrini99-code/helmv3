@@ -33,11 +33,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = [
-  // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
-  readFileSync(new URL('../../../../../../lib/golf/round-session/use-new-round-session.ts', import.meta.url), 'utf8'),
-  readFileSync(new URL('./new-round-client.tsx', import.meta.url), 'utf8'),
-].join('\n');
+const source = readFileSync(new URL('./new-round-client.tsx', import.meta.url), 'utf8');
 
 function slice(fromMarker: string, toMarker: string): string {
   const from = source.indexOf(fromMarker);
@@ -196,8 +192,7 @@ describe('New Round — one helper for round-write failures (B6)', () => {
 describe('New Round — completion surfaces provide cold-chunk feedback (B10)', () => {
   it('uses a fixed non-blocking loading status for cold chunks', () => {
     const submitDynamic = slice('const FairwayRoundSubmitOverlay = dynamic(', 'const FairwayRoundSummarySheet = dynamic(');
-    // `type Hole` moved with the engine (step 4b); the component now follows the last dynamic import.
-    const summaryDynamic = slice('const FairwayRoundSummarySheet = dynamic(', 'export default function NewRoundClient(');
+    const summaryDynamic = slice('const FairwayRoundSummarySheet = dynamic(', 'type Hole = RoundHole;');
     expect(submitDynamic).toContain('loading: () => <RoundCompletionChunkLoading />');
     expect(summaryDynamic).toContain('loading: () => <RoundCompletionChunkLoading />');
     expect(source).toMatch(/role="status"[\s\S]*pointer-events-none fixed[\s\S]*Preparing your round/);

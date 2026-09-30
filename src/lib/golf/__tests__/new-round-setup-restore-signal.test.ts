@@ -87,17 +87,10 @@ describe('reportRoundSetupRestoredAfterReload', () => {
 
 describe('NewRoundClient restore call site', () => {
   it('routes the restore through the info-level helper, not logError(new Error(...))', () => {
-    const source = [
-  // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
-  readFileSync(
-      resolve(process.cwd(), 'src/lib/golf/round-session/use-new-round-session.ts'),
-      'utf8',
-    ),
-  readFileSync(
+    const source = readFileSync(
       resolve(process.cwd(), 'src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx'),
       'utf8',
-    ),
-].join('\n');
+    );
     expect(source).not.toMatch(/new Error\(\s*['"]Round setup restored after reload['"]/);
     expect(source).toMatch(/reportRoundSetupRestoredAfterReload\(\{\s*courseId: pending\.courseId,\s*teeId: pending\.teeId\s*\}\)/);
   });

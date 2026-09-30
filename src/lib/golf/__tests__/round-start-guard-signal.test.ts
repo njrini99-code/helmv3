@@ -102,17 +102,10 @@ describe('reportRoundStartValidationBlocked', () => {
 });
 
 describe('NewRoundClient guard call sites', () => {
-  const source = [
-  // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
-  readFileSync(
-    resolve(process.cwd(), 'src/lib/golf/round-session/use-new-round-session.ts'),
-    'utf8',
-  ),
-  readFileSync(
+  const source = readFileSync(
     resolve(process.cwd(), 'src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx'),
     'utf8',
-  ),
-].join('\n');
+  );
 
   it('routes duplicate_completed_round through the info helper, not reportStartFailure/logError', () => {
     expect(source).not.toMatch(/reportStartFailure\(\s*['"]duplicate_completed_round['"]/);
