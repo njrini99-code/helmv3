@@ -2453,7 +2453,7 @@
     "item": 10,
     "name": "D1_BENCHMARKS_DONT_LOAD",
     "chCode": "CH-4209",
-    "meaning": "D1 benchmarks don't load",
+    "meaning": "Tour benchmarks don't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -2710,7 +2710,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A failed read is logged through chLogServer('stats', team|members|rounds|roundCache|putts|d1Benchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb.",
+    "meaning": "A failed read is logged through chLogServer('stats', team|members|rounds|roundCache|putts|tourBenchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb.",
     "status": "implemented",
     "where": "src/clubhouse/data/stats-team.ts; src/clubhouse/data/stats-common.ts; src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/screens/stats/StatsTeamIslands.tsx",
     "tests": [
@@ -3020,7 +3020,7 @@
     "item": 9,
     "name": "D1_BENCHMARKS_DONT_LOAD",
     "chCode": "CH-5208",
-    "meaning": "D1 benchmarks don't load, or the team's own row (its men's or women's tour) doesn't",
+    "meaning": "Tour benchmarks don't load, or the team's own row (its men's or women's tour) doesn't",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -3408,7 +3408,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A failed read is logged through chLogServer('stats', player|team|membership|rounds|detailedStats|d1Benchmarks|focusAreas|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb.",
+    "meaning": "A failed read is logged through chLogServer('stats', player|team|membership|rounds|detailedStats|tourBenchmarks|focusAreas|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb.",
     "status": "implemented",
     "where": "src/clubhouse/data/stats-player.ts; src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/lib/use-action.ts",
     "tests": [

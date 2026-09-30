@@ -266,7 +266,7 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-A section that crashes is reported through `chReport` with surface `home.<section>` (week, latestRound, leaderboard, upNext, today, form, game) at high severity; a failed server read is logged through `chLogServer('home', <read>)` (reads: timezone, team chat, roster, events, attendance, rounds, holes, roundCache, d1Benchmarks, player, team, coaches); and the N shortcut, opening Up next on the phone and opening a round on the phone leave `chTrail` breadcrumbs (22301). Not instrumented: the pagers, the Scoring window, and Up next in the player's desktop week.
+A section that crashes is reported through `chReport` with surface `home.<section>` (week, latestRound, leaderboard, upNext, today, form, game) at high severity; a failed server read is logged through `chLogServer('home', <read>)` (reads: timezone, team chat, roster, events, attendance, rounds, holes, roundCache, tourBenchmarks, player, team, coaches); and the N shortcut, opening Up next on the phone and opening a round on the phone leave `chTrail` breadcrumbs (22301). Not instrumented: the pagers, the Scoring window, and Up next in the player's desktop week.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -85,7 +85,7 @@ Each failed read is handled on its own. The rounds or roster (40602), the round 
 | 40607 | CH-4206 | `THE_LEG_TRENDS_OR_THE_PLAYER_GRID` | The leg trends or the player grid crash |
 | 40608 | CH-4207 | `TEAM_PUTTING_CRASHES` | Team putting crashes |
 | 40609 | CH-4208 | `SEASON_BESTS_CRASH` | Season bests crash |
-| 40610 | CH-4209 | `D1_BENCHMARKS_DONT_LOAD` | D1 benchmarks don't load |
+| 40610 | CH-4209 | `D1_BENCHMARKS_DONT_LOAD` | Tour benchmarks don't load |
 | 40611 | CH-4210 | `THE_TEAMS_OWN_DETAILS_DONT_LOAD` | The team's own details (name, men's or women's) don't load |
 
 ## 07 — Network / offline
@@ -255,7 +255,7 @@ Failed reads logged, section crashes and the blocked export reported, intents br
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 42301 | — | `FAILURES_REPORTED` | A failed read is logged through chLogServer('stats', team\|members\|rounds\|roundCache\|putts\|d1Benchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb. |
+| 42301 | — | `FAILURES_REPORTED` | A failed read is logged through chLogServer('stats', team\|members\|rounds\|roundCache\|putts\|tourBenchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb. |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

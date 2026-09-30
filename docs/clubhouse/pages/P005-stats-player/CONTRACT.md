@@ -84,7 +84,7 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50606 | CH-5205 | `GAME_DETAIL_CRASHES` | Game detail crashes |
 | 50607 | CH-5206 | `THE_ROUNDS_TABLE_CRASHES` | The rounds table crashes |
 | 50608 | CH-5207 | `DEVELOPMENT_CRASHES` | Development crashes |
-| 50609 | CH-5208 | `D1_BENCHMARKS_DONT_LOAD` | D1 benchmarks don't load, or the team's own row (its men's or women's tour) doesn't |
+| 50609 | CH-5208 | `D1_BENCHMARKS_DONT_LOAD` | Tour benchmarks don't load, or the team's own row (its men's or women's tour) doesn't |
 | 50610 | CH-5002 | `SHARING_A_PLAYERS_STATS_FROM_THE_PHONE` | Sharing a player's stats from the phone fails (the browser blocks the clipboard) |
 | 50611 | — | `PROFILE_READ_FAILURE_RAISES_ROUTE_ERROR` | When the player row or the roster membership read fails, the loader logs it and throws, so the route error view (with Try again) shows; a profile is never reported as That player isn't on your team unless a read that worked found nobody. |
 | 50612 | CH-5003 | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | A player's Accept of a proposed focus area fails |
@@ -277,7 +277,7 @@ Failed reads logged, crashes and failed saves reported, intents breadcrumbed (52
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 52301 | — | `FAILURES_REPORTED` | A failed read is logged through chLogServer('stats', player\|team\|membership\|rounds\|detailedStats\|d1Benchmarks\|focusAreas\|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb. |
+| 52301 | — | `FAILURES_REPORTED` | A failed read is logged through chLogServer('stats', player\|team\|membership\|rounds\|detailedStats\|tourBenchmarks\|focusAreas\|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb. |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

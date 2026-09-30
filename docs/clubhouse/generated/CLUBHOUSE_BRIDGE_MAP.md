@@ -310,7 +310,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40607 | CH-4206 | 06 Server / system error | `THE_LEG_TRENDS_OR_THE_PLAYER_GRID` | implemented | The leg trends or the player grid crash |
 | 40608 | CH-4207 | 06 Server / system error | `TEAM_PUTTING_CRASHES` | implemented | Team putting crashes |
 | 40609 | CH-4208 | 06 Server / system error | `SEASON_BESTS_CRASH` | implemented | Season bests crash |
-| 40610 | CH-4209 | 06 Server / system error | `D1_BENCHMARKS_DONT_LOAD` | implemented | D1 benchmarks don't load |
+| 40610 | CH-4209 | 06 Server / system error | `D1_BENCHMARKS_DONT_LOAD` | implemented | Tour benchmarks don't load |
 | 40611 | CH-4210 | 06 Server / system error | `THE_TEAMS_OWN_DETAILS_DONT_LOAD` | implemented | The team's own details (name, men's or women's) don't load |
 | 40701 | CH-4901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, or Show the season) while offline |
 | 40702 | CH-4902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window change takes longer than 5 seconds |
@@ -332,7 +332,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41901 |  | 19 Responsive layout | `PHONE_VIEW` | implemented | At 820px and below Team stats is the phone view (window switch, four figures, scoring line, strokes gained by leg, players sorted by Avg or SG, team putting), never a shrunken desktop; the server renders desktop and the phone view takes over at hydration. |
 | 42001 |  | 20 Keyboard / input | `KEYBOARD_PATH` | implemented | The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
 | 42101 |  | 21 Performance | `ONE_PASS_LOADER` | implemented | loadTeamStats reads the team and its roster together, starts the D1 benchmarks before the rounds come back, then reads the round figures and the putts together, once each (id chunks in parallel); every failed read is logged and flagged, never thrown. |
-| 42301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed read is logged through chLogServer('stats', team\|members\|rounds\|roundCache\|putts\|d1Benchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb. |
+| 42301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed read is logged through chLogServer('stats', team\|members\|rounds\|roundCache\|putts\|tourBenchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb. |
 | 42401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/stats-team.test.tsx names, in a test title, every Stats team catalog code it forces (the rows whose Test column names it) and each hand contract above. |
 
 ## P005 Stats (player)
@@ -364,7 +364,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50606 | CH-5205 | 06 Server / system error | `GAME_DETAIL_CRASHES` | implemented | Game detail crashes |
 | 50607 | CH-5206 | 06 Server / system error | `THE_ROUNDS_TABLE_CRASHES` | implemented | The rounds table crashes |
 | 50608 | CH-5207 | 06 Server / system error | `DEVELOPMENT_CRASHES` | implemented | Development crashes |
-| 50609 | CH-5208 | 06 Server / system error | `D1_BENCHMARKS_DONT_LOAD` | implemented | D1 benchmarks don't load, or the team's own row (its men's or women's tour) doesn't |
+| 50609 | CH-5208 | 06 Server / system error | `D1_BENCHMARKS_DONT_LOAD` | implemented | Tour benchmarks don't load, or the team's own row (its men's or women's tour) doesn't |
 | 50610 | CH-5002 | 06 Server / system error | `SHARING_A_PLAYERS_STATS_FROM_THE_PHONE` | implemented | Sharing a player's stats from the phone fails (the browser blocks the clipboard) |
 | 50611 |  | 06 Server / system error | `PROFILE_READ_FAILURE_RAISES_ROUTE_ERROR` | implemented | When the player row or the roster membership read fails, the loader logs it and throws, so the route error view (with Try again) shows; a profile is never reported as That player isn't on your team unless a read that worked found nobody. |
 | 50612 | CH-5003 | 06 Server / system error | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | implemented | A player's Accept of a proposed focus area fails |
@@ -397,7 +397,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51901 |  | 19 Responsive layout | `PHONE_PROFILE` | implemented | At 820px and below a profile is the phone view (who, three figures, Game detail one section at a time, scoring line, rounds, development), never a shrunken desktop; a coach's top bar is Player stats with Team and Share, a player's is My stats with More. |
 | 52001 |  | 20 Keyboard / input | `KEYBOARD_PATH` | implemented | The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it; the section tabs are one Tab stop, where the arrows, Home and End move between them and select. |
 | 52101 |  | 21 Performance | `ONE_PASS_LOADER` | implemented | loadPlayerProfile reads the team, the player and the membership together, then the rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once; a failed rounds, shot detail, benchmark, focus area or goal read is logged and flagged, never thrown. |
-| 52301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed read is logged through chLogServer('stats', player\|team\|membership\|rounds\|detailedStats\|d1Benchmarks\|focusAreas\|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb. |
+| 52301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed read is logged through chLogServer('stats', player\|team\|membership\|rounds\|detailedStats\|tourBenchmarks\|focusAreas\|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb. |
 | 52401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/stats-player.test.tsx names, in a test title, every Stats player catalog code it forces (the rows whose Test column names it, and the no-team row Team stats catalogues) and each hand contract above. |
 
 ## P006 Calendar
