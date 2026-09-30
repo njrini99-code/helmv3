@@ -71,7 +71,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P004 |  | 1 | 1 | 9 |  | 11 | 2 |  |  |  |  |  |  |  |  | 2 | 2 | 4 |  |  |  |  |  |  |  | 32 |
 | P005 |  |  | 2 | 5 | 1 | 9 |  | 2 |  |  |  |  |  |  |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 29 |
 | P006 |  | 5 | 1 | 7 | 4 | 24 |  |  |  |  | 2 | 1 |  |  |  | 3 | 3 | 4 |  |  |  |  |  |  |  | 54 |
-| P007 |  | 10 |  | 8 | 5 | 31 | 1 | 2 |  | 1 | 2 |  |  |  | 1 | 4 | 4 | 4 |  |  |  |  |  |  |  | 73 |
+| P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 1 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 88 |
 | P008 |  | 1 | 3 | 4 | 15 | 36 |  |  |  | 1 | 5 | 3 | 1 |  |  | 8 | 7 | 7 |  |  |  |  |  |  |  | 91 |
 | P009 |  | 4 | 3 | 10 | 10 | 22 |  | 2 |  | 1 | 1 | 1 |  |  |  | 2 | 2 | 3 |  |  |  |  |  |  |  | 61 |
 
@@ -343,6 +343,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
+| 70101 |  | 01 Default / core UI | `MESSAGES_READY` | implemented | Messages is open: the conversation rail, and on desktop the newest thread beside it, opened without marking it read; on the phone the inbox. |
+| 70102 |  | 01 Default / core UI | `DEEP_LINK_OPENS_CONVERSATION` | implemented | A link with ?conversation=<id> opens that thread, and ?player=<golf_players.id> opens or starts the direct thread with that player; the address is then cleaned. |
 | 70201 | CH-7401 | 02 Initial loading / skeleton | `MESSAGES_IS_LOADING` | implemented | Messages is loading |
 | 70202 | CH-7402 | 02 Initial loading / skeleton | `CONVERSATIONS_ARE_LOADING` | implemented | Conversations are loading |
 | 70203 | CH-7403 | 02 Initial loading / skeleton | `A_THREAD_IS_LOADING` | implemented | A thread is loading |
@@ -353,6 +355,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70208 | CH-7408 | 02 Initial loading / skeleton | `A_MESSAGES_ATTACHMENTS_ARE_LOADING` | implemented | A message's attachments are loading |
 | 70209 | CH-7409 | 02 Initial loading / skeleton | `THE_SHARED_FILES_ARE_LOADING` | implemented | The shared files are loading (phone Details) |
 | 70210 | CH-7410 | 02 Initial loading / skeleton | `THE_ADD_SHEETS_LIST_IS_LOADING` | implemented | The Add sheet's list is loading |
+| 70301 |  | 03 Background loading / refresh | `REALTIME_UPDATES_ARRIVE` | implemented | New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way. |
 | 70401 | CH-7301 | 04 Empty | `NO_CONVERSATIONS_YET` | implemented | No conversations yet |
 | 70402 | CH-7302 | 04 Empty | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | implemented | A rail search or the Unread filter has nothing |
 | 70403 | CH-7303 | 04 Empty | `NO_MESSAGE_MENTIONS_THE_SEARCH` | implemented | No message mentions the search |
@@ -400,9 +403,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |
+| 70901 |  | 09 Success | `MESSAGE_SEND_LANDED` | implemented | A message sends: it takes its place in the thread with no toast, and the success haptic fires. |
+| 70902 |  | 09 Success | `CHANGE_LANDED` | implemented | A change lands (edited, deleted, group created, member added, left, muted, acknowledged, task done, announcement posted): a toast names what landed, with the success haptic. |
 | 71001 | CH-7019 | 10 Warning | `A_COACHS_NEW_GROUP_IS_CREATED_BUT` | implemented | A coach's new group is created, but a coach picked for it couldn't be added (D-45) |
 | 71101 | CH-7501 | 11 Destructive | `DELETE_A_MESSAGE` | implemented | Delete a message |
 | 71102 | CH-7502 | 11 Destructive | `LEAVE_A_GROUP` | implemented | Leave a group |
+| 71201 |  | 12 State preservation | `DRAFT_KEPT_ON_FAILURE` | implemented | A send that fails puts the text and files back in the composer; nothing the person wrote is lost. |
+| 71301 |  | 13 Optimistic UI | `OPTIMISTIC_SEND` | implemented | A sent message appears at once under its final id and is reconciled in place when the server echoes it; a refused send stays in the thread marked Not sent (CH-7016), never silently removed. |
+| 71401 |  | 14 Retry / recovery | `RETRY_FAILED_SEND` | implemented | Retry re-sends a refused message under the same id, so pressing it twice can never post twice; Discard removes it. |
+| 71402 |  | 14 Retry / recovery | `TRY_AGAIN_SECTION_READ` | implemented | Try again on a section that did not load re-reads only that section (conversations, a thread, members, files, announcements) and keeps the rest of the page as it was. |
 | 71501 | CH-7017 | 15 Data freshness / sync | `A_MESSAGES_SEND_CANT_BE_CONFIRMED` | implemented | A message's send can't be confirmed |
 | 71601 | CH-7601 | 16 Micro animation | `A_MESSAGE_ARRIVES_OR_IS_SENT` | reserved | A message arrives or is sent |
 | 71602 | CH-7602 | 16 Micro animation | `SOMEONE_IS_TYPING` | reserved | Someone is typing |
@@ -416,6 +425,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71802 | CH-7802 | 18 Accessibility | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | reserved | Search results are announced as they arrive; Enter sends, Shift+Enter adds a line |
 | 71803 | CH-7803 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | 18 Accessibility | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | implemented | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") |
+| 71901 |  | 19 Responsive layout | `PHONE_STACK` | implemented | At 820px and below Messages is the phone stack: Inbox, Thread, Details and New message push and pop as screens, never a shrunken desktop. |
+| 72001 |  | 20 Keyboard / input | `ENTER_TO_SEND` | implemented | In the composer Enter sends, Shift+Enter adds a line, and Enter while an IME is composing is left to the IME. |
+| 72101 |  | 21 Performance | `ONE_LOAD_PER_THREAD` | implemented | Opening a thread fetches it and subscribes to it exactly once; the server loader reads the directory in one pass and never throws for a partial read. |
+| 72301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | Every client failure is reported through chReport with surface messages.<action>; server reads log through chLogServer("messages", ...); each intent leaves a chTrail breadcrumb. |
+| 72302 |  | 23 Logging / observability | `HELD_ACTION_REFUSES_OFF` | implemented | The held conversation-files action refuses before any read unless the Clubhouse UI is on for the caller (D-61). |
+| 72401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/messages.test.tsx names every catalog code it forces, and the conversation-files action has its own test file. |
 
 ## P008 Settings
 

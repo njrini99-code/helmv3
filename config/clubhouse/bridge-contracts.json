@@ -2574,6 +2574,26 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 70101,
+    "page": "P007",
+    "category": 1,
+    "item": 1,
+    "name": "MESSAGES_READY",
+    "meaning": "Messages is open: the conversation rail, and on desktop the newest thread beside it, opened without marking it read; on the phone the inbox.",
+    "status": "implemented",
+    "where": "Messages.tsx auto-open effect; MessagesDesktop, MessagesPhone"
+  },
+  {
+    "id": 70102,
+    "page": "P007",
+    "category": 1,
+    "item": 2,
+    "name": "DEEP_LINK_OPENS_CONVERSATION",
+    "meaning": "A link with ?conversation=<id> opens that thread, and ?player=<golf_players.id> opens or starts the direct thread with that player; the address is then cleaned.",
+    "status": "implemented",
+    "where": "Messages.tsx deep-link effect"
+  },
+  {
     "id": 70201,
     "page": "P007",
     "category": 2,
@@ -2682,6 +2702,16 @@
     "meaning": "The Add sheet's list is loading",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70301,
+    "page": "P007",
+    "category": 3,
+    "item": 1,
+    "name": "REALTIME_UPDATES_ARRIVE",
+    "meaning": "New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way.",
+    "status": "implemented",
+    "where": "useGolfMessages channel golf-conversation:<id>; useGolfConversations channel golf-conversations:<userId>"
   },
   {
     "id": 70401,
@@ -3201,6 +3231,26 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70901,
+    "page": "P007",
+    "category": 9,
+    "item": 1,
+    "name": "MESSAGE_SEND_LANDED",
+    "meaning": "A message sends: it takes its place in the thread with no toast, and the success haptic fires.",
+    "status": "implemented",
+    "where": "Composer.send, useGolfMessages.sendMessage"
+  },
+  {
+    "id": 70902,
+    "page": "P007",
+    "category": 9,
+    "item": 2,
+    "name": "CHANGE_LANDED",
+    "meaning": "A change lands (edited, deleted, group created, member added, left, muted, acknowledged, task done, announcement posted): a toast names what landed, with the success haptic.",
+    "status": "implemented",
+    "where": "Messages.tsx api handlers"
+  },
+  {
     "id": 71001,
     "page": "P007",
     "category": 10,
@@ -3232,6 +3282,46 @@
     "meaning": "Leave a group",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71201,
+    "page": "P007",
+    "category": 12,
+    "item": 1,
+    "name": "DRAFT_KEPT_ON_FAILURE",
+    "meaning": "A send that fails puts the text and files back in the composer; nothing the person wrote is lost.",
+    "status": "implemented",
+    "where": "Composer.send"
+  },
+  {
+    "id": 71301,
+    "page": "P007",
+    "category": 13,
+    "item": 1,
+    "name": "OPTIMISTIC_SEND",
+    "meaning": "A sent message appears at once under its final id and is reconciled in place when the server echoes it; a refused send stays in the thread marked Not sent (CH-7016), never silently removed.",
+    "status": "implemented",
+    "where": "useGolfMessages optimistic row (G-19)"
+  },
+  {
+    "id": 71401,
+    "page": "P007",
+    "category": 14,
+    "item": 1,
+    "name": "RETRY_FAILED_SEND",
+    "meaning": "Retry re-sends a refused message under the same id, so pressing it twice can never post twice; Discard removes it.",
+    "status": "implemented",
+    "where": "useGolfMessages.retryMessage, discardFailedMessage"
+  },
+  {
+    "id": 71402,
+    "page": "P007",
+    "category": 14,
+    "item": 2,
+    "name": "TRY_AGAIN_SECTION_READ",
+    "meaning": "Try again on a section that did not load re-reads only that section (conversations, a thread, members, files, announcements) and keeps the rest of the page as it was.",
+    "status": "implemented",
+    "where": "refetchConvs, refetchMsgs and the section loaders"
   },
   {
     "id": 71501,
@@ -3375,6 +3465,66 @@
     "meaning": "Phone: a message's actions have a path besides the long press (a \"Message actions\" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes (\"Back to Messages\", \"Back to Chat\")",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71901,
+    "page": "P007",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_STACK",
+    "meaning": "At 820px and below Messages is the phone stack: Inbox, Thread, Details and New message push and pop as screens, never a shrunken desktop.",
+    "status": "implemented",
+    "where": "useChPhone -> MessagesPhone"
+  },
+  {
+    "id": 72001,
+    "page": "P007",
+    "category": 20,
+    "item": 1,
+    "name": "ENTER_TO_SEND",
+    "meaning": "In the composer Enter sends, Shift+Enter adds a line, and Enter while an IME is composing is left to the IME.",
+    "status": "implemented",
+    "where": "Composer onKey"
+  },
+  {
+    "id": 72101,
+    "page": "P007",
+    "category": 21,
+    "item": 1,
+    "name": "ONE_LOAD_PER_THREAD",
+    "meaning": "Opening a thread fetches it and subscribes to it exactly once; the server loader reads the directory in one pass and never throws for a partial read.",
+    "status": "implemented",
+    "where": "useGolfMessages single-load; loadMessagesDirectory"
+  },
+  {
+    "id": 72301,
+    "page": "P007",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "Every client failure is reported through chReport with surface messages.<action>; server reads log through chLogServer(\"messages\", ...); each intent leaves a chTrail breadcrumb.",
+    "status": "implemented",
+    "where": "Messages.tsx fail/attempt; data/messages.ts"
+  },
+  {
+    "id": 72302,
+    "page": "P007",
+    "category": 23,
+    "item": 2,
+    "name": "HELD_ACTION_REFUSES_OFF",
+    "meaning": "The held conversation-files action refuses before any read unless the Clubhouse UI is on for the caller (D-61).",
+    "status": "implemented",
+    "where": "getGolfConversationFiles"
+  },
+  {
+    "id": 72401,
+    "page": "P007",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/messages.test.tsx names every catalog code it forces, and the conversation-files action has its own test file.",
+    "status": "implemented",
+    "where": "messages.test.tsx; message-attachments-conversation-files.test.ts"
   },
   {
     "id": 80201,
