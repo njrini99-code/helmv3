@@ -21,7 +21,7 @@ rejected the result; this tree exists so that cannot happen again.
   `[data-ui="clubhouse"]` and tokens from `src/clubhouse/styles/tokens.css`.
   No Tailwind utilities in Clubhouse markup.
 - **Doctrine:**
-  - Red means under par (and the pin flag) only. Gains are green; losses are amber.
+  - Red means under par, the pin flag, or a destructive action (D-42). Gains are green; losses are amber.
   - Instrument Sans only, in sentence case: no tracked uppercase, no serif.
   - Tabular numbers everywhere. Use a true minus `−`, `E` for even and `—` for no data.
   - Motion uses 90, 150, 220 and 360ms with `cubic-bezier(.2,.8,.2,1)`, and a 0.985 press. No count-ups, no entrance staggers.
