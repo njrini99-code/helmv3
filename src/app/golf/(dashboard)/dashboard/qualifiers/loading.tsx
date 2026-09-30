@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
@@ -89,6 +91,11 @@ function FairwayQualifiersLoading() {
   );
 }
 
-export default function Loading() {
+function LegacyLoading() {
   return <FairwayQualifiersLoading />;
+}
+
+/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<QualifiersSkeleton />} fallback={<LegacyLoading />} />;
 }
