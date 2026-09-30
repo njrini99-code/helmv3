@@ -30,8 +30,8 @@ function makeEvidence(overrides: Partial<InsightEvidence> = {}): InsightEvidence
     your_value: 0.38,
     your_value_display: '38%',
     comparison_value: 0.52,
-    comparison_label: 'D2 average',
-    comparison_source: 'd2_avg',
+    comparison_label: 'Team average',
+    comparison_source: 'team_avg',
     sample_n: 47,
     window_days: 30,
     window_start: '2026-03-23T00:00:00.000Z',
@@ -144,7 +144,7 @@ describe('EvidencePanel', () => {
     const yourValue = screen.getByTestId('evidence-your-value');
     expect(yourValue.textContent).toContain('38%');
     expect(yourValue.textContent).toContain('52%');
-    expect(yourValue.textContent).toContain('D2 target (approx.)');
+    expect(yourValue.textContent).toContain('Team average');
 
     // Sample + window
     expect(screen.getByTestId('evidence-sample').textContent).toContain('47 putts');
@@ -286,7 +286,7 @@ describe('EvidencePanel', () => {
         />,
       );
       const you = tickLeft('You');
-      const comp = tickLeft('D2 target (approx.)');
+      const comp = tickLeft('Team average');
       // You (38) is the smaller value → left of the comparison (52).
       expect(you).toBeLessThan(comp);
       // Neither tick is pinned to an edge.
@@ -311,7 +311,7 @@ describe('EvidencePanel', () => {
         />,
       );
       const you = tickLeft('You');
-      const comp = tickLeft('D2 target (approx.)');
+      const comp = tickLeft('Team average');
       expect(you).toBeGreaterThan(comp);
       expect(you).toBeLessThanOrEqual(100);
       expect(comp).toBeGreaterThanOrEqual(0);
@@ -416,8 +416,45 @@ describe('audit row 12 — lifetime values and the cohort source', () => {
     expect(row.textContent).not.toContain('213 days');
   });
 
-  it('labels a cohort_avg comparison as the college cohort', () => {
-    render(<EvidencePanel compact={false} evidence={makeEvidence({ comparison_source: 'cohort_avg', comparison_label: 'College cohort avg' })} />);
-    expect(screen.getByTestId('evidence-row-comparison').textContent).toContain('College cohort avg');
+  // Q-88: a stored college comparison (d2_avg on 13 live rows, the old
+  // women's-college estimate, cohort_avg) never renders.
+  it('drops a college comparison and promotes a Tour secondary', () => {
+    render(
+      <EvidencePanel
+        compact={false}
+        evidence={makeEvidence({
+          comparison_source: 'cohort_avg',
+          comparison_label: 'College cohort avg',
+          comparison_value: 0.45,
+          secondary_value: 0.62,
+          secondary_label: 'PGA Tour avg',
+          secondary_source: 'pga_baseline',
+        })}
+      />,
+    );
+    const row = screen.getByTestId('evidence-row-comparison').textContent ?? '';
+    expect(row).toContain('PGA Tour avg');
+    expect(row).toContain('62');
+    expect(row).not.toMatch(/college/i);
+  });
+
+  it('draws no comparison at all when a college figure is the only one', () => {
+    for (const source of ['d2_avg', 'estimated_target', 'cohort_avg'] as const) {
+      const { unmount } = render(
+        <EvidencePanel compact={false} evidence={makeEvidence({ comparison_source: source, comparison_label: 'D2 average' })} />,
+      );
+      expect(screen.queryByTestId('evidence-row-comparison')).toBeNull();
+      unmount();
+    }
+  });
+
+  it("an LPGA comparison keeps its own label, never 'PGA baseline'", () => {
+    render(
+      <EvidencePanel
+        compact={false}
+        evidence={makeEvidence({ comparison_source: 'pga_baseline', comparison_label: 'LPGA Tour avg' })}
+      />,
+    );
+    expect(screen.getByTestId('evidence-row-comparison').textContent).toContain('LPGA Tour avg');
   });
 });

@@ -483,7 +483,6 @@ export default async function PlayerCoachHelmPage() {
           suggestion: s,
           display_label: cfg?.display_label ?? s.metric_id,
           unit: cfg?.unit ?? 'count',
-          cohort_value: st?.level_avg ?? null,
           tour_value: st && !st.pga_omitted ? st.pga_value : null,
         };
       });

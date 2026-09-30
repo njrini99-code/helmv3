@@ -114,16 +114,15 @@ describe('ScramblingGenerator', () => {
     expect(agg!.failure_mode).toBe('lag');
   });
 
-  it('anchors a women\'s player to ~38% sand-save, not the men\'s 50%', () => {
+  it("anchors a women's player to the LPGA Tour sand save (45%), never the men's 50% or a college figure (Q-88)", () => {
     const g = new ScramblingGenerator(PLAYER_ID, 'sand');
     const c = g.composeContent(makeAgg({ playerValue: 0, attempts: 13, rounds_played: 8, gender: 'womens' }));
-    expect(c.evidence.comparison_value).toBe(38);
-    expect(c.content).toContain('38%');
-    expect(c.content).not.toContain('~50%'); // no men's Tour anchor for a women's player
-    // A derived target, labelled as one — never a measured college average (N16).
-    expect(c.evidence.comparison_label).toBe("Women's college sand save target (est.)");
-    expect(c.evidence.comparison_source).toBe('estimated_target');
-    expect(c.content).toContain('~38% (estimated)');
+    expect(c.evidence.comparison_value).toBe(45);
+    expect(c.evidence.comparison_label).toBe('LPGA Tour sand save avg');
+    expect(c.evidence.comparison_source).toBe('pga_baseline');
+    expect(c.content).toContain('LPGA Tour sand-save average is ~45%.');
+    expect(c.content).not.toContain('~50%');
+    expect(c.content.toLowerCase()).not.toMatch(/college|estimated/);
   });
 
   it('men\'s player keeps the 50% Tour anchor (unchanged)', () => {

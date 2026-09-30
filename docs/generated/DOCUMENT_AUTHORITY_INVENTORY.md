@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 19 | 2 | 6 | 0 |
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 13 | 5 |
+| `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
@@ -45,11 +45,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 37 | 5 | 18 | 74 |
 | `AUDIT_SNAPSHOT` | 57 | 6 | 31 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 41 | 0 | 7 | 22 |
+| `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 48 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 40 | 78 |
+| `UNKNOWN` | 94 | 12 | 40 | 76 |
 
 ## Files
 
@@ -199,7 +199,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/roster-team.md` | current | yes | - | - | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | - |
 | `memory/features/shot-tracking.md` | current | yes | - | yes | - |
-| `memory/features/stats-analytics.md` | current | yes | - | yes | 5 |
+| `memory/features/stats-analytics.md` | current | yes | - | yes | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | - |
 | `memory/features/team-communications.md` | current | yes | - | - | - |
 | `memory/features/team-operations.md` | current | yes | - | - | - |
@@ -463,7 +463,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | - |
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | - |
 | `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | - |
-| `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 3 |
+| `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | - |
 | `memory/ledgers/changes/team_access_control.md` | current | - | - | - | - |
 | `memory/ledgers/changes/team_communications.md` | current | - | - | yes | - |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | - |
@@ -623,6 +623,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | - |
 | `docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md` | current | - | - | - | - |
 | `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | - |
+| `docs/operations/2026-09-30-sg-penalty-and-shot-end-before-after.md` | current | - | - | - | - |
 | `docs/operations/APPLY_PATH.md` | current | - | - | - | - |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 |
@@ -660,7 +661,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `public/courses/CREDITS.md` | current | - | - | - | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
