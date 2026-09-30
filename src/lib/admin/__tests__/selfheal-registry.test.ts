@@ -185,6 +185,26 @@ describe('selectStageHeartbeat — a retired runner cannot speak for the stage',
     expect(selectStageHeartbeat(triage, [cloud])).toBe(cloud);
   });
 
+  it('recognises a retired runner that names itself in metadata.runner instead of metadata.method', () => {
+    // Production 2026-09-30 09:18Z: the same retired cloud task wrote its
+    // failed row as `metadata.runner = 'claude-code-cloud-session'` with no
+    // `method` key, so the method-only match let it decide Diagnose's status
+    // again, painting the loop red, 20s after a completed vercel-cron run.
+    const cloudByRunner = {
+      started_at: '2026-09-30T09:18:00.000Z',
+      status: 'failed',
+      metadata: { runner: 'claude-code-cloud-session', blocked_reason: 'missing_credentials' },
+    };
+    const picked = selectStageHeartbeat(triage, [cloudByRunner, cron]);
+    expect(picked).toBe(cron);
+    expect(selectStageHeartbeat(triage, [cloudByRunner])).toBe(cloudByRunner);
+  });
+
+  it('still counts a row whose runner is a live one (e.g. the desktop routine)', () => {
+    const desktop = { started_at: '2026-09-30T09:30:00.000Z', status: 'failed', metadata: { runner: 'desktop-routine' } };
+    expect(selectStageHeartbeat(triage, [desktop, cron])).toBe(desktop);
+  });
+
   it('is a no-op for a stage with no retired runners, and null for no rows', () => {
     expect(selectStageHeartbeat(repair, [cloud, cron])).toBe(cloud);
     expect(selectStageHeartbeat(triage, [])).toBeNull();
