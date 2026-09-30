@@ -339,7 +339,7 @@ export default function LegacyClassesPage() {
       showToast('Error: No player ID found. Please refresh the page.', 'error');
       return;
     }
-    
+
     if (confirmed.length === 0) {
       return;
     }
@@ -376,7 +376,7 @@ export default function LegacyClassesPage() {
           semester: cls.semester || detectSemester(''),
         };
       });
-      
+
       // Re-importing the same schedule must not double the calendar.
       //
       // `golf_player_classes` has only PRIMARY KEY (id) — no uniqueness on

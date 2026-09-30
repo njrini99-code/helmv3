@@ -107,4 +107,3 @@ The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and `rounds-course.js
 - One column; the band shrinks; the scorecard is one column of holes with 36px par buttons and 40px yardage boxes.
 - The dock (summary and Start round) sits above the home indicator.
 - The picker and Add a course are bottom sheets that drag to close.
-
