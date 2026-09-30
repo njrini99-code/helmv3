@@ -112,6 +112,34 @@ Starting the next session:
 - Q-3 Phone specs: decided 2026-09-29 (D-22). The owner's mobile designs in `design/handoff/mobile/` are the phone specs; the drafts in `docs/clubhouse/phone/` only matter for pages without one, and still need approval.
 - Q-4 Rollout: decided 2026-09-29, the flag stays off in production; the owner does a live pass on a Vercel preview with real coach and player accounts first.
 
+Open, from the owner's phone shell and Messages design (2026-09-29; `phone/foundation.md`, `phone/messages.md`). Each one lists the recommendation first; none is decided.
+
+- Q-5 Phone tab contents. The design has Home, Helm, Rounds, Stats and More, with no player set; D-3 as built has coach Home, Calendar, Messages, Roster, More and player Home, Calendar, Messages, My stats, More. Recommended: the design's five as the coach target, with Helm and Rounds each taking a rebuilt screen's place until they are rebuilt, and the player keeping today's set until the player app is designed. Trade-off: for a while the coach bar isn't the drawing. The alternative, the drawing now, puts two "not rebuilt" tabs in the bar.
+- Q-6 Tab bar style. The design is an ivory glass bar with the active tab in green and a green badge; D-3 is a green bar with the ivory pass. Recommended: the design, which supersedes D-3's style. Trade-off: the built `.ch-tabbar` is restyled, and the phone loses the green frame.
+- Q-7 Messages under More. Recommended: as drawn, with the unread badge rolled up onto More and shown on the Messages row. Trade-off: Messages, the screen players use most, is one tap deeper.
+- Q-8 More as a screen, and Settings. "‹ More" makes More a pushed stack, not today's sheet (CH-1802), but it isn't drawn (`m.css` has `.m-me` and `.m-more` only), and the phone top bar has no Settings gear. Recommended: ask for a More board; until then keep the sheet, and put Settings in it. Trade-off: the Inbox's "‹ More" back link has nothing to go back to until More exists.
+- Q-9 The Safari bar. Recommended: drop it (it is browser chrome) and pad the tab bar, composers and sheet footers by the home-indicator inset (capture 90). Trade-off: none in the app.
+- Q-10 Phone avatars. The design uses one neutral (#E9E3D3 on #5A4E36); Clubhouse coins have five tones. Recommended: the single neutral on the phone only, with the two colours added to the design system as tokens. Trade-off: a player's coin looks different on phone and desktop.
+- Q-11 Red for destructive actions. The design colours Leave group and Delete conversation `--ch-danger-600`, the under-par red. Recommended: allow red for destructive actions, as desktop's danger buttons already do, and write that exception into the doctrine. Trade-off: red is no longer exclusive to scoring.
+- Q-12 Pull to refresh and the push soft ask. Neither is drawn. Recommended: both keep waiting. Trade-off: none for Messages, whose list is realtime.
+- Q-13 Announcements (D-16) are not in the phone design: not in the Inbox and not in New message. Recommended: keep them. Announcements go above Today, the announcement pane opens as a pushed screen, and coaches get an Announcement choice in New message. Trade-off: the phone gains UI nobody drew. Dropping them leaves players unable to acknowledge on the phone.
+- Q-14 Naming a new group. The design says "You can name it after sending", but no rename action exists and broadcasts need a title. Recommended: ask for the name before creating (CH-7104) until a rename action exists. Trade-off: a field that isn't drawn.
+- Q-15 Coaches in a new group. The design lets a coach add the assistant coach, but `createGolfTeamBroadcast` adds players only. Recommended: create the group, then add the chosen coaches with `addGolfGroupMember`, in one flow using existing actions. Trade-off: two writes, and a new "group created, coach not added" state.
+- Q-16 Quick groups. Recommended: Whole team (all players, plus coaches if Q-15 says yes) and Seniors (from `graduation_year`); hide the travel squad until you choose its source (the next competition's invitees, or the itinerary's room list). Trade-off: one of the three drawn rows is missing.
+- Q-17 The unread chip's count. The design adds up messages (4); desktop counts conversations (2). Recommended: conversations, the thing the chip filters. Trade-off: the number differs from the drawing.
+- Q-18 Call. Recommended: hide it. Phone numbers aren't loaded, players' numbers are minors' PII, and a call means nothing in a group. Trade-off: a drawn tile is missing.
+- Q-19 Schedule. Recommended: for coaches, open the Calendar editor (`?new=1`) without invitees, since no prefill exists; hide it for players. Trade-off: the coach picks the people again.
+- Q-20 Search inside a thread. Recommended: hide it until `searchGolfMessages` takes a conversation (a change to the action; no migration). Trade-off: search stays team-wide, in the Inbox.
+- Q-21 Mute. The design has one switch; desktop offers 8 hours, a week, or until turned back on. Recommended: the switch and the tile mean "until I turn it back on". Trade-off: timed mutes are desktop-only.
+- Q-22 Pinned. Recommended: hide it until a pin action exists, plus a migration so coaches can pin other people's messages (the update policy is sender-only). Trade-off: a drawn panel is missing.
+- Q-23 Files list. Recommended: write a read-only action for a conversation's files (RLS already allows it; no migration), so Files ships with the phone. Trade-off: a new server surface to build and review. The alternative is to hide it.
+- Q-24 "Only coaches can post". Recommended: hide it, and write no migration unless you want the feature. Trade-off: a drawn switch is missing.
+- Q-25 Edit group. Recommended: hide it until what Edit covers is drawn and a rename action exists. Trade-off: a drawn button is missing.
+- Q-26 Add member. Recommended: wire the existing `getGolfGroupAddCandidates` and `addGolfGroupMember` for the group's creator, on desktop too, because the component is shared. Trade-off: desktop gains a control its handoff doesn't show.
+- Q-27 Leave group for the group's creator. The design shows it; desktop hides it. Recommended: keep the desktop rule, because nobody else could manage the group. Trade-off: differs from the drawing.
+- Q-28 Delete conversation. Recommended: hide it. There is no delete policy and no defined meaning (for you only, or for both). Trade-off: a drawn row is missing.
+- Q-29 Design details with no backend. Recommended: leave out the event card in a thread (no writer, and 0 such rows); show every group with the people mark (no group type); keep the six stored reactions (no check); mark only the creator as "Admin"; keep desktop's View stats for coaches in a player's direct details, which the design leaves out. Trade-off: small differences from the drawing.
+
 ## Data gaps (shown honestly, never invented)
 
 - Home: the prototype's weather and "Week 7 of 12" have no source (golf teams have no season start or end dates). They are omitted until one exists.
@@ -131,6 +159,24 @@ Starting the next session:
 - Settings: the comparison weights stay hidden, as in the current app.
 - Messages: threaded replies and a shared-files list in details have no backend. They are not shown.
 - Messages: the thread header's search icon is not built; message search is team-wide (`searchGolfMessages` takes no conversation) and lives in the rail. The typing indicator shows an avatar in direct threads only, because the realtime hook reports that someone is typing, not who.
+- Messages (phone design, 2026-09-29): checked against the code and production. Only SELECT statements were run, and only aggregates were read: no names and no message text. Every production message is `kind = 'text'` (215); none is pinned, none replies to another, and none has a payload. There are 13 attachments and 0 poll or RSVP responses. The design's items without a backend are these, each waiting on the question named:
+  - Call: phone numbers aren't loaded and are minors' PII (Q-18).
+  - Pinned: the columns exist but nothing writes them, and the update policy is sender-only (Q-22).
+  - The Files list: needs a conversation-level read (Q-23).
+  - Search inside a thread: the action is team-wide and capped at 50 results (Q-20).
+  - "Only coaches can post": no column or policy (Q-24).
+  - Edit group, and naming a group after sending: no rename action (Q-25, Q-14).
+  - Delete conversation: no delete policy on `golf_conversations` (Q-28).
+  - The event card in a thread: no writer (Q-29).
+  - A group icon by type: no column (Q-29).
+  - The check reaction: not one of the six stored reactions (Q-29).
+  - The travel squad: no membership source (Q-16).
+  - Assistant coaches in a new group: broadcasts add players only (Q-15).
+  - "Admin" on a coach who didn't create the group (Q-29).
+  - Schedule: can't prefill invitees (Q-19).
+
+  Add member has existing actions that desktop doesn't use yet (Q-26).
+- Phone shell (2026-09-29): `m.css` styles a More screen (`.m-me`, `.m-more`) that no board draws (Q-8). The design has no player tab bar (Q-5). The top-bar glass `rgb(247 245 239 / .9)` and the phone avatar colours have no `--ch-*` token yet; they go into the design system first (Q-10).
 
 ## Verification log
 
@@ -142,3 +188,4 @@ Starting the next session:
 - 2026-09-29 · Settings · desktop: built from the design system at 1280px (coach: account, notifications, team, CoachHelm, preferences; player: account, golf profile, notifications); preview states player, noteam, failed, partial, assistant, failwrites, loading. Fixed a live bug found on the way: `push_announcements` was stripped on save and read as off (test added). typecheck 0.
 - 2026-09-29 · Settings and shell · catalog: 76 Settings and 14 shell tests, each named by its number; clubhouse:check enforces the catalog. Found and fixed on the way: every Clubhouse toast rendered outside the Clubhouse root and so had no background; the browser's own email bubble covered ours; the photo coin lost its initials while the name was empty.
 - 2026-09-29 · Stats (team) · old link: `/stats/team` opens the rebuilt Team stats for coaches. Compared the design project's `Stats.html`, `stats.jsx`, `stats.css`, `cal.css`, `depth.css`, `sidebar.css` and the colour and elevation tokens with `design/handoff/`: identical apart from the Qualifiers nav item (not built, owner). 
+- 2026-09-29 · Foundation, Messages · phone-spec: the owner's `Messages Mobile.html` was served over http and every board and state was rendered at 390 × 844 @2x (`messages-00..22`, plus `messages-90`, derived without the Safari bar). This was redone after ccbd33465 changed the avatars. The preview was captured at 390px for coach and player (`messages-preview-*`) on a dev server on :3104, stopped afterwards. No page errors. Wrote `phone/foundation.md` and `phone/messages.md` as approved specs. The gate stays `doing` until Q-5 to Q-29 are answered.
