@@ -117,7 +117,7 @@ Missing actions:
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
-- [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (D-30 to D-33; Q-16, the phone frame, belongs to phone-spec)
+- [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (D-30 to D-33; Q-16, the phone tab, is D-34)
 
 ## desktop
 - [x] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth): 38 states at each width, side by side with the prototype captures; the differences left are decisions, logged in PROGRESS.md
@@ -160,7 +160,7 @@ Missing actions:
 
 ## phone-spec
 - [x] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/mobile/` (or is a draft the owner approved), and maps each screen to components
-- [ ] It says `Status: approved` (the design is the owner's, D-22; the mapping waits on Q-5, Q-15, Q-16 and Q-20)
+- [x] It says `Status: approved` (the design is the owner's, D-22; Q-5, Q-15, Q-16 and Q-20 answered by D-30, D-33 and D-34)
 
 ## phone
 - [ ] Built at 390px and 430px, respecting the safe areas

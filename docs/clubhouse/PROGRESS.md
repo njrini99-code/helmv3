@@ -74,7 +74,7 @@ Starting the next session:
 | Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Messages | /golf/dashboard/messages (coach and player) | done | done | done | doing | doing | doing | todo | doing | doing | doing | todo |
 | Settings | /golf/dashboard/settings (coach and player) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
-| Qualifiers | /golf/dashboard/qualifiers with /new, /[id], /[id]/edit (coach; list and detail also player), /golf/dashboard/my-qualifiers (player) | done | done | done | done | done | doing | todo | done | done | done | doing |
+| Qualifiers | /golf/dashboard/qualifiers with /new, /[id], /[id]/edit (coach; list and detail also player), /golf/dashboard/my-qualifiers (player) | done | done | done | done | done | done | todo | done | done | done | doing |
 | CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role) | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
@@ -120,7 +120,16 @@ Starting the next session:
   - every column fits at 924 and up;
   - the phone form keeps every web field.
 
-  Q-16 stays open with the phone foundation.
+  Q-16 stays open with the phone foundation (answered since: D-34).
+- D-34 (2026-09-29, Q-16): On the phone, Qualifiers opens from the Rounds tab, as the boards draw it. This follows the owner's foundation decision: the design's five-tab ivory bar, which `messages-mobile` is building on its branch. The Qualifiers phone build waits for that foundation to merge (owner).
+- D-35 (2026-09-29): Once Qualifiers desktop is verified, one forward-only migration closes the older database gaps the security review found. It is written and reviewed (`db-migration-reviewer`, pgTAP, `npm run test:rls` once locally) but not applied; applying it is the owner's call. It covers:
+  - `coach_reasoning` becomes coach-only: table-level SELECT is revoked and a column list without it is granted back, or it moves somewhere coach-gated (revoking the one column alone does nothing);
+  - the entries insert check also requires a `golf_team_members` row for that player on the qualifier's team;
+  - the remove-with-round trigger becomes `SECURITY DEFINER` with a fixed `search_path`, and covers draft rounds;
+  - `anon` grants on the four qualifier tables are revoked, and the helpers' `search_path` gains `pg_temp`.
+
+  Live counts (aggregates only): of 224 qualifier rounds, none has no team, another team or another status, so the trigger gap is latent. There are 6 selection rows and none has reasoning written, so nothing has leaked (owner).
+- D-36 (2026-09-29): A player seeing only their own scorecards is a screen choice, not a privacy rule. Players can read teammates' `golf_holes` through RLS, and that stays (owner).
 
 ## Open owner questions
 
@@ -129,7 +138,7 @@ Starting the next session:
 - Q-3 Phone specs: decided 2026-09-29 (D-22). The owner's mobile designs in `design/handoff/mobile/` are the phone specs; the drafts in `docs/clubhouse/phone/` only matter for pages without one, and still need approval.
 - Q-4 Rollout: decided 2026-09-29, the flag stays off in production; the owner does a live pass on a Vercel preview with real coach and player accounts first.
 
-Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 2026-09-29; map in `screens/qualifiers.md`). The owner answered every question except Q-16 on 2026-09-29 (D-30 to D-33). Each still shows the options as they were put.
+Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 2026-09-29; map in `screens/qualifiers.md`). The owner answered every question on 2026-09-29; Q-16 last, with the phone foundation (D-30 to D-33). Each still shows the options as they were put.
 
 - Q-5 (answered 2026-09-29, D-30) Player view (the design is coach-only):
   - Recommended: one page for both roles, like Calendar, built from the design system and reviewed by the owner, like Settings (D-18).
@@ -179,7 +188,7 @@ Qualifiers (design `Qualifiers.html` and `Qualifiers Mobile.html`, dropped in 20
   - Recommended: add Qualifiers under Program once it's rebuilt, and hide Lineups until it has its own design (as Q-2).
   - Trade-off: coaches lose the Lineups label they use now.
   - Player navigation gets Qualifiers only with Q-5 and Q-6.
-- Q-16 (open: decided with the phone foundation by `messages-mobile`) Phone home for Qualifiers: the tab bar, top bar, More and sheets belong to the foundation spec (owned by `messages-mobile`, from the owner's `m-shell.jsx` and `m.css`); `qual-mobile.jsx` carries an older copy of that shell. The page-level question is which tab owns Qualifiers. The boards mark Rounds active.
+- Q-16 (answered 2026-09-29, D-34) Phone home for Qualifiers: the tab bar, top bar, More and sheets belong to the foundation spec (owned by `messages-mobile`, from the owner's `m-shell.jsx` and `m.css`); `qual-mobile.jsx` carries an older copy of that shell. The page-level question is which tab owns Qualifiers. The boards mark Rounds active.
   - Recommended: Qualifiers sits under the Rounds tab, as drawn, once the foundation's tab set is approved.
   - Trade-off: it depends on the foundation keeping a Rounds tab.
   - Alternative: Qualifiers is reached from More.

@@ -1,6 +1,6 @@
 # Phone design: Qualifiers
 
-Status: owner design, mapping open. The design is `design/handoff/mobile/Qualifiers Mobile.html`, `qual-mobile.jsx` and `qual-mobile.css`, and it shares `qual-core.jsx`, `qual-data.js` and `qual.css` with desktop. Under D-22 the owner's design is the phone spec. This mapping stays open until Q-5, Q-15, Q-16 and Q-20 are answered and the foundation spec is approved, so the `phone-spec` gate is `doing`.
+Status: approved. The design is `design/handoff/mobile/Qualifiers Mobile.html`, `qual-mobile.jsx` and `qual-mobile.css`, and it shares `qual-core.jsx`, `qual-data.js` and `qual.css` with desktop. Under D-22 the owner's design is the phone spec. The mapping's questions are answered: the player view (Q-5, D-30), navigation (Q-15, D-33), the tab (Q-16, D-34) and the phone gaps (Q-20, D-33). The phone build waits for the foundation to merge (D-34).
 
 The boards are drawn at 402 × 874, an iPhone 16 Pro inside a Safari frame. They were rendered on 2026-09-29 at 390 × 844 without the bezel (`qualifiers-01..11`) and as drawn (`qualifiers-01..05-*-frame`); the captures are not committed. Every board is the coach's view, and there is no player phone design (Q-5).
 
@@ -23,7 +23,7 @@ The phone foundation (tab bar, top bar, More, sheets) is specified by its own sp
 The page builds on the shell's pieces rather than this copy, and nothing here overrides the foundation.
 
 Two things are page-specific:
-- **Which tab owns Qualifiers.** The boards mark Rounds active while in Qualifiers (Q-16).
+- **Which tab owns Qualifiers.** The Rounds tab, as the boards draw it (D-34).
 - **The top bar per screen.** The list has the title "Qualifiers" and the bell. The detail has a "Qualifiers" back link and the title "Qualifier". The create form has Cancel and a trailing Create, and hides the tab bar.
 
 The Safari chrome is prototype framing, since the app is the Capacitor shell. Toasts are styled in `qual-mobile.css` (`.qm-toast`) but never rendered, so their phone placement follows the foundation.
