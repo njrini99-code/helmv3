@@ -1,6 +1,7 @@
 'use client';
 
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { useEffect, type ReactNode } from 'react';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
@@ -51,7 +52,8 @@ export function ClubhouseFrame({
 
   return (
     <ClubhouseMarker>
-      <LazyMotion features={domAnimation} strict>
+      {/* The animation features load in their own chunk, after first paint (nothing animates on mount). */}
+      <LazyMotion features={loadFeatures} strict>
         {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
         <div className={`ch-root ${clubhouseFontVariables}`} data-ui="clubhouse" data-motion={showAnimations ? undefined : 'off'}>
           <ToastProvider>
