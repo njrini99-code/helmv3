@@ -952,6 +952,91 @@ a.ch-rd-sc:focus-visible {
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
+.ch-rv-nosg {
+  margin: 0;
+  padding: 0 4px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+/* Strokes gained: the total, then a bar per leg either side of zero. Gains green, losses amber. */
+.ch-rv-sg__tot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.ch-rv-sg__tot b {
+  font: 500 32px/1 var(--ch-font-sans);
+  letter-spacing: -0.04em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rv-sg__tot em {
+  font: var(--ch-type-caption);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv-sg__legs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0 20px 18px;
+}
+.ch-rv-sg__r {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-rv-sg__r dt,
+.ch-rv-sg__r dd {
+  margin: 0;
+}
+.ch-rv-sg__r dd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+}
+.ch-rv-sg__r b {
+  text-align: right;
+  font: 600 13px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv-sg .is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-rv-sg .is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-rv-sg__bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ch-bg-inset);
+}
+.ch-rv-sg__z {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 1px;
+  background: var(--ch-border-strong);
+}
+.ch-rv-sg__v {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+.ch-rv-sg__v.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-rv-sg__v.is-loss {
+  background: var(--ch-chart-loss);
+}
 .ch-rv-cardw {
   display: flex;
   flex-direction: column;
@@ -1299,7 +1384,8 @@ a.ch-rd-sc:focus-visible {
     padding: 0 12px 14px;
   }
   .ch-rv-shots,
-  .ch-rv-dist {
+  .ch-rv-dist,
+  .ch-rv-sg__legs {
     padding: 0 16px 14px;
   }
 }

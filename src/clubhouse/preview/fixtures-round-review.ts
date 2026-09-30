@@ -133,10 +133,16 @@ export const PREVIEW_REVIEW_ROUND: ChReviewRoundRow = {
   ai_recap:
     'Ball-striking carried this one at Finley. The damage came on the par 5s, where four bogeys undid two birdies, and the putter held steady. Scoring the long holes is the work before Thursday.',
   notes: 'Wind picked up on the back nine. Lag putting felt good.',
+  // Approach gained, putting lost: the legs add up to the total, as the stored figures do.
+  strokes_gained_total: 0.6,
+  strokes_gained_tee: 0.4,
+  strokes_gained_approach: 1.3,
+  strokes_gained_around_green: -0.2,
+  strokes_gained_putting: -0.9,
 };
 
 const review = (over: Partial<Parameters<typeof toReview>[1]> = {}, row: Partial<ChReviewRoundRow> = {}): ChRoundReview =>
-  toReview({ ...PREVIEW_REVIEW_ROUND, ...row }, { holes: toHoles(HOLES, SHOTS), holesError: false, shotsError: false, playerName: null, teeYards: 6984, ...over });
+  toReview({ ...PREVIEW_REVIEW_ROUND, ...row }, { holes: toHoles(HOLES, SHOTS), holesError: false, shotsError: false, playerName: null, teeYards: 6984, tour: 'pga', ...over });
 
 export const PREVIEW_REVIEW = review();
 export const PREVIEW_REVIEW_COACH = review({ playerName: 'Jonah Okafor' });
@@ -145,4 +151,6 @@ export const PREVIEW_REVIEW_NO_HOLES = review({ holes: [], holesError: true });
 /** Posted with its score only: no holes, no recap, no notes. */
 export const PREVIEW_REVIEW_TOTAL_ONLY = review({ holes: [] }, { ai_recap: null, notes: null });
 export const PREVIEW_REVIEW_HOLE_BY_HOLE = review({ holes: toHoles(HOLES, []) });
+/** Posted without shots: the round has no strokes gained at all (CH-11313). */
+export const PREVIEW_REVIEW_NO_SG = review({}, { strokes_gained_total: null, strokes_gained_tee: null, strokes_gained_approach: null, strokes_gained_around_green: null, strokes_gained_putting: null });
 export { HOLES as PREVIEW_REVIEW_HOLES, SHOTS as PREVIEW_REVIEW_SHOTS, FINLEY as PREVIEW_FINLEY, PATTERN as PREVIEW_FINLEY_PATTERN };

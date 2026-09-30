@@ -55,6 +55,8 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 40408 | CH-4308 | `A_PLAYER_HAS_TOO_FEW_ROUNDS_FOR` | A player has too few rounds for strokes gained |
 | 40409 | CH-4309 | `A_COACH_OR_PLAYER_WITH_NO_TEAM` | A coach or player with no team |
 | 40410 | CH-4310 | `NO_COUNTABLE_ROUND_ALL_SEASON` | No countable round all season (D-71) |
+| 40411 | CH-4311 | `THE_WINDOW_HAS_NO_ROUND_POSTED_WITH` | The window has no round posted with shots, so the team has no strokes gained |
+| 40412 | CH-4312 | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
 
 ## 05 — Validation
 

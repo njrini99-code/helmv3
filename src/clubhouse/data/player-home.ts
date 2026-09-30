@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
+import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
 import { isFull18, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
 import { loadD1, loadRoundCache, tourForGender, type ChRoundCache } from './stats-common';
@@ -70,6 +71,8 @@ export interface ChPlayerHome {
   /** Oldest to newest, 18-hole countable rounds, up to SCORING_MAX. */
   scoring: { points: ChScoringPoint[]; error: boolean };
   sgPerRound: number | null;
+  /** What the strokes gained here is measured against; null when the team's own row didn't load (no baseline is claimed). */
+  tour: ChSgTour;
   handicap: number | null;
   /** Null when the rounds didn't load. `cacheError`: scrambling and three-putts didn't load. */
   legs: { rows: ChPlayerLeg[]; cacheError: boolean; d1Error: boolean } | null;
@@ -139,6 +142,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
     sgPerRound: season.sgPerRound,
+    tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
   };

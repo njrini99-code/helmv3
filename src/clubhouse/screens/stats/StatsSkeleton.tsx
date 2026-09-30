@@ -56,7 +56,7 @@ export function StatsProfileSkeleton() {
   );
 }
 
-/** Route loading for Stats: title, window switch, five figure cards and the trend card, in place. */
+/** Route loading for Stats: title, window switch, six figure cards (strokes gained first) and the trend card, in place. */
 export function StatsSkeleton() {
   return (
     <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
@@ -74,8 +74,8 @@ export function StatsSkeleton() {
           <Skeleton width={236} height={32} radius={11} />
         </div>
       </header>
-      <div className="ch-fg">
-        {Array.from({ length: 5 }, (_, i) => (
+      <div className="ch-fg" style={{ ['--ch-fg-n' as string]: 6 }}>
+        {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="ch-fg__c ch-fg__c--skel">
             <Line height={17}>
               <Skeleton width={110} height={13} />

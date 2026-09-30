@@ -7,7 +7,7 @@ import { PreviewRounds } from '@/clubhouse/preview/PreviewRounds';
 import { PreviewTracking } from '@/clubhouse/preview/PreviewTracking';
 import { PreviewSetup } from '@/clubhouse/preview/PreviewSetup';
 import { RoundReview } from '@/clubhouse/screens/rounds/RoundReview';
-import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY } from '@/clubhouse/preview/fixtures-round-review';
+import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY } from '@/clubhouse/preview/fixtures-round-review';
 import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_ROUNDS_IDLE, PREVIEW_ROUNDS_MANY, PREVIEW_ROUNDS_NO_SEASON, PREVIEW_ROUNDS_UNFINISHED_FAILED } from '@/clubhouse/preview/fixtures-rounds';
 import '@/clubhouse/styles/rounds.css';
 import { PreviewClasses } from '@/clubhouse/preview/PreviewClasses';
@@ -88,7 +88,7 @@ import '@/clubhouse/styles/coachhelm.css';
  *   /clubhouse-preview/home-player ?state=empty | noevents | failed | loading   (Theo; empty is the first-run page)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
- *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole   (a round's review)
+ *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole | nosg   (a round's review)
  *   /clubhouse-preview/classes ?state=clear | empty | failed | partial | mixed | noteam | loading | failwrites | failsync | read-notschedule | read-fault | read-none | read-warn   (Jonah)
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail   (the shot screen)
@@ -219,7 +219,7 @@ export default async function ClubhousePreview({
       node: (
         <RoundReview
           review={
-            { coach: PREVIEW_REVIEW_COACH, noshots: PREVIEW_REVIEW_NO_SHOTS, noholes: PREVIEW_REVIEW_NO_HOLES, total: PREVIEW_REVIEW_TOTAL_ONLY, holebyhole: PREVIEW_REVIEW_HOLE_BY_HOLE }[state ?? ''] ?? PREVIEW_REVIEW
+            { coach: PREVIEW_REVIEW_COACH, noshots: PREVIEW_REVIEW_NO_SHOTS, noholes: PREVIEW_REVIEW_NO_HOLES, total: PREVIEW_REVIEW_TOTAL_ONLY, holebyhole: PREVIEW_REVIEW_HOLE_BY_HOLE, nosg: PREVIEW_REVIEW_NO_SG }[state ?? ''] ?? PREVIEW_REVIEW
           }
         />
       ),

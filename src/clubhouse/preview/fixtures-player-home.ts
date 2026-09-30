@@ -77,6 +77,7 @@ export const PREVIEW_PLAYER_HOME: ChPlayerHome = {
   },
   scoring: { error: false, points: SCORES.map(([label, score], i) => ({ id: `s${i}`, label, score, par: 72 })) },
   sgPerRound: 1.8,
+  tour: 'pga',
   handicap: -0.8,
   legs: {
     cacheError: false,

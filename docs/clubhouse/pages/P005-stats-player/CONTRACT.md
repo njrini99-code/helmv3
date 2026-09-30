@@ -54,6 +54,9 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50403 | CH-5303 | `NO_FOCUS_AREAS` | No focus areas |
 | 50404 | CH-5304 | `NO_GOALS` | No goals |
 | 50405 | CH-5305 | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | Fewer than three rounds in the window |
+| 50406 | CH-5308 | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
+| 50407 | CH-5309 | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | Phone: no strokes gained in the window (no leg and no total) |
+| 50408 | CH-5310 | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
 
 ## 05 — Validation
 

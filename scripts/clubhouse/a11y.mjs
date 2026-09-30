@@ -130,6 +130,7 @@ export const CH_A11Y_PAGES = [
   ['rounds', '/clubhouse-preview/round'],
   ['rounds', '/clubhouse-preview/round?state=coach'],
   ['rounds', '/clubhouse-preview/round?state=noshots'],
+  ['rounds', '/clubhouse-preview/round?state=nosg'],
   ['rounds', '/clubhouse-preview/setup'],
   ['rounds', '/clubhouse-preview/setup?state=failcourses'],
   ['rounds', '/clubhouse-preview/track'],

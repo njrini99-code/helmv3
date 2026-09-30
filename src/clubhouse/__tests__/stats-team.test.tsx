@@ -32,6 +32,7 @@ import { resolveClubhouseTeam } from '../routes/team';
 import { ClubhouseStatsRoute, StatsNoTeam } from '../routes/stats';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { StatsTeam } from '../screens/stats/StatsTeam';
+import { sgBaseline } from '../lib/sg';
 import { isRebuilt } from '../shell/nav';
 import { StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { ToastProvider } from '../ui/Toast';
@@ -205,7 +206,8 @@ describe('Stats team · reads that fail', () => {
     const data = await load();
     expect(logServer).toHaveBeenCalledWith('stats', 'team', expect.anything(), 'teams');
     expect(data.teamName).toBe('Your team');
-    expect(data.sgBaselineNote).toBe('the baseline');
+    expect(data.tour).toBeNull();
+    expect(sgBaseline(data.tour).noun).toBe('the baseline');
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/D1/);
     expect(data.roundCount).toBe(1);
   });
@@ -235,7 +237,7 @@ describe('Stats team · empty', () => {
   it('CH-4303 CH-4304 the trend has nothing to draw in either lens', async () => {
     const user = userEvent.setup();
     const blank = <T,>(xs: T[]) => xs.map(() => null);
-    wrap(stats({ players: PREVIEW_TEAM_STATS.players.map((p) => ({ ...p, sg: blank(p.sg), score: blank(p.score) })), team: { sg: blank(PREVIEW_TEAM_STATS.team.sg), score: blank(PREVIEW_TEAM_STATS.team.score) } }));
+    wrap(stats({ players: PREVIEW_TEAM_STATS.players.map((p) => ({ ...p, sg: blank(p.sg), score: blank(p.score), sgMean: null, scoreMean: null })), team: { sg: blank(PREVIEW_TEAM_STATS.team.sg), score: blank(PREVIEW_TEAM_STATS.team.score), sgMean: null, scoreMean: null } }));
     await expectCode('CH-4303', /No strokes gained in this window/);
     await user.click(screen.getByRole('radio', { name: 'Scoring' }));
     await expectCode('CH-4304', /No scores in this window/);
@@ -543,13 +545,13 @@ function captureExport() {
 }
 
 describe('Stats team · the page', () => {
-  it('40101 Team stats opens on the last 10 rounds: the header, five figures, the trend, the legs and the grid, putting and the season bests; the server render already has them', async () => {
+  it('40101 Team stats opens on the last 10 rounds: the header, six figures (strokes gained first), the trend, the legs and the grid, putting and the season bests; the server render already has them', async () => {
     const { renderToString } = await import('react-dom/server');
     const html = renderToString(tree(stats()));
     for (const text of ['Team stats', 'Varsity', 'active', 'Scoring average', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Birdies per round', 'Team putting', 'Season bests']) expect(html).toContain(text);
     wrap(stats());
     expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
-    expect([...document.querySelectorAll('.ch-fg__l')].map((l) => l.textContent)).toEqual(['Scoring average', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Birdies per round']);
+    expect([...document.querySelectorAll('.ch-fg__l')].map((l) => l.textContent)).toEqual(['Team SG per round', 'Scoring average', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Birdies per round']);
     expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /^(Off the tee|Approach|Around green|Putting)/ })).toHaveLength(4);

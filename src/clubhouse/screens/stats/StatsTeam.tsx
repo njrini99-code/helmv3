@@ -6,7 +6,7 @@ import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { NO_DATA } from '../../lib/format';
+import { formatSigned, NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
@@ -67,7 +67,8 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
                 players: data.players,
                 legWeeks: data.legWeeks,
                 grid: data.grid,
-                sgBaselineNote: data.sgBaselineNote,
+                legTotals: data.legTotals,
+                tour: data.tour,
                 roundCount: data.roundCount,
               }}
             />
@@ -105,12 +106,15 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
       <FigureCards
         items={figures.map((x) => ({
           label: x.label,
-          value: x.value == null ? NO_DATA : x.value.toFixed(x.digits),
+          value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
           unit: x.unit,
           delta: x.delta,
           deltaDigits: x.digits,
           lowerIsBetter: x.lowerIsBetter,
           context: x.context,
+          note: x.note,
+          tone: x.signed && x.value != null ? (x.value >= 0 ? ('gain' as const) : ('loss' as const)) : undefined,
+          code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
         }))}
       />
     </>

@@ -1,4 +1,5 @@
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import type { ChSgTour } from '../lib/sg';
 import { roundType, teeColorFor, teeLabel, type ChRoundType, type ChTeeColor } from './rounds-shape';
 
 /**
@@ -42,6 +43,15 @@ export interface ChReviewHole {
   shots: ChReviewShot[];
 }
 
+/** The round's strokes gained (golf_rounds.strokes_gained_*): the total and the four legs, positive is gained. A leg the round has no value for is null. */
+export interface ChReviewSg {
+  total: number | null;
+  tee: number | null;
+  approach: number | null;
+  around: number | null;
+  putting: number | null;
+}
+
 export interface ChRoundReview {
   id: string;
   playerId: string;
@@ -62,6 +72,10 @@ export interface ChRoundReview {
   putts: number | null;
   fairways: { hit: number; of: number } | null;
   greens: { hit: number; of: number } | null;
+  /** Null when the round has no strokes gained at all (posted without shots). */
+  strokesGained: ChReviewSg | null;
+  /** What that strokes gained is measured against; null when the player's team isn't known. */
+  tour: ChSgTour;
   /** The AI recap stored on the round; null when none was written. */
   recap: string | null;
   /** What the player wrote about the round when posting it. */
@@ -190,9 +204,23 @@ export type ChReviewRoundRow = {
   course_slope: number | null;
   ai_recap: string | null;
   notes: string | null;
+  strokes_gained_total: number | null;
+  strokes_gained_tee: number | null;
+  strokes_gained_approach: number | null;
+  strokes_gained_around_green: number | null;
+  strokes_gained_putting: number | null;
 };
 
-export function toReview(r: ChReviewRoundRow, input: { holes: ChReviewHole[]; holesError: boolean; shotsError: boolean; playerName: string | null; teeYards: number | null }): ChRoundReview {
+/** The round's strokes gained; null when none of the five values is there. */
+export function sgOf(r: ChReviewRoundRow): ChReviewSg | null {
+  const sg = { total: r.strokes_gained_total, tee: r.strokes_gained_tee, approach: r.strokes_gained_approach, around: r.strokes_gained_around_green, putting: r.strokes_gained_putting };
+  return Object.values(sg).some((v) => v != null) ? sg : null;
+}
+
+export function toReview(
+  r: ChReviewRoundRow,
+  input: { holes: ChReviewHole[]; holesError: boolean; shotsError: boolean; playerName: string | null; teeYards: number | null; tour?: ChSgTour },
+): ChRoundReview {
   const c = withCanonicalRoundTotal(r);
   const score = c.total_score ?? 0;
   const facts = [input.teeYards ? `${input.teeYards.toLocaleString('en-US')} yds` : null, r.course_rating && r.course_slope ? `${r.course_rating} / ${r.course_slope}` : null].filter(Boolean);
@@ -216,6 +244,8 @@ export function toReview(r: ChReviewRoundRow, input: { holes: ChReviewHole[]; ho
     putts: r.total_putts,
     fairways: r.total_fairways ? { hit: r.total_fairways_hit ?? 0, of: r.total_fairways } : null,
     greens: r.total_gir_possible ? { hit: r.total_gir ?? 0, of: r.total_gir_possible } : null,
+    strokesGained: sgOf(r),
+    tour: input.tour ?? null,
     recap: r.ai_recap?.trim() || null,
     notes: r.notes?.trim() || null,
     holes: input.holes,

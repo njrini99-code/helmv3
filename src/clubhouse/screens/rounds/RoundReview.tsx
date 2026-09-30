@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag, Sparkles } from 'lucide-react';
 import { distribution, type ChReviewHole, type ChRoundReview } from '../../data/round-review-shape';
-import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
+import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
@@ -28,6 +29,61 @@ export function reviewBack(r: ChRoundReview): { label: string; href: string } {
 /** The hole a review opens on: the first one over par (the board's choice), else the first. */
 export function firstHole(holes: ChReviewHole[]): number {
   return holes.find((h) => h.score != null && h.par != null && h.score > h.par)?.n ?? holes[0]?.n ?? 1;
+}
+
+const SG_LEGS: Array<[keyof Omit<NonNullable<ChRoundReview['strokesGained']>, 'total'>, string]> = [
+  ['tee', 'Off the tee'],
+  ['approach', 'Approach'],
+  ['around', 'Around green'],
+  ['putting', 'Putting'],
+];
+
+/**
+ * The round's strokes gained: the total, then the four legs as bars either side of zero on a scale the round
+ * sets (its largest value rounded up, at least 1). A round posted without shots has none, and says so in one line.
+ */
+function StrokesGained({ review: r }: { review: ChRoundReview }) {
+  const sg = r.strokesGained;
+  if (!sg)
+    return (
+      <p className="ch-rv-nosg" data-ch-code="CH-11313">
+        No strokes gained for this round. It is worked out from shots tracked hole by hole.
+      </p>
+    );
+  const baseline = sgBaseline(r.tour);
+  const scale = sgScale([sg.total, ...SG_LEGS.map(([k]) => sg[k])]);
+  const tone = (v: number | null) => (v == null ? '' : v >= 0 ? ' is-gain' : ' is-loss');
+  return (
+    <section className="ch-rv-card ch-rv-sg" aria-labelledby="ch-rv-sg-h">
+      <div className="ch-rv-card__h">
+        <div>
+          <h2 id="ch-rv-sg-h">Strokes gained</h2>
+          <span>{[r.holesPlayed === 9 ? '9 holes' : null, baseline.vs].filter(Boolean).join(' · ')}</span>
+        </div>
+        <div className="ch-rv-sg__tot">
+          <b className={'ch-num' + tone(sg.total)}>{formatSigned(sg.total)}</b>
+          <em>Total</em>
+        </div>
+      </div>
+      <dl className="ch-rv-sg__legs">
+        {SG_LEGS.map(([k, label]) => {
+          const v = sg[k];
+          return (
+            <div key={k} className="ch-rv-sg__r">
+              <dt>{label}</dt>
+              <dd>
+                <span className="ch-rv-sg__bar" aria-hidden="true">
+                  <i className="ch-rv-sg__z" />
+                  {v != null && <i className={'ch-rv-sg__v' + tone(v)} style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${sgShare(v, scale) * 50}%` }} />}
+                </span>
+                <b className={'ch-num' + tone(v)}>{formatSigned(v)}</b>
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    </section>
+  );
 }
 
 function Mark({ v }: { v: boolean | null }) {
@@ -243,6 +299,10 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           </div>
         ))}
       </dl>
+
+      <SectionBoundary surface="rounds.review.strokesGained" label="Strokes gained" code="CH-11203">
+        <StrokesGained review={r} />
+      </SectionBoundary>
 
       {r.holesError ? (
         <InlineNotice code="CH-11204" title="The scorecard didn't load" body="The round's totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} />

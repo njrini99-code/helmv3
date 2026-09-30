@@ -79,6 +79,7 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | CH-11310 | The course search matches nothing (or the library is empty) | "No courses match “zzz”. Check the spelling, or add it by hand." | `CoursePicker` | round-setup.test › CH-11510 |
 | CH-11311 | A course has no tees ready to play | "Chapel Ridge GC has no tees ready to play yet. A coach can finish them in the course library; for now, add the course by hand."; draft tees show, not playable | `CoursePicker` | round-setup.test › CH-11208 |
 | CH-11312 | Qualifier chosen, but none is open | "No qualifier is open for you right now. Your coach opens one when it's time; until then, play a practice or tournament round." | `RoundSetup` | round-setup.test › CH-11312 |
+| CH-11313 | A round with no strokes gained (posted without shots) | One line where the Strokes gained card would be: "No strokes gained for this round. It is worked out from shots tracked hole by hole." The hero, figures and card still show | `StrokesGained` in `RoundReview` | strokes-gained.test › CH-11313 |
 
 ## 114xx Loading
 

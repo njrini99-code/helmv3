@@ -43,6 +43,8 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4308 | A player has too few rounds for strokes gained | "Early read" in Total, dashes in the leg cells; never 0.0 | `LegGrid` | stats-team.test › CH-4308 |
 | CH-4309 | A coach or player with no team | The page empty state (v2 medallion): "You aren't on a team yet" + what fills in once they are | `StatsNoTeam` (route) | stats-player.test › CH-4309 |
 | CH-4310 | No countable round all season (D-71) | The page empty state: "No stats yet" + "Team and player stats fill in as players post rounds this season." + View roster; other windows keep CH-4301 | `StatsTeamFirstRun` (desktop and phone) | stats-team.test › CH-4310 |
+| CH-4311 | The window has no round posted with shots, so the team has no strokes gained | The "Team SG per round" headline reads "—" with "Needs rounds with shots" and what it is measured against ("vs Tour"), never a zero | `TeamFigures` (`FigureCards`, `data-ch-code` on the card); loader `figures[0].state = 'empty'` | strokes-gained.test › CH-4311 |
+| CH-4312 | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) | The headline keeps its value and says "No earlier rounds" (or "Too few earlier rounds with shots") where the change chip would be. The season and qualifier windows have no previous window by design and say nothing | `TeamFigures`; `sgChange` in `stats-common`, `figures[0].state = 'no-comparison'` | strokes-gained.test › CH-4312 |
 
 ## 44xx Loading
 

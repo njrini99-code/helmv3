@@ -1,8 +1,10 @@
 import { ArrowDownRight, ArrowUpRight, Flag, Minus } from 'lucide-react';
 import type { ReactNode } from 'react';
+import type { ChSgChange } from '../../data/stats-common';
 import { Icon } from '../../ui/Icon';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { sgScale, sgShare } from '../../lib/sg';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -28,18 +30,32 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
 export function FigureCards({
   items,
 }: {
-  items: Array<{ label: string; value: string; unit?: string; delta?: number | null; deltaDigits?: number; lowerIsBetter?: boolean; context: string }>;
+  items: Array<{
+    label: string;
+    value: string;
+    unit?: string;
+    delta?: number | null;
+    deltaDigits?: number;
+    lowerIsBetter?: boolean;
+    context: string;
+    /** A second line under the context: what the figure is measured against. */
+    note?: string;
+    /** Green for a gain and amber for a loss (strokes gained), on the value itself. */
+    tone?: 'gain' | 'loss';
+    /** The catalog state this card is in, when it is one (found by `data-ch-code`). */
+    code?: string;
+  }>;
 }) {
   return (
-    <div className="ch-fg">
+    <div className="ch-fg" style={{ ['--ch-fg-n' as string]: items.length }}>
       {items.map((it) => {
         const d = it.delta;
         const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
         const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
         return (
-          <div key={it.label} className="ch-fg__c">
+          <div key={it.label} className="ch-fg__c" data-ch-code={it.code}>
             <span className="ch-fg__l">{it.label}</span>
-            <span className="ch-fg__v ch-num">
+            <span className={'ch-fg__v ch-num' + (it.tone ? ` ch-${it.tone}` : '')}>
               {it.value}
               {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
             </span>
@@ -52,10 +68,31 @@ export function FigureCards({
               )}
               <span>{it.context}</span>
             </span>
+            {it.note && <span className="ch-fg__n">{it.note}</span>}
           </div>
         );
       })}
     </div>
+  );
+}
+
+/**
+ * How strokes gained moved against the previous 10 rounds: a small chip (green up, amber down, grey flat)
+ * and, where there is nothing to compare, the reason in words ("No earlier rounds").
+ */
+export function SgChangeChip({ change, code }: { change: ChSgChange; code?: string }) {
+  const d = change.delta;
+  const flat = d != null && Math.abs(d) < 0.05;
+  return (
+    <span className="ch-sgchg">
+      {d != null && (
+        <span className={`ch-delta ch-num ${flat ? 'is-flat' : d > 0 ? 'is-good' : 'is-bad'}`}>
+          <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
+          {formatSigned(d)}
+        </span>
+      )}
+      {change.context && <span data-ch-code={d == null ? code : undefined}>{change.context}</span>}
+    </span>
   );
 }
 
@@ -113,13 +150,14 @@ export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; sco
  * for a gain (green) or hangs for a loss (amber). A leg with no data is a
  * stop with a dash.
  */
-export function LegRoute({ rows, max }: { rows: Array<{ label: string; value: number | null }>; max?: number }) {
+export function LegRoute({ rows }: { rows: Array<{ label: string; value: number | null }> }) {
   const W = 360;
   const H = 220;
   const mid = H / 2;
   const P = 38;
   const step = (W - P * 2) / Math.max(1, rows.length - 1);
-  const m = max ?? Math.max(1, ...rows.map((r) => Math.abs(r.value ?? 0)));
+  // The scale is the data's own (its largest leg rounded up, at least 1), so a bar's height is its value.
+  const m = sgScale(rows.map((r) => r.value));
   const hh = mid - 46;
   const summary = rows.map((r) => `${r.label} ${r.value == null ? 'no data' : formatSigned(r.value)}`).join(', ');
   return (
@@ -128,7 +166,7 @@ export function LegRoute({ rows, max }: { rows: Array<{ label: string; value: nu
       {rows.map((r, i) => {
         const x = P + i * step;
         const v = r.value;
-        const h = v == null ? 0 : (Math.min(Math.abs(v), m) / m) * hh;
+        const h = v == null ? 0 : sgShare(v, m) * hh;
         const pos = v == null || v >= 0;
         return (
           <g key={r.label}>
@@ -147,15 +185,48 @@ export function LegRoute({ rows, max }: { rows: Array<{ label: string; value: nu
   );
 }
 
+/**
+ * Strokes gained by leg on the phone: a bar either side of zero on a scale the
+ * data sets (the largest value shown, rounded up, at least 1), so a bar's length
+ * is its value. The total sits under the legs on the same scale.
+ */
+export function SgBars({ rows }: { rows: Array<{ label: string; value: number | null; total?: boolean }> }) {
+  const scale = sgScale(rows.map((r) => r.value));
+  return (
+    <div className="ch-stm-legs">
+      {rows.map(({ label, value: v, total }) => (
+        <div key={label} className={'ch-stm-leg' + (total ? ' is-total' : '')}>
+          <span>{label}</span>
+          <span className="ch-stm-leg__bar" aria-hidden="true">
+            <i className="ch-stm-leg__z" />
+            {v != null && (
+              <i
+                className={'ch-stm-leg__v ' + (v >= 0 ? 'is-gain' : 'is-loss')}
+                style={{
+                  [v >= 0 ? 'left' : 'right']: '50%',
+                  width: `${sgShare(v, scale) * 50}%`,
+                }}
+              />
+            )}
+          </span>
+          <b className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** You against the team and D1, as a scorecard table. */
 export function FieldTable({
   rows,
   showTeam,
 }: {
-  rows: Array<{ label: string; you: number | null; team: number | null; d1: number | null; unit: '' | '%'; digits: number; lowerIsBetter: boolean }>;
+  rows: Array<{ label: string; you: number | null; team: number | null; d1: number | null; unit: '' | '%'; digits: number; lowerIsBetter: boolean; sg?: boolean }>;
   showTeam: boolean;
 }) {
-  const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : `${v.toFixed(r.digits)}${r.unit}`);
+  // Strokes gained reads with its sign and is green when gained, amber when lost (against the Tour); every other row is better or worse than its reference.
+  const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : r.sg ? formatSigned(v, r.digits) : `${v.toFixed(r.digits)}${r.unit}`);
+  const signTone = (v: number | null, r: (typeof rows)[number]) => (r.sg && v != null ? (v >= 0 ? 'ch-gain' : 'ch-loss') : '');
   const hasD1 = rows.some((r) => r.d1 != null);
   return (
     <table className="ch-ft">
@@ -175,7 +246,7 @@ export function FieldTable({
             <tr key={r.label}>
               <td>{r.label}</td>
               <td className="ch-ft__you">
-                <span className={`ch-num ${good == null ? '' : good ? 'ch-gain' : 'ch-loss'}`}>{fmt(r.you, r)}</span>
+                <span className={`ch-num ${r.sg ? signTone(r.you, r) : good == null ? '' : good ? 'ch-gain' : 'ch-loss'}`}>{fmt(r.you, r)}</span>
               </td>
               {showTeam && <td className="ch-num">{fmt(r.team, r)}</td>}
               {hasD1 && <td className="ch-num">{fmt(r.d1, r)}</td>}

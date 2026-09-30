@@ -2313,6 +2313,28 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 40411,
+    "page": "P004",
+    "category": 4,
+    "item": 11,
+    "name": "THE_WINDOW_HAS_NO_ROUND_POSTED_WITH",
+    "chCode": "CH-4311",
+    "meaning": "The window has no round posted with shots, so the team has no strokes gained",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40412,
+    "page": "P004",
+    "category": 4,
+    "item": 12,
+    "name": "THE_LAST_10_WINDOW_HAS_NO_EARLIER",
+    "chCode": "CH-4312",
+    "meaning": "The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 40501,
     "page": "P004",
     "category": 5,
@@ -2856,6 +2878,39 @@
     "name": "FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW",
     "chCode": "CH-5305",
     "meaning": "Fewer than three rounds in the window",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50406,
+    "page": "P005",
+    "category": 4,
+    "item": 6,
+    "name": "THREE_OR_MORE_ROUNDS_IN_THE_WINDOW",
+    "chCode": "CH-5308",
+    "meaning": "Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50407,
+    "page": "P005",
+    "category": 4,
+    "item": 7,
+    "name": "PHONE_NO_STROKES_GAINED_IN_THE_WINDOW",
+    "chCode": "CH-5309",
+    "meaning": "Phone: no strokes gained in the window (no leg and no total)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50408,
+    "page": "P005",
+    "category": 4,
+    "item": 8,
+    "name": "THE_LAST_10_WINDOW_HAS_NO_EARLIER",
+    "chCode": "CH-5310",
+    "meaning": "The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -9509,6 +9564,17 @@
     "tests": [
       "src/clubhouse/__tests__/rounds.test.tsx"
     ]
+  },
+  {
+    "id": 110414,
+    "page": "P011",
+    "category": 4,
+    "item": 14,
+    "name": "A_ROUND_WITH_NO_STROKES_GAINED",
+    "chCode": "CH-11313",
+    "meaning": "A round with no strokes gained (posted without shots)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
     "id": 110501,

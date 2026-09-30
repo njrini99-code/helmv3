@@ -8,6 +8,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { formatHcp } from '../roster/format';
 
 type Span = 5 | 10 | 20;
@@ -25,7 +26,7 @@ export function PlayerGame({ data, phone = false }: { data: ChPlayerHome; phone?
   return (
     <>
       <Scoring data={data} phone={phone} />
-      <Legs legs={data.legs} phone={phone} />
+      <Legs legs={data.legs} tour={data.tour} phone={phone} />
     </>
   );
 }
@@ -41,7 +42,7 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
   const under = shown.filter((p) => p.par != null && p.score < p.par).length;
   const figs: Array<[string, string, string, string]> = [
     ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, delta == null || Math.abs(delta) < 0.05 ? '' : delta < 0 ? 'is-gain' : 'is-loss'],
-    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : 'Per round vs D1', data.sgPerRound == null ? '' : data.sgPerRound >= 0 ? 'is-gain' : 'is-loss'],
+    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, data.sgPerRound == null ? '' : data.sgPerRound >= 0 ? 'is-gain' : 'is-loss'],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
     ['Under par', shown.length ? `${under} of ${shown.length}` : NO_DATA, 'Rounds in this window', ''],
   ];
@@ -217,7 +218,7 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   );
 }
 
-function Legs({ legs, phone }: { legs: ChPlayerHome['legs']; phone: boolean }) {
+function Legs({ legs, tour, phone }: { legs: ChPlayerHome['legs']; tour: ChSgTour; phone: boolean }) {
   if (!legs) return null;
   const any = legs.rows.some((l) => l.value != null);
   return (
@@ -225,7 +226,8 @@ function Legs({ legs, phone }: { legs: ChPlayerHome['legs']; phone: boolean }) {
       <div className="ch-ph-game__h">
         <div>
           <h2 id="ch-ph-legs">By part of the game</h2>
-          <span>Last 10 rounds · strokes gained vs D1</span>
+          {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour (D1 has none), and D1 marks the stats where a benchmark exists. */}
+          <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs} · D1 marks the stats</span>
         </div>
       </div>
       {legs.cacheError && <RefreshNotice code="CH-2216" title="Some of your figures didn't load." body="Scores, greens and putts are right; scrambling is missing. The error has been reported." />}

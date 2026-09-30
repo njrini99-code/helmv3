@@ -1,20 +1,23 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { chLogServer } from '../lib/track-server';
-import { fullName, groupByPlayer, loadSeasonRounds, mean, shortDate, summarizePlayer, type ChRound } from './season';
+import { sgBaseline, type ChSgTour } from '../lib/sg';
+import { fullName, groupByPlayer, isFull18, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChRound } from './season';
 import {
+  bandPutts,
   loadD1,
+  loadPutts,
   loadRoundCache,
   perRound,
   previousWindow,
   rate,
   roundsInWindow,
+  sgChange,
   tourForGender,
   weekLabel,
   weekOf,
   type ChRoundCache,
+  type ChSgChange,
   type ChWindow,
 } from './stats-common';
 
@@ -37,6 +40,12 @@ export interface ChFigure {
   /** Lower is better (scoring, putts). Drives the chip colour. */
   lowerIsBetter: boolean;
   context: string;
+  /** Shown with a sign and green or amber (strokes gained). */
+  signed?: boolean;
+  /** A second line under the context: what the figure is measured against. */
+  note?: string;
+  /** `empty`: no value (strokes gained needs rounds with shots). `no-comparison`: a value, with no earlier rounds to set it against. Drives the catalog states. */
+  state?: 'empty' | 'no-comparison';
 }
 
 export interface ChTeamStats {
@@ -46,28 +55,25 @@ export interface ChTeamStats {
   roundCount: number;
   figures: ChFigure[];
   weeks: string[];
-  team: { sg: Array<number | null>; score: Array<number | null> };
-  players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null> }>;
+  /** Weekly averages, and the window's own mean (strokes gained per round, scoring average), which is what the headline and the sort read. */
+  team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null };
+  players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null }>;
   legWeeks: Record<ChLeg, Array<number | null>>;
   grid: Array<{ id: string; name: string; rounds: number; legs: Array<number | null>; total: number | null; change: number | null; /** Scoring average over the window's 18-hole rounds (the phone's player list). */ avg: number | null }>;
   /** The team's strokes gained per round in each leg over the window, against the baseline; null with no strokes gained (the phone's leg bars). */
   legTotals: Array<number | null>;
   putting: { bands: Array<{ label: string; made: number; attempts: number; d1: number | null }>; putts: number } | null;
   bests: Array<{ label: string; playerId: string; name: string; value: string; meta: string; under?: boolean }>;
-  sgBaselineNote: string;
+  /** What the strokes gained here is measured against; null when the team's own row didn't load. */
+  tour: ChSgTour;
+  /** The team's strokes gained a round against the previous window (the headline chip). */
+  sgChange: ChSgChange;
+  /** Rounds in the window with strokes gained (the headline's sample). */
+  sgRounds: number;
   roundsError: boolean;
   cacheError: boolean;
   puttsError: boolean;
 }
-
-const PUTT_BANDS: Array<{ label: string; lo: number; hi: number; metric: string | null }> = [
-  { label: '0–3 ft', lo: 0, hi: 3, metric: null },
-  { label: '3–5 ft', lo: 3, hi: 5, metric: 'putts_made_3_5ft_pct' },
-  { label: '5–10 ft', lo: 5, hi: 10, metric: 'putts_made_5_10ft_pct' },
-  { label: '10–15 ft', lo: 10, hi: 15, metric: 'putts_made_10_15ft_pct' },
-  { label: '15–25 ft', lo: 15, hi: 25, metric: 'putts_made_15_25ft_pct' },
-  { label: '25+ ft', lo: 25, hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
-];
 
 function sgLegs(r: ChRound): Array<number | null> {
   return [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting];
@@ -131,7 +137,28 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   const d = (a: number | null, b: number | null) => (hasPrev && a != null && b != null ? a - b : null);
   const d1Gir = d1.get('gir_pct');
   const sample = `${windowRounds.length} ${windowRounds.length === 1 ? 'round' : 'rounds'}`;
+  // Strokes gained per round: the window's mean over its rounds with strokes gained, against the previous 10 when there is one.
+  const sgOf = (rs: ChRound[]) => rs.map((r) => r.strokes_gained_total).filter((v): v is number => v != null);
+  const sgNow = sgOf(windowRounds);
+  const sgPrev = sgOf(prevRounds);
+  const sgTotal = mean(sgNow);
+  const earlier = players.reduce((a, p) => a + Math.max(0, (byPlayer.get(p.id) ?? []).filter(isFull18).length - 10), 0);
+  const sgDelta = sgChange(sgTotal, sgPrev.length >= MIN_SG_ROUNDS ? mean(sgPrev) : null, input.window, earlier);
+  const baseline = sgBaseline(tour);
   const figures: ChFigure[] = [
+    {
+      label: 'Team SG per round',
+      value: sgTotal,
+      unit: '',
+      digits: 1,
+      signed: true,
+      delta: sgDelta.delta,
+      lowerIsBetter: false,
+      context: sgDelta.context || (sgNow.length ? `${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : 'Needs rounds with shots'),
+      state: sgTotal == null ? 'empty' : sgDelta.delta == null && sgDelta.context ? 'no-comparison' : undefined,
+      // Always drawn, so the card is as tall as its loading skeleton (CH-4401).
+      note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
+    },
     { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(scoring, prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
     // CH-4209: without D1 benchmarks, greens read against the sample instead of "D1 averages".
     { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(gir, rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: d1Gir != null ? `D1 averages ${Math.round(d1Gir)}%` : sample },
@@ -155,12 +182,16 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   const playerSeries = players
     .map((p) => {
       const mine = roundsInWindow(byPlayer.get(p.id) ?? [], input.window);
+      const mySg = sgOf(mine);
       return {
         id: p.id,
         name: fullName(p),
         first: p.first_name || fullName(p),
         sg: weekKeys.map((wk) => avgOf(inWeek(mine, wk), (r) => r.strokes_gained_total)),
         score: weekKeys.map((wk) => avgOf(inWeek(mine, wk), (r) => r.total_score)),
+        // The window's own mean (what the list is sorted by), not the last week's: strokes gained needs three rounds, as in the grid.
+        sgMean: mySg.length >= MIN_SG_ROUNDS ? mean(mySg) : null,
+        scoreMean: mean(mine.map((r) => r.total_score as number)),
       };
     })
     .filter((s) => s.score.some((v) => v != null));
@@ -189,11 +220,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   const windowIds = new Set(windowRounds.map((r) => r.id));
   const windowPutts = putts.rows.filter((r) => windowIds.has(r.roundId));
   if (!putts.error && windowPutts.length) {
-    const bands = PUTT_BANDS.map((b) => {
-      const inBand = windowPutts.filter((r) => r.feet >= b.lo && r.feet < b.hi);
-      return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, d1: b.metric ? (d1.get(b.metric) ?? null) : null };
-    });
-    putting = { bands, putts: windowPutts.length };
+    putting = { bands: bandPutts(windowPutts, d1), putts: windowPutts.length };
   }
 
   const bests = seasonBests(seasonFull, players, cache.byRound, putts.error ? null : { rows: putts.rows, rounds: season.rounds });
@@ -208,6 +235,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
     team: {
       sg: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.strokes_gained_total)),
       score: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)),
+      sgMean: sgTotal,
+      scoreMean: scoring,
     },
     players: playerSeries,
     legWeeks,
@@ -215,47 +244,13 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
     legTotals: LEGS.map((_, i) => avgOf(windowRounds, (r) => sgLegs(r)[i] ?? null)),
     putting,
     bests,
-    sgBaselineNote: tour === 'lpga' ? "the women's baseline" : tour === 'pga' ? 'the Tour baseline' : 'the baseline',
+    tour,
+    sgChange: sgDelta,
+    sgRounds: sgNow.length,
     roundsError: season.error || !!membersRes.error,
     cacheError: cache.error,
     puttsError: putts.error,
   };
-}
-
-async function loadPutts(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  roundIds: string[],
-): Promise<{ rows: Array<{ roundId: string; feet: number; made: boolean }>; error: boolean }> {
-  const rows: Array<{ roundId: string; feet: number; made: boolean }> = [];
-  // The chunks are independent, so they are read in parallel.
-  const results = await Promise.all(
-    chunkIds(roundIds).map((ids) =>
-      fetchAllRowsResult<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
-        (from, to) =>
-          supabase
-            .from('golf_shots')
-            .select('round_id, putt_distance_feet, putt_made')
-            .in('round_id', ids)
-            .not('putt_distance_feet', 'is', null)
-            .not('putt_made', 'is', null)
-            .order('id', { ascending: true })
-            .range(from, to),
-        undefined,
-        { table: 'golf_shots', action: 'clubhouse.stats.putts', feature: 'stats_analytics', sport: 'golf' },
-      ),
-    ),
-  );
-  for (const res of results) {
-    if (res.error) {
-      chLogServer('stats', 'putts', res.error, 'stats_analytics');
-      return { rows: [], error: true };
-    }
-    for (const r of res.data ?? []) {
-      const feet = Number(r.putt_distance_feet);
-      if (Number.isFinite(feet) && feet >= 0 && feet <= 120) rows.push({ roundId: r.round_id, feet, made: !!r.putt_made });
-    }
-  }
-  return { rows, error: false };
 }
 
 function seasonBests(

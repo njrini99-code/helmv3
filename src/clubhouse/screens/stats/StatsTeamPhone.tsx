@@ -12,6 +12,8 @@ import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { sgBaseline } from '../../lib/sg';
+import { SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
 import { RetryNotice, ShowSeason, useGoWindow } from './StatsTeamIslands';
@@ -78,7 +80,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   );
 }
 
-/** Scoring, greens, putts, scrambling, each with its change (green better, amber worse; D-42). */
+/** Scoring, greens, putts, scrambling, each with its change (green better, amber worse; D-42). Strokes gained has its own panel below. */
 function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
   const short: Record<string, string> = {
     'Scoring average': 'Scoring avg',
@@ -88,7 +90,7 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
   };
   return (
     <dl className="ch-stm-figs">
-      {figures.slice(0, 4).map((f) => (
+      {figures.filter((f) => !f.signed).slice(0, 4).map((f) => (
         <div key={f.label}>
           <dt>{short[f.label] ?? f.label}</dt>
           <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
@@ -163,9 +165,9 @@ export function ScoreLine({ values, from, to, label }: { values: Array<number | 
   );
 }
 
-/** Strokes gained per round in each leg, a bar either side of zero. */
+/** Strokes gained per round in each leg and in total, a bar either side of zero on the data's own scale. */
 function Legs({ data }: { data: ChTeamStats }) {
-  const max = 1.4;
+  const baseline = sgBaseline(data.tour);
   const legs = LEGS_LIST.map((l, i) => ({ l, v: data.legTotals[i] ?? null }));
   const known = legs.filter((x): x is { l: ChLeg; v: number } => x.v != null);
   const losing = known.filter((x) => x.v < -0.05);
@@ -179,7 +181,7 @@ function Legs({ data }: { data: ChTeamStats }) {
       </section>
     );
   const note = !losing.length
-    ? `No leg is losing strokes against ${data.sgBaselineNote}.`
+    ? `No leg is losing strokes against ${baseline.noun}.`
     : losing.length === 1
       ? `${losing[0]!.l} is the only leg losing strokes, ${Math.abs(losing[0]!.v).toFixed(1)} a round.`
       : `${losing.length} legs are losing strokes: ${losing.map((x) => x.l).join(', ')}.`;
@@ -187,28 +189,9 @@ function Legs({ data }: { data: ChTeamStats }) {
     <section className="ch-stm-panel" aria-labelledby="ch-stm-legs">
       <div className="ch-stm-panel__h">
         <h2 id="ch-stm-legs">Strokes gained by leg</h2>
-        <span>Per round · vs {data.sgBaselineNote}</span>
+        <span>Per round · {baseline.vs}</span>
       </div>
-      <div className="ch-stm-legs">
-        {legs.map(({ l, v }) => (
-          <div key={l} className="ch-stm-leg">
-            <span>{l}</span>
-            <span className="ch-stm-leg__bar" aria-hidden="true">
-              <i className="ch-stm-leg__z" />
-              {v != null && (
-                <i
-                  className={'ch-stm-leg__v ' + (v >= 0 ? 'is-gain' : 'is-loss')}
-                  style={{
-                    [v >= 0 ? 'left' : 'right']: '50%',
-                    width: `${(Math.min(Math.abs(v), max) / max) * 50}%`,
-                  }}
-                />
-              )}
-            </span>
-            <b className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</b>
-          </div>
-        ))}
-      </div>
+      <SgBars rows={[...legs.map(({ l, v }) => ({ label: l as string, value: v })), { label: 'Team total', value: data.team.sgMean, total: true }]} />
       <p className="ch-stm-note">{note}</p>
     </section>
   );

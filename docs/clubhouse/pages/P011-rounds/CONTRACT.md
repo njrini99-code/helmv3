@@ -89,6 +89,7 @@ empty (110413). A test covers 110413.
 | 110411 | CH-11311 | `A_COURSE_HAS_NO_TEES_READY_TO` | A course has no tees ready to play |
 | 110412 | CH-11312 | `QUALIFIER_CHOSEN_BUT_NONE_IS_OPEN` | Qualifier chosen, but none is open |
 | 110413 | — | `FIRST_RUN_ONLY_WHEN_EVERY_READ_ANSWERED` | The first-run page ("No rounds yet", CH-11301) shows only when the posted-rounds read and the in-progress read both answered and both were empty: a failed list read shows its own notice (CH-11201) and a failed in-progress check its own (CH-11202), never the first-run page. |
+| 110414 | CH-11313 | `A_ROUND_WITH_NO_STROKES_GAINED` | A round with no strokes gained (posted without shots) |
 
 ## 05 — Validation
 

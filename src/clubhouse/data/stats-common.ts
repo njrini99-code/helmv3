@@ -1,6 +1,7 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { StatsFilter } from '@/app/golf/actions/stats-data-types';
 import { chLogServer } from '../lib/track-server';
 import { isFull18, seasonStartDate, type ChRound } from './season';
@@ -42,6 +43,24 @@ export function previousWindow(rounds: ChRound[], w: ChWindow): ChRound[] | null
   if (w !== 'last10') return null;
   const prev = rounds.filter(isFull18).slice(10, 20);
   return prev.length >= 3 ? prev : null;
+}
+
+/** How strokes gained moved against the previous window: the chip's change, and the words when there is none to show. */
+export interface ChSgChange {
+  delta: number | null;
+  /** "vs. previous 10", "No earlier rounds", ...; empty when the window has no previous one by design (season, qualifiers). */
+  context: string;
+}
+
+/**
+ * `earlier` is how many 18-hole rounds come before the last 10. Both means
+ * need three rounds with shots (MIN_SG_ROUNDS), so "no earlier rounds" is
+ * said only when there are none, and a thin earlier stretch says so instead.
+ */
+export function sgChange(current: number | null, previous: number | null, window: ChWindow, earlier: number): ChSgChange {
+  if (current != null && previous != null) return { delta: current - previous, context: 'vs. previous 10' };
+  if (window !== 'last10' || current == null) return { delta: null, context: '' };
+  return { delta: null, context: earlier <= 0 ? 'No earlier rounds' : 'Too few earlier rounds with shots' };
 }
 
 export interface ChRoundCache {
@@ -144,4 +163,69 @@ export function weekOf(date: string): string {
 
 export function weekLabel(monday: string): string {
   return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(new Date(`${monday}T12:00:00Z`));
+}
+
+export interface ChPuttRow {
+  roundId: string;
+  feet: number;
+  made: boolean;
+}
+
+export interface ChPuttBand {
+  label: string;
+  made: number;
+  attempts: number;
+  d1: number | null;
+}
+
+/** Make rate by distance: the bands golf_pga_standards grades (3-5 up to 25+), so a band's D1 mark is the same distances. */
+export const PUTT_BANDS: Array<{ label: string; lo: number; hi: number; metric: string | null }> = [
+  { label: '0–3 ft', lo: 0, hi: 3, metric: null },
+  { label: '3–5 ft', lo: 3, hi: 5, metric: 'putts_made_3_5ft_pct' },
+  { label: '5–10 ft', lo: 5, hi: 10, metric: 'putts_made_5_10ft_pct' },
+  { label: '10–15 ft', lo: 10, hi: 15, metric: 'putts_made_10_15ft_pct' },
+  { label: '15–25 ft', lo: 15, hi: 25, metric: 'putts_made_15_25ft_pct' },
+  { label: '25+ ft', lo: 25, hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
+];
+
+/** The putts in `rows` counted into the bands, with each band's D1 make rate where there is one. */
+export function bandPutts(rows: ChPuttRow[], d1: Map<string, number>): ChPuttBand[] {
+  return PUTT_BANDS.map((b) => {
+    const inBand = rows.filter((r) => r.feet >= b.lo && r.feet < b.hi);
+    return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, d1: b.metric ? (d1.get(b.metric) ?? null) : null };
+  });
+}
+
+/** Every putt with a distance and a result on these rounds, read in parallel chunks. */
+export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise<{ rows: ChPuttRow[]; error: boolean }> {
+  const rows: ChPuttRow[] = [];
+  // The chunks are independent, so they are read in parallel.
+  const results = await Promise.all(
+    chunkIds(roundIds).map((ids) =>
+      fetchAllRowsResult<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
+        (from, to) =>
+          supabase
+            .from('golf_shots')
+            .select('round_id, putt_distance_feet, putt_made')
+            .in('round_id', ids)
+            .not('putt_distance_feet', 'is', null)
+            .not('putt_made', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to),
+        undefined,
+        { table: 'golf_shots', action: 'clubhouse.stats.putts', feature: 'stats_analytics', sport: 'golf' },
+      ),
+    ),
+  );
+  for (const res of results) {
+    if (res.error) {
+      chLogServer('stats', 'putts', res.error, 'stats_analytics');
+      return { rows: [], error: true };
+    }
+    for (const r of res.data ?? []) {
+      const feet = Number(r.putt_distance_feet);
+      if (Number.isFinite(feet) && feet >= 0 && feet <= 120) rows.push({ roundId: r.round_id, feet, made: !!r.putt_made });
+    }
+  }
+  return { rows, error: false };
 }

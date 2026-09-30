@@ -19,12 +19,23 @@ const P = [
   ['priya', 'Priya Natarajan', [78, 77, 77, 76, 75, 75, 74], [-2.9, -2.5, -2.1, -1.8, -1.5, -1.3, -1.2]],
 ] as const;
 
+/** Each player's window means (what the trend's list shows and sorts by): the grid's total and scoring average. */
+const MEANS: Record<(typeof P)[number][0], { sgMean: number; scoreMean: number }> = {
+  theo: { sgMean: 1.7, scoreMean: 70.9 },
+  sofia: { sgMean: 1.2, scoreMean: 71.6 },
+  ava: { sgMean: 0.6, scoreMean: 72.4 },
+  jonah: { sgMean: -0.9, scoreMean: 74.1 },
+  eli: { sgMean: -0.5, scoreMean: 74.8 },
+  priya: { sgMean: -1.2, scoreMean: 75.2 },
+};
+
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
   window: 'last10',
   activeCount: 7,
   roundCount: 64,
   figures: [
+    { label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, lowerIsBetter: false, context: 'vs. previous 10', note: 'vs Tour · 58 rounds with shots' },
     { label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, lowerIsBetter: true, context: 'vs. previous 10' },
     { label: 'Greens in regulation', value: 61, unit: '%', digits: 0, delta: 3, lowerIsBetter: false, context: 'D1 averages 60%' },
     { label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, lowerIsBetter: true, context: 'vs. previous 10' },
@@ -32,8 +43,8 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, lowerIsBetter: false, context: 'Birdies and eagles' },
   ],
   weeks: WEEKS,
-  team: { sg: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], score: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4] },
-  players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg] })),
+  team: { sg: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], score: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], sgMean: -0.5, scoreMean: 73.6 },
+  players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id] })),
   legWeeks: {
     'Off the tee': [0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4],
     Approach: [-1.2, -1.1, -1.0, -0.9, -0.9, -0.8, -0.8],
@@ -68,7 +79,9 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { label: 'Longest putt made', playerId: 'ava', name: 'Ava Lindqvist', value: '42 ft', meta: 'Finley GC · Oct 8' },
     { label: 'Most improved', playerId: 'priya', name: 'Priya Natarajan', value: '−4.0', meta: 'Scoring avg, first five rounds to latest five' },
   ],
-  sgBaselineNote: 'the Tour baseline',
+  tour: 'pga',
+  sgChange: { delta: 0.4, context: 'vs. previous 10' },
+  sgRounds: 58,
   roundsError: false,
   cacheError: false,
   puttsError: false,
@@ -207,8 +220,34 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
   season: season(74.1, [72, 72, 73, 74, 75, 74, 75], -0.9, 21, 'slipping'),
   win: season(74.1, [73, 72, 72, 73, 73, 74, 73, 75, 75, 74].slice(-7), -0.9, 10, 'slipping'),
   teamAvg: 72.8,
-  rounds: JONAH_ROUNDS.map(([course, date, score, toPar, gir, putts, sg], i) => ({ id: `j${i}`, course, date, score, toPar, gir, putts, sg })),
+  tour: 'pga',
+  sgChange: { delta: -1.3, context: 'vs. previous 10' },
+  puttBands: [
+    { label: '0–3 ft', made: 57, attempts: 64, d1: null },
+    { label: '3–5 ft', made: 24, attempts: 38, d1: 88 },
+    { label: '5–10 ft', made: 20, attempts: 51, d1: 50 },
+    { label: '10–15 ft', made: 8, attempts: 40, d1: 25 },
+    { label: '15–25 ft', made: 5, attempts: 46, d1: 12 },
+    { label: '25+ ft', made: 1, attempts: 34, d1: 4 },
+  ],
+  // The legs add up to the round's total: approach carries the difference.
+  rounds: JONAH_ROUNDS.map(([course, date, score, toPar, gir, putts, sg], i) => ({
+    id: `j${i}`,
+    course,
+    date,
+    score,
+    toPar,
+    gir,
+    putts,
+    sg,
+    sgLegs: [0.2, Math.round((sg - 0.2) * 10) / 10, -0.1, 0.1] as [number, number, number, number],
+  })),
   comparisons: [
+    { label: 'SG total', you: -0.9, team: -0.5, d1: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG off the tee', you: 0.3, team: 0.4, d1: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG approach', you: -1.2, team: -0.7, d1: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG around green', you: -0.1, team: 0.1, d1: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG putting', you: 0.2, team: -0.3, d1: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
     { label: 'Scoring avg', you: 74.1, team: 72.8, d1: null, unit: '', digits: 1, lowerIsBetter: true },
     { label: 'Fairways hit', you: 63, team: 62, d1: null, unit: '%', digits: 0, lowerIsBetter: false },
     { label: 'Greens in regulation', you: 60, team: 61, d1: 60, unit: '%', digits: 0, lowerIsBetter: false },

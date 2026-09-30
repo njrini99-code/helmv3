@@ -3,6 +3,7 @@
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import type { ChPuttBand } from '../../data/stats-common';
 import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
 import { NO_DATA } from '../../lib/format';
@@ -86,7 +87,22 @@ function Panel({ title, note, wide, children }: { title: string; note?: string; 
  * a D1 average, then the matched visuals. Missing shot data reads as a dash
  * and a plain sentence, never a zero.
  */
-export function GameDetail({ s, d1, first, rounds, phone = false }: { s: GolfStats; d1: Record<string, number>; first: string; rounds: number; phone?: boolean }) {
+export function GameDetail({
+  s,
+  d1,
+  first,
+  rounds,
+  puttBands: shotBands = null,
+  phone = false,
+}: {
+  s: GolfStats;
+  d1: Record<string, number>;
+  first: string;
+  rounds: number;
+  /** Make rate by distance from the window's putts, in the bands Team stats grades (0-3 up to 25+). Without it the curve stops at 20 feet, where the shot stats end. */
+  puttBands?: ChPuttBand[] | null;
+  phone?: boolean;
+}) {
   const [on, setOn] = useState<string>('scoring');
   const show = (id: string) => !phone || on === id;
 
@@ -164,13 +180,15 @@ export function GameDetail({ s, d1, first, rounds, phone = false }: { s: GolfSta
   const d1Sand = d1.scrambling_pct_sand ?? null;
 
   // Putting
-  const puttBands = [
-    { band: '0–3', value: s.puttMakePct0_3, d1: null, n: s.puttMakeCount0_3 },
-    { band: '3–5', value: s.puttMakePct3_5, d1: d1.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
-    { band: '5–10', value: s.puttMakePct5_10, d1: d1.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
-    { band: '10–15', value: s.puttMakePct10_15, d1: d1.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
-    { band: '15–20', value: s.puttMakePct15_20, d1: d1.putts_made_15_25ft_pct ?? null, n: s.puttMakeCount15_20 },
-  ];
+  const puttBands = shotBands
+    ? shotBands.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, d1: b.d1, n: b.attempts }))
+    : [
+        { band: '0–3', value: s.puttMakePct0_3, d1: null, n: s.puttMakeCount0_3 },
+        { band: '3–5', value: s.puttMakePct3_5, d1: d1.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
+        { band: '5–10', value: s.puttMakePct5_10, d1: d1.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
+        { band: '10–15', value: s.puttMakePct10_15, d1: d1.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
+        { band: '15–20', value: s.puttMakePct15_20, d1: d1.putts_made_15_25ft_pct ?? null, n: s.puttMakeCount15_20 },
+      ];
   const worstPutt = puttBands
     .filter((b) => b.value != null && b.d1 != null && b.n >= 10)
     .sort((a, b) => (a.value! - a.d1!) - (b.value! - b.d1!))[0];

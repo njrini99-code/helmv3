@@ -16,8 +16,10 @@ import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { sgBaseline } from '../../lib/sg';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
+import { SgBars, SgChangeChip } from './charts';
 import { GameDetail } from './GameDetail';
 import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
@@ -59,7 +61,9 @@ export function StatsPlayerPhone({
   const toast = useToast();
   const w = data.win;
   const first = data.firstName;
+  // Strokes gained needs three rounds WITH shots, so the banner keys on those, not on the round count alone.
   const early = w.rounds < 3;
+  const noShots = !early && w.sgRounds < 3;
 
   const share = async () => {
     haptic('press');
@@ -121,17 +125,27 @@ export function StatsPlayerPhone({
           there are three.
         </div>
       )}
+      {noShots && (
+        <div className="ch-pf-early" role="note" data-ch-code="CH-5308">
+          <Icon icon={Info} size={15} />
+          Strokes gained needs three rounds posted with shots. {coach ? `${first} has` : 'You have'} {w.sgRounds} of {w.rounds} rounds with shots in this window, so strokes gained shows a dash until there are three.
+        </div>
+      )}
       {data.roundsError && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={onRetry} />}
 
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
         <Figures data={data} />
       </SectionBoundary>
 
+      <SectionBoundary surface="stats.player.strokesGained" label="Strokes gained" code="CH-5204">
+        <StrokesGained data={data} />
+      </SectionBoundary>
+
       <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn't load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} d1={data.d1} first={coach ? first : 'You'} rounds={w.rounds} phone />
+          <GameDetail s={data.stats} d1={data.d1} first={coach ? first : 'You'} rounds={w.rounds} puttBands={data.puttBands} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState
@@ -175,7 +189,10 @@ function Figures({ data }: { data: ChPlayerProfile }) {
       <div>
         <dt>SG / round</dt>
         <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound)}</dd>
-        <dd>{w.sgPerRound == null ? 'After three rounds' : 'vs D1'}</dd>
+        <dd>
+          {w.sgPerRound == null ? 'After three rounds' : sgBaseline(data.tour).vs}
+          {w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) && <SgChangeChip change={data.sgChange} code="CH-5310" />}
+        </dd>
       </div>
       <div>
         <dt>Form</dt>
@@ -183,6 +200,46 @@ function Figures({ data }: { data: ChPlayerProfile }) {
         <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
       </div>
     </dl>
+  );
+}
+
+/** Strokes gained by leg and in total, the window's mean a round, a bar either side of zero on the data's own scale. */
+function StrokesGained({ data }: { data: ChPlayerProfile }) {
+  const w = data.win;
+  const baseline = sgBaseline(data.tour);
+  const legs = [
+    { label: 'Off the tee', value: w.sgLegs.tee },
+    { label: 'Approach', value: w.sgLegs.approach },
+    { label: 'Around green', value: w.sgLegs.around },
+    { label: 'Putting', value: w.sgLegs.putting },
+  ];
+  const known = legs.filter((l): l is { label: string; value: number } => l.value != null);
+  if (!known.length && w.sgPerRound == null)
+    return (
+      <section className="ch-stm-panel" aria-labelledby="ch-spm-sg">
+        <div className="ch-stm-panel__h">
+          <h2 id="ch-spm-sg">Strokes gained</h2>
+        </div>
+        <EmptyState compact code="CH-5309" title="No strokes gained in this window." body="Strokes gained by leg appears after three rounds with shots." />
+      </section>
+    );
+  const losing = known.filter((l) => l.value < -0.05);
+  const note = !known.length
+    ? null
+    : !losing.length
+      ? `No leg is losing strokes against ${baseline.noun}.`
+      : losing.length === 1
+        ? `${losing[0]!.label} is the only leg losing strokes, ${Math.abs(losing[0]!.value).toFixed(1)} a round.`
+        : `${losing.length} legs are losing strokes: ${losing.map((l) => l.label).join(', ')}.`;
+  return (
+    <section className="ch-stm-panel" aria-labelledby="ch-spm-sg">
+      <div className="ch-stm-panel__h">
+        <h2 id="ch-spm-sg">Strokes gained</h2>
+        <span>Per round · {baseline.vs}</span>
+      </div>
+      <SgBars rows={[...legs, { label: 'Total', value: w.sgPerRound, total: true }]} />
+      {note && <p className="ch-stm-note">{note}</p>}
+    </section>
   );
 }
 
@@ -242,6 +299,7 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
                 <span className="ch-stm-row__v ch-num">
                   <b>{r.score}</b>
                   <span className={'ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
+                  <span className={r.sg == null ? '' : r.sg >= 0 ? 'ch-gain' : 'ch-loss'}>{formatSigned(r.sg)} SG</span>
                 </span>
               </li>
             ))}

@@ -21,7 +21,7 @@ export async function ClubhouseRoundReviewRoute({ id }: { id: string }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
-  const viewer: ChReviewViewer | null = session.player && !session.coach ? { role: 'player', playerId: session.player.id } : team?.role === 'coach' ? { role: 'coach', teamId: team.teamId } : null;
+  const viewer: ChReviewViewer | null = session.player && !session.coach ? { role: 'player', playerId: session.player.id, teamId: team?.role === 'player' ? team.teamId : null } : team?.role === 'coach' ? { role: 'coach', teamId: team.teamId } : null;
   const result = viewer ? await loadRoundReview(id, viewer) : ({ kind: 'notFound' } as const);
 
   if (result.kind === 'inProgress') redirect(`/golf/dashboard/rounds/continue/${id}`);

@@ -3,7 +3,7 @@
 import { CalendarPlus, Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
-import { useEffect, useState, useTransition, type FormEvent } from 'react';
+import { useEffect, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -26,10 +26,12 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
-import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, YardagePage } from './charts';
+import { LEGS_LIST } from './legs';
+import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, SgChangeChip, YardagePage } from './charts';
 import { GameDetail } from './GameDetail';
 import { ProposalAnswer } from './ProposalAnswer';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
@@ -62,8 +64,11 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   // As in the handoff: a coach looking at a player reads "Stats › Jonah Okafor".
   usePageCrumbs(coach ? ['Stats', data.name] : null);
   const w = data.win;
+  // Strokes gained needs three rounds WITH shots, so the banner keys on those, not on the round count alone.
   const early = w.rounds < 3;
+  const noShots = !early && w.sgRounds < 3;
   const first = data.firstName;
+  const baseline = sgBaseline(data.tour);
   const base = '/golf/dashboard/stats';
   const href = (player: string | null, win: ChWindow) => {
     const q = new URLSearchParams();
@@ -99,10 +104,10 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52).
   const planHref = coach ? rebuiltHref(`/golf/dashboard/calendar?new=1&with=${data.id}`) : null;
 
-  const heroFigs: Array<[string, string, string, string?]> = [
+  const heroFigs: Array<[string, string, string, string?, ReactNode?]> = [
     ['Scoring avg', formatFixed(w.avg), coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
     ['Handicap', formatHcp(data.handicap), 'Index'],
-    ['SG / round', w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), 'Per round', w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss'],
+    ['SG / round', w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss', data.sgChange.delta != null || data.sgChange.context ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : undefined],
     ['Rounds', String(data.season.rounds), 'This season'],
   ];
   const pickTab = (t: Tab) => {
@@ -202,11 +207,12 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           )}
         </div>
         <dl className="ch-pf-hero__figs">
-          {heroFigs.map(([l, v, s, cls]) => (
+          {heroFigs.map(([l, v, s, cls, chip]) => (
             <div key={l}>
               <dt>{l}</dt>
               <dd className={`ch-num${cls ? ` ${cls}` : ''}`}>{v}</dd>
               <dd className="ch-pf-hero__sub">{s}</dd>
+              {chip && <dd className="ch-pf-hero__chg">{chip}</dd>}
             </div>
           ))}
         </dl>
@@ -242,6 +248,12 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           Early read. {first} has {w.rounds} countable {w.rounds === 1 ? 'round' : 'rounds'} in this window, so averages and trends will move a lot. Strokes gained shows once there are three.
         </div>
       )}
+      {noShots && (
+        <div className="ch-pf-early" role="note" data-ch-code="CH-5308">
+          <Icon icon={Info} size={15} />
+          Strokes gained needs three rounds posted with shots. {first} has {w.sgRounds} of {w.rounds} rounds with shots in this window, so strokes gained shows a dash until there are three.
+        </div>
+      )}
       {data.roundsError && (
         <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={() => router.refresh()} />
       )}
@@ -263,7 +275,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 onRetry={() => router.refresh()}
               />
             ) : data.stats && data.stats.roundsPlayed > 0 ? (
-              <GameDetail s={data.stats} d1={data.d1} first={first} rounds={w.rounds} />
+              <GameDetail s={data.stats} d1={data.d1} first={first} rounds={w.rounds} puttBands={data.puttBands} />
             ) : (
               <div className="ch-st-card">
                 <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -274,7 +286,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 
         {tab === 'rounds' && (
           <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
-            <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} />
+            <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} />
           </SectionBoundary>
         )}
 
@@ -298,6 +310,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const w = data.win;
   const first = data.firstName;
+  const baseline = sgBaseline(data.tour);
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
   const fig = (label: string, short: string) => {
     const c = cmp(label);
@@ -348,11 +361,14 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
         >
           <ScoreBoardTrend rounds={trendRounds} />
         </YardagePage>
-        <YardagePage title="Strokes gained by leg" meta="Per round" note={legNote}>
-          <LegRoute rows={legs} max={1.4} />
+        <YardagePage title="Strokes gained by leg" meta={`Per round ${baseline.vs}${w.sgPerRound != null ? ` · total ${formatSigned(w.sgPerRound)}` : ''}`} note={legNote}>
+          <LegRoute rows={legs} />
         </YardagePage>
       </div>
-      <YardagePage title={coach ? `${first} vs. team` : 'You vs. D1'} meta={coach ? 'Same window, active players' : 'D1 averages where the benchmark exists'}>
+      <YardagePage
+        title={coach ? `${first} vs. team` : 'You vs. D1'}
+        meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `D1 averages where the benchmark exists · strokes gained ${baseline.vs}`}
+      >
         <FieldTable rows={data.comparisons} showTeam={coach} />
       </YardagePage>
 
@@ -360,13 +376,14 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   );
 }
 
-function RoundsTable({ rounds, role }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player' }) {
+function RoundsTable({ rounds, role, tour }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour'] }) {
+  const baseline = sgBaseline(tour);
   return (
     <section className="ch-st-card">
       <div className="ch-st-card__head">
         <div>
           <h2>Rounds</h2>
-          <span>Countable 18-hole rounds &middot; newest first</span>
+          <span>Countable 18-hole rounds &middot; newest first &middot; strokes gained {baseline.vs}</span>
         </div>
       </div>
       {rounds.length === 0 ? (
@@ -381,7 +398,12 @@ function RoundsTable({ rounds, role }: { rounds: ChPlayerProfile['rounds']; role
               <span role="columnheader" className="r">To par</span>
               <span role="columnheader" className="r">GIR</span>
               <span role="columnheader" className="r">Putts</span>
-              <span role="columnheader" className="r">SG</span>
+              <span role="columnheader" className="r">SG total</span>
+              {LEGS_LIST.map((l) => (
+                <span key={l} role="columnheader" className="r">
+                  SG {l.toLowerCase()}
+                </span>
+              ))}
             </div>
             {rounds.map((r) => (
               <div key={r.id} className="ch-tr" role="row">
@@ -404,6 +426,11 @@ function RoundsTable({ rounds, role }: { rounds: ChPlayerProfile['rounds']; role
                 <span role="cell" className="r ch-num ch-n2">{r.gir ?? NO_DATA}</span>
                 <span role="cell" className="r ch-num ch-n2">{r.putts ?? NO_DATA}</span>
                 <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
+                {r.sgLegs.map((v, i) => (
+                  <span key={i} role="cell" className={'r ch-num ch-n2' + (v == null ? '' : v >= 0 ? ' ch-gain' : ' ch-loss')}>
+                    {formatSigned(v)}
+                  </span>
+                ))}
               </div>
             ))}
           </div>

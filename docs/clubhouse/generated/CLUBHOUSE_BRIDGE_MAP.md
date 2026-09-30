@@ -68,14 +68,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P001 | 2 | 1 | 1 | 4 |  | 10 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 12 | 1 | 1 | 1 | 3 | 1 | 1 |  | 66 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
-| P004 | 2 | 1 | 1 | 10 | 1 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 48 |
-| P005 | 4 | 2 | 2 | 5 | 1 | 13 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 57 |
+| P004 | 2 | 1 | 1 | 12 | 1 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 50 |
+| P005 | 4 | 2 | 2 | 8 | 1 | 13 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 2 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 24 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 123 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
 | P010 | 2 | 6 |  | 14 | 9 | 22 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 76 |
-| P011 | 13 | 7 |  | 13 | 10 | 25 | 3 | 5 | 2 |  | 17 | 2 | 1 | 3 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 134 |
+| P011 | 13 | 7 |  | 14 | 10 | 25 | 3 | 5 | 2 |  | 17 | 2 | 1 | 3 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 135 |
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
 
@@ -298,6 +298,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40408 | CH-4308 | 04 Empty | `A_PLAYER_HAS_TOO_FEW_ROUNDS_FOR` | implemented | A player has too few rounds for strokes gained |
 | 40409 | CH-4309 | 04 Empty | `A_COACH_OR_PLAYER_WITH_NO_TEAM` | implemented | A coach or player with no team |
 | 40410 | CH-4310 | 04 Empty | `NO_COUNTABLE_ROUND_ALL_SEASON` | implemented | No countable round all season (D-71) |
+| 40411 | CH-4311 | 04 Empty | `THE_WINDOW_HAS_NO_ROUND_POSTED_WITH` | implemented | The window has no round posted with shots, so the team has no strokes gained |
+| 40412 | CH-4312 | 04 Empty | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | implemented | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
 | 40501 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
 | 40601 | CH-4001 | 06 Server / system error | `THE_BROWSER_BLOCKS_THE_CSV_EXPORT` | implemented | The browser blocks the CSV export |
 | 40602 | CH-4201 | 06 Server / system error | `TEAM_ROUNDS_DONT_LOAD` | implemented | Team rounds (or the roster) don't load |
@@ -350,6 +352,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50403 | CH-5303 | 04 Empty | `NO_FOCUS_AREAS` | implemented | No focus areas |
 | 50404 | CH-5304 | 04 Empty | `NO_GOALS` | implemented | No goals |
 | 50405 | CH-5305 | 04 Empty | `FEWER_THAN_THREE_ROUNDS_IN_THE_WINDOW` | implemented | Fewer than three rounds in the window |
+| 50406 | CH-5308 | 04 Empty | `THREE_OR_MORE_ROUNDS_IN_THE_WINDOW` | implemented | Three or more rounds in the window but fewer than three with shots (strokes gained needs three rounds posted with shots) |
+| 50407 | CH-5309 | 04 Empty | `PHONE_NO_STROKES_GAINED_IN_THE_WINDOW` | implemented | Phone: no strokes gained in the window (no leg and no total) |
+| 50408 | CH-5310 | 04 Empty | `THE_LAST_10_WINDOW_HAS_NO_EARLIER` | implemented | The last-10 window has no earlier rounds to set strokes gained against (none, or fewer than three with shots) |
 | 50501 | CH-5101 | 05 Validation | `A_FOCUS_AREA_WITH_A_NAME_UNDER` | implemented | A focus area with a name under three characters |
 | 50601 | CH-5001 | 06 Server / system error | `PROPOSING_A_FOCUS_AREA_FAILS` | implemented | Proposing a focus area fails |
 | 50602 | CH-5201 | 06 Server / system error | `ROUNDS_DONT_LOAD` | implemented | Rounds don't load |
@@ -954,6 +959,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110411 | CH-11311 | 04 Empty | `A_COURSE_HAS_NO_TEES_READY_TO` | implemented | A course has no tees ready to play |
 | 110412 | CH-11312 | 04 Empty | `QUALIFIER_CHOSEN_BUT_NONE_IS_OPEN` | implemented | Qualifier chosen, but none is open |
 | 110413 |  | 04 Empty | `FIRST_RUN_ONLY_WHEN_EVERY_READ_ANSWERED` | implemented | The first-run page ("No rounds yet", CH-11301) shows only when the posted-rounds read and the in-progress read both answered and both were empty: a failed list read shows its own notice (CH-11201) and a failed in-progress check its own (CH-11202), never the first-run page. |
+| 110414 | CH-11313 | 04 Empty | `A_ROUND_WITH_NO_STROKES_GAINED` | implemented | A round with no strokes gained (posted without shots) |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |

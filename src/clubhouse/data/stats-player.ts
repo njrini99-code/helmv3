@@ -3,16 +3,23 @@ import { createClient } from '@/lib/supabase/server';
 import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, fullName, groupByPlayer, loadSeasonRounds, mean, shortDate, summarizePlayer, type ChPlayerSeason } from './season';
+import type { ChSgTour } from '../lib/sg';
+import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
+  bandPutts,
   loadD1,
+  loadPutts,
   loadRoundCache,
   perRound,
+  previousWindow,
   rate,
   roundsInWindow,
+  sgChange,
   tourForGender,
   windowFilter,
+  type ChPuttBand,
   type ChRoundCache,
+  type ChSgChange,
   type ChWindow,
 } from './stats-common';
 
@@ -38,6 +45,8 @@ export interface ChProfileRound {
   gir: string | null;
   putts: number | null;
   sg: number | null;
+  /** Off the tee, approach, around the green, putting; null where the round has none. */
+  sgLegs: [number | null, number | null, number | null, number | null];
 }
 
 export interface ChComparison {
@@ -48,6 +57,8 @@ export interface ChComparison {
   unit: '' | '%';
   digits: number;
   lowerIsBetter: boolean;
+  /** Strokes gained: shown with a sign, gain green and loss amber, against the Tour (there is no D1 strokes gained). */
+  sg?: boolean;
 }
 
 export interface ChPlayerProfile {
@@ -65,6 +76,12 @@ export interface ChPlayerProfile {
   /** Window-scoped summary (Last 10 / Season / Qualifiers). */
   win: ChPlayerSeason;
   teamAvg: number | null;
+  /** What the strokes gained here is measured against; null when the team's own row didn't load. */
+  tour: ChSgTour;
+  /** The window's strokes gained a round against the previous 10 (the hero chip). */
+  sgChange: ChSgChange;
+  /** Make rate by distance from the shots in the window (the team page's bands); null when there are none or the read failed. */
+  puttBands: ChPuttBand[] | null;
   rounds: ChProfileRound[];
   comparisons: ChComparison[];
   stats: GolfStats | null;
@@ -155,7 +172,11 @@ export async function loadPlayerProfile(input: {
 
   // Team rounds in the same window, for coach comparisons only.
   const teamWin = input.viewer === 'coach' ? teamIds.flatMap((id) => roundsInWindow(byPlayer.get(id) ?? [], input.window)) : [];
-  const cache = await loadRoundCache(supabase, [...winRounds, ...teamWin].map((r) => r.id), 'stats');
+  const [cache, putts] = await Promise.all([
+    loadRoundCache(supabase, [...winRounds, ...teamWin].map((r) => r.id), 'stats'),
+    // The same shot-level bands as Team stats, so the make-rate curve reaches 25+ feet with exact counts.
+    loadPutts(supabase, winRounds.map((r) => r.id)),
+  ]);
   const rows = (ids: string[]) => ids.map((id) => cache.byRound.get(id)).filter((x): x is ChRoundCache => !!x);
   const mineCache = rows(winRounds.map((r) => r.id));
   const teamCache = rows(teamWin.map((r) => r.id));
@@ -164,7 +185,27 @@ export async function loadPlayerProfile(input: {
 
   // CH-5208: without D1 benchmarks the D1 column reads "—"; nothing is compared with a benchmark it doesn't have.
   const d1Gir = d1.get('gir_pct') ?? null;
+  // Strokes gained against the Tour (no D1 value exists), with the team's pooled mean for a coach; a player is never compared with teammates.
+  const sgPool = (pick: (r: ChRound) => number | null) => {
+    const v = teamWin.map(pick).filter((x): x is number => x != null);
+    return v.length >= MIN_SG_ROUNDS ? mean(v) : null;
+  };
+  const sgRow = (label: string, you: number | null, pick: (r: ChRound) => number | null): ChComparison => ({
+    label,
+    you,
+    team: t ? sgPool(pick) : null,
+    d1: null,
+    unit: '',
+    digits: 1,
+    lowerIsBetter: false,
+    sg: true,
+  });
   const comparisons: ChComparison[] = [
+    sgRow('SG total', win.sgPerRound, (r) => r.strokes_gained_total),
+    sgRow('SG off the tee', win.sgLegs.tee, (r) => r.strokes_gained_tee),
+    sgRow('SG approach', win.sgLegs.approach, (r) => r.strokes_gained_approach),
+    sgRow('SG around green', win.sgLegs.around, (r) => r.strokes_gained_around_green),
+    sgRow('SG putting', win.sgLegs.putting, (r) => r.strokes_gained_putting),
     { label: 'Scoring avg', you: win.avg, team: teamAvg, d1: null, unit: '', digits: 1, lowerIsBetter: true },
     { label: 'Fairways hit', you: rate(mineCache, 'fairways_hit', 'fairways_total'), team: t ? rate(teamCache, 'fairways_hit', 'fairways_total') : null, d1: null, unit: '%', digits: 0, lowerIsBetter: false },
     { label: 'Greens in regulation', you: rate(mineCache, 'greens_hit', 'greens_total'), team: t ? rate(teamCache, 'greens_hit', 'greens_total') : null, d1: d1Gir, unit: '%', digits: 0, lowerIsBetter: false },
@@ -176,6 +217,11 @@ export async function loadPlayerProfile(input: {
   // window with no rounds in the detail means the detail read failed.
   const detailFailed = detail.error || (winRounds.length > 0 && (detail.stats?.roundsPlayed ?? 0) === 0);
   if (detailFailed && !detail.error) chLogServer('stats', 'detailedStatsEmpty', `no detail for ${winRounds.length} rounds`, 'stats_analytics');
+
+  // Strokes gained against the previous 10 rounds; only the last-10 window has one.
+  const prevList = previousWindow(mine, input.window);
+  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizePlayer(prevList).sgPerRound : null, input.window, Math.max(0, mine.filter(isFull18).length - 10));
+  const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, d1);
 
   let nav: ChPlayerProfile['nav'] = null;
   if (input.viewer === 'coach') {
@@ -207,6 +253,9 @@ export async function loadPlayerProfile(input: {
     season,
     win,
     teamAvg,
+    tour,
+    sgChange: sgDelta,
+    puttBands,
     rounds: winRounds.map((r) => {
       const c = cache.byRound.get(r.id);
       return {
@@ -218,6 +267,7 @@ export async function loadPlayerProfile(input: {
         gir: c?.greens_total ? `${c.greens_hit ?? 0}/${c.greens_total}` : r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
         putts: c?.total_putts ?? r.total_putts,
         sg: r.strokes_gained_total,
+        sgLegs: [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting],
       };
     }),
     comparisons,
