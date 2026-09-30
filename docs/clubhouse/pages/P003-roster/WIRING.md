@@ -64,6 +64,7 @@ Links out are plain links through `rebuiltHref`, so a destination that is not re
 
 | Link | From | To |
 | --- | --- | --- |
+| View insights | row menu (desktop List view), first item | `coachhelm?player=<id>` (CoachHelm opens on the player) |
 | View stats | row menu, phone ⋯ sheet | `stats?player=<id>` |
 | Open full profile | desktop panel | `stats?player=<id>` |
 | All N | phone profile | `stats?player=<id>&window=season&tab=rounds` (D-53) |

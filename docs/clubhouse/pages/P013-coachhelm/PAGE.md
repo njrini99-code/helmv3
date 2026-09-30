@@ -10,7 +10,7 @@ pulse and each player's top signal, and can turn it into a focus for that player
 Page ID:            P013
 Page Name:          CoachHelm
 Route:              /golf/dashboard/coachhelm (coach and player); ?view=development|profile|standing show the
-                    shell's "not rebuilt yet" page (CH-1301), ?view=insights and no view draw the board
+                    shell's "not rebuilt yet" page (CH-1301), ?view=insights and no view draw the board; ?player=<id> opens a coach's board on that player (Roster's View insights)
 Bridge Namespace:   13 (Bridge IDs 13ccii, D-68; catalog codes CH-13xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/coachhelm

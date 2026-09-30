@@ -389,6 +389,16 @@ describe('Roster · loading, haptics, accessibility', () => {
     expect(card.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it("View insights, the row menu's first item, opens CoachHelm on that player", async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await toList(user);
+    await user.click(screen.getByRole('button', { name: `Actions for ${theo.name}` }));
+    const items = await screen.findAllByRole('menuitem');
+    expect(items[0]!.textContent).toBe('View insights');
+    expect(items[0]!.getAttribute('href')).toBe(`/golf/dashboard/coachhelm?player=${theo.id}`);
+  });
+
   it("Schedule 1:1 in the player panel opens Calendar's editor with only that player invited (D-52)", async () => {
     const user = userEvent.setup();
     wrap(roster());

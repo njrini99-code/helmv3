@@ -611,6 +611,15 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
   });
 
+  it("?player= (Roster's View insights) opens the board on that player; an id not on the board opens the most pressing", () => {
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} initialPlayer="pl-theo" />));
+    expect(screen.getByRole('button', { name: /Theo Marchetti/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(focusHeading()).toBe('Double bogey-or-worse rate: 3.1%');
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} initialPlayer="someone-else" />));
+    expect(screen.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('Share with the player has no action behind it (players already see their insights), so it is not drawn', () => {
     showCoach();
     expect(screen.queryByRole('button', { name: /Share/ })).toBeNull();

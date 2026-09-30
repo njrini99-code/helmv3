@@ -22,7 +22,8 @@ import '../styles/coachhelm.css';
  */
 const VIEWS_NOT_REBUILT: Record<string, string> = { development: 'Development', profile: 'Game profile', standing: 'Standing', 'deep-dive': 'Deep dive' };
 
-export async function ClubhouseCoachHelmRoute({ view }: { view?: string } = {}) {
+/** `?player=<golf_players.id>` opens a coach's board on that player (Roster's View insights); an id not on the board is ignored. */
+export async function ClubhouseCoachHelmRoute({ view, player }: { view?: string; player?: string } = {}) {
   const notYet = view ? VIEWS_NOT_REBUILT[view] : undefined;
   if (notYet) return <NotRebuilt label={notYet} />;
   const session = await getGolfSessionProfile();
@@ -43,7 +44,7 @@ export async function ClubhouseCoachHelmRoute({ view }: { view?: string } = {}) 
       );
     }
     const data = await loadCoachCoachHelm({ coachId: team.coachId, teamId: team.teamId });
-    return <CoachBoard data={data} />;
+    return <CoachBoard data={data} initialPlayer={player} />;
   }
   if (session.player) {
     const data = await loadPlayerCoachHelm({ playerId: session.player.id });

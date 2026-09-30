@@ -34,12 +34,13 @@ export const coachBoardLinks = {
  * own players are read (data/coachhelm.ts). Share with the player has no action
  * behind it (players already see their own insights), so it is not drawn.
  */
-export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites }) {
+export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites; initialPlayer?: string }) {
   const phone = useChPhone();
   const router = useRouter();
   const toast = useToast();
   const players = data.players.list;
-  const [sel, setSel] = useState<string | null>(players[0]?.id ?? null);
+  // Roster's View insights opens on its player; a player with no insight on the board opens the most pressing one.
+  const [sel, setSel] = useState<string | null>(players.find((p) => p.id === initialPlayer)?.id ?? players[0]?.id ?? null);
   // What this visit changed, over what the page loaded: an insight assigned (by its id) or dismissed.
   const [assigned, setAssigned] = useState<Record<string, ChHelmAssigned>>({});
   const [dismissed, setDismissed] = useState<Record<string, true>>({});

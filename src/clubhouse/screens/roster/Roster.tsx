@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, UserMinus, UserPlus, Users } from 'lucide-react';
+import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
@@ -179,6 +179,9 @@ export function Roster({ data }: { data: ChRoster }) {
   const messagesHref = rebuiltHref('/golf/dashboard/messages');
   const menuFor = (p: ChRosterPlayer): MenuItem[] => {
     const items: MenuItem[] = [];
+    // The board's first row item: CoachHelm opened on this player.
+    const insights = rebuiltHref(`/golf/dashboard/coachhelm?player=${p.id}`, 'coach');
+    if (insights) items.push({ label: 'View insights', icon: Sparkles, href: insights });
     const s = statsHref(p);
     if (s) items.push({ label: 'View stats', icon: BarChart3, href: s });
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });

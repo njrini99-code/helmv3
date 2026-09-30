@@ -195,14 +195,14 @@ function progressHistoryOf(raw: unknown): { at: string; value: number; note?: st
  * 3. Fetches CoachHelm dashboard data
  * 4. Renders the client dashboard component
  */
-export default async function PlayerCoachHelmPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+export default async function PlayerCoachHelmPage({ searchParams }: { searchParams: Promise<{ view?: string; player?: string }> }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
   const { coach, player } = session;
 
   // Clubhouse CoachHelm (golf_clubhouse_ui): one page for coaches and players, drawn in place (no redirect: see golf-conditional-redirect.test.ts).
-  if ((coach && isClubhouseFor('coach')) || (player && isClubhouseFor('player'))) return <ClubhouseCoachHelmRoute view={(await searchParams).view} />;
+  if ((coach && isClubhouseFor('coach')) || (player && isClubhouseFor('player'))) return <ClubhouseCoachHelmRoute {...(await searchParams)} />;
 
   if (!player) {
     if (coach) {

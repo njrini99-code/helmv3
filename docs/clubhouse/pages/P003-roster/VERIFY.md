@@ -124,5 +124,5 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
   - `docs/clubhouse/screens/roster.md` said the page reads in one pass; it is two parallel rounds (corrected).
   - The Clubhouse roster files are not mapped to a feature in `memory/registry.yml` (`knowledge:map` finds none), so
     no feature doc is updated by a Roster change.
-  - The desktop panel still hides View insights (it waits for CoachHelm to accept a player). Its Schedule 1:1 was
-    built 2026-09-30 (CLICKABLES gap 4).
+  - The desktop Schedule 1:1 (panel) and View insights (row menu, CoachHelm `?player=`) were built 2026-09-30
+    (CLICKABLES gaps 4 and 16).
