@@ -17,7 +17,7 @@
  * Exit 0 clean, 1 on any violation.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, relative, extname } from 'node:path';
+import { dirname, join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runRegistryCheck } from './registry.mjs';
 
@@ -290,6 +290,31 @@ export function checkScreens(md, rebuilt) {
   return v;
 }
 
+/**
+ * A 'use client' file may import only types from a server-only module (`import 'server-only'`): a value
+ * import makes `next build` fail, and typecheck can't see it (the Stats phone shipped one once).
+ * `sources` maps repo-relative paths under src/clubhouse to their text.
+ */
+export function checkServerOnlyImports(sources) {
+  const v = [];
+  const serverOnly = new Set(Object.entries(sources).filter(([, src]) => /^import 'server-only';/m.test(src)).map(([f]) => f));
+  const resolve = (from, spec) => {
+    const base = join(dirname(from), spec);
+    return [`${base}.ts`, `${base}.tsx`, join(base, 'index.ts')].find((c) => serverOnly.has(c));
+  };
+  for (const [file, src] of Object.entries(sources)) {
+    if (!/^\s*['"]use client['"]/.test(src)) continue;
+    for (const m of src.matchAll(/import\s+(type\s+)?\{([^}]*)\}\s+from\s+'(\.[^']+)'/g)) {
+      if (m[1]) continue;
+      const target = resolve(file, m[3]);
+      if (!target) continue;
+      const values = m[2].split(',').map((x) => x.trim()).filter((x) => x && !x.startsWith('type '));
+      if (values.length) v.push(`${file}: imports ${values.join(', ')} from server-only ${target}; a client file may import only types from it`);
+    }
+  }
+  return v;
+}
+
 function main() {
   const argRoot = process.argv.indexOf('--root');
   const root = argRoot > -1 ? process.argv[argRoot + 1] : join(fileURLToPath(new URL('.', import.meta.url)), '../..');
@@ -313,6 +338,7 @@ function main() {
       ? Object.fromEntries(readdirSync(testDir).map((n) => [n, readFileSync(join(testDir, n), 'utf8')]))
       : {};
     violations.push(...checkCatalog({ catalogs, sources, tests }));
+    violations.push(...checkServerOnlyImports(Object.fromEntries(Object.entries(sources).filter(([f]) => !f.includes('/__tests__/')))));
   }
 
   const screens = join(root, 'docs/clubhouse/SCREENS.md');

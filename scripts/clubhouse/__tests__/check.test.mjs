@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes } from '../check.mjs';
+import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes, checkServerOnlyImports } from '../check.mjs';
 
 test('flags Fairway imports and tokens', () => {
   const v = checkSource('src/clubhouse/x.tsx', "import { Button } from '@/components/fairway/controls';\nconst s = { color: 'var(--fw-ink)' };");
@@ -135,4 +135,20 @@ test('screens: ticks match the rebuilt routes, per role', () => {
   assert.match(v, /Travel \(coach\) is ticked but/);
   assert.match(v, /\/golf\/dashboard\/settings is rebuilt for the coach role but not listed/);
   assert.doesNotMatch(v, /Home|Calendar/);
+});
+
+test('a client file may import only types from a server-only module', () => {
+  const loader = "import 'server-only';\nexport const LEGS = ['a'];\nexport type ChLeg = string;";
+  const bad = checkServerOnlyImports({
+    'src/clubhouse/data/stats-team.ts': loader,
+    'src/clubhouse/screens/stats/Phone.tsx': "'use client';\nimport { LEGS, type ChLeg } from '../../data/stats-team';",
+  });
+  assert.equal(bad.length, 1);
+  assert.ok(bad[0].includes('imports LEGS from server-only src/clubhouse/data/stats-team.ts'));
+  const ok = checkServerOnlyImports({
+    'src/clubhouse/data/stats-team.ts': loader,
+    'src/clubhouse/screens/stats/Phone.tsx': "'use client';\nimport type { ChLeg } from '../../data/stats-team';\nimport { type ChLeg as L } from '../../data/stats-team';",
+    'src/clubhouse/routes/stats.tsx': "import 'server-only';\nimport { LEGS } from '../data/stats-team';",
+  });
+  assert.deepEqual(ok, []);
 });
