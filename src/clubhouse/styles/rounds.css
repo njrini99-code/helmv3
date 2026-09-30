@@ -1022,6 +1022,14 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-nine td.is-sel {
   background: #e3eee6;
 }
+.ch-rv-nine td[data-hole] {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ch-rv-nine td[data-hole]:not(.is-sel):hover {
+    background: var(--ch-bg-hover);
+  }
+}
 .ch-rv-nine .is-par {
   color: var(--ch-text-secondary);
 }

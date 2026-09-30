@@ -73,7 +73,9 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
         <tr className="is-score">
           <th scope="row">Score</th>
           {holes.map((h) => (
-            <td key={h.n} className={h.n === sel ? 'is-sel' : undefined}>
+            // The board makes the score the target too: a tap on it selects the hole. Pointer only; the hole number
+            // above is the same choice as a button for the keyboard and a screen reader.
+            <td key={h.n} data-hole={h.n} className={h.n === sel ? 'is-sel' : undefined} onClick={pick(h.n)}>
               <ScoreMark score={h.score} par={h.par} size="sm" />
             </td>
           ))}

@@ -130,6 +130,19 @@ describe('112401 Round review, on screen', () => {
     expect((screen.getByRole('button', { name: 'Next hole' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('CH-11704 a tap on a score picks that hole too, as the hole number does; the Tot cell picks nothing', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_REVIEW);
+    await user.click(document.querySelector('.ch-rv-nine .is-score td[data-hole="12"]')!);
+    expect(holeTitle()).toMatch(/^Hole 12 /);
+    expect(screen.getByRole('button', { name: 'Hole 12' }).getAttribute('aria-pressed')).toBe('true');
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    const tot = document.querySelector('.ch-rv-nine .is-score td:last-child')!;
+    expect(tot.hasAttribute('data-hole')).toBe(false);
+    await user.click(tot);
+    expect(holeTitle()).toMatch(/^Hole 12 /);
+  });
+
   it('CH-11804 the card is two captioned tables; a par 3 has no fairway; three putts are flagged', () => {
     show(PREVIEW_REVIEW);
     const [out] = screen.getAllByRole('table');
