@@ -48,7 +48,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-4401 | Stats is loading (team or player) | The page's header, five figure cards and chart frames as skeletons, each line and card sized like the loaded Team stats so nothing below moves when it lands | `StatsSkeleton`, `aria-busy` | stats-team.test › CH-4401 |
+| CH-4401 | Team stats are loading (a player's profile is CH-5403) | The page's header, five figure cards and chart frames as skeletons, each line and card sized like the loaded Team stats so nothing below moves when it lands | `StatsSkeleton`, `aria-busy` | stats-team.test › CH-4401 |
 | CH-4402 | Changing the window (Last 10, Season, Qualifiers) | The page dims slightly and is marked busy until the new window lands; the scroll position stays | `StatsTeamFrame` (`useTransition`), `.ch-st[aria-busy]` | stats-team.test › CH-4402 |
 
 ## 46xx Motion

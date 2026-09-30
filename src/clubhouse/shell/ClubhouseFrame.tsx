@@ -52,7 +52,7 @@ export function ClubhouseFrame({
   useEffect(() => chTagSession(), []);
 
   return (
-    <ClubhouseMarker>
+    <ClubhouseMarker role={role}>
       {/* The animation features (domMax, for layoutId slides) load in their own chunk, after first paint (D-25). */}
       <LazyMotion features={loadMaxFeatures} strict>
         <PhoneChromeProvider>

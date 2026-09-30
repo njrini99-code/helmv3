@@ -5,7 +5,7 @@ Route `/golf/dashboard/stats?player=<id>` (coach) and `/golf/dashboard/stats` (p
 tests `src/clubhouse/__tests__/stats-player.test.tsx` · preview `/clubhouse-preview/player`
 (`?state=early|self|failed`).
 
-Loading is the Stats skeleton (CH-4401). Each tab is its own component inside
+Loading is the profile skeleton (CH-5403); the team page's is CH-4401. Each tab is its own component inside
 its own boundary, so a crash stays inside the tab.
 
 ## 50xx Error toasts
@@ -52,6 +52,7 @@ its own boundary, so a crash stays inside the tab.
 | --- | --- | --- | --- | --- |
 | CH-5401 | A focus area is being proposed | The button reads "Adding" and can't be pressed again | `FocusAreaSheet` | stats-player.test › CH-5401 |
 | CH-5402 | Changing the window or the player (pager) | The page dims and is marked busy until it lands; the scroll position stays | `useTransition`, `.ch-st[aria-busy]` | stats-player.test › CH-5402 |
+| CH-5403 | A player's stats are loading: their own, or a coach's `?player=` | The profile's shape in place: hero with avatar, name and four figures, the tabs and the window switch, then a chart frame (the team page keeps CH-4401) | `StatsProfileSkeleton` via `StatsRouteSkeleton` in the route's loading.tsx (the shell's role and `?player=`) | stats-player.test › CH-5403 |
 
 ## 56xx Motion
 

@@ -14,7 +14,8 @@ const reportSpy = vi.hoisted(() => vi.fn());
 const trailSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track', () => ({ chReport: reportSpy, chTrail: trailSpy, chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => router }));
+const search = vi.hoisted(() => ({ current: new URLSearchParams() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => search.current }));
 const createFocusArea = vi.hoisted(() => vi.fn());
 vi.mock('@/app/golf/actions/development', () => ({ createFocusArea }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
@@ -40,6 +41,8 @@ import { ToastProvider } from '../ui/Toast';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
+import { ClubhouseMarker } from '../shell/context';
+import StatsLoading from '@/app/golf/(dashboard)/dashboard/stats/loading';
 import './dialog-polyfill';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -781,6 +784,26 @@ describe('Stats player · the page', () => {
     await user.click(screen.getByRole('button', { name: 'Add focus area' }));
     await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting{Enter}');
     await waitFor(() => expect(createFocusArea).toHaveBeenCalledTimes(1));
+  });
+
+  it('CH-5403 /stats loads in the profile\'s shape for a player or a coach with ?player=, and the team page\'s for a coach without', () => {
+    const at = (role: 'coach' | 'player', query: string) => {
+      cleanup();
+      search.current = new URLSearchParams(query);
+      render(
+        <ClubhouseMarker role={role}>
+          <StatsLoading />
+        </ClubhouseMarker>,
+      );
+      return [code('CH-5403') != null, code('CH-4401') != null];
+    };
+    expect(at('player', '')).toEqual([true, false]);
+    expect(at('coach', 'player=p1')).toEqual([true, false]);
+    expect(at('coach', '')).toEqual([false, true]);
+    expect(code('CH-4401')!.getAttribute('aria-busy')).toBe('true');
+    expect(at('player', 'window=last10')).toEqual([true, false]);
+    expect(code('CH-5403')!.getAttribute('aria-busy')).toBe('true');
+    search.current = new URLSearchParams();
   });
 
   it('52001 the section tabs are one Tab stop; a click, Enter or Space on a tab still chooses it', async () => {

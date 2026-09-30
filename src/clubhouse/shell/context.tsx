@@ -3,10 +3,15 @@
 import { createContext, useContext, type ReactNode } from 'react';
 
 const InClubhouse = createContext(false);
+const Role = createContext<'coach' | 'player' | null>(null);
 
-/** Marks a subtree as rendered inside the Clubhouse shell. */
-export function ClubhouseMarker({ children }: { children: ReactNode }) {
-  return <InClubhouse.Provider value>{children}</InClubhouse.Provider>;
+/** Marks a subtree as rendered inside the Clubhouse shell, for the signed-in role. */
+export function ClubhouseMarker({ children, role = null }: { children: ReactNode; role?: 'coach' | 'player' | null }) {
+  return (
+    <InClubhouse.Provider value>
+      <Role.Provider value={role}>{children}</Role.Provider>
+    </InClubhouse.Provider>
+  );
 }
 
 /**
@@ -16,4 +21,9 @@ export function ClubhouseMarker({ children }: { children: ReactNode }) {
  */
 export function useInClubhouse(): boolean {
   return useContext(InClubhouse);
+}
+
+/** The shell's role, for route files (loading) that draw a role's own shape before its page loads. */
+export function useClubhouseRole(): 'coach' | 'player' | null {
+  return useContext(Role);
 }

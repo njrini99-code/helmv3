@@ -2,7 +2,7 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
-## 2026-09-30 — Tabs from the keyboard; a one-round trend
+## 2026-09-30 — Tabs from the keyboard; a one-round trend; the profile skeleton
 
 ```text
 PR/commit:      agent/clubhouse
@@ -16,6 +16,9 @@ Data impact:    none
   move between them and select, as in the Segmented control (52001, reworded).
 - **One round, no trend.** The phone's Scoring trend vanished under two rounds. With one it now says so:
   "One round so far: 74 on Oct 3. The trend draws from the second." With none it stays out.
+- **A profile loaded behind the team board.** The route drew the team page's skeleton for a player's own stats
+  and for a coach's `?player=`. It now draws the profile's shape (CH-5403): the shell's role reaches route
+  files through `ClubhouseMarker`.
 
 ## 2026-09-30 — Page docs, permission proven, six bugs fixed
 
