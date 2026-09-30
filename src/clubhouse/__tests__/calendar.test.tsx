@@ -858,7 +858,8 @@ describe('Calendar · the failure toast’s Retry', () => {
     } finally {
       line.mockRestore();
     }
-  });
+    // Every write scenario renders and fails in turn: about 1.7s locally, past 5s on CI runners.
+  }, 20_000);
 });
 
 /* ───────── the server side: the loader, the route and the page ───────── */
