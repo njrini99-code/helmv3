@@ -388,7 +388,7 @@ describe('Team Hub · the loader', () => {
     tables.current = {
       golf_teams: team,
       golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Eli', last_name: 'Brandt' } }, { player: { id: 'p2', first_name: 'Ava', last_name: 'Lindqvist' } }] },
-      golf_events: { data: [{ id: 'e1', title: 'Team dinner', event_type: 'meeting', start_time: soon, location: 'Carolina Inn', is_mandatory: false }] },
+      golf_events: { data: [{ id: 'e1', title: 'Team dinner', event_type: 'meeting', start_time: soon, location: 'Carolina Inn' }] },
       golf_travel_itineraries: { data: [{ id: 'tr1', event_id: 'e2', event_name: 'Seahawk', destination: 'Wilmington', departure_date: inAWeek, return_date: inAWeek, transportation_type: 'bus' }] },
       golf_event_attendance: {
         data: [

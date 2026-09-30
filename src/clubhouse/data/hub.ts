@@ -276,7 +276,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     supabase.from('golf_tasks').select('id, title, description, due_date, category, status').eq('team_id', input.teamId).is('parent_task_id', null).order('due_date', { ascending: true, nullsFirst: false }).limit(100),
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, location, is_mandatory')
+      .select('id, title, event_type, start_time, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
@@ -311,7 +311,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           title: e.title,
           ...f.day(e.start_time),
           meta: [f.time(e.start_time), e.location].filter(Boolean).join(' · '),
-          mandatory: !!e.is_mandatory,
+          // golf_events has no mandatory column (get_player_hub_events returns FALSE too); Q-71.
+          mandatory: false,
           mine: null,
           counts: attendance.error ? null : { going: count('accepted'), maybe: count('tentative'), no: count('declined'), none: count('pending') },
         };

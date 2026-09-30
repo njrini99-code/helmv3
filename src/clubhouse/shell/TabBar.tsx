@@ -2,10 +2,14 @@
 
 import Link from 'next/link';
 import { AnimatePresence, m } from 'framer-motion';
-import { LayoutGrid, Settings, X } from 'lucide-react';
+import { ChevronRight, LayoutGrid, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
+import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
+import { useToast } from '../ui/Toast';
+import { chSignOut } from '../lib/sign-out';
+import { chReport } from '../lib/track';
 import { haptic } from '../lib/haptics';
 import { chTween } from '../lib/motion';
 import { useSheetDrag } from '../lib/sheet-drag';
@@ -20,8 +24,27 @@ import { badgeCount } from './Sidebar';
  * destinations per role plus More, the active tab in green. A selection tick
  * on every tab change; More opens a sheet with the rest of the app (D-41).
  * When Messages lives under More, its unread count rolls up onto More.
+ *
+ * The sheet follows the v2 More board (m-ch.jsx `MoreM`): who you are (it
+ * opens Settings), the rest of the app with the next event under Calendar,
+ * then Settings, Help and Sign out.
  */
-export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChShellData; role: ChRole }) {
+export function TabBar({ pathname, shell, role, user }: { pathname: string; shell: ChShellData; role: ChRole; user?: { name: string; teamName?: string | null } }) {
+  const toast = useToast();
+  const [leaving, setLeaving] = useState(false);
+  const signOut = async () => {
+    haptic('press');
+    setLeaving(true);
+    try {
+      await chSignOut();
+    } catch (err) {
+      // CH-1002: the session is still open, so nothing is lost; say so and let them try again.
+      chReport(err, { surface: 'shell.more', action: 'signOut' });
+      haptic('error');
+      setLeaving(false);
+      toast({ tone: 'error', title: "Couldn't sign out", body: 'You are still signed in. Try again.', code: 'CH-1002', action: { label: 'Retry', run: () => void signOut() } });
+    }
+  };
   const badges = useNotificationBadges();
   const reduced = useChReducedMotion();
   const { immersive } = usePhoneChromeState();
@@ -153,8 +176,18 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
                   <Icon icon={X} size={16} />
                 </button>
               </div>
+              {user && (
+                <Link href="/golf/dashboard/settings" className="ch-more__me" onClick={() => haptic('select')}>
+                  <Avatar name={user.name} size={44} />
+                  <span className="ch-more__me-t">
+                    <b>{user.name}</b>{' '}
+                    <em>{[role === 'coach' ? 'Coach' : 'Player', user.teamName].filter(Boolean).join(' · ')}</em>
+                  </span>
+                  <Icon icon={ChevronRight} size={16} />
+                </Link>
+              )}
               <div className="ch-more__list">
-                {[...rest, { id: 'settings', label: 'Settings', href: '/golf/dashboard/settings', icon: Settings }].map((i) => {
+                {rest.map((i) => {
                   const count = 'badge' in i && i.badge ? badgeCount(i, badges, shell) : null;
                   return (
                     <Link
@@ -167,7 +200,16 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
                       <span className="ch-more__ic">
                         <Icon icon={i.icon} size={17} />
                       </span>
-                      <span className="ch-more__label">{i.label}</span>
+                      {i.id === 'calendar' && shell.nextEvent ? (
+                        <span className="ch-more__label">
+                          {i.label}{' '}
+                          <span className="ch-more__sub ch-num">
+                            {shell.nextEvent.whenLabel} · {shell.nextEvent.title}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="ch-more__label">{i.label}</span>
+                      )}
                       {/* The spaces are text nodes, so the link is named "Messages 3 new", not "Messages3new". */}
                       {count != null && (
                         <>
@@ -181,6 +223,26 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
                     </Link>
                   );
                 })}
+              </div>
+              <div className="ch-more__list">
+                <Link href="/golf/dashboard/settings" className="ch-more__row" aria-current={current?.id === 'settings' ? 'page' : undefined} onClick={() => haptic('select')}>
+                  <span className="ch-more__ic">
+                    <Icon icon={Settings} size={17} />
+                  </span>
+                  <span className="ch-more__label">Settings</span>
+                </Link>
+                <Link href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={() => haptic('select')}>
+                  <span className="ch-more__ic">
+                    <Icon icon={LifeBuoy} size={17} />
+                  </span>
+                  <span className="ch-more__label">Help</span>
+                </Link>
+                <button type="button" className="ch-more__row" onClick={() => void signOut()} disabled={leaving}>
+                  <span className="ch-more__ic">
+                    <Icon icon={LogOut} size={17} />
+                  </span>
+                  <span className="ch-more__label">{leaving ? 'Signing out…' : 'Sign out'}</span>
+                </button>
               </div>
             </m.div>
           </>

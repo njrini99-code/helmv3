@@ -74,7 +74,7 @@ export function ClubhouseFrame({
                     </RouteFrame>
                   </div>
                 </div>
-                <TabBar pathname={pathname} shell={shell} role={role} />
+                <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} />
               </CrumbProvider>
             </ToastProvider>
           </FrameRoot>

@@ -30,6 +30,8 @@ vi.mock('@/lib/supabase/server', () => ({
 const badgeState = vi.hoisted(() => ({ messages: 0 }));
 vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, messages: badgeState.messages, refetch: vi.fn() }) }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: vi.fn(), markNotificationRead: vi.fn(), markAllNotificationsRead: vi.fn() }));
+const signOutSpy = vi.hoisted(() => vi.fn());
+vi.mock('../lib/sign-out', () => ({ chSignOut: signOutSpy }));
 
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { ToastProvider } from '../ui/Toast';
@@ -354,6 +356,32 @@ describe('Shell · navigation and accessibility', () => {
     await expectCode('CH-1802');
     expect(within(code('CH-1802') as HTMLElement).getByRole('link', { name: 'Messages 3 new' })).toBeTruthy();
     badgeState.messages = 0;
+  });
+
+  it('CH-1802 the v2 More sheet: who you are (to Settings), the next event under Calendar, then Settings, Help and Sign out', async () => {
+    const user = userEvent.setup();
+    const withEvent = { ...shell, nextEvent: { id: 'e1', title: 'Pinehurst qualifier', whenLabel: 'Thursday', metaLabel: 'Thu, Oct 16', ready: null } };
+    wrap(<TabBar pathname="/golf/dashboard" shell={withEvent} role="player" user={{ name: 'Maya Reyes', teamName: 'Varsity' }} />);
+    await user.click(screen.getByRole('button', { name: /^More/ }));
+    const sheet = (await screen.findByRole('dialog', { name: 'More' })) as HTMLElement;
+    expect(within(sheet).getByRole('link', { name: /^Maya Reyes Player · Varsity/ }).getAttribute('href')).toBe('/golf/dashboard/settings');
+    expect(within(sheet).getByRole('link', { name: 'Calendar Thursday · Pinehurst qualifier' })).toBeTruthy();
+    expect(within(sheet).getByRole('link', { name: 'Help' }).getAttribute('href')).toBe('/golf/dashboard/settings#set-help');
+    signOutSpy.mockResolvedValueOnce(undefined);
+    await user.click(within(sheet).getByRole('button', { name: 'Sign out' }));
+    expect(signOutSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-1002 a sign-out that fails says you are still signed in, with Retry', async () => {
+    const user = userEvent.setup();
+    signOutSpy.mockReset();
+    signOutSpy.mockRejectedValueOnce(new Error('network'));
+    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="player" user={{ name: 'Theo Marchetti' }} />);
+    await user.click(screen.getByRole('button', { name: /^More/ }));
+    await user.click(await screen.findByRole('button', { name: 'Sign out' }));
+    await expectCode('CH-1002', /Couldn't sign out/);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
   });
 
   it('CH-1802 the More sheet takes focus, keeps Tab inside, and gives it back on Esc', async () => {

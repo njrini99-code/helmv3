@@ -16,6 +16,7 @@ D-40 to D-43).
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-1001 | "Mark all read" in the bell fails | "Couldn't mark your notifications read", Retry; the unread dots come back. On success: "All notifications marked read" | `useAction('shell.markAllRead')` in `Bell` | shell.test › CH-1001 |
+| CH-1002 | Signing out from the phone's More sheet fails | "Couldn't sign out" + "You are still signed in. Try again." Retry; error haptic | `TabBar` → `chSignOut` (lib/sign-out.ts, shared with Settings) | shell.test › CH-1002 |
 
 ## 12xx Didn't load
 
