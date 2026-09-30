@@ -97,7 +97,7 @@ function FindTime({
   for (let h = FROM; h <= TO; h += 2) ticks.push(h);
   const shown = rows.slice(0, 6);
   return (
-    <div className="ch-ft">
+    <div className="ch-cal-ft">
       <div className="ch-lanes">
         <span />
         <div className="ch-lanes__axis" aria-hidden="true">
@@ -115,7 +115,7 @@ function FindTime({
               className="ch-lane"
               ref={i === 0 ? ref : undefined}
               onPointerDown={(e) => {
-                if ((e.target as HTMLElement).closest('.ch-ft__band')) return;
+                if ((e.target as HTMLElement).closest('.ch-cal-ft__band')) return;
                 move(toH(e.clientX) - len / 2);
               }}
             >
@@ -133,7 +133,7 @@ function FindTime({
               })}
               {i === 0 ? (
                 <span
-                  className="ch-lane__b is-prop ch-ft__band"
+                  className="ch-lane__b is-prop ch-cal-ft__band"
                   style={{ left: `${pct(win[0])}%`, width: `${pct(win[1]) - pct(win[0])}%` }}
                   role="slider"
                   tabIndex={0}

@@ -1171,21 +1171,21 @@
   box-shadow: var(--ch-raised-shadow), 0 0 0 1.5px var(--ch-green-600);
   color: var(--ch-green-700);
 }
-.ch-ft {
+.ch-cal-ft {
   position: relative;
   user-select: none;
 }
-.ch-ft .ch-lane {
+.ch-cal-ft .ch-lane {
   cursor: crosshair;
 }
-.ch-ft__band {
+.ch-cal-ft__band {
   cursor: grab;
   touch-action: none;
 }
-.ch-ft__band:active {
+.ch-cal-ft__band:active {
   cursor: grabbing;
 }
-.ch-ft__band:focus-visible {
+.ch-cal-ft__band:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
