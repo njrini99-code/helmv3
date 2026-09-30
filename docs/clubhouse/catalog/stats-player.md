@@ -14,6 +14,8 @@ its own boundary, so a crash stays inside the tab.
 | --- | --- | --- | --- | --- |
 | CH-5001 | Proposing a focus area fails | "Couldn't add the focus area for Jonah" + "Your text is still here. Try again in a moment." Retry; the sheet stays open with the text. Done: "Focus area proposed to Jonah. It starts when Jonah accepts." | `useAction('stats.addFocusArea')` | stats-player.test › CH-5001 |
 | CH-5002 | Sharing a player's stats from the phone fails (the browser blocks the clipboard) | "Couldn't share the link" + "Your browser blocked it. Try again, or copy the address from the browser." Error haptic. Closing the share sheet is not a failure. Done: "Link copied" | `StatsPlayerPhone` share | stats-player.test › CH-5002 |
+| CH-5003 | A player's Accept of a proposed focus area fails | "Couldn’t accept Lag putting" + Retry; it stays waiting. Done: "Started · Lag putting" and the page reads again | `useAction('stats.acceptFocusArea')` in `ProposalAnswer` → `acceptFocusArea` | stats-player.test › CH-5003 |
+| CH-5004 | A player's Decline of a proposed focus area fails | "Couldn’t decline Lag putting" + Retry; it stays waiting. Done: "Declined · Lag putting" | `useAction('stats.declineFocusArea')` in `ProposalAnswer` → `declineFocusArea` | stats-player.test › CH-5004 |
 
 ## 51xx Validation
 
@@ -53,6 +55,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5401 | A focus area is being proposed | The button reads "Adding" and can't be pressed again | `FocusAreaSheet` | stats-player.test › CH-5401 |
 | CH-5402 | Changing the window or the player (pager) | The page dims and is marked busy until it lands; the scroll position stays | `useTransition`, `.ch-st[aria-busy]` | stats-player.test › CH-5402 |
 | CH-5403 | A player's stats are loading: their own, or a coach's `?player=` | The profile's shape in place: hero with avatar, name and four figures, the tabs and the window switch, then a chart frame (the team page keeps CH-4401) | `StatsProfileSkeleton` via `StatsRouteSkeleton` in the route's loading.tsx (the shell's role and `?player=`) | stats-player.test › CH-5403 |
+| CH-5404 | A player's answer to a proposed focus area is being sent | The pressed button reads "Accepting" or "Declining" and both are disabled until it lands | `ProposalAnswer` | stats-player.test › CH-5404 |
 
 ## 56xx Motion
 

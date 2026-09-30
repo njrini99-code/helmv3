@@ -790,6 +790,13 @@ a.ch-lg__r:focus-visible {
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
+/* Q-77: the player's answer to a proposed focus area, under its line. */
+.ch-pf-answer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
 .ch-pf-tabs {
   display: flex;
   flex-wrap: wrap;

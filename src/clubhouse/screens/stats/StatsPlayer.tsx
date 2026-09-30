@@ -31,6 +31,7 @@ import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
 import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, YardagePage } from './charts';
 import { GameDetail } from './GameDetail';
+import { ProposalAnswer } from './ProposalAnswer';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { WINDOW_WORDS, WindowSwitch } from './WindowSwitch';
 
@@ -442,6 +443,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                           ? `${f.current ?? f.baseline ?? NO_DATA} → target ${f.target}`
                           : 'No target set'}
                     </span>
+                    {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
                   </div>
                   <div className="ch-pf-bar" aria-hidden="true">
                     {progress != null && <span style={{ width: `${progress}%` }} />}

@@ -21,6 +21,7 @@ import { formatHcp } from '../roster/format';
 import { GameDetail } from './GameDetail';
 import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
+import { ProposalAnswer } from './ProposalAnswer';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -296,6 +297,7 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
               <span className="ch-num">
                 {f.status === 'proposed' ? 'Proposed, waiting to be accepted' : f.target != null ? `${f.current ?? f.baseline ?? NO_DATA} → target ${f.target}` : 'No target set'}
               </span>
+              {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
             </li>
           ))}
         </ul>

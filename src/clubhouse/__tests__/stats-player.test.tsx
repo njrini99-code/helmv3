@@ -17,7 +17,8 @@ const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 const search = vi.hoisted(() => ({ current: new URLSearchParams() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => search.current }));
 const createFocusArea = vi.hoisted(() => vi.fn());
-vi.mock('@/app/golf/actions/development', () => ({ createFocusArea }));
+const answer = vi.hoisted(() => ({ accept: vi.fn(), decline: vi.fn() }));
+vi.mock('@/app/golf/actions/development', () => ({ createFocusArea, acceptFocusArea: answer.accept, declineFocusArea: answer.decline }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: vi.fn() }));
 vi.mock('../data/stats-team', () => ({ loadTeamStats: vi.fn() }));
@@ -150,6 +151,42 @@ describe('Stats player · reads that fail', () => {
     for (const surface of ['stats.player.overview', 'stats.player.rounds', 'stats.player.development'])
       expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     quiet.mockRestore();
+  });
+
+  it('CH-5003 CH-5004 CH-5404 a player answers a proposed focus area: Accept starts it, Decline sets it aside; a coach only sees it waiting', async () => {
+    const user = userEvent.setup();
+    router.refresh.mockClear();
+    const proposed = { id: 'f9', title: 'Lag putting', baseline: 40, current: 40, target: 60, metric: 'lag', status: 'proposed' };
+    const mine = player({ viewer: 'player', focusAreas: [...PREVIEW_PLAYER.focusAreas, proposed] });
+    let release: (v: { success: boolean; error?: string }) => void = () => {};
+    answer.accept.mockImplementation(() => new Promise((r) => (release = r)));
+    show(mine, null);
+    await openTab(user, /Development/);
+    const group = screen.getByRole('group', { name: 'Answer Lag putting' });
+    // Only the proposed one takes an answer.
+    expect(screen.getAllByRole('group', { name: /^Answer / })).toHaveLength(1);
+    await user.click(within(group).getByRole('button', { name: 'Accept' }));
+    await expectCode('CH-5404', /Accepting/);
+    expect(within(group).getByRole('button', { name: 'Decline' })).toHaveProperty('disabled', true);
+    expect(answer.accept).toHaveBeenCalledWith('f9');
+    release({ success: false, error: 'nope' });
+    await expectCode('CH-5003', /Couldn’t accept Lag putting/);
+    expect(router.refresh).not.toHaveBeenCalled();
+    answer.accept.mockResolvedValue({ success: true });
+    await user.click(within(group).getByRole('button', { name: 'Accept' }));
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
+    answer.decline.mockResolvedValue({ success: false, error: 'nope' });
+    await user.click(within(group).getByRole('button', { name: 'Decline' }));
+    expect(answer.decline).toHaveBeenCalledWith('f9');
+    await expectCode('CH-5004', /Couldn’t decline Lag putting/);
+    answer.decline.mockResolvedValue({ success: true });
+    await user.click(within(group).getByRole('button', { name: 'Decline' }));
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(2));
+    cleanup();
+    show(player({ focusAreas: [proposed] }));
+    await openTab(user, /Development/);
+    expect(screen.getByText('Proposed, waiting to be accepted')).toBeTruthy();
+    expect(screen.queryByRole('group', { name: /^Answer / })).toBeNull();
   });
 
   it('CH-5205 game detail that crashes is contained', async () => {
@@ -327,6 +364,19 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     hapticSpy.mockClear();
     await user.click(screen.getByRole('button', { name: 'Approach' }));
     expect(hapticSpy).not.toHaveBeenCalled();
+  });
+
+  it('CH-5003 on the phone a player answers a proposed focus area too; a coach does not', async () => {
+    const user = userEvent.setup();
+    const proposed = { id: 'f9', title: 'Lag putting', baseline: 40, current: 40, target: 60, metric: 'lag', status: 'proposed' };
+    answer.accept.mockResolvedValue({ success: true });
+    phone(player({ viewer: 'player', focusAreas: [proposed] }), 'dev', null);
+    await user.click(within(screen.getByRole('group', { name: 'Answer Lag putting' })).getByRole('button', { name: 'Accept' }));
+    expect(answer.accept).toHaveBeenCalledWith('f9');
+    cleanup();
+    phone(player({ focusAreas: [proposed] }), 'dev');
+    expect(screen.getByText('Proposed, waiting to be accepted')).toBeTruthy();
+    expect(screen.queryByRole('group', { name: /^Answer / })).toBeNull();
   });
 
   it('the phone trend: a line from two rounds; one round says what there is instead of vanishing; none leaves it out', () => {
