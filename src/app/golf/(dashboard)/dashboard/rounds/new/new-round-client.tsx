@@ -10,6 +10,8 @@ import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking'
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { useToast } from '@/components/ui/sonner';
+import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { useNewRoundSession, type NewRoundClientProps } from '@/lib/golf/round-session/use-new-round-session';
 // The post-hole decision lives with the engine; its tests import it from here.
 export { decidePostHoleCompleteAction, type PostHoleCompleteAction } from '@/lib/golf/round-session/use-new-round-session';
@@ -65,6 +67,9 @@ const FairwayRoundSummarySheet = dynamic(
 export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
+  // The engine's ports: the same functions it used to get from these two hooks, every render (ROUNDS_PLAN step 4c).
+  const { showToast } = useToast();
+  const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
   const {
     router,
     connectionStatus,
@@ -168,7 +173,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     recoveredHoleCount,
     handleDiscardRecovery,
     handleRestoreRecovery,
-  } = useNewRoundSession({ playerId });
+  } = useNewRoundSession({ playerId, ports: { showToast, hideMobileNav, showMobileNav } });
   const recoveryDialog = (
     <ModalShell
       open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
