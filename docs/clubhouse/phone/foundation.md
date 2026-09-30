@@ -9,8 +9,8 @@ this file covers what those boards show. Anything the drawing doesn't show is ma
 `MOBILE.md` or from the desktop behaviour.
 
 Where the design disagrees with D-3 or the old draft of this file, the disagreement is listed at the
-end and sent to the owner as Q-40 to Q-47 in `PROGRESS.md`. **None of them is decided here.** Until the
-owner answers, the tab bar keeps D-3.
+end. The owner answered each one on 2026-09-29 (Q-40 to Q-47, decided as D-40 to D-43), and the answer
+is noted where it applies.
 
 It applies below 820px and in the iOS app: iPhone only, portrait, light theme (D-22). The frames are
 drawn at 402 × 874, the `IOSDevice` default. They were captured at 390 × 844, and no rule in the shell
@@ -19,7 +19,7 @@ depends on the width.
 ## Design versus device chrome
 
 - `MSafari`, the address pill and toolbar under every board, is Safari's own chrome and not app UI.
-  The iOS app has no such bar (Q-44).
+  The iOS app has no such bar (D-43).
 - `ios-frame.jsx` draws three device parts that the app doesn't draw either: the status bar, the
   Dynamic Island and the home indicator. In the design, the status bar's space is the top bar's
   54px top padding.
@@ -39,7 +39,7 @@ depends on the width.
   to `--ch-bg-hover` while pressed.
 - A caption or empty line (`.qm-empty`) uses `--ch-type-caption` in `--ch-text-tertiary`.
 - Avatars are always one calm neutral on the phone (`.qm .fw-avatar`, added in ccbd33465): background
-  #E9E3D3, initials #5A4E36, ring `rgb(90 78 54 / .22)`. Clubhouse's `Avatar` has five tones (Q-45).
+  #E9E3D3, initials #5A4E36, ring `rgb(90 78 54 / .22)`. Clubhouse's `Avatar` has five tones (D-43).
 
 ## Top bar (`MTop`, `.qm-top`)
 
@@ -60,7 +60,7 @@ bar that never renders. The rendered bar:
 
 - None of the Messages boards has a large title. The `.m-top--lg` class exists but is unused.
 - The phone bar has no Settings gear and no breadcrumbs, although the desktop `TopBar` has both
-  (Q-43).
+  (D-41).
 - The bell is the desktop `Bell`: same feed, same actions (D-17).
 
 ## Tab bar (`MTabs`, `.qm-tabs`)
@@ -68,7 +68,7 @@ bar that never renders. The rendered bar:
 - Five equal columns. The design draws one set: Home (`house`), Helm (`sparkles`), Rounds (`flag`),
   Stats (`chart-column`), More (`layout-grid`).
   - The boards show a head coach's account, and no player tab bar is drawn.
-  - Helm is CoachHelm. Neither CoachHelm nor Rounds is rebuilt (Q-40).
+  - Helm is CoachHelm. Neither CoachHelm nor Rounds is rebuilt (D-40).
 - Surface:
   - ivory at 92% (`rgb(253 252 248 / .92)`) under a 34px blur, saturate 170%
   - a hairline on top
@@ -77,25 +77,33 @@ bar that never renders. The rendered bar:
   - at least 46px tall
   - a 21px icon over a 500 10.5px label, 3px apart
   - inactive: `--ch-text-tertiary`
-  - active: icon and label in `--ch-green-700`, with no chip and no change of weight (Q-41)
+  - active: icon and label in `--ch-green-700`, with no chip and no change of weight (D-40)
 - Badge (`.m-tabdot`): at least 15px wide, radius 8, `--ch-green-600`, white 600 9.5px, offset −4px
-  from the top and −9px from the right. It is drawn only on More, as 3 (Q-42).
+  from the top and −9px from the right. It is drawn only on More, as 3 (D-40).
+- **Decided (D-40).** Coaches: Home, Helm, Rounds, Stats and More, as drawn. Helm and Rounds show
+  the not-rebuilt notice until those screens exist, and Qualifiers will open from Rounds once it has a
+  phone build. Messages, Roster and Calendar open from More, and the Messages unread badge rolls up
+  onto More. Players keep Home, Calendar, Messages, My stats and More, in this ivory style, until a
+  player tab design exists. This supersedes D-3.
 - The bar shows on tab-level screens, including the Messages inbox. It is hidden on New message, on a
   thread and on Details.
 - In the drawing the bar sits on Safari's toolbar. In the app it pads by
-  `env(safe-area-inset-bottom)`, which is 34px on Face ID iPhones. Capture 90 shows that (Q-44).
+  `env(safe-area-inset-bottom)`, which is 34px on Face ID iPhones. Capture 90 shows that (D-43).
 - Haptic: `select` on a change of tab, never on the tab already open (as built).
 
 ## More
 
 - The Messages inbox has a "‹ More" back link, and the More tab is active under it. So More is a
   screen, the root of its own tab, and Messages is pushed from it. Today More is a sheet (CH-1802),
-  and the old draft also made it a sheet (Q-43).
+  and the old draft also made it a sheet (D-41).
 - `m.css` styles two parts of that screen:
   - `.m-me`, a profile card: surface, radius 16, `--ch-shadow-sm`, a 15px name over a caption
   - `.m-more`, rows at least 54px tall with a 32px icon tile (radius 9, `--ch-bg-subtle`) and a 500
     label
-- No board draws the More screen itself, so its contents and order are not specified (Q-43).
+- No board draws the More screen itself, so its contents and order are not specified.
+- **Decided (D-41).** More stays today's sheet (CH-1802), with Settings in it, until the owner designs
+  a More screen. On a page opened from More, the "‹ More" back link returns to wherever the user came
+  from.
 
 ## Sheets (`MSheet`)
 
@@ -149,7 +157,7 @@ The prototype responds to clicks only. The drawing shows none of these gestures;
 | Drag a sheet down past the threshold | Sheets | `press`, as the More sheet does today |
 | Long press | A message bubble (Messages) | `press` when the menu opens |
 | Destructive confirm | Leave group, Delete message | `warning` on the destructive button, then `commit` |
-| Pull to refresh | Lists | Light, at the threshold. Still waits for a drawing (Q-47) |
+| Pull to refresh | Lists | Light, at the threshold. Still waits for a drawing (D-43) |
 
 ## Motion
 
@@ -183,41 +191,46 @@ Each keeps its drawn size and gets a 44px hit area, as `MOBILE.md` requires.
 | `rgb(21 90 57 / .18)` | Token edge | `--ch-green-600` at 18% |
 | `#fff` | Composer field, badge text | `--ch-ivory-0` or `--ch-text-on-accent` |
 | `var(--ink-200, #D9D5CB)` | Send, off | The design system has no `--ink-200`. The nearest is `--ch-ivory-300` (#DCD6C8) |
-| `var(--danger-600, #B3261E)` | Leave group, Delete conversation | `--ch-danger-600` (#B03A2E), the same red as `--ch-score-under` (Q-46) |
+| `var(--danger-600, #B3261E)` | Leave group, Delete conversation | `--ch-danger-600` (#B03A2E), the same red as `--ch-score-under` (D-42) |
 | `rgb(28 25 18 / .05)` | Search field | No token; `--ch-bg-inset` looks the same |
 | `rgb(28 25 18 / .06)`, `/ .18` | Sheet close, grab | Ink at 6% and 18%. No token |
 | `rgb(20 18 12 / .34)` | Sheet scrim | The existing `.ch-scrim` (`rgb(20 20 18 / .32)`) |
 | `#F4F2EA` | Sheet footer | `--ch-ivory-100` |
-| `#E9E3D3`, `#5A4E36` | Phone avatar | No tokens. The nearest are `--ch-ivory-200` and `--ch-champagne-500`. They go into the design system first (Q-45) |
+| `#E9E3D3`, `#5A4E36`, `rgb(90 78 54 / .22)` | Phone avatar | New tokens `--ch-avatar-phone-bg`, `--ch-avatar-phone-fg` and `--ch-avatar-phone-ring` (D-43) |
 
 ## Where the design contradicts D-3 or the old draft
 
-None of these is resolved here. Each one is an owner question in `PROGRESS.md`.
+The owner answered each one on 2026-09-29. The decision is in brackets.
 
-1. **Tab contents (Q-40).**
+1. **Tab contents (D-40).**
    - D-3 and the build:
      - coach: Home, Calendar, Messages, Roster, More
      - player: Home, Calendar, Messages, My stats, More
    - The design: Home, Helm, Rounds, Stats, More, with no player set drawn. Helm and Rounds aren't
      rebuilt, and `rebuiltHref` hides links to screens that aren't.
-2. **Tab bar style (Q-41).** D-3 is a green bar with the raised ivory pass on the active tab and a
+   - Decided: the design's five for coaches, with the not-rebuilt notice on Helm and Rounds; players
+     keep today's set.
+2. **Tab bar style (D-40).** D-3 is a green bar with the raised ivory pass on the active tab and a
    champagne badge, and that is what's built. The design is an ivory glass bar with green text on the
-   active tab and a green badge.
-3. **Where Messages lives (Q-42).** Built, and in the old draft, Messages is a tab with its own badge.
-   In the design it opens from More, and the badge sits on More.
-4. **More (Q-43).** Built, and in the old draft, More is a sheet with drag to dismiss. The design makes
-   it a pushed stack, but doesn't draw it.
-5. **Top bar (Q-43).**
+   active tab and a green badge. Decided: the design's style, for both roles.
+3. **Where Messages lives (D-40).** Built, and in the old draft, Messages is a tab with its own badge.
+   In the design it opens from More, and the badge sits on More. Decided: as drawn, for coaches.
+4. **More (D-41).** Built, and in the old draft, More is a sheet with drag to dismiss. The design makes
+   it a pushed stack, but doesn't draw it. Decided: the sheet stays until a More screen is designed.
+5. **Top bar (D-41).**
    - The old draft: a 48px bar with a large title that collapses on scroll.
    - The build: breadcrumbs, the bell and Settings.
    - The design: a 44px bar with a centred title and a back link on pushed screens, and no Settings.
-6. **Safari bar (Q-44).** It is drawn on every board and is not app UI.
-7. **Avatars (Q-45).** Clubhouse coins have five tones. On the phone the design uses one neutral.
-8. **Red for destructive actions (Q-46).** The doctrine keeps red for under par and the pin flag. The
+   - Decided: the design's bar; Settings stays in the More sheet.
+6. **Safari bar (D-43).** It is drawn on every board and is not app UI. Decided: dropped, with
+   safe-area padding.
+7. **Avatars (D-43).** Clubhouse coins have five tones. On the phone the design uses one neutral.
+   Decided: one neutral coin on the phone only, as `--ch-*` tokens.
+8. **Red for destructive actions (D-42).** The doctrine keeps red for under par and the pin flag. The
    design colours Leave group and Delete conversation with the danger red, as desktop Clubhouse
-   already does for its danger buttons.
-9. **Pull to refresh and the push soft ask (Q-47).** D-22 says both wait for the foundation design.
-   The design draws neither.
+   already does for its danger buttons. Decided: red now also means a destructive action.
+9. **Pull to refresh and the push soft ask (D-43).** D-22 says both wait for the foundation design.
+   The design draws neither. Decided: both keep waiting for a design.
 10. **What the old draft said that the design doesn't show:**
     - Details and New message opening as sheets. The design pushes both as screens.
     - Swipe actions on list rows.
