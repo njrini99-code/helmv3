@@ -107,6 +107,21 @@
   font: 500 13.5px/1.25 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
+/* Loading (CH-4401): each bar sits in a box the height of its real line, and a card is as tall
+   as a loaded one, so the page below doesn't move when the figures land. In five columns on a
+   canvas up to about 1116px, Last 10's context wraps under its chip and the cards grow a line. */
+.ch-skel-line {
+  display: flex;
+  align-items: center;
+}
+.ch-fg__c--skel {
+  min-height: 129px;
+}
+@container (min-width: 901px) and (max-width: 1116px) {
+  .ch-fg__c--skel {
+    min-height: 153px;
+  }
+}
 .ch-fg__v {
   display: flex;
   align-items: baseline;

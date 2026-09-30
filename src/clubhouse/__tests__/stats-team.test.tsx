@@ -144,6 +144,16 @@ describe('Stats team · reads that fail', () => {
     quiet.mockRestore();
   });
 
+  it('CH-4204 CH-4205 CH-4206 CH-4207 CH-4208 a section that crashes on the server render leaves the page standing', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Without the Suspense inside each boundary, this throws and the whole page fails.
+    const html = renderToString(tree(stats({ figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never })));
+    expect(html).toContain('Team stats');
+    expect(html).toContain('Export');
+    quiet.mockRestore();
+  });
+
   it('CH-4209 D1 benchmarks do not load: greens read against the sample, not a made-up benchmark', async () => {
     const ok = await load();
     expect(ok.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('D1 averages 67%');

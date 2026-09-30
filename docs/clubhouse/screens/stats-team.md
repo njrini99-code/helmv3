@@ -65,7 +65,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
 - [x] Press scales to 0.985 on every tappable surface
 - [x] No count-ups and no entrance staggers; data is final on mount
-- [x] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on). With Playwright `reducedMotion: reduce`, every Stats transition (page dim, leg cards, trend lines, grid rows, the switches) drops from 150 and 90ms to 0.01ms (the app-wide rule in globals.css). The switch pill doesn't slide, and toasts go through the hook. This page has no sheets
+- [x] Reduced motion is honoured through `useChReducedMotion` (tab and sheet transitions checked with the OS setting on). With Playwright `reducedMotion: reduce`, every Stats transition (page dim, leg cards, trend lines, grid rows, the switches) drops from 150 and 90ms to 0.01ms (the app-wide rule in globals.css), and toasts go through the hook. This page has no sheets
 - [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
 
 ## accessibility
@@ -79,7 +79,7 @@ Verified by `stats-team.test.tsx` (CH-48xx) and `npm run clubhouse:a11y`; states
 ## performance
 - [x] No request waterfall on the server, with independent reads in parallel. `loadTeamStats` reads the team and roster together. The season's rounds need the roster's ids; the D1 read is already in flight beside them. The round cache, the putts and D1 then load together, with each id chunk in parallel, and one cache read now serves the window, the previous window and the bests (it had been read twice)
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily (open: `StatsTeam` is one client tree, so the figures, putting and bests ship as client code although they are static; and the shell loads framer's `domAnimation` eagerly, not through a dynamic import)
-- [x] No layout shift after first paint (PerformanceObserver on the preview: CLS 0.0001 at 924px and 0 at 1280px on load. Choosing a lens, leg or player and scrolling adds only input-driven shifts)
+- [x] No layout shift after first paint (PerformanceObserver on the preview: CLS 0.0001 at 924px and 0 at 1280px on load. Choosing a lens, leg or player and scrolling adds only input-driven shifts. The route skeleton was sized to the loaded page: the header, first figure card and trend card now start at the same place at 924, 1100, 1280, 1400 and 1600px. At 1280px the trend card had dropped 40px when data landed. The phone width waits for the phone gate)
 
 ## verified
 - [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log

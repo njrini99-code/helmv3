@@ -1,5 +1,15 @@
+import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
 import '../../styles/stats.css';
+
+/** A skeleton bar centred in a box the height of the real line, so the text lands where the bar was. */
+function Line({ height, children }: { height: number; children: ReactNode }) {
+  return (
+    <div className="ch-skel-line" style={{ height }}>
+      {children}
+    </div>
+  );
+}
 
 /** Route loading for Stats: title, window switch, five figure cards and the trend card, in place. */
 export function StatsSkeleton() {
@@ -8,19 +18,29 @@ export function StatsSkeleton() {
       <header className="ch-st-head">
         <div className="ch-st-head__row">
           <div>
-            <Skeleton width={220} height={38} radius={10} />
-            <div style={{ height: 10 }} />
-            <Skeleton width={300} height={14} />
+            <Line height={41}>
+              <Skeleton width={220} height={38} radius={10} />
+            </Line>
+            <div style={{ height: 8 }} />
+            <Line height={21}>
+              <Skeleton width={300} height={14} />
+            </Line>
           </div>
-          <Skeleton width={236} height={34} radius={11} />
+          <Skeleton width={236} height={32} radius={11} />
         </div>
       </header>
       <div className="ch-fg">
         {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="ch-fg__c">
-            <Skeleton width={110} height={13} />
-            <Skeleton width={80} height={34} radius={8} />
-            <Skeleton width={120} height={12} />
+          <div key={i} className="ch-fg__c ch-fg__c--skel">
+            <Line height={17}>
+              <Skeleton width={110} height={13} />
+            </Line>
+            <Line height={36}>
+              <Skeleton width={80} height={34} radius={8} />
+            </Line>
+            <Line height={22}>
+              <Skeleton width={120} height={12} />
+            </Line>
           </div>
         ))}
       </div>
