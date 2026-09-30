@@ -23,7 +23,8 @@ const BASE = process.env.CH_BASE ?? 'http://localhost:3100';
  */
 export const CH_A11Y_PAGES = [
   ['shell', '/clubhouse-preview/settings', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: '.ch-tabbar button[aria-controls="ch-more"]' }],
-  ['shell', '/clubhouse-preview/settings?bell=empty', { wide: '.ch-topbar button[aria-label^="Notifications"]' }],
+  ['shell', '/clubhouse-preview/settings?bell=empty', { wide: '.ch-topbar button[aria-label^="Notifications"]', phone: '.ch-topbar button[aria-label^="Notifications"]' }],
+  ['shell', '/clubhouse-preview/settings', { phone: '.ch-topbar button[aria-label^="Notifications"]' }],
   ['home', '/clubhouse-preview/home'],
   ['home', '/clubhouse-preview/home?state=empty'],
   ['home', '/clubhouse-preview/home?state=failed'],
