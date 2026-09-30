@@ -72,7 +72,7 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Doc
 | `roster` | 65 | rebuilt. `roster?tab=requests` (code source) is **ignored** by Clubhouse Roster; requests show in the Roster header instead (P2) |
 | `team` | 3 | **NotRebuilt** (see table) |
 
-Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias drops `task`; P2), `intelligence*`, `my-development`, `coachhelm?view=development`.
+Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias drops `task`; P2. Source-confirmed against Next.js 16.2.9: a layout never receives `searchParams`, so no layout alias can carry a query string; it needs a page or Proxy redirect, and Clubhouse Team Hub has no single-task view to land on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 
 ## 4. Findings
 
