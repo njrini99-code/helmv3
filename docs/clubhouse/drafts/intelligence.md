@@ -65,6 +65,7 @@ The page reads eleven things in parallel (`page.tsx:201-239`): `getTeamOverview`
 **Greeting and status line** (`CommandOpening.tsx:32-80`): "Morning, {first}." (or Afternoon, Evening, "Welcome back" before the clock is read), else the team name; then "{team} · N active players · last round {today, yesterday, N days ago, or a date}", or "no rounds recorded yet" (`:63-80,102-108`). Data: `getCoachChatContext` and `getCoachProgramPulse` (`page.tsx:662`). If either fails the page draws a screen-reader-only "CoachHelm" heading instead (`CoachIntelligenceHome.tsx:133-138`).
 
 **Last scan and Scan team** (`TriageDesk.tsx:354-357,396-416,503-514,528-535`):
+
 - The caption is "No scans yet", or "Last scan just now, Nm ago, Nh ago, Nd ago" (`buildTriageViewModel.ts:372-385`). It comes from the newest `golf_insight_generation_log` row, else the newest signal (`signal-groups.ts:295-306`).
 - Scan team calls `refreshTeamAnalysisAsCoach` (`insights.ts:3720`, impl `:3641-3716`). It reruns the CoachHelm engine for every active player on the coach's team, three at a time, then `router.refresh()`. It is limited to 5 calls per minute per coach (`action-rate-limit.ts:27`), and the refusal reads "Too many analyze requests in the last minute — please wait a moment and try again." (`:48-56`).
 - The button reads "Scan team", or "Scanning" while busy (`:503-514`). Outcomes: error toast with the server's text or "Could not scan the team. Try again." (`:401,413`); warning toast "Scan finished with N player(s) needing another pass." when some players failed (`:404-407`); success toast "Scan complete, team signals refreshed." (`:410`).
@@ -91,6 +92,7 @@ Data: `loadTeamIntelligence` (`src/lib/golf/team-intelligence/loader.ts:70-164`)
 `getSignalGroups` (`signal-groups.ts:90-316`, exported at `:324-328`) returns every open signal for the team, and everything after that is client-side (`TriageDesk.tsx:30-35`).
 
 What a "signal" is:
+
 - An insight: an active, not dismissed `golf_coach_insights` row that passes the shared visibility contract (v3 engine, lifecycle detected, matured, addressed or resolved), for players still on the roster (`:144-153,204`).
 - A pattern: an active `golf_patterns_v2` row in state detected or confirmed, excluding the `contextual` type (`:169-191`). Patterns have no evidence blob (`:246-249`).
 - A team roll-up (`team_synthesis`): derived from the per-player signals of players with a recent countable round, with the synthetic id `team:<metric>` (`:252-288`, `signal-grouping.ts:15-33`). It has no row behind it.
@@ -116,6 +118,7 @@ Rows are collapsed to one per player and metric, largest measured leak kept, the
 | Related context (a player's signals only): Recent trend, Focus areas (active, up to 3), Active goals (up to 3), Other open signals for {name} | Read from data the page already holds; each block has a quiet line when empty | `:341-418` |
 
 Write paths, and what each does to the database:
+
 - Mark reviewed on an insight: `acknowledgeInsight` (`intelligence-dashboard.ts:704-788`) sets `status='acknowledged'`, `acknowledged_at` and `lifecycle_state='addressed'`, records an `acknowledged` action in `golf_insight_action`, revalidates. On a pattern: `markPatternAddressed` (`pattern-management.ts:688`) sets `lifecycle_state='addressed'` (`signal-groups.ts:336-348`).
 - Dismiss on an insight: `dismissInsight` (`intelligence-dashboard.ts:600-693`) sets `dismissed`, `status='dismissed'`, `lifecycle_state='archived'` and records `dismissed`. On a pattern: `dismissPattern` (`pattern-management.ts:612`) sets `lifecycle_state='dismissed'`, `is_active=false` (`signal-groups.ts:355-367`). The board's dismiss (`insights.ts:1508`) writes the same columns and the same ledger row.
 - Prescribe: `createFocusAreaFromInsight` (`development.ts:1799`) inserts a `golf_player_focus_areas` row with `status='proposed'` for the player to accept (`:1734`), refuses a second active focus on the same metric with `ACTIVE_FOCUS_DUPLICATE_ERROR` (`:1711`), then acknowledges the source insight (`:1757`) and records `create_focus`. The board's Assign uses `createFocusAreaFromInsightV2` (`writes.ts:30-35`, `development.ts:1385-1393,1409-1520`). It also proposes (`:1455`) and records `create_focus`, but it does not acknowledge the insight, and it takes no current or baseline value (its arguments are player, insight, title, description, area, metric, target value and timeframe).
@@ -149,6 +152,7 @@ Writes (all from `development.ts`, each with a toast): `createFocusArea` (emails
 Data behind this view (read-only SQL, 2026-09-30): 26 focus areas exist, 15 active, 10 completed, 1 proposed. Nine of the 15 active have no target, and none has a progress note, a date target or a criterion. Only 8 of 86 active players have any focus area. The two flagged parts, criteria with the practice log and the evidence-changed badge, are off (`config/feature-flags.yml:303,528`), and the practice-log tables are not applied in production. Due for review keys on a date target (`due-for-review.ts:42-48`), so on today's data it draws nothing for anyone.
 
 What is reusable and what is not:
+
 - Plain modules, reusable: `src/lib/coachhelm/focus-areas/` (`due-for-review`, `follow-up-eligibility`, `catalog`, `direction`, `target-metric`, `duplicate-guard`) and the actions in `development.ts` (`:513` create, `:857` update, `:913` delete, `:1052` progress, `:1148` complete, `:1236` reopen, `:1967` outcome) and `focus-area-practice-log.ts:470` (criteria).
 - Module-private inside `intelligence/page.tsx`, so they must be extracted or reimplemented before Clubhouse can call them: `loadPlayersDrillData` (`:427-647`), `progressHistoryOf` (`:100-111`), the stats mapping (`:313-353`) and the focus-area mapping (`:290-311`).
 - Fairway UI, to be rewritten: `PlayersGridView`, `FocusAreaCard`, `FocusAreaModal`, `DueForReviewPanel`, `RosterHealthHeader`, `CausalWhyPanel`, `GoalsSection`.
@@ -179,12 +183,14 @@ The details below come from a read-only inventory of the chat code, its route an
 Not present: rename, delete, pin, archive, copy, thumbs, feedback, or a regenerate other than that Try again. The conversations API is GET-only. The tab does not pass the `?q=` handoff the standalone page does (`CoachIntelligenceHome.tsx:162-177`). A receipt's own "Try again" never renders, because `ChatThread` passes no `onRetry` (`ChatThread.tsx:306`, `ActionCards.tsx:261`).
 
 Where it lives:
+
 - Route: `POST /api/coachhelm/v3/chat/stream` (`useCoachHelmChat.ts:33`), body `{messages, conversation_id|null, client_turn_id}` (`route.ts:116-121`), an AI SDK message stream with an `x-conversation-id` header, `maxDuration` 120, at most 8 steps (`:111,626,1154-1157`). Model `anthropic/claude-sonnet-5` with 13 read tools and the 4 gated writes (`llm/types.ts:33-38` [D]).
 - Tables: `golf_coachhelm_chat_conversations` and `golf_coachhelm_chat_messages` (coach-only RLS, one `FOR ALL` policy each, no `team_id`), plus `golf_coachhelm_action_runs`, `golf_coachhelm_llm_calls` and `golf_coachhelm_llm_budget` (`persistence.ts:24-25,57-64,200-206`, `route.ts:1216`, `budget.ts:150-155`). No purge was found [D].
 - Gates: coach only (`context.ts:83`; a player on `/intelligence` gets `FeatureUnavailable`, `page.tsx:124-133`); a rate limit per coach (`route.ts:369`); a daily budget, default $3 per coach with a pre-flight estimate of about $0.07 (`route.ts:114,397-413`, `budget.ts:67-69`). One flag, `coachhelm_chat_claim_gate`, off, changes verdict strictness (`route.ts:534`). No flag hides the chat, and neither the route nor the page checks the team's CoachHelm switch [D].
 - A coach on two teams sees both teams' threads in History, while the tools read the active team (`persistence.ts:57-64`, `context.ts:72-105`) [I].
 
 States production draws:
+
 - Loading: the Home-shaped route skeleton, "Loading CoachHelm…" (`intelligence/loading.tsx:114-122`); the tab has none of its own.
 - Inputs failed: "Chat is unavailable / CoachHelm could not load your program context. Try again in a moment.", with no retry button (`TriageDesk.tsx:641-643`).
 - Empty thread: the greeting and the openers; empty pulse "Nothing to report yet / Findings appear here as rounds, qualifiers and schedule activity are recorded."; coverage "No player has a recorded round yet." or "All N players have a round in the last D days." or "R of N players have a round in the last D days. Answers cover those R." (`ProgramOpening.tsx:98-103`, `program-pulse.ts:534-547`).
@@ -223,6 +229,7 @@ Two readings follow. The queue can be long (a coach could face 217 signals, abou
 ### 1.9 Findings in production code (nothing was changed)
 
 Chat:
+
 1. On any non-2xx answer (rate limit, the three budget refusals, a lost conversation, auth) the AI SDK puts the raw response body in `error.message`, so a coach reads literal JSON such as `{"error":"Too many requests. Please slow down."}`. The component's comment says the server's sentence is shown (`CoachHelmChat.tsx:278-300`; the SDK behaviour is in `node_modules/ai/dist/index.js:21816-21831,22099-22105`). Q-85 in `PROGRESS.md:311` logs the same.
 2. 33 of 73 assistant messages are `failed` (last 90 days, 7 coaches). Not investigated.
 3. All 4 proposed chat actions are still `proposed`; none was ever confirmed. Whether Confirm works end to end was not traced.
@@ -271,6 +278,7 @@ The two screens count nearly the same rows with different rules, so their number
 So the Players view's "Who needs your attention" and roster table repeat Roster, and the four cause visuals repeat, for one player at a time, what Game detail draws.
 
 How the three focus-area surfaces fit, so nothing is built twice:
+
 - The CoachHelm board proposes a focus from one insight (Assign as focus). It stays the fast path and is not changed.
 - Stats' Development tab stays the one player's read of their own areas, with the player's Accept and Decline. Its Add sheet and the Signals Prescribe sheet should be one component (Q11), so a proposal is written the same way wherever it starts. Its header gains an "Open in Players" link for a coach.
 - Players is the coach's roster-wide workspace and the only place the lifecycle actions live: edit, mark complete, reopen, delete, log progress, record the outcome.
@@ -309,6 +317,7 @@ No new routes. The screen serves `/golf/dashboard/intelligence`, chosen by `isCl
 ### 2.6 Entry points
 
 Signals is reached from CoachHelm, because the two are one story: the board says what to work on, Signals is every signal behind it.
+
 - Desktop: ghost buttons "All signals" and, once Ask is built, "Ask CoachHelm", at the right of the board's header, and the pulse rows' own links.
 - Phone: rows under the board's header, "All signals" and "Ask CoachHelm", each with a chevron, push that view over CoachHelm (a `PhoneScreen`, so the edge swipe returns). The pushed view's top bar shows "‹ CoachHelm".
 - The pulse rows' own questions ("ask", `program-pulse.ts`) are what Ask's opening state draws; the board's rows stay non-asking links.
@@ -335,6 +344,7 @@ Haptics (D-70): switching view or filter is `select`. Every other tap is silent 
 **Primary action:** Prescribe, on a selected insight. On a pattern the primary is Mark reviewed, because patterns cannot be prescribed. A roll-up has no action of its own; its contributors open the players' own signals. Scan team is secondary everywhere.
 
 **Desktop layout (Proposed).** Two columns as in production (380px and the rest, `TriageDesk.tsx:590`), each in a `Surface`, each scrolling on its own in a `ScrollRegion`.
+
 - Left, "Signals · Worst first". A `PillGroup` of filters with counts: All, Priority, Patterns, then one per category present (Q5 on the word). Player groups follow: a 34px `Avatar`, the name, the count, the worst priority as a word pill, a chevron. Groups start expanded. A row is one button: a priority dot, the category as a small kicker, the claim in two lines, "+N earlier", and at the right the estimated strokes ("0.6 strokes", amber) when known. The selected row is a deeper well, never a green wash (`SignalRow.tsx:1-15`). Arrow keys move selection. Back highlights the row for 900ms, as production does.
 - Right, the dossier. First the board's `FocusCard` for the insight (category and priority pill, the claim, the evidence, "This week", "Why we think this"), so an insight reads the same here and on CoachHelm. Around it, the Lab-only parts: a small figure strip (Est. impact, Status, Area or Occurrences); the action row; and Related context in a two-by-two of `Surface` blocks: Recent trend, Focus areas, Goals, Other open signals for {first name}. A pattern draws its claim and figure strip only (it has no evidence). A roll-up draws "Where it comes from", contributors largest first with share bars, each opening that player's own signal.
 - Action row: "Prescribe" (primary, `Button` with the flag icon like the board's Assign), "Mark reviewed" (secondary), "Dismiss" (ghost with the archive icon, as on the board), "View stats" (ghost link to `/stats?player=<id>`).
@@ -343,6 +353,7 @@ Haptics (D-70): switching view or filter is `select`. Every other tap is silent 
 **Prescribe.** A `Modal` (a centred sheet on desktop, a full-height bottom sheet on phone) titled "Prescribe a focus area for {first}", with the fields production has: Area, Title, Description, Stat to improve (catalog by area, current value filled from the player's stats), Custom metric, Current, Target, Timeframe (none, date or rounds). "{first} sees it as proposed and accepts it to start" (the sentence Stats' sheet already uses, `StatsPlayer.tsx:562-563`). The Stats `FocusAreaSheet` has only Area, Title and Note, so this is a new, larger sheet; its catalog and suggestion logic is `lib/coachhelm/focus-areas/catalog.ts`, unchanged. Save is primary; asking before discarding edits uses the destructive-confirm pattern.
 
 **Phone layout (Proposed).** Not the desktop squeezed: a list, then a pushed detail.
+
 - List: below the switch, a summary card in the owner's sketch style (`m-brief`): the verdict sentence and three figures, Priority, Players, Signals, with "Last scan 3h ago" as its kicker. Under it a row of filter pills that scroll sideways (44px, counts). Then player sections: a header row (36px avatar, name, count, worst priority word), and rows of 56px or more: dot, category, two-line claim, strokes at the right. Each section shows its first 3 signals and "Show N more" (a proposal to keep 217 rows usable; production shows all). Tap pushes the detail.
 - Detail (`PhoneScreen` with `usePhoneStackHistory`, so the edge swipe returns): `PhoneBar` with "‹ Signals" and a trailing Dismiss (archive icon). Content: the player's name and a priority pill, the title, the claim, the board's evidence card, "This week", "Why we think this" as a disclosure, then Related context as stacked `Surface` blocks, then "Other open signals" as rows. A pinned footer above the home indicator holds "Prescribe" (primary, full width) with "Mark reviewed" beside it. Prescribe opens a full-height sheet (its footer lifts by `var(--keyboard-height)`, `data-fw-keyboard-aware`).
 - After Mark reviewed or Dismiss the detail pops to the list.
@@ -384,6 +395,7 @@ Scan team runs the engine for every player and can take a while. The generic slo
 **Primary action:** "New focus area" (primary, as production `PlayersGridView.tsx:858`), opening the same Prescribe sheet with a player picker. Everything else on a card is secondary.
 
 **Desktop layout (Proposed).** The board's own pattern (`ch-hl-cgrid`): a "By player" list on the left and the chosen player's focus areas on the right.
+
 - Above both, one row of two `Surface` blocks: Coverage ("7 of 12 players have an active focus area", with active and done counts) with the outcome mix ("Did the coaching land?", Improved, No change, Worsened from recorded outcomes, and an honest "No outcomes recorded yet"), and Due for review (overdue and due within 7 days, up to 5 and "+N more", and areas ready for a follow-up review). Each due row opens that player. Due for review is absent when nothing is due, as in production.
 - Left: an "Everyone" row, then players (`Avatar` 34px, name, "2 active · 1 proposed", the trend word). A player with `alert_posture='silent'` reads "Insights muted" (production `PlayersGridView.tsx:659-668`).
 - Right: for the chosen player, their active goals (read-only) and then focus-area cards in buckets Active, Pending acceptance, Declined, Completed. "Everyone" shows the same buckets across the roster, with the player's name on each card.
@@ -391,6 +403,7 @@ Scan team runs the engine for every player and can take a while. The generic slo
 - Not rebuilt: the roster table and "Who needs your attention" (Roster's "Needs a look" is that), and "What moves together in their rounds" (causal relationships; no Clubhouse counterpart, see Q8).
 
 **Phone layout (Proposed).** A list, then a pushed player screen.
+
 - List: coverage sentence and a Due for review card (tap filters to those players); then one row per player: `Avatar` 40px, name, "2 active · 1 proposed", trend word, chevron, and "Insights muted" when it applies. Trailing top-bar action: a plus, "New focus area".
 - Player screen (`PhoneScreen`, history-backed): name and class, then goals, then cards. Card actions sit behind one "⋯" that opens an action sheet (Log progress, Mark complete, Edit, Delete in red), because four small buttons on a card are not 44px targets. Pinned footer: "New focus area" for this player.
 - Log progress is a small sheet: the current and target readout, a numeric field (`inputmode` decimal), an optional note ("A note adds a point to the progress trend"), Save progress.
@@ -439,6 +452,7 @@ No writes, so no write toasts. Haptics: theme card, contributor row, filters `se
 ### 3.5 Ask (chat), built last
 
 **Before any build (preconditions, not design):**
+
 1. The production defects in section 1.9 items 1 to 4 are fixed in a separate production change, so the Clubhouse version does not copy them: non-2xx answers map to sentences, the failed replies are explained, and Confirm is shown to work end to end.
 2. The owner decides cost: the route bills each answer against a daily budget, default $3 per coach (`budget.ts:67-69`).
 3. The owner decides the four writes: the model can propose a focus area, a task, a team announcement and a recurring practice, and a confirmed announcement or practice reaches players (Q10).

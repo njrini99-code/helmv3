@@ -58,6 +58,7 @@ Owner decisions on it:
   wait until the gold standard is done.
 
 **Not started yet:** the V2 registry itself. None of these exist:
+
 - `config/clubhouse/`
 - `check-registry`, `check-contracts`, `check-held`, `generate-docs` and
   `status` under `scripts/clubhouse/`

@@ -99,6 +99,7 @@ the request id is the key), and the new allowlist expression evaluated against t
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  1280 and 924px (preview, the dev server on :3107)
 Reference: design/handoff/recruiting/Main, AddProspect, Empty, NoMatch, LoadFailed (.dc.html)
@@ -108,6 +109,7 @@ Result:    main, add, empty, no match, failed and sparse compared with the board
 ```
 
 ### Phone
+
 ```text
 Viewport:     390 x 844 and 430 (preview)
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

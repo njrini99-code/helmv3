@@ -9,6 +9,7 @@ with no team figures, no roster pager and no focus-area editor. Reads go through
 and `getDetailedStats` access gate the current app uses.
 
 Shared changes from the Team stats pass that already reach this view (start the player pass from them):
+
 - Yardage-page notes sit 10px under their chart, as in the design system (`.ch-yb .ch-yb__note`; the base reset had removed the margin). 1e598e651
 - Card and yardage-page headings are ink-900 (`--ch-text-primary`) instead of the app's global heading colour. 1e598e651
 - `loadRoundCache` (stats-common) reads its id chunks in parallel. 1e598e651
@@ -17,6 +18,7 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - The shell loads `domMax` lazily, so `layoutId` slides now run: the tab and window switch pills slide (220ms), unless motion is reduced (D-25). 576a6331c, 314b03055
 
 ## parity (2026-09-30, `docs/clubhouse/pages/P005-stats-player/PARITY.md`)
+
 - [x] Every production player-stats figure is shown, or named with a reason ("not shown because"); the Tour is the only benchmark (Q-88)
 - [x] Every section says which rounds it counts (the window's own rounds, of the lengths the Holes control chose) and every shot-level figure reads exactly those rounds
 - [x] Every new panel has an empty or low-sample state with a catalog code and a test (CH-5209 to CH-5212, CH-5311 to CH-5319)
@@ -24,6 +26,7 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [x] Native-feel and axe scans of the new sections at 390, 430 and 1280px (`native.mjs` and `a11y.mjs` on stats-player, exit 0; see VERIFY.md)
 
 ## round filter (2026-09-30)
+
 - [x] One filter (round type, holes, time with a custom date range, course, Only these / Exclude these) reads every figure on the profile (Overview, Game detail and Rounds, desktop and phone), and the team figure beside them for a coach, and each says which rounds it counts
 - [x] It lives in the address (`window`, `type`, `holes`, `from`, `to`, `course`, `only`, `skip`); anything unusable is dropped and a round id is matched against the rounds already read for the viewer before any figure is computed
 - [x] Active filters are removable chips with a one-tap Clear and a count line ("12 rounds: tournaments, Sep 1 to Sep 29")
@@ -35,12 +38,14 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [ ] Browser pass with a real account, desktop and phone (owner)
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] Every control is mapped to an existing server action (`createFocusArea`), or to a migration that has to be written (never applied by an agent)
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md
 
 ## desktop
+
 - [x] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [x] Numbers are tabular, with a true minus, `E` for even and `—` for no data
@@ -50,6 +55,7 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [x] A narrow canvas (container below 860px) reflows without horizontal page scroll
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
@@ -62,6 +68,7 @@ Shared changes from the Team stats pass that already reach this view (start the 
   - No new state, so no catalog row.
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [x] Empty (first run): no rounds yet says what will appear and the one next step
 - [x] Early read: under three rounds, form and trends say "early read" instead of grading
@@ -76,6 +83,7 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [x] N/A: no optimistic updates on this screen
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('<screen>', '<read>')`
 - [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
@@ -84,10 +92,12 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [ ] Every failure path was forced once locally and seen in the console or Sentry (open, merge pass: forced in stats-player.test, which asserts each read's `chLogServer` name, each tab crash's `chReport` and the focus-area failure's; not yet seen in the console or Sentry)
 
 ## phone-spec
+
 - [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
 - [ ] The owner approved it (the file says `Status: approved`)
 
 ## phone
+
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss
@@ -104,7 +114,9 @@ Shared changes from the Team stats pass that already reach this view (start the 
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
+
 Verified by `stats-player.test.tsx` (CH-58xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/stats-player.md`.
+
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent (aria-label or a view-as-table path)
@@ -112,11 +124,13 @@ Verified by `stats-player.test.tsx` (CH-58xx) and `npm run clubhouse:a11y`; stat
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [ ] No request waterfall on the server, with independent reads in parallel
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

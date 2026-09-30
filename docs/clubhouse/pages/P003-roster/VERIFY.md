@@ -41,6 +41,7 @@ taking `useAction` out of each Roster caller in turn), and the existing tests th
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  924, 1280 and 1400px (preview)
 Reference: design/handoff/screenshots/roster-01..05 (v1); Coach - Roster.html (v2, same screen)
@@ -49,6 +50,7 @@ Result:    matched, logged 2026-09-29 in PROGRESS.md (cards, list, panel, reques
 ```
 
 ### Phone
+
 ```text
 Viewport:     390 × 844 (preview)
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

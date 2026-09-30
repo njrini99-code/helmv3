@@ -34,6 +34,7 @@ Date:       2026-09-29
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  924, 1280 and 1400px (preview)
 Reference: design/handoff/screenshots/messages-01..04 (v1); Coach - Messages.html (v2, same screen)
@@ -43,6 +44,7 @@ Result:    matched, logged 2026-09-29 in PROGRESS.md (team thread, direct, group
 ```
 
 ### Phone
+
 ```text
 Viewport:     390 × 844 (preview)
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

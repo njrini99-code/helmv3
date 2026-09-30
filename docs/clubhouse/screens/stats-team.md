@@ -5,6 +5,7 @@ Route: /golf/dashboard/stats (coach)   Surface tag: `stats.team.<figures|trend|l
 Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 
 ## round filter (2026-09-30)
+
 - [x] One filter (round type, holes, time with a custom date range, course, Only these / Exclude these) reads every figure on the page (the cards, trend, legs, grid, putting and the phone's lists), per player and pooled for the team, and each says which rounds it counts
 - [x] It lives in the address (`window`, `type`, `holes`, `from`, `to`, `course`, `only`, `skip`); anything unusable is dropped and a round id is matched against the rounds already read for the viewer before any figure is computed
 - [x] Active filters are removable chips with a one-tap Clear and a count line ("12 rounds: tournaments, Sep 1 to Sep 29")
@@ -16,12 +17,14 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [ ] Browser pass with a real account, desktop and phone (owner)
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md
 
 ## desktop
+
 - [x] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [x] Numbers are tabular, with a true minus, `E` for even and `—` for no data
@@ -31,6 +34,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] A narrow canvas (container below 860px) reflows without horizontal page scroll
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
@@ -39,6 +43,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Unit tests cover the window math, weighted rates, tour choice and week bucketing (`logic.test.ts`, "stats windows")
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [x] Empty (first run): no rounds yet says stats fill in as players post countable rounds; no team has its own state
 - [x] Empty (window): a window with no rounds (for example no qualifiers yet) says why and offers the season
@@ -54,6 +59,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] N/A: no optimistic updates on this screen
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('<screen>', '<read>')`
 - [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
@@ -62,10 +68,12 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Every failure path was forced once locally and seen in the console or Sentry (stats-team.test forces the rounds, roster, team, round cache, putts and Tour benchmark reads, each asserting its `chLogServer`, plus the five section crashes (high) and the export (low), each asserting its `chReport`. The preview's failed, partial, empty, crash and loading states were loaded in the browser with the console read. The crash state found that a section crash on the server render failed the whole page; each section now has a Suspense inside its boundary)
 
 ## phone-spec
+
 - [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (open, phone design: `design/handoff/mobile/` has no Stats design; `docs/clubhouse/phone/stats-team.md` is a draft)
 - [ ] The owner approved it (the file says `Status: approved`) (open, owner: the draft says `Status: draft (awaiting owner approval)`)
 
 ## phone
+
 - [ ] Built at 390px and 430px, respecting the safe areas (open, phone design: waits for an approved phone spec)
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent (open, phone design: waits for an approved phone spec)
 - [ ] Sheets are used instead of popovers, and they drag to dismiss (open, phone design: waits for an approved phone spec)
@@ -82,7 +90,9 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
+
 Verified by `stats-team.test.tsx` (CH-48xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/stats-team.md`.
+
 - [x] Full keyboard path, with visible focus and no traps; Esc closes overlays. Tab reaches, in reading order: the window switch (arrows move it), Export, the measure switch, each player, each leg card (Enter/Space), each grid row and each season best, then leaves the page. Every stop has a ring; grid rows use an inset ring, because an outset one is clipped by the scroller. N/A for Esc: this page has no overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent (aria-label or a view-as-table path)
@@ -90,11 +100,13 @@ Verified by `stats-team.test.tsx` (CH-48xx) and `npm run clubhouse:a11y`; states
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [x] No request waterfall on the server, with independent reads in parallel. `loadTeamStats` reads the team and roster together. The season's rounds need the roster's ids; the Tour benchmark read is already in flight beside them. The round cache, the putts and the benchmarks then load together, with each id chunk in parallel, and one cache read now serves the window, the previous window and the bests (it had been read twice)
 - [x] Client JS is limited to the interactive islands, and animation code is loaded lazily. `StatsTeam` now renders on the server: the figures, putting and season bests are HTML. Only `StatsTeamIslands` ships as client code: the window switch and its busy state, Export, Try again, Show the season, and the trend, leg cards and grid, which share the focused player and leg. Team stats' own client code went from 17.7 to 11.8 KB minified (6.6 to 4.7 KB gzip); in the production build the route's client chunks are 5.2 KB smaller, and the Season bests copy and the putting rings are in no client chunk. The shell's animation features load in their own chunk after first paint (D-25; `domMax` since 314b03055, so layout slides run). The first-load JS with `domMax` is measured at the merge pass (D-27). Every capture at 924 and 1280px (sections, lens, focus, every state) is pixel-identical before and after
 - [x] No layout shift after first paint (PerformanceObserver on the preview: CLS 0.0001 at 924px and 0 at 1280px on load. Choosing a lens, leg or player and scrolling adds only input-driven shifts. The route skeleton was sized to the loaded page: the header, first figure card and trend card now start at the same place at 924, 1100, 1280, 1400 and 1600px. At 1280px the trend card had dropped 40px when data landed. The phone width waits for the phone gate)
 
 ## verified
+
 - [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md (open, owner: the live pass on a Vercel preview, Q-4; agents don't sign in)
 - [ ] Owner review of the built screen (open, owner: the lead carries it; the player views start after it)

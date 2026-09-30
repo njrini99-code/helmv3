@@ -5,12 +5,14 @@ Route: /golf/dashboard (coach and player)   Surface tag: `home.<week|latestRound
 Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home - Mobile.html (phone spec `phone/home-player.md`)
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] N/A: Home has no mutations; "Message team" and "New event" are links (D-4, revised)
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md
 
 ## desktop
+
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [x] Numbers are tabular, with a true minus, `E` for even and `—` for no data
@@ -20,6 +22,7 @@ Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home -
 - [ ] A narrow canvas (container below 860px) reflows without horizontal page scroll
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
@@ -28,6 +31,7 @@ Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home -
 - [x] Unit tests cover the loader's derivations (subline, invitee details, quiet days: `src/clubhouse/__tests__/logic.test.ts`)
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [x] Empty (first run): says what will appear here and the one next step
 - [x] N/A: Home has no filters
@@ -42,6 +46,7 @@ Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home -
 - [x] N/A: Home has no optimistic updates
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('<screen>', '<read>')`
 - [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [ ] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
@@ -50,6 +55,7 @@ Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home -
 - [ ] Every failure path was forced once locally and seen in the console or Sentry
 
 ## phone-spec
+
 - [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (the v2 board, mapped piece by piece, 2026-09-30)
 - [x] The owner approved it (the file says `Status: approved`; the owner's v2 phone board is the spec, D-22)
 
@@ -71,7 +77,9 @@ Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home -
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
+
 Verified by `home.test.tsx` (CH-28xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/home.md`.
+
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [x] Charts have a text equivalent (aria-label or a view-as-table path)
@@ -79,11 +87,13 @@ Verified by `home.test.tsx` (CH-28xx) and `npm run clubhouse:a11y`; states catal
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [ ] No request waterfall on the server, with independent reads in parallel
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

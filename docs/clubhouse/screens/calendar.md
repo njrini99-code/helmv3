@@ -16,12 +16,14 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 `markAttendance`, `getCalendarFeeds`, `createCalendarFeed`.
 
 ## spec
+
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
 - [x] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md
 
 ## desktop
+
 - [x] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [x] Numbers are tabular, with a true minus, `E` for even and `—` for no data
@@ -31,6 +33,7 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [x] A narrow canvas (container below 860px) reflows without horizontal page scroll
 
 ## wired
+
 - [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
 - [x] Reads go through the RLS-scoped client, with no service role for a user's own data
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
@@ -45,6 +48,7 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
   - No new state, so no catalog row.
 
 ## states
+
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [x] Empty (first run): an empty range still draws the grid, and the panel says there's nothing on the calendar today
 - [x] Empty (filtered or no results): the people filter says whose schedule is shown and offers Clear; the agenda says the range is empty for those players
@@ -59,6 +63,7 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [x] Optimistic updates roll back on failure and tell the coach (a player's reply reverts if it doesn't send)
 
 ## error-tracking
+
 - [x] Server read failures are logged with `chLogServer('<screen>', '<read>')`
 - [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (navigate, submit, save attendance, keep overlap)
@@ -67,6 +72,7 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [ ] Every failure path was forced once locally and seen in the console or Sentry (the preview forces the events, replies, classes and attendance failures; every write's failure, Retry and offline refusal is now forced in `calendar.test.tsx` (60601 to 60612, 61401, 10703, 60701); none has been seen in Sentry)
 
 ## phone-spec
+
 - [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (the v2 board, mapped piece by piece, 2026-09-30)
 - [x] The owner approved it (the file says `Status: approved`; the owner's v2 phone board is the spec, D-22)
 
@@ -88,7 +94,9 @@ Server actions reused unchanged: `createGolfEvent`, `updateGolfEvent`, `deleteGo
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
+
 Verified by `calendar.test.tsx` (CH-68xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/calendar.md`.
+
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons
 - [ ] Charts have a text equivalent (aria-label or a view-as-table path)
@@ -96,11 +104,13 @@ Verified by `calendar.test.tsx` (CH-68xx) and `npm run clubhouse:a11y`; states c
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
+
 - [x] No request waterfall on the server, with independent reads in parallel (three rounds: the team; events, classes and busy time; replies. The order is asserted by `calendar.test` › 62101)
 - [ ] Client JS is limited to the interactive islands, and animation code is loaded lazily
 - [ ] No layout shift after first paint
 
 ## verified
+
 - [ ] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
 - [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
 - [ ] Owner review of the built screen

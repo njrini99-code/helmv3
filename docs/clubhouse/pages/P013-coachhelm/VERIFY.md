@@ -76,6 +76,7 @@ and Undo once and lands, then with a refusal and Retry, and forces Assign offlin
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  1280px (preview, /clubhouse-preview/coachhelm and coachhelm-player), looked at by eye by the lead
            on 2026-09-30, as reported in PROGRESS.md
@@ -85,6 +86,7 @@ Result:    looked at by the lead, as reported; no side-by-side pixel comparison 
 ```
 
 ### Phone
+
 ```text
 Viewport:     390px (preview), looked at by eye by the lead on 2026-09-30, as reported in PROGRESS.md
 Device/shell: not on a real iPhone (npm run ios:dev, owner)

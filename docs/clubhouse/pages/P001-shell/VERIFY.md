@@ -36,6 +36,7 @@ ignoring the viewer's role, 10102/10802 fails. Both were restored.
 ## Visual verification
 
 ### Desktop
+
 ```text
 Viewport:  1280px (dev server on :3100, node Playwright script)
 Reference: design/handoff/gh-nav.js, sidebar.css
@@ -43,6 +44,7 @@ Result:    the v2 navigation, the reveal, the skeleton delay and reduced motion 
 ```
 
 ### Phone
+
 ```text
 Viewport:     390 × 844
 Device/shell: not yet on a real iPhone (npm run ios:dev, owner)

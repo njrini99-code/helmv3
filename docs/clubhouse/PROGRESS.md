@@ -114,6 +114,7 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
   e2e run, full build, full suite and performance (the merge pass); forced send, edit, delete and
   leave failures against a live session (the merge pass). After Clubhouse: the queued attachment
   migration (Data gaps).
+
 6. Roster phone (`agent/clubhouse-roster-mobile`, d9b1c81fc and this pass):
    phone-spec is done, and phone is doing. It is built on the foundation, and
    D-50 to D-59 are in code. It passed the browser check at 390 and
