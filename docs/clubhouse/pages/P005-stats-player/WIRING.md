@@ -92,7 +92,7 @@ There are no realtime hooks: the page is read once per render, and again after a
 | createFocusArea | `src/app/golf/actions/development.ts` | Existing | a coach proposes a focus area (status proposed) |
 | getDetailedStats | `src/app/golf/actions/stats-data.ts` | Existing | shot-level detail; answers empty unless the caller is the player or their coach |
 | loadSeasonRounds, summarizePlayer | `src/clubhouse/data/season.ts` | Existing (shared with Home, Roster, Team stats) | the season's countable rounds |
-| roundsInWindow, loadRoundCache, loadD1, parseWindow, windowFilter | `src/clubhouse/data/stats-common.ts` | Existing (shared with Team stats) | windows, per-round figures, D1 benchmarks |
+| roundsInWindow, loadRoundCache, loadTourBenchmarks, parseWindow, windowFilter | `src/clubhouse/data/stats-common.ts` | Existing (shared with Team stats) | windows, per-round figures, Tour benchmarks |
 | resolveClubhouseTeam | `src/clubhouse/routes/team.ts` | Existing | the caller's own team |
 
 ## Data resources

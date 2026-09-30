@@ -32,6 +32,7 @@ import { sgBaseline, sgScale, sgShare, sgTint } from '../lib/sg';
 import { PlayerHome } from '../screens/home/PlayerHome';
 import { RoundReview } from '../screens/rounds/RoundReview';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
+import { puttingNote } from '../screens/stats/notes';
 import { StatsTeam } from '../screens/stats/StatsTeam';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
@@ -129,12 +130,12 @@ describe('the strokes gained baseline', () => {
     });
   });
 
-  it('Home: the season’s strokes gained is vs Tour, and the legs’ header says the strokes gained are the season’s and D1 marks the stats', () => {
+  it('Home: the season’s strokes gained is vs Tour, and the legs’ header says the strokes gained are the season’s', () => {
     wrap(<PlayerHome data={PREVIEW_PLAYER_HOME} now={PREVIEW_HOME_NOW} />);
     const sg = [...document.querySelectorAll('.ch-ph-figs > div')].find((d) => d.querySelector('dt')!.textContent === 'Strokes gained')!;
     expect(sg.textContent).toContain('Season, per round vs Tour');
     const legs = document.getElementById('ch-ph-legs')!.closest('section')!;
-    expect(legs.querySelector('.ch-ph-game__h span')!.textContent).toBe('Last 10 rounds · strokes gained this season vs Tour · D1 marks the stats');
+    expect(legs.querySelector('.ch-ph-game__h span')!.textContent).toBe('Last 10 rounds · strokes gained this season vs Tour');
     expect(document.body.textContent).not.toMatch(/strokes gained vs D1|Per round vs D1/);
   });
 
@@ -445,7 +446,7 @@ describe('player loader', () => {
     const data = (await load('coach'))!;
     const rows = data.comparisons.slice(0, 5);
     expect(rows.map((r) => r.label)).toEqual(['SG total', 'SG off the tee', 'SG approach', 'SG around green', 'SG putting']);
-    expect(rows.every((r) => r.sg === true && r.d1 === null && r.lowerIsBetter === false)).toBe(true);
+    expect(rows.every((r) => r.sg === true && r.bench === null && r.lowerIsBetter === false)).toBe(true);
     expect(rows[0]).toMatchObject({ you: 3, team: 1.5 });
     // Off the tee: p1 mean 1.5; the pool of eight, (7.5 − 1.5) / 8 = 0.75.
     expect(rows[1]).toMatchObject({ you: 1.5, team: 0.75 });
@@ -564,7 +565,7 @@ describe('player profile · desktop', () => {
     expect(rows[4]!.querySelectorAll('td')[1]!.querySelector('span')!.className).toContain('ch-gain');
   });
 
-  it('a player’s own table has strokes gained with no team column and no D1 for it', () => {
+  it('a player’s own table has strokes gained with no team column and no Tour value for it', () => {
     showPlayer(
       player({
         viewer: 'player',
@@ -572,7 +573,7 @@ describe('player profile · desktop', () => {
       }),
     );
     const table = document.querySelector('table.ch-ft')!;
-    expect([...table.querySelectorAll('th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'D1']);
+    expect([...table.querySelectorAll('th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour']);
     const total = table.querySelector('tbody tr')!.querySelectorAll('td');
     expect([total[0]!.textContent, total[1]!.textContent, total[2]!.textContent]).toEqual(['SG total', '−0.9', '—']);
   });
@@ -777,6 +778,138 @@ describe('round review · strokes gained', () => {
       tables.current = { ...reads('men'), golf_rounds: { data: { ...roundRow, strokes_gained_total: null, strokes_gained_tee: null, strokes_gained_approach: null, strokes_gained_around_green: null, strokes_gained_putting: null } } };
       const r = await loadRoundReview(roundRow.id, { role: 'player', playerId: roundRow.player_id });
       expect(r.kind === 'ok' && r.review.strokesGained).toBeNull();
+    });
+  });
+});
+
+/* ─── The Tour is the only benchmark (Q-88) ─── */
+
+const BENCHMARK_WORDS = /\bD[123]\b|\bdivision\b|\bcollege\b|\bNCAA\b/i;
+/** Everything a person or a screen reader is given: the text and the names on labels, titles and images. */
+function everythingSaid() {
+  const names = [...document.querySelectorAll('[aria-label],[title],[alt]')].map((e) => ['aria-label', 'title', 'alt'].map((a) => e.getAttribute(a) ?? '').join(' '));
+  // Each text node on its own, so two spans that touch in the DOM ("par" and "D1 3.00") are still two words.
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const texts: string[] = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) texts.push(n.nodeValue ?? '');
+  return `${texts.join(' ')} ${names.join(' ')}`.replace(/\s+/g, ' ');
+}
+
+describe('the Tour is the only benchmark (Q-88)', () => {
+  it('no Team stats screen says D1, a division or college', () => {
+    showTeam(team());
+    expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
+    // The Tour's make rate is what the putting note grades against.
+    expect(everythingSaid()).toMatch(/Tour make rate/);
+  });
+
+  it('no player profile tab says it, for a coach or a player, with benchmarks present', async () => {
+    const user = userEvent.setup();
+    showPlayer(player());
+    for (const tab of [/Overview/, /Game detail/, /Rounds/, /Development/]) {
+      await user.click(screen.getByRole('tab', { name: tab }));
+      expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
+    }
+    document.body.innerHTML = '';
+    showPlayer(player({ viewer: 'player', comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }));
+    expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
+    // The player's own table reads "You vs. the Tour", with the Tour's value where there is one.
+    expect(screen.getByRole('heading', { level: 3, name: 'You vs. the Tour' })).toBeTruthy();
+  });
+
+  it('Game detail names the Tour wherever it marks a benchmark (figures, notes, ticks)', async () => {
+    const user = userEvent.setup();
+    showPlayer(player());
+    await user.click(screen.getByRole('tab', { name: /Game detail/ }));
+    const said = everythingSaid();
+    expect(said).toMatch(/Tour 66%/);
+    expect(said).toMatch(/Tour average for that range/);
+    // The par tiles carry the Tour's scoring average for the par.
+    expect(said).toContain('Tour 3.00');
+    expect(said).not.toMatch(BENCHMARK_WORDS);
+  });
+
+  describe('on the phone', () => {
+    phoneWidth();
+    it('no profile section chip says it', async () => {
+      const user = userEvent.setup();
+      showPlayerPhone(player());
+      for (const chip of ['Scoring', 'Off the tee', 'Approach', 'Short game', 'Putting']) {
+        await user.click(screen.getByRole('button', { name: chip }));
+        expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
+      }
+    });
+    it('nor does Team stats', () => {
+      showTeam(team());
+      expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
+    });
+  });
+
+  it('the putting note grades against the Tour in every case', () => {
+    const band = (label: string, made: number, attempts: number, bench: number | null) => ({ label, made, attempts, bench });
+    expect(puttingNote([band('3–5 ft', 5, 5, 90)])).toBe('Bands grade against the Tour once they have 10 or more putts.');
+    expect(puttingNote([band('3–5 ft', 18, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('Every graded band is at or above the Tour make rate.');
+    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('3 to 5 feet is the only band below the Tour make rate.');
+    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 4, 20, 50)])).toBe('2 bands are below the Tour make rate: 3–5 ft, 5–10 ft.');
+  });
+
+  it('Home says Tour on the benchmark mark of a part of the game', () => {
+    wrap(<PlayerHome data={PREVIEW_PLAYER_HOME} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelector('.ch-ph-bench__k')!.textContent).toContain('Tour 66');
+    expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
+  });
+
+  describe('the benchmark read', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-15T12:00:00Z'));
+    });
+    afterEach(() => vi.useRealTimers());
+    const standards = (f: Array<[string, unknown[]]>) => {
+      const tour = f.find(([k, a]) => k === 'eq' && a[0] === 'tour')?.[1][1];
+      // numeric columns come back as strings; the men's Tour has a sand value the women's row has not.
+      const rows: Record<string, unknown[]> = {
+        pga: [{ metric_id: 'gir_pct', pga_tour_value: '66' }, { metric_id: 'scrambling_pct_sand', pga_tour_value: '50' }],
+        lpga: [{ metric_id: 'gir_pct', pga_tour_value: '70' }, { metric_id: 'scrambling_pct_rough', pga_tour_value: null }],
+      };
+      // The fake ignores a select's columns, so it returns only the ones the loader asked for.
+      const cols = String(f.find(([k]) => k === 'select')?.[1][0] ?? '');
+      return { data: (rows[String(tour)] ?? []).map((r) => Object.fromEntries(Object.entries(r as Record<string, unknown>).filter(([k]) => cols.includes(k)))) };
+    };
+    const tablesFor = (gender: string): import('./supabase-fake').ChFakeTables => ({
+      golf_teams: { data: { name: 'Varsity', gender } },
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }] },
+      golf_rounds: { data: [rnd('r1', 'p1', 1, 1, [0.5, 0.5, null, null])] },
+      golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18 }] },
+      golf_pga_standards: standards,
+      golf_shots: { data: [] },
+    });
+
+    it('is the Tour value (pga_tour_value) of the team’s own tour: a women’s team reads the LPGA rows and never falls back to the men’s', async () => {
+      tables.current = tablesFor('men');
+      const men = await loadTeamStats({ teamId: 't1', window: 'season' });
+      expect(men.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('Tour averages 66%');
+      tables.current = tablesFor('women');
+      const women = await loadTeamStats({ teamId: 't1', window: 'season' });
+      expect(women.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('Tour averages 70%');
+    });
+
+    it('the profile carries the Tour’s values for the team’s tour only: none for a metric the women’s tour has no value for', async () => {
+      const base = (gender: string): import('./supabase-fake').ChFakeTables => ({
+        golf_teams: { data: { gender } },
+        golf_players: { data: { id: 'p1', first_name: 'Jonah', last_name: 'Okafor', graduation_year: 2029, hometown: null, state: null, handicap: null, handicap_index: 3.9 } },
+        golf_team_members: (f) => (f.some(([k, a]) => k === 'select' && a[0] === 'status') ? { data: { status: 'active' } } : { data: [{ player_id: 'p1' }] }),
+        golf_rounds: { data: [rnd('a1', 'p1', 1, 1)] },
+        golf_round_stats_cache: { data: [] },
+        golf_pga_standards: standards,
+        golf_shots: { data: [] },
+        golf_player_focus_areas: { data: [] },
+        golf_goals: { data: [] },
+      });
+      tables.current = base('men');
+      expect((await loadPlayerProfile({ viewer: 'player', teamId: 't1', playerId: 'p1', window: 'season' }))!.bench).toEqual({ gir_pct: 66, scrambling_pct_sand: 50 });
+      tables.current = base('women');
+      expect((await loadPlayerProfile({ viewer: 'player', teamId: 't1', playerId: 'p1', window: 'season' }))!.bench).toEqual({ gir_pct: 70 });
     });
   });
 });

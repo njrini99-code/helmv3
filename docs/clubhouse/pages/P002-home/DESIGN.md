@@ -72,7 +72,7 @@ Named regions and headings, every day of the week read as words, the leaderboard
 
 ## Data assumptions
 
-Only data the app has. Not shown because no source exists: the prototype's weather and "Week 7 of 12" (golf teams have no season dates), the coach phone's "Needs you" rail (defined in `m-home.jsx` and never drawn by it), a team switcher (one team per coach), a Workout event type (the fourth quick type is Meeting), and a single-round recap (the round's card links to the player's stats instead). For the player: shot-level notes (driver carry, proximity) need shot data Home does not read, D1 marks exist for Approach only (`golf_pga_standards` has greens in regulation among the four), and "the best on the team" would compare the player with teammates, so it is left out.
+Only data the app has. Not shown because no source exists: the prototype's weather and "Week 7 of 12" (golf teams have no season dates), the coach phone's "Needs you" rail (defined in `m-home.jsx` and never drawn by it), a team switcher (one team per coach), a Workout event type (the fourth quick type is Meeting), and a single-round recap (the round's card links to the player's stats instead). For the player: shot-level notes (driver carry, proximity) need shot data Home does not read, Tour marks exist for Approach only (`golf_pga_standards` has greens in regulation among the four), and "the best on the team" would compare the player with teammates, so it is left out.
 
 ## Existing backend capabilities used
 

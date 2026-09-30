@@ -1337,7 +1337,7 @@ a.ch-lg__r:focus-visible {
 .ch-lad__fill.is-neutral {
   background: linear-gradient(180deg, #a5a197, var(--ch-ink-400));
 }
-.ch-lad__d1 {
+.ch-lad__bench {
   position: absolute;
   right: -4px;
   left: -4px;

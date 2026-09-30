@@ -66,7 +66,7 @@ function seasonTables(): import('./supabase-fake').ChFakeTables {
     golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }] },
     golf_rounds: { data: [{ id: 'r1', player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' }] },
     golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 }] },
-    golf_pga_standards: { data: [{ metric_id: 'gir_pct', div1_avg_value: 67, tour: 'pga' }] },
+    golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] },
     golf_shots: { data: [] },
   };
 }
@@ -192,13 +192,13 @@ describe('Stats team · reads that fail', () => {
     quiet.mockRestore();
   });
 
-  it('CH-4209 D1 benchmarks do not load: greens read against the sample, not a made-up benchmark', async () => {
+  it('CH-4209 Tour benchmarks do not load: greens read against the sample, not a made-up benchmark', async () => {
     const ok = await load();
-    expect(ok.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('D1 averages 67%');
+    expect(ok.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('Tour averages 67%');
     tables.current = { ...seasonTables(), golf_pga_standards: { error: { message: 'boom' } } };
     const data = await load();
-    expect(logServer).toHaveBeenCalledWith('stats', 'd1Benchmarks', expect.anything());
-    expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/D1/);
+    expect(logServer).toHaveBeenCalledWith('stats', 'tourBenchmarks', expect.anything());
+    expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/Tour/);
   });
 
   it("CH-4210 the team's own row does not load: no benchmark or baseline of a guessed tour", async () => {
@@ -208,7 +208,7 @@ describe('Stats team · reads that fail', () => {
     expect(data.teamName).toBe('Your team');
     expect(data.tour).toBeNull();
     expect(sgBaseline(data.tour).noun).toBe('the baseline');
-    expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/D1/);
+    expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/Tour/);
     expect(data.roundCount).toBe(1);
   });
 });
@@ -661,14 +661,14 @@ describe('Stats team · the loader', () => {
     expect(partial.roundCount).toBe(data.roundCount);
   });
 
-  it('42301 a failed read is logged with its name (team, members, rounds, roundCache, putts, d1Benchmarks), and a window change and a focused player leave a breadcrumb', async () => {
+  it('42301 a failed read is logged with its name (team, members, rounds, roundCache, putts, tourBenchmarks), and a window change and a focused player leave a breadcrumb', async () => {
     for (const [table, read] of [
       ['golf_teams', 'team'],
       ['golf_team_members', 'members'],
       ['golf_rounds', 'rounds'],
       ['golf_round_stats_cache', 'roundCache'],
       ['golf_shots', 'putts'],
-      ['golf_pga_standards', 'd1Benchmarks'],
+      ['golf_pga_standards', 'tourBenchmarks'],
     ] as const) {
       logServer.mockClear();
       tables.current = { ...seasonTables(), [table]: { error: { message: 'boom' } } };

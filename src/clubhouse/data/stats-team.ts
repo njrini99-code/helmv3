@@ -5,7 +5,7 @@ import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { fullName, groupByPlayer, isFull18, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChRound } from './season';
 import {
   bandPutts,
-  loadD1,
+  loadTourBenchmarks,
   loadPutts,
   loadRoundCache,
   perRound,
@@ -62,7 +62,7 @@ export interface ChTeamStats {
   grid: Array<{ id: string; name: string; rounds: number; legs: Array<number | null>; total: number | null; change: number | null; /** Scoring average over the window's 18-hole rounds (the phone's player list). */ avg: number | null }>;
   /** The team's strokes gained per round in each leg over the window, against the baseline; null with no strokes gained (the phone's leg bars). */
   legTotals: Array<number | null>;
-  putting: { bands: Array<{ label: string; made: number; attempts: number; d1: number | null }>; putts: number } | null;
+  putting: { bands: Array<{ label: string; made: number; attempts: number; bench: number | null }>; putts: number } | null;
   bests: Array<{ label: string; playerId: string; name: string; value: string; meta: string; under?: boolean }>;
   /** What the strokes gained here is measured against; null when the team's own row didn't load. */
   tour: ChSgTour;
@@ -95,9 +95,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   type P = { id: string; first_name: string | null; last_name: string | null };
   const players = ((membersRes.data ?? []) as Array<{ player: P | null }>).map((m) => m.player).filter((p): p is P => !!p);
   // CH-4210: without the team's row its tour is unknown, so no benchmark or baseline is claimed
-  // (a women's team must never be graded against the men's D1 averages).
+  // (a women's team must never be graded against the men's Tour values; Q-88: the Tour is the only benchmark).
   const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
-  const d1Promise = tour ? loadD1(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>());
+  const benchPromise = tour ? loadTourBenchmarks(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>());
 
   const season = players.length
     ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats' })
@@ -118,11 +118,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   // One cache read serves the window, the previous window and the season bests: both windows
   // are 18-hole season rounds, so they are inside `seasonFull`.
   const seasonFull = season.rounds.filter((r) => (r.holes_played ?? 18) === 18);
-  const [cache, putts, d1] = await Promise.all([
+  const [cache, putts, bench] = await Promise.all([
     loadRoundCache(supabase, seasonFull.map((r) => r.id), 'stats'),
     // The whole season's putts: the window's bands, and the season's longest made putt.
     loadPutts(supabase, season.rounds.map((r) => r.id)),
-    d1Promise,
+    benchPromise,
   ]);
   const rowsFor = (rs: ChRound[]) => rs.map((r) => cache.byRound.get(r.id)).filter((x): x is ChRoundCache => !!x);
   const cur = rowsFor(windowRounds);
@@ -135,7 +135,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   const scramble = rate(cur, 'scrambles_converted', 'scramble_attempts');
   const birdies = cur.length ? cur.reduce((a, r) => a + (r.birdies ?? 0) + (r.eagles ?? 0), 0) / cur.length : null;
   const d = (a: number | null, b: number | null) => (hasPrev && a != null && b != null ? a - b : null);
-  const d1Gir = d1.get('gir_pct');
+  const benchGir = bench.get('gir_pct');
   const sample = `${windowRounds.length} ${windowRounds.length === 1 ? 'round' : 'rounds'}`;
   // Strokes gained per round: the window's mean over its rounds with strokes gained, against the previous 10 when there is one.
   const sgOf = (rs: ChRound[]) => rs.map((r) => r.strokes_gained_total).filter((v): v is number => v != null);
@@ -160,8 +160,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
       note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
     },
     { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(scoring, prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
-    // CH-4209: without D1 benchmarks, greens read against the sample instead of "D1 averages".
-    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(gir, rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: d1Gir != null ? `D1 averages ${Math.round(d1Gir)}%` : sample },
+    // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
+    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(gir, rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : sample },
     { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(puttsPer, perRound(prev, 'total_putts')), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
     { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(scramble, rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : sample },
     {
@@ -220,7 +220,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   const windowIds = new Set(windowRounds.map((r) => r.id));
   const windowPutts = putts.rows.filter((r) => windowIds.has(r.roundId));
   if (!putts.error && windowPutts.length) {
-    putting = { bands: bandPutts(windowPutts, d1), putts: windowPutts.length };
+    putting = { bands: bandPutts(windowPutts, bench), putts: windowPutts.length };
   }
 
   const bests = seasonBests(seasonFull, players, cache.byRound, putts.error ? null : { rows: putts.rows, rounds: season.rounds });

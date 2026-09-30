@@ -2,6 +2,18 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The Tour is the only benchmark (Q-88): no D1 anywhere
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (CH-4209's words change; its number doesn't)
+Data impact:    none (reads the existing `pga_tour_value` column; no migration)
+```
+
+- **Issue.** Greens in regulation read "D1 averages 67%", the putting rings and their note graded the team against the D1 make rates, and `loadD1` also filled a women's team's gaps with the men's values. The owner's answer (Q-88): never a D1 benchmark, always the Tour.
+- **Fix.** `loadTourBenchmarks` reads `golf_pga_standards.pga_tour_value` for the team's own tour only (the LPGA row for a women's team); a metric the tour has no value for has no benchmark, never the men's. The GIR card reads "Tour averages 66%", the rings' marks and the note grade against the Tour ("3 to 5 feet is the only band below the Tour make rate"). The loader's field is `bench` and the read is logged as `tourBenchmarks`.
+- **Checked.** strokes-gained.test (no Team stats screen, desktop or phone, renders D1, a division or college; the loader reads the Tour value of the team's tour and never falls back; the note in every branch); 11 mutations caught.
+
 ## 2026-09-30 — Strokes gained on Team stats: a headline, the window mean, bars that mean what they show
 
 ```text

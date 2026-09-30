@@ -26,7 +26,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4206 | The leg trends or the player grid crash | "Strokes gained by leg couldn't be shown." … | `SectionBoundary stats.team.legs` | stats-team.test › CH-4206 |
 | CH-4207 | Team putting crashes | "Team putting couldn't be shown." … | `SectionBoundary stats.team.putting` | stats-team.test › CH-4207 |
 | CH-4208 | Season bests crash | "Season bests couldn't be shown." … | `SectionBoundary stats.team.bests` | stats-team.test › CH-4208 |
-| CH-4209 | D1 benchmarks don't load | Greens and putting bands compare with the sample instead of "D1 averages 67%"; nothing claims a benchmark it doesn't have | `loadTeamStats`; logged `clubhouse.stats.d1Benchmarks` | stats-team.test › CH-4209 |
+| CH-4209 | Tour benchmarks don't load | Greens and putting bands compare with the sample instead of "Tour averages 67%"; nothing claims a benchmark it doesn't have | `loadTeamStats`; logged `clubhouse.stats.tourBenchmarks` | stats-team.test › CH-4209 |
 | CH-4210 | The team's own details (name, men's or women's) don't load | The header reads "Your team"; greens and putting compare with the sample and the trend's dashed line is "the baseline", so no benchmark of the wrong tour is claimed | `loadTeamStats`; logged `clubhouse.stats.team` | stats-team.test › CH-4210 |
 
 ## 43xx Empty

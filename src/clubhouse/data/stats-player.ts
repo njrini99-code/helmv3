@@ -7,7 +7,7 @@ import type { ChSgTour } from '../lib/sg';
 import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
   bandPutts,
-  loadD1,
+  loadTourBenchmarks,
   loadPutts,
   loadRoundCache,
   perRound,
@@ -29,7 +29,7 @@ import {
  *   coach  - any active player on their team, with team comparisons and
  *            previous/next navigation
  *   player - only themselves (the route never takes a player id from a
- *            player), compared against D1 only, never against teammates
+ *            player), compared against the Tour only, never against teammates
  * Shot-level detail comes from getDetailedStats, which enforces the same
  * access rule server-side (the player, or a coach in the player's org).
  */
@@ -53,7 +53,8 @@ export interface ChComparison {
   label: string;
   you: number | null;
   team: number | null;
-  d1: number | null;
+  /** The Tour's average for the stat where golf_pga_standards has one; null draws no column value. */
+  bench: number | null;
   unit: '' | '%';
   digits: number;
   lowerIsBetter: boolean;
@@ -86,7 +87,8 @@ export interface ChPlayerProfile {
   comparisons: ChComparison[];
   stats: GolfStats | null;
   statsError: boolean;
-  d1: Record<string, number>;
+  /** The Tour's averages by metric id (the team's own tour). */
+  bench: Record<string, number>;
   focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null }>;
   goals: Array<{ id: string; title: string; state: string | null; current: number | null; target: number | null; baseline: number | null }>;
   devError: boolean;
@@ -122,7 +124,7 @@ export async function loadPlayerProfile(input: {
   // Not on this team (or not readable): the page shows not-found, never another team's player.
   if (!p || !memberRes.data) return null;
 
-  // CH-5208: without the team's row its tour is unknown, so no D1 benchmark is claimed (a women's team is never graded against the men's).
+  // CH-5208: without the team's row its tour is unknown, so no benchmark is claimed (a women's team is never graded against the men's).
   const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
 
   // Coaches compare against the active team and page through it; players see only themselves.
@@ -137,7 +139,7 @@ export async function loadPlayerProfile(input: {
     teamIds = [...new Set([input.playerId, ...(data ?? []).map((m) => m.player_id)])];
   }
 
-  const [seasonRes, detail, d1, focusRes, goalsRes] = await Promise.all([
+  const [seasonRes, detail, bench, focusRes, goalsRes] = await Promise.all([
     loadSeasonRounds(supabase, teamIds, { surface: 'stats' }),
     getDetailedStats(input.playerId, 'overall', windowFilter(input.window)).then(
       (s) => ({ stats: s, error: false }),
@@ -146,7 +148,7 @@ export async function loadPlayerProfile(input: {
         return { stats: null, error: true };
       },
     ),
-    tour ? loadD1(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>()),
+    tour ? loadTourBenchmarks(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>()),
     supabase
       .from('golf_player_focus_areas')
       .select('id, title, baseline_value, current_value, target_value, target_metric, status')
@@ -183,9 +185,9 @@ export async function loadPlayerProfile(input: {
   const teamAvg = input.viewer === 'coach' ? mean(teamWin.map((r) => r.total_score as number)) : null;
   const t = input.viewer === 'coach';
 
-  // CH-5208: without D1 benchmarks the D1 column reads "—"; nothing is compared with a benchmark it doesn't have.
-  const d1Gir = d1.get('gir_pct') ?? null;
-  // Strokes gained against the Tour (no D1 value exists), with the team's pooled mean for a coach; a player is never compared with teammates.
+  // CH-5208: without Tour benchmarks the Tour column reads "—"; nothing is compared with a benchmark it doesn't have.
+  const benchGir = bench.get('gir_pct') ?? null;
+  // Strokes gained against the Tour (its benchmark is zero by definition), with the team's pooled mean for a coach; a player is never compared with teammates.
   const sgPool = (pick: (r: ChRound) => number | null) => {
     const v = teamWin.map(pick).filter((x): x is number => x != null);
     return v.length >= MIN_SG_ROUNDS ? mean(v) : null;
@@ -194,7 +196,7 @@ export async function loadPlayerProfile(input: {
     label,
     you,
     team: t ? sgPool(pick) : null,
-    d1: null,
+    bench: null,
     unit: '',
     digits: 1,
     lowerIsBetter: false,
@@ -206,11 +208,11 @@ export async function loadPlayerProfile(input: {
     sgRow('SG approach', win.sgLegs.approach, (r) => r.strokes_gained_approach),
     sgRow('SG around green', win.sgLegs.around, (r) => r.strokes_gained_around_green),
     sgRow('SG putting', win.sgLegs.putting, (r) => r.strokes_gained_putting),
-    { label: 'Scoring avg', you: win.avg, team: teamAvg, d1: null, unit: '', digits: 1, lowerIsBetter: true },
-    { label: 'Fairways hit', you: rate(mineCache, 'fairways_hit', 'fairways_total'), team: t ? rate(teamCache, 'fairways_hit', 'fairways_total') : null, d1: null, unit: '%', digits: 0, lowerIsBetter: false },
-    { label: 'Greens in regulation', you: rate(mineCache, 'greens_hit', 'greens_total'), team: t ? rate(teamCache, 'greens_hit', 'greens_total') : null, d1: d1Gir, unit: '%', digits: 0, lowerIsBetter: false },
-    { label: 'Putts per round', you: perRound(mineCache, 'total_putts'), team: t ? perRound(teamCache, 'total_putts') : null, d1: null, unit: '', digits: 1, lowerIsBetter: true },
-    { label: 'Scrambling', you: rate(mineCache, 'scrambles_converted', 'scramble_attempts'), team: t ? rate(teamCache, 'scrambles_converted', 'scramble_attempts') : null, d1: null, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Scoring avg', you: win.avg, team: teamAvg, bench: null, unit: '', digits: 1, lowerIsBetter: true },
+    { label: 'Fairways hit', you: rate(mineCache, 'fairways_hit', 'fairways_total'), team: t ? rate(teamCache, 'fairways_hit', 'fairways_total') : null, bench: null, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Greens in regulation', you: rate(mineCache, 'greens_hit', 'greens_total'), team: t ? rate(teamCache, 'greens_hit', 'greens_total') : null, bench: benchGir, unit: '%', digits: 0, lowerIsBetter: false },
+    { label: 'Putts per round', you: perRound(mineCache, 'total_putts'), team: t ? perRound(teamCache, 'total_putts') : null, bench: null, unit: '', digits: 1, lowerIsBetter: true },
+    { label: 'Scrambling', you: rate(mineCache, 'scrambles_converted', 'scramble_attempts'), team: t ? rate(teamCache, 'scrambles_converted', 'scramble_attempts') : null, bench: null, unit: '%', digits: 0, lowerIsBetter: false },
   ];
 
   // getDetailedStats answers a failed read with zeroed stats. Rounds in the
@@ -221,7 +223,7 @@ export async function loadPlayerProfile(input: {
   // Strokes gained against the previous 10 rounds; only the last-10 window has one.
   const prevList = previousWindow(mine, input.window);
   const sgDelta = sgChange(win.sgPerRound, prevList ? summarizePlayer(prevList).sgPerRound : null, input.window, Math.max(0, mine.filter(isFull18).length - 10));
-  const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, d1);
+  const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
 
   let nav: ChPlayerProfile['nav'] = null;
   if (input.viewer === 'coach') {
@@ -273,7 +275,7 @@ export async function loadPlayerProfile(input: {
     comparisons,
     stats: detailFailed ? null : detail.stats,
     statsError: detailFailed,
-    d1: Object.fromEntries(d1),
+    bench: Object.fromEntries(bench),
     focusAreas: (focusRes.data ?? []).map((f) => ({
       id: f.id,
       title: f.title,

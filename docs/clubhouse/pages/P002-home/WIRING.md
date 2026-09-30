@@ -96,7 +96,7 @@ Home calls no server action. The loaders are the services.
 | loadPlayerHome, coachFor | data/player-home.ts | New (Clubhouse) | Player Home in one server pass; the coach Message coach names |
 | homeClock, loadHomeWeek, latestWithHoles | data/home.ts | New (Clubhouse) | The timezone, greeting and date; the week; the latest rounds with their holes. Shared by both loaders |
 | loadSeasonRounds, summarizePlayer, isFull18 | data/season.ts | New (Clubhouse) | Season rounds and the derived figures, shared with Roster and Stats |
-| loadRoundCache, loadD1, tourForGender | data/stats-common.ts | New (Clubhouse) | Per-round aggregates and D1 benchmarks, shared with Stats |
+| loadRoundCache, loadTourBenchmarks, tourForGender | data/stats-common.ts | New (Clubhouse) | Per-round aggregates and Tour benchmarks, shared with Stats |
 | resolveClubhouseTeam | routes/team.ts | New (Clubhouse) | The player's team, throwing when the membership read fails |
 
 ## Data resources
@@ -120,7 +120,7 @@ Write path: none
 ```text
 Tables:   golf_team_settings, golf_events and golf_event_attendance (the team's week, without names), golf_rounds
           filtered to the player's id, golf_players (their own row), golf_teams (gender, creator, organisation),
-          golf_holes and golf_round_stats_cache (their own rounds), golf_pga_standards (D1 benchmarks),
+          golf_holes and golf_round_stats_cache (their own rounds), golf_pga_standards (Tour benchmarks),
           golf_coaches (the organisation's coaches, for Message coach)
 RPCs:     none
 Storage:  none

@@ -216,18 +216,18 @@ export function SgBars({ rows }: { rows: Array<{ label: string; value: number | 
   );
 }
 
-/** You against the team and D1, as a scorecard table. */
+/** You against the team and the Tour, as a scorecard table. */
 export function FieldTable({
   rows,
   showTeam,
 }: {
-  rows: Array<{ label: string; you: number | null; team: number | null; d1: number | null; unit: '' | '%'; digits: number; lowerIsBetter: boolean; sg?: boolean }>;
+  rows: Array<{ label: string; you: number | null; team: number | null; bench: number | null; unit: '' | '%'; digits: number; lowerIsBetter: boolean; sg?: boolean }>;
   showTeam: boolean;
 }) {
   // Strokes gained reads with its sign and is green when gained, amber when lost (against the Tour); every other row is better or worse than its reference.
   const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : r.sg ? formatSigned(v, r.digits) : `${v.toFixed(r.digits)}${r.unit}`);
   const signTone = (v: number | null, r: (typeof rows)[number]) => (r.sg && v != null ? (v >= 0 ? 'ch-gain' : 'ch-loss') : '');
-  const hasD1 = rows.some((r) => r.d1 != null);
+  const hasBench = rows.some((r) => r.bench != null);
   return (
     <table className="ch-ft">
       <thead>
@@ -235,12 +235,12 @@ export function FieldTable({
           <th>Stat</th>
           <th>You</th>
           {showTeam && <th>Team</th>}
-          {hasD1 && <th>D1</th>}
+          {hasBench && <th>Tour</th>}
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => {
-          const ref = showTeam ? r.team : r.d1;
+          const ref = showTeam ? r.team : r.bench;
           const good = r.you != null && ref != null ? (r.lowerIsBetter ? r.you <= ref : r.you >= ref) : null;
           return (
             <tr key={r.label}>
@@ -249,7 +249,7 @@ export function FieldTable({
                 <span className={`ch-num ${r.sg ? signTone(r.you, r) : good == null ? '' : good ? 'ch-gain' : 'ch-loss'}`}>{fmt(r.you, r)}</span>
               </td>
               {showTeam && <td className="ch-num">{fmt(r.team, r)}</td>}
-              {hasD1 && <td className="ch-num">{fmt(r.d1, r)}</td>}
+              {hasBench && <td className="ch-num">{fmt(r.bench, r)}</td>}
             </tr>
           );
         })}
@@ -258,8 +258,8 @@ export function FieldTable({
   );
 }
 
-/** Putting read off rings around the cup: make rate by distance band, with the D1 rate beside it. */
-export function PuttingRings({ bands }: { bands: Array<{ label: string; made: number; attempts: number; d1: number | null }> }) {
+/** Putting read off rings around the cup: make rate by distance band, with the Tour rate beside it. */
+export function PuttingRings({ bands }: { bands: Array<{ label: string; made: number; attempts: number; bench: number | null }> }) {
   // Geometry from the design system's PuttingGreen (charts/geom.jsx `green`): rings by
   // distance, each shaded by its make rate, the pin at the centre, labels on leaders.
   const shown = bands.slice(0, 5);
@@ -289,7 +289,7 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
         const px = cx + rm * Math.cos(-0.6);
         const py = cy + rm * Math.sin(-0.6) - (4 - i) * 4;
         const ly = 26 + i * 24;
-        const below = pct != null && b.d1 != null && b.attempts >= 10 && pct < b.d1;
+        const below = pct != null && b.bench != null && b.attempts >= 10 && pct < b.bench;
         return (
           <g key={b.label}>
             <circle cx={px} cy={py} r={2.5} fill="var(--ch-ink-900)" />
@@ -332,7 +332,7 @@ export function ScoreMix({ d }: { d: { eagle: number; birdie: number; par: numbe
   );
 }
 
-export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; d1: number | null }> }) {
+export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; bench: number | null }> }) {
   return (
     <div className="ch-par3">
       {rows.map((r) => (
@@ -340,7 +340,7 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
           <span className="ch-par3__l">Par {r.par}s</span>
           <span className="ch-par3__v ch-num">{r.avg == null ? NO_DATA : r.avg.toFixed(2)}</span>
           <span className="ch-par3__to ch-num">{r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}</span>
-          {r.d1 != null && <span className="ch-par3__d ch-num">D1 {r.d1.toFixed(2)}</span>}
+          {r.bench != null && <span className="ch-par3__d ch-num">Tour {r.bench.toFixed(2)}</span>}
         </div>
       ))}
     </div>
@@ -393,23 +393,23 @@ export function Compare({ rows, unit = '', max }: { rows: Array<{ label: string;
   );
 }
 
-/** Bars by distance band with a dashed benchmark tick; bars are the player, ticks are D1. */
+/** Bars by distance band with a dashed benchmark tick; bars are the player, ticks are the Tour. */
 export function Ladder({
   rows,
   unit,
   label,
   invert = false,
 }: {
-  rows: Array<{ band: string; value: number | null; d1: number | null }>;
+  rows: Array<{ band: string; value: number | null; bench: number | null }>;
   unit: string;
   label: string;
   invert?: boolean;
 }) {
-  const max = Math.max(1, ...rows.flatMap((r) => [r.value ?? 0, r.d1 ?? 0])) * 1.1;
+  const max = Math.max(1, ...rows.flatMap((r) => [r.value ?? 0, r.bench ?? 0])) * 1.1;
   return (
     <div className="ch-lad" style={{ ['--ch-n' as string]: rows.length }}>
       {rows.map((r) => {
-        const tone = r.value == null || r.d1 == null ? 'is-neutral' : (invert ? r.value <= r.d1 : r.value >= r.d1) ? 'is-gain' : 'is-loss';
+        const tone = r.value == null || r.bench == null ? 'is-neutral' : (invert ? r.value <= r.bench : r.value >= r.bench) ? 'is-gain' : 'is-loss';
         return (
           <div key={r.band} className="ch-lad__c">
             <span className={`ch-lad__v ch-num ${tone === 'is-gain' ? 'ch-gain' : tone === 'is-loss' ? 'ch-loss' : ''}`}>
@@ -417,7 +417,7 @@ export function Ladder({
             </span>
             <span className="ch-lad__col">
               {r.value != null && <span className={`ch-lad__fill ${tone}`} style={{ height: `${(r.value / max) * 100}%` }} />}
-              {r.d1 != null && <span className="ch-lad__d1" style={{ bottom: `${(r.d1 / max) * 100}%` }} />}
+              {r.bench != null && <span className="ch-lad__bench" style={{ bottom: `${(r.bench / max) * 100}%` }} />}
             </span>
             <span className="ch-lad__b ch-num">{r.band}</span>
           </div>
@@ -460,8 +460,8 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
   );
 }
 
-/** Make rate by distance: the player's line against D1's dashed line. Bands under 10 putts aren't graded. */
-export function MakeCurve({ bands }: { bands: Array<{ band: string; value: number | null; d1: number | null; n: number }> }) {
+/** Make rate by distance: the player's line against the Tour's dashed line. Bands under 10 putts aren't graded. */
+export function MakeCurve({ bands }: { bands: Array<{ band: string; value: number | null; bench: number | null; n: number }> }) {
   const w = 760;
   const h = 210;
   const pl = 64;
@@ -471,7 +471,7 @@ export function MakeCurve({ bands }: { bands: Array<{ band: string; value: numbe
   const x = (i: number) => pl + (i * (w - pl - pr)) / Math.max(1, bands.length - 1);
   const y = (v: number) => pt + ((100 - v) / 100) * (h - pt - pb);
   const you = bands.map((b, i) => (b.value == null ? null : ([x(i), y(b.value)] as [number, number]))).filter((p): p is [number, number] => !!p);
-  const d1 = bands.map((b, i) => (b.d1 == null ? null : ([x(i), y(b.d1)] as [number, number]))).filter((p): p is [number, number] => !!p);
+  const tourPts = bands.map((b, i) => (b.bench == null ? null : ([x(i), y(b.bench)] as [number, number]))).filter((p): p is [number, number] => !!p);
   const line = (pts: Array<[number, number]>) => pts.map(([px, py], i) => `${i ? 'L' : 'M'}${px},${py}`).join(' ');
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="ch-mk" role="img" aria-label={bands.map((b) => `${b.band} feet ${b.value == null ? 'no data' : `${Math.round(b.value)}%`}`).join(', ')}>
@@ -483,7 +483,7 @@ export function MakeCurve({ bands }: { bands: Array<{ band: string; value: numbe
           </text>
         </g>
       ))}
-      {d1.length > 1 && <path d={line(d1)} fill="none" stroke="var(--ch-champagne-500)" strokeDasharray="4 4" strokeWidth={1.5} />}
+      {tourPts.length > 1 && <path d={line(tourPts)} fill="none" stroke="var(--ch-champagne-500)" strokeDasharray="4 4" strokeWidth={1.5} />}
       {you.length > 1 && (
         <>
           <path d={`${line(you)} L${you[you.length - 1]![0]},${y(0)} L${you[0]![0]},${y(0)} Z`} fill="var(--ch-chart-gain)" opacity={0.07} />
@@ -491,8 +491,8 @@ export function MakeCurve({ bands }: { bands: Array<{ band: string; value: numbe
         </>
       )}
       {bands.map((b, i) => {
-        const graded = b.value != null && b.d1 != null && b.n >= 10;
-        const good = graded && b.value! >= b.d1!;
+        const graded = b.value != null && b.bench != null && b.n >= 10;
+        const good = graded && b.value! >= b.bench!;
         return (
           <g key={b.band}>
             {b.value != null && (

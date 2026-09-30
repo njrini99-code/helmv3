@@ -192,7 +192,7 @@ describe('Stats player · reads that fail', () => {
   it('CH-5205 game detail that crashes is contained', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
-    show(player({ stats: { ...PREVIEW_PLAYER.stats!, roundsPlayed: 3, approachByDistance: null } as never, d1: null as never }));
+    show(player({ stats: { ...PREVIEW_PLAYER.stats!, roundsPlayed: 3, approachByDistance: null } as never, bench: null as never }));
     await openTab(user, /Game detail/);
     await expectCode('CH-5205', /Game detail couldn’t be shown/);
     quiet.mockRestore();
@@ -578,7 +578,7 @@ describe('Stats player · who may open what', () => {
     expect(screen.queryByRole('link', { name: /player$/ })).toBeNull();
     // The crumb trail is the navigation's, not "Stats › name".
     expect(screen.getByTestId('trail').textContent).toBe('nav');
-    expect(screen.getByRole('heading', { level: 3, name: 'You vs. D1' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: 'You vs. the Tour' })).toBeTruthy();
     expect(screen.queryByRole('columnheader', { name: 'Team' })).toBeNull();
   });
 });
@@ -595,7 +595,7 @@ function profileTables(over: import('./supabase-fake').ChFakeTables = {}): impor
     golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: OTHER }, { player_id: 'p2' }] }),
     golf_rounds: { data: [{ id: 'r1', player_id: OTHER, round_date: DAY, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'practice' }] },
     golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 4, scrambles_converted: 2 }] },
-    golf_pga_standards: { data: [{ metric_id: 'gir_pct', div1_avg_value: 67, tour: 'pga' }] },
+    golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] },
     golf_player_focus_areas: { data: [] },
     golf_goals: { data: [] },
     ...over,
@@ -643,7 +643,7 @@ describe('Stats player · the loader', () => {
     expect(profile!.status).toBe('inactive');
   });
 
-  it('50803 a player is compared with D1 only: their own rounds are the only ones read, there is no team average or pager, and shot detail is asked for their own id', async () => {
+  it('50803 a player is compared with the Tour only: their own rounds are the only ones read, there is no team average or pager, and shot detail is asked for their own id', async () => {
     const roundReads: Filters[] = [];
     tables.current = profileTables({
       golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: 'someone-else' }] }),
@@ -681,25 +681,25 @@ describe('Stats player · the loader', () => {
     expect(detailed).toHaveBeenLastCalledWith(OTHER, 'overall', expect.objectContaining({ roundType: 'qualifier' }));
   });
 
-  it("CH-5208 the D1 column: read from the team's tour; without the benchmarks, or without the team's own row, nothing is compared with a benchmark it does not have", async () => {
+  it("CH-5208 the Tour column: read from the team's tour; without the benchmarks, or without the team's own row, nothing is compared with a benchmark it does not have", async () => {
     const ok = await loadAs('player', OTHER);
-    expect(ok!.d1).toEqual({ gir_pct: 67 });
-    expect(ok!.comparisons.find((c) => c.label === 'Greens in regulation')!.d1).toBe(67);
-    // The benchmark read fails: logged, empty, and the profile shows no D1 column at all.
+    expect(ok!.bench).toEqual({ gir_pct: 67 });
+    expect(ok!.comparisons.find((c) => c.label === 'Greens in regulation')!.bench).toBe(67);
+    // The benchmark read fails: logged, empty, and the profile shows no Tour column at all.
     tables.current = profileTables({ golf_pga_standards: { error: { message: 'boom' } } });
-    const noD1 = await loadAs('player', OTHER);
-    expect(logServer).toHaveBeenCalledWith('stats', 'd1Benchmarks', expect.anything());
-    expect(noD1!.d1).toEqual({});
-    expect(noD1!.comparisons.every((c) => c.d1 == null)).toBe(true);
-    wrap(<StatsPlayer data={noD1!} coachId={null} />);
-    expect(screen.queryByRole('columnheader', { name: 'D1' })).toBeNull();
+    const noBench = await loadAs('player', OTHER);
+    expect(logServer).toHaveBeenCalledWith('stats', 'tourBenchmarks', expect.anything());
+    expect(noBench!.bench).toEqual({});
+    expect(noBench!.comparisons.every((c) => c.bench == null)).toBe(true);
+    wrap(<StatsPlayer data={noBench!} coachId={null} />);
+    expect(screen.queryByRole('columnheader', { name: 'Tour' })).toBeNull();
     // The team's own row fails: its tour is unknown, so the benchmarks are not even read (a women's team is never graded against the men's).
-    const bench = vi.fn(() => ({ data: [{ metric_id: 'gir_pct', div1_avg_value: 67, tour: 'pga' }] }));
+    const bench = vi.fn(() => ({ data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] }));
     tables.current = profileTables({ golf_teams: { error: { message: 'boom' } }, golf_pga_standards: bench });
     const unknown = await loadAs('player', OTHER);
     expect(logServer).toHaveBeenCalledWith('stats', 'team', expect.anything(), 'teams');
     expect(bench).not.toHaveBeenCalled();
-    expect(unknown!.d1).toEqual({});
+    expect(unknown!.bench).toEqual({});
   });
 
   it('50103 a coach pages through the team by scoring average, and past the last player comes the first', async () => {

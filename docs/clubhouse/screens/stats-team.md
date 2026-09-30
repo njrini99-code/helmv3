@@ -31,7 +31,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
 - [x] Empty (first run): no rounds yet says stats fill in as players post countable rounds; no team has its own state
 - [x] Empty (window): a window with no rounds (for example no qualifiers yet) says why and offers the season
-- [x] Partial failure: rounds, members, cache, putts and D1 each carry their own flag and inline notice with Try again
+- [x] Partial failure: rounds, members, cache, putts and Tour benchmarks each carry their own flag and inline notice with Try again
 - [x] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
 - [x] Route error: the Clubhouse error view
 - [x] Not found and no access: a coach without a team gets the no-team state; players get their own profile instead (proved in stats-team.test, 40801 and 40802: the team is the session's, never the address's, and no team figure is read for a player)
@@ -48,7 +48,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
 - [x] No `catch` swallows an error without reporting or handling it on screen
 - [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [x] Every failure path was forced once locally and seen in the console or Sentry (stats-team.test forces the rounds, roster, team, round cache, putts and D1 reads, each asserting its `chLogServer`, plus the five section crashes (high) and the export (low), each asserting its `chReport`. The preview's failed, partial, empty, crash and loading states were loaded in the browser with the console read. The crash state found that a section crash on the server render failed the whole page; each section now has a Suspense inside its boundary)
+- [x] Every failure path was forced once locally and seen in the console or Sentry (stats-team.test forces the rounds, roster, team, round cache, putts and Tour benchmark reads, each asserting its `chLogServer`, plus the five section crashes (high) and the export (low), each asserting its `chReport`. The preview's failed, partial, empty, crash and loading states were loaded in the browser with the console read. The crash state found that a section crash on the server render failed the whole page; each section now has a Suspense inside its boundary)
 
 ## phone-spec
 - [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop (open, phone design: `design/handoff/mobile/` has no Stats design; `docs/clubhouse/phone/stats-team.md` is a draft)
@@ -79,7 +79,7 @@ Verified by `stats-team.test.tsx` (CH-48xx) and `npm run clubhouse:a11y`; states
 - [x] Text contrast meets WCAG AA on every surface
 
 ## performance
-- [x] No request waterfall on the server, with independent reads in parallel. `loadTeamStats` reads the team and roster together. The season's rounds need the roster's ids; the D1 read is already in flight beside them. The round cache, the putts and D1 then load together, with each id chunk in parallel, and one cache read now serves the window, the previous window and the bests (it had been read twice)
+- [x] No request waterfall on the server, with independent reads in parallel. `loadTeamStats` reads the team and roster together. The season's rounds need the roster's ids; the Tour benchmark read is already in flight beside them. The round cache, the putts and the benchmarks then load together, with each id chunk in parallel, and one cache read now serves the window, the previous window and the bests (it had been read twice)
 - [x] Client JS is limited to the interactive islands, and animation code is loaded lazily. `StatsTeam` now renders on the server: the figures, putting and season bests are HTML. Only `StatsTeamIslands` ships as client code: the window switch and its busy state, Export, Try again, Show the season, and the trend, leg cards and grid, which share the focused player and leg. Team stats' own client code went from 17.7 to 11.8 KB minified (6.6 to 4.7 KB gzip); in the production build the route's client chunks are 5.2 KB smaller, and the Season bests copy and the putting rings are in no client chunk. The shell's animation features load in their own chunk after first paint (D-25; `domMax` since 314b03055, so layout slides run). The first-load JS with `domMax` is measured at the merge pass (D-27). Every capture at 924 and 1280px (sections, lens, focus, every state) is pixel-identical before and after
 - [x] No layout shift after first paint (PerformanceObserver on the preview: CLS 0.0001 at 924px and 0 at 1280px on load. Choosing a lens, leg or player and scrolling adds only input-driven shifts. The route skeleton was sized to the loaded page: the header, first figure card and trend card now start at the same place at 924, 1100, 1280, 1400 and 1600px. At 1280px the trend card had dropped 40px when data landed. The phone width waits for the phone gate)
 

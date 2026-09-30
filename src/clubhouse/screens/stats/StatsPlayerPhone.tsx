@@ -145,7 +145,7 @@ export function StatsPlayerPhone({
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn't load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} d1={data.d1} first={coach ? first : 'You'} rounds={w.rounds} puttBands={data.puttBands} phone />
+          <GameDetail s={data.stats} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} puttBands={data.puttBands} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState

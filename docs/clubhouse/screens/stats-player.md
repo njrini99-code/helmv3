@@ -4,7 +4,7 @@ Reference: design/handoff/Stats.html, stats.jsx, stats-game.jsx, stats-game.css,
 Route: /golf/dashboard/stats?player=<id> (coach) and /golf/dashboard/stats (player, own profile)
 Surface tag: `stats.player.<overview|game|rounds|development|focus>`
 
-Player permissions: a player always sees their own profile (`?player` is ignored), compared against D1 only,
+Player permissions: a player always sees their own profile (`?player` is ignored), compared against the Tour only,
 with no team figures, no roster pager and no focus-area editor. Reads go through the same RLS-scoped client
 and `getDetailedStats` access gate the current app uses.
 

@@ -20,7 +20,7 @@ Manifest:           config/clubhouse/pages/P005-stats-player.json
 ### Primary user
 
 A college golf coach reading one player before a conversation, a lineup call or a practice plan. The
-same page is a player's own view of their game against D1, without any teammate's numbers.
+same page is a player's own view of their game against the Tour, without any teammate's numbers.
 
 ### Job to be done
 
@@ -42,7 +42,7 @@ Share the link (coach) and open all rounds.
 
 1. Who and four numbers: scoring average, handicap, strokes gained a round, rounds this season.
 2. Overview: five figure cards, the scoring chart and strokes gained by leg, and the comparison table
-   (against the team for a coach, against D1 for a player).
+   (against the team for a coach, against the Tour for a player).
 3. Game detail (Scoring, Off the tee, Approach, Short game, Putting), Rounds, Development.
 
 ### User should notice first
@@ -58,7 +58,7 @@ load, or that no round has shots).
 ### Success looks like
 
 A coach reads a player's weakest leg and proposes a focus area for it in two minutes; a player sees
-their game against D1 and their coach's focus areas in one place.
+their game against the Tour and their coach's focus areas in one place.
 
 ## Semantic features
 
@@ -102,7 +102,7 @@ Implementation:  src/clubhouse/screens/stats (StatsPlayer, GameDetail, StatsPlay
                  src/clubhouse/data/stats-player.ts, route src/clubhouse/routes/stats.tsx
 Data:            stats_analytics and player_coachhelm_development: golf_players, golf_team_members,
                  golf_rounds, golf_round_stats_cache, shot-level stats through getDetailedStats,
-                 golf_pga_standards (D1), golf_player_focus_areas and golf_goals (read); a proposed focus
+                 golf_pga_standards (the Tour values), golf_player_focus_areas and golf_goals (read); a proposed focus
                  area is written to golf_player_focus_areas by createFocusArea
 ```
 

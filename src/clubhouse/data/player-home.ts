@@ -4,14 +4,14 @@ import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
 import { isFull18, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
-import { loadD1, loadRoundCache, tourForGender, type ChRoundCache } from './stats-common';
+import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } from './stats-common';
 
 /**
  * Player Home (Clubhouse; design/handoff/Player - Home.html and
  * Player - Home - Mobile.html). One server read, final data on first paint.
  *
  * The player's own rounds only: nothing here reads a teammate's scores (a
- * player is compared against D1, never against teammates, as on Stats). The
+ * player is compared against the Tour, never against teammates, as on Stats). The
  * week is the team's calendar without who else is invited. Every section
  * carries its own error flag, and a figure with no source is absent, never
  * approximated.
@@ -39,8 +39,8 @@ export interface ChPlayerLeg {
   lowerIsBetter: boolean;
   /** Strokes gained per round in this leg (three or more rounds with it); null otherwise. */
   sg: number | null;
-  /** The D1 average for the stat where golf_pga_standards has one; null draws no mark. */
-  d1: number | null;
+  /** The Tour's average for the stat where golf_pga_standards has one; null draws no mark. */
+  bench: number | null;
   /** Oldest to newest, one value per round, up to seven. */
   trend: number[];
   /** One plain line from the same rounds, or null. */
@@ -75,7 +75,7 @@ export interface ChPlayerHome {
   tour: ChSgTour;
   handicap: number | null;
   /** Null when the rounds didn't load. `cacheError`: scrambling and three-putts didn't load. */
-  legs: { rows: ChPlayerLeg[]; cacheError: boolean; d1Error: boolean } | null;
+  legs: { rows: ChPlayerLeg[]; cacheError: boolean; benchError: boolean } | null;
 }
 
 function log(read: string, error: unknown) {
@@ -109,16 +109,16 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const full = roundsRes.error ? [] : roundsRes.rounds.filter(isFull18);
   const window = full.slice(0, LEG_WINDOW);
 
-  const [latest, cache, d1, coachUserId] = await Promise.all([
+  const [latest, cache, bench, coachUserId] = await Promise.all([
     latestWithHoles(supabase, full, () => input.firstName),
     window.length ? loadRoundCache(supabase, window.map((r) => r.id), 'home') : Promise.resolve({ byRound: new Map<string, ChRoundCache>(), error: false }),
     // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
-    teamRes.data ? loadD1(supabase, tourForGender(teamRes.data.gender), 'home') : Promise.resolve(null),
+    teamRes.data ? loadTourBenchmarks(supabase, tourForGender(teamRes.data.gender), 'home') : Promise.resolve(null),
     coachFor(supabase, teamRes.data ?? null),
   ]);
 
   const season = summarizePlayer(full);
-  const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, d1, season.sgLegs), cacheError: cache.error, d1Error: d1 === null || d1.size === 0 };
+  const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full
     .slice(0, SCORING_MAX)
@@ -170,7 +170,7 @@ async function coachFor(
 type Pick = { made: number; total: number } | null;
 
 /** The four parts of the game over the window: a weighted rate (never a mean of percentages), a per-round trend, and one line. */
-export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, d1: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs']): ChPlayerLeg[] {
+export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, bench: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs']): ChPlayerLeg[] {
   const oldestFirst = [...window].reverse();
   const rateOf = (pick: (r: ChRound) => Pick) => {
     let made = 0;
@@ -214,7 +214,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, d1:
     { saves: 0, att: 0 },
   );
   const rounds = (k: number) => `${k} ${k === 1 ? 'round' : 'rounds'}`;
-  const row = (key: ChLegKey, value: number | null, unit: '%' | '', digits: number, lowerIsBetter: boolean, legSg: number | null, bench: number | null, trend: number[], note: string | null): ChPlayerLeg => ({
+  const row = (key: ChLegKey, value: number | null, unit: '%' | '', digits: number, lowerIsBetter: boolean, legSg: number | null, benchValue: number | null, trend: number[], note: string | null): ChPlayerLeg => ({
     key,
     label: LEG_LABELS[key][0],
     stat: LEG_LABELS[key][1],
@@ -223,13 +223,13 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, d1:
     digits,
     lowerIsBetter,
     sg: legSg,
-    d1: bench,
+    bench: benchValue,
     trend,
     note,
   });
   return [
-    row('tee', tee.value, '%', 0, false, sg.tee, d1?.get('fairway_pct') ?? null, trendOf(fairways), tee.total ? `${tee.made} of ${tee.total} fairways in the last ${rounds(n)}` : null),
-    row('approach', gir.value, '%', 0, false, sg.approach, d1?.get('gir_pct') ?? null, trendOf(greens), gir.total ? `${gir.made} of ${gir.total} greens in the last ${rounds(n)}` : null),
+    row('tee', tee.value, '%', 0, false, sg.tee, bench?.get('fairway_pct') ?? null, trendOf(fairways), tee.total ? `${tee.made} of ${tee.total} fairways in the last ${rounds(n)}` : null),
+    row('approach', gir.value, '%', 0, false, sg.approach, bench?.get('gir_pct') ?? null, trendOf(greens), gir.total ? `${gir.made} of ${gir.total} greens in the last ${rounds(n)}` : null),
     row(
       'short',
       scr.value,
@@ -237,7 +237,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, d1:
       0,
       false,
       sg.around,
-      d1?.get('scrambling_pct') ?? null,
+      bench?.get('scrambling_pct') ?? null,
       trendOf(scrambles),
       scr.total ? [`Up and down ${scr.made} of ${scr.total}`, sand.att ? `sand saves ${sand.saves} of ${sand.att}` : null].filter(Boolean).join(' · ') : null,
     ),
@@ -248,7 +248,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, d1:
       1,
       true,
       sg.putting,
-      d1?.get('putts_per_round') ?? null,
+      bench?.get('putts_per_round') ?? null,
       window
         .map((r) => r.total_putts)
         .filter((v): v is number => v != null)

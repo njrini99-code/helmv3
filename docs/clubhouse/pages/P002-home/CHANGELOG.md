@@ -2,6 +2,17 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The Tour is the only benchmark (Q-88): no D1 anywhere
+
+```text
+PR/commit:      agent/clubhouse
+Data impact:    none
+```
+
+- **Issue.** The player Home's four parts of the game drew a D1 mark and "D1 60" under each bar.
+- **Fix.** The mark is the Tour's average from `golf_pga_standards.pga_tour_value` for the team's own tour ("Tour 66"); a stat the tour has no value for (fairways, scrambling overall, putts per round) still draws no mark. `ChPlayerLeg.d1` is `bench`, `d1Error` is `benchError`, and the read is logged as `tourBenchmarks`.
+- **Checked.** strokes-gained.test and player-home.test; a mutation back to "D1" is caught.
+
 ## 2026-09-30 — The player's strokes gained says vs Tour, not vs D1
 
 ```text

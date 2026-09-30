@@ -34,7 +34,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5205 | Game detail crashes | "Game detail couldn't be shown." … | `SectionBoundary stats.player.game` | stats-player.test › CH-5205 |
 | CH-5206 | The rounds table crashes | "The rounds table couldn't be shown." … | `SectionBoundary stats.player.rounds` | stats-player.test › CH-5206 |
 | CH-5207 | Development crashes | "Development couldn't be shown." … | `SectionBoundary stats.player.development` | stats-player.test › CH-5207 |
-| CH-5208 | D1 benchmarks don't load, or the team's own row (its men's or women's tour) doesn't | With no benchmark at all the profile leaves the D1 column out and each figure's context reads the sample ("10 rounds") instead of "vs. D1"; when only some benchmarks exist the rest of the column reads "—". An unknown tour reads no benchmark, so a women's team is never graded against the men's | `loadPlayerProfile`; logged `clubhouse.stats.d1Benchmarks` / `clubhouse.stats.team` | stats-player.test › CH-5208 |
+| CH-5208 | Tour benchmarks don't load, or the team's own row (its men's or women's tour) doesn't | With no benchmark at all the profile leaves the Tour column out and each figure's context reads the sample ("10 rounds") instead of "vs. Tour"; when only some benchmarks exist the rest of the column reads "—". An unknown tour reads no benchmark, so a women's team is never graded against the men's | `loadPlayerProfile`; logged `clubhouse.stats.tourBenchmarks` / `clubhouse.stats.team` | stats-player.test › CH-5208 |
 
 ## 53xx Empty
 

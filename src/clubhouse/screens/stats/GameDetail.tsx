@@ -83,20 +83,21 @@ function Panel({ title, note, wide, children }: { title: string; note?: string; 
 
 /**
  * Game detail: every section leads with one head-pro sentence built from the
- * numbers below it, then four figures against D1 where golf_pga_standards has
- * a D1 average, then the matched visuals. Missing shot data reads as a dash
+ * numbers below it, then four figures against the Tour where golf_pga_standards has
+ * a Tour average, then the matched visuals. Missing shot data reads as a dash
  * and a plain sentence, never a zero.
  */
 export function GameDetail({
   s,
-  d1,
+  bench,
   first,
   rounds,
   puttBands: shotBands = null,
   phone = false,
 }: {
   s: GolfStats;
-  d1: Record<string, number>;
+  /** The Tour's averages by metric id (the team's own tour). */
+  bench: Record<string, number>;
   first: string;
   rounds: number;
   /** Make rate by distance from the window's putts, in the bands Team stats grades (0-3 up to 25+). Without it the curve stops at 20 feet, where the shot stats end. */
@@ -137,7 +138,7 @@ export function GameDetail({
   };
   const par = (p: 3 | 4 | 5) => {
     const d = s.scoringByPar[`par${p}` as const];
-    return { par: p, avg: d.avgToPar == null ? null : p + d.avgToPar, d1: d1[`scoring_par_${p}`] ?? null };
+    return { par: p, avg: d.avgToPar == null ? null : p + d.avgToPar, bench: bench[`scoring_par_${p}`] ?? null };
   };
   const pars = [par(3), par(4), par(5)];
   const p5 = pars[2]!;
@@ -146,7 +147,7 @@ export function GameDetail({
   const fw = s.fairwayPercentage;
   const left = s.missLeftPct;
   const right = s.missRightPct;
-  const d1Pen = d1.penalty_rate_per_round ?? null;
+  const benchPen = bench.penalty_rate_per_round ?? null;
 
   // Approach
   const girBands: Array<[string, number | null]> = [
@@ -159,13 +160,13 @@ export function GameDetail({
     ['200+', s.girPct200_225 ?? s.girPct225Plus],
   ];
   const proxBands: Array<[string, number | null, number | null]> = [
-    ['50–75', s.approachProx30_75, d1.approach_proximity_50_125ft ?? null],
-    ['75–100', s.approachProx75_100, d1.approach_proximity_50_125ft ?? null],
-    ['100–125', s.approachProx100_125, d1.approach_proximity_50_125ft ?? null],
-    ['125–150', s.approachProx125_150, d1.approach_proximity_125_175ft ?? null],
-    ['150–175', s.approachProx150_175, d1.approach_proximity_125_175ft ?? null],
-    ['175–200', s.approachProx175_200, d1.approach_proximity_175_plus_ft ?? null],
-    ['200+', s.approachProx200_225 ?? s.approachProx225Plus, d1.approach_proximity_175_plus_ft ?? null],
+    ['50–75', s.approachProx30_75, bench.approach_proximity_50_125ft ?? null],
+    ['75–100', s.approachProx75_100, bench.approach_proximity_50_125ft ?? null],
+    ['100–125', s.approachProx100_125, bench.approach_proximity_50_125ft ?? null],
+    ['125–150', s.approachProx125_150, bench.approach_proximity_125_175ft ?? null],
+    ['150–175', s.approachProx150_175, bench.approach_proximity_125_175ft ?? null],
+    ['175–200', s.approachProx175_200, bench.approach_proximity_175_plus_ft ?? null],
+    ['200+', s.approachProx200_225 ?? s.approachProx225Plus, bench.approach_proximity_175_plus_ft ?? null],
   ];
   const worstProx = proxBands
     .filter(([, v, b]) => v != null && b != null)
@@ -175,23 +176,23 @@ export function GameDetail({
   const hasMiss = s.approachMissTotal > 0;
 
   // Short game
-  const d1ScrFw = d1.scrambling_pct_fairway ?? null;
-  const d1ScrRough = d1.scrambling_pct_rough ?? null;
-  const d1Sand = d1.scrambling_pct_sand ?? null;
+  const benchScrFw = bench.scrambling_pct_fairway ?? null;
+  const benchScrRough = bench.scrambling_pct_rough ?? null;
+  const benchSand = bench.scrambling_pct_sand ?? null;
 
   // Putting
   const puttBands = shotBands
-    ? shotBands.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, d1: b.d1, n: b.attempts }))
+    ? shotBands.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }))
     : [
-        { band: '0–3', value: s.puttMakePct0_3, d1: null, n: s.puttMakeCount0_3 },
-        { band: '3–5', value: s.puttMakePct3_5, d1: d1.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
-        { band: '5–10', value: s.puttMakePct5_10, d1: d1.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
-        { band: '10–15', value: s.puttMakePct10_15, d1: d1.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
-        { band: '15–20', value: s.puttMakePct15_20, d1: d1.putts_made_15_25ft_pct ?? null, n: s.puttMakeCount15_20 },
+        { band: '0–3', value: s.puttMakePct0_3, bench: null, n: s.puttMakeCount0_3 },
+        { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
+        { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
+        { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
+        { band: '15–20', value: s.puttMakePct15_20, bench: bench.putts_made_15_25ft_pct ?? null, n: s.puttMakeCount15_20 },
       ];
   const worstPutt = puttBands
-    .filter((b) => b.value != null && b.d1 != null && b.n >= 10)
-    .sort((a, b) => (a.value! - a.d1!) - (b.value! - b.d1!))[0];
+    .filter((b) => b.value != null && b.bench != null && b.n >= 10)
+    .sort((a, b) => (a.value! - a.bench!) - (b.value! - b.bench!))[0];
   const onePuttRate = s.holesPlayed ? (s.onePuttsTotal / s.holesPlayed) * 100 : null;
   const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {}).filter(([, v]) => v != null);
   const brk = (['straight', 'left_to_right', 'right_to_left'] as const).map((k) => ({
@@ -230,7 +231,7 @@ export function GameDetail({
           ['Scoring average', num(s.scoringAverage18 ?? s.scoringAverage), 'Per 18 holes', undefined],
           ['Birdies / round', num(s.birdiesPerRound), null, undefined],
           ['Bogeys / round', num(s.bogeysPerRound), null, undefined],
-          ['Doubles or worse', num(s.doublePlusPerRound), d1.big_number_rate != null ? `D1 ${d1.big_number_rate}% of holes` : null, undefined],
+          ['Doubles or worse', num(s.doublePlusPerRound), bench.big_number_rate != null ? `Tour ${bench.big_number_rate}% of holes` : null, undefined],
         ]}
       >
         <Panel title="What an average round looks like" wide note="Holes per round by result. Doubles or worse are the quickest place to save strokes.">
@@ -257,7 +258,7 @@ export function GameDetail({
         figs={[
           ['Fairways hit', pct(fw), null, undefined],
           ['Driver distance', s.drivingDistanceDriverOnly == null ? NO_DATA : `${Math.round(s.drivingDistanceDriverOnly)} yds`, 'Average drive', undefined],
-          ['Penalties / round', num(s.penaltiesPerRound), d1Pen != null ? `D1 ${d1Pen}` : null, tone(s.penaltiesPerRound, d1Pen, true)],
+          ['Penalties / round', num(s.penaltiesPerRound), benchPen != null ? `Tour ${benchPen}` : null, tone(s.penaltiesPerRound, benchPen, true)],
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4 ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
         ]}
       >
@@ -286,21 +287,21 @@ export function GameDetail({
           s.girPercentage == null
             ? 'No approach shots are logged in this window.'
             : worstProx
-              ? `${first} hits ${Math.round(s.girPercentage)}% of greens. The biggest gap to D1 is from ${worstProx[0]} yards, finishing ${Math.round(worstProx[1]!)} feet away against ${Math.round(worstProx[2]!)}.`
+              ? `${first} hits ${Math.round(s.girPercentage)}% of greens. The biggest gap to the Tour is from ${worstProx[0]} yards, finishing ${Math.round(worstProx[1]!)} feet away against ${Math.round(worstProx[2]!)}.`
               : `${first} hits ${Math.round(s.girPercentage)}% of greens in regulation.`
         }
         figs={[
-          ['Greens in regulation', pct(s.girPercentage), d1.gir_pct != null ? `D1 ${d1.gir_pct}%` : null, tone(s.girPercentage, d1.gir_pct)],
+          ['Greens in regulation', pct(s.girPercentage), bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)],
           ['Proximity · all', s.approachProximityAvg == null ? NO_DATA : `${Math.round(s.approachProximityAvg)} ft`, 'Every approach', undefined],
           ['Missed short', hasMiss ? pct(missShort) : NO_DATA, 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
         ]}
       >
         <Panel title="Greens hit by distance" wide note="Bars are the GIR rate from each band.">
-          <Ladder rows={girBands.map(([band, value]) => ({ band, value, d1: null }))} unit="%" label="Yards to the pin" />
+          <Ladder rows={girBands.map(([band, value]) => ({ band, value, bench: null }))} unit="%" label="Yards to the pin" />
         </Panel>
-        <Panel title="Proximity to the hole" wide note="Average finish in feet; shorter is better. The dashed tick is the D1 average for that range.">
-          <Ladder rows={proxBands.map(([band, value, b]) => ({ band, value, d1: b }))} unit={'′'} label="Yards to the pin" invert />
+        <Panel title="Proximity to the hole" wide note="Average finish in feet; shorter is better. The dashed tick is the Tour average for that range.">
+          <Ladder rows={proxBands.map(([band, value, b]) => ({ band, value, bench: b }))} unit={'′'} label="Yards to the pin" invert />
         </Panel>
         <Panel title="Where missed greens finish" note={hasMiss ? `Most misses finish ${missShort >= missLong ? 'short' : 'long'}. ${missShort >= missLong ? 'Taking one more club is the simplest change.' : 'Clubbing down is worth a look.'}` : undefined}>
           {hasMiss ? (
@@ -348,9 +349,9 @@ export function GameDetail({
         }
         figs={[
           ['Scrambling', pct(s.scramblingPercentage), null, undefined],
-          ['Sand saves', pct(s.sandSavePercentage), d1Sand != null ? `D1 ${d1Sand}%` : null, tone(s.sandSavePercentage, d1Sand)],
+          ['Sand saves', pct(s.sandSavePercentage), benchSand != null ? `Tour ${benchSand}%` : null, tone(s.sandSavePercentage, benchSand)],
           ['Inside 10 yds', pct(s.scramblingPct0_10), 'Up and down', undefined],
-          ['From the rough', pct(s.scramblingPctRough), d1ScrRough != null ? `D1 ${d1ScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, d1ScrRough)],
+          ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `Tour ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
         ]}
       >
         <Panel title="Up and down by lie" note="Counts are attempts in the window.">
@@ -359,9 +360,9 @@ export function GameDetail({
             max={100}
             rows={[
               { label: 'Fringe', value: s.scramblingPctFringe, sub: `${s.scrambleFringeAttempts} attempts` },
-              { label: 'Fairway', value: s.scramblingPctFairway, sub: `${s.scrambleFairwayAttempts} attempts${d1ScrFw != null ? ` · D1 ${d1ScrFw}%` : ''}` },
-              { label: 'Rough', value: s.scramblingPctRough, sub: `${s.scrambleRoughAttempts} attempts${d1ScrRough != null ? ` · D1 ${d1ScrRough}%` : ''}` },
-              { label: 'Sand', value: s.scramblingPctSand, sub: `${s.scrambleSandAttempts} attempts${d1Sand != null ? ` · D1 ${d1Sand}%` : ''}` },
+              { label: 'Fairway', value: s.scramblingPctFairway, sub: `${s.scrambleFairwayAttempts} attempts${benchScrFw != null ? ` · Tour ${benchScrFw}%` : ''}` },
+              { label: 'Rough', value: s.scramblingPctRough, sub: `${s.scrambleRoughAttempts} attempts${benchScrRough != null ? ` · Tour ${benchScrRough}%` : ''}` },
+              { label: 'Sand', value: s.scramblingPctSand, sub: `${s.scrambleSandAttempts} attempts${benchSand != null ? ` · Tour ${benchSand}%` : ''}` },
             ]}
           />
         </Panel>
@@ -387,8 +388,8 @@ export function GameDetail({
         lead={
           s.totalPutts === 0
             ? 'No putts are logged in this window.'
-            : worstPutt && worstPutt.value! < worstPutt.d1!
-              ? `From ${worstPutt.band} feet ${first} makes ${Math.round(worstPutt.value!)}%. The D1 rate is ${Math.round(worstPutt.d1!)}%, so that range costs the most.`
+            : worstPutt && worstPutt.value! < worstPutt.bench!
+              ? `From ${worstPutt.band} feet ${first} makes ${Math.round(worstPutt.value!)}%. The Tour rate is ${Math.round(worstPutt.bench!)}%, so that range costs the most.`
               : `${first} averages ${num(s.puttsPerGir, 2)} putts per green hit and ${num(s.threePuttsPerRound)} three-putts a round.`
         }
         figs={[
@@ -398,7 +399,7 @@ export function GameDetail({
           ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${s.firstPuttDistanceAvg.toFixed(1)} ft`, 'Average start', undefined],
         ]}
       >
-        <Panel title="Make rate by distance" wide note={`Green line is the player, dashed champagne is D1. Each band needs 10 or more putts to grade.${shotBands ? ' Counts are putts logged with a distance.' : ''}`}>
+        <Panel title="Make rate by distance" wide note={`Green line is the player, dashed champagne is the Tour. Each band needs 10 or more putts to grade.${shotBands ? ' Counts are putts logged with a distance.' : ''}`}>
           <MakeCurve bands={puttBands} />
         </Panel>
         <Panel title="How putts miss" wide>

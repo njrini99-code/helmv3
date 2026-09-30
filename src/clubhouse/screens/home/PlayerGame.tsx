@@ -20,7 +20,7 @@ const LEG_ICON: Record<ChLegKey, LucideIcon> = { tee: MoveUpRight, approach: Cro
  * The player's game on Home (Player - Home.html `DetailedStats`, and the phone's
  * Scoring and "By part of the game"): the scoring line for the last 5, 10 or 20
  * rounds against par and the player's own mean, four figures, one sentence,
- * then the four parts of the game against D1 where a benchmark exists.
+ * then the four parts of the game against the Tour where a benchmark exists.
  */
 export function PlayerGame({ data, phone = false }: { data: ChPlayerHome; phone?: boolean }) {
   return (
@@ -226,8 +226,8 @@ function Legs({ legs, tour, phone }: { legs: ChPlayerHome['legs']; tour: ChSgTou
       <div className="ch-ph-game__h">
         <div>
           <h2 id="ch-ph-legs">By part of the game</h2>
-          {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour (D1 has none), and D1 marks the stats where a benchmark exists. */}
-          <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs} · D1 marks the stats</span>
+          {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
+          <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs}</span>
         </div>
       </div>
       {legs.cacheError && <RefreshNotice code="CH-2216" title="Some of your figures didn't load." body="Scores, greens and putts are right; scrambling is missing. The error has been reported." />}
@@ -248,7 +248,7 @@ function Leg({ g }: { g: ChPlayerLeg }) {
   const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : v.toFixed(g.digits));
   // The benchmark bar: a share of the scale for percentages, or a putts band (fewer is further right).
   const pos = (v: number) => (g.unit === '%' ? Math.max(0, Math.min(100, v)) : Math.max(0, Math.min(100, ((36 - v) / (36 - 26)) * 100)));
-  const better = g.value != null && g.d1 != null ? (g.lowerIsBetter ? g.value <= g.d1 : g.value >= g.d1) : null;
+  const better = g.value != null && g.bench != null ? (g.lowerIsBetter ? g.value <= g.bench : g.value >= g.bench) : null;
   return (
     <article className="ch-ph-leg" aria-labelledby={`ch-ph-leg-${g.key}`}>
       <div className="ch-ph-leg__h">
@@ -268,15 +268,15 @@ function Leg({ g }: { g: ChPlayerLeg }) {
         <em>{g.stat}</em>
         <Spark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />
       </div>
-      {g.value != null && g.d1 != null && (
+      {g.value != null && g.bench != null && (
         <div className="ch-ph-bench">
           <span className="ch-ph-bench__t" aria-hidden="true">
             <i className={better ? 'is-gain' : 'is-loss'} style={{ width: `${pos(g.value)}%` }} />
-            <em style={{ left: `${pos(g.d1)}%` }} />
+            <em style={{ left: `${pos(g.bench)}%` }} />
           </span>
           <span className="ch-ph-bench__k ch-num">
             <span>You {fmt(g.value)}</span>
-            <span>D1 {fmt(g.d1)}</span>
+            <span>Tour {fmt(g.bench)}</span>
           </span>
         </div>
       )}

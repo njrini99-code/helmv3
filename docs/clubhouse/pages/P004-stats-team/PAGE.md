@@ -100,7 +100,7 @@ Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/stats (StatsTeam on the server, StatsTeamIslands as client
                  islands, StatsTeamPhone), loader src/clubhouse/data/stats-team.ts
 Data:            stats_analytics: golf_teams, golf_team_members, golf_players, golf_rounds,
-                 golf_round_stats_cache, golf_shots (putts), golf_pga_standards (D1)
+                 golf_round_stats_cache, golf_shots (putts), golf_pga_standards (the Tour values)
 ```
 
 ## Current status

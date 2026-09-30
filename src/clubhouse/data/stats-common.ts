@@ -129,21 +129,20 @@ export function perRound(rows: ChRoundCache[], key: keyof ChRoundCache): number 
 
 export type ChTour = 'pga' | 'lpga';
 
-/** D1 averages from golf_pga_standards (div1_avg_value), for the team's tour. */
-export async function loadD1(supabase: Supabase, tour: ChTour, surface: string): Promise<Map<string, number>> {
+/**
+ * The Tour's average for each metric from golf_pga_standards (`pga_tour_value`, which holds the LPGA
+ * value on an LPGA row), for the team's own tour only: a women's team is never graded against the
+ * men's values, and a metric the tour has no value for has no benchmark (Q-88: never D1, always Tour).
+ */
+export async function loadTourBenchmarks(supabase: Supabase, tour: ChTour, surface: string): Promise<Map<string, number>> {
   const out = new Map<string, number>();
-  const { data, error } = await supabase
-    .from('golf_pga_standards')
-    .select('metric_id, div1_avg_value, tour')
-    .in('tour', tour === 'lpga' ? ['lpga', 'pga'] : ['pga']);
+  const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
   if (error) {
-    chLogServer(surface, 'd1Benchmarks', error);
+    chLogServer(surface, 'tourBenchmarks', error);
     return out;
   }
-  // LPGA rows win for a women's team; PGA fills any gap (same rule as stats-leak-maps).
-  const rows = [...(data ?? [])].sort((a, b) => (a.tour === tour ? 1 : 0) - (b.tour === tour ? 1 : 0));
-  for (const r of rows) {
-    const v = r.div1_avg_value == null ? null : Number(r.div1_avg_value);
+  for (const r of data ?? []) {
+    const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
     if (v != null && Number.isFinite(v)) out.set(r.metric_id, v);
   }
   return out;
@@ -175,10 +174,11 @@ export interface ChPuttBand {
   label: string;
   made: number;
   attempts: number;
-  d1: number | null;
+  /** The Tour's make rate for the band; null where the tour has none. */
+  bench: number | null;
 }
 
-/** Make rate by distance: the bands golf_pga_standards grades (3-5 up to 25+), so a band's D1 mark is the same distances. */
+/** Make rate by distance: the bands golf_pga_standards grades (3-5 up to 25+), so a band's Tour mark is the same distances. */
 export const PUTT_BANDS: Array<{ label: string; lo: number; hi: number; metric: string | null }> = [
   { label: '0–3 ft', lo: 0, hi: 3, metric: null },
   { label: '3–5 ft', lo: 3, hi: 5, metric: 'putts_made_3_5ft_pct' },
@@ -188,11 +188,11 @@ export const PUTT_BANDS: Array<{ label: string; lo: number; hi: number; metric: 
   { label: '25+ ft', lo: 25, hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
 ];
 
-/** The putts in `rows` counted into the bands, with each band's D1 make rate where there is one. */
-export function bandPutts(rows: ChPuttRow[], d1: Map<string, number>): ChPuttBand[] {
+/** The putts in `rows` counted into the bands, with each band's Tour make rate where there is one. */
+export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>): ChPuttBand[] {
   return PUTT_BANDS.map((b) => {
     const inBand = rows.filter((r) => r.feet >= b.lo && r.feet < b.hi);
-    return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, d1: b.metric ? (d1.get(b.metric) ?? null) : null };
+    return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, bench: b.metric ? (bench.get(b.metric) ?? null) : null };
   });
 }
 

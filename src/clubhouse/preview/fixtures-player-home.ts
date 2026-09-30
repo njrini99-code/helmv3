@@ -19,7 +19,7 @@ const SCORES: Array<[string, number]> = [
   ['Sep 9', 71], ['Sep 13', 70], ['Sep 20', 70], ['Sep 23', 71], ['Sep 29', 70], ['Oct 4', 71], ['Oct 8', 70], ['Oct 11', 69], ['Oct 11', 70], ['Oct 12', total(oak)],
 ];
 
-const leg = (key: ChPlayerLeg['key'], label: string, stat: string, value: number, unit: '%' | '', digits: number, lowerIsBetter: boolean, sg: number, d1: number | null, trend: number[], note: string): ChPlayerLeg => ({
+const leg = (key: ChPlayerLeg['key'], label: string, stat: string, value: number, unit: '%' | '', digits: number, lowerIsBetter: boolean, sg: number, bench: number | null, trend: number[], note: string): ChPlayerLeg => ({
   key,
   label,
   stat,
@@ -28,7 +28,7 @@ const leg = (key: ChPlayerLeg['key'], label: string, stat: string, value: number
   digits,
   lowerIsBetter,
   sg,
-  d1,
+  bench,
   trend,
   note,
 });
@@ -81,10 +81,10 @@ export const PREVIEW_PLAYER_HOME: ChPlayerHome = {
   handicap: -0.8,
   legs: {
     cacheError: false,
-    d1Error: false,
+    benchError: false,
     rows: [
       leg('tee', 'Off the tee', 'Fairways hit', 71, '%', 0, false, 0.8, null, [62, 64, 66, 65, 68, 70, 71], '101 of 142 fairways in the last 10 rounds'),
-      leg('approach', 'Approach', 'Greens in regulation', 74, '%', 0, false, 0.6, 60, [64, 66, 65, 70, 72, 71, 74], '133 of 180 greens in the last 10 rounds'),
+      leg('approach', 'Approach', 'Greens in regulation', 74, '%', 0, false, 0.6, 66, [64, 66, 65, 70, 72, 71, 74], '133 of 180 greens in the last 10 rounds'),
       leg('short', 'Short game', 'Scrambling', 62, '%', 0, false, 0.3, null, [54, 58, 55, 60, 57, 61, 62], 'Up and down 29 of 47 · sand saves 6 of 11'),
       leg('putting', 'Putting', 'Putts per round', 29.0, '', 1, true, 0.1, null, [29.4, 29.8, 29.1, 29.6, 28.9, 29.3, 29.0], '1.0 three-putts a round'),
     ],
@@ -113,7 +113,7 @@ export const PREVIEW_PLAYER_HOME_EMPTY: ChPlayerHome = {
   latest: { rounds: [], error: false, holesError: false },
   scoring: { points: [], error: false },
   sgPerRound: null,
-  legs: { rows: PREVIEW_PLAYER_HOME.legs!.rows.map((l) => ({ ...l, value: null, sg: null, trend: [], note: null })), cacheError: false, d1Error: false },
+  legs: { rows: PREVIEW_PLAYER_HOME.legs!.rows.map((l) => ({ ...l, value: null, sg: null, trend: [], note: null })), cacheError: false, benchError: false },
 };
 
 /** Rounds, but nothing on the calendar ahead. */

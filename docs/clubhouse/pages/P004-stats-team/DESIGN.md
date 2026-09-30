@@ -101,14 +101,14 @@ Only data the app has, stated where the design differs (D-26, Q-68, and the fide
 PROGRESS.md):
 
 - The strokes gained line is measured against the tour baseline (the women's baseline for a women's
-  team), not the handoff's "vs. D1"; the subtitle says so. D1 is shown only where
+  team), not the handoff's "vs. D1" (there is no D1 benchmark: Q-88); the subtitle says so. The Tour average is shown only where
   `golf_pga_standards` has the metric: greens in regulation and putting make rates.
-- The putting rings use the D1 seed's bands (0 to 3, 3 to 5, 5 to 10, 10 to 15, 15 to 25 feet); putts
+- The putting rings use the Tour benchmark's bands (0 to 3, 3 to 5, 5 to 10, 10 to 15, 15 to 25 feet); putts
   of 25 feet and longer are read but not drawn and not counted in the meta.
 - The Scoring lens has no Season best marker, because the chart shows at most the last ten weeks.
 - A player's row counts their rounds in the window, not the season.
 - Not shown, no source: the prototype's prediction card and its "vs. tour" figures; birdies per round
-  and overall scrambling have no D1 metric. The phone's player rows carry no handicap (the team
+  and overall scrambling have no Tour metric. The phone's player rows carry no handicap (the team
   loader does not read it).
 
 ## Existing backend capabilities used
@@ -143,7 +143,7 @@ tab), D-70 (haptics), D-71 (page empty state), Q-68 (phone gaps, built on the re
 - Bars (the phone's legs and total, the grid's tint) are scaled to the data: the largest value shown, rounded
   up to a whole stroke, at least 1, symmetric about zero. Gains green, losses amber.
 - The notes read a change as a change ("up about 1.0 a round since Aug 30").
-- Stored strokes gained has no D1 value (`golf_pga_standards` has none); it is always labelled against the Tour.
+- Every benchmark is the Tour's (`golf_pga_standards.pga_tour_value`, the LPGA row for a women's team); there is no D1 benchmark anywhere in Clubhouse (Q-88). Stored strokes gained is measured against the Tour and is always labelled so.
 
 ## Explicit non-goals
 

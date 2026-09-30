@@ -106,9 +106,9 @@ rounds table is a named region that takes focus so the arrow keys scroll it. Axe
 
 Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 
-- D1 is shown only where `golf_pga_standards` has the metric (greens in regulation, the approach
+- The Tour average is shown only where `golf_pga_standards` has the metric (greens in regulation, the approach
   proximity and scrambling bands, the putting make-rate bands and a few scoring rates). The prototype's
-  prediction card, its "vs tour" figures for stats other than strokes gained (which has a Tour baseline) and D1 marks for fairways and putts per round have no source and
+  prediction card, its "vs tour" figures for stats other than strokes gained (which has a Tour baseline) and Tour marks for fairways and putts per round have no source and
   are left out.
 - The scoring chart has no Season best marker and no par meta; both wait for season-best and course-par
   data per window.
@@ -117,7 +117,7 @@ Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 
 ### Strokes gained (2026-09-30)
 
-- Stored strokes gained is measured against the Tour and there is no D1 value: every figure says "vs Tour"
+- Every benchmark is the Tour's; there is no D1 benchmark anywhere in Clubhouse (Q-88). Stored strokes gained is measured against the Tour: every figure says "vs Tour"
   ("vs the women's Tour baseline" for a women's team; `lib/sg.ts`).
 - The hero's SG / round and the phone's figure carry a change chip against the previous 10 rounds.
 - The phone has a Strokes gained panel (four legs and the total, on a scale the data sets); the Rounds tab
@@ -151,7 +151,7 @@ recommendation).
 
 ## Explicit non-goals
 
-The prediction card, "vs tour" figures, D1 marks with no source, a Season best marker on the scoring
+The prediction card, "vs tour" figures, Tour marks with no source, a Season best marker on the scoring
 chart, previous or next player and the comparison table on the phone.
 
 ## Fresh-build confirmation

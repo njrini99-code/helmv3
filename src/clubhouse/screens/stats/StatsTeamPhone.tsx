@@ -247,7 +247,7 @@ function Players({ data }: { data: ChTeamStats }) {
   );
 }
 
-/** Make rate by distance: a bar per band, the D1 rate as a mark, a band under it in amber. */
+/** Make rate by distance: a bar per band, the Tour rate as a mark, a band under it in amber. */
 function Putting({ data }: { data: ChTeamStats }) {
   if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn't load." body="Try again; the error has been reported." />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
@@ -262,13 +262,13 @@ function Putting({ data }: { data: ChTeamStats }) {
       <div className="ch-stm-putt">
         {bands.map((b) => {
           const rate = b.attempts ? (b.made / b.attempts) * 100 : null;
-          const low = rate != null && b.d1 != null && b.attempts >= 10 && rate < b.d1;
+          const low = rate != null && b.bench != null && b.attempts >= 10 && rate < b.bench;
           return (
             <div key={b.label} className="ch-stm-putt__r">
               <span className="ch-num">{b.label}</span>
               <span className="ch-stm-putt__bar" aria-hidden="true">
                 {rate != null && <i className={low ? 'is-low' : ''} style={{ width: `${rate}%` }} />}
-                {b.d1 != null && <em style={{ left: `${b.d1}%` }} />}
+                {b.bench != null && <em style={{ left: `${b.bench}%` }} />}
               </span>
               <b className={'ch-num' + (low ? ' ch-loss' : '')}>{rate == null ? NO_DATA : `${Math.round(rate)}%`}</b>
             </div>

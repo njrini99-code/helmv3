@@ -2,6 +2,18 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The Tour is the only benchmark (Q-88): no D1 anywhere
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (CH-5208's words change; its number doesn't)
+Data impact:    none (reads the existing `pga_tour_value` column; no migration)
+```
+
+- **Issue.** The comparison table read "You vs. D1" with a D1 column, Game detail's figures, proximity ticks, scrambling and sand-save rows, par tiles and the make-rate curve all graded against D1, and the notes said "the biggest gap to D1" and "the D1 rate is".
+- **Fix.** Every benchmark is the Tour's (`ChPlayerProfile.bench`, from `loadTourBenchmarks`; the team's own tour only). The table reads "You vs. the Tour" with a Tour column; Game detail says "Tour 66%", "the Tour average for that range", "The Tour rate is 35%". A metric the tour has no value for shows nothing. Home's leg marks say "Tour 66%" too (see the Home changelog).
+- **Checked.** strokes-gained.test (no profile tab, for a coach or a player, and no phone section chip renders D1, a division or college; the Tour's values for the team's tour only); mutations caught for each label and for the loader's column and fallback.
+
 ## 2026-09-30 — Strokes gained on the player profile: legs and total on the phone, legs in the Rounds table, comparison rows, change chips, and a banner that counts rounds with shots
 
 ```text

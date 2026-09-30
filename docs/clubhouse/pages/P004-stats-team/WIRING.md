@@ -85,7 +85,7 @@ There are no realtime hooks and no shared UI hooks: the page is read once per re
 | --- | --- | --- | --- |
 | loadTeamStats, loadPutts, seasonBests | `src/clubhouse/data/stats-team.ts` | Existing | the team's figures, trend, grid, putting and bests |
 | loadSeasonRounds, summarizePlayer | `src/clubhouse/data/season.ts` | Existing (shared with Home and Roster) | the season's countable rounds |
-| roundsInWindow, previousWindow, loadRoundCache, loadD1, parseWindow | `src/clubhouse/data/stats-common.ts` | Existing (shared with the profile) | windows, per-round figures, D1 benchmarks |
+| roundsInWindow, previousWindow, loadRoundCache, loadTourBenchmarks, parseWindow | `src/clubhouse/data/stats-common.ts` | Existing (shared with the profile) | windows, per-round figures, Tour benchmarks |
 | resolveClubhouseTeam | `src/clubhouse/routes/team.ts` | Existing | the caller's own team |
 
 No server action is called from this page.
@@ -104,7 +104,7 @@ Realtime: none
 Cache:    none; the page is read again on each window change and Try again
 RLS:      the caller's own database session throughout; no service role
 Read path:  loadTeamStats on the server, one pass (team and roster together, the rounds, then the round
-            figures, putts and D1 together)
+            figures, putts and Tour benchmarks together)
 Write path: none
 ```
 

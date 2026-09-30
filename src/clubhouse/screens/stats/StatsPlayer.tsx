@@ -275,7 +275,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 onRetry={() => router.refresh()}
               />
             ) : data.stats && data.stats.roundsPlayed > 0 ? (
-              <GameDetail s={data.stats} d1={data.d1} first={first} rounds={w.rounds} puttBands={data.puttBands} />
+              <GameDetail s={data.stats} bench={data.bench} first={first} rounds={w.rounds} puttBands={data.puttBands} />
             ) : (
               <div className="ch-st-card">
                 <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -314,7 +314,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
   const fig = (label: string, short: string) => {
     const c = cmp(label);
-    const ref = coach ? c?.team : c?.d1;
+    const ref = coach ? c?.team : c?.bench;
     return {
       label: short,
       value: c?.you == null ? NO_DATA : c.you.toFixed(c.digits),
@@ -322,7 +322,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       delta: c?.you != null && ref != null ? c.you - ref : null,
       deltaDigits: c?.digits ?? 0,
       lowerIsBetter: c?.lowerIsBetter,
-      context: ref == null ? `${w.rounds} rounds` : `vs. ${coach ? 'team' : 'D1'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
+      context: ref == null ? `${w.rounds} rounds` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
     };
   };
   const best = data.rounds.length ? Math.min(...data.rounds.map((r) => r.score)) : null;
@@ -366,8 +366,8 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
         </YardagePage>
       </div>
       <YardagePage
-        title={coach ? `${first} vs. team` : 'You vs. D1'}
-        meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `D1 averages where the benchmark exists · strokes gained ${baseline.vs}`}
+        title={coach ? `${first} vs. team` : 'You vs. the Tour'}
+        meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `Tour averages where the benchmark exists · strokes gained ${baseline.vs}`}
       >
         <FieldTable rows={data.comparisons} showTeam={coach} />
       </YardagePage>
