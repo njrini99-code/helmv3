@@ -1,4 +1,5 @@
 # Feature: Qualifiers
+<!-- schema-drift-absent: golf_clubhouse_ui, golf_qualifier_db_hardening, golf_qualifier_selection_reasons -->
 
 ## Status
 

@@ -554,6 +554,21 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/data/qualifiers.ts",
+        "pattern": "src/clubhouse/data/qualifiers.ts",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/routes/qualifiers.tsx",
+        "pattern": "src/clubhouse/routes/qualifiers.tsx",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/screens/qualifiers/**",
+        "pattern": "src/clubhouse/screens/qualifiers/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/admin/command-deck/**",
         "pattern": "src/components/admin/command-deck/**",
         "category": "components"
@@ -1193,6 +1208,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/qualifier-setup.ts",
+        "pattern": "src/app/golf/actions/qualifier-setup.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/recruit-documents-categories.ts",
         "pattern": "src/app/golf/actions/recruit-documents-categories.ts",
         "category": "actions"
@@ -1825,6 +1845,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/qualifier-selection-reasons.ts",
+        "pattern": "src/lib/golf/qualifier-selection-reasons.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/native/**",
         "pattern": "src/lib/native/**",
         "category": "services"
@@ -1972,6 +1997,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/qualifier-setup.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/stats-data.test.ts",
         "pattern": "src/app/golf/actions/__tests__/stats-data.test.ts",
         "category": "tests"
@@ -1999,6 +2029,11 @@
       {
         "id": "tests:src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
         "pattern": "src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/qualifiers.test.tsx",
+        "pattern": "src/clubhouse/__tests__/qualifiers.test.tsx",
         "category": "tests"
       },
       {
@@ -2209,6 +2244,11 @@
       {
         "id": "tests:supabase/tests/rls/golf_message_reactions.sql",
         "pattern": "supabase/tests/rls/golf_message_reactions.sql",
+        "category": "tests"
+      },
+      {
+        "id": "tests:supabase/tests/rls/golf_qualifier_db_hardening.sql",
+        "pattern": "supabase/tests/rls/golf_qualifier_db_hardening.sql",
         "category": "tests"
       },
       {
@@ -3292,6 +3332,10 @@
       {
         "id": "golf_player_anonymize_on_unlink",
         "definedIn": "supabase/migrations/20260819200000_preserve_golf_history_on_account_deletion.sql"
+      },
+      {
+        "id": "golf_qualifier_selection_reasons",
+        "definedIn": "supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql"
       },
       {
         "id": "golf_recruit_documents_assert_same_team",
@@ -15619,6 +15663,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -18958,6 +19007,18 @@
     },
     {
       "source": "qualifiers",
+      "target": "actions:src/app/golf/actions/qualifier-setup.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/qualifier-setup.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "actions:src/app/golf/actions/v3/qualifying.ts",
       "kind": "feature_action",
       "evidence": [
@@ -18975,6 +19036,11 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-setup.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/qualifying.ts",
           "anchor": "src/lib/admin/observed-action"
         }
@@ -18987,6 +19053,26 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
+          "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-setup.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-setup.ts",
+          "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-setup.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/qualifying.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -18994,6 +19080,42 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/qualifying.ts",
           "anchor": "src/lib/auth/verify-player-access"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "components:src/clubhouse/data/qualifiers.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/qualifiers.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "components:src/clubhouse/routes/qualifiers.tsx",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/routes/qualifiers.tsx"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "components:src/clubhouse/screens/qualifiers/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/qualifiers/**"
         }
       ]
     },
@@ -19041,6 +19163,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260621231000_qualifier_round_courses.sql"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "golf_qualifier_selection_reasons",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/golf/qualifier-selection-reasons.ts",
+          "anchor": "golf_qualifier_selection_reasons"
         }
       ]
     },
@@ -19130,6 +19264,18 @@
     },
     {
       "source": "qualifiers",
+      "target": "services:src/lib/golf/qualifier-selection-reasons.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/qualifier-selection-reasons.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "tests:e2e/golf-qualifier.spec.ts",
       "kind": "feature_test",
       "evidence": [
@@ -19142,6 +19288,30 @@
     },
     {
       "source": "qualifiers",
+      "target": "tests:src/app/golf/actions/__tests__/qualifier-setup.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/qualifier-setup.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "tests:src/clubhouse/__tests__/qualifiers.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/qualifiers.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "tests:src/test/coachhelm/v3/qualifying.test.ts",
       "kind": "feature_test",
       "evidence": [
@@ -19149,6 +19319,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/coachhelm/v3/qualifying.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "tests:supabase/tests/rls/golf_qualifier_db_hardening.sql",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "supabase/tests/rls/golf_qualifier_db_hardening.sql"
         }
       ]
     },
@@ -21351,6 +21533,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/message-attachments.ts",
           "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/message-attachments.ts",
+          "anchor": "src/lib/auth/session"
         },
         {
           "kind": "import_graph",
