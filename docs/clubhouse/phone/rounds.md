@@ -2,7 +2,7 @@
 
 Status: approved. The owner's v2 boards are the spec (D-22): `design/handoff/Player - Rounds.html` and `Player - Rounds - Mobile.html` (`rounds-flow.jsx`, `rounds-course.jsx`, `rounds-track.jsx`, `rounds-review.jsx`, `rounds-flow.css`, `rounds-track.css`, `rounds-data.js`). The whole project, its order and its engine seam are in `docs/clubhouse/ROUNDS_PLAN.md`. Gaps are Q-72.
 
-This file covers the library and a round's review, both built in `src/clubhouse/screens/rounds/`. Setup and Tracking get their sections here as they are built.
+This file covers the library, a round's review and the shot screen (Tracking), built in `src/clubhouse/screens/rounds/` (Tracking in `track/`). Setup gets its section when it is built.
 
 The route is `/golf/dashboard/rounds`, for players. It is the player's third phone tab (D-66). Coaches have no Rounds library in v2; `/golf/dashboard/rounds` keeps the Fairway page for them.
 
@@ -64,3 +64,29 @@ The review's states: the card didn't load (CH-11204), the shots didn't load (CH-
 - Below 640px the card and the season stack. The book drops the Out · In · Tot grid and the meters to a date tile, course and tee, and the to-par box. Group headers drop avg and low.
 - The tab bar stays. There are no sheets on the library; the discard question is a Modal, which is a bottom sheet on the phone.
 - The review's top bar is "Round", with "‹ Rounds" (or "‹ Stats" for a coach). The hero stacks, the score sits beside its to par, and the figures wrap to three columns. The card scrolls sideways inside its own frame, never the page.
+
+## Tracking: board to engine
+
+The board is `rounds-track.jsx` / `rounds-track.css`. The screen is Clubhouse's renderer of the shot screen: every rule and write is `useShotTracking`, the hook the Fairway screen runs (moved there unchanged, reviewed), and the gating is `shot-entry-rules`. Where the board and the hardened engine disagree, the engine wins:
+
+- Penalty works before the first shot (the board disables it). The penalty sheet asks which stroke went for out of bounds and lost ball, as the engine records them.
+- Undo asks first (the board undoes at once), and a failed undo says so (the Fairway screen showed nothing).
+- Putt tags are the engine's four (Short, Long, Low side, High side; the pairs exclude each other), not the board's eight.
+- The hole-out button says "Hole out · 4" and the engine saves the hole before the round moves on; while it saves the review shows "Saving hole 4…", and a failed save shows Try again. The board's "Next hole" is the round screen's job: it moves to the next hole itself once the hole is saved, so the review's button is "Back to hole N" only when the player looked back at a finished hole.
+- The hero has no hole handicap (the round's holes don't carry it). The map is a schematic (Q-72c).
+- Quick distances: on the green the Fairway entry's (5 to 40 ft, or 1 to 12 m); off it the board's (120 to 180 off the tee, 10 to 80 elsewhere), in meters their nearest round values.
+- Meters: the hero, the labels and the quick picks follow the player's unit; what is stored stays yards and feet. The change-a-shot sheet is in stored units, as in the Fairway sheet.
+
+The round's own sheets (Exit, Scorecard, Round complete, Submitting) are `round-sheets.tsx`, driven by props, because the round screen owns the round. The preview plays that part (`PreviewTracking`).
+
+## Tracking on the phone
+
+Board: `Player - Rounds - Mobile.html`, the tracking frames.
+
+- A round is full screen: the tab bar hides (`usePhoneTabsHidden`); Exit and the scorecard (an icon) are in the screen's own top bar.
+- The hole strip scrolls sideways at 34px a hole, edge to edge.
+- The hole stacks above the entry, with a smaller map and a 76px distance.
+- The action bar sits at the bottom of the entry, above the home indicator; quick distances fill the row at 44px.
+- Sheets (penalty, change a shot, leave this shot, exit, scorecard, round complete) are bottom sheets that drag to close.
+- Not yet: the numeric pad has no Done key on iOS (the Fairway screen adds a bar for it); an iPhone pass.
+

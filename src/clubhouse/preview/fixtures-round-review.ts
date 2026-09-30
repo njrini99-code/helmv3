@@ -145,4 +145,4 @@ export const PREVIEW_REVIEW_NO_HOLES = review({ holes: [], holesError: true });
 /** Posted with its score only: no holes, no recap, no notes. */
 export const PREVIEW_REVIEW_TOTAL_ONLY = review({ holes: [] }, { ai_recap: null, notes: null });
 export const PREVIEW_REVIEW_HOLE_BY_HOLE = review({ holes: toHoles(HOLES, []) });
-export { HOLES as PREVIEW_REVIEW_HOLES, SHOTS as PREVIEW_REVIEW_SHOTS };
+export { HOLES as PREVIEW_REVIEW_HOLES, SHOTS as PREVIEW_REVIEW_SHOTS, FINLEY as PREVIEW_FINLEY, PATTERN as PREVIEW_FINLEY_PATTERN };

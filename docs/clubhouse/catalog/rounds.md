@@ -5,11 +5,11 @@ Routes: `/golf/dashboard/rounds` (the library, for players) and `/golf/dashboard
 The library shows the round in progress, the season's scoring, then every posted round by month or by course. Review, New round and Continue are the next surfaces in the plan. Until each is rebuilt, its control is not drawn (`nav.rebuiltHref`). No control ever leads nowhere.
 
 Where things live:
-- Code: `src/clubhouse/screens/rounds/` (`RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton`, `RoundReview`, `ReviewLoadFailed`)
+- Code: `src/clubhouse/screens/rounds/` (`RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton`, `RoundReview`, `ReviewLoadFailed`), and `track/` for the shot screen (`RoundTracking` over the shared `useShotTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `labels`)
 - Loaders: `src/clubhouse/data/rounds.ts` (`loadRoundsLibrary`) and `round-review.ts` (`loadRoundReview`), with their pure steps in `rounds-shape.ts` and `round-review-shape.ts`
 - Routes: `src/clubhouse/routes/rounds.tsx`, `round-review.tsx`
-- Tests: `src/clubhouse/__tests__/rounds.test.tsx` (library) and `round-review.test.tsx` (review)
-- Preview: `/clubhouse-preview/rounds` (`?state=idle|many|empty|noseason|failed|unfinished-failed|failwrites`) and `/clubhouse-preview/round` (`?state=coach|noshots|noholes|total|holebyhole`)
+- Tests: `src/clubhouse/__tests__/rounds.test.tsx` (library), `round-review.test.tsx` (review) and `round-tracking.test.tsx` (the shot screen)
+- Preview: `/clubhouse-preview/rounds` (`?state=idle|many|empty|noseason|failed|unfinished-failed|failwrites`) `/clubhouse-preview/round` (`?state=coach|noshots|noholes|total|holebyhole`) and `/clubhouse-preview/track` (`?state=approach|putt|holed|checkpointfail|last|meters|exit|card|summary|submitting|posted|submitfail`)
 
 Discard goes through `useAction`, so these belong to the shell: offline refusal (CH-1903), slow saves (CH-1902), and the success and error haptics (D-70).
 
@@ -18,6 +18,24 @@ Discard goes through `useAction`, so these belong to the shell: offline refusal 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-11001 | Discarding an unfinished round fails | "Couldn't discard the round at Finley GC" + "It is still saved. Try again, or continue it instead." + Retry; the card stays. Done: "Round discarded", and the card goes, whether the discard came from the dialog or from Retry | `useAction('rounds.discard')` → `deleteInProgressRound`, then `clearEmergencySave` | rounds.test › CH-11001 |
+| CH-11002 | Undo fails (tracking) | Under the undo question: "Couldn't undo the shot. It's still on your card; try again." The shot stays | `UndoConfirm` reads the engine's `undoError` | round-tracking.test › CH-11002 |
+| CH-11003 | A holed-out hole doesn't save | "Hole 4 didn't save." + "Your shots are kept on this device. Try again to move on." (offline: "Reconnect, then try again.") + Try again; the round doesn't move on until it saves | `HoleReview`, `handleRetryHoleCheckpoint` | round-tracking.test › CH-11402 |
+| CH-11004 | Changing or deleting a shot fails | In the sheet: "Couldn't save the change." + the engine's reason; the sheet stays open with what was typed | `EditShotSheet` (`editError`) | preview |
+| CH-11005 | Submitting the round fails | "The round didn't submit" + "It's saved on this device. Check your connection, then try again." + Try again | `SubmitOverlay` | round-tracking.test › CH-11603 |
+| CH-11006 | Discarding from Exit fails | In the discard question: "Couldn't discard the round." + the reason; the round is kept | `ExitSheet` (`discardError`) | preview |
+
+## 111xx Validation (tracking)
+
+Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the same the Fairway entry runs, so the hint can never disagree with the button.
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-11101 | Next shot can't be recorded yet | Above the disabled button, the one thing missing: "Select a shot result", "Choose driver or non-driver", "Choose a miss direction", "Enter the distance remaining", "Green proximity must be under 150 ft", "Confirm the result above to continue"; the button names it (`aria-describedby`) | `nextShotBlocker` | round-tracking.test › CH-11101 |
+| CH-11102 | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) | A warning with Confirm; once confirmed "Confirmed. Tap Next shot when ready." Changing the result or distance asks again | `shotPlausibility`, `plausibilityKey` | round-tracking.test › CH-11102 |
+| CH-11103 | A shot that can't happen (a 540-yard drive onto the green) | The reason, with no Confirm; Next shot stays off | `shotPlausibility` | round-tracking.test › CH-11103 |
+| CH-11104 | The distance isn't a number | "Enter the distance as a number, like 150." under a red-ringed box | `ShotEntry` | round-tracking.test › CH-11104 |
+| CH-11105 | A changed shot breaks a shot rule | In the sheet: the reason; a block disables Save, a warning turns it into "Save anyway" | `EditShotSheet`, `editedShotIssues` | preview |
+| CH-11106 | A hole reaches shot 12 | "Shot 12 of 15. 3 more before the limit."; at 15 "This is the most strokes a hole can record (15). Hole out or pick up." | `ShotEntry` | round-tracking.test › CH-11106 |
 
 ## 112xx Didn't load
 
@@ -29,6 +47,7 @@ Discard goes through `useAction`, so these belong to the shell: offline refusal 
 | CH-11204 | A review's hole-by-hole card doesn't load | "The scorecard didn't load" + "The round's totals are right; the hole-by-hole card is missing. Try again in a moment." + Try again; the hero and figures still show | `RoundReview` | round-review.test › CH-11204 |
 | CH-11205 | A review's shots don't load | "The shots for this round didn't load" + "The scorecard is right; only the shot-by-shot detail is missing." + Try again, in the hole card | `HoleCard` | round-review.test › CH-11205 |
 | CH-11206 | The round itself doesn't load | "This round didn't load" + "Nothing is lost; the round is still saved. Try again in a moment." + Try again | `ReviewLoadFailed` | round-review.test › CH-11206 |
+| CH-11207 | The shot screen gets a hole that doesn't exist | "This hole didn't load. Go back to Rounds and continue the round from there." | `RoundTracking` | preview |
 
 ## 113xx Empty
 
@@ -41,24 +60,36 @@ Discard goes through `useAction`, so these belong to the shell: offline refusal 
 | CH-11305 | A round posted as a total, with no holes | "Posted as a total" + "This round was posted with its score only, so there's no hole-by-hole card or shots to show." The hero and figures still show | `EmptyState compact` in `RoundReview` | round-review.test › CH-11305 |
 | CH-11306 | A hole with a score but no shots tracked | "No shots were tracked on this hole. It was scored as a total." | `HoleCard` | round-review.test › CH-11306 |
 | CH-11307 | A round that doesn't exist, or one this viewer may not see | "This round isn't here" + (player) "It may have been deleted, or it isn’t one of your rounds." / (coach) "… or it was played by someone who isn’t on your team." + Go to your rounds / Go to Stats. The same page either way, so it never confirms someone else's round exists | `ClubhouseRoundReviewRoute` | round-review.test › CH-11307 |
+| CH-11308 | A hole with no shots yet | "No shots yet on this hole" in the shot log | `ShotLog` | round-tracking.test › CH-11502 |
 
 ## 114xx Loading
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-11401 | The page is on its way | The header, the round card beside the season card, the tools and four rows, in place | `RoundsSkeleton` via `rounds/loading.tsx` (`ClubhouseSwitch`) | rounds.test › CH-11401 |
+| CH-11402 | A holed-out hole is saving | "Saving hole 4…" with a spinner above its shots; the shots can't be changed until it lands | `HoleReview` | round-tracking.test › CH-11402 |
 
 ## 115xx Confirm
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-11501 | Discard on an unfinished round | "Discard this round?" + "Every shot from Finley GC on Oct 14 is deleted. This can't be undone." Keep it · Discard round (danger; "Discarding" while it runs) | `Modal` | rounds.test › CH-11501 |
+| CH-11502 | Undo | "Undo shot 2?" + the shot + Keep it / Undo | `UndoConfirm` | round-tracking.test › CH-11502 |
+| CH-11503 | Penalty | "Add a penalty stroke": out of bounds, water, unplayable, lost ball, each with what it means; for stroke and distance, which stroke went (the last one entered, or one from here not entered yet). Add waits for a choice; it works before the first shot | `PenaltySheet` over `usePenaltyHandler` | round-tracking.test › CH-11503 |
+| CH-11504 | Leaving a hole with a result picked but not recorded | "Leave this shot?" + Stay / Leave without it | `UnsavedSheet` | round-tracking.test › CH-11504 |
+| CH-11505 | A recorded shot is tapped | "Change shot 1": club, lie before, distances, result, miss, putt read; Delete asks "Delete shot 1?" first | `EditShotSheet` over `useEditShotModal` | round-tracking.test › CH-11505 |
+| CH-11506 | Exit | The round so far ("Finley GC · thru 3 · +1") + Save for later / Keep playing / Discard round | `ExitSheet` | round-tracking.test › CH-11506 |
+| CH-11507 | Discard round from Exit | "Discard this round?" + "It deletes every shot you entered at Finley GC. This can't be undone." + Keep it / Discard round | `ExitSheet` | round-tracking.test › CH-11506 |
+| CH-11508 | The last hole is saved | "Round complete": score and to par, putts, fairways, greens, front and back, the card; Back to hole 18 / Submit round | `RoundCompleteSheet` | round-tracking.test › CH-11508 |
+| CH-11509 | Scorecard, from the top bar | Both nines with par, score and putts, totals of what's scored, the current hole marked | `ScorecardSheet` | round-tracking.test › CH-11509 |
 
 ## 116xx Motion
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-11601 | Hovering a round that opens its review | It lifts 1px and its ring turns green (quick) | `a.ch-rd-sc:hover`, `--ch-dur-quick` | preview |
+| CH-11602 | The shot log opens | Its chevron turns (base); the rows show at once. No turn with reduced motion | `ShotLog`, `.ch-rt-log__chev` | preview |
+| CH-11603 | Submitting the round | A spinner (still with reduced motion) and what is really happening: "Saving 71 shots, updating your stats and writing the round recap." No timed fake steps (Q-72d). Posted: a tick, "Round posted", View round review | `SubmitOverlay` | round-tracking.test › CH-11603 |
 
 ## 117xx Haptics
 
@@ -68,6 +99,9 @@ Discard goes through `useAction`, so these belong to the shell: offline refusal 
 | CH-11702 | A round is opened | Selection | `RoundRow` | rounds.test › CH-11702 |
 | CH-11703 | Continue, Submit or Start a round is tapped | Light (press) | `UnfinishedCard`, the more-unfinished list | rounds.test › CH-11703 |
 | CH-11704 | A hole is picked on the review's card, or stepped with the arrows | Selection | `ReviewNine`, `RoundReview.step` | round-review.test › CH-11704 |
+| CH-11705 | A shot is recorded (Next shot or Hole out) | Medium, once (the Button's own tap is replaced); every choice in the panel is a selection tick | `ShotEntry`, `Seg` | preview |
+| CH-11706 | Going to another hole | Selection (the engine's navigation port) | `PORTS` in `RoundTracking` | preview |
+| CH-11707 | Undo, Delete shot, Discard round, Leave without it | Warning | `UndoConfirm`, `EditShotSheet`, `ExitSheet`, `UnsavedSheet` | preview |
 
 ## 118xx Accessibility
 
@@ -77,3 +111,13 @@ Discard goes through `useAction`, so these belong to the shell: offline refusal 
 | CH-11802 | The in-progress card's hole strip | The strip is hidden from screen readers; the card says the same in words: "+1 through 3", "Continue at hole 4" | `Strip aria-hidden` | rounds.test › CH-11802 |
 | CH-11803 | The season ribbon | One labelled image: "Strokes over par for your last 8 rounds, oldest to newest; average +1.9"; each bar has a title with its date, score and type | `Ribbon role="img"` | rounds.test › CH-11803 |
 | CH-11804 | The review's card | Two tables, captioned "Front nine" and "Back nine", with a button per hole number (pressed on the one shown); fairways and greens read "Hit", "Missed" or "Not applicable"; the hole card is a polite live region, so stepping holes is announced | `ReviewNine`, `HoleCard` | round-review.test › CH-11804 |
+| CH-11805 | The hole strip | Holes you can go to are buttons ("Go to hole 1, 4 strokes"); the rest are named marks ("Hole 2, current hole") | `TrackStrip` | round-tracking.test › CH-11805 |
+| CH-11806 | Choices in the entry and the sheets | Radio groups named for what they choose ("Shot result", "Where it missed the green"); putt tags are toggle buttons | `Seg`, the miss grid | preview |
+| CH-11807 | The distance box | Labelled by its section ("Distance remaining (yds)"), `aria-invalid` with its message when it isn't a number | `ShotEntry` | preview |
+| CH-11808 | The hole map | One image named in words ("Hole 4, par 4: 2 shots so far"), captioned Schematic | `HoleMap` | preview |
+
+## 119xx Network and UX
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-11901 | The round saves in the background | A small pill under the top bar: "Saving round", "Round saved", or "Not synced yet, retrying" (the engine retries on its own) | `RoundTracking` (`autoSaveStatus`) | preview |
