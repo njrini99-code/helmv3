@@ -195,7 +195,7 @@ function progressHistoryOf(raw: unknown): { at: string; value: number; note?: st
  * 3. Fetches CoachHelm dashboard data
  * 4. Renders the client dashboard component
  */
-export default async function PlayerCoachHelmPage({ searchParams }: { searchParams: Promise<{ view?: string; player?: string }> }) {
+export default async function PlayerCoachHelmPage({ searchParams }: { searchParams: Promise<{ view?: string; player?: string; c?: string }> }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 

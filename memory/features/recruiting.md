@@ -56,7 +56,13 @@ feature.
 - `src/app/golf/actions/recruiting.ts` — `getRecruits`, `createRecruit`,
   `updateRecruit`, `deleteRecruit`
 - `src/app/golf/actions/recruit-documents.ts` — `getRecruitDocuments`,
-  `uploadRecruitDocument`, `deleteRecruitDocument`, `getRecruitDocumentUrl`
+  `uploadRecruitDocument`, `deleteRecruitDocument`, `getRecruitDocumentUrl`, and
+  the Clubhouse page's two-step upload, `prepareRecruitDocumentUpload` and
+  `completeRecruitDocumentUpload` (the file goes to Storage on a signed URL, not
+  through a server action)
+- `src/app/golf/actions/recruit-documents-limits.ts` — the allowed types and
+  the size caps the page refuses with (25 MB; 100 MB for film), in a plain
+  module for the same reason
 - `src/app/golf/actions/recruit-documents-categories.ts` — the category
   vocabulary, split out because a `'use server'` file may only export async
   functions
@@ -67,7 +73,9 @@ feature.
 - `golf_recruits` — `first_name`, `last_name`, `email`, `phone`, `hometown`,
   `state`, `hs_class`, `status`, `notes`, `team_id`, `created_by`
 - `golf_recruit_documents`
-- storage bucket `recruit-documents` (private; 25 MB per file)
+- storage bucket `recruit-documents` (private; 25 MB per file, no video, until
+  `supabase/migrations/20260930140000_recruit_documents_film.sql` is applied:
+  then 100 MB and MP4, MOV and M4V too)
 
 ## Business Rules
 
@@ -79,7 +87,10 @@ feature.
 - The storage bucket is never public. Serve files through signed URLs only, and
   never widen the bucket to make a link work.
 - A failed row insert must remove the uploaded object. An orphaned file in a
-  private bucket is invisible and permanent.
+  private bucket is invisible and permanent. (The Clubhouse two-step upload
+  keeps the object when the row fails, on purpose, so a Retry with the same
+  upload id records it without sending a film twice; the object path is built on
+  the server, so it cannot point anywhere but this recruit's folder.)
 
 ## UI Contract
 
@@ -103,8 +114,9 @@ screen in place (`page.tsx` still redirects a player Home first); with it off
 nothing changes. Built from the owner's approved boards
 (`design/handoff/recruiting/`, Q-87); numbered states in
 `docs/clubhouse/catalog/recruiting.md` (CH-14xxx), page docs in
-`docs/clubhouse/pages/P014-recruiting/`. It uses the same server actions and
-changes no schema.
+`docs/clubhouse/pages/P014-recruiting/`. It uses the same server actions; the
+additions are an optional request id on `createRecruit` and the two-step upload,
+and one migration (film), written and not applied.
 
 - The pipeline's counts and shares are the whole list's (largest remainder, so
   they sum to 100) and do not follow the search; a stage there filters the
@@ -116,12 +128,20 @@ changes no schema.
   again, including the move and its undo.
 - Delete asks first and says that notes and documents go with the prospect; it
   does not ask for the name. Removing a document asks too.
-- A new prospect starts at Watched (the boards' Add dialog). `createRecruit`
-  has no idempotency key, so a Retry after a lost reply can add a prospect
-  twice.
+- A new prospect starts at Watched (the boards' Add dialog). An Add carries one
+  request id, kept across Retry, and `createRecruit` inserts under it: a repeat
+  after a lost reply finds the prospect it added (read back as this coach's, on
+  this team, with this name) instead of adding a second. The current page sends
+  no id and is unchanged.
 - The upload dialog asks for a title and a category and refuses, before sending,
-  a file over 25 MB or of a type the bucket does not take. The bucket has no
-  video type, so film is for stills and documents until that changes.
+  a file over its limit (25 MB; film, meaning MP4, MOV or M4V, 100 MB) or of a
+  type the bucket does not take. On desktop a file can be dropped on a
+  prospect's documents (one file at a time; a folder or several are refused);
+  the phone keeps the picker. The bytes go to Storage on a signed URL with real
+  progress, and what Storage itself turns down (the bucket not yet updated for
+  film, or a project-wide upload limit below 100 MB) is said in the dialog, not
+  as a generic failure. The project's upload limit could not be read when this
+  was written: confirm it is at least 100 MB before applying the migration.
 - Email and Call are `mailto:` and `tel:` links; nothing is sent from GolfHelm.
 - A prospect's documents are read when it opens; a failed read is a notice in
   that section and the rest of the prospect still works.
@@ -146,7 +166,10 @@ changes no schema.
 ## Tests To Prefer
 
 - `src/clubhouse/__tests__/recruiting.test.tsx` (the Clubhouse screen: rules,
-  loader, route and page, every write and its failure, the phone)
+  loader, route and page, every write and its failure, the phone) and
+  `recruiting-upload.test.tsx` (film, the file drop, the transfer, an Add that
+  cannot repeat); `src/test/golf/actions/recruit-document-upload.test.ts` and
+  `recruiting-create.test.ts` for the server side
 - `src/components/fairway/pages/recruiting/FairwayRecruitingPage.test.tsx`
 - RLS tests whenever team scoping or the document bucket policy changes.
 
