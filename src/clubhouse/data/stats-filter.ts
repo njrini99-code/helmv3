@@ -255,6 +255,14 @@ export function wholeRounds<T>(rows: T[], toRow: (t: T) => ChFilterRow): number 
   return rows.reduce((a, t) => a + toRow(t).holes / 18, 0);
 }
 
+/**
+ * Would choosing Both show a 9-hole round in this window (its time, type and course)? It is the test for the "9-hole rounds are here"
+ * hint, and it keeps a team whose only rounds this season are 9-hole ones out of the first-run page (D-71 counts rounds of either length).
+ */
+export function nineRoundsInWindow(f: ChFilter, options: { rounds: ChFilterRow[]; seasonStart: string }): boolean {
+  return candidates(options.rounds, withHoles(f, 'all'), options.seasonStart, (r) => r).some((r) => r.holes === 9);
+}
+
 /** The ten matching rounds before the newest ten, for "vs. previous 10"; null with no previous window or fewer than three whole rounds. */
 export function previousRounds<T>(rows: T[], f: ChFilter, seasonStart: string, toRow: (t: T) => ChFilterRow): T[] | null {
   if (!hasPrevious(f)) return null;

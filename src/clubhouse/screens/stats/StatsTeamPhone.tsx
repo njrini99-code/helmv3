@@ -17,6 +17,7 @@ import { SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
 import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow } from './StatsTeamIslands';
+import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { WindowSwitch } from './WindowSwitch';
@@ -34,6 +35,8 @@ type Sort = 'avg' | 'sg';
 export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const go = useGoWindow();
   const noRounds = !data.roundsError && data.roundCount === 0;
+  // D-71's first-run page is for no round of either length: a team with only 9-hole rounds gets CH-4301 and the CH-4319 hint instead.
+  const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
   return (
@@ -51,7 +54,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
       {noRounds && filtered ? (
         <TeamFilterEmpty />
-      ) : noRounds && data.window === 'season' ? (
+      ) : noRounds && data.window === 'season' && !nineOnly ? (
         <StatsTeamFirstRun />
       ) : noRounds ? (
         <EmptyState

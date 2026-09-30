@@ -171,7 +171,8 @@ One filter for every figure, shared with the player profile (P005) and kept in t
 - **States.** No round matches: "No rounds match these filters" with Clear filters (CH-4313), in place of the first-run
   page and of CH-4301 / CH-4302; fewer than three whole rounds: an early-read note above the figures (CH-4314); the sheet's
   range error (CH-4101), nothing to pick from (CH-4315), a list cut at 200 (CH-4316); nine-hole rounds in: the per-18 note
-  (CH-4318); no 18-hole round but 9-hole ones posted: where they are (CH-4319).
+  (CH-4318); no 18-hole round but 9-hole ones posted: where they are (CH-4319), above CH-4301. D-71's first-run page is for
+  no round of either length, so a team with only 9-hole rounds this season gets CH-4301 and the hint, not "No stats yet".
 - **Phone.** As on the profile: the bar under the window switch, the standard bottom sheet (the approved phone board has
   no filter; this is the owner's addition).
 

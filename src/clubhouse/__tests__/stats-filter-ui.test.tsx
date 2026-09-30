@@ -856,6 +856,24 @@ describe('Stats · holes', () => {
     expect(code('CH-5305')!.textContent).not.toMatch(/counting 9-hole/);
   });
 
+  it('D-71 a team whose only rounds this season are 9-hole ones gets CH-4301 and the hint, never the first-run page; with no round of either length it is still the first run', () => {
+    const noTeamRounds = { window: 'season' as const, roundCount: 0, roundsEffective: 0, grid: [], players: [], putting: null, bests: [] };
+    const first = showTeam(team({ ...noTeamRounds, filterOptions: opts(0) }));
+    expect(code('CH-4310')).not.toBeNull();
+    expect(code('CH-4319')).toBeNull();
+    first.unmount();
+    // A 9-hole round posted this season: stats exist, they are just not 18-hole ones.
+    const nineOnly = showTeam(team({ ...noTeamRounds, filterOptions: opts(1, { rounds: [pr(0, { holes: 9 })] }) }));
+    expect(code('CH-4310')).toBeNull();
+    expect(code('CH-4301')).not.toBeNull();
+    expect(code('CH-4319')).not.toBeNull();
+    nineOnly.unmount();
+    // Only 18-hole rounds loaded and none in the window (before the season): nothing 9-hole to point at, so the first run.
+    showTeam(team({ ...noTeamRounds, filterOptions: opts(1, { rounds: [pr(0, { holes: 9, date: `${y - 1}-09-01` })] }) }));
+    expect(code('CH-4310')).not.toBeNull();
+    expect(code('CH-4319')).toBeNull();
+  });
+
   it('CH-4319 CH-5324 no round of the default length but 9-hole ones posted: the page says where they are, and only then', () => {
     const noTeamRounds = { roundCount: 0, roundsEffective: 0, grid: [], players: [], putting: null, bests: [] };
     const withNine = opts(2, { rounds: [pr(0, { holes: 9 }), pr(1)] });
@@ -1049,6 +1067,12 @@ describe('Stats · holes · phone', () => {
     const { unmount } = showTeam(team({ roundCount: 0, roundsEffective: 0, grid: [], players: [], putting: null, bests: [], filterOptions: withNine }));
     expect(code('CH-4319')!.textContent).toMatch(/^This team has 9-hole rounds/);
     unmount();
+    // The phone's first run is D-71's too: 9-hole rounds this season are CH-4301 with the hint.
+    const season = showTeam(team({ window: 'season', roundCount: 0, roundsEffective: 0, grid: [], players: [], putting: null, bests: [], filterOptions: withNine }));
+    expect(code('CH-4310')).toBeNull();
+    expect(code('CH-4301')).not.toBeNull();
+    expect(code('CH-4319')).not.toBeNull();
+    season.unmount();
     const none = { ...PREVIEW_PLAYER.win, rounds: 0, effRounds: 0, sgRounds: 0, effSgRounds: 0, avg: null, sgPerRound: null };
     const coach = showPhonePlayer(player({ win: none, rounds: [], filterOptions: withNine }));
     expect(code('CH-5324')!.textContent).toMatch(/^Jonah has 9-hole rounds/);

@@ -2,6 +2,19 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — A team with only 9-hole rounds this season is not a first run (D-71)
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (CH-4301, CH-4310 and CH-4319 change their words)
+Data impact:    none
+```
+
+- **Issue.** With Holes at its default of 18, a team whose only rounds this season were 9-hole ones saw "No stats yet. Team and player stats fill in as players post rounds", which is false: the rounds exist, they are just not 18-hole ones.
+- **Fix.** D-71's first-run page is for no round of either length. A team with a 9-hole round in the window gets CH-4301 with the CH-4319 hint ("choose 9 holes or Both in Filter") instead, desktop and phone. The same check (`nineRoundsInWindow`) drives the hint, so it never points at an empty page.
+- **Also.** Game detail's make-rate curve, when the putt read fails, no longer sets the 15-20 ft band against the Tour's 15-25 ft value (P005).
+- **Checked.** Tests for the nine-only team (desktop and phone), the no-round team (still the first run) and a 9-hole round from before the season (still the first run); the 15-20 ft mark; mutations of each caught.
+
 ## 2026-09-30 — Round filter with a Holes control: the same filter on every player and the team's figures (owner: "make it 9 or 18")
 
 ```text

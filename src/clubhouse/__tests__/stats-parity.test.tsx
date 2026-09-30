@@ -643,6 +643,15 @@ describe('Game detail · states', () => {
     expect(code('CH-5319')).toBeNull();
   });
 
+  it('without the putt read the curve grades only bands the Tour publishes: 15 to 20 ft is not set against the Tour\'s 15 to 25 ft value', async () => {
+    showPlayer(withExtra({ puttsError: true, puttBandsNine: null }));
+    await openTab(/Game detail/);
+    const marks = [...document.querySelectorAll('svg.ch-mk .ch-mk__v')].map((el) => [el.textContent, el.getAttribute('class')]);
+    // 10 to 15 ft (20%, 40 putts) is graded against its own Tour value; 15 to 20 ft (13%, 33 putts) has no mark.
+    expect(marks.find(([t]) => t === '20%')![1]).toContain('is-loss');
+    expect(marks.find(([t]) => t === '13%')![1]).not.toMatch(/is-(gain|loss)/);
+  });
+
   it('CH-5209 CH-5210 CH-5211 CH-5212 a read that failed says so where its figures would be, and Try again asks the server for the page again; the rest of Game detail is still there', async () => {
     const user = userEvent.setup();
     showPlayer(withExtra({ holesError: true, toughest: null, opening: null, approachError: true, approach: null, sprayError: true, spray: null, puttsError: true }));

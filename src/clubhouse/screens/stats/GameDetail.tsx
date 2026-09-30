@@ -209,7 +209,8 @@ export function GameDetail({
         { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
         { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
         { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
-        { band: '15–20', value: s.puttMakePct15_20, bench: bench.putts_made_15_25ft_pct ?? null, n: s.puttMakeCount15_20 },
+        // No Tour mark: the Tour's standard is 15-25 feet, and this band is 15-20 (graded like with like only in the six Tour bands).
+        { band: '15–20', value: s.puttMakePct15_20, bench: null, n: s.puttMakeCount15_20 },
       ];
   // The lead names the band furthest under the Tour, from the six bands the Tour publishes (not the nine, which reuse a standard across bands).
   const leadBands = shotBands

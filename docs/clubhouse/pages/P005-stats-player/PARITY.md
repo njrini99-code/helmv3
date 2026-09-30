@@ -113,6 +113,16 @@ untouched here). So:
   make-rate path and honest band labels); scrambling by lie, distance and miss direction (SH1 to SH3, SH7: one scrambling
   definition); sand saves (SH4, SH10); penalties a round (DR11, SH9, SH10: one penalty count); every shot-level figure
   (test rounds out); and the "most recent 100 rounds" note (SC19: the cap after the countable filter).
+- **Clubhouse's own putt read moves to `putt-make.ts` when the shared PR merges.** `loadPutts` (`data/stats-common.ts`) reads
+  `putt_distance_feet`, leaves out putts with no `putt_made` and does not clamp the distance; the shared PR's
+  `src/lib/golf/putt-make.ts` is the one make-% definition (`distance_to_hole_before` clamped 0 to 120, made is
+  `result === 'hole'` or `putt_made === true`, bands (lo, hi]). Until then Clubhouse's make rates can differ from
+  production's by the putts those rules treat differently (PT7 to PT10, PT17, Team stats' putting rings).
+- **Bands graded against a wider Tour value.** The Tour publishes five make standards (3-5, 5-10, 10-15, 15-25, 25+). The nine
+  putting bands reuse them as production's own table does (15-20 and 20-25 ft against the 15-25 value; 25-30, 30-35 and 35+
+  against 25+; PT8). Without the putt read the curve has only the calculator's five bands, and its 15-20 ft point now carries
+  no Tour mark instead of being set against the 15-25 value. Whether the nine-band curve should drop its reused marks too is
+  the lead's call.
 - **Production's patterns read** (SC17) orders by `stroke_impact` with a limit of 10, which drops a player's biggest
   leaks; reported to the shared-fix work, not fixed here.
 

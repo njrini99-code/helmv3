@@ -11,6 +11,7 @@ import {
   hasRange,
   isFiltered,
   KIND_LABEL,
+  nineRoundsInWindow,
   PER_18_NOTE,
   ROUND_KINDS,
   roundsWord,
@@ -155,7 +156,7 @@ export function StatsFilter({
  * window (its time, type and course): where to find them. Nothing when it would show none, so the hint never sends anyone to an empty page.
  */
 export function NineHint({ code, filter, options, who }: { code: string; filter: ChFilter; options: ChFilterOptions; who: string }) {
-  if (!candidates(options.rounds, withHoles(filter, 'all'), options.seasonStart, (r) => r).some((r) => r.holes === 9)) return null;
+  if (!nineRoundsInWindow(filter, options)) return null;
   return (
     <div className="ch-pf-early" role="note" data-ch-code={code}>
       <Icon icon={Info} size={15} />

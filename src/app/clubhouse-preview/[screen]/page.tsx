@@ -257,7 +257,7 @@ export default async function ClubhousePreview({
         state === 'loading' ? (
           <StatsSkeleton />
         ) : state === 'empty' ? (
-          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [] }} />
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] } }} />
         ) : state === 'failed' ? (
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />
         ) : state === 'partial' ? (

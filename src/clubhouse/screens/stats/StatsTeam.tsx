@@ -5,6 +5,7 @@ import { isFiltered, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
+import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { formatSigned, NO_DATA } from '../../lib/format';
@@ -21,6 +22,8 @@ import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFi
  */
 export function StatsTeam({ data }: { data: ChTeamStats }) {
   const noRounds = !data.roundsError && data.roundCount === 0;
+  // D-71's first-run page is for no round of either length: a team with only 9-hole rounds gets CH-4301 and the CH-4319 hint instead.
+  const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
   // Nothing to filter before a round exists (the first-run page); a filter already on always shows, so it can be cleared.
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
@@ -51,7 +54,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
 
       {noRounds && filtered ? (
         <TeamFilterEmpty />
-      ) : noRounds && data.window === 'season' ? (
+      ) : noRounds && data.window === 'season' && !nineOnly ? (
         <StatsTeamFirstRun />
       ) : noRounds ? (
         <div className="ch-st-card">

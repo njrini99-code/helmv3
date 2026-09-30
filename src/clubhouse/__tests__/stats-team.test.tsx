@@ -58,7 +58,8 @@ function tree(data: ChTeamStats) {
 const wrap = (data: ChTeamStats) => render(tree(data));
 // A test that chooses a window chooses it for the filter too (the screens read the filter, whose window is the window).
 const stats = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
-const empty = (over: Partial<ChTeamStats> = {}) => stats({ roundCount: 0, grid: [], players: [], putting: null, bests: [], ...over });
+// A team with no round at all: nothing loaded for the filter's sheet either (a loaded 9-hole round would be CH-4301 with the CH-4319 hint, not the first run).
+const empty = (over: Partial<ChTeamStats> = {}) => stats({ roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] }, ...over });
 
 /** One active player with one countable round from yesterday, so every read downstream runs. */
 function seasonTables(): import('./supabase-fake').ChFakeTables {
