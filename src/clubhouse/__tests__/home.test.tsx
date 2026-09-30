@@ -627,6 +627,13 @@ describe('Home · Coach Home’s own contracts', () => {
     expect(document.querySelector('.ch-hm')).toBeNull();
   });
 
+  it('20103 Open recap opens the round\'s review once the round has a real id (the fixtures\' short ids keep the Stats link)', () => {
+    const [first, ...others] = PREVIEW_HOME.latestRounds.rounds;
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }} />);
+    expect(screen.getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
+    expect(screen.queryByRole('link', { name: "Theo's stats" })).toBeNull();
+  });
+
   it('20103 links out of Coach Home open what they name', () => {
     wrap(<CoachHome data={PREVIEW_HOME} />);
     const href = (name: string | RegExp) => screen.getByRole('link', { name }).getAttribute('href');
@@ -744,6 +751,16 @@ describe('Home · the phone, the page’s own contracts', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
     expect(within(sheet).getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=theo');
     expect(within(sheet).getByRole('link', { name: 'Player stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+  });
+
+  it('20103 on the phone a round with a real id opens its review from the card (Round recap)', async () => {
+    const user = userEvent.setup();
+    const [first, ...others] = PREVIEW_HOME.latestRounds.rounds;
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }} now={PREVIEW_HOME_NOW} />);
+    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    expect(within(sheet).getByRole('link', { name: 'Round recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
+    expect(within(sheet).queryByRole('link', { name: 'Player stats' })).toBeNull();
   });
 
   it('20103 an empty day offers Plan, which opens the editor', () => {

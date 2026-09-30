@@ -8,7 +8,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { rebuiltHref } from '../../shell/nav';
 import { firstName } from './model';
-import { MY_STATS } from './player-links';
+import { MY_STATS, roundHref } from './player-links';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { EmptyState } from '../../ui/States';
 import { ScrollRegion } from '../../ui/ScrollRegion';
@@ -156,14 +156,19 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
                     <b className={r.sg == null ? undefined : r.sg >= 0 ? 'is-gain' : 'is-loss'}>{formatSigned(r.sg)}</b>
                   </span>
                 </div>
-                {mine ? (
-                  // No single-round recap is rebuilt yet; My stats holds every round.
+                {roundHref(r.id, mine ? 'player' : 'coach') ? (
+                  // The board's "Open recap": the round's own review.
+                  <Button href={roundHref(r.id, mine ? 'player' : 'coach')!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                    Open recap
+                  </Button>
+                ) : mine ? (
+                  // The review isn't rebuilt for this role; My stats holds every round.
                   <Button href={MY_STATS} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
                     My stats
                   </Button>
                 ) : (
                   statsHref(r.playerId) && (
-                    // No single-round recap is rebuilt yet; this opens the player's stats, and says so.
+                    // The review isn't rebuilt for this role; this opens the player's stats, and says so.
                     <Button href={statsHref(r.playerId)!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
                       {firstName(r.playerName)}&apos;s stats
                     </Button>

@@ -110,6 +110,13 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect([...timer.children].every((c) => c.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
+  it('20103 My latest round opens its review (Open recap) once the round has a real id', () => {
+    const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
+    show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
+    expect(screen.getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
+    expect(screen.queryByRole('link', { name: 'My stats' })).toBeNull();
+  });
+
   it('20103 My latest round: the course, a flag not an avatar, and My stats', async () => {
     const user = userEvent.setup();
     show();
@@ -192,6 +199,12 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
+  });
+
+  it('20103 on the phone My latest round opens its review once the round has a real id', () => {
+    const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
+    show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
+    expect(screen.getByRole('link', { name: /Open recap/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
   });
 
   it('20102 20103 21901 the hero: Up next with its countdown, and Message coach', () => {

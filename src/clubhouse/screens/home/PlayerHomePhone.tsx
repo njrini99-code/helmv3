@@ -17,7 +17,7 @@ import { usePhoneHero } from '../../shell/phone-chrome';
 import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
 import { PlayerGame } from './PlayerGame';
-import { messageCoachHref, MY_STATS, postRoundHref } from './player-links';
+import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 
 /**
  * The player's phone Home (v2, design/handoff/Player - Home - Mobile.html,
@@ -177,9 +177,9 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
               <dd className={'ch-num' + (r.sg == null ? '' : r.sg >= 0 ? ' is-gain' : ' is-loss')}>{formatSigned(r.sg)}</dd>
             </div>
           </dl>
-          {/* No single-round recap is rebuilt yet; My stats holds every round. */}
-          <Button size="lg" rightIcon={ArrowRight} href={MY_STATS} className="ch-ph-card__more">
-            My stats
+          {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}
+          <Button size="lg" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more">
+            {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}
           </Button>
         </div>
       )}

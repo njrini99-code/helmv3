@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -20,6 +20,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
+import { roundHref } from './player-links';
 
 export const CALENDAR = '/golf/dashboard/calendar';
 export const eventHref = (e: ChHomeEvent) => `${CALENDAR}?date=${e.date}&event=${e.id}`;
@@ -380,6 +381,7 @@ function Rounds({ data, onOpen }: { data: ChCoachHome['latestRounds']; onOpen: (
 /** A latest round's card (board 05): the figures, then Out and In; Message and the player's stats. */
 function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
+  const recap = round ? roundHref(round.id, 'coach') : null;
   const stats = round ? rebuiltHref(`/golf/dashboard/stats?player=${round.playerId}`) : null;
   return (
     <Modal
@@ -388,17 +390,24 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
       title={round?.playerName ?? ''}
       description={round?.meta}
       footer={
-        (message || stats) && (
+        (message || recap || stats) && (
           <>
             {message && (
               <Button leftIcon={MessageSquare} href={message}>
                 Message
               </Button>
             )}
-            {stats && (
-              <Button variant="primary" leftIcon={BarChart3} href={stats}>
-                Player stats
+            {/* The board's "Round recap": the round's own review; the player's stats when it isn't rebuilt. */}
+            {recap ? (
+              <Button variant="primary" rightIcon={ArrowRight} href={recap}>
+                Round recap
               </Button>
+            ) : (
+              stats && (
+                <Button variant="primary" leftIcon={BarChart3} href={stats}>
+                  Player stats
+                </Button>
+              )
             )}
           </>
         )

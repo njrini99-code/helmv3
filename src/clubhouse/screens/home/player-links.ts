@@ -6,5 +6,8 @@ export const messageCoachHref = (coachUserId: string | null) => (coachUserId ? `
 /** Post a round, once the player's round entry is rebuilt (until then the button isn't drawn). */
 export const postRoundHref = () => rebuiltHref('/golf/dashboard/rounds/new', 'player');
 
-/** A player's own stats (rebuilt for players): where the latest round's "My stats" goes until a round recap exists. */
+/** A player's own stats (rebuilt for players): where the latest round's link goes when its review isn't rebuilt for the viewer. */
 export const MY_STATS = '/golf/dashboard/stats';
+
+/** A round's review (the board's "Open recap"), once it is rebuilt for this role; null keeps the Stats link. */
+export const roundHref = (roundId: string, role: 'coach' | 'player') => rebuiltHref(`/golf/dashboard/rounds/${roundId}`, role);
