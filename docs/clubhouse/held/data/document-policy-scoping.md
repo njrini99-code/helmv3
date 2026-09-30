@@ -5,7 +5,7 @@ Plan ID: HD-document-policy-scoping
 Status: HELD
 Pages: Team hub (P010): documents and an announcement's attached files
 Feature: team_communications (memory/registry.yml)
-Migration: supabase/migrations/20260930150000_golf_document_policy_scoping.sql
+Migration: supabase/migrations/20260930160000_golf_document_policy_scoping.sql
 Date: 2026-09-30
 ```
 
@@ -83,7 +83,7 @@ WRITTEN — HOLD — NOT APPLIED. pgTAP not written or run: local Supabase was s
 
 ## HELD.md registration
 
-Row `20260930150000_golf_document_policy_scoping.sql`, **HOLD**.
+Row `20260930160000_golf_document_policy_scoping.sql`, **HOLD**.
 
 ## Activation checklist
 
