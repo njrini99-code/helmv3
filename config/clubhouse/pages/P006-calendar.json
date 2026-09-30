@@ -1,0 +1,54 @@
+{
+  "id": "P006",
+  "name": "Calendar",
+  "slug": "calendar",
+  "bridgeNamespace": 6,
+  "routes": [
+    "/golf/dashboard/calendar"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "calendar_events"
+  ],
+  "progressRow": "Calendar",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Calendar.html",
+      "design/handoff/Calendar.html",
+      "design/handoff/cal-views.jsx",
+      "design/handoff/cal-inspector.jsx",
+      "design/handoff/cal-editor.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Calendar - Mobile.html",
+      "design/handoff/m-cal.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/calendar",
+    "loader": "src/clubhouse/data/calendar.ts",
+    "route": "src/clubhouse/routes/calendar.tsx",
+    "styles": "src/clubhouse/styles/calendar.css",
+    "tests": [
+      "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/calendar.md",
+  "checklist": "docs/clubhouse/screens/calendar.md",
+  "phoneSpec": "docs/clubhouse/phone/calendar.md",
+  "actions": [],
+  "held": []
+}

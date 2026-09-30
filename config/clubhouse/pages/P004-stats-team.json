@@ -1,0 +1,52 @@
+{
+  "id": "P004",
+  "name": "Stats (team)",
+  "slug": "stats-team",
+  "bridgeNamespace": 4,
+  "routes": [
+    "/golf/dashboard/stats",
+    "/golf/dashboard/stats/team"
+  ],
+  "roles": [
+    "coach"
+  ],
+  "semanticFeatures": [
+    "stats_analytics"
+  ],
+  "progressRow": "Stats (team)",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Stats.html",
+      "design/handoff/Stats.html",
+      "design/handoff/stats.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Stats - Mobile.html",
+      "design/handoff/m-stats.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/stats",
+    "loader": "src/clubhouse/data/stats-team.ts",
+    "route": "src/clubhouse/routes/stats.tsx",
+    "styles": "src/clubhouse/styles/stats.css",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/stats-team.md",
+  "checklist": "docs/clubhouse/screens/stats-team.md",
+  "phoneSpec": "docs/clubhouse/phone/stats-team.md",
+  "actions": [],
+  "held": []
+}

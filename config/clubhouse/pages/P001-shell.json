@@ -1,0 +1,55 @@
+{
+  "id": "P001",
+  "name": "Shell",
+  "slug": "shell",
+  "bridgeNamespace": 1,
+  "routes": [],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "ios_native_shell",
+    "team_communications"
+  ],
+  "progressRow": "Foundation",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/sidebar.css",
+      "design/handoff/depth.css",
+      "design/handoff/gh-nav.js",
+      "design/handoff/gh-states.jsx",
+      "design/handoff/gh-polish.css"
+    ],
+    "phone": [
+      "design/handoff/m-shell.jsx",
+      "design/handoff/m.css",
+      "design/handoff/mobile/m-shell.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/shell",
+    "loader": "src/clubhouse/data/shell.ts",
+    "route": null,
+    "styles": "src/clubhouse/styles/shell.css",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx",
+      "src/clubhouse/__tests__/native.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/shell.md",
+  "checklist": "docs/clubhouse/screens/foundation.md",
+  "phoneSpec": "docs/clubhouse/phone/foundation.md",
+  "actions": [],
+  "held": []
+}

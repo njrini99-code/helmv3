@@ -23,7 +23,12 @@ data gaps, verification log).
     qualifier write-integrity test
   - `knowledge:check` 0
   - `docs:check` 0
-  - `npm run build` was not run on the merged head: it was started and then stopped when the owner called the stopping point. Run it first next session (`NODE_OPTIONS=--max-old-space-size=8192 npm run build`).
+  - `npm run build` exit 0 on 2c5cf01b6 (2026-09-29, the next session).
+- **Since this handoff (same date, next session):** step 1 is done (D-61 for
+  Qualifiers, and the Roster availability migration recorded as held); the
+  V2 registry exists (`config/clubhouse/`, `scripts/clubhouse/registry.mjs`,
+  `docs/clubhouse/generated/`), with the page docs and README rewrite still to
+  come. Decisions D-63 to D-69. The PROGRESS verification log has the detail.
 
 ## The process from here: Foundation V2 (owner, D-60 to D-62)
 

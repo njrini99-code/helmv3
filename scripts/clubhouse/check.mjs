@@ -18,6 +18,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runRegistryCheck } from './registry.mjs';
 
 const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
@@ -313,12 +314,16 @@ function main() {
   if (!existsSync(screens)) violations.push('docs/clubhouse/SCREENS.md is missing');
   else violations.push(...checkScreens(readFileSync(screens, 'utf8'), readRebuiltRoutes(readFileSync(join(root, 'src/clubhouse/shell/nav.ts'), 'utf8'))));
 
+  // Foundation V2 registry: page manifests, Bridge IDs, contracts, held plans, generated docs.
+  const registry = runRegistryCheck(root);
+  violations.push(...registry.violations);
+
   if (violations.length) {
     console.error(`clubhouse:check found ${violations.length} violation(s):`);
     for (const x of violations) console.error('  ' + x);
     process.exit(1);
   }
-  console.log(`clubhouse:check clean: ${files.length} file(s), tracker valid.`);
+  console.log(`clubhouse:check clean: ${files.length} file(s), tracker valid, ${registry.pages} pages and ${registry.ids} Bridge IDs registered.`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

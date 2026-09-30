@@ -1,0 +1,55 @@
+{
+  "id": "P005",
+  "name": "Stats (player)",
+  "slug": "stats-player",
+  "bridgeNamespace": 5,
+  "routes": [
+    "/golf/dashboard/stats"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "stats_analytics",
+    "player_coachhelm_development"
+  ],
+  "progressRow": "Stats (player)",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Stats.html",
+      "design/handoff/Stats.html",
+      "design/handoff/stats.jsx",
+      "design/handoff/stats-game.jsx",
+      "design/handoff/stats-sg.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Stats - Mobile.html",
+      "design/handoff/m-stats.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/stats",
+    "loader": "src/clubhouse/data/stats-player.ts",
+    "route": "src/clubhouse/routes/stats.tsx",
+    "styles": "src/clubhouse/styles/stats.css",
+    "tests": [
+      "src/clubhouse/__tests__/stats-player.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/stats-player.md",
+  "checklist": "docs/clubhouse/screens/stats-player.md",
+  "phoneSpec": "docs/clubhouse/phone/stats-player.md",
+  "actions": [],
+  "held": []
+}

@@ -1,0 +1,56 @@
+{
+  "id": "P007",
+  "name": "Messages",
+  "slug": "messages",
+  "bridgeNamespace": 7,
+  "routes": [
+    "/golf/dashboard/messages"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "team_communications"
+  ],
+  "progressRow": "Messages",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Messages.html",
+      "design/handoff/Messages.html",
+      "design/handoff/messages.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Messages - Mobile.html",
+      "design/handoff/mobile/Messages Mobile.html",
+      "design/handoff/m-msg.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/messages",
+    "loader": "src/clubhouse/data/messages.ts",
+    "route": "src/clubhouse/routes/messages.tsx",
+    "styles": "src/clubhouse/styles/messages.css",
+    "tests": [
+      "src/clubhouse/__tests__/messages.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/messages.md",
+  "checklist": "docs/clubhouse/screens/messages.md",
+  "phoneSpec": "docs/clubhouse/phone/messages.md",
+  "actions": [],
+  "held": [
+    "docs/clubhouse/held/features/conversation-files.md",
+    "docs/clubhouse/held/data/message-attachments-hardening.md"
+  ]
+}

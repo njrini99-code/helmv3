@@ -1,0 +1,54 @@
+{
+  "id": "P003",
+  "name": "Roster",
+  "slug": "roster",
+  "bridgeNamespace": 3,
+  "routes": [
+    "/golf/dashboard/roster"
+  ],
+  "roles": [
+    "coach"
+  ],
+  "semanticFeatures": [
+    "roster_team"
+  ],
+  "progressRow": "Roster",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Roster.html",
+      "design/handoff/Roster.html",
+      "design/handoff/roster.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Roster - Mobile.html",
+      "design/handoff/mobile/Roster Mobile.html",
+      "design/handoff/m-roster.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/roster",
+    "loader": "src/clubhouse/data/roster.ts",
+    "route": null,
+    "styles": "src/clubhouse/styles/roster.css",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/roster.md",
+  "checklist": "docs/clubhouse/screens/roster.md",
+  "phoneSpec": "docs/clubhouse/phone/roster.md",
+  "actions": [],
+  "held": [
+    "docs/clubhouse/held/data/roster-availability.md"
+  ]
+}

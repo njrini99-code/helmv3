@@ -1,0 +1,62 @@
+{
+  "id": "P009",
+  "name": "Qualifiers",
+  "slug": "qualifiers",
+  "bridgeNamespace": 9,
+  "routes": [
+    "/golf/dashboard/qualifiers",
+    "/golf/dashboard/qualifiers/new",
+    "/golf/dashboard/qualifiers/[id]",
+    "/golf/dashboard/qualifiers/[id]/edit",
+    "/golf/dashboard/my-qualifiers"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "qualifiers"
+  ],
+  "progressRow": "Qualifiers",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Qualifiers.html",
+      "design/handoff/Qualifiers.html",
+      "design/handoff/qualifiers.jsx",
+      "design/handoff/qual-core.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Qualifiers - Mobile.html",
+      "design/handoff/mobile/Qualifiers Mobile.html",
+      "design/handoff/qual-mobile.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/qualifiers",
+    "loader": "src/clubhouse/data/qualifiers.ts",
+    "route": "src/clubhouse/routes/qualifiers.tsx",
+    "styles": "src/clubhouse/styles/qualifiers.css",
+    "tests": [
+      "src/clubhouse/__tests__/qualifiers.test.tsx",
+      "src/app/golf/actions/__tests__/qualifier-setup.test.ts"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/qualifiers.md",
+  "checklist": "docs/clubhouse/screens/qualifiers.md",
+  "phoneSpec": "docs/clubhouse/phone/qualifiers.md",
+  "actions": [],
+  "held": [
+    "docs/clubhouse/held/features/qualifier-squad-and-entrants.md",
+    "docs/clubhouse/held/data/qualifier-db-hardening.md"
+  ]
+}

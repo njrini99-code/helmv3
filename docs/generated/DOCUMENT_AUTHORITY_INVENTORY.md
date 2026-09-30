@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 202 | 12 | 46 | 87 |
+| `UNKNOWN` | 205 | 12 | 46 | 87 |
 
 ## Files
 
@@ -662,7 +662,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | 5 |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 2 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 3 |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
@@ -692,7 +692,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/foundation-v2/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/message-attachments-hardening.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/qualifier-db-hardening.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
+| `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
@@ -776,7 +779,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `public/courses/CREDITS.md` | current | - | - | - | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 1 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |

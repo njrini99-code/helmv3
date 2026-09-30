@@ -1,0 +1,54 @@
+{
+  "id": "P002",
+  "name": "Home",
+  "slug": "home",
+  "bridgeNamespace": 2,
+  "routes": [
+    "/golf/dashboard"
+  ],
+  "roles": [
+    "coach"
+  ],
+  "semanticFeatures": [
+    "team_operations",
+    "calendar_events",
+    "stats_analytics"
+  ],
+  "progressRow": "Home",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Home.html",
+      "design/handoff/Coach Home v3.html",
+      "design/handoff/coach-home-v3.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Home - Mobile.html",
+      "design/handoff/m-home.jsx",
+      "design/handoff/m-home.css"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/home",
+    "loader": "src/clubhouse/data/home.ts",
+    "route": null,
+    "styles": "src/clubhouse/styles/home.css",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/home.md",
+  "checklist": "docs/clubhouse/screens/home.md",
+  "phoneSpec": "docs/clubhouse/phone/home.md",
+  "actions": [],
+  "held": []
+}

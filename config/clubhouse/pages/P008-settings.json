@@ -1,0 +1,52 @@
+{
+  "id": "P008",
+  "name": "Settings",
+  "slug": "settings",
+  "bridgeNamespace": 8,
+  "routes": [
+    "/golf/dashboard/settings",
+    "/golf/dashboard/settings/notifications",
+    "/golf/dashboard/settings/coaching-intelligence"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "settings_preferences",
+    "auth_onboarding_join",
+    "coachhelm_ai"
+  ],
+  "progressRow": "Settings",
+  "status": {
+    "design": "draft",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "missing"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/sidebar.css",
+      "design/handoff/depth.css"
+    ],
+    "phone": []
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/settings",
+    "loader": "src/clubhouse/data/settings.ts",
+    "route": "src/clubhouse/routes/settings.tsx",
+    "styles": "src/clubhouse/styles/settings.css",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/settings.md",
+  "checklist": "docs/clubhouse/screens/settings.md",
+  "phoneSpec": "docs/clubhouse/phone/settings.md",
+  "actions": [],
+  "held": []
+}
