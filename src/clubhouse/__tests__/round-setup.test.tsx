@@ -28,7 +28,7 @@ function setup(over: Partial<ChSetupPorts> = {}, qualifiers: ChSetupQualifier[] 
   return { ports, onStarted, user: userEvent.setup() };
 }
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`) as HTMLElement | null;
-const dock = () => document.getElementById('ch-rs-dock-s')!;
+const dock = () => document.getElementById('ch-rsu-dock-s')!;
 const startBtn = () => screen.getByRole('button', { name: /Start round|Starting/ });
 
 async function pickFinleyBlue(user: ReturnType<typeof userEvent.setup>) {
@@ -138,8 +138,8 @@ describe('Round setup: picking a course', () => {
     expect(startBtn()).toBeEnabled();
     await user.click(within(screen.getByRole('radiogroup', { name: 'Hole 3 par' })).getByRole('radio', { name: '4' }));
     expect(screen.getByText('1 hole edited for this round')).toBeInTheDocument();
-    expect(screen.getByRole('radiogroup', { name: 'Hole 3 par' }).closest('.ch-rs-hole')).toHaveClass('is-edited');
-    expect(screen.getByRole('radiogroup', { name: 'Hole 4 par' }).closest('.ch-rs-hole')).not.toHaveClass('is-edited');
+    expect(screen.getByRole('radiogroup', { name: 'Hole 3 par' }).closest('.ch-rsu-hole')).toHaveClass('is-edited');
+    expect(screen.getByRole('radiogroup', { name: 'Hole 4 par' }).closest('.ch-rsu-hole')).not.toHaveClass('is-edited');
     expect(dock()).toHaveTextContent('Par 73');
   });
 

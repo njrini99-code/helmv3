@@ -40,8 +40,8 @@ export function HoleConfig({
       : []),
   ];
   return (
-    <section className="ch-rs-card ch-rs-hc" aria-label="Scorecard">
-      <div className="ch-rs-card__h">
+    <section className="ch-rsu-card ch-rsu-hc" aria-label="Scorecard">
+      <div className="ch-rsu-card__h">
         <div>
           <h3>Scorecard</h3>
           <span>
@@ -53,7 +53,7 @@ export function HoleConfig({
           </span>
         </div>
         {count === 9 && holes.length === 18 && (
-          <div className="ch-rs-seg ch-rs-seg--sm" role="radiogroup" aria-label="Which nine">
+          <div className="ch-rsu-seg ch-rsu-seg--sm" role="radiogroup" aria-label="Which nine">
             {(
               [
                 ['front', 'Front 9'],
@@ -76,7 +76,7 @@ export function HoleConfig({
           </div>
         )}
       </div>
-      <dl className="ch-rs-hc__sum">
+      <dl className="ch-rsu-hc__sum">
         {figs.map(([k, v]) => (
           <div key={k}>
             <dt>{k}</dt>
@@ -84,18 +84,18 @@ export function HoleConfig({
           </div>
         ))}
       </dl>
-      <div className="ch-rs-hc__grid">
+      <div className="ch-rsu-hc__grid">
         {list.map((h) => {
           const b = baseline?.[h.n - 1];
           const changed = !!b && (b.par !== h.par || b.yards !== h.yards);
           const y = parseInt(h.yards, 10);
           const bad = !!h.yards.trim() && (!Number.isFinite(y) || y < 1 || y > MAX_HOLE_YARDS);
           return (
-            <div key={h.n} className={'ch-rs-hole' + (changed ? ' is-edited' : '')}>
-              <span className="ch-rs-hole__n" aria-hidden="true">
+            <div key={h.n} className={'ch-rsu-hole' + (changed ? ' is-edited' : '')}>
+              <span className="ch-rsu-hole__n" aria-hidden="true">
                 {h.n}
               </span>
-              <div className="ch-rs-par" role="radiogroup" aria-label={`Hole ${h.n} par`}>
+              <div className="ch-rsu-par" role="radiogroup" aria-label={`Hole ${h.n} par`}>
                 {PARS.map((p) => (
                   <button
                     key={p}
@@ -112,7 +112,7 @@ export function HoleConfig({
                   </button>
                 ))}
               </div>
-              <label className="ch-rs-yds">
+              <label className="ch-rsu-yds">
                 <input
                   inputMode="numeric"
                   autoComplete="off"

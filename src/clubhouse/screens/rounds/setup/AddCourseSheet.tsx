@@ -103,7 +103,7 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
               <span>Cancel</span>
             </button>
           )}
-          <span className="ch-rs-grow ch-rs-foot-note" role="status" aria-live="polite" data-ch-code={issue ? 'CH-11108' : undefined}>
+          <span className="ch-rsu-grow ch-rsu-foot-note" role="status" aria-live="polite" data-ch-code={issue ? 'CH-11108' : undefined}>
             {issue ?? ['Name and place', 'One tee set', `${filled} of ${count} holes`, 'Ready for this round'][step]}
           </span>
           <button type="button" className="ch-btn ch-btn--primary" disabled={!!issue} onClick={() => (step < 3 ? setStep(step + 1) : done())}>
@@ -113,7 +113,7 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
         </>
       }
     >
-      <ol className="ch-rs-spine ch-rs-spine--sm" aria-label="Steps">
+      <ol className="ch-rsu-spine ch-rsu-spine--sm" aria-label="Steps">
         {STEPS.map((s, i) => (
           <li key={s} className={i < step ? 'is-done' : i === step ? 'is-on' : ''} aria-current={i === step ? 'step' : undefined}>
             <i aria-hidden="true" />
@@ -122,24 +122,24 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
         ))}
       </ol>
       {step === 0 && (
-        <div className="ch-rs-form">
-          <label className="ch-rs-field">
+        <div className="ch-rsu-form">
+          <label className="ch-rsu-field">
             <span>Course name</span>
-            <input className="ch-rs-in ch-rs-in--big" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Chapel Ridge Golf Club" autoComplete="off" />
+            <input className="ch-rsu-in ch-rsu-in--big" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Chapel Ridge Golf Club" autoComplete="off" />
           </label>
-          <div className="ch-rs-2">
-            <label className="ch-rs-field">
+          <div className="ch-rsu-2">
+            <label className="ch-rsu-field">
               <span>City</span>
-              <input className="ch-rs-in" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} autoComplete="off" />
+              <input className="ch-rsu-in" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} autoComplete="off" />
             </label>
-            <label className="ch-rs-field">
+            <label className="ch-rsu-field">
               <span>State</span>
-              <input className="ch-rs-in" value={f.state} maxLength={2} onChange={(e) => setF({ ...f, state: e.target.value })} autoComplete="off" />
+              <input className="ch-rsu-in" value={f.state} maxLength={2} onChange={(e) => setF({ ...f, state: e.target.value })} autoComplete="off" />
             </label>
           </div>
-          <div className="ch-rs-field">
+          <div className="ch-rsu-field">
             <span>Holes</span>
-            <div className="ch-rs-seg" role="radiogroup" aria-label="Holes">
+            <div className="ch-rsu-seg" role="radiogroup" aria-label="Holes">
               {([18, 9] as const).map((n) => (
                 <button key={n} type="button" role="radio" aria-checked={count === n} onClick={() => setCountAndCard(n)}>
                   {n} holes
@@ -150,10 +150,10 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
         </div>
       )}
       {step === 1 && (
-        <div className="ch-rs-form">
-          <div className="ch-rs-field">
+        <div className="ch-rsu-form">
+          <div className="ch-rsu-field">
             <span>Tee colour</span>
-            <div className="ch-rs-sw" role="radiogroup" aria-label="Tee colour">
+            <div className="ch-rsu-sw" role="radiogroup" aria-label="Tee colour">
               {COLORS.map(([c, n]) => (
                 <button
                   key={c}
@@ -171,21 +171,21 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
               ))}
             </div>
           </div>
-          <label className="ch-rs-field">
+          <label className="ch-rsu-field">
             <span>Tee name</span>
-            <input className="ch-rs-in" value={f.teeName} onChange={(e) => setF({ ...f, teeName: e.target.value })} placeholder="Blue" autoComplete="off" />
+            <input className="ch-rsu-in" value={f.teeName} onChange={(e) => setF({ ...f, teeName: e.target.value })} placeholder="Blue" autoComplete="off" />
           </label>
-          <div className="ch-rs-2">
-            <label className="ch-rs-field">
+          <div className="ch-rsu-2">
+            <label className="ch-rsu-field">
               <span>Course rating (optional)</span>
-              <input className="ch-rs-in" inputMode="decimal" value={f.rating} onChange={(e) => setF({ ...f, rating: e.target.value })} placeholder="72.8" autoComplete="off" />
+              <input className="ch-rsu-in" inputMode="decimal" value={f.rating} onChange={(e) => setF({ ...f, rating: e.target.value })} placeholder="72.8" autoComplete="off" />
             </label>
-            <label className="ch-rs-field">
+            <label className="ch-rsu-field">
               <span>Slope (optional)</span>
-              <input className="ch-rs-in" inputMode="numeric" value={f.slope} onChange={(e) => setF({ ...f, slope: e.target.value })} placeholder="134" autoComplete="off" />
+              <input className="ch-rsu-in" inputMode="numeric" value={f.slope} onChange={(e) => setF({ ...f, slope: e.target.value })} placeholder="134" autoComplete="off" />
             </label>
           </div>
-          <p className="ch-rs-note">
+          <p className="ch-rsu-note">
             <Icon icon={Info} size={14} />
             Rating and slope are on the scorecard, usually beside the tee name.
           </p>
@@ -193,8 +193,8 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
       )}
       {step === 2 && <HoleConfig holes={holes} baseline={null} count={count} nine="front" onHoles={setHoles} onNine={() => {}} />}
       {step === 3 && (
-        <div className="ch-rs-rv">
-          <div className="ch-rs-rv__hero">
+        <div className="ch-rsu-rv">
+          <div className="ch-rsu-rv__hero">
             <span aria-hidden="true">
               <Icon icon={Flag} size={22} />
             </span>
@@ -203,7 +203,7 @@ export function AddCourseSheet({ open, onClose, onDone }: { open: boolean; onClo
               <span>{[place, `${count} holes`, `par ${parOf(holes)}`, `${yardsOf(holes).toLocaleString('en-US')} yds`].filter(Boolean).join(' · ')}</span>
             </div>
           </div>
-          <p className="ch-rs-rv__tee">
+          <p className="ch-rsu-rv__tee">
             <i className={f.color ? `ch-rd-tee ch-rd-tee--${f.color}` : 'ch-rd-tee'} aria-hidden="true" />
             <b>{f.teeName.trim()} tees</b>
             <span>{f.rating || f.slope ? `${f.rating || '—'} / ${f.slope || '—'}` : 'No rating or slope'}</span>

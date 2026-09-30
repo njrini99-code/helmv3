@@ -6,6 +6,7 @@ import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'luc
 import type { ChRoundType } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
 import { useAction } from '../../../lib/use-action';
+import { usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
@@ -56,6 +57,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
   const [holesLoad, setHolesLoad] = useState<HolesLoad>({ state: 'idle' });
   const [lastTee, setLastTee] = useState<string | null>(null);
   const set = (patch: Partial<ChSetupForm>) => setForm((f) => ({ ...f, ...patch }));
+  // A new round is a full-screen flow on the phone: the dock holds Start, and Back is in the band.
+  usePhoneTabsHidden(true);
 
   const loadHoles = useCallback(
     async (teeId: string) => {
@@ -109,13 +112,13 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
   const p = form.pick;
 
   return (
-    <div className="ch-rs" data-ui="clubhouse">
-      <div className="ch-rs-band">
-        <Link className="ch-rs-band__back" href={backHref}>
+    <div className="ch-rsu" data-ui="clubhouse">
+      <div className="ch-rsu-band">
+        <Link className="ch-rsu-band__back" href={backHref}>
           <Icon icon={ChevronLeft} size={16} />
           Rounds
         </Link>
-        <span className="ch-rs-k">New round · {p ? 'Scorecard' : 'Setup'}</span>
+        <span className="ch-rsu-k">New round · {p ? 'Scorecard' : 'Setup'}</span>
         <h1>{p ? `Your round at ${p.courseName}` : 'Track every shot of this round.'}</h1>
         <p>
           {p
@@ -124,7 +127,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
               : 'Check each hole, then start.'
             : 'Pick a course, set up your scorecard, then start tracking.'}
         </p>
-        <ol className="ch-rs-spine" aria-label="Steps">
+        <ol className="ch-rsu-spine" aria-label="Steps">
           {STEPS.map((s, i) => (
             <li key={s} className={i < step ? 'is-done' : i === step ? 'is-on' : ''} aria-current={i === step ? 'step' : undefined}>
               <i aria-hidden="true" />
@@ -134,12 +137,12 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
         </ol>
       </div>
 
-      <div className="ch-rs-cols">
-        <div className="ch-rs-col">
-          <section className="ch-rs-card ch-rs-course" aria-label="Course">
+      <div className="ch-rsu-cols">
+        <div className="ch-rsu-col">
+          <section className="ch-rsu-card ch-rsu-course" aria-label="Course">
             {p ? (
               <>
-                <div className="ch-rs-course__band">
+                <div className="ch-rsu-course__band">
                   <b>{p.courseName}</b>
                   {p.place && (
                     <span>
@@ -148,8 +151,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
                     </span>
                   )}
                 </div>
-                <div className="ch-rs-course__f">
-                  <span className="ch-rs-course__tee">
+                <div className="ch-rsu-course__f">
+                  <span className="ch-rsu-course__tee">
                     <TeeSwatch color={p.teeColor} />
                     <b>{p.teeName} tees</b>
                   </span>
@@ -162,8 +165,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
                 </div>
               </>
             ) : (
-              <div className="ch-rs-course__empty">
-                <span className="ch-rs-course__ic" aria-hidden="true">
+              <div className="ch-rsu-course__empty">
+                <span className="ch-rsu-course__ic" aria-hidden="true">
                   <Icon icon={MapPin} size={20} />
                 </span>
                 <div>
@@ -179,29 +182,29 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
           </section>
 
           {offer && (
-            <button type="button" className="ch-rs-qual" onClick={() => playQualifier(offer)}>
-              <span className="ch-rs-qual__ic" aria-hidden="true">
+            <button type="button" className="ch-rsu-qual" onClick={() => playQualifier(offer)}>
+              <span className="ch-rsu-qual__ic" aria-hidden="true">
                 <Icon icon={Medal} size={17} />
               </span>
-              <span className="ch-rs-qual__b">
+              <span className="ch-rsu-qual__b">
                 <em>Open qualifier</em>
                 <b>{offer.name}</b>
                 <span>{[`Round ${offer.nextRound} of ${offer.rounds}`, offer.courseName, offer.teeName].filter(Boolean).join(' · ')}</span>
               </span>
-              <span className="ch-rs-qual__cta">Play</span>
+              <span className="ch-rsu-qual__cta">Play</span>
             </button>
           )}
 
-          <section className="ch-rs-card" aria-label="Round details">
-            <div className="ch-rs-card__h">
+          <section className="ch-rsu-card" aria-label="Round details">
+            <div className="ch-rsu-card__h">
               <div>
                 <h3>Round details</h3>
               </div>
             </div>
-            <div className="ch-rs-form">
-              <div className="ch-rs-field">
+            <div className="ch-rsu-form">
+              <div className="ch-rsu-field">
                 <span>Round type</span>
-                <div className="ch-rs-seg" role="radiogroup" aria-label="Round type">
+                <div className="ch-rsu-seg" role="radiogroup" aria-label="Round type">
                   {TYPES.map((t) => (
                     <button
                       key={t}
@@ -218,12 +221,12 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
                   ))}
                 </div>
               </div>
-              <div className="ch-rs-2">
-                <label className="ch-rs-field">
+              <div className="ch-rsu-2">
+                <label className="ch-rsu-field">
                   <span>Date</span>
                   <input
                     type="date"
-                    className="ch-rs-in"
+                    className="ch-rsu-in"
                     value={form.date}
                     max={today}
                     aria-invalid={form.date > today || undefined}
@@ -231,9 +234,9 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
                     onChange={(e) => set({ date: e.target.value })}
                   />
                 </label>
-                <div className="ch-rs-field">
+                <div className="ch-rsu-field">
                   <span>Holes</span>
-                  <div className="ch-rs-seg" role="radiogroup" aria-label="Holes">
+                  <div className="ch-rsu-seg" role="radiogroup" aria-label="Holes">
                     {([9, 18] as const).map((n) => (
                       <button
                         key={n}
@@ -257,14 +260,14 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
                   <InlineNotice code="CH-11211" title="Your qualifiers didn't load" body="Play it as a practice round, or come back in a moment." />
                 ) : !qualifiers.length ? (
                   // CH-11312: nothing to qualify in.
-                  <p className="ch-rs-none" data-ch-code="CH-11312">
+                  <p className="ch-rsu-none" data-ch-code="CH-11312">
                     No qualifier is open for you right now. Your coach opens one when it&rsquo;s time; until then, play a practice or tournament round.
                   </p>
                 ) : (
-                  <div className="ch-rs-opts" role="radiogroup" aria-label="Qualifier">
+                  <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier">
                     {qualifiers.map((q) => (
-                      <button key={q.id} type="button" role="radio" aria-checked={form.qualifierId === q.id} disabled={q.nextRound == null} className="ch-rs-opt" onClick={() => playQualifier(q)}>
-                        <span className="ch-rs-radio" aria-hidden="true" />
+                      <button key={q.id} type="button" role="radio" aria-checked={form.qualifierId === q.id} disabled={q.nextRound == null} className="ch-rsu-opt" onClick={() => playQualifier(q)}>
+                        <span className="ch-rsu-radio" aria-hidden="true" />
                         <span>
                           <b>{q.name}</b>
                           <em>{q.nextRound != null ? `Round ${q.nextRound} of ${q.rounds} · ${q.completed} played` : (q.blocked ?? 'No round open')}</em>
@@ -274,7 +277,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
                   </div>
                 ))}
               {chosenQ && chosenQ.nextRound != null && (
-                <p className="ch-rs-qsel">
+                <p className="ch-rsu-qsel">
                   <Icon icon={Medal} size={15} />
                   <span>
                     This counts as round {chosenQ.nextRound} of {chosenQ.rounds} in {chosenQ.name}.
@@ -284,7 +287,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
             </div>
           </section>
 
-          <p className="ch-rs-note">
+          <p className="ch-rsu-note">
             <Icon icon={ChartColumn} size={15} />
             <span>
               <b>Tracked on every shot:</b> driving, approach proximity, putting, scrambling and penalties. Use your rangefinder for accurate distances.
@@ -292,17 +295,17 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
           </p>
         </div>
 
-        <div className="ch-rs-col">
+        <div className="ch-rsu-col">
           {holesLoad.state === 'loading' ? (
-            <section className="ch-rs-card ch-rs-hc" aria-busy="true" aria-label="Loading the scorecard" data-ch-code="CH-11405">
-              <div className="ch-rs-hc__ghost">
+            <section className="ch-rsu-card ch-rsu-hc" aria-busy="true" aria-label="Loading the scorecard" data-ch-code="CH-11405">
+              <div className="ch-rsu-hc__ghost">
                 {Array.from({ length: 9 }, (_, i) => (
                   <span key={i} className="ch-skel" />
                 ))}
               </div>
             </section>
           ) : holesLoad.state === 'failed' ? (
-            <section className="ch-rs-card ch-rs-hc">
+            <section className="ch-rsu-card ch-rsu-hc">
               <InlineNotice
                 code="CH-11210"
                 title="The scorecard didn't load"
@@ -314,8 +317,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
             <HoleConfig holes={form.holes} baseline={form.baseline} count={form.count} nine={form.nine} onHoles={(holes) => set({ holes })} onNine={(nine) => set({ nine })} />
           ) : (
             // CH-11309: before a course, the scorecard's place is held.
-            <section className="ch-rs-card ch-rs-hc ch-rs-hc--empty" data-ch-code="CH-11309">
-              <div className="ch-rs-hc__ghost" aria-hidden="true">
+            <section className="ch-rsu-card ch-rsu-hc ch-rsu-hc--empty" data-ch-code="CH-11309">
+              <div className="ch-rsu-hc__ghost" aria-hidden="true">
                 {Array.from({ length: 9 }, (_, i) => (
                   <span key={i}>
                     <b>{i + 1}</b>
@@ -330,8 +333,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
         </div>
       </div>
 
-      <div className="ch-rs-dock">
-        <span className="ch-rs-dock__s" id="ch-rs-dock-s" role="status" aria-live="polite">
+      <div className="ch-rsu-dock">
+        <span className="ch-rsu-dock__s" id="ch-rsu-dock-s" role="status" aria-live="polite">
           {p && !blocker ? (
             <>
               <b>{p.courseName}</b> · {p.teeName} · {played.length} holes · Par {parOf(played)}
@@ -344,7 +347,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted }: Ro
           type="button"
           className="ch-btn ch-btn--primary ch-btn--lg"
           disabled={!!blocker || start.pending}
-          aria-describedby="ch-rs-dock-s"
+          aria-describedby="ch-rsu-dock-s"
           onClick={() => {
             haptic('press');
             void start.run(form);
