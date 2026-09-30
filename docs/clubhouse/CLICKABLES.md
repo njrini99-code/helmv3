@@ -131,7 +131,7 @@ The "Where" column is the file to build in.
 | 20 | **Built 2026-09-30** · Per-page settings gear (CoachHelm settings, Team Hub settings) | Shell, coach desktop (2) | A secondary icon; CoachHelm already has its own Open CoachHelm settings link | `src/clubhouse/shell/TopBar.tsx:53` (`settings/model.ts:17` has the section ids) |
 | 21 | **Built 2026-09-30** · Close (x) on the Calendar jump panel | Calendar, coach desktop (1) | Esc and an outside click already close it | `src/clubhouse/screens/calendar/Calendar.tsx:40-41` |
 | 22 | Back in the trip builder | Team Hub, coach desktop and phone (2) | Only matters if the sheet becomes the board's four steps | `src/clubhouse/screens/hub/sheets.tsx:287` |
-| 23 | Right-click a bubble opens the reaction bar | Messages, coach desktop (1) | Unlabelled gesture; the React button does the same | `src/clubhouse/screens/messages/MessagesView.tsx:568` |
+| 23 | **Built 2026-09-30** · Right-click a bubble opens the reaction bar | Messages, coach desktop (1) | Unlabelled gesture; the React button does the same | `src/clubhouse/screens/messages/MessagesView.tsx:568` |
 | 24 | **Built 2026-09-30** · Closing Add a course reopens the course picker `[preview-only]` | Rounds setup, player desktop and phone (2) | Reached only once round entry has a product route (Q-78) | `src/clubhouse/screens/rounds/setup/RoundSetup.tsx:374` |
 
 ## Not a GAP, but the biggest thing still not reachable: round entry (Q-78)

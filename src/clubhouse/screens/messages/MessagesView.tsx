@@ -600,6 +600,16 @@ export function Bubble({
 }) {
   const who = personOf(api, m.senderId);
   const press = useLongPress(m.failed ? undefined : onActions);
+  // Desktop (no actions sheet): a right click opens the reaction bar, as the React button does (the board's gesture).
+  const rightClick =
+    !onActions && !m.failed
+      ? {
+          onContextMenu: (e: ReactMouseEvent) => {
+            e.preventDefault();
+            setPicking(true);
+          },
+        }
+      : {};
   const reacts = api.reactions.get(m.id) ?? [];
   if (m.deleted) {
     return (
@@ -640,7 +650,7 @@ export function Bubble({
           </span>
         )}
         <div className="ch-ms-msg__line">
-          <div className="ch-ms-msg__stack" {...press}>
+          <div className="ch-ms-msg__stack" {...press} {...rightClick}>
             {m.text && <div className="ch-ms-bub">{m.text}</div>}
             {m.hasAttachments && (
               <Attachments load={api.attachments} id={m.id} mine={m.mine} />

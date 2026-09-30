@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -249,6 +249,15 @@ describe('Messages · actions that fail', () => {
     await user.click(screen.getByRole('button', { name: 'React' }));
     await user.click(screen.getAllByRole('menuitem', { name: /^React / })[0]!);
     await expectCode('CH-7009', /Couldn't save the reaction/);
+  });
+
+  it('desktop: a right click on a message opens its reaction bar, as the React button does', async () => {
+    show();
+    const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    expect(screen.queryByRole('menu', { name: 'Reactions' })).toBeNull();
+    fireEvent.contextMenu(bubble);
+    expect(await screen.findByRole('menu', { name: 'Reactions' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'React' }).getAttribute('aria-expanded')).toBe('true');
   });
 
   it('CH-7010 CH-7502 leaving a group asks first; a failed leave says so', async () => {
