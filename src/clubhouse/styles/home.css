@@ -557,7 +557,8 @@
     letter-spacing: -0.025em;
     color: var(--ch-ivory-100);
   }
-  .ch-hm-next p {
+  /* The card's own line only: a notice in the card (CH-2201) keeps its ink (a descendant rule made it 1.02:1). */
+  .ch-hm-next > p {
     font: 400 13.5px/1.35 var(--ch-font-sans);
     color: rgb(244 241 232 / 0.72);
   }

@@ -1839,7 +1839,8 @@
     color: var(--ch-text-primary);
   }
   .ch-calm-month__c.is-out b {
-    color: var(--ch-text-disabled);
+    /* Tappable, so it keeps 4.5:1 (disabled grey read 2.1:1, axe); lighter than an in-month day. */
+    color: var(--ch-text-tertiary);
   }
   .ch-calm-month__c.is-today b {
     font-weight: 600;

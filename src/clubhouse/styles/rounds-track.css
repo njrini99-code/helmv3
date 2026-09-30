@@ -1134,7 +1134,8 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-exitc__n em {
   font: 500 10px/1 var(--ch-font-sans);
   font-style: normal;
-  color: rgb(244 241 232 / 0.6);
+  /* 0.6 read 4.3:1 on the green (axe); 0.72 clears 4.5:1. */
+  color: rgb(244 241 232 / 0.72);
 }
 .ch-rt-exitc__bar {
   display: block;
