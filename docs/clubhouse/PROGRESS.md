@@ -122,6 +122,16 @@ Starting the next session:
 - Roster: owner, 2026-09-29: cards show no jersey number (the handoff has none; Captain waits for a column); the layout toggle and the panel order follow the handoff (the panel sits after the cards when there is no room beside them).
 - Roster: invite-by-email has no server action. The invite sheet offers the join code, a copy button and the native share sheet for the join link.
 - Roster: "Schedule 1:1" and "View insights" wait for Calendar and CoachHelm. They are hidden until then.
+- Roster (phone), 2026-09-29, owner design `Roster Mobile.html`. Each open decision is listed in `phone/roster.md`, and none is decided here.
+  - The design's Captain chip, major, About prose, home course and birthday still have no columns (birthday is minors' PII). The profile shows hometown, high school, class, jersey when set, and member since.
+  - Live data: no member has a jersey number, 12 of 106 players have a high school, and 90 have a hometown.
+  - The inactive row note ("Medical · wrist") needs the unapplied Q-1 availability migration.
+  - Plan 1:1: the Calendar editor opens with `?new=1`, but it can't be seeded with a type or a single invitee. A new event invites every player.
+  - "All N" rounds: the player's Stats Rounds tab can't be opened from the URL (tab is local state). Only `window=season` matches Roster's count.
+  - "Approve all" has no bulk action (live: 0 pending requests on any team).
+  - Invite by email still has no action. The ⋯ menu's contents aren't drawn.
+  - The join code is drawn in tracked mono. It maps to the desktop treatment (Instrument Sans).
+  - The brief asked for a 4-round sparkline threshold; the design and every page use 3.
 
 - Stats (player), 2026-09-29 fidelity: the strokes gained by leg chart is the design system's StrokesGainedRoute (it had been bars), the Rounds count is the design system's tab pill, and a coach reads "Stats › name" in the top bar. The scoring chart's "Season best" marker and "Par 72" meta wait for season-best and course-par data per window.
 - Stats: the prototype's PredictionCard, "vs tour" figures and D1 benchmarks for fairways and putts per round have no source. They are omitted, and D1 shows only where `golf_pga_standards` has the metric.
@@ -141,4 +151,5 @@ Starting the next session:
 - 2026-09-29 · Fidelity pass (Home, Stats team, Calendar, Messages, shell) · desktop: rendered each handoff prototype and our preview side by side at 1280px and fixed what differed. Home subline, Message team and New event, agenda invitee details, "First tee 8:42 · 5 of 6 confirmed", "No rounds 9 days", the Full roster arrow and the stats link; the notifications bell; the sidebar readiness bar; team putting rings at the handoff's size; Longest putt made; Calendar "Checked"; the Messages typing avatar. typecheck 0, vitest logic 32/32, preview states bell empty, failed and filter. No console errors.
 - 2026-09-29 · Settings · desktop: built from the design system at 1280px (coach: account, notifications, team, CoachHelm, preferences; player: account, golf profile, notifications); preview states player, noteam, failed, partial, assistant, failwrites, loading. Fixed a live bug found on the way: `push_announcements` was stripped on save and read as off (test added). typecheck 0.
 - 2026-09-29 · Settings and shell · catalog: 76 Settings and 14 shell tests, each named by its number; clubhouse:check enforces the catalog. Found and fixed on the way: every Clubhouse toast rendered outside the Clubhouse root and so had no background; the browser's own email bubble covered ours; the photo coin lost its initials while the name was empty.
+- 2026-09-29 · Roster · phone-spec, still `doing`: `phone/roster.md` rewritten from the owner's design. The three boards were rendered at 390 × 844, and 14 states were captured (sorts, inactive, long names, sheet with two and five requests, profile top and About, captain, early read, inactive). The current preview was captured at 390px (default, player open, invite, list, empty, failed, partial, loading). The gate stays `doing` because the phone foundation is still a draft and 11 owner decisions are open.
 - 2026-09-29 · Stats (team) · old link: `/stats/team` opens the rebuilt Team stats for coaches. Compared the design project's `Stats.html`, `stats.jsx`, `stats.css`, `cal.css`, `depth.css`, `sidebar.css` and the colour and elevation tokens with `design/handoff/`: identical apart from the Qualifiers nav item (not built, owner). 

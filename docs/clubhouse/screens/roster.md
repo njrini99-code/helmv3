@@ -49,8 +49,11 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 - [ ] Every failure path was forced once locally and seen in the console or Sentry
 
 ## phone-spec
-- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
-- [ ] The owner approved it (the file says `Status: approved`)
+Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/handoff/mobile/Roster Mobile.html`, `m-roster.jsx`: list, profile, join requests sheet). The design boards were captured at 390 × 844, as was the current preview at 390px.
+- [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop. It adds a pushed profile, a requests sheet and a list with sections, and maps every element to a component and to a loader field or action.
+- [x] The owner approved it: the file says `Status: approved`. Handing over the design is the approval (D-22, `design/handoff/mobile/README.md`).
+- [ ] The phone foundation it sits in is approved (`docs/clubhouse/phone/foundation.md` is still a draft; see "Needs from the foundation" in the spec)
+- [ ] The owner decisions listed at the end of the spec are answered (11 open: where Roster lives, fields with no column, Plan 1:1, All N, More actions, Approve all, Invite, desktop-only features, sparkline threshold, Inactive, name sort)
 
 ## phone
 - [ ] Built at 390px and 430px, respecting the safe areas
