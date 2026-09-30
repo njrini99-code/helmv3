@@ -55,6 +55,8 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10207 | Travel doesn't load | "Travel didn't load." + "Trips are safe." | `TeamHub` | hub.test › CH-10207 |
 | CH-10208 | The coach's roster doesn't load | In the announcement and task sheets, where players are chosen: "The roster didn't load, so players can't be chosen." + Try again (reads the page again; the roster that arrives starts fully chosen). "Whole team" loses its count and still posts; Assign stops with this line, never "For 0 of 0" | `PlayerPicks` (`playersError` from `loadTeamHub`) | hub.test › CH-10208 |
 | CH-10209 | The team's documents don't load | In New announcement, where files are attached: "Documents didn't load." + "Nothing was lost. Try again to attach files." + Try again (reads the page again; the files that arrive can be attached, and what was typed stays). The post still goes with none. Never "No documents yet" | `DocumentPicks`, `RefreshNotice` (`documents.error` from `loadTeamHub`) | hub.test › CH-10209 |
+| CH-10210 | Plan a trip: upcoming events didn't load | "Upcoming events didn't load. You can still plan the trip without one, or close and try again." | `TripSheet` | hub.test › CH-10210 |
+| CH-10211 | Plan a trip: who is invited to the chosen event didn't load | "Who is invited to <event> didn't load, so travelers can't be chosen now. Publish keeps the event's invitees as they are." | `TripSheet` | hub.test › CH-10211 |
 
 ## 103xx Empty
 
@@ -71,6 +73,8 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10309 | No team | "You aren't on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
 | CH-10310 | A team with nobody on the roster | In the sheets, where players are chosen: "No players on the roster yet. Add them in Roster, then choose them here." | `PlayerPicks` | hub.test › CH-10310 |
 | CH-10311 | A team with no documents | In New announcement, where files are attached: "No documents yet. Add files in the Documents tab, then attach them here." Nothing to attach; the post still goes | `DocumentPicks` | hub.test › CH-10311 |
+| CH-10312 | Plan a trip: no upcoming events in the next four months | "No upcoming events in the next four months. Add the tournament in Calendar to choose its travelers here." | `TripSheet` | hub.test › CH-10312 |
+| CH-10313 | Plan a trip: the Travelers step with no calendar event | "Travelers come from the trip's calendar event. Without one, the whole team sees the trip. Go Back to choose an event." | `TripSheet` | hub.test › CH-10313 |
 
 ## 104xx Loading
 

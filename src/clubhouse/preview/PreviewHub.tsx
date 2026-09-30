@@ -24,6 +24,7 @@ export function PreviewHub({ data, state, tab }: { data: ChTeamHub; state?: stri
       assignTask: r,
       deleteTask: r,
       planTrip: r,
+      setTravelers: r,
       uploadDocument: r,
       deleteDocument: r,
     };

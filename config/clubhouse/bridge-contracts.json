@@ -8450,6 +8450,28 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100413,
+    "page": "P010",
+    "category": 4,
+    "item": 13,
+    "name": "PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN",
+    "chCode": "CH-10312",
+    "meaning": "Plan a trip: no upcoming events in the next four months",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100414,
+    "page": "P010",
+    "category": 4,
+    "item": 14,
+    "name": "PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH",
+    "chCode": "CH-10313",
+    "meaning": "Plan a trip: the Travelers step with no calendar event",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100501,
     "page": "P010",
     "category": 5,
@@ -8765,6 +8787,28 @@
     "name": "UNTICKING_A_DONE_TASK_FAILS",
     "chCode": "CH-10011",
     "meaning": "Unticking a done task fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100621,
+    "page": "P010",
+    "category": 6,
+    "item": 21,
+    "name": "PLAN_A_TRIP_UPCOMING_EVENTS_DIDNT_LOAD",
+    "chCode": "CH-10210",
+    "meaning": "Plan a trip: upcoming events didn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100622,
+    "page": "P010",
+    "category": 6,
+    "item": 22,
+    "name": "PLAN_A_TRIP_WHO_IS_INVITED_TO",
+    "chCode": "CH-10211",
+    "meaning": "Plan a trip: who is invited to the chosen event didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -9766,6 +9810,72 @@
     ]
   },
   {
+    "id": 110620,
+    "page": "P011",
+    "category": 6,
+    "item": 20,
+    "name": "RESTORING_THE_ROUND_SAVED_ON_THIS_DEVICE",
+    "chCode": "CH-11008",
+    "meaning": "Restoring the round saved on this device fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110621,
+    "page": "P011",
+    "category": 6,
+    "item": 21,
+    "name": "DISCARDING_THE_ROUND_ALREADY_IN_PROGRESS_FAILS",
+    "chCode": "CH-11009",
+    "meaning": "Discarding the round already in progress fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110622,
+    "page": "P011",
+    "category": 6,
+    "item": 22,
+    "name": "SAVE_FOR_LATER_FAILS",
+    "chCode": "CH-11010",
+    "meaning": "Save for later fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110623,
+    "page": "P011",
+    "category": 6,
+    "item": 23,
+    "name": "DISCARDING_FAILS_WHERE_NO_DISCARD_QUESTION_HOLDS",
+    "chCode": "CH-11011",
+    "meaning": "Discarding fails where no discard question holds the message",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110624,
+    "page": "P011",
+    "category": 6,
+    "item": 24,
+    "name": "CHANGING_A_ROUND_TO_PRACTICE_FAILS",
+    "chCode": "CH-11012",
+    "meaning": "Changing a round to practice fails (qualifier closed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110625,
+    "page": "P011",
+    "category": 6,
+    "item": 25,
+    "name": "THE_ROUND_REPORTS_AN_ERROR_WHILE_TRACKING",
+    "chCode": "CH-11013",
+    "meaning": "The round reports an error while tracking (a failed checkpoint or auto-save, a restore or discard that didn't work)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -9785,6 +9895,17 @@
     "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). No P011 test forces offline; the shell's tests cover useAction's refusal.",
     "status": "reserved",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview"
+  },
+  {
+    "id": 110703,
+    "page": "P011",
+    "category": 7,
+    "item": 3,
+    "name": "THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND",
+    "chCode": "CH-11902",
+    "meaning": "The round changed on another device and this one stopped saving",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
     "id": 110801,
@@ -9990,6 +10111,72 @@
     "name": "ADD_A_COURSE",
     "chCode": "CH-11511",
     "meaning": "Add a course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111112,
+    "page": "P011",
+    "category": 11,
+    "item": 12,
+    "name": "A_ROUND_SAVED_ON_THIS_DEVICE_IS",
+    "chCode": "CH-11512",
+    "meaning": "A round saved on this device is found on opening (an interrupted round)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111113,
+    "page": "P011",
+    "category": 11,
+    "item": 13,
+    "name": "DISCARD_ON_THAT_DIALOG",
+    "chCode": "CH-11513",
+    "meaning": "Discard saved shots on that dialog",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111114,
+    "page": "P011",
+    "category": 11,
+    "item": 14,
+    "name": "STARTING_A_ROUND_FINDS_ONE_ALREADY_IN",
+    "chCode": "CH-11514",
+    "meaning": "Starting a round finds one already in progress for this course and date, with real progress",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111115,
+    "page": "P011",
+    "category": 11,
+    "item": 15,
+    "name": "DISCARD_ON_THAT_DIALOG_2",
+    "chCode": "CH-11515",
+    "meaning": "Discard on that dialog",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111116,
+    "page": "P011",
+    "category": 11,
+    "item": 16,
+    "name": "A_SUBMIT_IS_REFUSED_BECAUSE_THE_COACH",
+    "chCode": "CH-11516",
+    "meaning": "A submit is refused because the coach closed the round's qualifier (the refusal contains \"qualifier\" and \"already been completed\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111117,
+    "page": "P011",
+    "category": 11,
+    "item": 17,
+    "name": "DISCARD_ROUND_ON_THAT_SHEET",
+    "chCode": "CH-11517",
+    "meaning": "Discard round on that sheet",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -10215,6 +10402,28 @@
     "name": "UNDO_DELETE_SHOT_DISCARD_ROUND_LEAVE_WITHOUT",
     "chCode": "CH-11707",
     "meaning": "Undo, Delete shot, Discard round, Leave without it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111708,
+    "page": "P011",
+    "category": 17,
+    "item": 8,
+    "name": "THE_SECOND_TAP_OF_A_DISCARD_IN",
+    "chCode": "CH-11708",
+    "meaning": "The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111709,
+    "page": "P011",
+    "category": 17,
+    "item": 9,
+    "name": "A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN",
+    "chCode": "CH-11709",
+    "meaning": "A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

@@ -87,10 +87,23 @@ export interface ChHubTrip {
   eventId: string | null;
   /** Travelers' names (coach), from the linked event's invitees; null when unknown. */
   travelers: string[] | null;
+  /** The same travelers' golf_players ids (coach): the "<trip> travelers" audience. */
+  travelerIds: string[] | null;
   travelerCount: number | null;
   /** Player: invited to the linked event. */
   mine: boolean | null;
   upcoming: boolean;
+}
+
+export interface ChHubTripEvent {
+  id: string;
+  title: string;
+  /** YYYY-MM-DD, in the team's zone */
+  date: string;
+  /** "Mon Nov 3" */
+  label: string;
+  location: string | null;
+  invited: string[] | null;
 }
 
 export interface ChHubTask {
@@ -137,6 +150,11 @@ export interface ChTeamHub {
   /** The coach's roster read failed: `players` is empty because it didn't load, not because the team has none (CH-10208). */
   playersError: boolean;
   rsvps: { rows: ChHubRsvp[]; error: boolean };
+  /**
+   * Coach: the team's upcoming calendar events a trip can be planned for (the trip builder's Event step), with who is
+   * invited (its travelers). `invited` is null when attendance didn't load. Empty for a player.
+   */
+  tripEvents: { rows: ChHubTripEvent[]; error: boolean };
   announcements: { rows: ChHubAnnouncement[]; error: boolean };
   trips: { rows: ChHubTrip[]; error: boolean };
   tasks: { rows: ChHubTask[]; error: boolean };
@@ -243,6 +261,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     ]);
     return {
       ...base,
+      tripEvents: { rows: [], error: false },
       rsvps: {
         // Only events that still take a reply: respondToEvent refuses the rest, so they get no Going / Maybe / Can't.
         rows: replyable
@@ -285,7 +304,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
 
   // ── Coach ──
   const weekEnd = addDays(today, 7);
-  const [annRes, tripsRes, tasksRes, eventsRes] = await Promise.all([
+  const [annRes, tripsRes, tasksRes, eventsRes, tripEventsRes] = await Promise.all([
     getAnnouncementsWithMeta(input.teamId, input.userId, true).catch(() => ({ success: false as const, error: 'failed' })),
     supabase.from('golf_travel_itineraries').select(TRIP_COLUMNS).eq('team_id', input.teamId).gte('departure_date', addDays(today, -60)).order('departure_date', { ascending: true }).limit(50),
     supabase.from('golf_tasks').select('id, title, description, due_date, category, status').eq('team_id', input.teamId).is('parent_task_id', null).order('due_date', { ascending: true, nullsFirst: false }).limit(100),
@@ -299,7 +318,19 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       .lt('start_time', `${weekEnd}T23:59:59Z`)
       .order('start_time', { ascending: true })
       .limit(50),
+    // The trip builder's Event step: the next four months of events a team travels for (not classes or busy time).
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, location')
+      .eq('team_id', input.teamId)
+      .neq('event_type', CLASS_EVENT_TYPE)
+      .is('cancelled_at', null)
+      .gte('start_time', now.toISOString())
+      .lt('start_time', `${addDays(today, 120)}T23:59:59Z`)
+      .order('start_time', { ascending: true })
+      .limit(40),
   ]);
+  if (tripEventsRes.error) log('tripEvents', tripEventsRes.error);
   if (!annRes.success) log('announcements', 'error' in annRes ? annRes.error : 'failed');
   if (tripsRes.error) log('trips', tripsRes.error);
   if (tasksRes.error) log('tasks', tasksRes.error);
@@ -308,9 +339,10 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const trips = (tripsRes.data ?? []) as unknown as TripRow[];
   const tasks = tasksRes.data ?? [];
   const events = eventsRes.data ?? [];
-  // One attendance read for this week's events and the trips' events; one for task completion.
+  const tripEvents = tripEventsRes.data ?? [];
+  // One attendance read for this week's events, the trips' events and the builder's events; one for task completion.
   const [attendance, assignments, authors] = await Promise.all([
-    attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id)]),
+    attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)]),
     assignmentsFor(supabase, tasks.map((t) => t.id)),
     authorNames(supabase, annRes.success ? (annRes.data ?? []) : []),
   ]);
@@ -335,10 +367,22 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       error: !!eventsRes.error,
     },
     announcements: { rows: annRes.success ? (annRes.data ?? []).map((a) => announcement(a, authors, f, 'coach')) : [], error: !annRes.success },
+    tripEvents: {
+      rows: tripEvents.map((e) => ({
+        id: e.id,
+        title: e.title,
+        date: f.day(e.start_time).date,
+        label: `${f.day(e.start_time).weekday} ${f.short(e.start_time)}`,
+        location: e.location,
+        invited: attendance.error ? null : (attendance.byEvent.get(e.id) ?? []).map((r) => r.player),
+      })),
+      error: !!tripEventsRes.error,
+    },
     trips: {
       rows: trips.map((t) => {
-        const who = t.event_id && !attendance.error ? (attendance.byEvent.get(t.event_id) ?? []).map((r) => names.get(r.player)).filter((n): n is string => !!n) : null;
-        return trip(t, f, today, { travelers: who, count: who ? who.length : null, mine: null });
+        const ids = t.event_id && !attendance.error ? (attendance.byEvent.get(t.event_id) ?? []).map((r) => r.player).filter((id) => names.has(id)) : null;
+        const who = ids ? ids.map((id) => names.get(id)!) : null;
+        return trip(t, f, today, { travelers: who, ids, count: who ? who.length : null, mine: null });
       }),
       error: !!tripsRes.error,
     },
@@ -454,7 +498,7 @@ function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: stri
   };
 }
 
-function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: { travelers: string[] | null; count: number | null; mine: boolean | null }): ChHubTrip {
+function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: { travelers: string[] | null; ids?: string[] | null; count: number | null; mine: boolean | null }): ChHubTrip {
   const gear = Array.isArray(t.gear_list) ? t.gear_list.join(', ') : t.gear_list;
   return {
     id: t.id,
@@ -474,6 +518,7 @@ function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: 
     flight: jsonText(t.flight_info),
     eventId: t.event_id,
     travelers: who.travelers,
+    travelerIds: who.ids ?? null,
     travelerCount: who.count,
     mine: who.mine,
     upcoming: !!t.departure_date && (t.return_date ?? t.departure_date) >= today,

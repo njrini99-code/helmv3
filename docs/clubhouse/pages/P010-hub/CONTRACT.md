@@ -58,6 +58,8 @@ First run is the whole-page empty state, one for a coach (CH-10305, with New ann
 | 100410 | — | `PAGE_EMPTY_ONLY_WHEN_EVERY_READ_IS_EMPTY` | The whole-page empty state (CH-10305 for a coach, CH-10306 for a player) shows only when every section read answered and every one was empty, Updates included: a failed read, Updates too, shows its own notice with Try again instead, and an update to read is shown, never hidden behind No team updates yet. |
 | 100411 | CH-10310 | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | A team with nobody on the roster |
 | 100412 | CH-10311 | `A_TEAM_WITH_NO_DOCUMENTS` | A team with no documents |
+| 100413 | CH-10312 | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | Plan a trip: no upcoming events in the next four months |
+| 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step with no calendar event |
 
 ## 05 — Validation
 
@@ -105,6 +107,8 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 100618 | CH-10010 | `SAVING_AN_EDIT_TO_AN_ANNOUNCEMENT_FAILS` | Saving an edit to an announcement fails |
 | 100619 | CH-10209 | `THE_TEAMS_DOCUMENTS_DONT_LOAD` | The team's documents don't load |
 | 100620 | CH-10011 | `UNTICKING_A_DONE_TASK_FAILS` | Unticking a done task fails |
+| 100621 | CH-10210 | `PLAN_A_TRIP_UPCOMING_EVENTS_DIDNT_LOAD` | Plan a trip: upcoming events didn't load |
+| 100622 | CH-10211 | `PLAN_A_TRIP_WHO_IS_INVITED_TO` | Plan a trip: who is invited to the chosen event didn't load |
 
 ## 07 — Network / offline
 

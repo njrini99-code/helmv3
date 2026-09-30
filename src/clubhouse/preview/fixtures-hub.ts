@@ -50,6 +50,7 @@ const TRIPS: ChHubTrip[] = [
     flight: null,
     eventId: 'e-cfi',
     travelers: ['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Eli Brandt', 'Priya Natarajan'],
+    travelerIds: ['theo', 'sofia', 'ava', 'eli', 'priya'],
     travelerCount: 5,
     mine: true,
     upcoming: true,
@@ -72,6 +73,7 @@ const TRIPS: ChHubTrip[] = [
     flight: null,
     eventId: 'e-sea',
     travelers: ['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Priya Natarajan'],
+    travelerIds: ['theo', 'sofia', 'ava', 'jonah', 'priya'],
     travelerCount: 5,
     mine: false,
     upcoming: true,
@@ -124,6 +126,7 @@ export const PREVIEW_HUB_PLAYER: ChTeamHub = {
   role: 'player',
   viewerPlayerId: 'theo',
   players: [],
+  tripEvents: { rows: [], error: false },
   rsvps: {
     error: false,
     rows: [
@@ -147,6 +150,13 @@ export const PREVIEW_HUB_COACH: ChTeamHub = {
   role: 'coach',
   viewerPlayerId: null,
   players: PLAYERS.map(([id, name]) => ({ id, name })),
+  tripEvents: {
+    error: false,
+    rows: [
+      { id: 'e-cfi', title: 'Carolina Fall Invitational', date: '2026-11-03', label: 'Mon Nov 3', location: 'Pinehurst No. 8', invited: ['theo', 'sofia', 'ava', 'eli', 'priya'] },
+      { id: 'e-ecu', title: 'ECU Intercollegiate', date: '2026-11-17', label: 'Mon Nov 17', location: 'Greenville CC', invited: [] },
+    ],
+  },
   announcements: { rows: ANNS.map((a) => ({ ...a, acked: false })), error: false },
   rsvps: {
     error: false,
@@ -169,6 +179,7 @@ export const PREVIEW_HUB_COACH: ChTeamHub = {
 const empty = (d: ChTeamHub): ChTeamHub => ({
   ...d,
   rsvps: { rows: [], error: false },
+  tripEvents: { rows: [], error: false },
   announcements: { rows: [], error: false },
   trips: { rows: [], error: false },
   tasks: { rows: [], error: false },

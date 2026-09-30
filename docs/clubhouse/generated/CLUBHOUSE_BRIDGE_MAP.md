@@ -74,8 +74,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
-| P010 | 2 | 6 |  | 12 | 9 | 20 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 72 |
-| P011 | 13 | 7 |  | 13 | 10 | 19 | 2 | 5 | 2 |  | 11 | 2 | 1 | 3 | 3 | 3 | 7 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 119 |
+| P010 | 2 | 6 |  | 14 | 9 | 22 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 76 |
+| P011 | 13 | 7 |  | 13 | 10 | 25 | 3 | 5 | 2 |  | 17 | 2 | 1 | 3 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 134 |
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
 
@@ -858,6 +858,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100410 |  | 04 Empty | `PAGE_EMPTY_ONLY_WHEN_EVERY_READ_IS_EMPTY` | implemented | The whole-page empty state (CH-10305 for a coach, CH-10306 for a player) shows only when every section read answered and every one was empty, Updates included: a failed read, Updates too, shows its own notice with Try again instead, and an update to read is shown, never hidden behind No team updates yet. |
 | 100411 | CH-10310 | 04 Empty | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | implemented | A team with nobody on the roster |
 | 100412 | CH-10311 | 04 Empty | `A_TEAM_WITH_NO_DOCUMENTS` | implemented | A team with no documents |
+| 100413 | CH-10312 | 04 Empty | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | implemented | Plan a trip: no upcoming events in the next four months |
+| 100414 | CH-10313 | 04 Empty | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | implemented | Plan a trip: the Travelers step with no calendar event |
 | 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting or saving an edit with a headline under three characters |
 | 100502 | CH-10102 | 05 Validation | `POSTING_TO_CHOSEN_PLAYERS_WITH_NONE_CHOSEN` | implemented | Posting to chosen players with none chosen |
 | 100503 | CH-10103 | 05 Validation | `A_TRIP_WITH_A_NAME_UNDER_THREE` | implemented | A trip with a name under three characters |
@@ -887,6 +889,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100618 | CH-10010 | 06 Server / system error | `SAVING_AN_EDIT_TO_AN_ANNOUNCEMENT_FAILS` | implemented | Saving an edit to an announcement fails |
 | 100619 | CH-10209 | 06 Server / system error | `THE_TEAMS_DOCUMENTS_DONT_LOAD` | implemented | The team's documents don't load |
 | 100620 | CH-10011 | 06 Server / system error | `UNTICKING_A_DONE_TASK_FAILS` | implemented | Unticking a done task fails |
+| 100621 | CH-10210 | 06 Server / system error | `PLAN_A_TRIP_UPCOMING_EVENTS_DIDNT_LOAD` | implemented | Plan a trip: upcoming events didn't load |
+| 100622 | CH-10211 | 06 Server / system error | `PLAN_A_TRIP_WHO_IS_INVITED_TO` | implemented | Plan a trip: who is invited to the chosen event didn't load |
 | 100701 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 | 100801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The role from the session decides the controls: a player is never drawn New announcement, Plan a trip, Assign, the drop zone or a delete menu, and a coach is never drawn a reply button, Got it or a task box. |
 | 100802 |  | 08 Permission / authorization | `PLAYER_GETS_ONLY_WHAT_IS_THEIRS` | implemented | A player's data carries none of their teammates' read receipts (an announcement's acknowledged and recipient counts), replies, task completions, traveler lists or names, and no roster; those are in a coach's data only, where the same post reads 5 of 6. |
@@ -977,8 +981,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110617 | CH-11210 | 06 Server / system error | `THE_PICKED_TEES_SCORECARD_DOESNT_LOAD` | implemented | The picked tees' scorecard doesn't load |
 | 110618 | CH-11211 | 06 Server / system error | `THE_PLAYERS_QUALIFIERS_DONT_LOAD` | implemented | The player's qualifiers don't load (Qualifier chosen) |
 | 110619 |  | 06 Server / system error | `A_PARTIAL_READ_STILL_RENDERS_THE_REST` | implemented | A read that fails is logged, flagged on its own part and never thrown, so the rest of the page renders. In the library the posted rounds (CH-11201) and the in-progress check (CH-11202) fail apart, and a failed hole read leaves the in-progress card without its strip and never says it is ready to submit. In the review the holes and the shots fail apart (CH-11204, CH-11205) with the hero and the figures still drawn. The round itself failing is CH-11206. |
+| 110620 | CH-11008 | 06 Server / system error | `RESTORING_THE_ROUND_SAVED_ON_THIS_DEVICE` | implemented | Restoring the round saved on this device fails |
+| 110621 | CH-11009 | 06 Server / system error | `DISCARDING_THE_ROUND_ALREADY_IN_PROGRESS_FAILS` | implemented | Discarding the round already in progress fails |
+| 110622 | CH-11010 | 06 Server / system error | `SAVE_FOR_LATER_FAILS` | implemented | Save for later fails |
+| 110623 | CH-11011 | 06 Server / system error | `DISCARDING_FAILS_WHERE_NO_DISCARD_QUESTION_HOLDS` | implemented | Discarding fails where no discard question holds the message |
+| 110624 | CH-11012 | 06 Server / system error | `CHANGING_A_ROUND_TO_PRACTICE_FAILS` | implemented | Changing a round to practice fails (qualifier closed) |
+| 110625 | CH-11013 | 06 Server / system error | `THE_ROUND_REPORTS_AN_ERROR_WHILE_TRACKING` | implemented | The round reports an error while tracking (a failed checkpoint or auto-save, a restore or discard that didn't work) |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). No P011 test forces offline; the shell's tests cover useAction's refusal. |
+| 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
 | 110801 |  | 08 Permission / authorization | `LIBRARY_IS_FOR_PLAYERS` | implemented | /golf/dashboard/rounds is Clubhouse only for a player: a coach session renders nothing from the Clubhouse route and the Fairway page keeps the coach (v2 has no coach Rounds library), and the shell does not list the library as rebuilt for a coach. A player's rounds are theirs with or without a team (the team only sets the time zone that decides today). |
 | 110802 |  | 08 Permission / authorization | `REVIEW_IS_FOR_THE_PLAYER_AND_THEIR_COACHES` | implemented | A round's review opens for the player who played it and for a coach of a team the player is an active member of. Anyone else, a missing round and a test round get the same "This round isn't here" page, so it never confirms that someone else's round exists (CH-11307). A failed access check is not a permission answer: a round or a coach's membership read that fails gives "This round didn't load" with Try again (CH-11206), never "not found". |
 | 110803 |  | 08 Permission / authorization | `LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS` | reserved | The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Read in this pass, not run: no test asserts the player filter. |
@@ -997,6 +1008,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111109 | CH-11509 | 11 Destructive | `SCORECARD_FROM_THE_TOP_BAR` | implemented | Scorecard, from the top bar |
 | 111110 | CH-11510 | 11 Destructive | `BROWSE_COURSES` | implemented | Browse courses (or Change course) |
 | 111111 | CH-11511 | 11 Destructive | `ADD_A_COURSE` | implemented | Add a course |
+| 111112 | CH-11512 | 11 Destructive | `A_ROUND_SAVED_ON_THIS_DEVICE_IS` | implemented | A round saved on this device is found on opening (an interrupted round) |
+| 111113 | CH-11513 | 11 Destructive | `DISCARD_ON_THAT_DIALOG` | implemented | Discard saved shots on that dialog |
+| 111114 | CH-11514 | 11 Destructive | `STARTING_A_ROUND_FINDS_ONE_ALREADY_IN` | implemented | Starting a round finds one already in progress for this course and date, with real progress |
+| 111115 | CH-11515 | 11 Destructive | `DISCARD_ON_THAT_DIALOG_2` | implemented | Discard on that dialog |
+| 111116 | CH-11516 | 11 Destructive | `A_SUBMIT_IS_REFUSED_BECAUSE_THE_COACH` | implemented | A submit is refused because the coach closed the round's qualifier (the refusal contains "qualifier" and "already been completed") |
+| 111117 | CH-11517 | 11 Destructive | `DISCARD_ROUND_ON_THAT_SHEET` | implemented | Discard round on that sheet |
 | 111201 |  | 12 State preservation | `SETUP_KEPT_WHEN_START_FAILS` | reserved | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Read in this pass: the CH-11007 test proves that Retry opens the round, not that every field is kept, so no test covers this. |
 | 111202 |  | 12 State preservation | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | reserved | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). The test forces the failure and the retry, not the kept shots, so no test covers this. |
 | 111301 |  | 13 Optimistic UI | `DISCARD_WAITS_FOR_THE_SERVER` | implemented | Nothing on the library is optimistic: Discard keeps the card until the server has deleted the round, and the card leaves only on success, from the question or from Retry. The device's emergency copy is cleared only when the delete worked. |
@@ -1016,6 +1033,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111705 | CH-11705 | 17 Haptic | `A_SHOT_IS_RECORDED` | implemented | A shot is recorded (Next shot or Hole out) |
 | 111706 | CH-11706 | 17 Haptic | `GOING_TO_ANOTHER_HOLE` | implemented | Going to another hole |
 | 111707 | CH-11707 | 17 Haptic | `UNDO_DELETE_SHOT_DISCARD_ROUND_LEAVE_WITHOUT` | implemented | Undo, Delete shot, Discard round, Leave without it |
+| 111708 | CH-11708 | 17 Haptic | `THE_SECOND_TAP_OF_A_DISCARD_IN` | implemented | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
+| 111709 | CH-11709 | 17 Haptic | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | implemented | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 | 111801 | CH-11801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_BOOK` | implemented | A screen reader moves through the book |
 | 111802 | CH-11802 | 18 Accessibility | `THE_IN_PROGRESS_CARDS_HOLE_STRIP` | implemented | The in-progress card's hole strip |
 | 111803 | CH-11803 | 18 Accessibility | `THE_SEASON_RIBBON` | implemented | The season ribbon |

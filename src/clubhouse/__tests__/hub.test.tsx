@@ -61,6 +61,7 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
     reply: vi.fn(ok),
     acknowledge: vi.fn(ok),
     completeTask: vi.fn(ok),
+    setTravelers: vi.fn(ok),
     uncompleteTask: vi.fn(ok),
     openDocument: vi.fn(() => Promise.resolve({ success: true, data: { url: 'https://files.example/d1' } })),
     postAnnouncement: vi.fn(() => Promise.resolve({ success: true, data: { announcementId: 'n' } })),
@@ -346,30 +347,125 @@ describe('Team Hub · coach', () => {
     await waitFor(() => expect(router.refresh).toHaveBeenCalled());
   });
 
-  it('CH-10103 CH-10104 CH-10105 CH-10106 CH-10403 CH-10006 101201 planning a trip checks the name, place and dates; a failed save keeps them', async () => {
+  it('CH-10313 CH-10103 CH-10104 CH-10105 CH-10106 CH-10403 CH-10006 101201 planning a trip in steps: no event means no travelers to pick; Logistics checks the name, place and dates before Next; a failed save keeps them', async () => {
     const user = userEvent.setup();
     let release: (v: { success: boolean }) => void = () => {};
     const plan = vi.fn(() => new Promise<{ success: boolean }>((r) => (release = r)));
     show(PREVIEW_HUB_COACH, writes({ planTrip: plan }), 'travel');
     await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
     const dialog = await screen.findByRole('dialog', { name: 'Plan a trip' });
-    await user.click(within(dialog).getByRole('button', { name: 'Save trip' }));
+    const d = within(dialog);
+    // Event (none), Travelers (none without an event), then Logistics, which checks before it lets you on.
+    await user.click(d.getByRole('radio', { name: /No calendar event/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    await expectCode('CH-10313', /Travelers come from the trip’s calendar event/);
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
     await expectCode('CH-10103');
     await expectCode('CH-10104');
     await expectCode('CH-10105');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Trip' }), 'Seahawk');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Where' }), 'Wilmington');
-    fireEvent.change(within(dialog).getByLabelText('Leaves'), { target: { value: '2026-11-14' } });
-    fireEvent.change(within(dialog).getByLabelText('Back'), { target: { value: '2026-11-12' } });
-    await user.click(within(dialog).getByRole('button', { name: 'Save trip' }));
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    await user.type(d.getByRole('textbox', { name: 'Trip' }), 'Seahawk');
+    await user.type(d.getByRole('textbox', { name: 'Where' }), 'Wilmington');
+    fireEvent.change(d.getByLabelText('Leaves'), { target: { value: '2026-11-14' } });
+    fireEvent.change(d.getByLabelText('Back'), { target: { value: '2026-11-12' } });
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
     await expectCode('CH-10106', /can’t be before the departure/);
-    fireEvent.change(within(dialog).getByLabelText('Back'), { target: { value: '2026-11-16' } });
-    await user.click(within(dialog).getByRole('button', { name: 'Save trip' }));
+    fireEvent.change(d.getByLabelText('Back'), { target: { value: '2026-11-16' } });
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+    await user.click(d.getByRole('button', { name: 'Publish' }));
     await expectCode('CH-10403', /Saving/);
-    expect(plan).toHaveBeenCalledWith(expect.objectContaining({ name: 'Seahawk', destination: 'Wilmington', departDate: '2026-11-14', returnDate: '2026-11-16', transport: 'bus', teamId: 't1' }));
+    expect(plan).toHaveBeenCalledWith(expect.objectContaining({ eventId: null, name: 'Seahawk', destination: 'Wilmington', departDate: '2026-11-14', returnDate: '2026-11-16', transport: 'bus', teamId: 't1' }));
     release({ success: false });
     await expectCode('CH-10006', /Couldn’t save Seahawk/);
-    expect((within(dialog).getByRole('textbox', { name: 'Trip' }) as HTMLInputElement).value).toBe('Seahawk');
+    // Back returns to Logistics with everything kept.
+    await user.click(d.getByRole('button', { name: 'Back' }));
+    expect((d.getByRole('textbox', { name: 'Trip' }) as HTMLInputElement).value).toBe('Seahawk');
+  });
+
+  it("a trip for a calendar event: the event fills the trip, its invitees are the travelers, and Publish saves the trip once, then who travels", async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_COACH, writes({ planTrip: vi.fn(async () => ({ success: true, data: { id: 'trip-new' } })) }), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /ECU Intercollegiate/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    expect(d.getByText('Who’s traveling · 0 of 6')).toBeTruthy();
+    await user.click(d.getByRole('button', { name: /Theo Marchetti/ }));
+    await user.click(d.getByRole('button', { name: /Eli Brandt/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    expect((d.getByRole('textbox', { name: 'Trip' }) as HTMLInputElement).value).toBe('ECU Intercollegiate');
+    expect((d.getByRole('textbox', { name: 'Where' }) as HTMLInputElement).value).toBe('Greenville CC');
+    expect((d.getByLabelText('Leaves') as HTMLInputElement).value).toBe('2026-11-17');
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+    expect(d.getByText('2 from ECU Intercollegiate')).toBeTruthy();
+    await user.click(d.getByRole('button', { name: 'Publish' }));
+    await waitFor(() => expect(w.setTravelers).toHaveBeenCalledWith('e-ecu', { add: ['theo', 'eli'], remove: [] }));
+    expect(w.planTrip).toHaveBeenCalledWith(expect.objectContaining({ eventId: 'e-ecu', name: 'ECU Intercollegiate' }));
+  });
+
+  it("CH-10006 a travelers write that fails after the trip saved says so, and Retry writes only the travelers, never a second trip", async () => {
+    const user = userEvent.setup();
+    const setTravelers = vi.fn().mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValue({ success: true });
+    const w = show(PREVIEW_HUB_COACH, writes({ planTrip: vi.fn(async () => ({ success: true, data: { id: 'trip-new' } })), setTravelers }), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /Carolina Fall Invitational/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    // The event's invitees come chosen; taking one off removes them.
+    expect(d.getByText('Who’s traveling · 5 of 6')).toBeTruthy();
+    await user.click(d.getByRole('button', { name: /Priya Natarajan/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+    await user.click(d.getByRole('button', { name: 'Publish' }));
+    await expectCode('CH-10006', /Couldn’t save Carolina Fall Invitational/);
+    expect(screen.getByText(/The trip is saved; its travelers didn’t update/)).toBeTruthy();
+    expect(d.getByRole('button', { name: 'Update travelers' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(setTravelers).toHaveBeenCalledTimes(2));
+    expect(setTravelers).toHaveBeenLastCalledWith('e-cfi', { add: [], remove: ['priya'] });
+    expect(w.planTrip).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+  });
+
+  it("CH-10210 CH-10312 the Event step: events that didn't load say so, and a team with none says where to add one; the trip can still go without one", async () => {
+    const user = userEvent.setup();
+    show({ ...PREVIEW_HUB_COACH, tripEvents: { rows: [], error: true } }, writes(), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    await expectCode('CH-10210', /Upcoming events didn’t load/);
+    cleanup();
+    show({ ...PREVIEW_HUB_COACH, tripEvents: { rows: [], error: false } }, writes(), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    await expectCode('CH-10312', /Add the tournament in Calendar/);
+    expect(screen.getByRole('radio', { name: /No calendar event/ }).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it("CH-10211 an event whose invitees didn't load: travelers can't be chosen, and Publish leaves the event's invitees alone", async () => {
+    const user = userEvent.setup();
+    const data = { ...PREVIEW_HUB_COACH, tripEvents: { rows: PREVIEW_HUB_COACH.tripEvents.rows.map((e) => ({ ...e, invited: null })), error: false } };
+    const w = show(data, writes({ planTrip: vi.fn(async () => ({ success: true, data: { id: 'x' } })) }), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /ECU Intercollegiate/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    await expectCode('CH-10211', /can’t be chosen now/);
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+    await user.click(d.getByRole('button', { name: 'Publish' }));
+    await waitFor(() => expect(w.planTrip).toHaveBeenCalledTimes(1));
+    expect(w.setTravelers).not.toHaveBeenCalled();
+  });
+
+  it("New announcement offers the next trip's travelers as an audience, and sends to exactly them", async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_COACH, writes());
+    await user.click(screen.getByRole('button', { name: 'New announcement' }));
+    const d = within(await screen.findByRole('dialog', { name: 'New announcement' }));
+    await user.type(d.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(d.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
+    await user.click(d.getByRole('radio', { name: /travelers · 5$/ }));
+    await user.click(d.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(w.postAnnouncement).toHaveBeenCalledWith(expect.objectContaining({ playerIds: ['theo', 'sofia', 'ava', 'eli', 'priya'] })));
   });
 
   it('CH-10107 CH-10108 CH-10404 CH-10007 101201 assigning a task: a name, at least one player; the whole team by default', async () => {
@@ -524,7 +620,10 @@ describe('Team Hub · the loader', () => {
     expect(reads).toEqual({ attendance: 1, assignments: 1 });
     expect(data.rsvps.rows[0]!.counts).toEqual({ going: 1, maybe: 0, no: 0, none: 1 });
     expect(data.trips.rows[0]!.travelers).toEqual(['Ava Lindqvist']);
+    expect(data.trips.rows[0]!.travelerIds).toEqual(['p2']);
     expect(data.trips.rows[0]!.upcoming).toBe(true);
+    // The trip builder's events come with who is invited, from the same one attendance read.
+    expect(data.tripEvents.rows[0]).toMatchObject({ id: 'e1', title: 'Team dinner', location: 'Carolina Inn', invited: ['p1', 'p2'] });
     expect(data.tasks.rows[0]!.done).toEqual([1, 2]);
     expect(data.players.map((p) => p.name)).toEqual(['Ava Lindqvist', 'Eli Brandt']);
   });
@@ -541,9 +640,9 @@ describe('Team Hub · the loader', () => {
       golf_events: { error: { message: 'events down' } },
     };
     const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
-    expect([data.documents.error, data.updates.error, data.trips.error, data.tasks.error, data.rsvps.error]).toEqual([true, true, true, true, true]);
+    expect([data.documents.error, data.updates.error, data.trips.error, data.tasks.error, data.rsvps.error, data.tripEvents.error]).toEqual([true, true, true, true, true, true]);
     expect(data.announcements.error).toBe(false);
-    for (const read of ['documents', 'updates', 'trips', 'tasks', 'events']) expect(logServer).toHaveBeenCalledWith('hub', read, expect.anything());
+    for (const read of ['documents', 'updates', 'trips', 'tasks', 'events', 'tripEvents']) expect(logServer).toHaveBeenCalledWith('hub', read, expect.anything());
   });
 
   it('102101 CH-10208 a failed roster read is flagged for a coach, not passed off as an empty team, and logged', async () => {
@@ -745,20 +844,28 @@ const scenarios: Scenario[] = [
     drive: async (user) => {
       await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
       const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+      await user.click(d.getByRole('radio', { name: /No calendar event/ }));
+      await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+      await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
       await user.type(d.getByRole('textbox', { name: 'Trip' }), 'Seahawk');
       await user.type(d.getByRole('textbox', { name: 'Where' }), 'Wilmington');
       fireEvent.change(d.getByLabelText('Leaves'), { target: { value: '2026-11-14' } });
-      await user.click(d.getByRole('button', { name: 'Save trip' }));
+      await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+      await user.click(d.getByRole('button', { name: 'Publish' }));
     },
     notYet: () => {
       expect(dialogOpen()).toBe(true);
-      expect((screen.getByRole('textbox', { name: 'Trip' }) as HTMLInputElement).value).toBe('Seahawk');
+      // Still on the last step, with the trip in its summary.
+      expect(screen.getByText('Seahawk · Wilmington')).toBeTruthy();
       expect(router.refresh).not.toHaveBeenCalled();
     },
     landed: async (user) => {
       await waitFor(() => expect(dialogOpen()).toBe(false));
       await refreshed();
-      expect(await reopen(user, 'Plan a trip', 'Plan a trip', 'Trip')).toBe('');
+      // Reopened, the builder starts over at its first step.
+      await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+      const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+      expect(d.getByText('Event').getAttribute('aria-current')).toBe('step');
     },
   },
   {

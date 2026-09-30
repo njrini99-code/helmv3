@@ -167,6 +167,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
       ),
     (t) => ({ done: `${t.title} is open again`, failed: `Couldn't reopen ${t.title}`, code: 'CH-10011' }),
   );
+  // The next trip whose travelers are known: the "<trip> travelers" audience in New announcement.
+  const travelTrip = data.trips.rows.find((t) => t.upcoming && t.travelerIds && t.travelerIds.length > 0);
+  const travelAudience = travelTrip?.travelerIds ? { label: `${travelTrip.name} travelers`, ids: travelTrip.travelerIds } : undefined;
   const taskDone = (t: ChHubTask) => (t.status === 'completed' || done.has(t.id)) && !undone.has(t.id);
   const open = useAction(
     'hub.openDocument',
@@ -456,7 +459,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
       {coach && (
         <>
-          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} documents={docs} write={writes.postAnnouncement} onDone={refresh} />
+          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} documents={docs} travel={travelAudience} write={writes.postAnnouncement} onDone={refresh} />
           <ComposeSheet
             open={!!editing}
             onClose={() => setEditing(null)}
@@ -467,7 +470,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             onDone={refresh}
             edit={{ announcement: editing, write: writes.editAnnouncement, onSaved: (id, change) => setEdited((m) => new Map(m).set(id, change)) }}
           />
-          <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} write={writes.planTrip} onDone={refresh} />
+          <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} events={data.tripEvents} players={data.players} playersError={data.playersError} write={writes.planTrip} writeTravelers={writes.setTravelers} onDone={refresh} />
           <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} />
           <ConfirmDelete
             open={!!confirm}

@@ -3,7 +3,7 @@
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
-import { respondToEvent } from '@/app/golf/actions/golf';
+import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/golf';
 import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
 import { createGolfTravelItinerary } from '@/app/golf/actions/travel';
 import type { ChHubUrgency } from '../../data/hub';
@@ -28,13 +28,18 @@ export interface ChHubWrites {
   deleteAnnouncement(id: string): Promise<ServerResult>;
   assignTask(input: { teamId: string; title: string; detail: string; dueDate: string | null; playerIds: string[] }): Promise<ServerResult>;
   deleteTask(id: string): Promise<ServerResult>;
-  planTrip(input: ChTripInput): Promise<ServerResult>;
+  /** Saves the itinerary; `data.id` is the new trip's, so a retry of the travelers step never saves it twice. */
+  planTrip(input: ChTripInput): Promise<ServerResult<{ id: string }>>;
+  /** Who travels: the linked event's invitees (updateGolfEvent adds and removes explicitly; it never widens to the team). */
+  setTravelers(eventId: string, change: { add: string[]; remove: string[] }): Promise<ServerResult>;
   uploadDocument(input: { teamId: string; file: File; folder: string | null }): Promise<ServerResult>;
   deleteDocument(id: string): Promise<ServerResult>;
 }
 
 export interface ChTripInput {
   teamId: string;
+  /** The calendar event the trip is for (the builder's Event step); its invitees are the travelers. */
+  eventId: string | null;
   name: string;
   destination: string;
   transport: 'bus' | 'van' | 'flight' | 'carpool';
@@ -68,6 +73,7 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
   planTrip: (i) =>
     createGolfTravelItinerary({
       team_id: i.teamId,
+      event_id: i.eventId ?? undefined,
       event_name: i.name.trim(),
       destination: i.destination.trim(),
       transportation_type: i.transport,
@@ -78,7 +84,8 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
       return_time: blank(i.returnTime),
       hotel_name: blank(i.hotel),
       notes: blank(i.notes),
-    }) as Promise<ServerResult>,
+    }) as Promise<ServerResult<{ id: string }>>,
+  setTravelers: (eventId, c) => updateGolfEvent(eventId, { addAttendeeIds: c.add, removeAttendeeIds: c.remove }) as Promise<ServerResult>,
   async uploadDocument(i) {
     const up = await uploadGolfDocument(i.file, i.teamId);
     if (!up.success || !up.file_url) return { success: false, error: up.error };

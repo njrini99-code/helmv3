@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, FileText, Megaphone, Paperclip, Pencil, Plane, SquareCheck, TriangleAlert, X } from 'lucide-react';
-import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { ArrowRight, Check, FileText, Megaphone, Paperclip, Pencil, Plane, SquareCheck, TriangleAlert, X } from 'lucide-react';
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChTeamHub } from '../../data/hub';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -171,6 +171,7 @@ export function ComposeSheet({
   players,
   playersError,
   documents,
+  travel,
   write,
   onDone,
   edit,
@@ -180,6 +181,8 @@ export function ComposeSheet({
   players: ChTeamHub['players'];
   playersError: boolean;
   documents: ChTeamHub['documents'];
+  /** The next trip's travelers, as the board's "Pinehurst travelers" audience; absent when it has none known. */
+  travel?: { label: string; ids: string[] };
   write: ChHubWrites['postAnnouncement'];
   /** After a post or an edit lands: the page reads again. */
   onDone: () => void;
@@ -189,7 +192,7 @@ export function ComposeSheet({
   const id = useId();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [aud, setAud] = useState<'all' | 'pick'>('all');
+  const [aud, setAud] = useState<'all' | 'pick' | 'travel'>('all');
   const [picked, setPicked] = useState<string[]>([]);
   const [docs, setDocs] = useState<string[]>([]);
   const [ack, setAck] = useState(true);
@@ -255,7 +258,7 @@ export function ComposeSheet({
       if (target) void save.run(target.id, { title, body, urgency: target.urgency, requiresAck: ack });
       return;
     }
-    void create.run({ title, body, requiresAck: ack, playerIds: aud === 'all' ? null : picked, documentIds: attached });
+    void create.run({ title, body, requiresAck: ack, playerIds: aud === 'all' ? null : aud === 'travel' && travel ? travel.ids : picked, documentIds: attached });
   };
   return (
     <Modal
@@ -306,8 +309,9 @@ export function ComposeSheet({
               {(
                 [
                   ['all', playersError ? 'Whole team' : `Whole team · ${players.length}`],
+                  ...(travel ? ([['travel', `${travel.label} · ${travel.ids.length}`]] as const) : []),
                   ['pick', 'Choose players'],
-                ] as const
+                ] as ReadonlyArray<readonly ['all' | 'pick' | 'travel', string]>
               ).map(([k, l]) => (
                 <button
                   key={k}
@@ -352,114 +356,276 @@ const TRANSPORTS: Array<[ChTripInput['transport'], string]> = [
   ['carpool', 'Carpool'],
 ];
 
+const TRIP_STEPS = ['Event', 'Travelers', 'Logistics', 'Itinerary'] as const;
+
+/**
+ * Plan a trip, in the board's four steps: the calendar event it's for (optional), who travels (that event's invitees),
+ * logistics, then the itinerary notes. Back and Next move between steps; Publish saves the trip, then the travelers.
+ * The trip is saved once: a travelers write that fails is retried on its own (the saved trip's id is kept), so a
+ * Retry never makes a second trip.
+ */
 export function TripSheet({
   open,
   onClose,
   teamId,
+  events,
+  players,
+  playersError,
   write,
+  writeTravelers,
   onDone,
 }: {
   open: boolean;
   onClose: () => void;
   teamId: string;
+  events: ChTeamHub['tripEvents'];
+  players: ChTeamHub['players'];
+  playersError: boolean;
   write: ChHubWrites['planTrip'];
+  writeTravelers: ChHubWrites['setTravelers'];
   /** After a trip is saved: the page reads again. */
   onDone: () => void;
 }) {
   const id = useId();
-  const empty: ChTripInput = { teamId, name: '', destination: '', transport: 'bus', departDate: '', departTime: '', from: '', returnDate: '', returnTime: '', hotel: '', notes: '' };
+  const empty: ChTripInput = { teamId, eventId: null, name: '', destination: '', transport: 'bus', departDate: '', departTime: '', from: '', returnDate: '', returnTime: '', hotel: '', notes: '' };
   const [v, setV] = useState<ChTripInput>(empty);
+  const [step, setStep] = useState(0);
+  const [travelers, setTravelers] = useState<string[]>([]);
   const [tried, setTried] = useState(false);
+  // The trip this sheet already saved, when only its travelers are left to write.
+  const [savedId, setSavedId] = useState<string | null>(null);
+  // The same, read by the action: a toast's Retry runs the action as it was first made, so state would still say none.
+  const savedRef = useRef<string | null>(null);
   const set = (k: keyof ChTripInput) => (e: { target: { value: string } }) => setV((cur) => ({ ...cur, [k]: e.target.value }));
+  const event = events.rows.find((e) => e.id === v.eventId) ?? null;
   const errs = {
     name: tried && v.name.trim().length < 3 ? 'Name the trip, at least three characters.' : null,
     destination: tried && !v.destination.trim() ? 'Where is the team going?' : null,
     departDate: tried && !v.departDate ? 'Pick the day the team leaves.' : null,
     returnDate: tried && v.returnDate && v.departDate && v.returnDate < v.departDate ? 'The return can’t be before the departure.' : null,
   };
+  const reset = () => {
+    setV(empty);
+    setStep(0);
+    setTravelers([]);
+    setTried(false);
+    setSavedId(null);
+    savedRef.current = null;
+  };
+  const pickEvent = (eventId: string | null) => {
+    haptic('select');
+    const e = events.rows.find((x) => x.id === eventId) ?? null;
+    // The event fills what it knows; anything typed already stays.
+    setV((cur) => ({
+      ...cur,
+      eventId,
+      name: cur.name || (e?.title ?? ''),
+      destination: cur.destination || (e?.location ?? ''),
+      departDate: cur.departDate || (e?.date ?? ''),
+    }));
+    setTravelers(e?.invited ?? []);
+  };
   const plan = useAction(
     'hub.planTrip',
-    async (i: ChTripInput) => {
-      const res = await write(i);
-      if (normalise(res).success) {
-        setV(empty);
-        setTried(false);
-        onClose();
-        onDone();
+    async (i: { trip: ChTripInput; travelers: string[] }) => {
+      let tripId = savedRef.current;
+      if (!tripId) {
+        const res = await write(i.trip);
+        const landed = normalise(res);
+        if (!landed.success) return res;
+        tripId = landed.data?.id ?? 'saved';
+        savedRef.current = tripId;
+        setSavedId(tripId);
       }
-      return res;
+      const ev = events.rows.find((e) => e.id === i.trip.eventId);
+      if (ev && ev.invited) {
+        const add = i.travelers.filter((p) => !ev.invited!.includes(p));
+        const remove = ev.invited.filter((p) => !i.travelers.includes(p));
+        if (add.length || remove.length) {
+          const res = normalise(await writeTravelers(ev.id, { add, remove }));
+          if (!res.success) return { success: false, error: `The trip is saved; its travelers didn’t update.${'error' in res && res.error ? ` ${res.error}` : ''}` };
+        }
+      }
+      reset();
+      onClose();
+      onDone();
+      return { success: true };
     },
-    (i) => ({ done: `${i.name.trim()} is on Travel`, failed: `Couldn’t save ${i.name.trim() || 'the trip'}`, hint: 'What you entered is still here.', code: 'CH-10006' }),
+    (i) => ({ done: `${i.trip.name.trim()} is on Travel`, failed: `Couldn’t save ${i.trip.name.trim() || 'the trip'}`, hint: 'What you entered is still here.', code: 'CH-10006' }),
   );
   const pending = plan.pending;
-  const submit = (e?: FormEvent) => {
-    e?.preventDefault();
-    setTried(true);
-    const bad = v.name.trim().length < 3 || !v.destination.trim() || !v.departDate || (!!v.returnDate && v.returnDate < v.departDate);
-    if (bad) {
+  const logisticsBad = v.name.trim().length < 3 || !v.destination.trim() || !v.departDate || (!!v.returnDate && v.returnDate < v.departDate);
+  const next = () => {
+    // Logistics holds the required fields; they are checked leaving it, and again on Publish.
+    if (step === 2 && logisticsBad) {
+      setTried(true);
       haptic('warning');
       return;
     }
-    void plan.run({ ...v, teamId });
+    haptic('select');
+    setStep((n) => Math.min(TRIP_STEPS.length - 1, n + 1));
+  };
+  const back = () => {
+    haptic('select');
+    setStep((n) => Math.max(0, n - 1));
+  };
+  const submit = (e?: FormEvent) => {
+    e?.preventDefault();
+    setTried(true);
+    if (logisticsBad) {
+      haptic('warning');
+      setStep(2);
+      return;
+    }
+    void plan.run({ trip: { ...v, teamId }, travelers });
   };
   const input = (k: keyof ChTripInput, label: string, type = 'text', err?: string | null, code?: string) => (
     <Field label={label} id={`${id}-${k}`} error={err} errorCode={code}>
-      <input id={`${id}-${k}`} className="ch-input" type={type} value={v[k]} onChange={set(k)} aria-invalid={!!err} aria-describedby={err ? `${id}-${k}-err` : undefined} />
+      <input id={`${id}-${k}`} className="ch-input" type={type} value={v[k] ?? ''} onChange={set(k)} aria-invalid={!!err} aria-describedby={err ? `${id}-${k}-err` : undefined} />
     </Field>
   );
+  const last = step === TRIP_STEPS.length - 1;
   return (
     <Modal
       open={open}
       onClose={onClose}
       icon={Plane}
       title="Plan a trip"
-      description="Players see the itinerary in Team Hub."
+      description={event ? `${event.title} · ${event.label}` : 'Players see the itinerary in Team Hub.'}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
-            {pending ? <span data-ch-code="CH-10403">Saving</span> : 'Save trip'}
-          </Button>
+          {step > 0 ? (
+            <Button variant="ghost" onClick={back} disabled={pending}>
+              Back
+            </Button>
+          ) : (
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
+          {last ? (
+            <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
+              {pending ? <span data-ch-code="CH-10403">Saving</span> : savedId ? 'Update travelers' : 'Publish'}
+            </Button>
+          ) : (
+            <Button variant="primary" rightIcon={ArrowRight} onClick={next}>
+              Next: {step === 2 ? 'Itinerary' : TRIP_STEPS[step + 1]}
+            </Button>
+          )}
         </>
       }
     >
       <form className="ch-hb-form" onSubmit={submit} noValidate>
-        {input('name', 'Trip', 'text', errs.name, 'CH-10103')}
-        {input('destination', 'Where', 'text', errs.destination, 'CH-10104')}
-        <div className="ch-field">
-          <span className="ch-field__label">Getting there</span>
-          <div className="ch-hb-aud" role="radiogroup" aria-label="Getting there">
-            {TRANSPORTS.map(([k, l]) => (
-              <button
-                key={k}
-                type="button"
-                role="radio"
-                aria-checked={v.transport === k}
-                onClick={() => {
-                  haptic('select');
-                  setV((cur) => ({ ...cur, transport: k }));
-                }}
-              >
-                {l}
+        <ol className="ch-hb-steps" aria-label="Steps">
+          {TRIP_STEPS.map((l, i) => (
+            <li key={l} className={i < step ? 'is-done' : i === step ? 'is-on' : undefined} aria-current={i === step ? 'step' : undefined}>
+              {l}
+            </li>
+          ))}
+        </ol>
+        {step === 0 && (
+          <div className="ch-field">
+            <span className="ch-field__label">What the trip is for</span>
+            {events.error ? (
+              <span className="ch-field__help is-error" data-ch-code="CH-10210">
+                Upcoming events didn’t load. You can still plan the trip without one, or close and try again.
+              </span>
+            ) : null}
+            <div className="ch-hb-evpick" role="radiogroup" aria-label="Event">
+              {events.rows.map((e) => (
+                <button key={e.id} type="button" role="radio" aria-checked={v.eventId === e.id} onClick={() => pickEvent(e.id)}>
+                  <b>{e.title}</b>
+                  <span>{[e.label, e.location].filter(Boolean).join(' · ')}</span>
+                </button>
+              ))}
+              <button type="button" role="radio" aria-checked={v.eventId === null} onClick={() => pickEvent(null)}>
+                <b>No calendar event</b>
+                <span>A trip on its own; the whole team sees it</span>
               </button>
-            ))}
+            </div>
+            {!events.error && events.rows.length === 0 && (
+              <span className="ch-field__help" data-ch-code="CH-10312">
+                No upcoming events in the next four months. Add the tournament in Calendar to choose its travelers here.
+              </span>
+            )}
           </div>
-        </div>
-        <div className="ch-hb-2">
-          {input('departDate', 'Leaves', 'date', errs.departDate, 'CH-10105')}
-          {input('departTime', 'At', 'time')}
-        </div>
-        {input('from', 'From')}
-        <div className="ch-hb-2">
-          {input('returnDate', 'Back', 'date', errs.returnDate, 'CH-10106')}
-          {input('returnTime', 'At', 'time')}
-        </div>
-        {input('hotel', 'Hotel (optional)')}
-        <Field label="Notes for the players (optional)" id={`${id}-notes`}>
-          <textarea id={`${id}-notes`} className="ch-textarea" rows={3} value={v.notes} onChange={set('notes')} />
-        </Field>
+        )}
+        {step === 1 &&
+          (event ? (
+            event.invited === null ? (
+              <span className="ch-field__help is-error" data-ch-code="CH-10211">
+                Who is invited to {event.title} didn’t load, so travelers can’t be chosen now. Publish keeps the event’s invitees as they are.
+              </span>
+            ) : (
+              <div className="ch-field">
+                <span className="ch-field__label">
+                  Who’s traveling · {travelers.length} of {players.length}
+                </span>
+                <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={travelers} onChange={setTravelers} label="Who’s traveling" />
+                <span className="ch-field__help">They are invited to {event.title} in Calendar, and are this trip’s travelers.</span>
+              </div>
+            )
+          ) : (
+            <span className="ch-field__help" data-ch-code="CH-10313">
+              Travelers come from the trip’s calendar event. Without one, the whole team sees the trip. Go Back to choose an event.
+            </span>
+          ))}
+        {step === 2 && (
+          <>
+            {input('name', 'Trip', 'text', errs.name, 'CH-10103')}
+            {input('destination', 'Where', 'text', errs.destination, 'CH-10104')}
+            <div className="ch-field">
+              <span className="ch-field__label">Getting there</span>
+              <div className="ch-hb-aud" role="radiogroup" aria-label="Getting there">
+                {TRANSPORTS.map(([k, l]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    role="radio"
+                    aria-checked={v.transport === k}
+                    onClick={() => {
+                      haptic('select');
+                      setV((cur) => ({ ...cur, transport: k }));
+                    }}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="ch-hb-2">
+              {input('departDate', 'Leaves', 'date', errs.departDate, 'CH-10105')}
+              {input('departTime', 'At', 'time')}
+            </div>
+            {input('from', 'From')}
+            <div className="ch-hb-2">
+              {input('returnDate', 'Back', 'date', errs.returnDate, 'CH-10106')}
+              {input('returnTime', 'At', 'time')}
+            </div>
+            {input('hotel', 'Hotel (optional)')}
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <Field label="Itinerary for the players (optional)" id={`${id}-notes`}>
+              <textarea id={`${id}-notes`} className="ch-textarea" rows={5} value={v.notes} onChange={set('notes')} />
+            </Field>
+            <dl className="ch-hb-tripsum">
+              <div>
+                <dt>Trip</dt>
+                <dd>{[v.name.trim(), v.destination.trim()].filter(Boolean).join(' · ') || '—'}</dd>
+              </div>
+              <div>
+                <dt>Leaves</dt>
+                <dd>{[v.departDate, v.departTime, v.from.trim()].filter(Boolean).join(' · ') || '—'}</dd>
+              </div>
+              <div>
+                <dt>Travelers</dt>
+                <dd>{event ? (event.invited === null ? 'As invited in Calendar' : `${travelers.length} from ${event.title}`) : 'The whole team sees it'}</dd>
+              </div>
+            </dl>
+          </>
+        )}
       </form>
     </Modal>
   );
