@@ -21,11 +21,27 @@ import { readScheduleLive, type ChReadResult, type ChReadSource } from './import
  * for a save whose answer was lost after the row was stored: the page makes the
  * new row's id, so its retry reaches that row instead of adding another.
  */
+/** What deleting several classes did, for the page's list and its words: who is gone, who stayed on the calendar, and who is off the calendar but still saved. */
+export interface ChRemoveAllData {
+  /** Deleted, or already gone when the attempt began (a Retry after a lost answer). */
+  removed: string[];
+  /** The calendar removal failed, so the class was kept: nothing was done to it. */
+  kept: Array<{ id: string; reason: string }>;
+  /** Off the calendar, but the delete did not finish: still on the schedule. */
+  offCalendar: string[];
+}
+
 export interface ChClassesWrites {
   /** Insert (`editing` null, as the row `newId`) or update a class row. Returns the row as stored. A retry with the same `newId` finds the row its first attempt stored. */
   save(input: ChClassInput, editing: ChClass | null, newId: string): Promise<ServerResult<{ row: ChClassRow }>>;
   /** Take a class off the calendar, then delete it. The row stays when the calendar removal failed, so a retry finds it. */
   remove(id: string): Promise<ServerResult>;
+  /**
+   * Take every one of these classes off the calendar, then delete the ones that came off. `remove`, for a list. A class whose calendar removal failed is
+   * kept, untouched; one whose calendar part landed and whose delete did not is reported as off the calendar. A retry with the same ids is safe: a class already
+   * gone counts as removed. Success only when every class is gone.
+   */
+  removeAll(ids: string[]): Promise<ServerResult<ChRemoveAllData>>;
   /** Put one saved class on the team calendar (a diff-upsert, so repeating it is safe). A class with no start or no end time is taken off the calendar instead. */
   sync(c: ChClass, opts?: { semesterStartDate?: string }): Promise<ServerResult>;
   /** Save the reviewed rows of an import, skipping classes already on the schedule. */
@@ -133,6 +149,59 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       // The calendar part landed; only the row is left. Say so (the toast shows this reason), and mark it, so the page flags the class.
       chReport(new Error(error.message || 'delete failed'), { surface: 'classes.remove', action: 'delete', severity: 'low' });
       return { success: false, error: 'It is off your calendar but still on your schedule. Try again to finish removing it.', data: { offCalendar: true } };
+    },
+
+    async removeAll(ids) {
+      // Calendar first, for every class, then the rows of the ones that came off it (the same order as `remove`, and the current page's). A class whose events
+      // are still on the team calendar keeps its row: once the row is gone nothing can target its [class:<id>] tag.
+      const cleared: string[] = [];
+      const kept: ChRemoveAllData['kept'] = [];
+      for (const id of ids) {
+        try {
+          const removal = await removeClassFromCalendar(id);
+          if (removal?.success) cleared.push(id);
+          else kept.push({ id, reason: removal?.error ?? 'unknown error' });
+        } catch (err) {
+          chReport(err, { surface: 'classes.removeAll', action: 'removeClassFromCalendar', severity: 'low' });
+          kept.push({ id, reason: 'The calendar removal did not finish.' });
+        }
+      }
+      let removed: string[] = [];
+      let offCalendar: string[] = [];
+      if (cleared.length) {
+        let gone: string[] = [];
+        let failure: unknown = null;
+        try {
+          const del = await sb.from('golf_player_classes').delete().in('id', cleared).eq('player_id', ctx.playerId).select('id');
+          if (del.error) failure = del.error;
+          else gone = ((del.data ?? []) as Array<{ id: string }>).map((r) => r.id);
+        } catch (err) {
+          failure = err;
+        }
+        if (failure) chReport(failure instanceof Error ? failure : new Error((failure as { message?: string }).message || 'delete failed'), { surface: 'classes.removeAll', action: 'delete', severity: 'low' });
+        const missing = cleared.filter((id) => !gone.includes(id));
+        if (!missing.length) removed = cleared;
+        else {
+          // The delete did not return every row: it failed, or a policy hid some, or the rows were already gone. Ask which are still there; a class that is
+          // not is gone, and one that is (or whose answer can't be read) is not claimed as deleted.
+          let left: string[] | null = null;
+          try {
+            const read = await sb.from('golf_player_classes').select('id').in('id', missing).eq('player_id', ctx.playerId);
+            if (!read.error) left = ((read.data ?? []) as Array<{ id: string }>).map((r) => r.id);
+          } catch {
+            left = null;
+          }
+          offCalendar = left ?? missing;
+          removed = cleared.filter((id) => !offCalendar.includes(id));
+        }
+      }
+      const data: ChRemoveAllData = { removed, kept, offCalendar };
+      if (!kept.length && !offCalendar.length) return { success: true, data };
+      return {
+        success: false,
+        error: kept.length ? `Couldn't take ${kept.length === 1 ? 'a class' : `${kept.length} classes`} off your calendar. ${kept.length === 1 ? 'It was' : 'They were'} kept so you can try again.` : 'Some classes are off your calendar but still on your schedule. Try again to finish removing them.',
+        data,
+      };
     },
 
     async sync(c, opts) {

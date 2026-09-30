@@ -5,8 +5,9 @@ import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } fr
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/golf';
 import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
-import { createGolfTravelItinerary } from '@/app/golf/actions/travel';
+import { createGolfTravelItinerary, getTravelerClassConflicts } from '@/app/golf/actions/travel';
 import type { ChHubUrgency } from '../../data/hub';
+import type { ChTravelerClass, ChTripWindow } from '../../data/hub-shape';
 import type { ServerResult } from '../../lib/use-action';
 
 /**
@@ -22,7 +23,11 @@ export interface ChHubWrites {
   /** Undo the player's own tick (an accidental one): the task is open again. */
   uncompleteTask(taskId: string): Promise<ServerResult>;
   openDocument(documentId: string): Promise<ServerResult<{ url: string }>>;
-  postAnnouncement(input: { title: string; body: string; requiresAck: boolean; playerIds: string[] | null; documentIds: string[] }): Promise<ServerResult<{ announcementId: string }>>;
+  /**
+   * `data.attachmentsError` is set when the post exists but its files did not attach (Q-82): the post is not replayed to
+   * fix it, so the sheet closes and says so once.
+   */
+  postAnnouncement(input: { title: string; body: string; requiresAck: boolean; playerIds: string[] | null; documentIds: string[] }): Promise<ServerResult<{ announcementId: string; attachmentsError?: string }>>;
   /** A posted announcement's headline, message and acknowledgement (updateAnnouncement takes no audience or attachments). */
   editAnnouncement(id: string, input: { title: string; body: string; urgency: ChHubUrgency; requiresAck: boolean }): Promise<ServerResult>;
   deleteAnnouncement(id: string): Promise<ServerResult>;
@@ -32,6 +37,11 @@ export interface ChHubWrites {
   planTrip(input: ChTripInput): Promise<ServerResult<{ id: string }>>;
   /** Who travels: the linked event's invitees (updateGolfEvent adds and removes explicitly; it never widens to the team). */
   setTravelers(eventId: string, change: { add: string[]; remove: string[] }): Promise<ServerResult>;
+  /**
+   * A read, not a write: which of the chosen travelers have a class inside the trip's dates (Q-84). Only those players'
+   * classes that overlap the window come back. `partial` means a read behind the answer failed, so it is not an all-clear.
+   */
+  travelerClasses(input: ChTripWindow & { teamId: string; playerIds: string[] }): Promise<ServerResult<{ classes: ChTravelerClass[]; partial: boolean }>>;
   uploadDocument(input: { teamId: string; file: File; folder: string | null }): Promise<ServerResult>;
   deleteDocument(id: string): Promise<ServerResult>;
 }
@@ -86,6 +96,7 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
       notes: blank(i.notes),
     }) as Promise<ServerResult<{ id: string }>>,
   setTravelers: (eventId, c) => updateGolfEvent(eventId, { addAttendeeIds: c.add, removeAttendeeIds: c.remove }) as Promise<ServerResult>,
+  travelerClasses: (i) => getTravelerClassConflicts(i),
   async uploadDocument(i) {
     const up = await uploadGolfDocument(i.file, i.teamId);
     if (!up.success || !up.file_url) return { success: false, error: up.error };

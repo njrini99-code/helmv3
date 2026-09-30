@@ -28,6 +28,8 @@ Date:       2026-09-30
 | --- | --- | --- |
 | `src/clubhouse/__tests__/recruiting.test.tsx` (61 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 that is not marked preview | pass |
 | `src/clubhouse/__tests__/shell.test.tsx` (the Team list now reads Roster, Recruiting, Stats, Qualifiers) | 10802 | pass |
+| `src/clubhouse/__tests__/recruiting-upload.test.tsx` (31 cases: the limits and the migration's numbers, the transfer and its progress, the file drop, Storage's refusals, an Add that cannot repeat, the phone) | CH-14105 to CH-14110, CH-14404, CH-14407, CH-14703, CH-14915 to CH-14917 | pass |
+| `src/test/golf/actions/recruit-document-upload.test.ts` (16) and `recruiting-create.test.ts` (9) | the server side of CH-14915 and CH-14916 | pass |
 
 Both files together: 110 passed (2026-09-30). All of `src/clubhouse`: 30 files, 1531 tests, exit 0.
 
@@ -49,6 +51,35 @@ to fail, and the code was put back (byte-identical afterwards). 32 breaks, 32 ki
 - Role and route (140801, 140101, 140406, 140608, 140609): the route drawing for a session with no coach; a player not
   sent Home; the Clubhouse page shown with the flag off; a failed read drawn as an empty list; no team treated as a
   failed list; a failed documents read drawn as empty.
+
+### Film, the file drop and an idempotent Add (2026-09-30, later)
+
+The four test files above: 117 passed (`npm run test:file`, exit 0). With the Fairway recruiting tests
+(`FairwayRecruitingPage`, `FairwayRecruitCard`), `coverage-contract.b6`, `feature-registry` and
+`supabase-service-wiring`: 9 files, 192 tests, exit 0. `typecheck:fast` exit 0. eslint on the changed files: 0 errors (one
+`jsx-a11y/aria-role` warning on the `role="coach"` marker prop, the same as the other Clubhouse tests).
+`squawk-cli` 2.64.0 on the migration, as CI runs it: 0 issues. `check:migration-headers`: the migration is not among the files
+it flags.
+
+Mutation checks: 80 deliberate breaks, 80 caught, each restored (29 on the server, 51 on the page). Two survived at first
+and each got a test: the read-back's first name (a prospect with the same last name but another first name was accepted as
+"saved"), and the log of an over-size file that could not be taken out of Storage. Covered: the type and size rules and the
+names that are only object properties; a repeat that signs a second transfer or records a second row; the size read back from
+Storage; Storage's refusals by status and by body; progress held at 99 until Storage answers; the drop (folder, several, empty,
+text, the phone, a second drop, the window guard while the dialog is open); the toast staying quiet for a refusal; the upload id
+kept across Retry; the request id kept across Retry and Save and changed with the contents; the team, creator and name
+read-back.
+
+Preview states forced: `upload`, `toolarge`, `refusedtype`, `refusedsize`, and a file dragged over (a synthetic `dragenter`).
+axe (WCAG 2.2 AA): clean on 13 scans, the four states at 1280, 390 and 430 and the drag at 1280. The native-feel scan on the four
+states at 390 and 430: clean. Both were run from a scratch copy of the scripts pointed at these URLs, because `a11y.mjs` and
+`native.mjs` are edited by another session: add the four states to `CH_A11Y_PAGES`. Seen at 1280: the drop's dashed edge, the
+upload dialog mid-transfer (a bar at 83%, "Uploading 83%") and Storage's refusal of a type.
+
+The read-only database checks behind the migration: the live `recruit-documents` row (25 MB, fourteen types, no objects), the
+coach-only policies on `storage.objects`, the `golf_recruits` constraints (the primary key is the only unique column, so
+the request id is the key), and the new allowlist expression evaluated against the live row (seventeen types, the file's own
+`-- VERIFY:` true of it). Nothing was written.
 
 ## Forced states
 
@@ -128,9 +159,15 @@ needed regenerating for the new docs and the registry entry (`knowledge:doc-inve
 - A real coach session, against real data: the page, the five writes, a document upload and its signed link. None was
   run; every write is tested against a fake of the current server actions, and the preview's writes are in memory.
 - The iPhone pass (keyboard with the edit sheet open, swipe-back with a sheet open, haptics, a file from Photos).
-- `createRecruit` has no idempotency key; a Retry after a reply lost on the way would add the prospect twice. This is
-  the current page's server behaviour and was not changed.
-- The boards' sample film is a `.mov`; the bucket takes no video, so it cannot be uploaded (DESIGN.md).
+- Film needs the migration: the bucket takes no video and caps a file at 25 MB until
+  `20260930140000_recruit_documents_film.sql` is applied. A real film was not uploaded (that would write to the production
+  bucket), so the direct transfer to Storage was tested against a fake request only; what Storage answers to a refused film
+  (413 for a size, 415 or a body naming the mime type for a type) is read from its documented shape, with a body-only case covered.
+- The project-wide Storage upload limit is a project setting that could not be read; the migration assumes at least 100 MB.
+- `npm run test:rls` was not run (no local database in this pass; the change is bucket configuration, not a policy) and
+  `npm run build` was not run (a server-action file changed; CI's build is the check).
+- `createRecruit`'s idempotency was tested against a fake of the database (the duplicate-key answer, the read-back); the real
+  primary-key collision was not forced on production.
 - CH-14601 and CH-14602 (motion) are preview-checked only.
 - The registry will mark the codes `reserved` or `implemented` when the coordinator runs `sync`; 53 IDs are minted
   from the catalog, with no hand contracts.
@@ -145,5 +182,6 @@ needed regenerating for the new docs and the registry entry (`knowledge:doc-inve
 
 ## Found, not fixed (outside this page's files or an owner call)
 
-- See DESIGN.md "Not on the boards" for the eight questions. `createRecruit`'s missing idempotency key and the
-  bucket's missing video type are server-side and were not touched.
+- See DESIGN.md "Not on the boards" for the eight questions (film, item 6, is decided and built; it waits for the migration).
+- After a lost reply, editing a field and pressing Add again is a different Add and adds a second prospect; a Retry and a
+  repeated Save with the same contents cannot. An upload the coach abandons after the file landed leaves an object with no row.

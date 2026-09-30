@@ -100,6 +100,8 @@ export interface ChHubTripEvent {
   title: string;
   /** YYYY-MM-DD, in the team's zone */
   date: string;
+  /** The last day the event runs (YYYY-MM-DD, inclusive); the trip's dates start from its span until the coach types their own. */
+  endDate: string;
   /** "Mon Nov 3" */
   label: string;
   location: string | null;
@@ -128,6 +130,8 @@ export interface ChHubFile {
   size: string | null;
   /** "Oct 10" */
   date: string | null;
+  /** Players can open it (`is_public`). A coach-only file is not offered in New announcement: the players it goes to couldn't open it (Q-83). */
+  isPublic: boolean;
 }
 
 export interface ChHubUpdate {
@@ -321,7 +325,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     // The trip builder's Event step: the next four months of events a team travels for (not classes or busy time).
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, location')
+      .select('id, title, event_type, start_time, end_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
@@ -368,14 +372,18 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     },
     announcements: { rows: annRes.success ? (annRes.data ?? []).map((a) => announcement(a, authors, f, 'coach')) : [], error: !annRes.success },
     tripEvents: {
-      rows: tripEvents.map((e) => ({
-        id: e.id,
-        title: e.title,
-        date: f.day(e.start_time).date,
-        label: `${f.day(e.start_time).weekday} ${f.short(e.start_time)}`,
-        location: e.location,
-        invited: attendance.error ? null : (attendance.byEvent.get(e.id) ?? []).map((r) => r.player),
-      })),
+      rows: tripEvents.map((e) => {
+        const span = eventSpan(e, f);
+        return {
+          id: e.id,
+          title: e.title,
+          date: span.from,
+          endDate: span.to,
+          label: `${span.weekday} ${span.short}`,
+          location: e.location,
+          invited: attendance.error ? null : (attendance.byEvent.get(e.id) ?? []).map((r) => r.player),
+        };
+      }),
       error: !!tripEventsRes.error,
     },
     trips: {
@@ -528,7 +536,7 @@ function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: 
 const TYPE_OF: Record<string, string> = { pdf: 'PDF', doc: 'DOC', docx: 'DOC', xls: 'XLS', xlsx: 'XLS', csv: 'XLS', png: 'IMG', jpg: 'IMG', jpeg: 'IMG', gif: 'IMG', webp: 'IMG', heic: 'IMG', txt: 'TXT', md: 'TXT' };
 
 /** Folders in first-seen order ("Team" for none), files newest first. */
-export function folders(docs: Array<{ id: string; title: string; folder: string | null; file_type: string | null; file_url: string; file_size: number | null; updated_at: string | null; created_at: string | null }>, f: ReturnType<typeof formatters>) {
+export function folders(docs: Array<{ id: string; title: string; folder: string | null; file_type: string | null; file_url: string; file_size: number | null; updated_at: string | null; created_at: string | null; is_public?: boolean | null }>, f: ReturnType<typeof formatters>) {
   const out = new Map<string, ChHubFile[]>();
   const sorted = [...docs].sort((a, b) => (b.updated_at ?? b.created_at ?? '').localeCompare(a.updated_at ?? a.created_at ?? ''));
   for (const d of sorted) {
@@ -536,7 +544,15 @@ export function folders(docs: Array<{ id: string; title: string; folder: string 
     const ext = (d.file_type ?? d.file_url.split('?')[0]!.split('.').pop() ?? '').toLowerCase().replace(/^.*\//, '');
     out.set(name, [
       ...(out.get(name) ?? []),
-      { id: d.id, title: d.title, type: TYPE_OF[ext] ?? (ext.slice(0, 4).toUpperCase() || 'FILE'), size: d.file_size ? bytes(d.file_size) : null, date: d.updated_at || d.created_at ? f.short(d.updated_at ?? d.created_at!) : null },
+      {
+        id: d.id,
+        title: d.title,
+        type: TYPE_OF[ext] ?? (ext.slice(0, 4).toUpperCase() || 'FILE'),
+        size: d.file_size ? bytes(d.file_size) : null,
+        date: d.updated_at || d.created_at ? f.short(d.updated_at ?? d.created_at!) : null,
+        // The policy reads `is_public = true` for a player: anything else (false, null, not read) is coach-only.
+        isPublic: d.is_public === true,
+      },
     ]);
   }
   return [...out.entries()].map(([name, files]) => ({ name, files }));
@@ -551,6 +567,18 @@ export function bytes(n: number): string {
 function firstLine(s: string | null): string | null {
   const line = s?.split('\n')[0]?.trim();
   return line ? (line.length > 60 ? `${line.slice(0, 57)}…` : line) : null;
+}
+
+/**
+ * The days an event runs, in the team's zone. An all-day event is stored at UTC midnight, so its date is the one written
+ * (zoning it would put it a day early west of UTC), and its `end_time` is the inclusive last day. A timed event's days are
+ * the ones its start and end fall on. A missing or inverted end is the start's own day.
+ */
+export function eventSpan(e: { start_time: string; end_time?: string | null; all_day?: boolean | null }, f: ReturnType<typeof formatters>) {
+  const from = e.all_day ? e.start_time.slice(0, 10) : f.day(e.start_time).date;
+  const end = e.end_time ? (e.all_day ? e.end_time.slice(0, 10) : f.day(e.end_time).date) : from;
+  const anchor = e.all_day ? `${from}T12:00:00Z` : e.start_time;
+  return { from, to: end < from ? from : end, weekday: e.all_day ? f.wd(from) : f.day(e.start_time).weekday, short: e.all_day ? f.short(anchor) : f.short(e.start_time) };
 }
 
 function addDays(date: string, n: number): string {

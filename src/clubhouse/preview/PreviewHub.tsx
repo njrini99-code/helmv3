@@ -25,6 +25,9 @@ export function PreviewHub({ data, state, tab }: { data: ChTeamHub; state?: stri
       deleteTask: r,
       planTrip: r,
       setTravelers: r,
+      // Preview: the clash line shows for any traveler chosen in the Plan a trip sheet, unless writes are set to fail.
+      travelerClasses: (i) =>
+        wait(fail ? { success: false, error: 'Preview: this check is set to fail.' } : { success: true, data: { classes: i.playerIds.slice(0, 1).map((playerId) => ({ playerId, title: 'CHEM 102 lab', days: ['Mon'], time: '3:00–4:15 PM' })), partial: false } }),
       uploadDocument: r,
       deleteDocument: r,
     };

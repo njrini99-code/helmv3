@@ -231,9 +231,13 @@ describe('Recruiting · the rules', () => {
 
   it('CH-14105 CH-14106 a file is screened with the bucket\'s own limits, before anything is sent', () => {
     expect(screenFile({ name: 'film.pdf', size: 25 * 1024 * 1024 + 1 })?.code).toBe('CH-14105');
-    expect(screenFile({ name: 'swing.mov', size: 9_000_000 })?.code).toBe('CH-14106');
+    expect(screenFile({ name: 'clip.avi', size: 9_000_000 })?.code).toBe('CH-14106');
     expect(screenFile({ name: 'noextension', size: 10 })?.code).toBe('CH-14106');
     expect(screenFile({ name: 'Transcript.PDF', size: 25 * 1024 * 1024 })).toBeNull();
+    // Film (MP4, MOV, M4V) is taken, up to 100 MB; anything else stays at 25 MB.
+    for (const name of ['swing.mov', 'Swing.MP4', 'drill.m4v']) expect(screenFile({ name, size: 100 * 1024 * 1024 }), name).toBeNull();
+    expect(screenFile({ name: 'swing.mov', size: 100 * 1024 * 1024 + 1 })).toMatchObject({ code: 'CH-14105', title: 'That film is over 100 MB' });
+    expect(screenFile({ name: 'scan.png', size: 26 * 1024 * 1024 })).toMatchObject({ code: 'CH-14105', title: 'That file is over 25 MB' });
   });
 
   it('CH-14805 a phone number becomes a tel: link of digits and a plus only', () => {
@@ -766,7 +770,7 @@ describe('Recruiting · desktop', () => {
     await user.type(form.getByRole('textbox', { name: 'Class of' }), '2028');
     await user.keyboard('{Enter}');
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(1));
-    expect(w.create).toHaveBeenCalledWith({ first_name: 'Ellie', last_name: 'Morrow', hs_class: 2028, email: '', phone: '', hometown: 'Wilmington', state: 'NC', notes: '', status: 'watched' });
+    expect(w.create).toHaveBeenCalledWith({ first_name: 'Ellie', last_name: 'Morrow', hs_class: 2028, email: '', phone: '', hometown: 'Wilmington', state: 'NC', notes: '', status: 'watched' }, expect.any(String));
     await expectCode('CH-14905', /Ellie Morrow added/);
     expect(hapticSpy).toHaveBeenCalledWith('success');
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
@@ -808,7 +812,7 @@ describe('Recruiting · desktop', () => {
     await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(rowNames()).toHaveLength(9));
     expect(w.create).toHaveBeenCalledTimes(2);
-    expect(w.create).toHaveBeenLastCalledWith(expect.objectContaining({ first_name: 'Ellie', hometown: 'Wilmington' }));
+    expect(w.create).toHaveBeenLastCalledWith(expect.objectContaining({ first_name: 'Ellie', hometown: 'Wilmington' }), expect.any(String));
   });
 
   it('CH-14906 Edit opens the form on the prospect as they are; Save sends everything, updates the row, the panel and the list, and says so', async () => {
@@ -974,7 +978,7 @@ describe('Recruiting · desktop', () => {
     w.documents.list.mockImplementation(() => ok([{ ...PREVIEW_DOCUMENTS['p-mason']![0]!, id: 'd-new', title: 'Spring transcript, junior', category: 'transcript' }, ...PREVIEW_DOCUMENTS['p-mason']!.map((x) => ({ ...x }))]));
     await act(async () => slow.resolve({ success: true, data: { id: 'd-new' } }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
-    expect(w.documents.upload).toHaveBeenCalledWith('p-mason', file, { title: 'Spring transcript, junior', category: 'transcript' });
+    expect(w.documents.upload).toHaveBeenCalledWith('p-mason', file, { title: 'Spring transcript, junior', category: 'transcript' }, { uploadId: expect.any(String), onProgress: expect.any(Function) });
     await expectCode('CH-14908', /Spring transcript, junior added/);
     expect(await within(panel('Mason Reilly')).findByRole('button', { name: /^Spring transcript, junior/ })).toBeTruthy();
   });
@@ -1025,8 +1029,8 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14105')?.textContent).toMatch(/That file is over 25 MB.*Choose a smaller file/);
     expect(within(dlg()).queryByRole('button', { name: 'Upload' })).toBeNull();
     await user.click(within(dlg()).getByRole('button', { name: 'Cancel' }));
-    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'Swing.mov', { type: 'video/quicktime' }));
-    expect(code('CH-14106')?.textContent).toMatch(/We can't take that file type.*Use a PDF, an image/);
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'Swing.avi', { type: 'video/x-msvideo' }));
+    expect(code('CH-14106')?.textContent).toMatch(/We can't take that file type.*Use a PDF, an image.*MP4, MOV or M4V/);
     expect(w.documents.upload).not.toHaveBeenCalled();
     await user.click(within(dlg()).getByRole('button', { name: 'Choose another file' }));
   });
@@ -1209,7 +1213,7 @@ describe('Recruiting · phone', () => {
     expect(sheet.getByText('Add a first name.').getAttribute('data-ch-code')).toBe('CH-14101');
     await user.type(sheet.getByRole('textbox', { name: 'First name' }), 'Ellie');
     await user.click(sheet.getByRole('button', { name: 'Add' }));
-    await waitFor(() => expect(w.create).toHaveBeenCalledWith(expect.objectContaining({ first_name: 'Ellie', status: 'watched' })));
+    await waitFor(() => expect(w.create).toHaveBeenCalledWith(expect.objectContaining({ first_name: 'Ellie', status: 'watched' }), expect.any(String)));
     await waitFor(() => expect(detail()).not.toBeNull());
     expect(within(detail()!).getAllByText('Ellie').length).toBeGreaterThanOrEqual(1);
   });

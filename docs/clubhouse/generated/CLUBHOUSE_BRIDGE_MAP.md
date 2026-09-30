@@ -103,11 +103,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 123 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
-| P010 | 2 | 6 |  | 14 | 9 | 22 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 76 |
+| P010 | 2 | 7 |  | 16 | 10 | 24 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
 | P011 | 14 | 8 |  | 14 | 10 | 28 | 11 | 5 | 2 |  | 19 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 151 |
-| P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
-| P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
-| P014 | 1 | 2 | 4 | 6 | 6 | 10 | 1 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 2 | 5 | 1 | 1 |  |  |  |  |  | 53 |
+| P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
+| P013 | 6 | 8 |  | 18 | 1 | 24 | 11 | 6 | 3 |  |  | 1 |  | 3 | 1 | 4 | 6 | 15 | 1 |  | 1 |  | 1 |  |  | 110 |
+| P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
 | P015 |  | 1 | 1 | 3 | 2 | 12 | 1 | 2 | 1 |  |  | 1 |  | 1 |  | 6 | 5 | 5 | 2 | 1 | 1 |  | 1 |  |  | 46 |
 
 ## P001 Shell
@@ -915,6 +915,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100204 | CH-10404 | 02 Initial loading / skeleton | `A_TASK_IS_BEING_ASSIGNED` | implemented | A task is being assigned |
 | 100205 | CH-10405 | 02 Initial loading / skeleton | `TEAM_HUB_IS_LOADING` | implemented | Team Hub is loading |
 | 100206 | CH-10406 | 02 Initial loading / skeleton | `AN_EDIT_IS_BEING_SAVED` | implemented | An edit is being saved |
+| 100207 | CH-10407 | 02 Initial loading / skeleton | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_ARE` | implemented | Plan a trip: the travelers' classes are being checked |
 | 100401 | CH-10301 | 04 Empty | `NO_EVENTS_NEED_A_REPLY` | implemented | No events need a reply |
 | 100402 | CH-10302 | 04 Empty | `NO_UPDATES` | implemented | No updates |
 | 100403 | CH-10303 | 04 Empty | `NO_TASKS` | implemented | No tasks |
@@ -929,6 +930,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100412 | CH-10311 | 04 Empty | `A_TEAM_WITH_NO_DOCUMENTS` | implemented | A team with no documents |
 | 100413 | CH-10312 | 04 Empty | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | implemented | Plan a trip: no upcoming events in the next four months |
 | 100414 | CH-10313 | 04 Empty | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | implemented | Plan a trip: the Travelers step with no calendar event |
+| 100415 | CH-10314 | 04 Empty | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | implemented | New announcement: files that players can't open are left out of the attach list |
+| 100416 | CH-10315 | 04 Empty | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | implemented | Plan a trip: nobody chosen has a class during the trip |
 | 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting or saving an edit with a headline under three characters |
 | 100502 | CH-10102 | 05 Validation | `POSTING_TO_CHOSEN_PLAYERS_WITH_NONE_CHOSEN` | implemented | Posting to chosen players with none chosen |
 | 100503 | CH-10103 | 05 Validation | `A_TRIP_WITH_A_NAME_UNDER_THREE` | implemented | A trip with a name under three characters |
@@ -938,6 +941,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100507 | CH-10107 | 05 Validation | `A_TASK_WITH_A_NAME_UNDER_THREE` | implemented | A task with a name under three characters |
 | 100508 | CH-10108 | 05 Validation | `A_TASK_FOR_NOBODY` | implemented | A task for nobody |
 | 100509 | CH-10109 | 05 Validation | `POSTING_OR_SAVING_AN_EDIT_WITH_NO` | implemented | Posting or saving an edit with no message (the server requires one) |
+| 100510 | CH-10110 | 05 Validation | `PLAN_A_TRIP_A_CHOSEN_TRAVELER_HAS` | implemented | Plan a trip: a chosen traveler has a class during the trip |
 | 100601 | CH-10001 | 06 Server / system error | `A_PLAYERS_RSVP_REPLY_FAILS` | implemented | A player's RSVP reply fails |
 | 100602 | CH-10002 | 06 Server / system error | `ACKNOWLEDGING_A_POST_FAILS` | implemented | Acknowledging a post fails |
 | 100603 | CH-10003 | 06 Server / system error | `CHECKING_OFF_A_TASK_FAILS` | implemented | Checking off a task fails |
@@ -960,6 +964,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100620 | CH-10011 | 06 Server / system error | `UNTICKING_A_DONE_TASK_FAILS` | implemented | Unticking a done task fails |
 | 100621 | CH-10210 | 06 Server / system error | `PLAN_A_TRIP_UPCOMING_EVENTS_DIDNT_LOAD` | implemented | Plan a trip: upcoming events didn't load |
 | 100622 | CH-10211 | 06 Server / system error | `PLAN_A_TRIP_WHO_IS_INVITED_TO` | implemented | Plan a trip: who is invited to the chosen event didn't load |
+| 100623 | CH-10012 | 06 Server / system error | `A_POST_GOES_OUT_BUT_ITS_FILES` | implemented | A post goes out but its files don't attach |
+| 100624 | CH-10212 | 06 Server / system error | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_DIDNT` | implemented | Plan a trip: the travelers' classes didn't load |
 | 100701 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 | 100801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The role from the session decides the controls: a player is never drawn New announcement, Plan a trip, Assign, the drop zone or a delete menu, and a coach is never drawn a reply button, Got it or a task box. |
 | 100802 |  | 08 Permission / authorization | `PLAYER_GETS_ONLY_WHAT_IS_THEIRS` | implemented | A player's data carries none of their teammates' read receipts (an announcement's acknowledged and recipient counts), replies, task completions, traveler lists or names, and no roster; those are in a coach's data only, where the same post reads 5 of 6. |
@@ -1183,6 +1189,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120608 | CH-12204 | 06 Server / system error | `THE_READER_FAILS_OR_THROWS` | implemented | The reader fails or throws |
 | 120609 |  | 06 Server / system error | `AN_UPDATE_A_POLICY_HIDES_IS_A_FAILURE` | implemented | An edit whose update a row-level-security policy hides comes back from the database with no error and no row. The page treats that as a failure ("Nothing was saved. This class was not found, or you can't change it.") and never as "Class updated". An edit is limited to the class's id and the player's own id. |
 | 120610 |  | 06 Server / system error | `A_SYNC_THAT_WROTE_NOTHING_IS_A_FAILURE` | implemented | A calendar sync that returns no error but wrote no meetings for a class that has days and a time is a failure, so the class is flagged and CH-12002 says why, instead of a quietly empty calendar. A class with no days has nothing to write and is not a failure. A sync that throws is reported (surface classes.sync, low severity) and its reason reads "The calendar sync did not finish". |
+| 120611 | CH-12005 | 06 Server / system error | `DELETE_ALL_CLASSES_CHANGED_NOTHING_NO_CLASS` | implemented | Delete all classes changed nothing: no class could be taken off the calendar (every removal failed or threw), the connection dropped, or the write threw |
+| 120612 | CH-12006 | 06 Server / system error | `DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME` | implemented | Delete all classes stopped half-way: some classes are gone and some are not |
 | 120701 | CH-12901 | 07 Network / offline | `A_SCREENSHOT_IS_CHOSEN_WHILE_OFFLINE` | implemented | A screenshot is chosen while offline |
 | 120702 | CH-12902 | 07 Network / offline | `A_READ_IS_SLOW` | implemented | A read is slow |
 | 120703 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device. |
@@ -1193,6 +1201,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120902 |  | 09 Success | `THE_IMPORT_RESULT_SAYS_WHAT_REACHED_THE_CALENDAR` | reserved | The Schedule imported view says how many classes were imported and counts as on the calendar only those that can be: "3 of 4 are on your calendar and repeat weekly until Dec 15" (until each class's own term end, or "until the end of their terms, Dec 15 and May 15" when they differ), then "Not on your calendar: PHIL 150 (no meeting days) and HIST 210 (no time set). Open the class to add what's missing." It says "Adding them to your calendar…" while the sync runs, and "Some didn't reach your calendar. Use Retry sync on the Classes page." when one failed. An import where no class can be on the calendar never says they are. |
 | 121101 | CH-12501 | 11 Destructive | `REMOVE_CLASS` | implemented | Remove class |
 | 121102 | CH-12502 | 11 Destructive | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | implemented | Cancel or close a form that has changes |
+| 121103 | CH-12503 | 11 Destructive | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | implemented | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
 | 121201 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A class that fails to save leaves its sheet open with every field as typed; nothing is cleared until the save lands, and the failure toast is inside the open sheet so its Retry is where the person is looking. An import that fails to save leaves the review as it was. A remove that fails leaves the question open and the class in the list. Cancel or close on a form with changes asks first (CH-12502), and each time the sheet opens it starts from the class being edited, or blank. |
 | 121401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | reserved | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: a save's Retry adds the class to the list, closes the sheet and starts the calendar sync; a remove's Retry takes the class out of the list and closes the question; an import's Retry shows the imported view and starts the sync; a sync's Retry puts the failed classes on the calendar. A failed sync's Retry never saves the class a second time. |
 | 121402 |  | 14 Retry / recovery | `RETRY_REPLAYS_THE_STORED_START` | reserved | Every calendar sync starts each class from the day its last attempt did. The toast's Retry replays the same arguments; the header's Retry sync and a class sheet's Retry sync pass no start, so each class takes the start held for it this visit. A Retry therefore never moves a class to a start its own term would refuse, and a class saved from its whole term is re-synced from its whole term, so a re-sync never removes the meetings already held. |
@@ -1208,6 +1217,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 121702 | CH-12702 | 17 Haptic | `REMOVE_CLASS_IS_TAPPED_IN_A_CLASSS` | implemented | Remove class is tapped in a class's sheet |
 | 121703 | CH-12703 | 17 Haptic | `A_DAY_IS_CHOSEN_OR_CLEARED_IN` | implemented | A day is chosen or cleared in the form |
 | 121704 | CH-12705 | 17 Haptic | `THE_IMPORT_SWITCHES_BETWEEN_A_FILE_AND` | implemented | The import switches between a file and pasted text |
+| 121705 | CH-12704 | 17 Haptic | `DELETE_ALL_CLASSES_IS_TAPPED` | implemented | Delete all classes is tapped |
 | 121801 | CH-12801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_DECK` | implemented | A screen reader moves through the deck |
 | 121802 | CH-12802 | 18 Accessibility | `THE_CARDS_WEEK_STRIP` | implemented | The card's week strip |
 | 121803 | CH-12803 | 18 Accessibility | `THE_TERM_OVERVIEW` | implemented | The term overview |
@@ -1234,6 +1244,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130202 | CH-13402 | 02 Initial loading / skeleton | `THE_COACHS_PAGE_IS_ON_ITS_WAY` | implemented | The coach's page is on its way |
 | 130203 | CH-13403 | 02 Initial loading / skeleton | `ASSIGN_OR_DISMISS_IS_SAVING` | implemented | Assign or Dismiss is saving |
 | 130204 |  | 02 Initial loading / skeleton | `THE_ROUTE_SKELETON_TAKES_THE_ROLES_SHAPE` | implemented | The route's loading.tsx draws the Clubhouse skeleton only inside the Clubhouse shell (Fairway's skeleton everywhere else), in the shape of the signed-in role's page: the coach's program pulse, then the players beside the focus card; the player's focus card beside a short list. The player's shape is used until the role is known. |
+| 130205 | CH-13404 | 02 Initial loading / skeleton | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | implemented | A player's Accept or Decline is being sent |
+| 130206 | CH-13420 | 02 Initial loading / skeleton | `ASK_THE_CHAT_PAGE_LOADS` | implemented | Ask: The chat page loads |
+| 130207 | CH-13421 | 02 Initial loading / skeleton | `ASK_A_REPLY_IS_STREAMING` | implemented | Ask: A reply is streaming |
+| 130208 | CH-13450 | 02 Initial loading / skeleton | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | implemented | Ask: An action was confirmed and is being carried out |
 | 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
@@ -1245,6 +1259,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130409 | CH-13309 | 04 Empty | `COACH_THE_PULSE_HAS_NOTHING_FLAGGED` | implemented | Coach: the pulse has nothing flagged |
 | 130410 | CH-13310 | 04 Empty | `COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET` | implemented | Coach: some players have no insight yet |
 | 130411 |  | 04 Empty | `A_FAILED_READ_IS_NEVER_DRAWN_AS_EMPTY` | implemented | The delivery actions answer an empty list or map when a read fails, so the loaders tell a failed read from a first run. An empty feed, or empty top insights, while a drawable visible insight is on file (for a player, one they have not dismissed themselves: the newest feedback row per insight decides) is a failed read (CH-13201, CH-13202), and so is a failed visible-insights, feedback or roster read; only when that check finds nothing is it a first run (CH-13301, CH-13302, CH-13306). A player who dismissed every insight themselves is a first run, not a failure, and a failed roster read is never an empty team (CH-13307). |
+| 130412 | CH-13320 | 04 Empty | `ASK_A_CONVERSATION_THAT_IS_GONE_OR` | implemented | Ask: A conversation that is gone or not the coach's |
+| 130413 | CH-13321 | 04 Empty | `ASK_THE_ROSTER_IS_EMPTY` | implemented | Ask: The roster is empty |
+| 130414 | CH-13322 | 04 Empty | `ASK_PLAYERS_BUT_NO_RECORDED_ROUND` | implemented | Ask: Players but no recorded round |
+| 130415 | CH-13323 | 04 Empty | `ASK_NO_CHATS_YET` | implemented | Ask: No chats yet |
+| 130416 | CH-13324 | 04 Empty | `ASK_A_CHAT_SEARCH_WITH_NO_MATCH` | implemented | Ask: A chat search with no match |
+| 130417 | CH-13325 | 04 Empty | `ASK_ROUNDS_RECORDED_NOTHING_FLAGGED` | implemented | Ask: Rounds recorded, nothing flagged |
+| 130418 | CH-13350 | 04 Empty | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | implemented | Ask: A read tool found nothing recorded |
+| 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
 | 130603 | CH-13003 | 06 Server / system error | `UNDO_FAILS` | implemented | Undo fails |
@@ -1253,8 +1275,33 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130606 | CH-13203 | 06 Server / system error | `THE_PROGRAM_PULSE_DOESNT_LOAD` | implemented | The program pulse doesn't load |
 | 130607 | CH-13204 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
 | 130608 |  | 06 Server / system error | `A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF` | reserved | The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Found in this pass, not fixed: on a coach's gate failure the pulse is not read, and the board draws its empty line 'Nothing is flagged in the pulse right now.' beside the CH-13202 notice. |
+| 130609 | CH-13004 | 06 Server / system error | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | implemented | A player's Accept of a proposed focus area fails |
+| 130610 | CH-13005 | 06 Server / system error | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | implemented | A player's Decline of a proposed focus area fails |
+| 130611 | CH-13205 | 06 Server / system error | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | implemented | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
+| 130612 | CH-13050 | 06 Server / system error | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | implemented | Ask: An action CoachHelm proposed fails after Confirm |
+| 130613 | CH-13051 | 06 Server / system error | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | implemented | Ask: Copy is refused by the clipboard |
+| 130614 | CH-13221 | 06 Server / system error | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | implemented | Ask: The chat context (the program) does not load |
+| 130615 | CH-13222 | 06 Server / system error | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | implemented | Ask: The chat list does not load |
+| 130616 | CH-13223 | 06 Server / system error | `ASK_THE_PULSE_DOES_NOT_LOAD` | implemented | Ask: The pulse does not load |
+| 130617 | CH-13224 | 06 Server / system error | `ASK_A_CONVERSATION_OR_ITS_MESSAGES_DO` | implemented | Ask: A conversation or its messages do not load |
+| 130618 | CH-13225 | 06 Server / system error | `ASK_ONE_SECTION_OF_THE_PAGE_CRASHES` | implemented | Ask: One section of the page crashes |
+| 130619 | CH-13250 | 06 Server / system error | `ASK_A_READ_TOOL_BEHIND_AN_ANSWER` | implemented | Ask: A read tool behind an answer failed |
+| 130620 | CH-13251 | 06 Server / system error | `ASK_AN_ANSWER_FAILS_WHILE_IT_STREAMS` | implemented | Ask: An answer fails while it streams |
+| 130621 | CH-13252 | 06 Server / system error | `ASK_AN_ANSWER_ARRIVES_MALFORMED_AND_IS` | implemented | Ask: An answer arrives malformed and is rejected |
+| 130622 | CH-13253 | 06 Server / system error | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | implemented | Ask: A confirmed action failed or only partly completed |
+| 130623 | CH-13254 | 06 Server / system error | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | implemented | Ask: The conversation moved past a card that was never answered |
+| 130624 | CH-13255 | 06 Server / system error | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | implemented | Ask: The evidence panel is opened for a player the conversation has nothing on |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
+| 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
+| 130704 | CH-13920 | 07 Network / offline | `ASK_SEND_WHILE_OFFLINE` | implemented | Ask: Send while offline |
+| 130705 | CH-13921 | 07 Network / offline | `ASK_A_SEND_FAILS` | implemented | Ask: A send fails |
+| 130706 | CH-13922 | 07 Network / offline | `ASK_A_NEW_THREAD_STARTS` | implemented | Ask: A new thread starts |
+| 130707 | CH-13923 | 07 Network / offline | `ASK_THE_SUB_TAB_STRIP` | implemented | Ask: The sub-tab strip |
+| 130708 | CH-13950 | 07 Network / offline | `ASK_COPY_AN_ANSWER` | implemented | Ask: Copy an answer |
+| 130709 | CH-13951 | 07 Network / offline | `ASK_COACHHELM_PROPOSES_AN_ACTION` | implemented | Ask: CoachHelm proposes an action |
+| 130710 | CH-13952 | 07 Network / offline | `ASK_A_PROPOSED_ACTION_IS_CANCELLED` | implemented | Ask: A proposed action is cancelled |
+| 130711 | CH-13953 | 07 Network / offline | `ASK_A_CONFIRMED_ACTION_LANDS` | implemented | Ask: A confirmed action lands |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |
@@ -1269,11 +1316,16 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a failed-read notice (CH-13201, CH-13202, CH-13203) has the server read the whole page again (router.refresh); no section re-reads itself and nothing retries a read on its own. |
 | 131403 |  | 14 Retry / recovery | `UNDO_RESTORES_THE_STATE_THE_INSIGHT_HAD` | implemented | Undo calls reactivateInsight with the lifecycle state the insight had when it was dismissed (detected, matured, addressed or resolved), so it returns to the feed where it was rather than always as new. The dismissed notice stays until it has landed. |
 | 131501 |  | 15 Data freshness / sync | `THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ` | reserved | Nothing on the page refreshes in the background. A landed Assign, Dismiss or Undo changes the page in place from the board's own state and does not call router.refresh (the dismissed notice is never refreshed away); Try again on a failed-read notice is the one client re-read (131402). |
-| 131601 | CH-13601 | 16 Micro animation | `AN_INSIGHT_IS_ASSIGNED_OR_DISMISSED` | implemented | An insight is assigned, or dismissed |
+| 131601 | CH-13601 | 16 Micro animation | `AN_INSIGHT_IS_ASSIGNED_OR_DISMISSED` | implemented | An insight is assigned or dismissed, or a proposed focus area is answered |
 | 131602 | CH-13602 | 16 Micro animation | `HOVERING_AN_INSIGHT_ROW_OR_A_PLAYER` | reserved | Hovering an insight row or a player |
+| 131603 | CH-13620 | 16 Micro animation | `ASK_HIDE_CHATS` | implemented | Ask: Hide chats |
+| 131604 | CH-13621 | 16 Micro animation | `ASK_THE_PHONE_DRAWER_IS_DRAGGED` | implemented | Ask: The phone drawer is dragged |
 | 131701 | CH-13701 | 17 Haptic | `A_PLAYER_OR_AN_INSIGHT_ROW_IS` | implemented | A player or an insight row is picked |
 | 131702 | CH-13702 | 17 Haptic | `ASSIGN_AS_FOCUS_IS_TAPPED` | implemented | Assign as focus is tapped |
 | 131703 | CH-13703 | 17 Haptic | `DISMISS_IS_TAPPED` | implemented | Dismiss is tapped |
+| 131704 | CH-13704 | 17 Haptic | `ACCEPT_OR_DECLINE_IS_TAPPED` | reserved | Accept or Decline is tapped |
+| 131705 | CH-13721 | 17 Haptic | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | implemented | Ask: An opener pill or shortcut card is tapped |
+| 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | implemented | Ask: A follow-up is tapped |
 | 131801 | CH-13801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | implemented | A screen reader moves through the page |
 | 131802 | CH-13802 | 18 Accessibility | `A_GAUGE` | implemented | A gauge |
 | 131803 | CH-13803 | 18 Accessibility | `AN_INSIGHT_OR_PLAYER_ROW` | implemented | An insight or player row |
@@ -1281,6 +1333,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131805 | CH-13805 | 18 Accessibility | `CHOOSING_ANOTHER_INSIGHT_OR_PLAYER` | implemented | Choosing another insight or player |
 | 131806 | CH-13806 | 18 Accessibility | `PRIORITY` | implemented | Priority |
 | 131807 |  | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_THE_AXE_PREVIEW_STATES` | reserved | No axe violations in the ten preview states clubhouse:a11y walks for CoachHelm (the coach's default, assigned, empty, failed, off and loading; the player's default, empty, norounds and failed), at 1280px and 390px: 20 runs, clean on 2026-09-30 as reported by the lead in PROGRESS.md. Checked by npm run clubhouse:a11y (CH_A11Y_PAGES in scripts/clubhouse/a11y.mjs), not by a unit test. Not walked: the coach's noroster, pulsefailed, quiet, failwrites, failundo and duplicate states and the player's working, off and loading states. |
+| 131808 | CH-13807 | 18 Accessibility | `THE_PLAYERS_PROPOSED_FOCUS_AREAS` | reserved | The player's proposed focus areas |
+| 131809 | CH-13820 | 18 Accessibility | `ASK_THE_CHAT_PAGE` | implemented | Ask: The chat page |
+| 131810 | CH-13821 | 18 Accessibility | `ASK_A_PLAYER_IS_MENTIONED` | implemented | Ask: A player is mentioned |
+| 131811 | CH-13822 | 18 Accessibility | `ASK_THE_PHONE_CHATS_BUTTON` | implemented | Ask: The phone Chats button |
+| 131812 | CH-13823 | 18 Accessibility | `ASK_THE_OPEN_CHAT_IN_THE_LIST` | implemented | Ask: The open chat in the list |
+| 131813 | CH-13850 | 18 Accessibility | `ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER` | implemented | Ask: CoachHelm is working on an answer |
+| 131814 | CH-13851 | 18 Accessibility | `ASK_THE_EVIDENCE_CONTROL` | implemented | Ask: The evidence control |
+| 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | implemented | Ask: Evidence drawn as a chart |
 | 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | reserved | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | reserved | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | reserved | A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |
@@ -1292,6 +1352,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 140101 | CH-14904 | 01 Default / core UI | `RECRUITING_OPENS` | implemented | Recruiting opens |
 | 140201 | CH-14401 | 02 Initial loading / skeleton | `THE_PAGE_IS_ON_ITS_WAY` | implemented | The page is on its way |
 | 140202 | CH-14402 | 02 Initial loading / skeleton | `A_PROSPECTS_DOCUMENTS_ARE_LOADING` | implemented | A prospect's documents are loading |
+| 140203 | CH-14407 | 02 Initial loading / skeleton | `A_FILE_IS_BEING_SENT_TO_STORAGE` | implemented | A file is being sent to Storage and the browser reports progress |
 | 140301 | CH-14403 | 03 Background loading / refresh | `AN_ADD_OR_A_SAVE_IS_ON` | implemented | An add or a save is on its way |
 | 140302 | CH-14404 | 03 Background loading / refresh | `A_DOCUMENT_IS_UPLOADING` | implemented | A document is uploading |
 | 140303 | CH-14405 | 03 Background loading / refresh | `A_DOCUMENT_IS_BEING_REMOVED` | implemented | A document is being removed |
@@ -1306,19 +1367,26 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 140502 | CH-14102 | 05 Validation | `A_CLASS_YEAR_THAT_IS_NOT_A` | implemented | A class year that is not a four-digit year from 2020 to 2040 |
 | 140503 | CH-14103 | 05 Validation | `A_STATE_THAT_IS_NOT_TWO_LETTERS` | implemented | A state that is not two letters |
 | 140504 | CH-14104 | 05 Validation | `A_VALUE_PAST_THE_SERVERS_LIMIT_NAMES` | implemented | A value past the server's limit: names and hometown 120 characters, email 254, phone 40, notes 5,000 |
-| 140505 | CH-14105 | 05 Validation | `A_FILE_OVER_25_MB` | implemented | A file over 25 MB |
+| 140505 | CH-14105 | 05 Validation | `A_FILE_OVER_25_MB` | implemented | A file over its limit: 25 MB for a document or an image, 100 MB for film (MP4, MOV, M4V) |
 | 140506 | CH-14106 | 05 Validation | `A_FILE_WHOSE_TYPE_THE_BUCKET_DOES` | implemented | A file whose type the bucket does not take |
+| 140507 | CH-14107 | 05 Validation | `STORAGE_TURNS_DOWN_A_FILES_TYPE_AFTER` | implemented | Storage turns down a file's type after the page let it through (the bucket not yet updated to take film, or a type it stopped taking) |
+| 140508 | CH-14108 | 05 Validation | `STORAGE_TURNS_DOWN_A_FILES_SIZE_AFTER` | implemented | Storage turns down a file's size after the page let it through (the bucket's cap not yet raised, or a project-wide upload limit below it) |
+| 140509 | CH-14109 | 05 Validation | `SEVERAL_FILES_ARE_DROPPED_AT_ONCE` | implemented | Several files are dropped at once |
+| 140510 | CH-14110 | 05 Validation | `A_FOLDER_OR_A_FILE_WITH_NOTHING` | implemented | A folder, or a file with nothing in it, is dropped |
 | 140601 | CH-14001 | 06 Server / system error | `ADDING_A_PROSPECT_FAILS` | implemented | Adding a prospect fails |
 | 140602 | CH-14002 | 06 Server / system error | `SAVING_CHANGES_TO_A_PROSPECT_FAILS` | implemented | Saving changes to a prospect fails |
 | 140603 | CH-14003 | 06 Server / system error | `A_STAGE_CHANGE_FAILS` | implemented | A stage change fails |
 | 140604 | CH-14004 | 06 Server / system error | `DELETING_A_PROSPECT_FAILS` | implemented | Deleting a prospect fails |
-| 140605 | CH-14005 | 06 Server / system error | `UPLOADING_A_DOCUMENT_FAILS` | implemented | Uploading a document fails |
+| 140605 | CH-14005 | 06 Server / system error | `UPLOADING_A_DOCUMENT_FAILS` | implemented | Uploading a document fails (not because Storage turned the file itself down: that is CH-14107 or CH-14108) |
 | 140606 | CH-14006 | 06 Server / system error | `REMOVING_A_DOCUMENT_FAILS` | implemented | Removing a document fails |
 | 140607 | CH-14007 | 06 Server / system error | `OPENING_A_DOCUMENT_FAILS` | implemented | Opening a document fails |
 | 140608 | CH-14201 | 06 Server / system error | `THE_PROSPECT_LIST_DOESNT_LOAD` | implemented | The prospect list doesn't load |
 | 140609 | CH-14202 | 06 Server / system error | `A_PROSPECTS_DOCUMENTS_DONT_LOAD` | implemented | A prospect's documents don't load |
 | 140610 | CH-14203 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
 | 140701 | CH-14901 | 07 Network / offline | `ANY_WRITE_WHILE_OFFLINE` | implemented | Any write while offline |
+| 140702 | CH-14915 | 07 Network / offline | `AN_ADD_IS_REPEATED` | implemented | An Add is repeated |
+| 140703 | CH-14916 | 07 Network / offline | `AN_UPLOAD_IS_REPEATED` | implemented | An upload is repeated |
+| 140704 | CH-14917 | 07 Network / offline | `A_FILE_IS_DRAGGED_OVER_A_PROSPECTS` | implemented | A file is dragged over a prospect's documents (desktop) |
 | 140801 | CH-14902 | 08 Permission / authorization | `A_PLAYER_OPENS_RECRUITING` | implemented | A player opens Recruiting |
 | 140802 | CH-14903 | 08 Permission / authorization | `THE_SERVER_REFUSES_A_WRITE_BECAUSE_THE` | implemented | The server refuses a write because the caller is not the team's coach |
 | 140901 | CH-14905 | 09 Success | `A_PROSPECT_IS_ADDED` | implemented | A prospect is added |
@@ -1335,6 +1403,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 141602 | CH-14602 | 16 Micro animation | `A_PROSPECT_OPENS_ON_THE_PHONE` | implemented | A prospect opens on the phone |
 | 141701 | CH-14701 | 17 Haptic | `A_STAGE_IS_PICKED_AS_THE_FILTER` | implemented | A stage is picked, as the filter or as a prospect's stage; a row is opened; a sort is chosen |
 | 141702 | CH-14702 | 17 Haptic | `DELETE_PROSPECT_IS_TAPPED` | implemented | Delete prospect is tapped |
+| 141703 | CH-14703 | 17 Haptic | `STORAGE_TURNS_A_FILE_DOWN` | reserved | Storage turns a file down (CH-14107, CH-14108) |
 | 141801 | CH-14801 | 18 Accessibility | `A_SCREEN_READER_REACHES_THE_PIPELINE` | implemented | A screen reader reaches the pipeline |
 | 141802 | CH-14802 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PROSPECTS` | implemented | A screen reader moves through the prospects |
 | 141803 | CH-14803 | 18 Accessibility | `A_STAGE_IS_CHANGED` | implemented | A stage is changed |

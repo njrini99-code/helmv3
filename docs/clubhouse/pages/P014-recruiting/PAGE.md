@@ -36,7 +36,8 @@ Add prospect (the page's one primary action). With a prospect open, the one thin
 ### Secondary actions
 
 Search (name, hometown, state, email, notes); sort (recently updated, name, class year); filter by stage through the
-pipeline; edit a prospect; email or call them; upload, open and remove documents; delete a prospect.
+pipeline; edit a prospect; email or call them; upload (by the button, or by dropping a file on desktop), open and remove documents;
+delete a prospect.
 
 ### Information hierarchy
 

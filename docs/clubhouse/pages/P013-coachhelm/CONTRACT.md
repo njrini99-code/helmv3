@@ -41,6 +41,10 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130202 | CH-13402 | `THE_COACHS_PAGE_IS_ON_ITS_WAY` | The coach's page is on its way |
 | 130203 | CH-13403 | `ASSIGN_OR_DISMISS_IS_SAVING` | Assign or Dismiss is saving |
 | 130204 | — | `THE_ROUTE_SKELETON_TAKES_THE_ROLES_SHAPE` | The route's loading.tsx draws the Clubhouse skeleton only inside the Clubhouse shell (Fairway's skeleton everywhere else), in the shape of the signed-in role's page: the coach's program pulse, then the players beside the focus card; the player's focus card beside a short list. The player's shape is used until the role is known. |
+| 130205 | CH-13404 | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | A player's Accept or Decline is being sent |
+| 130206 | CH-13420 | `ASK_THE_CHAT_PAGE_LOADS` | Ask: The chat page loads |
+| 130207 | CH-13421 | `ASK_A_REPLY_IS_STREAMING` | Ask: A reply is streaming |
+| 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
 
 ## 03 — Background loading / refresh
 
@@ -65,10 +69,23 @@ First run is a whole-page empty state for each role and each way of having nothi
 | 130409 | CH-13309 | `COACH_THE_PULSE_HAS_NOTHING_FLAGGED` | Coach: the pulse has nothing flagged |
 | 130410 | CH-13310 | `COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET` | Coach: some players have no insight yet |
 | 130411 | — | `A_FAILED_READ_IS_NEVER_DRAWN_AS_EMPTY` | The delivery actions answer an empty list or map when a read fails, so the loaders tell a failed read from a first run. An empty feed, or empty top insights, while a drawable visible insight is on file (for a player, one they have not dismissed themselves: the newest feedback row per insight decides) is a failed read (CH-13201, CH-13202), and so is a failed visible-insights, feedback or roster read; only when that check finds nothing is it a first run (CH-13301, CH-13302, CH-13306). A player who dismissed every insight themselves is a first run, not a failure, and a failed roster read is never an empty team (CH-13307). |
+| 130412 | CH-13320 | `ASK_A_CONVERSATION_THAT_IS_GONE_OR` | Ask: A conversation that is gone or not the coach's |
+| 130413 | CH-13321 | `ASK_THE_ROSTER_IS_EMPTY` | Ask: The roster is empty |
+| 130414 | CH-13322 | `ASK_PLAYERS_BUT_NO_RECORDED_ROUND` | Ask: Players but no recorded round |
+| 130415 | CH-13323 | `ASK_NO_CHATS_YET` | Ask: No chats yet |
+| 130416 | CH-13324 | `ASK_A_CHAT_SEARCH_WITH_NO_MATCH` | Ask: A chat search with no match |
+| 130417 | CH-13325 | `ASK_ROUNDS_RECORDED_NOTHING_FLAGGED` | Ask: Rounds recorded, nothing flagged |
+| 130418 | CH-13350 | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | Ask: A read tool found nothing recorded |
 
 ## 05 — Validation
 
-Status: N/A — CoachHelm has no form and no field to check: Assign as focus, Dismiss and Undo are buttons, and what they send is the insight's own text.
+Status: DEFINED
+
+The board has no form: Assign as focus, Dismiss and Undo are buttons, and what they send is the insight's own text. The Ask composer has one rule: nothing is sent while an action card waits for Confirm or Cancel, and the box says why (CH-13120).
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 130501 | CH-13120 | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | Ask: Send while an action card waits for Confirm or Cancel |
 
 ## 06 — Server / system error
 
@@ -86,6 +103,22 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130606 | CH-13203 | `THE_PROGRAM_PULSE_DOESNT_LOAD` | The program pulse doesn't load |
 | 130607 | CH-13204 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
 | 130608 | — | `A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF` | The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Found in this pass, not fixed: on a coach's gate failure the pulse is not read, and the board draws its empty line 'Nothing is flagged in the pulse right now.' beside the CH-13202 notice. |
+| 130609 | CH-13004 | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | A player's Accept of a proposed focus area fails |
+| 130610 | CH-13005 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails |
+| 130611 | CH-13205 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
+| 130612 | CH-13050 | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | Ask: An action CoachHelm proposed fails after Confirm |
+| 130613 | CH-13051 | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | Ask: Copy is refused by the clipboard |
+| 130614 | CH-13221 | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | Ask: The chat context (the program) does not load |
+| 130615 | CH-13222 | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | Ask: The chat list does not load |
+| 130616 | CH-13223 | `ASK_THE_PULSE_DOES_NOT_LOAD` | Ask: The pulse does not load |
+| 130617 | CH-13224 | `ASK_A_CONVERSATION_OR_ITS_MESSAGES_DO` | Ask: A conversation or its messages do not load |
+| 130618 | CH-13225 | `ASK_ONE_SECTION_OF_THE_PAGE_CRASHES` | Ask: One section of the page crashes |
+| 130619 | CH-13250 | `ASK_A_READ_TOOL_BEHIND_AN_ANSWER` | Ask: A read tool behind an answer failed |
+| 130620 | CH-13251 | `ASK_AN_ANSWER_FAILS_WHILE_IT_STREAMS` | Ask: An answer fails while it streams |
+| 130621 | CH-13252 | `ASK_AN_ANSWER_ARRIVES_MALFORMED_AND_IS` | Ask: An answer arrives malformed and is rejected |
+| 130622 | CH-13253 | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | Ask: A confirmed action failed or only partly completed |
+| 130623 | CH-13254 | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | Ask: The conversation moved past a card that was never answered |
+| 130624 | CH-13255 | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | Ask: The evidence panel is opened for a player the conversation has nothing on |
 
 ## 07 — Network / offline
 
@@ -97,6 +130,15 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | --- | --- | --- | --- |
 | 130701 | CH-13901 | `AN_INSIGHT_IS_DISMISSED` | An insight is dismissed |
 | 130702 | — | `WRITES_REFUSE_OFFLINE` | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
+| 130703 | CH-13902 | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | A proposed focus area is accepted or declined |
+| 130704 | CH-13920 | `ASK_SEND_WHILE_OFFLINE` | Ask: Send while offline |
+| 130705 | CH-13921 | `ASK_A_SEND_FAILS` | Ask: A send fails |
+| 130706 | CH-13922 | `ASK_A_NEW_THREAD_STARTS` | Ask: A new thread starts |
+| 130707 | CH-13923 | `ASK_THE_SUB_TAB_STRIP` | Ask: The sub-tab strip |
+| 130708 | CH-13950 | `ASK_COPY_AN_ANSWER` | Ask: Copy an answer |
+| 130709 | CH-13951 | `ASK_COACHHELM_PROPOSES_AN_ACTION` | Ask: CoachHelm proposes an action |
+| 130710 | CH-13952 | `ASK_A_PROPOSED_ACTION_IS_CANCELLED` | Ask: A proposed action is cancelled |
+| 130711 | CH-13953 | `ASK_A_CONFIRMED_ACTION_LANDS` | Ask: A confirmed action lands |
 
 ## 08 — Permission / authorization
 
@@ -183,8 +225,10 @@ The Assigned chip and the dismissed notice rise in once (CH-13601), still with r
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 131601 | CH-13601 | `AN_INSIGHT_IS_ASSIGNED_OR_DISMISSED` | An insight is assigned, or dismissed |
+| 131601 | CH-13601 | `AN_INSIGHT_IS_ASSIGNED_OR_DISMISSED` | An insight is assigned or dismissed, or a proposed focus area is answered |
 | 131602 | CH-13602 | `HOVERING_AN_INSIGHT_ROW_OR_A_PLAYER` | Hovering an insight row or a player |
+| 131603 | CH-13620 | `ASK_HIDE_CHATS` | Ask: Hide chats |
+| 131604 | CH-13621 | `ASK_THE_PHONE_DRAWER_IS_DRAGGED` | Ask: The phone drawer is dragged |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 
@@ -199,6 +243,9 @@ On the v2 grammar (D-70): selection for choosing a player or an insight (CH-1370
 | 131701 | CH-13701 | `A_PLAYER_OR_AN_INSIGHT_ROW_IS` | A player or an insight row is picked |
 | 131702 | CH-13702 | `ASSIGN_AS_FOCUS_IS_TAPPED` | Assign as focus is tapped |
 | 131703 | CH-13703 | `DISMISS_IS_TAPPED` | Dismiss is tapped |
+| 131704 | CH-13704 | `ACCEPT_OR_DECLINE_IS_TAPPED` | Accept or Decline is tapped |
+| 131705 | CH-13721 | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | Ask: An opener pill or shortcut card is tapped |
+| 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
 
@@ -217,6 +264,14 @@ The page is labelled by its title and each section is a labelled region (CH-1380
 | 131805 | CH-13805 | `CHOOSING_ANOTHER_INSIGHT_OR_PLAYER` | Choosing another insight or player |
 | 131806 | CH-13806 | `PRIORITY` | Priority |
 | 131807 | — | `NO_AXE_VIOLATIONS_IN_THE_AXE_PREVIEW_STATES` | No axe violations in the ten preview states clubhouse:a11y walks for CoachHelm (the coach's default, assigned, empty, failed, off and loading; the player's default, empty, norounds and failed), at 1280px and 390px: 20 runs, clean on 2026-09-30 as reported by the lead in PROGRESS.md. Checked by npm run clubhouse:a11y (CH_A11Y_PAGES in scripts/clubhouse/a11y.mjs), not by a unit test. Not walked: the coach's noroster, pulsefailed, quiet, failwrites, failundo and duplicate states and the player's working, off and loading states. |
+| 131808 | CH-13807 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS` | The player's proposed focus areas |
+| 131809 | CH-13820 | `ASK_THE_CHAT_PAGE` | Ask: The chat page |
+| 131810 | CH-13821 | `ASK_A_PLAYER_IS_MENTIONED` | Ask: A player is mentioned |
+| 131811 | CH-13822 | `ASK_THE_PHONE_CHATS_BUTTON` | Ask: The phone Chats button |
+| 131812 | CH-13823 | `ASK_THE_OPEN_CHAT_IN_THE_LIST` | Ask: The open chat in the list |
+| 131813 | CH-13850 | `ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER` | Ask: CoachHelm is working on an answer |
+| 131814 | CH-13851 | `ASK_THE_EVIDENCE_CONTROL` | Ask: The evidence control |
+| 131815 | CH-13852 | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | Ask: Evidence drawn as a chart |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
 

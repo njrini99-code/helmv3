@@ -12,6 +12,8 @@ import { InlineNotice } from '../../ui/Notices';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { FocusCard, Head, InsightRow } from './parts';
+import { Proposals } from './Proposals';
+import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from './writes';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachHelmLinks = {
@@ -28,9 +30,10 @@ export const coachHelmLinks = {
  * CoachHelm for the player (P013; design/handoff/Player - CoachHelm.html,
  * helm3.jsx `PlayerHelm`; spec docs/clubhouse/phone/coachhelm.md): one focus,
  * then the other things worth knowing and what is working. The player reads
- * only their own insights and has no coach controls; nothing here writes.
+ * only their own insights and has no coach controls. The one thing they write
+ * is their answer to a focus area a coach proposed: Accept or Decline (Q-77).
  */
-export function PlayerBoard({ data }: { data: ChPlayerHelm }) {
+export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPlayerHelm; writes?: ChPlayerWrites }) {
   const phone = useChPhone();
   const router = useRouter();
   const [picked, setPicked] = useState<string | null>(null);
@@ -50,6 +53,8 @@ export function PlayerBoard({ data }: { data: ChPlayerHelm }) {
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title">
       {phone && <PhoneTop start title="CoachHelm" />}
       <Head who="Player">One thing to work on this week, based on the rounds you’ve posted.</Head>
+
+      {!data.off && <Proposals proposals={data.proposals} writes={writes} onRetry={refresh} />}
 
       {data.off ? (
         <EmptyState

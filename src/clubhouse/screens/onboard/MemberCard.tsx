@@ -80,11 +80,9 @@ export function MemberCard({ face, issued, season }: { face: CardFace; issued: b
       )}
       <div className="ch-ox-mc" role="img" aria-label={label}>
         <span className="ch-ox-mc__rose" aria-hidden="true" />
-        {/* eslint-disable-next-line @next/next/no-img-element -- a small static mark, drawn as a watermark */}
         <img className="ch-ox-mc__wm" src={MARK} alt="" aria-hidden="true" />
         <div className="ch-ox-mc__top">
           <span className="ch-ox-mc__brand">
-            {/* eslint-disable-next-line @next/next/no-img-element -- a small static mark */}
             <img src={MARK} alt="" width={26} height={26} />
             GolfHelm
           </span>
@@ -95,7 +93,6 @@ export function MemberCard({ face, issued, season }: { face: CardFace; issued: b
         <div className="ch-ox-mc__who">
           <span className="ch-ox-mc__coin">
             {face.photo ? (
-              // eslint-disable-next-line @next/next/no-img-element -- the player's own upload, a public avatar URL
               <img src={face.photo} alt="" />
             ) : face.name ? (
               <Avatar name={face.name} size={55} />

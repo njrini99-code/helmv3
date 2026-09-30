@@ -38,7 +38,8 @@ Action: useAction(name, run, copy) in RecruitingView and Documents (offline refu
 Client writes: src/clubhouse/screens/recruiting/writes.ts (createLiveRecruitingWrites; one interface, faked whole in
                tests and the preview)
 ↓
-Server actions: src/app/golf/actions/recruiting.ts, recruit-documents.ts (unchanged)
+Server actions: src/app/golf/actions/recruiting.ts, recruit-documents.ts (the current page's calls are unchanged;
+                createRecruit takes an optional request id, and recruit-documents.ts has two new upload steps)
 ↓
 Data: golf_recruits, golf_recruit_documents, storage bucket recruit-documents (private; signed URLs)
 ↓
@@ -62,12 +63,12 @@ write re-reads the page (141501) and a failed one reports through `chReport`.
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
-| ACT-P014-ADD-PROSPECT | Add prospect (header, empty page, phone "+") | `addAction` in `RecruitingView` | `createRecruit` | golf_recruits | invalid 140501 · lands 140901 · fails 140601 · fields kept 141201 · Retry 141401 |
+| ACT-P014-ADD-PROSPECT | Add prospect (header, empty page, phone "+") | `addAction` in `RecruitingView`, which sends one request id per Add (`requestIdFor`) | `createRecruit(input, { requestId })`: inserts under that id; a repeat finds the row it stored (CH-14915) | golf_recruits | invalid 140501 · lands 140901 · fails 140601 · fields kept 141201 · Retry 141401 · repeat CH-14915 |
 | ACT-P014-SAVE-PROSPECT | Save (Edit dialog or sheet) | `saveAction` | `updateRecruit` | golf_recruits | invalid 140501 · lands 140902 · fails 140602 · fields kept 141201 · Retry 141401 |
 | ACT-P014-MOVE-STAGE | A stage in the panel's control, the phone's stage sheet | `moveAction`, which moves, calls `updateRecruit` (status only) and puts the prospect back if it does not land | `updateRecruit` | golf_recruits | optimistic 141301 · fails 140603 · announce 141803 · haptic 141701 · Retry 141401 |
 | ACT-P014-DELETE-PROSPECT | Delete prospect (panel, edit sheet), after the question | `deleteAction` | `deleteRecruit` (their documents go with them) | golf_recruits, golf_recruit_documents | confirm 141101 · loading 140304 · lands 140903 · fails 140604 · haptic 141702 |
 | ACT-P014-LIST-DOCUMENTS | A prospect opens (the Documents section) | `fetchDocs` in `Documents` | `getRecruitDocuments` | golf_recruit_documents | loading 140202 · fails 140609 |
-| ACT-P014-UPLOAD-DOCUMENT | Upload (a chosen file, its title and category) | `uploadAction` | `uploadRecruitDocument` (removes the stored file if its row does not save) | golf_recruit_documents, recruit-documents | invalid 140505, 140506 · loading 140302 · lands 140904 · fails 140605 · refused 140802 |
+| ACT-P014-UPLOAD-DOCUMENT | Upload (a chosen or dropped file, its title and category) | `uploadAction`, which sends one upload id per chosen file | `uploadRecruitFile`: `prepareRecruitDocumentUpload` (checks the type and size, builds the path from the recruit's team, signs an upload URL, or says the object is already there), a `PUT` of the file to that URL with progress, then `completeRecruitDocumentUpload` (reads the object's real size back, records the row; a file whose row fails stays for the Retry) | golf_recruit_documents, recruit-documents | invalid 140505, 140506 · loading 140302 · lands 140904 · fails 140605 · refused 140802 · file refused CH-14107, CH-14108 · drop CH-14109, CH-14110, CH-14917 · progress CH-14407 · repeat CH-14916 |
 | ACT-P014-REMOVE-DOCUMENT | Remove document, after the question | `removeAction` | `deleteRecruitDocument` | golf_recruit_documents, recruit-documents | confirm 141102 · loading 140303 · lands 140904 · fails 140606 · refused 140802 |
 | ACT-P014-OPEN-DOCUMENT | A document's name | `openAction` | `getRecruitDocumentUrl`, then the in-app browser (`openExternalUrl`) on the iPhone and an anchor on the web | golf_recruit_documents | fails 140607 |
 | ACT-P014-TRY-AGAIN | Try again on the list's notice | `tryAgain` (asks the server for the page again) | — | — | list failed 140608 · Retry 141401 |
@@ -98,6 +99,12 @@ RLS:           golf_recruits and golf_recruit_documents are team-scoped with RLS
 
 ## Open wiring gaps
 
-- `createRecruit` has no idempotency key, so a Retry after an answer that was lost on the way (the write landed,
-  the reply did not) adds the prospect a second time. The stage, edit and delete writes are idempotent.
-- The documents bucket takes no video and caps a file at 25 MB (the boards' sample film is a `.mov`); see DESIGN.md.
+- Fixed 2026-09-30: `createRecruit` had no idempotency key, so a Retry after an answer lost on the way added the
+  prospect twice. An Add now carries a request id (CH-14915). The stage, edit and delete writes were already idempotent.
+- Film is built but waits for a migration: the bucket takes no video and caps a file at 25 MB until
+  `20260930140000_recruit_documents_film.sql` is applied (DESIGN.md item 6). Until then a film is refused by Storage and the
+  dialog says so (CH-14107, CH-14108).
+- The project-wide Storage upload limit could not be read from here. The migration sets 100 MB on the bucket; a project
+  limit below that makes Storage answer 413 for a large film, which the page reports as CH-14108.
+- An upload the coach abandons after the file landed but before its row was saved leaves an object in the private
+  bucket with no row (a Retry would have found it). There is no sweep for these.

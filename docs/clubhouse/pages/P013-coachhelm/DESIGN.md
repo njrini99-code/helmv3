@@ -30,8 +30,9 @@ one-tap way to prescribe or set aside the top signal.
 
 ## Visual hierarchy
 
-Header (role chip, "CoachHelm", one line), then the boards. The player's is the focus card beside a column of
-"Also worth knowing" and "Working". The coach's is the program pulse across the top, then By player beside
+Header (role chip, "CoachHelm", one line), then the boards. The player's is, when a coach proposed a focus area
+to them, one "Proposed for you" card (each focus area with Accept and Decline), then the focus card beside a
+column of "Also worth knowing" and "Working". The coach's is the program pulse across the top, then By player beside
 the chosen player's focus card with Assign as focus and Dismiss under it. The frame is a container named
 `chhl` (at most 1180px): the two columns collapse to one below 900px of canvas, and below 640px the header is
 smaller, the pulse is a single column and the coach's players become a row of pills that scrolls sideways.
@@ -46,10 +47,12 @@ On the phone (820px and below) the title also moves to the top bar.
 
 ### New Clubhouse components
 
-`PlayerBoard` and `CoachBoard` (the containers: the page's state and the three writes), the cards in
+`PlayerBoard` and `CoachBoard` (the containers: the page's state and the three writes), `Proposals` (the
+player's Accept and Decline for a proposed focus area, with its own `ProposalRow`; not Stats' `ProposalAnswer`,
+whose toast numbers and style are Stats'), the cards in
 `parts.tsx` (`FocusCard`, `Evidence` with its `Gauge` and bars, `ReadMeter`, `PriPill`, `InsightRow`,
 `PulseList`, `Head`), `CoachHelmSkeleton` (one shape per role) and `CoachHelmRouteSkeleton`, and
-`LIVE_COACHHELM_WRITES` in `writes.ts` (the one place the server actions are named). The loaders are
+`LIVE_COACHHELM_WRITES` and `LIVE_PLAYER_WRITES` in `writes.ts` (the one place the server actions are named). The loaders are
 `data/coachhelm.ts`, with `coachhelm-shape.ts` (types, partition, ordering, the pulse rows) and
 `coachhelm-map.ts` (generator output to what is drawn).
 
@@ -68,7 +71,7 @@ All 25 (CONTRACT.md), seven of them N/A with a reason.
 
 ## Motion intent
 
-Its own: the Assigned chip and the dismissed notice rise in (base), and hovering an insight row or a player
+Its own: the Assigned chip, the dismissed notice and a proposal's Started or Declined chip rise in (base), and hovering an insight row or a player
 tints it (quick); with reduced motion or Animations off the rise is skipped and the chip and notice appear at
 once (CH-13601, CH-13602). Everything else (presses, the skeleton fade, toasts) is the shell's (D-64).
 Nothing counts up.
@@ -76,7 +79,8 @@ Nothing counts up.
 ## Haptic intent
 
 v2 grammar (D-70): selection for choosing a player or an insight; the light press on Assign as focus, with
-success when it lands and error when it does not; the warning before Dismiss; other taps are silent.
+success when it lands and error when it does not; the warning before Dismiss; Accept is a primary button (the
+light press) and Decline is silent, each with success or error from `useAction` (CH-13704); other taps are silent.
 
 ## Desktop
 
@@ -89,7 +93,8 @@ roles.
 Approved spec `docs/clubhouse/phone/coachhelm.md`: CoachHelm is a phone tab for both roles. The top bar is
 the shell's "CoachHelm" and the page keeps its own header; the focus card takes less padding; the coach's
 players are a row of pills (the "By player" heading stays for screen readers); Assign as focus and Dismiss
-share a row; on the player's page, choosing a row brings the focus into view.
+share a row; on the player's page, choosing a row brings the focus into view, and each proposed focus area is
+a row with its two 44px buttons underneath, side by side.
 
 ## Accessibility
 
@@ -130,7 +135,7 @@ exist; it is not built.
 
 D-22 (phone), D-42 (red), D-64 (motion), D-66 (navigation), D-70 (haptics), D-71 (page empty state). Open:
 Q-76 (the Fairway drills reached by `?view=`: built as "not rebuilt yet", with Development, Profile and
-Standing to be rebuilt) and Q-77 (Accept and Decline: built in Stats Development; this board still has none).
+Standing to be rebuilt) and Q-77 (Accept and Decline: built in Stats Development and on the player's board here).
 
 ## Explicit non-goals
 

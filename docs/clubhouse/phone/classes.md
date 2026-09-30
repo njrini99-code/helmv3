@@ -30,7 +30,7 @@ Built in `src/clubhouse/screens/classes/`. The screen is `ClassesView` over an i
 - **"Busy time only".** The board's note says the coach sees only busy time. The read policy lets an active coach read the whole class row (name, room, instructor). The card says what is true: the coach sees the classes, when they meet and where; teammates don't.
 - **Import review.** The board's row has an Edit pencil. Each row can be removed from the review; a class is edited from its card once imported. The board's timed "Image received, Finding classes, Matching times" steps are animation, not progress, so the reading state says only what it is doing.
 - **Import: what needs a look.** A parsed class with no days or no time is imported and marked "Need a look" (it can't be on the calendar without both). The result says how many classes are on the calendar and until when (each class's own term end), and names the ones that are not and why ("PHIL 150 (no meeting days)", "HIST 210 (no time set)"), rather than saying they all are.
-- **Delete all.** The current Fairway page has "Delete all classes". The board doesn't draw it and it isn't built; a class is removed one at a time. Open question for the owner (a semester-end clean-up is N removals).
+- **Delete all.** The current Fairway page has "Delete all classes" and the board doesn't draw it. The owner approved it on 2026-09-30 (Q-75a) and it is built: a quiet red button under the deck (on the phone a full-width row, 44px tall, in the page's own flow and not in the header, which keeps Import schedule and Add class as the two actions), behind a bottom sheet that says how many classes go and that their calendar events go with them. The calendar comes first, then the rows, as on the current page.
 - **Week strip and term bar** are drawn from the classes' own data; the term line marks today and this week.
 
 ## Beyond the board
@@ -50,5 +50,5 @@ Loading: a route skeleton (CH-12401), "Reading your schedule…" while a file is
 
 - The top bar is the shell's: "Classes" with "‹ More". The page keeps its own header (the term line, "Classes", Import schedule and Add class, which share the row).
 - Below 640px the deck is one column, the term overview stacks (the week tile beside the credits and the bar; the overlap count on its own row), and the side cards go under the deck.
-- The tab bar stays (More is on). The class's sheet, the form, the import and both questions are bottom sheets that drag to close.
+- The tab bar stays (More is on). The class's sheet, the form, the import and the three questions (remove, delete all and discard) are bottom sheets that drag to close; the delete-all question does not close while its delete is running.
 - Not yet: a measured touch-target pass (the day picker, the week strip's cards) and a pass on a real iPhone (keyboard with the form open, swipe-back with a sheet open, haptics felt).

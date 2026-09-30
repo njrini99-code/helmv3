@@ -33,6 +33,7 @@ The route skeleton (CH-10405) is the Clubhouse one inside the shell and the Fair
 | 100204 | CH-10404 | `A_TASK_IS_BEING_ASSIGNED` | A task is being assigned |
 | 100205 | CH-10405 | `TEAM_HUB_IS_LOADING` | Team Hub is loading |
 | 100206 | CH-10406 | `AN_EDIT_IS_BEING_SAVED` | An edit is being saved |
+| 100207 | CH-10407 | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_ARE` | Plan a trip: the travelers' classes are being checked |
 
 ## 03 — Background loading / refresh
 
@@ -60,6 +61,8 @@ First run is the whole-page empty state, one for a coach (CH-10305, with New ann
 | 100412 | CH-10311 | `A_TEAM_WITH_NO_DOCUMENTS` | A team with no documents |
 | 100413 | CH-10312 | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | Plan a trip: no upcoming events in the next four months |
 | 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step with no calendar event |
+| 100415 | CH-10314 | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | New announcement: files that players can't open are left out of the attach list |
+| 100416 | CH-10315 | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | Plan a trip: nobody chosen has a class during the trip |
 
 ## 05 — Validation
 
@@ -78,6 +81,7 @@ Checked before anything is sent, with the message under the field and the warnin
 | 100507 | CH-10107 | `A_TASK_WITH_A_NAME_UNDER_THREE` | A task with a name under three characters |
 | 100508 | CH-10108 | `A_TASK_FOR_NOBODY` | A task for nobody |
 | 100509 | CH-10109 | `POSTING_OR_SAVING_AN_EDIT_WITH_NO` | Posting or saving an edit with no message (the server requires one) |
+| 100510 | CH-10110 | `PLAN_A_TRIP_A_CHOSEN_TRAVELER_HAS` | Plan a trip: a chosen traveler has a class during the trip |
 
 ## 06 — Server / system error
 
@@ -109,6 +113,8 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 100620 | CH-10011 | `UNTICKING_A_DONE_TASK_FAILS` | Unticking a done task fails |
 | 100621 | CH-10210 | `PLAN_A_TRIP_UPCOMING_EVENTS_DIDNT_LOAD` | Plan a trip: upcoming events didn't load |
 | 100622 | CH-10211 | `PLAN_A_TRIP_WHO_IS_INVITED_TO` | Plan a trip: who is invited to the chosen event didn't load |
+| 100623 | CH-10012 | `A_POST_GOES_OUT_BUT_ITS_FILES` | A post goes out but its files don't attach |
+| 100624 | CH-10212 | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_DIDNT` | Plan a trip: the travelers' classes didn't load |
 
 ## 07 — Network / offline
 

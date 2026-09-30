@@ -35,9 +35,9 @@ export interface ChHelmGauge {
   secPct: number | null;
   /** "23 pts" (the generator's own display). */
   you: string;
-  /** "College cohort avg 0.6". */
+  /** "Tour 0.3" in place of a college comparison (Q-88: the Tour is the only benchmark); any other comparison keeps the generator's own label ("Your right-to-left make % (same band) 51%"). */
   cmp: string;
-  /** "PGA Tour avg 0.3", when the generator carries a Tour tick beside the cohort. */
+  /** "PGA Tour avg 0.3", when the generator carries a Tour tick beside a comparison that is not a college one. */
   sec: string | null;
   /**
    * The insight's stance, drawn green: a strength. Every other insight is a
@@ -49,6 +49,19 @@ export interface ChHelmGauge {
   /** The track starts at zero, so the fill is a real magnitude; otherwise only the ticks show. */
   fromZero: boolean;
 }
+
+/**
+ * The Tour an insight is graded against (Q-88: the Tour is the only benchmark, never a college one): the team's own tour, and
+ * `golf_pga_standards.pga_tour_value` for each metric (the LPGA value on an LPGA row, so a women's team is never graded against
+ * the men's). A metric the tour has no value for is not in `values`, and its college comparison is not drawn.
+ */
+export interface ChTourBaseline {
+  tour: 'pga' | 'lpga';
+  values: ReadonlyMap<string, number>;
+}
+
+/** How the gauge names the Tour's tick. */
+export const TOUR_LABEL: Record<ChTourBaseline['tour'], string> = { pga: 'Tour', lpga: 'LPGA Tour' };
 
 export interface ChHelmEvidence {
   /** "Downhill penalty vs level putts (distance-controlled)". */
@@ -96,9 +109,19 @@ export interface ChInsight {
   assigned: ChHelmAssigned | null;
 }
 
+/** A focus area a coach proposed, waiting for this player to accept or decline it (`golf_player_focus_areas.status = 'proposed'`; Q-77). */
+export interface ChProposal {
+  id: string;
+  title: string;
+  /** The title of the insight it was made from, when that insight is on this page. */
+  from: string | null;
+}
+
 export interface ChPlayerHelm {
   /** CoachHelm is turned off for this player: the coach's reason when there is one. Nothing else is read. */
   off: { reason: string | null } | null;
+  /** The focus areas proposed to this player on their team. `error`: the read failed, never "nothing proposed". */
+  proposals: { list: ChProposal[]; error: boolean };
   /** Ranked and deduplicated as the feed does (`getInsightsForPlayer`). `error`: the read failed, never "no insights". */
   insights: { list: ChInsight[]; error: boolean };
   /** Countable rounds posted, read only when there are no insights, so the empty state can say what to do; null when unknown. */

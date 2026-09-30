@@ -1,5 +1,14 @@
 import type { Recruit, RecruitInput } from '@/app/golf/actions/recruiting';
 import type { RecruitDocument } from '@/app/golf/actions/recruit-documents';
+import {
+  RECRUIT_DOC_MAX_BYTES,
+  RECRUIT_FILM_EXTENSIONS,
+  RECRUIT_FILM_MAX_BYTES,
+  RECRUIT_DOC_MIME_BY_EXT,
+  isRecruitFilmExtension,
+  recruitDocExtension,
+  recruitDocMaxBytes,
+} from '@/app/golf/actions/recruit-documents-limits';
 
 /**
  * Recruiting (P014): the coach's prospect list, in the shapes the screen draws. Client-safe (only types come from
@@ -296,25 +305,68 @@ export function toDocument(r: RecruitDocument): ChDocument {
   return { id: r.id, title: r.title || r.file_name, category: known ? (r.category as ChDocCategory) : 'other', fileName: r.file_name, fileType: r.file_type, size: r.file_size, createdAt: r.created_at };
 }
 
-/** The bucket's own ceiling, and the extensions its allowlist takes (src/app/golf/actions/recruit-documents.ts). */
-export const MAX_FILE_BYTES = 25 * 1024 * 1024;
-export const DOC_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'gif', 'txt', 'csv', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'] as const;
-export const DOC_ACCEPT = DOC_EXTENSIONS.map((e) => `.${e}`).join(',');
+/**
+ * The bucket's own ceilings and the extensions its allowlist takes (src/app/golf/actions/recruit-documents-limits.ts,
+ * set on the bucket by supabase/migrations/20260930140000_recruit_documents_film.sql): 25 MB for a document or an
+ * image, 100 MB for film (MP4, MOV, M4V).
+ */
+export const MAX_FILE_BYTES = RECRUIT_DOC_MAX_BYTES;
+export const MAX_FILM_BYTES = RECRUIT_FILM_MAX_BYTES;
+export const DOC_EXTENSIONS = Object.keys(RECRUIT_DOC_MIME_BY_EXT);
+export const FILM_EXTENSIONS: readonly string[] = RECRUIT_FILM_EXTENSIONS;
+/** Extensions, and the three film types too: on an iPhone a video type is what makes the picker offer the Photo Library. */
+export const DOC_ACCEPT = [...DOC_EXTENSIONS.map((e) => `.${e}`), ...new Set(FILM_EXTENSIONS.map((e) => RECRUIT_DOC_MIME_BY_EXT[e]!))].join(',');
 
 export interface ChFileProblem {
-  code: 'CH-14105' | 'CH-14106';
+  code: 'CH-14105' | 'CH-14106' | 'CH-14107' | 'CH-14108' | 'CH-14109' | 'CH-14110';
   title: string;
   body: string;
 }
 
-/** Refused before anything is sent, with the server's own limits. */
+const mb = (bytes: number) => `${Math.round(bytes / (1024 * 1024))} MB`;
+
+/** Refused before anything is sent, with the bucket's own limits: the type first, then the size its kind of file may be. */
 export function screenFile(file: { name: string; size: number }): ChFileProblem | null {
-  if (file.size > MAX_FILE_BYTES) return { code: 'CH-14105', title: 'That file is over 25 MB', body: 'Choose a smaller file, or a lower-resolution copy.' };
-  const ext = file.name.includes('.') ? (file.name.split('.').pop() ?? '').toLowerCase() : '';
-  if (!(DOC_EXTENSIONS as readonly string[]).includes(ext)) {
-    return { code: 'CH-14106', title: "We can't take that file type", body: 'Use a PDF, an image, a text or spreadsheet file, or a Word or PowerPoint document.' };
+  const ext = recruitDocExtension(file.name);
+  if (!DOC_EXTENSIONS.includes(ext)) {
+    return { code: 'CH-14106', title: "We can't take that file type", body: 'Use a PDF, an image, a text or spreadsheet file, a Word or PowerPoint document, or film as MP4, MOV or M4V.' };
+  }
+  const max = recruitDocMaxBytes(ext);
+  if (file.size > max) {
+    return isRecruitFilmExtension(ext)
+      ? { code: 'CH-14105', title: `That film is over ${mb(max)}`, body: 'Choose a shorter clip, or export it at a lower resolution.' }
+      : { code: 'CH-14105', title: `That file is over ${mb(max)}`, body: 'Choose a smaller file, or a lower-resolution copy.' };
   }
   return null;
+}
+
+/**
+ * Storage turned down a file the page let through (the bucket not updated to take film yet, or a project-wide upload
+ * limit below the bucket's). Said as it happened, never as a generic failure, and without a limit the page cannot know.
+ */
+export function refusedProblem(kind: 'size' | 'type', file: { name: string; size: number }): ChFileProblem {
+  return kind === 'size'
+    ? { code: 'CH-14108', title: "Storage won't take a file this large", body: `${file.name}${sizeLabel(file.size) ? ` (${sizeLabel(file.size)})` : ''} was refused, so nothing was added. Try a smaller file, or keep a link to it in the notes.` }
+    : { code: 'CH-14107', title: "Storage won't take that file type", body: `${file.name} was refused, so nothing was added. Try another file, or keep a link to it in the notes.` };
+}
+
+/** What a drop held, judged before anything is staged: one file, and a file rather than a folder or nothing. */
+export function screenDrop(d: { count: number; folder: boolean; file: { name: string; size: number } | null }): ChFileProblem | null {
+  if (d.folder) return { code: 'CH-14110', title: "That isn't a file", body: "A folder can't be added. Drop the file itself." };
+  if (d.count > 1) return { code: 'CH-14109', title: 'Drop one file at a time', body: 'Each document gets its own title and category. Drop the first, then the next.' };
+  if (!d.file || d.file.size === 0) return { code: 'CH-14110', title: "That isn't a file", body: 'It is empty, or it is a folder. Drop the file itself.' };
+  return null;
+}
+
+/** One id per Add, or per chosen file, kept across a Retry so a repeat after a lost answer finds what its first attempt did. */
+export function newRequestId(): string {
+  const c = globalThis.crypto;
+  if (typeof c.randomUUID === 'function') return c.randomUUID();
+  const b = c.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6]! & 0x0f) | 0x40;
+  b[8] = (b[8]! & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 export function sizeLabel(bytes: number | null): string {

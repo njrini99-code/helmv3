@@ -13,7 +13,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
 - [x] Only Clubhouse tokens and classes are used (`.ch-cl-*` over `--ch-*`), and `clubhouse:check` is clean
 - [x] Numbers are tabular (`.ch-num` on the credits, the week, the times and the counts), with `—` and plain words for no data ("Instructor not listed", "Not set", "No time")
-- [x] Red appears only on Remove class (`.ch-cl-danger`) and invalid fields; an overlap with the team or another class is amber, never red
+- [x] Red appears only on Remove class (`.ch-cl-danger`), Delete all classes (`.ch-cl-delall`, both destructive) and invalid fields; an overlap with the team or another class is amber, never red
 - [ ] Copy is in sentence case, in the head-pro voice, and actions are a verb plus an object
 - [x] Controls that point at an unbuilt screen are hidden via `rebuiltHref` ("Open team settings" on the no-team page); every other control opens a sheet or writes
 - [ ] A narrow canvas (container below 1000px and 640px) reflows without horizontal page scroll
@@ -35,9 +35,9 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
 - [ ] Not found and no access: plain words and a way back
 - [x] Offline or slow network: a write says so instead of spinning (CH-1903, CH-1902); a screenshot read says so and offers the paste (CH-12901, CH-12902)
-- [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event (CH-12001 to CH-12004); Retry finishes the job, a failed sync's Retry never saves the class again and starts each class from the day its first attempt did, and a save does not wait for the calendar (the sheet is free while the header says "Adding to your calendar…")
+- [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event (CH-12001 to CH-12006); Retry finishes the job, a failed sync's Retry never saves the class again and starts each class from the day its first attempt did, and a save does not wait for the calendar (the sheet is free while the header says "Adding to your calendar…")
 - [x] Forms: every rule shows beside its field, and the first field that needs it takes focus (CH-12101 to CH-12114); the duplicate and overlap checks count only the classes of the term the form is set to
-- [x] Destructive actions: a confirm step (CH-12501), and a question before a form with changes is thrown away (CH-12502)
+- [x] Destructive actions: a confirm step for one class (CH-12501) and for all of them (CH-12503), and a question before a form with changes is thrown away (CH-12502)
 - [x] N/A: nothing is optimistic; a class joins the list when the server has stored it
 
 ## error-tracking
@@ -65,7 +65,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
 - [ ] Skeletons wait 150ms, fade in, and share one shimmer sweep
 - [ ] Reduced motion and Animations off remove the rise, the press and the shimmer (`useChReducedMotion`)
-- [x] Haptics follow v2 (D-70): selection for opening a class, choosing a day and the file or paste switch (CH-12701, CH-12703, CH-12705); warning before the remove question and on Discard (CH-12702); success and error through `useAction`; an error when a file can't be read; every other tap silent
+- [x] Haptics follow v2 (D-70): selection for opening a class, choosing a day and the file or paste switch (CH-12701, CH-12703, CH-12705); warning before the remove question, the delete-all question and on Discard (CH-12702, CH-12704); success and error through `useAction`; an error when a file can't be read; every other tap silent
 
 ## accessibility
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays

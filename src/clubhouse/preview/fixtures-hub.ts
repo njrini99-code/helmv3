@@ -93,20 +93,20 @@ const BASE = {
       {
         name: 'Carolina Fall Invitational',
         files: [
-          { id: 'd1', title: 'Pairings and tee times', type: 'PDF', size: '84 KB', date: 'Oct 14' },
-          { id: 'd2', title: 'Hotel confirmation', type: 'PDF', size: '61 KB', date: 'Oct 13' },
-          { id: 'd3', title: 'Travel waiver', type: 'PDF', size: '46 KB', date: 'Oct 10' },
+          { id: 'd1', title: 'Pairings and tee times', type: 'PDF', size: '84 KB', date: 'Oct 14', isPublic: true },
+          { id: 'd2', title: 'Hotel confirmation', type: 'PDF', size: '61 KB', date: 'Oct 13', isPublic: true },
+          { id: 'd3', title: 'Travel waiver', type: 'PDF', size: '46 KB', date: 'Oct 10', isPublic: true },
         ],
       },
       {
         name: 'Team',
         files: [
-          { id: 'd4', title: 'Fall 2026 schedule', type: 'PDF', size: '120 KB', date: 'Aug 20' },
-          { id: 'd5', title: 'Team handbook', type: 'PDF', size: '1.2 MB', date: 'Aug 18' },
-          { id: 'd6', title: 'Practice plan · week 9', type: 'DOC', size: '32 KB', date: 'Oct 12' },
+          { id: 'd4', title: 'Fall 2026 schedule', type: 'PDF', size: '120 KB', date: 'Aug 20', isPublic: true },
+          { id: 'd5', title: 'Team handbook', type: 'PDF', size: '1.2 MB', date: 'Aug 18', isPublic: true },
+          { id: 'd6', title: 'Practice plan · week 9', type: 'DOC', size: '32 KB', date: 'Oct 12', isPublic: false },
         ],
       },
-      { name: 'Compliance', files: [{ id: 'd7', title: 'NCAA hours log', type: 'XLS', size: '58 KB', date: 'Oct 13' }] },
+      { name: 'Compliance', files: [{ id: 'd7', title: 'NCAA hours log', type: 'XLS', size: '58 KB', date: 'Oct 13', isPublic: true }] },
     ],
   },
   updates: {
@@ -126,6 +126,8 @@ export const PREVIEW_HUB_PLAYER: ChTeamHub = {
   role: 'player',
   viewerPlayerId: 'theo',
   players: [],
+  // A player's read returns only files players can open; the coach-only ones never reach them.
+  documents: { ...BASE.documents, folders: BASE.documents.folders.map((f) => ({ ...f, files: f.files.filter((x) => x.isPublic) })).filter((f) => f.files.length > 0) },
   tripEvents: { rows: [], error: false },
   rsvps: {
     error: false,
@@ -153,8 +155,8 @@ export const PREVIEW_HUB_COACH: ChTeamHub = {
   tripEvents: {
     error: false,
     rows: [
-      { id: 'e-cfi', title: 'Carolina Fall Invitational', date: '2026-11-03', label: 'Mon Nov 3', location: 'Pinehurst No. 8', invited: ['theo', 'sofia', 'ava', 'eli', 'priya'] },
-      { id: 'e-ecu', title: 'ECU Intercollegiate', date: '2026-11-17', label: 'Mon Nov 17', location: 'Greenville CC', invited: [] },
+      { id: 'e-cfi', title: 'Carolina Fall Invitational', date: '2026-11-03', endDate: '2026-11-05', label: 'Mon Nov 3', location: 'Pinehurst No. 8', invited: ['theo', 'sofia', 'ava', 'eli', 'priya'] },
+      { id: 'e-ecu', title: 'ECU Intercollegiate', date: '2026-11-17', endDate: '2026-11-17', label: 'Mon Nov 17', location: 'Greenville CC', invited: [] },
     ],
   },
   announcements: { rows: ANNS.map((a) => ({ ...a, acked: false })), error: false },

@@ -2,7 +2,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { SLOPE_METRIC, toChInsight } from '../data/coachhelm-map';
-import { pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChInsight, type ChPlayerHelm } from '../data/coachhelm-shape';
+import { pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChInsight, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 
 /**
  * CoachHelm sample data (design/handoff/helm3.jsx `INS`, `PULSE`, `PLAYERS`).
@@ -166,23 +166,41 @@ export const bigNumber = (playerId: string, id = 'in-dbl'): EvidenceInsight =>
     }),
   });
 
+const NO_PROPOSALS: ChPlayerHelm['proposals'] = { list: [], error: false };
 const jonah = HELM_PLAYERS.jonah.id;
+/** A men's team's Tour values for the two metrics whose generator writes a college comparison (golf_pga_standards, tour = pga). */
+export const PREVIEW_TOUR: ChTourBaseline = { tour: 'pga', values: new Map([['penalty_rate_per_round', 0.3], ['big_number_rate', 2]]) };
+const chTour = (i: EvidenceInsight) => toChInsight(i, { tour: PREVIEW_TOUR });
 const chSlope = (playerId: string, id?: string, assigned: ChInsight['assigned'] = null) => toChInsight(slope(playerId, id), { drillText: DRILL_TEXT, assigned });
 
 /** Jonah's own CoachHelm, as the board draws it: the downhill penalty as the focus, two more, and one thing working. */
 export const PREVIEW_HELM_PLAYER: ChPlayerHelm = {
   off: null,
-  insights: { list: [chSlope(jonah), toChInsight(penalties(jonah)), toChInsight(breakBias(jonah)), toChInsight(bigNumber(jonah))], error: false },
+  proposals: NO_PROPOSALS,
+  insights: { list: [chSlope(jonah), chTour(penalties(jonah)), toChInsight(breakBias(jonah)), chTour(bigNumber(jonah))], error: false },
   rounds: null,
 };
+/** Two focus areas Coach Reyes proposed to Jonah: one made from his downhill-putts insight, one of the coach's own. */
+export const PREVIEW_HELM_PLAYER_PROPOSED: ChPlayerHelm = {
+  ...PREVIEW_HELM_PLAYER,
+  proposals: {
+    list: [
+      { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from: 'Downhill putts inside 4-6 ft: a real penalty' },
+      { id: 'fa-lag', title: 'Lag putting from 30 ft', from: null },
+    ],
+    error: false,
+  },
+};
+/** The proposals did not load; the insights did. */
+export const PREVIEW_HELM_PLAYER_PROPOSALS_FAILED: ChPlayerHelm = { ...PREVIEW_HELM_PLAYER, proposals: { list: [], error: true } };
 /** Rounds posted, no insight yet. */
-export const PREVIEW_HELM_PLAYER_EMPTY: ChPlayerHelm = { off: null, insights: { list: [], error: false }, rounds: 3 };
+export const PREVIEW_HELM_PLAYER_EMPTY: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: 3 };
 /** No round posted at all. */
-export const PREVIEW_HELM_PLAYER_NO_ROUNDS: ChPlayerHelm = { off: null, insights: { list: [], error: false }, rounds: 0 };
-export const PREVIEW_HELM_PLAYER_FAILED: ChPlayerHelm = { off: null, insights: { list: [], error: true }, rounds: null };
-export const PREVIEW_HELM_PLAYER_OFF: ChPlayerHelm = { off: { reason: null }, insights: { list: [], error: false }, rounds: null };
+export const PREVIEW_HELM_PLAYER_NO_ROUNDS: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: 0 };
+export const PREVIEW_HELM_PLAYER_FAILED: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: true }, rounds: null };
+export const PREVIEW_HELM_PLAYER_OFF: ChPlayerHelm = { off: { reason: null }, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: null };
 /** Only strengths: nothing needs work. */
-export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, insights: { list: [toChInsight(bigNumber(jonah))], error: false }, rounds: null };
+export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [chTour(bigNumber(jonah))], error: false }, rounds: null };
 
 const PULSE_ITEMS: PulseItem[] = [
   { id: 'rsvp-e1', headline: '2 players have not responded for Team dinner', evidence: 'Thu, Oct 16, 6:30 PM · 4 of 6 responded', tone: 'attention', weight: 85 },
@@ -196,9 +214,9 @@ const player = (p: { id: string; name: string }, top: ChInsight, count: number):
 
 const COACH_PLAYERS: ChCoachPlayer[] = sortCoachPlayers([
   player(HELM_PLAYERS.jonah, chSlope(jonah), 3),
-  player(HELM_PLAYERS.eli, toChInsight(penalties(HELM_PLAYERS.eli.id, 'in-pen-eli')), 2),
+  player(HELM_PLAYERS.eli, chTour(penalties(HELM_PLAYERS.eli.id, 'in-pen-eli')), 2),
   player(HELM_PLAYERS.priya, toChInsight(breakBias(HELM_PLAYERS.priya.id, 'in-brk-priya')), 1),
-  player(HELM_PLAYERS.theo, toChInsight(bigNumber(HELM_PLAYERS.theo.id, 'in-dbl-theo')), 1),
+  player(HELM_PLAYERS.theo, chTour(bigNumber(HELM_PLAYERS.theo.id, 'in-dbl-theo')), 1),
 ]);
 
 /** The coach's board: the pulse, four players with signals, one without. */

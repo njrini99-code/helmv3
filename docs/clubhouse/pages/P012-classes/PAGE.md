@@ -110,8 +110,8 @@ Implementation: in_progress (desktop and phone built for players; gates in PROGR
 Contract:       complete (CONTRACT.md: all 25 categories answered; the 29 hand contracts are reserved until
                 their tests carry the Bridge IDs, VERIFY.md)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
-Data:           existing (no held plan; Delete all, and the board's grade, next deadline and Share with coach,
-                need an owner decision, Q-75)
+Data:           existing (no held plan; the board's grade, next deadline and Share with coach need an owner
+                decision, Q-75; Delete all classes is built, Q-75a approved 2026-09-30)
 Verification:   partial (VERIFY.md: axe clean at 1280 and 390, seen by eye; no iPhone pass, no real-account pass,
                 no build)
 Docs:           current

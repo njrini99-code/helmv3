@@ -54,11 +54,11 @@ call it.
 `Recruiting` (the live wrapper), `RecruitingView` (the state, the intents and the five writes; it draws the desktop
 or the phone), `RecruitingDesktop` (header, list table, search and sort, `ProspectPanel`, `NoMatch`),
 `RecruitingPhone` (the list, the pushed prospect and the stage sheet), `Pipeline` (with a `compact` form),
-`Documents` (list, loading, failed, empty, the upload dialog, the removal question), `ProspectForm` (the form's
+`Documents` (list, loading, failed, empty, the file drop, the upload dialog with its progress, the removal question), `ProspectForm` (the form's
 rows, in a `Modal` on desktop and a `RecFormSheet` on the phone), `RecSheet` (`RecFormSheet`, `RecPickSheet`,
 `RecActionSheet`: bottom sheets on the native `<dialog>`, dragged to dismiss), `parts` (`StageChip`, `EmptyRow`,
 `ContactRows` and the like), `RecruitingSkeleton`, `RecruitingNoTeam`, `writes.ts` (every write behind one
-interface, faked whole in tests and the preview) and `ctx.ts` (what the view hands the two layouts). The pure rules
+interface, faked whole in tests and the preview), `upload.ts` (the transfer to Storage: prepare, PUT with progress, complete) and `ctx.ts` (what the view hands the two layouts). The pure rules
 (stages, counts, shares, search, sort, dates, the form's checks, file screening) are in
 `src/clubhouse/data/recruiting-shape.ts`; the server-only read is `data/recruiting.ts`.
 
@@ -123,8 +123,10 @@ stage history. The monogram is the initials.
 ## Existing backend capabilities used
 
 `getRecruits`, `createRecruit`, `updateRecruit`, `deleteRecruit` (`src/app/golf/actions/recruiting.ts`) and
-`getRecruitDocuments`, `uploadRecruitDocument`, `deleteRecruitDocument`, `getRecruitDocumentUrl`
-(`recruit-documents.ts`). Nothing new was added on the server. WIRING.md maps each.
+`getRecruitDocuments`, `deleteRecruitDocument`, `getRecruitDocumentUrl` and, for an upload, `prepareRecruitDocumentUpload`
+then `completeRecruitDocumentUpload` (`recruit-documents.ts`; the current page keeps `uploadRecruitDocument`). Two
+additions on the server, both optional for the current page: `createRecruit` takes a request id, and the two upload steps
+send the file straight to Storage (a server action's body is capped far below a film). WIRING.md maps each.
 
 ## HELD requirements
 
@@ -134,7 +136,7 @@ None.
 
 ### New data/schema
 
-None.
+The film migration (item 6 above), written and not applied: `supabase/migrations/20260930140000_recruit_documents_film.sql`.
 
 ### Owner decisions
 
@@ -153,9 +155,17 @@ PROGRESS.md by this session):
 5. **Add prospect on the phone.** The boards' "+" goes to the edit sheet; a new prospect gets one more row, Stage,
    and starts at Watched, as the desktop Add board does. The current page's server default for a new prospect is
    Recruiting; the boards' Add dialog shows Watched, and the boards win.
-6. **Film.** The bucket's allowlist has no video type and a 25 MB cap, so the board's sample `Swing, down the line.mov`
-   cannot be uploaded. Either the allowlist and cap grow (a migration and a server change, HELD) or the category
-   stays for links and stills.
+6. **Film (decided 2026-09-30, Q-95 item 6: film uploads are allowed, as a file drop).** The board's sample
+   `Swing, down the line.mov` can be uploaded once the migration is applied: MP4, MOV and M4V up to 100 MB (everything
+   else stays at 25 MB), refused before sending with "That film is over 100 MB" (CH-14105) and, if Storage still turns
+   one down, in the dialog with "Storage won't take that file type" or "a file this large" (CH-14107, CH-14108). The
+   file goes straight to Storage on a signed URL (a server action's body is capped far below a film), with a real
+   progress bar and "Keep this page open until it finishes" (CH-14407). A video chosen or dropped starts as Film.
+   The 100 MB cap is a stated assumption: the project's upload limit could not be read.
+   **The file drop** (desktop only; "as a file drop" is the owner's word): dropping a file on a prospect's Documents
+   opens the same dialog as Upload. The section shows a dashed edge and "Drop a file to add it" while a file is over it
+   (CH-14917). One file at a time: several files or a folder are refused with a sentence (CH-14109, CH-14110). The
+   Upload button stays, as the keyboard path and the phone's only one; the phone has no drop and no hint.
 7. **Pronouns.** The boards' sample copy says "him" and "his". The page cannot know a prospect's pronouns, so its copy
    says "them" and "their".
 8. **A remembered filter.** The stage filter and the sort are kept per browser (`localStorage`), as on the current
@@ -164,4 +174,5 @@ PROGRESS.md by this session):
 ## Explicit non-goals
 
 Sending anything: no email or text is sent from GolfHelm. No player-facing view. No import, export or sharing of a
-list. No stage history, reminders or tasks. No change to the server actions or the schema.
+list. No stage history, reminders or tasks. No change to what the current page's server actions do: the additions
+are an optional request id on `createRecruit` and two new upload steps. The one schema change is the film migration.

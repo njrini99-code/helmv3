@@ -116,7 +116,11 @@ browser with PDF.js from the current importer's pinned CDN copy). WIRING.md maps
 
 ### New features
 
-None built as held. Delete all is not built (the Fairway page has it; the board does not draw it).
+None built as held. Delete all classes is built (the Fairway page has it and the board does not draw it; the owner
+approved it on 2026-09-30, Q-75a): a quiet red button under the deck, behind a question that says how many classes
+go and that their calendar events go with them, in the current page's order (the calendar first, then the rows, so a
+class whose events are still on the calendar keeps its row). It is one write, and its failures are told apart: nothing
+deleted (CH-12005), or half-way with what is gone, kept and off the calendar but still saved named (CH-12006).
 
 ### New data/schema
 
@@ -126,14 +130,14 @@ status would need a column too. None is written.
 ### Owner decisions
 
 D-22 (phone), D-64 (motion), D-66 (navigation), D-67 (build order), D-70 (haptics), D-71 (page empty state).
-Q-75 is open and the page is built on its reversible choices: (a) Delete all is not built (recommended: build
-it behind the same confirm and calendar-first order); (b) Add class is a sheet (a bottom sheet on the phone)
+Q-75 is answered in part: (a) Delete all classes was approved by the owner on 2026-09-30 and is built, behind the
+same confirm and calendar-first order. The rest is built on its reversible choices: (b) Add class is a sheet (a bottom sheet on the phone)
 rather than the board's inline card; (c) the coach-visibility copy follows the read policy, not "busy time
 only"; (d) the grade, deadline and Share switch are not drawn.
 
 ## Explicit non-goals
 
-Delete all classes; the board's grade, next deadline and Share with coach; a sync status line; the board's
+The board's grade, next deadline and Share with coach; a sync status line; the board's
 timed "Image received, Finding classes, Matching times" steps (animation, not progress); the review row's Edit
 pencil (each class is edited from its card once imported); a coach's Classes page.
 

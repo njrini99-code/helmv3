@@ -2,6 +2,28 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Accept and Decline on the player's board, and the Tour in place of the college cohort (Q-77, Q-88)
+
+```text
+PR/commit:      agent/clubhouse
+Catalog:        CH-13004, CH-13005, CH-13205, CH-13404, CH-13704, CH-13807, CH-13902 (new); CH-13204, CH-13601, CH-13802 (reworded)
+Data impact:    none written. New reads: the player's own proposed golf_player_focus_areas, the team's gender
+                (golf_teams), and golf_pga_standards (reference data, readable by any signed-in user). No migration
+```
+
+### Accept and Decline on the player's board (Q-77)
+
+- **Issue.** A coach's Assign as focus makes a proposal the player accepts, but the only Clubhouse screen with Accept and Decline was Stats Development; a player on CoachHelm, where the coach's assignment is most likely to be talked about, had no way to answer it.
+- **Fix.** The player's board has a "Proposed for you" card above the focus: each focus area the coach proposed (the player's own `proposed` rows on their active team, newest first, with the insight it came from when that insight is on the page) with Accept and Decline, over the same `acceptFocusArea` and `declineFocusArea`. The answer confirms itself in place ("Started · title", "Declined · title"), a failure says what failed with Retry and keeps both buttons (CH-13004, CH-13005), a read that failed is its own notice rather than "nothing proposed" (CH-13205), and the coach's board never has either button. Stats' `ProposalAnswer` is not reused (its toast numbers and style are Stats'); the row is this page's own over the same actions.
+- **Checked.** coachhelm.test 142/142; typecheck:fast clean for these files; eslint 0; 17 mutations of Accept, Decline, the proposals read, the notice and the preview's writes each fail a test.
+
+### The Tour in place of "College cohort avg" (Q-88)
+
+- **Issue.** Two generators (course-mgmt.ts and pressure-gap.ts) write a college comparison ("College cohort avg 0.6", value from `golf_player_standing.level_avg`), drawn as the gauge's comparison with the Tour beside it, and the reasoning quoted it ("College players in our data average ~0.6"). The owner's rule is the Tour, never a college benchmark.
+- **Fix.** A college comparison (`cohort_avg`, or a division average) is drawn as the Tour's value for the metric from `golf_pga_standards.pga_tour_value` ("Tour 0.3"), for the team's own tour (the LPGA's for a women's team, "LPGA Tour 0.4"); the generator's own Tour tick beside it is the same number, so it is drawn once. Where the tour has no value for the metric, or the team's tour is not known, there is no comparison and no gauge (the sample and window still show), and the "College players in our data average" sentence is left out of the reasoning. Whether an insight is working is still the generator's call (its priority is anchored to its own comparison); only what is drawn moved.
+- **Checked.** coachhelm.test 142/142 (the men's and women's tour, a missing value, an unknown team, a failed team read and a failed standards read, in both loaders); 9 mutations (the college source, the fallback to the college number, the LPGA label, the doubled Tour tick, the prose sentence and its specificity, the coach's and the player's tour) each fail a test; two more that changed nothing showed a redundant guard, which was removed.
+- **Left, for the shared generators.** The generators' other college wording (a cold-start "top college teams stay under 0.5", "college typical is 2-5", and the women's-college "estimated target" comparisons on approach, putting and sand saves) and a women's team's cold-start "PGA Tour avg" (the men's value) are not this page's to reword; a women's cold-start Tour tick is the men's until the generators are moved (Q-93).
+
 ## 2026-09-30 — Phone tap targets
 
 ```text

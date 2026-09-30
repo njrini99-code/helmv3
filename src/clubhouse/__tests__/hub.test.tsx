@@ -32,18 +32,20 @@ vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotificat
 vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: vi.fn() }));
 vi.mock('@/app/golf/actions/golf', () => ({ respondToEvent: vi.fn() }));
 vi.mock('@/app/golf/actions/tasks', () => ({ completeTask: vi.fn(), uncompleteTask: vi.fn(), createTask: vi.fn(), deleteTask: vi.fn() }));
-vi.mock('@/app/golf/actions/travel', () => ({ createGolfTravelItinerary: vi.fn() }));
+vi.mock('@/app/golf/actions/travel', () => ({ createGolfTravelItinerary: vi.fn(), getTravelerClassConflicts: vi.fn() }));
 const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
 const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
 
 import Loading from '@/app/golf/(dashboard)/dashboard/team-hub/loading';
-import { folders, formatters, loadTeamHub, replyIsClosed, type ChTeamHub } from '../data/hub';
+import { eventSpan, folders, formatters, loadTeamHub, replyIsClosed, type ChTeamHub } from '../data/hub';
 import { ClubhouseHubRoute } from '../routes/hub';
 import { HubSkeleton } from '../screens/hub/HubSkeleton';
 import { parseHubTab, TeamHub, type ChHubTab } from '../screens/hub/TeamHub';
 import { createEnrichedAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
+import { getTravelerClassConflicts } from '@/app/golf/actions/travel';
+import { CLASH_LINES, checkKey, clashSummary, tripWindow } from '../data/hub-shape';
 import { LIVE_HUB_WRITES, type ChHubWrites } from '../screens/hub/writes';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
@@ -62,6 +64,7 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
     acknowledge: vi.fn(ok),
     completeTask: vi.fn(ok),
     setTravelers: vi.fn(ok),
+    travelerClasses: vi.fn(() => Promise.resolve({ success: true, data: { classes: [], partial: false } })),
     uncompleteTask: vi.fn(ok),
     openDocument: vi.fn(() => Promise.resolve({ success: true, data: { url: 'https://files.example/d1' } })),
     postAnnouncement: vi.fn(() => Promise.resolve({ success: true, data: { announcementId: 'n' } })),
@@ -1589,6 +1592,423 @@ describe('Team Hub · the live writes', () => {
     expect(createEnrichedAnnouncement).toHaveBeenCalledWith({ title: 'Waiver', body: 'Sign it', urgency: 'normal', requiresAcknowledgement: true, recipientPlayerIds: ['p1'], documentIds: ['d3', 'd2'], inlineTasks: [] });
     await LIVE_HUB_WRITES.editAnnouncement('a1', { title: ' Tee times ', body: ' Warm-up ', urgency: 'urgent', requiresAck: false });
     expect(updateAnnouncement).toHaveBeenCalledWith('a1', { title: 'Tee times', body: 'Warm-up', urgency: 'urgent', requiresAcknowledgement: false });
+  });
+});
+
+describe('Team Hub · a post whose files did not attach (Q-82)', () => {
+  const attachFail = { success: true, data: { announcementId: 'n', attachmentsError: 'The announcement was posted, but its files didn’t attach.' } };
+  const compose = async (user: User, post: ChHubWrites['postAnnouncement'], withFile: boolean) => {
+    show(PREVIEW_HUB_COACH, writes({ postAnnouncement: post }), 'ann');
+    const dialog = await openCompose(user);
+    if (withFile) {
+      await user.click(dialog.getByRole('button', { name: 'Attach from Documents' }));
+      await user.click(dialog.getByRole('button', { name: 'Travel waiver, PDF' }));
+    }
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Waiver');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Sign it.');
+    hapticSpy.mockClear();
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+  };
+
+  it('CH-10012 a post whose files did not attach says so once, in an error toast that names the post: it stands (the sheet closes, the page reads again), it is not offered a Retry, and it is never sent twice', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn().mockResolvedValue(attachFail);
+    await compose(user, post, true);
+    await expectCode('CH-10012', /Posted "Waiver" without its files/);
+    const toast = code('CH-10012') as HTMLElement;
+    expect(toast.textContent).toMatch(/The files didn’t attach, so players see the post with no files\. They can still open them in Documents\./);
+    expect(toast.getAttribute('role')).toBe('alert');
+    // A Retry would post it again: there is none. And the usual "Posted" is not said beside it.
+    expect(within(toast).queryByRole('button')).toBeNull();
+    expect(screen.queryByText('Posted "Waiver"')).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+    expect(router.refresh).toHaveBeenCalled();
+    expect(post).toHaveBeenCalledTimes(1);
+    // The post went; nothing failed to be reported.
+    expect(track.chReport).not.toHaveBeenCalled();
+  });
+
+  it('a post whose files attached, and one with none, still says Posted, with no CH-10012 and the success haptic', async () => {
+    const user = userEvent.setup();
+    await compose(user, vi.fn().mockResolvedValue({ success: true, data: { announcementId: 'n' } }), true);
+    await screen.findByText('Posted "Waiver"');
+    expect(code('CH-10012')).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    expect(hapticSpy).not.toHaveBeenCalledWith('error');
+  });
+
+  it('CH-10005 a post that fails outright still keeps its sheet and offers Retry, and a Retry that lands with files missing says CH-10012', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn().mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValue(attachFail);
+    await compose(user, post, true);
+    await expectCode('CH-10005');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await expectCode('CH-10012', /without its files/);
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Posted "Waiver"')).toBeNull();
+  });
+
+  it('the live write hands the action’s attachmentsError through, so the sheet can say it', async () => {
+    vi.mocked(createEnrichedAnnouncement).mockResolvedValue({ success: true, data: { announcementId: 'n', attachmentsError: 'x' } });
+    const res = await LIVE_HUB_WRITES.postAnnouncement({ title: 'Waiver', body: 'Sign it', requiresAck: true, playerIds: null, documentIds: ['d3'] });
+    expect(res.data).toEqual({ announcementId: 'n', attachmentsError: 'x' });
+  });
+});
+
+describe('Team Hub · New announcement offers only files players can open (Q-83)', () => {
+  const COACH_ONLY = 'Practice plan · week 9, DOC';
+
+  it('CH-10314 a coach-only file is not in the list, a line says how many were left out, and the files players can open are all still there', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH, writes(), 'ann');
+    const dialog = await openCompose(user);
+    await user.click(dialog.getByRole('button', { name: 'Attach from Documents' }));
+    expect(dialog.queryByRole('button', { name: COACH_ONLY })).toBeNull();
+    expect(dialog.getAllByRole('button', { name: /, (PDF|XLS)$/ })).toHaveLength(6);
+    await expectCode('CH-10314', /1 coach-only file isn’t offered: players couldn’t open it\./);
+    // The Documents tab is the coach's own: it still lists every file, this one included.
+    cleanup();
+    show(PREVIEW_HUB_COACH, writes(), 'docs');
+    expect(screen.getByText('Practice plan · week 9')).toBeTruthy();
+  });
+
+  it('CH-10314 a team whose files are all coach-only: nothing to attach, the line says why, and the post still goes with none', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn(ok);
+    const only = { error: false, folders: [{ name: 'Team', files: [{ id: 'd6', title: 'Practice plan · week 9', type: 'DOC', size: '32 KB', date: 'Oct 12', isPublic: false }] }] };
+    show(withDocuments(only), writes({ postAnnouncement: post }), 'ann');
+    const dialog = await openCompose(user);
+    await expectCode('CH-10314', /Your file is coach-only, so none can be attached: players couldn’t open it\./);
+    expect(code('CH-10311')).toBeNull();
+    expect(dialog.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: [] }));
+  });
+
+  it('no line when every file can be opened, and plural wording for several coach-only files', async () => {
+    const user = userEvent.setup();
+    const allOpen = { ...PREVIEW_HUB_COACH.documents, folders: PREVIEW_HUB_COACH.documents.folders.map((f) => ({ ...f, files: f.files.map((x) => ({ ...x, isPublic: true })) })) };
+    show(withDocuments(allOpen), writes(), 'ann');
+    await openCompose(user);
+    expect(code('CH-10314')).toBeNull();
+    cleanup();
+    const several = { ...PREVIEW_HUB_COACH.documents, folders: PREVIEW_HUB_COACH.documents.folders.map((f) => ({ ...f, files: f.files.map((x) => ({ ...x, isPublic: x.id === 'd1' })) })) };
+    show(withDocuments(several), writes(), 'ann');
+    await openCompose(user);
+    await expectCode('CH-10314', /6 coach-only files aren’t offered: players couldn’t open them\./);
+  });
+
+  it('a file chosen and then made coach-only while the sheet is open comes off its chips and is not sent', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn(ok);
+    const w = writes({ postAnnouncement: post });
+    const { rerender } = render(tree(PREVIEW_HUB_COACH, w, 'ann'));
+    const dialog = await openCompose(user);
+    await user.click(dialog.getByRole('button', { name: 'Attach from Documents' }));
+    await user.click(dialog.getByRole('button', { name: 'Travel waiver, PDF' }));
+    await user.click(dialog.getByRole('button', { name: 'Hotel confirmation, PDF' }));
+    const closed = { ...PREVIEW_HUB_COACH.documents, folders: PREVIEW_HUB_COACH.documents.folders.map((f) => ({ ...f, files: f.files.map((x) => (x.id === 'd3' ? { ...x, isPublic: false } : x)) })) };
+    rerender(tree(withDocuments(closed), w, 'ann'));
+    expect(attached(dialog)).toEqual(['Remove Hotel confirmation']);
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Hotel is booked');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Details in the app.');
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Hotel is booked', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: ['d2'] }));
+  });
+
+  it('the loader marks a file players can open only when the document says is_public is true, and a player is never sent a coach-only one', async () => {
+    const f = formatters('America/New_York', new Date('2026-10-14T18:00:00Z'));
+    const row = (id: string, is_public?: boolean | null) => ({ id, title: id, folder: null, file_type: 'pdf', file_url: `x/${id}.pdf`, file_size: 10, updated_at: '2026-10-10T12:00:00Z', created_at: null, is_public });
+    const out = folders([row('open', true), row('shut', false), row('unset', null), row('absent')], f);
+    expect(out[0]!.files.map((x) => [x.id, x.isPublic])).toEqual([['open', true], ['shut', false], ['unset', false], ['absent', false]]);
+    // The action a player's hub reads returns public files only; the loader passes what it is given through unchanged.
+    actions.docs.mockResolvedValue({ data: [row('open', true)], error: null });
+    actions.notifs.mockResolvedValue({ success: true, data: { items: [] } });
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    tables.current = { golf_teams: { data: { name: 'Varsity', season: 'Fall 2026' } }, golf_team_members: { data: [] } };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.documents.folders[0]!.files[0]).toMatchObject({ id: 'open', isPublic: true });
+  });
+});
+
+describe('Team Hub · Plan a trip warns when a traveler has a class during the trip (Q-84)', () => {
+  const ELI = { playerId: 'eli', title: 'CHEM 102 lab', days: ['Mon'], time: '3:00–4:15 PM' };
+  const answer = (classes: Array<{ playerId: string; title: string; days: string[]; time: string }>, partial = false) => ({ success: true, data: { classes, partial } });
+  const travelersStep = async (user: User, w: ChHubWrites, event = /Carolina Fall Invitational/) => {
+    show(PREVIEW_HUB_COACH, w, 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: event }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    return d;
+  };
+
+  it('CH-10110 a traveler with a class during the trip is named with the class, its day and hours, in the board’s words; only the event’s invitees are asked about, for the event’s days', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn(async () => answer([ELI]));
+    await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10110', /Eli has CHEM 102 lab Mon 3:00–4:15 PM\.\s*They’d miss it to travel\./);
+    expect(read).toHaveBeenCalledTimes(1);
+    // The Travelers step asks before Logistics is filled in: the event's own days, nobody but who is invited.
+    expect(read).toHaveBeenCalledWith({ teamId: 't1', playerIds: ['theo', 'sofia', 'ava', 'eli', 'priya'], fromDate: '2026-11-03', toDate: '2026-11-05', fromTime: null, toTime: null });
+    // A warning, not a stop: the way on is open.
+    expect(screen.getByRole('button', { name: 'Next: Logistics' })).toBeTruthy();
+    expect(code('CH-10315')).toBeNull();
+    expect(code('CH-10212')).toBeNull();
+  });
+
+  it('taking a traveler off asks again for exactly who is left, and the answer on screen is always for the travelers on screen', async () => {
+    const user = userEvent.setup();
+    let releaseFirst: (v: ReturnType<typeof answer>) => void = () => {};
+    const read = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise((r) => (releaseFirst = r)))
+      .mockResolvedValue(answer([]));
+    const d = await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10407', /Checking their classes/);
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(1));
+    await user.click(d.getByRole('button', { name: /Priya Natarajan/ }));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    expect(read.mock.calls[1]![0].playerIds).toEqual(['theo', 'sofia', 'ava', 'eli']);
+    await expectCode('CH-10315', /No class meets during the trip for the travelers chosen\./);
+    // The first question's answer arrives late: it is not the question on screen, so it is not shown.
+    releaseFirst(answer([ELI]));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(code('CH-10110')).toBeNull();
+    expect(code('CH-10315')).not.toBeNull();
+  });
+
+  it('an invitee who has left the roster is not asked about: the server answers only for the team’s active players', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn(async (_i: Parameters<ChHubWrites['travelerClasses']>[0]) => answer([]));
+    const withGhost = { ...PREVIEW_HUB_COACH, tripEvents: { error: false, rows: PREVIEW_HUB_COACH.tripEvents.rows.map((e) => (e.id === 'e-cfi' ? { ...e, invited: [...e.invited!, 'ghost'] } : e)) } };
+    show(withGhost, writes({ travelerClasses: read }), 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    const d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /Carolina Fall Invitational/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(1));
+    expect(read.mock.calls[0]![0].playerIds).toEqual(['theo', 'sofia', 'ava', 'eli', 'priya']);
+  });
+
+  it('CH-10110 names three travelers at most and counts the rest, and says how many more classes a named traveler has', async () => {
+    const user = userEvent.setup();
+    const class_ = (playerId: string, title = 'MATH 210') => ({ playerId, title, days: ['Tue', 'Thu'], time: '9:30–10:45 AM' });
+    const read = vi.fn(async () => answer([class_('theo'), class_('sofia'), class_('sofia', 'ENG 101'), class_('ava'), class_('eli'), class_('priya')]));
+    await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10110');
+    const box = within(code('CH-10110') as HTMLElement);
+    expect(box.getAllByText(/ has /)).toHaveLength(CLASH_LINES);
+    expect(box.getByText(/Theo has MATH 210/).parentElement!.textContent).toBe('Theo has MATH 210 Tue, Thu 9:30–10:45 AM.');
+    expect(box.getByText(/Sofia has MATH 210/).parentElement!.textContent).toBe('Sofia has MATH 210 Tue, Thu 9:30–10:45 AM and 1 more class.');
+    expect(box.getByText('2 more travelers also have a class during the trip.')).toBeTruthy();
+    expect(box.getByText('They’d miss these to travel.')).toBeTruthy();
+  });
+
+  it('CH-10407 while the check runs it says so, and Publish never waits for it', async () => {
+    const user = userEvent.setup();
+    const plan = vi.fn(async () => ({ success: true, data: { id: 'trip-new' } }));
+    const read = vi.fn(() => new Promise<never>(() => {}));
+    const w = writes({ travelerClasses: read, planTrip: plan });
+    const d = await travelersStep(user, w);
+    await expectCode('CH-10407', /Checking their classes…/);
+    expect(code('CH-10315')).toBeNull();
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+    await user.click(d.getByRole('button', { name: 'Publish' }));
+    await waitFor(() => expect(plan).toHaveBeenCalledTimes(1));
+  });
+
+  it('CH-10212 a check that could not run says so, is not an all-clear, offers Try again, and never stops the trip', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn().mockResolvedValueOnce({ success: false, error: 'down' }).mockResolvedValue(answer([]));
+    const d = await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10212', /Couldn’t check the travelers’ classes, so one may clash\. Publishing still works\./);
+    expect(code('CH-10315')).toBeNull();
+    expect(code('CH-10110')).toBeNull();
+    // A handled failure is reported, at low severity.
+    expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'hub.travelerClasses', severity: 'low' }));
+    expect(d.getByRole('button', { name: 'Next: Logistics' })).toBeTruthy();
+    await user.click(within(code('CH-10212') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await expectCode('CH-10315');
+    expect(code('CH-10212')).toBeNull();
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+
+  it('CH-10212 a read that throws, and a browser that is offline, are a check that could not run, never an all-clear', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn().mockRejectedValue(new Error('boom'));
+    await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10212');
+    expect(code('CH-10315')).toBeNull();
+    expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'hub.travelerClasses' }));
+    cleanup();
+    const onLine = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    const offline = vi.fn(async () => answer([]));
+    await travelersStep(user, writes({ travelerClasses: offline }));
+    await expectCode('CH-10212');
+    expect(offline).not.toHaveBeenCalled();
+    onLine.mockRestore();
+  });
+
+  it('CH-10212 an answer that is partial still names the classes found, and says some could not be checked: never "no classes"', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn(async () => answer([ELI], true));
+    await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10110', /Eli has CHEM 102 lab/);
+    await expectCode('CH-10212', /Some classes couldn’t be checked, so one more may clash\. Publishing still works\./);
+    cleanup();
+    await travelersStep(userEvent.setup(), writes({ travelerClasses: vi.fn(async () => answer([], true)) }));
+    await expectCode('CH-10212', /Some classes couldn’t be checked/);
+    expect(code('CH-10315')).toBeNull();
+  });
+
+  it('nothing is asked without travelers to ask about: no event, an event whose invitees did not load, or an event with nobody chosen yet', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn(async () => answer([]));
+    const w = writes({ travelerClasses: read });
+    // No calendar event: the Travelers step has no travelers.
+    show(PREVIEW_HUB_COACH, w, 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    let d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /No calendar event/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    await expectCode('CH-10313');
+    cleanup();
+    // Invitees that did not load (CH-10211).
+    const unread = { ...PREVIEW_HUB_COACH, tripEvents: { rows: PREVIEW_HUB_COACH.tripEvents.rows.map((e) => ({ ...e, invited: null })), error: false } };
+    show(unread, w, 'travel');
+    await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
+    d = within(await screen.findByRole('dialog', { name: 'Plan a trip' }));
+    await user.click(d.getByRole('radio', { name: /ECU Intercollegiate/ }));
+    await user.click(d.getByRole('button', { name: 'Next: Travelers' }));
+    await expectCode('CH-10211');
+    cleanup();
+    // An event with nobody invited yet: nothing to ask until a traveler is chosen, then the event's one day.
+    d = await travelersStep(user, w, /ECU Intercollegiate/);
+    await new Promise((r) => setTimeout(r, 450));
+    expect(read).not.toHaveBeenCalled();
+    await user.click(d.getByRole('button', { name: /Eli Brandt/ }));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(1));
+    expect(read).toHaveBeenCalledWith({ teamId: 't1', playerIds: ['eli'], fromDate: '2026-11-17', toDate: '2026-11-17', fromTime: null, toTime: null });
+  });
+
+  it('the dates typed in Logistics decide the window from then on, and the last step shows the answer for them before Publish', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn().mockResolvedValueOnce(answer([])).mockResolvedValue(answer([ELI]));
+    const d = await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10315');
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    // Logistics is not a step that asks: it is where the dates are typed.
+    fireEvent.change(d.getByLabelText('Leaves'), { target: { value: '2026-11-02' } });
+    fireEvent.change(d.getAllByLabelText('At')[0]!, { target: { value: '12:00' } });
+    fireEvent.change(d.getByLabelText('Back'), { target: { value: '2026-11-04' } });
+    fireEvent.change(d.getAllByLabelText('At')[1]!, { target: { value: '14:30' } });
+    await new Promise((r) => setTimeout(r, 450));
+    expect(read).toHaveBeenCalledTimes(1);
+    await user.type(d.getByRole('textbox', { name: 'Trip' }), 'Carolina Fall Invitational');
+    await user.type(d.getByRole('textbox', { name: 'Where' }), 'Pinehurst');
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+    await expectCode('CH-10110', /Eli has CHEM 102 lab Mon 3:00–4:15 PM/);
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(read.mock.calls[1]![0]).toEqual({ teamId: 't1', playerIds: ['theo', 'sofia', 'ava', 'eli', 'priya'], fromDate: '2026-11-02', toDate: '2026-11-04', fromTime: '12:00', toTime: '14:30' });
+  });
+
+  it('going on to the next step where nothing changed shows the answer already had, and asks again only when who or when changes', async () => {
+    const user = userEvent.setup();
+    const read = vi.fn(async () => answer([ELI]));
+    const d = await travelersStep(user, writes({ travelerClasses: read }));
+    await expectCode('CH-10110', /Eli has CHEM 102 lab/);
+    expect(read).toHaveBeenCalledTimes(1);
+    await user.click(d.getByRole('button', { name: 'Next: Logistics' }));
+    await user.click(d.getByRole('button', { name: 'Next: Itinerary' }));
+    // The Itinerary summary is for the same travelers and days: the warning is there at once, and nothing is asked.
+    expect(code('CH-10110')!.textContent).toMatch(/Eli has CHEM 102 lab/);
+    await new Promise((r) => setTimeout(r, 450));
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it('the preview’s and the live write reach the action with the window as given', async () => {
+    vi.mocked(getTravelerClassConflicts).mockResolvedValue({ success: true, data: { classes: [], partial: false } });
+    const input = { teamId: 't1', playerIds: ['eli'], fromDate: '2026-11-03', toDate: '2026-11-05', fromTime: null, toTime: '14:00' };
+    await LIVE_HUB_WRITES.travelerClasses(input);
+    expect(getTravelerClassConflicts).toHaveBeenCalledWith(input);
+  });
+});
+
+describe('Team Hub · the trip’s dates and the class lines (Q-84)', () => {
+  const ev = { date: '2026-11-03', endDate: '2026-11-05' };
+  const none = { departDate: '', departTime: '', returnDate: '', returnTime: '' };
+
+  it('until dates are typed the trip is its event’s days, and a typed departure and return rule from then on', () => {
+    expect(tripWindow(none, ev)).toEqual({ fromDate: '2026-11-03', toDate: '2026-11-05', fromTime: null, toTime: null });
+    expect(tripWindow({ ...none, departDate: '2026-11-02' }, ev)).toEqual({ fromDate: '2026-11-02', toDate: '2026-11-05', fromTime: null, toTime: null });
+    expect(tripWindow({ ...none, departDate: '2026-11-02', returnDate: '2026-11-04' }, ev)).toEqual({ fromDate: '2026-11-02', toDate: '2026-11-04', fromTime: null, toTime: null });
+    expect(tripWindow(none, { date: '2026-11-17', endDate: '2026-11-17' })).toEqual({ fromDate: '2026-11-17', toDate: '2026-11-17', fromTime: null, toTime: null });
+  });
+
+  it('a return before the departure is ignored until it is fixed, and an event that ends before a later departure is one day', () => {
+    expect(tripWindow({ ...none, departDate: '2026-11-04', returnDate: '2026-11-02' }, ev)).toMatchObject({ fromDate: '2026-11-04', toDate: '2026-11-05' });
+    expect(tripWindow({ ...none, departDate: '2026-11-09' }, ev)).toMatchObject({ fromDate: '2026-11-09', toDate: '2026-11-09' });
+  });
+
+  it('a departure time narrows the first day; a return time narrows the last only when a return day was typed', () => {
+    expect(tripWindow({ departDate: '2026-11-03', departTime: '12:00', returnDate: '2026-11-05', returnTime: '14:30' }, ev)).toEqual({ fromDate: '2026-11-03', toDate: '2026-11-05', fromTime: '12:00', toTime: '14:30' });
+    expect(tripWindow({ departDate: '2026-11-03', departTime: '', returnDate: '', returnTime: '14:30' }, ev)?.toTime).toBeNull();
+    // A time on a day the coach did not type is not the event's: the event has no time to narrow by.
+    expect(tripWindow({ ...none, departTime: '12:00' }, ev)?.fromTime).toBeNull();
+    expect(tripWindow({ ...none, departDate: 'soon' }, ev)?.fromDate).toBe('2026-11-03');
+    expect(tripWindow(none, null)).toBeNull();
+  });
+
+  it('a check is asked again whenever who, the days or the times change, and not when only their order does', () => {
+    const w = { fromDate: '2026-11-03', toDate: '2026-11-05', fromTime: null, toTime: null };
+    const key = checkKey('t1', ['b', 'a'], w);
+    expect(checkKey('t1', ['a', 'b'], w)).toBe(key);
+    for (const other of [checkKey('t1', ['a'], w), checkKey('t2', ['a', 'b'], w), checkKey('t1', ['a', 'b'], { ...w, toDate: '2026-11-06' }), checkKey('t1', ['a', 'b'], { ...w, fromTime: '12:00' }), checkKey('t1', ['a', 'b'], { ...w, toTime: '12:00' })]) expect(other).not.toBe(key);
+  });
+
+  it('the lines follow the coach’s roster order, use first names, count extra classes, and leave out a traveler the roster does not know', () => {
+    const names = new Map([['a', 'Ava Lindqvist'], ['b', 'Eli Brandt'], ['c', 'Theo Marchetti']]);
+    const c = (playerId: string, title: string) => ({ playerId, title, days: ['Mon'], time: '3:00–4:15 PM' });
+    const out = clashSummary([c('c', 'ART 1'), c('b', 'CHEM 102 lab'), c('b', 'MATH 210'), c('b', 'ENG 101'), c('zz', 'GHOST 1')], names);
+    expect(out.lines.map((l) => [l.playerId, l.who, l.more])).toEqual([['b', 'Eli has CHEM 102 lab', 2], ['c', 'Theo has ART 1', 0]]);
+    expect(out.moreTravelers).toBe(0);
+    expect(out.total).toBe(4);
+    expect(clashSummary([], names)).toEqual({ lines: [], moreTravelers: 0, total: 0 });
+  });
+
+  it('the trip builder’s events carry the days they run: an all-day event is read as written (never a day early), a timed one in the team’s zone, and a missing end is one day', () => {
+    const f = formatters('America/New_York', new Date('2026-10-14T18:00:00Z'));
+    expect(eventSpan({ start_time: '2026-11-03T00:00:00+00:00', end_time: '2026-11-05T00:00:00+00:00', all_day: true }, f)).toEqual({ from: '2026-11-03', to: '2026-11-05', weekday: 'Tue', short: 'Nov 3' });
+    // 5 PM to 10 PM Eastern on Nov 3; and a late one that runs past local midnight.
+    expect(eventSpan({ start_time: '2026-11-03T22:00:00Z', end_time: '2026-11-04T03:00:00Z', all_day: false }, f)).toMatchObject({ from: '2026-11-03', to: '2026-11-03' });
+    expect(eventSpan({ start_time: '2026-11-03T23:00:00Z', end_time: '2026-11-04T06:00:00Z' }, f)).toMatchObject({ from: '2026-11-03', to: '2026-11-04' });
+    expect(eventSpan({ start_time: '2026-11-03T22:00:00Z' }, f)).toMatchObject({ from: '2026-11-03', to: '2026-11-03' });
+    expect(eventSpan({ start_time: '2026-11-05T00:00:00+00:00', end_time: '2026-11-03T00:00:00+00:00', all_day: true }, f)).toMatchObject({ from: '2026-11-05', to: '2026-11-05' });
+  });
+
+  it('the loader sends each event with the days it runs', async () => {
+    const selects: string[] = [];
+    actions.docs.mockResolvedValue({ data: [], error: null });
+    actions.notifs.mockResolvedValue({ success: true, data: { items: [] } });
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    tables.current = {
+      golf_teams: { data: { name: 'Varsity', season: 'Fall 2026' } },
+      golf_team_members: { data: [] },
+      golf_events: (filters) => {
+        selects.push(String(filters.find(([k]) => k === 'select')?.[1][0] ?? ''));
+        return { data: [{ id: 'e1', title: 'Invitational', event_type: 'tournament', start_time: '2026-11-03T00:00:00+00:00', end_time: '2026-11-05T00:00:00+00:00', all_day: true, location: 'Pinehurst' }] };
+      },
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.tripEvents.rows[0]).toMatchObject({ id: 'e1', date: '2026-11-03', endDate: '2026-11-05', label: 'Tue Nov 3' });
+    // The days only come from columns the read asks for: a fake answers the same whatever is selected, so the read is checked too.
+    expect(selects.filter((c) => /\bend_time\b/.test(c) && /\ball_day\b/.test(c))).toHaveLength(1);
   });
 });
 

@@ -106,6 +106,8 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 120608 | CH-12204 | `THE_READER_FAILS_OR_THROWS` | The reader fails or throws |
 | 120609 | — | `AN_UPDATE_A_POLICY_HIDES_IS_A_FAILURE` | An edit whose update a row-level-security policy hides comes back from the database with no error and no row. The page treats that as a failure ("Nothing was saved. This class was not found, or you can't change it.") and never as "Class updated". An edit is limited to the class's id and the player's own id. |
 | 120610 | — | `A_SYNC_THAT_WROTE_NOTHING_IS_A_FAILURE` | A calendar sync that returns no error but wrote no meetings for a class that has days and a time is a failure, so the class is flagged and CH-12002 says why, instead of a quietly empty calendar. A class with no days has nothing to write and is not a failure. A sync that throws is reported (surface classes.sync, low severity) and its reason reads "The calendar sync did not finish". |
+| 120611 | CH-12005 | `DELETE_ALL_CLASSES_CHANGED_NOTHING_NO_CLASS` | Delete all classes changed nothing: no class could be taken off the calendar (every removal failed or threw), the connection dropped, or the write threw |
+| 120612 | CH-12006 | `DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME` | Delete all classes stopped half-way: some classes are gone and some are not |
 
 ## 07 — Network / offline
 
@@ -162,6 +164,7 @@ Removing a class asks first, with the warning haptic before the question, and sa
 | --- | --- | --- | --- |
 | 121101 | CH-12501 | `REMOVE_CLASS` | Remove class |
 | 121102 | CH-12502 | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | Cancel or close a form that has changes |
+| 121103 | CH-12503 | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
 
 ## 12 — State preservation
 
@@ -230,6 +233,7 @@ On the v2 grammar (D-70): a tick for opening a class, choosing or clearing a day
 | 121702 | CH-12702 | `REMOVE_CLASS_IS_TAPPED_IN_A_CLASSS` | Remove class is tapped in a class's sheet |
 | 121703 | CH-12703 | `A_DAY_IS_CHOSEN_OR_CLEARED_IN` | A day is chosen or cleared in the form |
 | 121704 | CH-12705 | `THE_IMPORT_SWITCHES_BETWEEN_A_FILE_AND` | The import switches between a file and pasted text |
+| 121705 | CH-12704 | `DELETE_ALL_CLASSES_IS_TAPPED` | Delete all classes is tapped |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
 

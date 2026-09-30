@@ -11,3 +11,5 @@ Held features and data plans (D-61), by page. Nothing here is applied or active 
 | P007 Messages | `docs/clubhouse/held/data/message-attachments-hardening.md` | HELD | none written |
 | P009 Qualifiers | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | HELD | — |
 | P009 Qualifiers | `docs/clubhouse/held/data/qualifier-db-hardening.md` | HELD | supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql |
+| P010 Team Hub | `docs/clubhouse/held/data/document-policy-scoping.md` | HELD | supabase/migrations/20260930150000_golf_document_policy_scoping.sql |
+| P014 Recruiting | `docs/clubhouse/held/data/recruit-documents-film.md` | HELD | supabase/migrations/20260930140000_recruit_documents_film.sql |

@@ -127,12 +127,10 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
           </div>
           <div className="ch-ox-paper" aria-hidden="true" />
           <div className="ch-ox-seal" aria-hidden="true">
-            {/* eslint-disable-next-line @next/next/no-img-element -- a small static mark */}
             <img src={MARK} alt="" width={28} height={28} />
           </div>
           <header className="ch-ox-top">
             <span className="ch-ox-lock">
-              {/* eslint-disable-next-line @next/next/no-img-element -- a small static mark */}
               <img src={MARK} alt="" width={28} height={28} />
               GolfHelm
             </span>
@@ -184,7 +182,6 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
         </div>
         <div className="ch-ox-mhome" aria-hidden="true">
           <span>
-            {/* eslint-disable-next-line @next/next/no-img-element -- a small static mark */}
             <img src={MARK} alt="" width={28} height={28} />
             Opening your dashboard
           </span>

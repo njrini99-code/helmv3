@@ -1,6 +1,6 @@
 'use client';
 
-import { createFocusAreaFromInsightV2 } from '@/app/golf/actions/development';
+import { acceptFocusArea, createFocusAreaFromInsightV2, declineFocusArea } from '@/app/golf/actions/development';
 import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights';
 import type { ChHelmLifecycle } from '../../data/coachhelm-shape';
 import type { ServerResult } from '../../lib/use-action';
@@ -32,4 +32,18 @@ export const LIVE_COACHHELM_WRITES: ChCoachHelmWrites = {
   dismiss: (insightId) => dismissInsight(insightId),
   // Back to the state it had, so it returns to the feed where it was.
   undo: (insightId, lifecycle) => reactivateInsight(insightId, lifecycle),
+};
+
+/**
+ * The player's answer to a focus area a coach proposed (Q-77), the same two actions Stats Development's Accept and Decline
+ * call. Each acts only on the player's own `proposed` row (RLS and a status guard), so a stale answer is refused, not applied twice.
+ */
+export interface ChPlayerWrites {
+  accept(focusAreaId: string): Promise<ServerResult>;
+  decline(focusAreaId: string): Promise<ServerResult>;
+}
+
+export const LIVE_PLAYER_WRITES: ChPlayerWrites = {
+  accept: (id) => acceptFocusArea(id),
+  decline: (id) => declineFocusArea(id),
 };

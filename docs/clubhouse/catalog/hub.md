@@ -5,8 +5,8 @@ Route: `/golf/dashboard/team-hub` (`?tab=home|ann|travel|docs|tasks`), for coach
 A player replies to events, acknowledges posts, checks off tasks and opens files; a coach posts (with files from Documents), fixes the wording of a post, plans trips, assigns tasks, shares and deletes files, and sees who has replied, read and done each.
 
 Where things live:
-- Code: `src/clubhouse/screens/hub/` (`TeamHub`, `parts`, `sheets`, `writes`)
-- Loader: `src/clubhouse/data/hub.ts` (`loadTeamHub`); route `src/clubhouse/routes/hub.tsx`
+- Code: `src/clubhouse/screens/hub/` (`TeamHub`, `parts`, `sheets`, `TravelerClasses`, `writes`)
+- Loader: `src/clubhouse/data/hub.ts` (`loadTeamHub`); the trip's dates and the class lines, as plain functions, in `src/clubhouse/data/hub-shape.ts`; route `src/clubhouse/routes/hub.tsx`
 - Tests: `src/clubhouse/__tests__/hub.test.tsx`
 - Preview: `/clubhouse-preview/hub` and `/clubhouse-preview/hub-player` (`?state=empty|failed|failwrites`, `&tab=`)
 
@@ -27,6 +27,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10009 | Deleting a post, task or file fails | "Couldn't delete NCAA hours log" + Retry; it stays. Done: "Deleted NCAA hours log" | `useAction('hub.delete')` → `deleteAnnouncement`, `deleteTask`, `deleteGolfDocument` | hub.test › CH-10009 |
 | CH-10011 | Unticking a done task fails | "Couldn't reopen Sign travel waiver" + Retry; it stays done. Done: "Sign travel waiver is open again" | `useAction('hub.uncompleteTask')` → `uncompleteTask` | hub.test › CH-10011 |
 | CH-10010 | Saving an edit to an announcement fails | "Couldn't save the announcement" + "Your changes are still here. Try again in a moment." (the server's reason when it gave one, for example "Message is required.") The sheet stays open with the words; the card is unchanged. Done: "Saved "Bus leaves at 6"" | `useAction('hub.editAnnouncement')` → `updateAnnouncement` | hub.test › CH-10010 |
+| CH-10012 | A post goes out but its files don't attach | "Posted "Waiver" without its files" + "The files didn't attach, so players see the post with no files. They can still open them in Documents." An error toast (8s, read as an alert) with no Retry, since a Retry would post it again; the sheet has closed and the page read again. Error haptic, no success haptic, and no "Posted" toast beside it. Clean posts say Posted as before | `useAction('hub.postAnnouncement')` (`refine` hands the outcome over) + its own toast from `ComposeSheet` ← `createEnrichedAnnouncement` (`attachmentsError` beside the id, `success` stays true) | hub.test › CH-10012 |
 
 ## 101xx Validation
 
@@ -41,6 +42,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10107 | A task with a name under three characters | "Name the task, at least three characters." | `AssignSheet` | hub.test › CH-10107 |
 | CH-10108 | A task for nobody | "Choose at least one player." | `AssignSheet` | hub.test › CH-10108 |
 | CH-10109 | Posting or saving an edit with no message (the server requires one) | "Add a message." Warning haptic; nothing is sent | `ComposeSheet` | hub.test › CH-10109 |
+| CH-10110 | Plan a trip: a chosen traveler has a class during the trip | A warning, not a stop: "**Eli has CHEM 102 lab** Mon 3:00–4:15 PM. They'd miss it to travel." One line per traveler, three at most, then "2 more travelers also have a class during the trip."; a traveler's other classes are counted ("and 1 more class", "They'd miss these to travel."). Shown on the Travelers step, for the event's own days, and on the Itinerary step, for the dates and times typed in Logistics. Only the chosen travelers' classes that overlap the trip are read | `TripSheet` → `ClassClashes`, `useClassCheck` (`tripWindow`, `clashSummary` in `hub-shape.ts`) → `getTravelerClassConflicts` | hub.test › CH-10110 |
 
 ## 102xx Didn't load
 
@@ -57,6 +59,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10209 | The team's documents don't load | In New announcement, where files are attached: "Documents didn't load." + "Nothing was lost. Try again to attach files." + Try again (reads the page again; the files that arrive can be attached, and what was typed stays). The post still goes with none. Never "No documents yet" | `DocumentPicks`, `RefreshNotice` (`documents.error` from `loadTeamHub`) | hub.test › CH-10209 |
 | CH-10210 | Plan a trip: upcoming events didn't load | "Upcoming events didn't load. You can still plan the trip without one, or close and try again." | `TripSheet` | hub.test › CH-10210 |
 | CH-10211 | Plan a trip: who is invited to the chosen event didn't load | "Who is invited to <event> didn't load, so travelers can't be chosen now. Publish keeps the event's invitees as they are." | `TripSheet` | hub.test › CH-10211 |
+| CH-10212 | Plan a trip: the travelers' classes didn't load | "Couldn't check the travelers' classes, so one may clash. Publishing still works." + Try again (asks again, for the same travelers and days). When classes were found and some reads failed: "Some classes couldn't be checked, so one more may clash." beside the warning. Never "No class meets…". A browser that is offline is this too, with nothing sent. The trip can always be published; the failure is reported at low severity | `ClassClashes` (`useClassCheck`) | hub.test › CH-10212 |
 
 ## 103xx Empty
 
@@ -75,6 +78,8 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10311 | A team with no documents | In New announcement, where files are attached: "No documents yet. Add files in the Documents tab, then attach them here." Nothing to attach; the post still goes | `DocumentPicks` | hub.test › CH-10311 |
 | CH-10312 | Plan a trip: no upcoming events in the next four months | "No upcoming events in the next four months. Add the tournament in Calendar to choose its travelers here." | `TripSheet` | hub.test › CH-10312 |
 | CH-10313 | Plan a trip: the Travelers step with no calendar event | "Travelers come from the trip's calendar event. Without one, the whole team sees the trip. Go Back to choose an event." | `TripSheet` | hub.test › CH-10313 |
+| CH-10314 | New announcement: files that players can't open are left out of the attach list | Only files players can open (`is_public`) are offered. With some left out, under the list: "1 coach-only file isn't offered: players couldn't open it." ("6 coach-only files aren't offered: … them."). With every file coach-only: "Your file is coach-only, so none can be attached: players couldn't open it." and no attach button; the post still goes with none. A file chosen and then made coach-only while the sheet is open comes off its chip and is not sent. The Documents tab still lists every file to a coach | `DocumentPicks` (`ChHubFile.isPublic` from `folders()`) | hub.test › CH-10314 |
+| CH-10315 | Plan a trip: nobody chosen has a class during the trip | "No class meets during the trip for the travelers chosen." Only when the check ran in full: a check that could not is CH-10212 | `ClassClashes` | hub.test › CH-10315 |
 
 ## 104xx Loading
 
@@ -86,6 +91,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10404 | A task is being assigned | "Assigning" | `AssignSheet` | hub.test › CH-10404 |
 | CH-10405 | Team Hub is loading | The header, the tab strip and the two Home columns as grey blocks, in place (nothing for the first 150ms, then a fade); read as "Loading Team Hub" | `HubSkeleton` from `team-hub/loading.tsx` through `ClubhouseSwitch` | hub.test › CH-10405 |
 | CH-10406 | An edit is being saved | "Saving" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
+| CH-10407 | Plan a trip: the travelers' classes are being checked | "Checking their classes…" once the chosen travelers have settled (350ms; a run of taps on player chips is one question). Publish never waits for it, and an answer for travelers or days no longer on screen is not shown | `ClassClashes` (`useClassCheck`) | hub.test › CH-10407 |
 
 ## 105xx Confirm
 

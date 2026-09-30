@@ -2,6 +2,35 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Files that didn't attach, only files players can open, and a traveler's class during a trip (Q-82, Q-83, Q-84)
+
+```text
+PR/commit:      agent/clubhouse
+Design package: none (owner-approved 2026-09-30: Q-82, Q-83, Q-84; the class row is the board's "Eli has CHEM 102 lab")
+Contract IDs:   CH-10012, CH-10110, CH-10212, CH-10314, CH-10315, CH-10407, minted by the sync
+Actions:        ACT-P010-TRAVELER-CLASSES (new); ACT-P010-POST-ANNOUNCEMENT now reads `attachmentsError`
+Data impact:    `getTravelerClassConflicts` (travel.ts, new) reads the chosen travelers' classes through the availability layer; `createEnrichedAnnouncement` returns an optional `attachmentsError`; the trip builder's events read `end_time` and `all_day`. No schema change.
+Held items:     none
+```
+
+### The post says when its files did not attach (Q-82)
+
+- **Issue.** `createEnrichedAnnouncement` discarded the error from its `golf_announcement_documents` insert, so a post whose attachments failed said "Posted" and the coach believed players had the files.
+- **Fix.** The action returns `attachmentsError` beside the announcement id (`success` stays true, so every other caller is unchanged, and the failure is logged). The sheet closes, the page reads again, and one error toast says `Posted "Waiver" without its files`, that the files didn't attach and that players can still open them in Documents (CH-10012). It has no Retry: the post exists, and a replay would post it twice. No "Posted" toast beside it; error haptic.
+- **Checked.** announcement-attachments 2/2 (3 of 3 mutations caught); hub 129/129; the phone build is the same sheet.
+
+### New announcement offers only files players can open (Q-83)
+
+- **Issue.** A coach-only document could be attached to an announcement, as in Fairway's composer; players then saw an attachment they could not open.
+- **Fix.** `ChHubFile` carries `isPublic` (`is_public === true`, so a missing value is coach-only). The attach list offers only those files, hides a folder with none, and says how many were left out (CH-10314). When every file is coach-only there is no attach button and the line says why; the post still goes with none. A file chosen and then made coach-only while the sheet is open comes off its chip and is not sent. The Documents tab still lists every file to a coach.
+- **Checked.** hub 129/129 (the loader marks `isPublic` only for `true`).
+
+### Plan a trip warns when a traveler has a class during the trip (Q-84)
+
+- **Issue.** The board's trip builder warns "Eli has CHEM 102 lab Mon 3:00–4:15"; Clubhouse did not read class schedules, so a coach could take a player out of a class without knowing.
+- **Fix.** The Travelers step, and the Itinerary summary once the dates are typed, show the warning row (CH-10110): one line per traveler with a class (three at most, the rest counted), "They'd miss it to travel." The read is a coach's and is scoped three ways: staffed on the team, every traveler on its active roster, and only the chosen travelers asked about, for the trip's days (the event's own span until a departure and return are typed; a departure or return time narrows the first or last day). It asks the availability layer the Calendar's conflict check asks, so terms, synced meetings, academic breaks and the team's zone are decided once; only `{ playerId, title, days, time }` reaches the page. A check that could not run says so with Try again and never reads as "no classes" (CH-10212, CH-10315); it runs only after the travelers settle (CH-10407), drops an answer for travelers no longer on screen, and never blocks Publish. The trip builder's events now carry the days they run, and an all-day event's day is no longer read a day early west of UTC.
+- **Checked.** travel-class-conflicts 16/16 (12 of 13 mutations caught; the survivor drops a `.in('player_id', …)` narrowing that the roster check just below it makes harmless); hub 129/129, 45 of 45 mutations of the page's code caught.
+
 ## 2026-09-30 — Phone tap targets
 
 ```text

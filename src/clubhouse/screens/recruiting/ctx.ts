@@ -34,4 +34,13 @@ export interface RecCtx {
   askDelete: (p: ChProspect) => void;
   tryAgain: () => void;
   error: boolean;
+  /** Preview and tests only: the upload dialog opens on this file when a prospect's documents draw. */
+  initialUpload?: RecInitialUpload;
+}
+
+/** A chosen file to open the upload dialog on: its name and size, and whether Storage is to have refused it already. */
+export interface RecInitialUpload {
+  name: string;
+  size: number;
+  refused?: 'size' | 'type';
 }

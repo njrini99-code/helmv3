@@ -2,6 +2,75 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Film, a file drop, and an Add that cannot repeat
+
+```text
+Design package: none (owner decision Q-95 item 6, 2026-09-30: film uploads allowed, as a file drop; the drop is not on the boards)
+PR/commit:      agent/clubhouse (draft PR #2102)
+Contract IDs:   9 new catalog rows: CH-14107 to CH-14110, CH-14407, CH-14703, CH-14915 to CH-14917; CH-14005, CH-14105,
+                CH-14106 and CH-14404 reworded (the registry mints the IDs when the coordinator runs sync)
+Actions:        9 (ACT-P014-ADD-PROSPECT and ACT-P014-UPLOAD-DOCUMENT changed; none added)
+Data impact:    one migration, written and NOT applied: supabase/migrations/20260930140000_recruit_documents_film.sql
+Held items:     the film migration (held plan docs/clubhouse/held/data/recruit-documents-film.md; its HELD.md row is the coordinator's)
+```
+
+- **Issue.** (1) The `recruit-documents` bucket took no video and capped a file at 25 MB, so the boards' sample film (a
+  `.mov`) could not be attached, and a file could only be chosen, not dropped. The upload also went through a server
+  action, whose request body is capped far below a film. (2) `createRecruit` had no idempotency key: a Retry after a
+  reply lost on the way added the prospect a second time.
+- **Fix.** (1) MP4, MOV and M4V up to 100 MB can be attached, by the picker (the phone's only way) or, on desktop, by
+  dropping one file on the prospect's Documents (several files, a folder or an empty file are refused with a sentence:
+  CH-14109, CH-14110; a dashed edge shows where it lands: CH-14917). The bytes go straight to Storage on a signed URL
+  the server makes for this coach and this prospect (prepare, then complete; the path is built on the server and the
+  row's size is read back from Storage), with real progress and "Keep this page open" (CH-14407), and one upload id per
+  file so a Retry never sends or records it twice (CH-14916). A file over its limit (25 MB, film 100 MB) or of a type
+  the bucket does not take is refused before sending (CH-14105, CH-14106), and a file Storage itself turns down is named
+  in the dialog, not reported as a failure (CH-14107, CH-14108), which is what happens until the migration is applied.
+  (2) An Add carries one request id, kept across Retry and a repeated Save; the server inserts under it, and a repeat
+  finds the row its first attempt stored, but only once it reads back as this coach's own, on this team, with this name
+  (CH-14915).
+- **Checked.** Recruiting tests: the existing 61 (updated where they encoded the old rules) plus 31 new (`recruiting-upload.test.tsx`), and 25 on the server side (`recruit-document-upload.test.ts` 16, `recruiting-create.test.ts` 9): 117 passed; with the Fairway recruiting tests, the recruiting coverage-contract, feature-registry and Storage-wiring tests, 9 files and 192 tests pass. 80 deliberate breaks of the guarded code (29 on the server, 51 on the page), all caught and restored; two survived at first and each got a test (the read-back's first name, the log of an over-size file that could not be taken out). `typecheck:fast` exit 0; eslint 0 errors; `squawk` 0 issues on the migration;
+  the migration's new allowlist evaluated read-only against production's current row (17 types, all fourteen old ones
+  kept); axe and the native-feel scan on the four new preview states (`upload`, `toolarge`, `refusedtype`,
+  `refusedsize`) and on a file dragged over: clean on 13 scans (the four states at 1280, 390 and 430, and a file dragged over at 1280), and the native-feel scan clean on the four states at 390 and 430.
+- **Not checked.** The migration applied and a real film uploaded (the bucket takes no video until it is); the project's
+  Storage upload limit (a project setting that could not be read: it must be at least 100 MB); `test:rls`; a production
+  build; the iPhone (a film from Photos, the picker's offer of it, the transfer on cellular).
+
+### Added
+
+- `src/clubhouse/screens/recruiting/upload.ts` (the transfer to Storage: prepare, a PUT with progress, complete) and the
+  file drop in `Documents`; `prepareRecruitDocumentUpload` and `completeRecruitDocumentUpload` in
+  `src/app/golf/actions/recruit-documents.ts`; `src/app/golf/actions/recruit-documents-limits.ts` (the types and caps,
+  shared by the server and the page); `createRecruit(input, { requestId })`.
+- The migration `20260930140000_recruit_documents_film.sql` (written, not applied) and its held plan
+  (`docs/clubhouse/held/data/recruit-documents-film.md`, listed in this page's manifest).
+- 9 catalog rows (CH-14107 to CH-14110, CH-14407, CH-14703, CH-14915 to CH-14917) and preview states `upload`,
+  `toolarge`, `refusedtype`, `refusedsize` (the upload dialog open on a film, refused, and refused by Storage).
+- Tests: `recruiting-upload.test.tsx`, `recruit-document-upload.test.ts`, `recruiting-create.test.ts`.
+
+### Changed
+
+- The upload is no longer a `File` passed to a server action (the current page still does that, unchanged).
+- Choosing or dropping a video starts the category as Film.
+- Checks that encoded the old rules were updated with them: a `.mov` is no longer "a type the bucket does not take", the
+  add and upload calls carry a request id and an upload id.
+
+### Why
+
+- The owner asked for film uploads "as a file drop" (Q-95 item 6) and for the repeat-Add hole found while building this
+  page to be closed. A server action cannot carry a film, so the file goes to Storage directly under the coach's own
+  session; RLS on the bucket (coach-only, team-scoped) is unchanged and already covers any path in the recruit's folder.
+
+### Open
+
+- Apply the migration (and confirm the Storage upload limit is at least 100 MB first). Until then a film is refused by
+  Storage and the dialog says so.
+- After a lost reply, editing a field and pressing Add again sends a new id, so it adds a second prospect (the contents
+  changed, so it is a different Add). A Retry, and Save pressed again with the same contents, cannot.
+- A file that landed whose row never saved, and whose coach walked away, stays in the private bucket with no row.
+- Cancel is off while a file is uploading, as it was (a long upload cannot be stopped from the dialog).
+
 ## 2026-09-30 — Recruiting in Clubhouse (desktop and phone)
 
 ```text

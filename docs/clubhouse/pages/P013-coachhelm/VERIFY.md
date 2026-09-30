@@ -154,3 +154,17 @@ Notes:             first-load JS and LCP (CH-1954) are open
   days" for a lifetime window (neither used here); the insight readers return empty on failure (the loaders probe the
   table to tell a failure from a first run).
 - Q-76 and Q-77 are open owner questions; the page is built on their recommendations (Q-76's, and Q-77's in Stats).
+
+## Update 2026-09-30: Accept and Decline on the player's board (Q-77) and the Tour comparison (Q-88)
+
+Observed after the two changes (CHANGELOG.md has what changed):
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npm run test:file -- src/clubhouse/__tests__/coachhelm.test.tsx` | exit 0, 142/142 (was 112): the proposals on screen and in the loader, and the Tour in both loaders and the mapper; CH-13004, CH-13005, CH-13205, CH-13404, CH-13704, CH-13807 and CH-13902 are each named in a test title |
+| Mutations | 26 one-line breaks, run one at a time | all fail a test (17 for Accept, Decline, the proposals read and its notice and the preview's writes; 9 for the Tour); two that changed nothing showed a redundant guard, which was removed |
+| Typecheck | `npm run typecheck:fast` | exit 1 on other sessions' files only (hub, recruiting-upload and travel-class-conflicts tests); none in CoachHelm's |
+| Lint | `npx eslint` on the changed CoachHelm files | exit 0 |
+| Clubhouse check | `npm run -s clubhouse:check` | exit 1 on the registry only for this page: the seven new catalog codes have no Bridge ID and CONTRACT.md is stale, both for `registry.mjs sync` (the lead's) |
+
+Not observed: the new preview states in a browser and in axe (the preview route and `a11y.mjs` are not this change's to edit: `?state=proposed|failproposal|proposalsfailed` on `/clubhouse-preview/coachhelm-player`), a real player with a proposed focus area, and the Tour values against a real women's team. Hand contracts 130106, 130801 and 130902 were reworded for the changes; no new hand contract is written.

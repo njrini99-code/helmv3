@@ -176,7 +176,7 @@ function Detail({ p, c, onPickStage }: { p: ChProspect; c: RecCtx; onPickStage: 
       )}
       {!hasContact && <ContactSection p={p} onAdd={() => c.startEdit(p, 'email')} />}
       <NotesSection p={p} onAdd={() => c.startEdit(p, 'notes')} />
-      <Documents prospect={p} writes={c.writes} />
+      <Documents prospect={p} writes={c.writes} initialUpload={c.initialUpload} />
       <MetaLine p={p} now={c.now} tz={c.tz} />
     </div>
   );

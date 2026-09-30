@@ -27,12 +27,14 @@ const rowOf = (id: string, i: ChClassInput, color: string | null): ChClassRow =>
 
 /**
  * Classes with fake writes for the dev preview. Nothing reaches the server.
- *   ?state=failwrites   saving, removing and importing fail
+ *   ?state=failwrites   saving, removing, importing and Delete all classes fail
  *   ?state=failsync     saves work, but the calendar sync fails
+ *   ?state=failpartial  Delete all classes stops half-way the first time (one kept, one off the calendar but still saved), and its Retry finishes
  *   ?state=read-notschedule | read-fault | read-none | read-warn   a file is read as that (pasted text is really read)
  */
 export function PreviewClasses({ data, state }: { data: ChClassesPage; state?: string }) {
   const next = useRef(100);
+  const partialOnce = useRef(true);
   const writes = useMemo<ChClassesWrites>(() => {
     const failWrites = state === 'failwrites';
     const refuse = { success: false, error: 'Preview: this save is set to fail.' };
@@ -40,6 +42,21 @@ export function PreviewClasses({ data, state }: { data: ChClassesPage; state?: s
     return {
       save: (input, editing, id) => wait(failWrites ? refuse : { success: true, data: { row: rowOf(editing?.id ?? id, input, editing?.color ?? null) } }),
       remove: () => wait(failWrites ? refuse : { success: true }),
+      removeAll: (ids) => {
+        // Every calendar removal fails, so nothing is deleted.
+        if (failWrites) return wait({ ...refuse, data: { removed: [], kept: ids.map((id) => ({ id, reason: 'Preview: the calendar removal is set to fail.' })), offCalendar: [] } });
+        // The first attempt stops half-way (the last two classes), and its Retry finishes.
+        if (state === 'failpartial' && partialOnce.current && ids.length >= 3) {
+          partialOnce.current = false;
+          const cut = ids.length - 2;
+          return wait({
+            success: false,
+            error: 'Preview: the delete is set to stop half-way.',
+            data: { removed: ids.slice(0, cut), kept: [{ id: ids[cut]!, reason: 'Preview: the calendar removal is set to fail.' }], offCalendar: [ids[cut + 1]!] },
+          });
+        }
+        return wait({ success: true, data: { removed: ids, kept: [], offCalendar: [] } });
+      },
       sync: () => wait(state === 'failsync' ? { success: false, error: 'Preview: the calendar sync is set to fail.' } : { success: true }, 700),
       importRows: async (rows) => {
         if (failWrites) return wait(refuse);

@@ -103,7 +103,7 @@ import { ClassesSkeleton } from '../screens/classes/ClassesSkeleton';
 import { ClassesView } from '../screens/classes/ClassesView';
 import { CH_SLOW_SAVE_AFTER } from '../lib/use-action';
 import { classifyReadError, readScheduleLive, screenFile } from '../screens/classes/import-read';
-import { createLiveClassesWrites, newClassId, syncDataOf, type ChClassesWrites } from '../screens/classes/writes';
+import { createLiveClassesWrites, newClassId, syncDataOf, type ChClassesWrites, type ChRemoveAllData } from '../screens/classes/writes';
 import { ClubhouseMarker } from '../shell/context';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
@@ -153,6 +153,7 @@ function fakeWrites(over: Partial<ChClassesWrites> = {}): ChClassesWrites & Fake
       data: { row: rowFor(editing?.id ?? `n${++n}`, input, editing ? { color: editing.color, created_at: '2026-08-21T14:00:00Z' } : {}) },
     })),
     remove: vi.fn(async () => ({ success: true })),
+    removeAll: vi.fn(async (ids: string[]) => ({ success: true, data: { removed: ids, kept: [], offCalendar: [] } as ChRemoveAllData })),
     sync: vi.fn(async () => ({ success: true })),
     importRows: vi.fn(async (rows: ChImportRow[]) => ({ success: true, data: { rows: rows.map((r, i) => rowFor(`i${i}`, { ...r, semester: r.semester || 'Fall 2026' })), skipped: [] as string[] } })),
     read: vi.fn(async () => ({ ok: true as const, rows: PREVIEW_PARSED.map(toImportRow), warnings: [] as string[] })),
@@ -666,6 +667,79 @@ describe('Classes live writes', () => {
     client.answers['golf_player_classes.delete'] = { error: { message: 'gone wrong' } };
     // Off the calendar already: the answer says so, for the page's flag and hint.
     expect(await w.remove('k1')).toEqual({ success: false, error: 'It is off your calendar but still on your schedule. Try again to finish removing it.', data: { offCalendar: true } });
+  });
+
+  it('delete all takes every class off the calendar first, one by one, then deletes only the ones that came off, in one statement scoped to the player', async () => {
+    actions.remove.mockImplementation(async (id: string) => (id === 'k2' ? { success: false, error: 'events locked' } : { success: true }));
+    let calendarCallsAtDelete = -1;
+    client.answers['golf_player_classes.delete'] = () => {
+      calendarCallsAtDelete = actions.remove.mock.calls.length;
+      return { data: [{ id: 'k1' }, { id: 'k3' }] };
+    };
+    const res = await live().removeAll(['k1', 'k2', 'k3']);
+    expect(actions.remove.mock.calls.map((c) => c[0])).toEqual(['k1', 'k2', 'k3']);
+    expect(calendarCallsAtDelete).toBe(3);
+    expect(client.log.filter((c) => c.op === 'delete')).toHaveLength(1);
+    expect(last('delete').filters).toEqual(
+      expect.arrayContaining([
+        ['in', ['id', ['k1', 'k3']]],
+        ['eq', ['player_id', 'p1']],
+      ]),
+    );
+    expect(res).toEqual({
+      success: false,
+      error: expect.stringContaining('kept'),
+      data: { removed: ['k1', 'k3'], kept: [{ id: 'k2', reason: 'events locked' }], offCalendar: [] },
+    });
+    // Nothing to delete is nothing to do.
+    actions.remove.mockClear();
+    expect(await live().removeAll([])).toEqual({ success: true, data: { removed: [], kept: [], offCalendar: [] } });
+    expect(actions.remove).not.toHaveBeenCalled();
+  });
+
+  it('delete all deletes no row when no class came off the calendar, and a calendar removal that throws is kept and reported', async () => {
+    actions.remove.mockResolvedValueOnce({ success: false, error: 'events locked' });
+    actions.remove.mockRejectedValueOnce(new Error('network'));
+    const res = await live().removeAll(['k1', 'k2']);
+    expect(client.log.filter((c) => c.op === 'delete')).toHaveLength(0);
+    expect(res).toEqual({
+      success: false,
+      error: expect.any(String),
+      data: { removed: [], kept: [{ id: 'k1', reason: 'events locked' }, { id: 'k2', reason: 'The calendar removal did not finish.' }], offCalendar: [] },
+    });
+    expect(report).toHaveBeenCalled();
+  });
+
+  it('delete all claims only what it can show is gone: a failed delete, a row a policy hid, and an unreadable check are not "deleted"; a row already gone is', async () => {
+    actions.remove.mockResolvedValue({ success: true });
+    // The delete failed: the read-back says which rows are still there, and only those are off the calendar but saved.
+    client.answers['golf_player_classes.delete'] = { error: { message: 'gone wrong' } };
+    client.answers['golf_player_classes.select'] = { data: [{ id: 'k2' }] };
+    expect(await live().removeAll(['k1', 'k2'])).toMatchObject({ success: false, data: { removed: ['k1'], kept: [], offCalendar: ['k2'] } });
+    expect(last('select').filters).toEqual(
+      expect.arrayContaining([
+        ['in', ['id', ['k1', 'k2']]],
+        ['eq', ['player_id', 'p1']],
+      ]),
+    );
+    // The delete returned one row of two (a policy hid the other): the other is not claimed.
+    client.answers['golf_player_classes.delete'] = { data: [{ id: 'k1' }] };
+    expect(await live().removeAll(['k1', 'k2'])).toMatchObject({ success: false, data: { removed: ['k1'], offCalendar: ['k2'] } });
+    expect(last('select').filters).toEqual(expect.arrayContaining([['in', ['id', ['k2']]]]));
+    // A Retry after the first attempt landed: nothing is returned and nothing is left, so both are gone and it is a success.
+    client.answers['golf_player_classes.delete'] = { data: [] };
+    client.answers['golf_player_classes.select'] = { data: [] };
+    expect(await live().removeAll(['k1', 'k2'])).toEqual({ success: true, data: { removed: ['k1', 'k2'], kept: [], offCalendar: [] } });
+    // The check can't be read: nothing is claimed (a Retry is safe).
+    client.answers['golf_player_classes.select'] = { error: { message: 'timeout' } };
+    expect(await live().removeAll(['k1', 'k2'])).toMatchObject({ success: false, data: { removed: [], offCalendar: ['k1', 'k2'] } });
+    // A delete that throws (the connection dropped) is read the same way.
+    client.answers['golf_player_classes.delete'] = () => {
+      throw new Error('network');
+    };
+    client.answers['golf_player_classes.select'] = { data: [] };
+    expect(await live().removeAll(['k1', 'k2'])).toEqual({ success: true, data: { removed: ['k1', 'k2'], kept: [], offCalendar: [] } });
+    expect(report).toHaveBeenCalled();
   });
 
   it('the sync gets the class as the current importer sends it: the stored term, the caller’s zone and offset, and the start date when there is one', async () => {
@@ -1477,6 +1551,192 @@ describe('Classes, writes that fail', () => {
 
 /** A page with STAT 201 alone. */
 const page1 = (): ChClassesPage => ({ ...PREVIEW_CLASSES, classes: { list: PREVIEW_CLASSES.classes.list.filter((c) => c.code === 'STAT 201'), error: false } });
+
+// ---------------------------------------------------------------------------
+// Delete all classes
+// ---------------------------------------------------------------------------
+
+describe('Classes, delete all', () => {
+  const ALL_IDS = PREVIEW_CLASS_ROWS.map((r) => r.id).sort();
+  /** The control under the deck (the dialog has a button of the same name). */
+  const deleteAll = () => within(document.querySelector('.ch-cl-delall') as HTMLElement).getByRole('button', { name: 'Delete all classes' }) as HTMLButtonElement;
+  const question = () => screen.getByRole('dialog', { name: 'Delete all classes?' });
+  const confirm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(question()).getByRole('button', { name: /^(Delete all classes|Deleting)$/ }));
+  const answer = (over: Partial<ChRemoveAllData>, error = 'stopped'): { success: boolean; error: string; data: ChRemoveAllData } => ({ success: false, error, data: { removed: [], kept: [], offCalendar: [], ...over } });
+  const idOf = (n: number) => `c0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+
+  it('CH-12503 CH-12704 Delete all classes warns first, asks how many go and what goes with them, and Keep them sends nothing', async () => {
+    const user = userEvent.setup();
+    const w = show();
+    hapticSpy.mockClear();
+    await user.click(deleteAll());
+    expect(hapticSpy.mock.calls.map((c) => c[0])[0]).toBe('warning');
+    await expectCode('CH-12503', /Delete all classes\?.*All 5 classes come off your schedule and your calendar\. This can't be undone\./);
+    await user.click(screen.getByRole('button', { name: 'Keep them' }));
+    expect(w.removeAll).not.toHaveBeenCalled();
+    expect(names()).toHaveLength(5);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('CH-12503 a yes deletes every class in one write, leaves the first-run page, says so, and the confirm itself is silent (the warning came before the question)', async () => {
+    const user = userEvent.setup();
+    const w = show();
+    await user.click(deleteAll());
+    hapticSpy.mockClear();
+    await confirm(user);
+    await waitFor(() => expect(w.removeAll).toHaveBeenCalledTimes(1));
+    expect([...w.removeAll.mock.calls[0]![0]].sort()).toEqual(ALL_IDS);
+    await expectCode('CH-12301');
+    expect(await screen.findByText('All 5 classes deleted')).toBeTruthy();
+    expect(hapticSpy.mock.calls.map((c) => c[0])).toEqual(['success']);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+  });
+
+  it('CH-12503 the question counts the classes from other terms too, and a single class is named', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_CLASSES_MIXED);
+    await user.click(deleteAll());
+    await expectCode('CH-12503', /All 7 classes come off your schedule and your calendar, including 1 from another term\. This can't be undone\./);
+  });
+
+  it('CH-12503 with one class the question names it, and the done line says class', async () => {
+    const user = userEvent.setup();
+    const w = show(page1());
+    await user.click(deleteAll());
+    await expectCode('CH-12503', /STAT 201 comes off your schedule and your calendar\. This can't be undone\./);
+    await confirm(user);
+    await waitFor(() => expect(w.removeAll).toHaveBeenCalledWith([STAT_ID]));
+    expect(await screen.findByText('Class deleted')).toBeTruthy();
+  });
+
+  it('CH-12301 the control is not drawn with no classes', () => {
+    show(PREVIEW_CLASSES_EMPTY);
+    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+  });
+
+  it('CH-12201 the control is not drawn beside a schedule that did not load', () => {
+    show(PREVIEW_CLASSES_FAILED);
+    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+  });
+
+  it('CH-12503 while a delete runs the question says Deleting and cannot be closed or pressed again, and the control is off; while a calendar sync runs the control is off too', async () => {
+    const user = userEvent.setup();
+    const held = later<{ success: boolean; data: ChRemoveAllData }>();
+    const w = show(PREVIEW_CLASSES, { removeAll: vi.fn(() => held.promise) });
+    await user.click(deleteAll());
+    await confirm(user);
+    await waitFor(() => expect(within(question()).getByRole('button', { name: 'Deleting' })).toBeTruthy());
+    expect((within(question()).getByRole('button', { name: 'Deleting' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(question()).getByRole('button', { name: 'Keep them' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(deleteAll().disabled).toBe(true);
+    // Esc and the Close button leave it open: closing would hide a delete that is still going.
+    fireEvent(question(), new Event('cancel', { cancelable: true }));
+    await user.click(within(question()).getByRole('button', { name: 'Close' }));
+    expect(question().hasAttribute('open')).toBe(true);
+    expect(w.removeAll).toHaveBeenCalledTimes(1);
+    await act(async () => held.resolve({ success: true, data: { removed: ALL_IDS, kept: [], offCalendar: [] } }));
+    await expectCode('CH-12301');
+  });
+
+  it('CH-12403 the control is off while a class is being put on the calendar, and back when that lands', async () => {
+    const user = userEvent.setup();
+    const held = later<{ success: boolean }>();
+    show(PREVIEW_CLASSES, { sync: vi.fn((c: ChClass) => (c.code === 'GEOG 110' ? held.promise : Promise.resolve({ success: true }))) });
+    expect(deleteAll().disabled).toBe(false);
+    await fillGeog(user);
+    await submitForm(user);
+    await expectCode('CH-12403', /Adding to your calendar…/);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(deleteAll().disabled).toBe(true);
+    await act(async () => held.resolve({ success: true }));
+    await waitFor(() => expect(deleteAll().disabled).toBe(false));
+  });
+
+  it('CH-12005 a delete where no class could be taken off the calendar keeps every class and the question, says so, and Retry deletes them', async () => {
+    const user = userEvent.setup();
+    const kept = ALL_IDS.map((id) => ({ id, reason: 'Failed to remove class from calendar: events locked' }));
+    const removeAll = failing(answer({ kept }), async (ids: string[]) => ({ success: true, data: { removed: ids, kept: [], offCalendar: [] } }));
+    show(PREVIEW_CLASSES, { removeAll });
+    await user.click(deleteAll());
+    await confirm(user);
+    await expectCode('CH-12005', /Couldn't delete your classes.*None of them could be taken off your calendar, so all 5 were kept: Failed to remove class from calendar: events locked\. Try again\./);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(names()).toHaveLength(5);
+    expect(question()).toBeTruthy();
+    expect(code('CH-12006')).toBeNull();
+    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await expectCode('CH-12301');
+    expect(removeAll).toHaveBeenCalledTimes(2);
+    expect(removeAll.mock.calls[1]![0]).toEqual(removeAll.mock.calls[0]![0]);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('CH-12005 with one class the words are singular, and the reason is the calendar removal’s', async () => {
+    const user = userEvent.setup();
+    show(page1(), { removeAll: vi.fn(async () => answer({ kept: [{ id: STAT_ID, reason: 'events locked' }] })) });
+    await user.click(deleteAll());
+    await confirm(user);
+    await expectCode('CH-12005', /Couldn't delete your classes.*It couldn't be taken off your calendar, so the class was kept: events locked\. Try again\./);
+    expect(names()).toEqual(['Probability and Statistics']);
+  });
+
+  it('CH-12005 a delete that throws, or a connection that is gone, leaves the classes as they were and says nothing was deleted', async () => {
+    const user = userEvent.setup();
+    const removeAll = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockImplementation(async (ids: string[]) => ({ success: true, data: { removed: ids, kept: [], offCalendar: [] } }));
+    show(PREVIEW_CLASSES, { removeAll });
+    await user.click(deleteAll());
+    await confirm(user);
+    await expectCode('CH-12005', /Couldn't delete your classes.*Nothing was deleted\. Check your connection and try again\./);
+    expect(report).toHaveBeenCalled();
+    expect(names()).toHaveLength(5);
+    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await expectCode('CH-12301');
+  });
+
+  it('CH-12006 a delete that stops half-way removes what is gone, keeps the rest, flags the class that is off the calendar, says which is which, and Retry finishes it with the same classes', async () => {
+    const user = userEvent.setup();
+    // STAT 201, ECON 310 and BUSI 401 are gone; ENGL 105 stayed on the calendar; EXSS 188 came off it but is still saved.
+    const half = answer({ removed: [idOf(1), idOf(2), idOf(3)], kept: [{ id: idOf(4), reason: 'events locked' }], offCalendar: [idOf(5)] });
+    const removeAll = failing(half, async (ids: string[]) => ({ success: true, data: { removed: ids, kept: [], offCalendar: [] } }));
+    show(PREVIEW_CLASSES, { removeAll });
+    await user.click(deleteAll());
+    await confirm(user);
+    await expectCode(
+      'CH-12006',
+      /3 of 5 classes deleted.*ENGL 105 couldn't be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Retry to finish\./,
+    );
+    expect(code('CH-12005')).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    // The page shows what the server has: two classes, one of them flagged.
+    expect(names()).toEqual(['Writing in the Disciplines', 'Golf Performance Lab']);
+    expect(within(card(/^EXSS 188/)).getByText('Not on your calendar')).toBeTruthy();
+    expect(within(card(/^ENGL 105/)).queryByText('Not on your calendar')).toBeNull();
+    // The question stays, and counts what is left.
+    expect(question().textContent).toContain('All 2 classes come off your schedule and your calendar');
+    await user.click(within(code('CH-12006') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await expectCode('CH-12301');
+    // The Retry repeats the first attempt's classes: a class already gone is removed again harmlessly.
+    expect(removeAll).toHaveBeenCalledTimes(2);
+    expect([...removeAll.mock.calls[1]![0]].sort()).toEqual(ALL_IDS);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('.ch-cl-sync')).toBeNull();
+  });
+
+  it('CH-12006 when every calendar part landed and no row could be deleted, the classes stay, flagged, and the words say so', async () => {
+    const user = userEvent.setup();
+    const removeAll = vi.fn(async () => answer({ offCalendar: ALL_IDS }));
+    show(PREVIEW_CLASSES, { removeAll });
+    await user.click(deleteAll());
+    await confirm(user);
+    await expectCode('CH-12006', /Couldn't finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Retry to finish\./);
+    expect(names()).toHaveLength(5);
+    expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('5 classes are not on your calendar');
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Import a schedule

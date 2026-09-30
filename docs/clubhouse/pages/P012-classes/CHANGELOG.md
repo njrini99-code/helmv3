@@ -2,6 +2,34 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Delete all classes (Q-75a)
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   catalog CH-12005, CH-12006, CH-12503 and CH-12704 (Bridge IDs are minted by the registry sync)
+Data impact:    none (the same table and server action as Remove; no migration)
+```
+
+### Delete all classes (Q-75a)
+
+- **Issue.** The current Fairway Classes page has "Delete all classes" and the Clubhouse page did not, so clearing a
+  semester's schedule was one removal at a time. The owner approved building it on 2026-09-30.
+- **Fix.** A quiet red "Delete all classes" button under the deck (a full-width, 44px row on the phone) with the warning
+  haptic first, behind a question that says how many classes go, that their calendar events go with them, and how many
+  are from another term (CH-12503). It is one write, `writes.removeAll`, in the current page's order: the calendar
+  first for every class, then one delete of the rows that came off it, scoped to the player; a class whose calendar
+  removal failed keeps its row. A failure says which part: nothing was deleted (CH-12005), or it stopped half-way, with
+  the classes that are gone dropped from the list, the ones kept and the ones off the calendar but still saved named,
+  and the latter flagged "Not on your calendar" (CH-12006). A row is reported deleted only when the delete returned it
+  or a read-back shows it gone, so a failed delete or a row a policy hid is never called deleted. Retry repeats the same
+  classes and finishes the job (a class already gone counts as removed). The button is off while a save, an import, a
+  remove, a calendar sync or a delete-all is running, and is not drawn with no classes or when they didn't load.
+  The question stays open after a failure, counts what is left, and cannot be closed while its delete runs.
+- **Checked.** `classes.test.tsx` 125/125 with 16 new cases (the control, the question and its counts, the silent confirm,
+  the two failure toasts and their Retry, the off states, and the live writes: order, scope, read-back, a thrown call);
+  each behaviour mutation-checked (15 mutations, each caught; see VERIFY.md); axe clean at 1280 and 390 on the question,
+  the half-way toast and the nothing-deleted toast, and the phone button measured 358 x 44. Not seen on an iPhone.
+
 ## 2026-09-30 — Classes for players, the review fixes and the page docs
 
 ```text

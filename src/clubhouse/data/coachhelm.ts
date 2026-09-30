@@ -9,7 +9,8 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
 import { toChInsight } from './coachhelm-map';
-import { pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm } from './coachhelm-shape';
+import { pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChTourBaseline } from './coachhelm-shape';
+import { loadTourBenchmarks, tourForGender } from './stats-common';
 
 export type * from './coachhelm-shape';
 
@@ -135,13 +136,65 @@ async function assignedByInsight(supabase: Supabase, insightIds: string[]): Prom
   return out;
 }
 
+/**
+ * The Tour's values for the team's own tour (Q-88: the Tour is the only benchmark): the LPGA's for a women's team, never the men's.
+ * Without the team's row its tour is unknown, so no benchmark is claimed and a college comparison is left undrawn.
+ */
+async function tourBaselineOf(supabase: Supabase, team: { gender: string | null } | null): Promise<ChTourBaseline | null> {
+  if (!team) return null;
+  const tour = tourForGender(team.gender);
+  return { tour, values: await loadTourBenchmarks(supabase, tour, 'coachhelm') };
+}
+
+/** The coach's team's Tour. A failed team read is logged and claims no benchmark. */
+async function coachTour(supabase: Supabase, teamId: string): Promise<ChTourBaseline | null> {
+  const res = await supabase.from('golf_teams').select('gender').eq('id', teamId).maybeSingle();
+  if (res.error) {
+    log('team', res.error);
+    return null;
+  }
+  return tourBaselineOf(supabase, res.data);
+}
+
+/** The player's active team and its tour. `error`: the read failed, so neither the tour nor the proposals are known. */
+async function playerTeam(supabase: Supabase, playerId: string): Promise<{ teamId: string | null; tour: ChTourBaseline | null; error: boolean }> {
+  const res = await supabase.from('golf_team_members').select('team_id, golf_teams(gender)').eq('player_id', playerId).eq('status', 'active').maybeSingle();
+  if (res.error) {
+    log('playerTeam', res.error);
+    return { teamId: null, tour: null, error: true };
+  }
+  const row = res.data as { team_id: string; golf_teams: { gender: string | null } | null } | null;
+  if (!row) return { teamId: null, tour: null, error: false };
+  return { teamId: row.team_id, tour: await tourBaselineOf(supabase, row.golf_teams), error: false };
+}
+
+/** The focus areas a coach proposed to this player on their team, newest first (Q-77). `from` names the insight it came from when that insight is on the page. */
+async function loadProposals(supabase: Supabase, playerId: string, teamId: string | null, insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> {
+  if (!teamId) return { list: [], error: false };
+  const res = await supabase
+    .from('golf_player_focus_areas')
+    .select('id, title, from_insight_id, created_at')
+    .eq('player_id', playerId)
+    .eq('team_id', teamId)
+    .eq('status', 'proposed')
+    .order('created_at', { ascending: false });
+  if (res.error) {
+    log('proposals', res.error);
+    return { list: [], error: true };
+  }
+  const titles = new Map(insights.map((i) => [i.id, i.title]));
+  const list: ChProposal[] = (res.data ?? []).map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null }));
+  return { list, error: false };
+}
+
 /** The disabled gate names why; a failed lookup is a failed read, not "off". */
 const LOOKUP_FAILED = /lookup failed/i;
 
 /** The player's own CoachHelm. Their insights are their own, with or without a team. */
 export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<ChPlayerHelm> {
   const supabase = await createClient();
-  const failed: ChPlayerHelm = { off: null, insights: { list: [], error: true }, rounds: null };
+  const noProposals: ChPlayerHelm['proposals'] = { list: [], error: false };
+  const failed: ChPlayerHelm = { off: null, proposals: noProposals, insights: { list: [], error: true }, rounds: null };
 
   let gate;
   try {
@@ -156,9 +209,11 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
       return failed;
     }
     const reason = gate.disabledBy === 'coach' && gate.disabledReason && gate.disabledReason !== 'Disabled by coach' ? gate.disabledReason : null;
-    return { off: { reason }, insights: { list: [], error: false }, rounds: null };
+    return { off: { reason }, proposals: noProposals, insights: { list: [], error: false }, rounds: null };
   }
 
+  // The team gives the tour (Q-88) and the proposals (Q-77); it reads beside the feed.
+  const teamRead = playerTeam(supabase, input.playerId);
   let feed: EvidenceInsight[] = [];
   let threw = false;
   try {
@@ -169,15 +224,20 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   }
 
   if (threw) return failed;
+  const team = await teamRead;
+  // Without the team there is no telling what was proposed: the page says so, never "nothing proposed".
+  const proposalsOf = async (insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> =>
+    team.error ? { list: [], error: true } : loadProposals(supabase, input.playerId, team.teamId, insights);
   if (feed.length === 0) {
     // Empty: a real first run, or a swallowed failure? Rows the player has not dismissed themselves and the feed could draw say it failed.
     const [visible, dismissed] = await Promise.all([loadVisible(supabase, [input.playerId]), loadPlayerDismissed(supabase, input.playerId)]);
     if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return failed;
-    return { off: null, insights: { list: [], error: false }, rounds: await countCountableRounds(supabase, input.playerId) };
+    const [proposals, rounds] = await Promise.all([proposalsOf([]), countCountableRounds(supabase, input.playerId)]);
+    return { off: null, proposals, insights: { list: [], error: false }, rounds };
   }
 
-  const drills = await drillTextByInsight(supabase, feed);
-  return { off: null, insights: { list: feed.map((i) => toChInsight(i, { drillText: drills.get(i.id) ?? null })), error: false }, rounds: null };
+  const [drills, proposals] = await Promise.all([drillTextByInsight(supabase, feed), proposalsOf(feed)]);
+  return { off: null, proposals, insights: { list: feed.map((i) => toChInsight(i, { drillText: drills.get(i.id) ?? null, tour: team.tour })), error: false }, rounds: null };
 }
 
 /**
@@ -223,10 +283,11 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   const roster = (people.data ?? []).map((p) => ({ id: p.id, name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || 'Player' }));
   const ids = roster.map((p) => p.id);
 
-  const [pulse, visible, heads] = await Promise.all([
+  const [pulse, visible, heads, tour] = await Promise.all([
     pulseOf(),
     ids.length ? loadVisible(supabase, ids) : Promise.resolve({ rows: [], error: false }),
     ids.length ? topInsights(ids) : Promise.resolve(new Map<string, EvidenceInsight[]>()),
+    coachTour(supabase, input.teamId),
   ]);
 
   const top = [...heads.values()].map((l) => l[0]).filter((i): i is EvidenceInsight => !!i);
@@ -248,7 +309,7 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   for (const p of roster) {
     const head = heads.get(p.id)?.[0];
     if (!head) continue;
-    list.push({ id: p.id, name: p.name, count: Math.max(1, counts.get(p.id) ?? 1), top: toChInsight(head, { drillText: drills.get(head.id) ?? null, assigned: assigned.get(head.id) ?? null }) });
+    list.push({ id: p.id, name: p.name, count: Math.max(1, counts.get(p.id) ?? 1), top: toChInsight(head, { drillText: drills.get(head.id) ?? null, assigned: assigned.get(head.id) ?? null, tour }) });
   }
   return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length };
 }

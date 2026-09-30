@@ -6,7 +6,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 ## spec
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a gap (`pages/P014-recruiting/DESIGN.md` "Data assumptions": every figure is `golf_recruits` or `golf_recruit_documents`; the pipeline's counts and shares are computed from the list, not stored)
-- [x] Every control is mapped to an existing server action: Add, Edit, stage and Delete are `createRecruit`, `updateRecruit` and `deleteRecruit`; documents are `getRecruitDocuments`, `uploadRecruitDocument`, `deleteRecruitDocument` and `getRecruitDocumentUrl`; Email and Call are `mailto:` and `tel:` links. No new action and no migration
+- [x] Every control is mapped to an existing server action: Add, Edit, stage and Delete are `createRecruit`, `updateRecruit` and `deleteRecruit`; documents are `getRecruitDocuments`, `deleteRecruitDocument` and `getRecruitDocumentUrl`, and an upload is `prepareRecruitDocumentUpload`, a PUT to Storage, then `completeRecruitDocumentUpload` (the current page keeps `uploadRecruitDocument`); Email and Call are `mailto:` and `tel:` links. `createRecruit` takes an optional request id. One migration (film), written and not applied
 - [x] N/A: the Recruiting boards have no README to disagree with; what the boards do not show (the upload dialog, removing a document, the no-team page, an empty stage, the phone's Add form) is listed as questions in `pages/P014-recruiting/DESIGN.md`, and the tracker entry is the lead's
 
 ## desktop
@@ -27,7 +27,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 - [x] Unit tests cover the derivations (`recruiting.test › the rules`, `the loader, the route and the page`)
 
 ## states
-- [x] Loading: a route skeleton shaped like the page (CH-14401); a prospect's documents (CH-14402); a save, an upload, a removal and a delete each say so (CH-14403 to CH-14406)
+- [x] Loading: a route skeleton shaped like the page (CH-14401); a prospect's documents (CH-14402); a save, an upload (with its progress, CH-14407), a removal and a delete each say so (CH-14403 to CH-14406)
 - [x] Empty (first run): says what will appear here and the one next step (CH-14301); no team (CH-14306)
 - [x] Empty (filtered or no results): distinct from first run, and offers to clear the search or show every stage (CH-14302)
 - [x] Partial failure: the list and a prospect's documents have their own notice with Try again; the rest of the page still works (CH-14201, CH-14202)

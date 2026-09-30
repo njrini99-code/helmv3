@@ -8737,6 +8737,17 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100207,
+    "page": "P010",
+    "category": 2,
+    "item": 7,
+    "name": "PLAN_A_TRIP_THE_TRAVELERS_CLASSES_ARE",
+    "chCode": "CH-10407",
+    "meaning": "Plan a trip: the travelers' classes are being checked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100401,
     "page": "P010",
     "category": 4,
@@ -8893,6 +8904,28 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100415,
+    "page": "P010",
+    "category": 4,
+    "item": 15,
+    "name": "NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN",
+    "chCode": "CH-10314",
+    "meaning": "New announcement: files that players can't open are left out of the attach list",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100416,
+    "page": "P010",
+    "category": 4,
+    "item": 16,
+    "name": "PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A",
+    "chCode": "CH-10315",
+    "meaning": "Plan a trip: nobody chosen has a class during the trip",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100501,
     "page": "P010",
     "category": 5,
@@ -8988,6 +9021,17 @@
     "name": "POSTING_OR_SAVING_AN_EDIT_WITH_NO",
     "chCode": "CH-10109",
     "meaning": "Posting or saving an edit with no message (the server requires one)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100510,
+    "page": "P010",
+    "category": 5,
+    "item": 10,
+    "name": "PLAN_A_TRIP_A_CHOSEN_TRAVELER_HAS",
+    "chCode": "CH-10110",
+    "meaning": "Plan a trip: a chosen traveler has a class during the trip",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -9230,6 +9274,28 @@
     "name": "PLAN_A_TRIP_WHO_IS_INVITED_TO",
     "chCode": "CH-10211",
     "meaning": "Plan a trip: who is invited to the chosen event didn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100623,
+    "page": "P010",
+    "category": 6,
+    "item": 23,
+    "name": "A_POST_GOES_OUT_BUT_ITS_FILES",
+    "chCode": "CH-10012",
+    "meaning": "A post goes out but its files don't attach",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100624,
+    "page": "P010",
+    "category": 6,
+    "item": 24,
+    "name": "PLAN_A_TRIP_THE_TRAVELERS_CLASSES_DIDNT",
+    "chCode": "CH-10212",
+    "meaning": "Plan a trip: the travelers' classes didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -11701,6 +11767,28 @@
     ]
   },
   {
+    "id": 120611,
+    "page": "P012",
+    "category": 6,
+    "item": 11,
+    "name": "DELETE_ALL_CLASSES_CHANGED_NOTHING_NO_CLASS",
+    "chCode": "CH-12005",
+    "meaning": "Delete all classes changed nothing: no class could be taken off the calendar (every removal failed or threw), the connection dropped, or the write threw",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120612,
+    "page": "P012",
+    "category": 6,
+    "item": 12,
+    "name": "DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME",
+    "chCode": "CH-12006",
+    "meaning": "Delete all classes stopped half-way: some classes are gone and some are not",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 120701,
     "page": "P012",
     "category": 7,
@@ -11816,6 +11904,17 @@
     "name": "CANCEL_OR_CLOSE_A_FORM_THAT_HAS",
     "chCode": "CH-12502",
     "meaning": "Cancel or close a form that has changes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 121103,
+    "page": "P012",
+    "category": 11,
+    "item": 3,
+    "name": "DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO",
+    "chCode": "CH-12503",
+    "meaning": "Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -11999,6 +12098,17 @@
     "name": "THE_IMPORT_SWITCHES_BETWEEN_A_FILE_AND",
     "chCode": "CH-12705",
     "meaning": "The import switches between a file and pasted text",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 121705,
+    "page": "P012",
+    "category": 17,
+    "item": 5,
+    "name": "DELETE_ALL_CLASSES_IS_TAPPED",
+    "chCode": "CH-12704",
+    "meaning": "Delete all classes is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -12251,6 +12361,50 @@
     ]
   },
   {
+    "id": 130205,
+    "page": "P013",
+    "category": 2,
+    "item": 5,
+    "name": "A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING",
+    "chCode": "CH-13404",
+    "meaning": "A player's Accept or Decline is being sent",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130206,
+    "page": "P013",
+    "category": 2,
+    "item": 6,
+    "name": "ASK_THE_CHAT_PAGE_LOADS",
+    "chCode": "CH-13420",
+    "meaning": "Ask: The chat page loads",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130207,
+    "page": "P013",
+    "category": 2,
+    "item": 7,
+    "name": "ASK_A_REPLY_IS_STREAMING",
+    "chCode": "CH-13421",
+    "meaning": "Ask: A reply is streaming",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130208,
+    "page": "P013",
+    "category": 2,
+    "item": 8,
+    "name": "ASK_AN_ACTION_WAS_CONFIRMED_AND_IS",
+    "chCode": "CH-13450",
+    "meaning": "Ask: An action was confirmed and is being carried out",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -12374,6 +12528,94 @@
     ]
   },
   {
+    "id": 130412,
+    "page": "P013",
+    "category": 4,
+    "item": 12,
+    "name": "ASK_A_CONVERSATION_THAT_IS_GONE_OR",
+    "chCode": "CH-13320",
+    "meaning": "Ask: A conversation that is gone or not the coach's",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130413,
+    "page": "P013",
+    "category": 4,
+    "item": 13,
+    "name": "ASK_THE_ROSTER_IS_EMPTY",
+    "chCode": "CH-13321",
+    "meaning": "Ask: The roster is empty",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130414,
+    "page": "P013",
+    "category": 4,
+    "item": 14,
+    "name": "ASK_PLAYERS_BUT_NO_RECORDED_ROUND",
+    "chCode": "CH-13322",
+    "meaning": "Ask: Players but no recorded round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130415,
+    "page": "P013",
+    "category": 4,
+    "item": 15,
+    "name": "ASK_NO_CHATS_YET",
+    "chCode": "CH-13323",
+    "meaning": "Ask: No chats yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130416,
+    "page": "P013",
+    "category": 4,
+    "item": 16,
+    "name": "ASK_A_CHAT_SEARCH_WITH_NO_MATCH",
+    "chCode": "CH-13324",
+    "meaning": "Ask: A chat search with no match",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130417,
+    "page": "P013",
+    "category": 4,
+    "item": 17,
+    "name": "ASK_ROUNDS_RECORDED_NOTHING_FLAGGED",
+    "chCode": "CH-13325",
+    "meaning": "Ask: Rounds recorded, nothing flagged",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130418,
+    "page": "P013",
+    "category": 4,
+    "item": 18,
+    "name": "ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED",
+    "chCode": "CH-13350",
+    "meaning": "Ask: A read tool found nothing recorded",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130501,
+    "page": "P013",
+    "category": 5,
+    "item": 1,
+    "name": "ASK_SEND_WHILE_AN_ACTION_CARD_WAITS",
+    "chCode": "CH-13120",
+    "meaning": "Ask: Send while an action card waits for Confirm or Cancel",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130601,
     "page": "P013",
     "category": 6,
@@ -12464,6 +12706,182 @@
     ]
   },
   {
+    "id": 130609,
+    "page": "P013",
+    "category": 6,
+    "item": 9,
+    "name": "A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS",
+    "chCode": "CH-13004",
+    "meaning": "A player's Accept of a proposed focus area fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130610,
+    "page": "P013",
+    "category": 6,
+    "item": 10,
+    "name": "A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS",
+    "chCode": "CH-13005",
+    "meaning": "A player's Decline of a proposed focus area fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130611,
+    "page": "P013",
+    "category": 6,
+    "item": 11,
+    "name": "THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD",
+    "chCode": "CH-13205",
+    "meaning": "The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130612,
+    "page": "P013",
+    "category": 6,
+    "item": 12,
+    "name": "ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER",
+    "chCode": "CH-13050",
+    "meaning": "Ask: An action CoachHelm proposed fails after Confirm",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130613,
+    "page": "P013",
+    "category": 6,
+    "item": 13,
+    "name": "ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD",
+    "chCode": "CH-13051",
+    "meaning": "Ask: Copy is refused by the clipboard",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130614,
+    "page": "P013",
+    "category": 6,
+    "item": 14,
+    "name": "ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD",
+    "chCode": "CH-13221",
+    "meaning": "Ask: The chat context (the program) does not load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130615,
+    "page": "P013",
+    "category": 6,
+    "item": 15,
+    "name": "ASK_THE_CHAT_LIST_DOES_NOT_LOAD",
+    "chCode": "CH-13222",
+    "meaning": "Ask: The chat list does not load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130616,
+    "page": "P013",
+    "category": 6,
+    "item": 16,
+    "name": "ASK_THE_PULSE_DOES_NOT_LOAD",
+    "chCode": "CH-13223",
+    "meaning": "Ask: The pulse does not load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130617,
+    "page": "P013",
+    "category": 6,
+    "item": 17,
+    "name": "ASK_A_CONVERSATION_OR_ITS_MESSAGES_DO",
+    "chCode": "CH-13224",
+    "meaning": "Ask: A conversation or its messages do not load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130618,
+    "page": "P013",
+    "category": 6,
+    "item": 18,
+    "name": "ASK_ONE_SECTION_OF_THE_PAGE_CRASHES",
+    "chCode": "CH-13225",
+    "meaning": "Ask: One section of the page crashes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130619,
+    "page": "P013",
+    "category": 6,
+    "item": 19,
+    "name": "ASK_A_READ_TOOL_BEHIND_AN_ANSWER",
+    "chCode": "CH-13250",
+    "meaning": "Ask: A read tool behind an answer failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130620,
+    "page": "P013",
+    "category": 6,
+    "item": 20,
+    "name": "ASK_AN_ANSWER_FAILS_WHILE_IT_STREAMS",
+    "chCode": "CH-13251",
+    "meaning": "Ask: An answer fails while it streams",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130621,
+    "page": "P013",
+    "category": 6,
+    "item": 21,
+    "name": "ASK_AN_ANSWER_ARRIVES_MALFORMED_AND_IS",
+    "chCode": "CH-13252",
+    "meaning": "Ask: An answer arrives malformed and is rejected",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130622,
+    "page": "P013",
+    "category": 6,
+    "item": 22,
+    "name": "ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY",
+    "chCode": "CH-13253",
+    "meaning": "Ask: A confirmed action failed or only partly completed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130623,
+    "page": "P013",
+    "category": 6,
+    "item": 23,
+    "name": "ASK_THE_CONVERSATION_MOVED_PAST_A_CARD",
+    "chCode": "CH-13254",
+    "meaning": "Ask: The conversation moved past a card that was never answered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130624,
+    "page": "P013",
+    "category": 6,
+    "item": 24,
+    "name": "ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR",
+    "chCode": "CH-13255",
+    "meaning": "Ask: The evidence panel is opened for a player the conversation has nothing on",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -12486,6 +12904,105 @@
     "tests": [
       "src/clubhouse/__tests__/coachhelm.test.tsx"
     ]
+  },
+  {
+    "id": 130703,
+    "page": "P013",
+    "category": 7,
+    "item": 3,
+    "name": "A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR",
+    "chCode": "CH-13902",
+    "meaning": "A proposed focus area is accepted or declined",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130704,
+    "page": "P013",
+    "category": 7,
+    "item": 4,
+    "name": "ASK_SEND_WHILE_OFFLINE",
+    "chCode": "CH-13920",
+    "meaning": "Ask: Send while offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130705,
+    "page": "P013",
+    "category": 7,
+    "item": 5,
+    "name": "ASK_A_SEND_FAILS",
+    "chCode": "CH-13921",
+    "meaning": "Ask: A send fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130706,
+    "page": "P013",
+    "category": 7,
+    "item": 6,
+    "name": "ASK_A_NEW_THREAD_STARTS",
+    "chCode": "CH-13922",
+    "meaning": "Ask: A new thread starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130707,
+    "page": "P013",
+    "category": 7,
+    "item": 7,
+    "name": "ASK_THE_SUB_TAB_STRIP",
+    "chCode": "CH-13923",
+    "meaning": "Ask: The sub-tab strip",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130708,
+    "page": "P013",
+    "category": 7,
+    "item": 8,
+    "name": "ASK_COPY_AN_ANSWER",
+    "chCode": "CH-13950",
+    "meaning": "Ask: Copy an answer",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130709,
+    "page": "P013",
+    "category": 7,
+    "item": 9,
+    "name": "ASK_COACHHELM_PROPOSES_AN_ACTION",
+    "chCode": "CH-13951",
+    "meaning": "Ask: CoachHelm proposes an action",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130710,
+    "page": "P013",
+    "category": 7,
+    "item": 10,
+    "name": "ASK_A_PROPOSED_ACTION_IS_CANCELLED",
+    "chCode": "CH-13952",
+    "meaning": "Ask: A proposed action is cancelled",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130711,
+    "page": "P013",
+    "category": 7,
+    "item": 11,
+    "name": "ASK_A_CONFIRMED_ACTION_LANDS",
+    "chCode": "CH-13953",
+    "meaning": "Ask: A confirmed action lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
     "id": 130801,
@@ -12673,7 +13190,7 @@
     "item": 1,
     "name": "AN_INSIGHT_IS_ASSIGNED_OR_DISMISSED",
     "chCode": "CH-13601",
-    "meaning": "An insight is assigned, or dismissed",
+    "meaning": "An insight is assigned or dismissed, or a proposed focus area is answered",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12686,6 +13203,28 @@
     "chCode": "CH-13602",
     "meaning": "Hovering an insight row or a player",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131603,
+    "page": "P013",
+    "category": 16,
+    "item": 3,
+    "name": "ASK_HIDE_CHATS",
+    "chCode": "CH-13620",
+    "meaning": "Ask: Hide chats",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131604,
+    "page": "P013",
+    "category": 16,
+    "item": 4,
+    "name": "ASK_THE_PHONE_DRAWER_IS_DRAGGED",
+    "chCode": "CH-13621",
+    "meaning": "Ask: The phone drawer is dragged",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -12718,6 +13257,39 @@
     "name": "DISMISS_IS_TAPPED",
     "chCode": "CH-13703",
     "meaning": "Dismiss is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131704,
+    "page": "P013",
+    "category": 17,
+    "item": 4,
+    "name": "ACCEPT_OR_DECLINE_IS_TAPPED",
+    "chCode": "CH-13704",
+    "meaning": "Accept or Decline is tapped",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131705,
+    "page": "P013",
+    "category": 17,
+    "item": 5,
+    "name": "ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD",
+    "chCode": "CH-13721",
+    "meaning": "Ask: An opener pill or shortcut card is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131706,
+    "page": "P013",
+    "category": 17,
+    "item": 6,
+    "name": "ASK_A_FOLLOW_UP_IS_TAPPED",
+    "chCode": "CH-13752",
+    "meaning": "Ask: A follow-up is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12798,6 +13370,94 @@
     "where": "scripts/clubhouse/a11y.mjs#CH_A11Y_PAGES"
   },
   {
+    "id": 131808,
+    "page": "P013",
+    "category": 18,
+    "item": 8,
+    "name": "THE_PLAYERS_PROPOSED_FOCUS_AREAS",
+    "chCode": "CH-13807",
+    "meaning": "The player's proposed focus areas",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131809,
+    "page": "P013",
+    "category": 18,
+    "item": 9,
+    "name": "ASK_THE_CHAT_PAGE",
+    "chCode": "CH-13820",
+    "meaning": "Ask: The chat page",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131810,
+    "page": "P013",
+    "category": 18,
+    "item": 10,
+    "name": "ASK_A_PLAYER_IS_MENTIONED",
+    "chCode": "CH-13821",
+    "meaning": "Ask: A player is mentioned",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131811,
+    "page": "P013",
+    "category": 18,
+    "item": 11,
+    "name": "ASK_THE_PHONE_CHATS_BUTTON",
+    "chCode": "CH-13822",
+    "meaning": "Ask: The phone Chats button",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131812,
+    "page": "P013",
+    "category": 18,
+    "item": 12,
+    "name": "ASK_THE_OPEN_CHAT_IN_THE_LIST",
+    "chCode": "CH-13823",
+    "meaning": "Ask: The open chat in the list",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131813,
+    "page": "P013",
+    "category": 18,
+    "item": 13,
+    "name": "ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER",
+    "chCode": "CH-13850",
+    "meaning": "Ask: CoachHelm is working on an answer",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131814,
+    "page": "P013",
+    "category": 18,
+    "item": 14,
+    "name": "ASK_THE_EVIDENCE_CONTROL",
+    "chCode": "CH-13851",
+    "meaning": "Ask: The evidence control",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131815,
+    "page": "P013",
+    "category": 18,
+    "item": 15,
+    "name": "ASK_EVIDENCE_DRAWN_AS_A_CHART",
+    "chCode": "CH-13852",
+    "meaning": "Ask: Evidence drawn as a chart",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131901,
     "page": "P013",
     "category": 19,
@@ -12866,6 +13526,17 @@
     "name": "A_PROSPECTS_DOCUMENTS_ARE_LOADING",
     "chCode": "CH-14402",
     "meaning": "A prospect's documents are loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140203,
+    "page": "P014",
+    "category": 2,
+    "item": 3,
+    "name": "A_FILE_IS_BEING_SENT_TO_STORAGE",
+    "chCode": "CH-14407",
+    "meaning": "A file is being sent to Storage and the browser reports progress",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
@@ -13030,7 +13701,7 @@
     "item": 5,
     "name": "A_FILE_OVER_25_MB",
     "chCode": "CH-14105",
-    "meaning": "A file over 25 MB",
+    "meaning": "A file over its limit: 25 MB for a document or an image, 100 MB for film (MP4, MOV, M4V)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
@@ -13042,6 +13713,50 @@
     "name": "A_FILE_WHOSE_TYPE_THE_BUCKET_DOES",
     "chCode": "CH-14106",
     "meaning": "A file whose type the bucket does not take",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140507,
+    "page": "P014",
+    "category": 5,
+    "item": 7,
+    "name": "STORAGE_TURNS_DOWN_A_FILES_TYPE_AFTER",
+    "chCode": "CH-14107",
+    "meaning": "Storage turns down a file's type after the page let it through (the bucket not yet updated to take film, or a type it stopped taking)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140508,
+    "page": "P014",
+    "category": 5,
+    "item": 8,
+    "name": "STORAGE_TURNS_DOWN_A_FILES_SIZE_AFTER",
+    "chCode": "CH-14108",
+    "meaning": "Storage turns down a file's size after the page let it through (the bucket's cap not yet raised, or a project-wide upload limit below it)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140509,
+    "page": "P014",
+    "category": 5,
+    "item": 9,
+    "name": "SEVERAL_FILES_ARE_DROPPED_AT_ONCE",
+    "chCode": "CH-14109",
+    "meaning": "Several files are dropped at once",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140510,
+    "page": "P014",
+    "category": 5,
+    "item": 10,
+    "name": "A_FOLDER_OR_A_FILE_WITH_NOTHING",
+    "chCode": "CH-14110",
+    "meaning": "A folder, or a file with nothing in it, is dropped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
@@ -13096,7 +13811,7 @@
     "item": 5,
     "name": "UPLOADING_A_DOCUMENT_FAILS",
     "chCode": "CH-14005",
-    "meaning": "Uploading a document fails",
+    "meaning": "Uploading a document fails (not because Storage turned the file itself down: that is CH-14107 or CH-14108)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
@@ -13163,6 +13878,39 @@
     "name": "ANY_WRITE_WHILE_OFFLINE",
     "chCode": "CH-14901",
     "meaning": "Any write while offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140702,
+    "page": "P014",
+    "category": 7,
+    "item": 2,
+    "name": "AN_ADD_IS_REPEATED",
+    "chCode": "CH-14915",
+    "meaning": "An Add is repeated",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140703,
+    "page": "P014",
+    "category": 7,
+    "item": 3,
+    "name": "AN_UPLOAD_IS_REPEATED",
+    "chCode": "CH-14916",
+    "meaning": "An upload is repeated",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140704,
+    "page": "P014",
+    "category": 7,
+    "item": 4,
+    "name": "A_FILE_IS_DRAGGED_OVER_A_PROSPECTS",
+    "chCode": "CH-14917",
+    "meaning": "A file is dragged over a prospect's documents (desktop)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
@@ -13340,6 +14088,17 @@
     "chCode": "CH-14702",
     "meaning": "Delete prospect is tapped",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 141703,
+    "page": "P014",
+    "category": 17,
+    "item": 3,
+    "name": "STORAGE_TURNS_A_FILE_DOWN",
+    "chCode": "CH-14703",
+    "meaning": "Storage turns a file down (CH-14107, CH-14108)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
   {

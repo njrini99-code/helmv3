@@ -94,7 +94,7 @@ sheets are native dialogs that trap focus and close on Esc.
 Only data the app has. Not shown because no source exists (Q-70, Q-71): Pin to the top (no pinned
 column), Schedule (`createEnrichedAnnouncement` takes no publish time), the push line (said only when
 the post's `send_push` came back true, never as a promise), trip photos (the owner rejected imagery),
-the class clash check in the trip builder, a folder picker for uploads (they go to Team), and the
+a folder picker for uploads (they go to Team), and the
 Mandatory tag (`golf_events` has no such column; `get_player_hub_events` returns it as false). A
 player's trip says whether they are traveling only when the aggregate returns the trip's event.
 
@@ -123,9 +123,19 @@ picks (for example treating `requires_rsvp` as mandatory). None is written.
 D-22 (phone), D-64 (motion), D-66 (navigation), D-67 (build order), D-70 (haptics), D-71 (page empty
 state); Q-70 and Q-71 are open, and the page is built on their recommendations.
 
+## Class clash in the trip builder (Q-84, built 2026-09-30)
+
+The board's warning row sits under the traveler chips: a warning-tinted row, the triangle icon, "**Eli has CHEM 102 lab**
+Mon 3:00–4:15 PM. They'd miss it to travel." (CH-10110). One line per traveler, three at most, the rest counted; a traveler's
+other classes are counted on their line. It is a warning and never a stop: Publish does not wait for the check, and a check
+that could not run (CH-10212) says so with Try again instead of reading as "no classes" (CH-10315). While it runs the
+line says "Checking their classes…" (CH-10407). The copy is pronoun-free ("They'd miss it"): the page cannot know a
+traveler's pronouns (Q-95 item 7). The row appears on the Travelers step, for the event's own days, and again under the
+Itinerary summary, for the dates and times typed in Logistics.
+
 ## Explicit non-goals
 
-Pin to the top, Schedule, a push promise, trip photos, the class clash check, a folder picker, and room
+Pin to the top, Schedule, a push promise, trip photos, a folder picker, and room
 and flight editors (they are shown as text when present). Also not built, though the design's data
 table lists `updateGolfTravelItinerary`: editing a trip after it is posted. Editing a post is built
 (Clickables gap 11): Edit announcement in a post's More menu changes its headline, message and

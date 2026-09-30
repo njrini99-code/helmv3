@@ -1299,12 +1299,16 @@ features:
         - src/app/golf/actions/recruiting.ts
         - src/app/golf/actions/recruit-documents.ts
         - src/app/golf/actions/recruit-documents-categories.ts
+        - src/app/golf/actions/recruit-documents-limits.ts
       services: []
       db:
         - supabase/migrations/*golf_recruits*.sql
         - supabase/migrations/*recruit_documents*.sql
       tests:
         - src/clubhouse/__tests__/recruiting.test.tsx
+        - src/clubhouse/__tests__/recruiting-upload.test.tsx
+        - src/test/golf/actions/recruit-document-upload.test.ts
+        - src/test/golf/actions/recruiting-create.test.ts
     integrations:
       - supabase
       - team_access_control

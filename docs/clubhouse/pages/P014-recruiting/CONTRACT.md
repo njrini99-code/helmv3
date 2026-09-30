@@ -36,6 +36,7 @@ The route skeleton (140201, CH-14401) draws the header, the pipeline, the table 
 | --- | --- | --- | --- |
 | 140201 | CH-14401 | `THE_PAGE_IS_ON_ITS_WAY` | The page is on its way |
 | 140202 | CH-14402 | `A_PROSPECTS_DOCUMENTS_ARE_LOADING` | A prospect's documents are loading |
+| 140203 | CH-14407 | `A_FILE_IS_BEING_SENT_TO_STORAGE` | A file is being sent to Storage and the browser reports progress |
 
 From the shell (P001): 10201 CH-1401.
 
@@ -83,8 +84,12 @@ The form checks before it sends, with the message beside the field, focus on the
 | 140502 | CH-14102 | `A_CLASS_YEAR_THAT_IS_NOT_A` | A class year that is not a four-digit year from 2020 to 2040 |
 | 140503 | CH-14103 | `A_STATE_THAT_IS_NOT_TWO_LETTERS` | A state that is not two letters |
 | 140504 | CH-14104 | `A_VALUE_PAST_THE_SERVERS_LIMIT_NAMES` | A value past the server's limit: names and hometown 120 characters, email 254, phone 40, notes 5,000 |
-| 140505 | CH-14105 | `A_FILE_OVER_25_MB` | A file over 25 MB |
+| 140505 | CH-14105 | `A_FILE_OVER_25_MB` | A file over its limit: 25 MB for a document or an image, 100 MB for film (MP4, MOV, M4V) |
 | 140506 | CH-14106 | `A_FILE_WHOSE_TYPE_THE_BUCKET_DOES` | A file whose type the bucket does not take |
+| 140507 | CH-14107 | `STORAGE_TURNS_DOWN_A_FILES_TYPE_AFTER` | Storage turns down a file's type after the page let it through (the bucket not yet updated to take film, or a type it stopped taking) |
+| 140508 | CH-14108 | `STORAGE_TURNS_DOWN_A_FILES_SIZE_AFTER` | Storage turns down a file's size after the page let it through (the bucket's cap not yet raised, or a project-wide upload limit below it) |
+| 140509 | CH-14109 | `SEVERAL_FILES_ARE_DROPPED_AT_ONCE` | Several files are dropped at once |
+| 140510 | CH-14110 | `A_FOLDER_OR_A_FILE_WITH_NOTHING` | A folder, or a file with nothing in it, is dropped |
 
 ## 06 — Server / system error
 
@@ -98,7 +103,7 @@ Every write goes through `useAction`, which reports it (Sentry, under `recruitin
 | 140602 | CH-14002 | `SAVING_CHANGES_TO_A_PROSPECT_FAILS` | Saving changes to a prospect fails |
 | 140603 | CH-14003 | `A_STAGE_CHANGE_FAILS` | A stage change fails |
 | 140604 | CH-14004 | `DELETING_A_PROSPECT_FAILS` | Deleting a prospect fails |
-| 140605 | CH-14005 | `UPLOADING_A_DOCUMENT_FAILS` | Uploading a document fails |
+| 140605 | CH-14005 | `UPLOADING_A_DOCUMENT_FAILS` | Uploading a document fails (not because Storage turned the file itself down: that is CH-14107 or CH-14108) |
 | 140606 | CH-14006 | `REMOVING_A_DOCUMENT_FAILS` | Removing a document fails |
 | 140607 | CH-14007 | `OPENING_A_DOCUMENT_FAILS` | Opening a document fails |
 | 140608 | CH-14201 | `THE_PROSPECT_LIST_DOESNT_LOAD` | The prospect list doesn't load |
@@ -116,6 +121,9 @@ Offline, no write is sent: the shell's toast names what did not happen ("Couldn'
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 140701 | CH-14901 | `ANY_WRITE_WHILE_OFFLINE` | Any write while offline |
+| 140702 | CH-14915 | `AN_ADD_IS_REPEATED` | An Add is repeated |
+| 140703 | CH-14916 | `AN_UPLOAD_IS_REPEATED` | An upload is repeated |
+| 140704 | CH-14917 | `A_FILE_IS_DRAGGED_OVER_A_PROSPECTS` | A file is dragged over a prospect's documents (desktop) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -227,6 +235,7 @@ v2 grammar (D-70): selection when a stage is picked as the filter or as a prospe
 | --- | --- | --- | --- |
 | 141701 | CH-14701 | `A_STAGE_IS_PICKED_AS_THE_FILTER` | A stage is picked, as the filter or as a prospect's stage; a row is opened; a sort is chosen |
 | 141702 | CH-14702 | `DELETE_PROSPECT_IS_TAPPED` | Delete prospect is tapped |
+| 141703 | CH-14703 | `STORAGE_TURNS_A_FILE_DOWN` | Storage turns a file down (CH-14107, CH-14108) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
 

@@ -6,7 +6,7 @@ Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm`
 ## spec
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a gap (`phone/coachhelm.md` "Board to data" and "Differences from the board")
-- [x] Every control is mapped to an existing server action: Assign as focus is `createFocusAreaFromInsightV2`, Dismiss is `dismissInsight`, Undo is `reactivateInsight`. Share with the player has no action and is not drawn. No new action and no migration
+- [x] Every control is mapped to an existing server action: Assign as focus is `createFocusAreaFromInsightV2`, Dismiss is `dismissInsight`, Undo is `reactivateInsight`; the player's Accept is `acceptFocusArea` and Decline `declineFocusArea` (Q-77). Share with the player has no action and is not drawn. No new action and no migration
 - [ ] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (the gaps are written in `phone/coachhelm.md`; the tracker entry is the lead's)
 
 ## desktop

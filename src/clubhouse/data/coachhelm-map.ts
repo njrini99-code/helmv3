@@ -1,9 +1,9 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
+import type { InsightComparisonSource, InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
 import { buildInsightUnit, readQuality } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { deriveTone, isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
 import { MINUS } from '../lib/format';
-import type { ChHelmAssigned, ChHelmBar, ChHelmEvidence, ChHelmGauge, ChHelmLifecycle, ChHelmPri, ChHelmWeek, ChInsight } from './coachhelm-shape';
+import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChTourBaseline } from './coachhelm-shape';
 
 /**
  * Generator output to what the CoachHelm screens draw (Clubhouse P013). Pure:
@@ -44,13 +44,30 @@ export function areaTypeFor(category: string | null | undefined): string {
   }
 }
 
-/** The first sentence, and the rest as one paragraph. Sentences end at . ! or ? before a capital, digit or opening mark, so "1.1" and "~0.6." stay whole. */
+/** Sentences end at . ! or ? before a capital, digit or opening mark, so "1.1" and "~0.6." stay whole. */
+const SENTENCE_BREAK = /(?<=[.!?])\s+(?=[A-Z0-9("“'])/;
+
+/** The first sentence, and the rest as one paragraph. */
 export function splitContent(content: string | null | undefined): { lede: string; why: string | null } {
   const text = (content ?? '').replace(/\s+/g, ' ').trim();
   if (!text) return { lede: '', why: null };
-  const [lede = '', ...rest] = text.split(/(?<=[.!?])\s+(?=[A-Z0-9("“'])/);
+  const [lede = '', ...rest] = text.split(SENTENCE_BREAK);
   const why = rest.join(' ').trim();
   return { lede, why: why || null };
+}
+
+/**
+ * The generators' "College players in our data average ~0.6." sentence is the prose twin of the "College cohort avg" comparison, and
+ * like it is not drawn (Q-88: the Tour is the only benchmark, never a college one). The generators' other college mentions
+ * (a cold-start "top college teams stay under 0.5") are the shared generators' to reword, not this page's.
+ */
+const COLLEGE_AVERAGE = /^College players in our data average\b/;
+export function withoutCollegeAverage(content: string | null | undefined): string {
+  const text = (content ?? '').replace(/\s+/g, ' ').trim();
+  return text
+    .split(SENTENCE_BREAK)
+    .filter((s) => !COLLEGE_AVERAGE.test(s))
+    .join(' ');
 }
 
 /** A round display ceiling for the gauge's track, a step above the largest value (a scale, never a shown number). */
@@ -82,7 +99,7 @@ export function formatComparison(v: number, unit: InsightUnit): string {
   }
 }
 
-/** "College cohort avg" + its value; a label that already carries numbers ("… your level putts 81%") stands alone. */
+/** A comparison's label + its value ("Your right-to-left make % 51%"); a label that already carries numbers ("… your level putts 81%") stands alone. */
 function labelled(label: string | undefined, v: number, unit: InsightUnit): string {
   const l = (label ?? '').trim();
   if (!l) return formatComparison(v, unit);
@@ -120,11 +137,22 @@ function barsFor(ev: InsightEvidence): ChHelmBar[] | null {
   ];
 }
 
-function gaugeFor(ev: InsightEvidence, good: boolean): ChHelmGauge | null {
+/**
+ * Comparisons that are a college population, which the page does not draw (Q-88: the Tour is the only benchmark). `cohort_avg` is
+ * the only one the generators write (course-mgmt.ts and pressure-gap.ts, whose value is the same metric, in the same unit, as the
+ * `golf_pga_standards` row of that metric id); the division sources are listed so none can slip in later as a D1 or D2 benchmark.
+ */
+const COLLEGE_SOURCES: ReadonlySet<InsightComparisonSource> = new Set<InsightComparisonSource>(['cohort_avg', 'd1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg']);
+
+function gaugeFor(ev: InsightEvidence, good: boolean, tour: ChTourBaseline | null): ChHelmGauge | null {
   const you = num(ev.your_value);
-  const cmp = num(ev.comparison_value);
-  if (you == null || cmp == null) return null;
-  const secRaw = num(ev.secondary_value);
+  if (you == null) return null;
+  // A college comparison becomes the Tour's value for this metric (the LPGA's for a women's team), and the Tour tick the generator
+  // carried beside it is the same thing, so it is not drawn twice. Where the tour has no value there is no comparison and no gauge.
+  const college = COLLEGE_SOURCES.has(ev.comparison_source);
+  const cmp = college ? (tour?.values.get(ev.metric ?? '') ?? null) : num(ev.comparison_value);
+  if (cmp == null) return null;
+  const secRaw = college ? null : num(ev.secondary_value);
   const sec = secRaw != null && secRaw !== cmp ? secRaw : null;
   const values = [you, cmp, ...(sec != null ? [sec] : [])];
   const fromZero = values.every((v) => v >= 0);
@@ -147,14 +175,14 @@ function gaugeFor(ev: InsightEvidence, good: boolean): ChHelmGauge | null {
     cmpPct: pos(cmp),
     secPct: sec != null ? pos(sec) : null,
     you: ev.your_value_display?.trim() || formatComparison(you, ev.unit),
-    cmp: labelled(ev.comparison_label, cmp, ev.unit),
+    cmp: college && tour ? `${TOUR_LABEL[tour.tour]} ${formatComparison(cmp, ev.unit)}` : labelled(ev.comparison_label, cmp, ev.unit),
     sec: sec != null ? labelled(ev.secondary_label ?? 'Tour', sec, ev.unit) : null,
     good,
     fromZero,
   };
 }
 
-function evidenceFor(ins: EvidenceInsight, strength: boolean): ChHelmEvidence {
+function evidenceFor(ins: EvidenceInsight, strength: boolean, tour: ChTourBaseline | null): ChHelmEvidence {
   const ev = ins.evidence;
   const n = num(ev.sample_n);
   const read = readQuality(ev.confidence);
@@ -163,7 +191,7 @@ function evidenceFor(ins: EvidenceInsight, strength: boolean): ChHelmEvidence {
     label: ev.metric_label,
     bars,
     // The bars say it for the slope finding; a gauge of its penalty (23 points against none) would say it twice.
-    gauge: bars ? null : gaugeFor(ev, strength),
+    gauge: bars ? null : gaugeFor(ev, strength, tour),
     sample: n != null && n > 0 ? `${n} ${nounFor(ev, n)}` : '',
     window: windowFor(ev),
     read: read ? { level: read.level, word: read.word } : null,
@@ -186,9 +214,12 @@ const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'reso
 /**
  * One insight, ready to draw. `drillText`: the attached drill's description
  * (`golf_drills.description`, which the delivery shape does not carry), read
- * by the loader; `assigned`: a focus area already made from this insight.
+ * by the loader; `assigned`: a focus area already made from this insight;
+ * `tour`: the team's Tour values (Q-88), which a college comparison is drawn as.
+ * A strength is still the generator's own call (its priority is anchored to its
+ * own comparison), so only what is drawn moves to the Tour, not which insights work.
  */
-export function toChInsight(ins: EvidenceInsight, extra: { drillText?: string | null; assigned?: ChHelmAssigned | null } = {}): ChInsight {
+export function toChInsight(ins: EvidenceInsight, extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; tour?: ChTourBaseline | null } = {}): ChInsight {
   const ev = ins.evidence;
   const unit = buildInsightUnit(ins);
   const lowerIsBetter = isNegativePolarityMetric(ev.metric ?? '', ev);
@@ -199,7 +230,7 @@ export function toChInsight(ins: EvidenceInsight, extra: { drillText?: string | 
   const tone = deriveTone(ins);
   // What is working: resolved or encouraging, or ahead of its comparison at low priority.
   const strength = tone === 'celebratory' || tone === 'encouraging' || (better && priority === 'low');
-  const { lede, why } = splitContent(ins.content);
+  const { lede, why } = splitContent(withoutCollegeAverage(ins.content));
   return {
     id: ins.id,
     playerId: ins.player_id,
@@ -210,7 +241,7 @@ export function toChInsight(ins: EvidenceInsight, extra: { drillText?: string | 
     lede: lede || ev.diagnosis?.symptom?.trim() || '',
     why,
     value: ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),
-    evidence: evidenceFor(ins, strength),
+    evidence: evidenceFor(ins, strength, extra.tour ?? null),
     week: weekFor(ins, unit, extra.drillText),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,
     metric: ev.metric,

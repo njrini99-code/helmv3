@@ -22,16 +22,16 @@ Legacy page:             src/app/golf/(dashboard)/dashboard/classes/LegacyClasse
 ## End-to-end graph
 
 ```text
-UI (ClassCard, AddTile, the header's Import schedule and Add class, ClassForm, ClassDetail, ImportSchedule, the remove question, SyncStatus)
+UI (ClassCard, AddTile, the header's Import schedule and Add class, ClassForm, ClassDetail, ImportSchedule, the remove question, Delete all classes and its question, SyncStatus)
 ↓
-Action (a handler in ClassesView: save.run, remove.run, doImport.run, or syncClasses; the import's reader runs in ImportSchedule itself)
+Action (a handler in ClassesView: save.run, remove.run, removeAll.run, doImport.run, or syncClasses; the import's reader runs in ImportSchedule itself)
 ↓
 Client controller: useAction (offline refusal CH-1903, slow notice CH-1902, chReport + error toast with Retry + haptic).
                    Every follow-up (the list, the open sheet, the calendar flags, the imported view) is INSIDE the action
                    function, so Retry does it too. A save does not wait for the calendar: it starts the sync (its own
                    useAction) and returns.
 ↓
-Writes: ChClassesWrites, createLiveClassesWrites (writes.ts), one method per write: save, remove, sync, importRows, read
+Writes: ChClassesWrites, createLiveClassesWrites (writes.ts), one method per write: save, remove, removeAll, sync, importRows, read
 ↓
 Data actions: golf_player_classes through the RLS-scoped browser client; src/app/golf/actions/calendar-sync.ts
               (syncClassToCalendar, removeClassFromCalendar); src/app/golf/actions/schedule-image.ts
@@ -57,6 +57,7 @@ again (121401).
 | ACT-P012-SAVE-CLASS | Add class or Save changes in the form (Enter in a field saves too) | `ClassForm` `submit` → `onSave` → `save.run` (`saveAction`) | `writes.save`: an insert under the row id the sheet made, or an update by id and player, on golf_player_classes; then the save starts the calendar sync without waiting | golf_player_classes | rules 120501 to 120507 · done 120901 · refused 120601 · text kept 121201 · same row after a lost answer 121404 · hidden update 120609 · Retry 121401 |
 | ACT-P012-SYNC-CALENDAR | Started by a save or an import; Retry sync in the header and in a class's sheet; the toast's Retry | `syncClasses` → `sync.run` (`syncAction`), one call per class | `writes.sync` → `syncClassToCalendar`, or `removeClassFromCalendar` for a class with no start or no end time | golf_events (tagged [class:<id>]) | adding 120203 · not on the calendar 120602 · not waited on 121501 · from its term 121502 · no time 121503 · wrote nothing 120610 · stored start 121402 · flag held for the visit 121504 |
 | ACT-P012-REMOVE-CLASS | Remove class in the question (opened from a class's sheet, with the warning haptic first) | `removeAction` → `remove.run` | `writes.remove`: `removeClassFromCalendar(id)` first, then the delete by id and player, only if the calendar removal worked | golf_events, golf_player_classes | question 121101 · done 120901 · refused 120603 · the class leaves the list only when both landed · Retry 121401 |
+| ACT-P012-REMOVE-ALL | Delete all classes in the question (opened from the button under the deck, with the warning haptic first) | `removeAllAction` → `removeAll.run` | `writes.removeAll`: `removeClassFromCalendar(id)` for every class, then one delete of the rows that came off the calendar (by id and player, returning the rows), then a read-back for any row the delete did not return | golf_events, golf_player_classes | question CH-12503 · nothing deleted CH-12005 · half-way CH-12006 · done 120901 · Retry 121401 (the manifest entry follows the registry sync, which mints these Bridge IDs) |
 | ACT-P012-IMPORT-SCHEDULE | Import N classes in the review | `ImportSchedule` `onImport` → `doImport.run` (`importAction`) | `writes.importRows`: reads the classes already there, skips what matches, one insert of the rest; then starts the sync per class from its own start (`syncStartFor`) | golf_player_classes | refused 120604 · skipped 120515 · all there 120406 · result 120902 · starts 121502 · text kept 121201 · Retry 121401 |
 | ACT-P012-READ-SCHEDULE | Read schedule (pasted text), a chosen or dropped file | `ImportSchedule` `run` (its own state, not `useAction`; a late answer after the sheet closes is dropped) | `readScheduleLive`: `parseScheduleText` for pasted text, TXT and PDF text (PDF.js in the browser), `extractClassesFromScheduleImage` for a screenshot | nothing is saved by a read | nothing pasted 120510 · file 120511 120512 · reader 120513 120514 120608 · reading 120202 · offline 120701 · slow 120702 |
 | ACT-P012-TRY-AGAIN | Try again on the classes' notice and on the team events' notice | `InlineNotice` → `router.refresh` | the server route, read again | (every read) | 120605 · 120606 · recovery 121403 |
@@ -66,7 +67,7 @@ again (121401).
 | Path | Purpose | States |
 | --- | --- | --- |
 | `screens/classes/Classes.tsx` | The live wrapper: server data and the live writes | — |
-| `screens/classes/ClassesView.tsx` | The container: header, first run, the failed-read notice, overview, deck, side column, every sheet, the calendar flags and every action | CH-12201, CH-12301, CH-12203, CH-12501, 120407 |
+| `screens/classes/ClassesView.tsx` | The container: header, first run, the failed-read notice, overview, deck, Delete all classes, side column, every sheet, the calendar flags and every action | CH-12201, CH-12301, CH-12203, CH-12501, CH-12503, CH-12005, CH-12006, 120407 |
 | `screens/classes/parts.tsx` | `TermBar`, `ClassCard`, `AddTile`, `OverlapsCard`, `CoachNote`, `SyncStatus` | CH-12202, CH-12302, CH-12303, CH-12304, CH-12403, CH-12601, CH-12701, CH-12801 to CH-12803 |
 | `screens/classes/ClassForm.tsx` | Add and edit, and the discard question | CH-12101 to CH-12109, CH-12502, CH-12703, CH-12804 |
 | `screens/classes/ClassDetail.tsx` | One class: when, where, its next meetings, Edit and Remove | CH-12702, 120103, 121503 |
@@ -124,8 +125,9 @@ Write path: the browser client to golf_player_classes, and the server actions ab
 
 ## Held dependencies
 
-None. Delete all, the board's grade, next deadline and Share with coach, and a sync status column each need an
-owner decision or new data (Q-75); none is written.
+None. The board's grade, next deadline and Share with coach, and a sync status column, each need an owner
+decision or new data (Q-75); none is written. Delete all classes needs neither: it uses the same table and the
+same server action as Remove (no migration).
 
 ## Impact notes
 
@@ -137,6 +139,11 @@ owner decision or new data (Q-75); none is written.
   Monday would drop the meetings already held. An import's start is next Monday only where `syncStartFor` says the
   sync's window for it is the class's own term (the sync re-derives another term when a start leaves a label with
   under 21 days, `lib/golf/semester.ts`); if `parseSemesterDates` changes, `syncStartFor` must follow (121502).
+- Delete all classes repeats what Remove does, for a list, so the same rule holds: a class whose calendar events
+  are still on the team calendar keeps its row. Its answer carries three lists (removed, kept, off the calendar),
+  and the page applies exactly those, including on a half-way failure. A Retry replays the first attempt's classes:
+  `removeClassFromCalendar` cleans up a class that is already gone and a delete of a missing row is not an error, so a
+  Retry after a lost answer finishes instead of failing. It is off while any other Classes write runs.
 - The row id is made by the page (`newClassId`) and travels with the insert; `golf_player_classes` has no
   uniqueness beyond its id, which is why a duplicate-key answer on it means "already stored" (121404).
 - The calendar flags and each class's stored start are held in the page, not in a column: a reload forgets which

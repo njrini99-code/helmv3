@@ -273,5 +273,7 @@
       ]
     }
   ],
-  "held": []
+  "held": [
+    "docs/clubhouse/held/data/document-policy-scoping.md"
+  ]
 }

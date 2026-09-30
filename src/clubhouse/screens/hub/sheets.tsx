@@ -1,16 +1,19 @@
 'use client';
 
 import { ArrowRight, Check, FileText, Megaphone, Paperclip, Pencil, Plane, SquareCheck, TriangleAlert, X } from 'lucide-react';
-import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChTeamHub } from '../../data/hub';
+import { tripWindow } from '../../data/hub-shape';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Switch } from '../../ui/Switch';
+import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
+import { ClassClashes, useClassCheck } from './TravelerClasses';
 import type { ChHubWrites, ChTripInput } from './writes';
 
 /*
@@ -94,23 +97,34 @@ function PlayerPicks({
 
 /**
  * Files from the team's Documents to send with the post: the chosen ones as chips that come off with a tap, and a list to
- * choose from. The team's documents came with the page, so the list has nothing to load. With none to show it says why: the
- * read failed (CH-10209), or nothing has been added yet (CH-10311).
+ * choose from. The team's documents came with the page, so the list has nothing to load. Only files players can open are
+ * offered (Q-83): the post goes to players, and a coach-only file would arrive as an attachment they can't open, so a line says
+ * how many were left out (CH-10314). With none to show it says why: the read failed (CH-10209), nothing has been added yet
+ * (CH-10311), or every file is coach-only (CH-10314).
  */
 function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['documents']; picked: string[]; onChange: (ids: string[]) => void }) {
   const listId = useId();
   const [listing, setListing] = useState(false);
-  const files = documents.folders.flatMap((f) => f.files);
+  const all = documents.folders.flatMap((f) => f.files);
+  const folders = documents.folders.map((f) => ({ ...f, files: f.files.filter((x) => x.isPublic) })).filter((f) => f.files.length > 0);
+  const files = folders.flatMap((f) => f.files);
+  const hidden = all.length - files.length;
   const chosen = picked.map((id) => files.find((f) => f.id === id)).filter((f): f is ChHubFile => !!f);
   const toggle = (id: string) => {
     haptic('select');
     onChange(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
   };
   if (documents.error) return <RefreshNotice code="CH-10209" title="Documents didn't load." body="Nothing was lost. Try again to attach files." />;
-  if (files.length === 0)
+  if (all.length === 0)
     return (
       <span className="ch-field__help" data-ch-code="CH-10311">
         No documents yet. Add files in the Documents tab, then attach them here.
+      </span>
+    );
+  if (files.length === 0)
+    return (
+      <span className="ch-field__help" data-ch-code="CH-10314">
+        {hidden === 1 ? 'Your file is' : 'Your files are'} coach-only, so none can be attached: players couldn’t open {hidden === 1 ? 'it' : 'them'}.
       </span>
     );
   return (
@@ -134,7 +148,7 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
       </button>
       {listing && (
         <div className="ch-hb-dp" id={listId}>
-          {documents.folders.map((f) => (
+          {folders.map((f) => (
             <div key={f.name} role="group" aria-label={f.name}>
               <span className="ch-hb-dp__f">{f.name}</span>
               {f.files.map((d) => (
@@ -151,6 +165,11 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
             </div>
           ))}
         </div>
+      )}
+      {hidden > 0 && (
+        <span className="ch-field__help" data-ch-code="CH-10314">
+          {hidden} coach-only {hidden === 1 ? 'file isn’t' : 'files aren’t'} offered: players couldn’t open {hidden === 1 ? 'it' : 'them'}.
+        </span>
       )}
     </div>
   );
@@ -212,13 +231,15 @@ export function ComposeSheet({
   // The server refuses an announcement without a message (announcements.ts, body.min(1)), so it is required here too.
   const bodyErr = tried && !body.trim() ? 'Add a message.' : null;
   const pickErr = tried && aud === 'pick' && picked.length === 0 ? 'Choose at least one player, or send it to the whole team.' : null;
-  // A file deleted from Documents while the sheet was open is not sent.
-  const attached = docs.filter((d) => documents.folders.some((f) => f.files.some((x) => x.id === d)));
+  // A file deleted from Documents while the sheet was open is not sent, nor one that has become coach-only.
+  const attached = docs.filter((d) => documents.folders.some((f) => f.files.some((x) => x.id === d && x.isPublic)));
+  const toast = useToast();
   const create = useAction(
     'hub.postAnnouncement',
     async (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => {
       const res = await write(i);
-      if (normalise(res).success) {
+      const landed = normalise(res);
+      if (landed.success) {
         setTitle('');
         setBody('');
         setAud('all');
@@ -227,10 +248,23 @@ export function ComposeSheet({
         setTried(false);
         onClose();
         onDone();
+        // The post exists, so nothing here can be retried (a replay would post it twice): it is said once, and the files are
+        // where players can still open them.
+        if (landed.data?.attachmentsError) {
+          haptic('error');
+          toast({
+            tone: 'error',
+            title: `Posted "${i.title.trim()}" without its files`,
+            body: 'The files didn’t attach, so players see the post with no files. They can still open them in Documents.',
+            code: 'CH-10012',
+          });
+        }
       }
       return res;
     },
     (i) => ({ done: `Posted "${i.title.trim()}"`, failed: 'Couldn’t post the announcement', hint: 'Your text is still here. Try again in a moment.', code: 'CH-10005' }),
+    // The toast above is this outcome's: the usual "Posted" would say the files went too.
+    (result, c) => (result.success && result.data?.attachmentsError ? { ...c, quiet: true } : c),
   );
   const save = useAction(
     'hub.editAnnouncement',
@@ -373,6 +407,7 @@ export function TripSheet({
   playersError,
   write,
   writeTravelers,
+  readClasses,
   onDone,
 }: {
   open: boolean;
@@ -383,6 +418,8 @@ export function TripSheet({
   playersError: boolean;
   write: ChHubWrites['planTrip'];
   writeTravelers: ChHubWrites['setTravelers'];
+  /** Which chosen travelers have a class during the trip (Q-84); a read that never stops a trip. */
+  readClasses: ChHubWrites['travelerClasses'];
   /** After a trip is saved: the page reads again. */
   onDone: () => void;
 }) {
@@ -398,6 +435,13 @@ export function TripSheet({
   const savedRef = useRef<string | null>(null);
   const set = (k: keyof ChTripInput) => (e: { target: { value: string } }) => setV((cur) => ({ ...cur, [k]: e.target.value }));
   const event = events.rows.find((e) => e.id === v.eventId) ?? null;
+  // The travelers' classes are asked for where the coach chooses them, and again on the last step, where the dates typed in
+  // Logistics are known. Only a trip for an event has travelers to ask about.
+  const span = open && (step === 1 || step === 3) && event && event.invited !== null ? tripWindow(v, event) : null;
+  const names = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players]);
+  // An invitee who has left the roster can't be asked about: the server answers only for the team's active players.
+  const onRoster = useMemo(() => travelers.filter((id) => names.has(id)), [travelers, names]);
+  const classCheck = useClassCheck(readClasses, teamId, onRoster, span);
   const errs = {
     name: tried && v.name.trim().length < 3 ? 'Name the trip, at least three characters.' : null,
     destination: tried && !v.destination.trim() ? 'Where is the team going?' : null,
@@ -563,6 +607,7 @@ export function TripSheet({
                 </span>
                 <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={travelers} onChange={setTravelers} label="Who’s traveling" />
                 <span className="ch-field__help">They are invited to {event.title} in Calendar, and are this trip’s travelers.</span>
+                <ClassClashes check={classCheck.check} names={names} onRetry={classCheck.retry} />
               </div>
             )
           ) : (
@@ -624,6 +669,7 @@ export function TripSheet({
                 <dd>{event ? (event.invited === null ? 'As invited in Calendar' : `${travelers.length} from ${event.title}`) : 'The whole team sees it'}</dd>
               </div>
             </dl>
+            {span && <ClassClashes check={classCheck.check} names={names} onRetry={classCheck.retry} />}
           </>
         )}
       </form>

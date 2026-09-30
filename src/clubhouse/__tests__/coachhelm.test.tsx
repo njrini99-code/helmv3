@@ -1,4 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,7 +23,7 @@ const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
-vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2: vi.fn() }));
+vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
 vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: vi.fn(), getTopInsightsForPlayers: vi.fn() }));
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: vi.fn(), isCoachHelmEnabledForCoach: vi.fn() }));
@@ -33,20 +34,21 @@ const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
 
 import GolfCoachHelmPage from '@/app/golf/(dashboard)/dashboard/coachhelm/page';
-import { createFocusAreaFromInsightV2 } from '@/app/golf/actions/development';
+import { acceptFocusArea, createFocusAreaFromInsightV2, declineFocusArea } from '@/app/golf/actions/development';
 import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights';
 import { getInsightsForPlayer, getTopInsightsForPlayers } from '@/app/golf/actions/insight-delivery';
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
-import { areaTypeFor, formatComparison, niceMax, splitContent, toChInsight } from '../data/coachhelm-map';
-import { partitionInsights, pulseRows, signalsLine, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm } from '../data/coachhelm-shape';
+import { areaTypeFor, formatComparison, niceMax, splitContent, toChInsight, withoutCollegeAverage } from '../data/coachhelm-map';
+import { partitionInsights, pulseRows, signalsLine, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { CoachHelmRouteSkeleton, CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
-import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../screens/coachhelm/writes';
+import { LIVE_COACHHELM_WRITES, LIVE_PLAYER_WRITES, type ChCoachHelmWrites, type ChPlayerWrites } from '../screens/coachhelm/writes';
+import { PreviewCoachHelmPlayer } from '../preview/PreviewCoachHelmPlayer';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
 import { GolfUserProvider } from '@/contexts/golf-user-context';
@@ -68,7 +70,10 @@ import {
   PREVIEW_HELM_PLAYER_FAILED,
   PREVIEW_HELM_PLAYER_NO_ROUNDS,
   PREVIEW_HELM_PLAYER_OFF,
+  PREVIEW_HELM_PLAYER_PROPOSALS_FAILED,
+  PREVIEW_HELM_PLAYER_PROPOSED,
   PREVIEW_HELM_PLAYER_WORKING,
+  PREVIEW_TOUR,
   slope,
 } from '../preview/fixtures-coachhelm';
 
@@ -105,6 +110,8 @@ beforeEach(() => {
   router.refresh.mockClear();
   logServer.mockClear();
   vi.mocked(createFocusAreaFromInsightV2).mockReset();
+  vi.mocked(acceptFocusArea).mockReset();
+  vi.mocked(declineFocusArea).mockReset();
   vi.mocked(dismissInsight).mockReset();
   vi.mocked(reactivateInsight).mockReset();
   vi.mocked(getInsightsForPlayer).mockReset();
@@ -123,6 +130,8 @@ afterEach(() => {
 
 describe('Generator output to the board', () => {
   const jonah = HELM_PLAYERS.jonah.id;
+  /** The same insight compared against the player's own baseline, which is not a college comparison (Q-88 leaves it as it is). */
+  const ownBaseline = (i: EvidenceInsight): EvidenceInsight => ({ ...i, evidence: { ...i.evidence, comparison_source: 'your_baseline', comparison_label: 'Your recent rounds' } });
 
   it('130106 the downhill penalty: two make rates as bars, no gauge, the sample in putts, the window in days, the drill from the attached drill', () => {
     const i = toChInsight(slope(jonah), { drillText: 'Start 2 ft below the hole.' });
@@ -147,15 +156,15 @@ describe('Generator output to the board', () => {
     expect(toChInsight(slope(jonah)).week).toEqual({ title: 'Downhill ladder', text: null, meta: '12 min · intermediate' });
   });
 
-  it('a lifetime value says All rounds and counts rounds; a count keeps its decimal; the Tour rides beside the cohort', () => {
-    const i = toChInsight(penalties(jonah));
+  it('a lifetime value says All rounds and counts rounds; a count keeps its decimal; the college cohort is drawn as the Tour, once (Q-88)', () => {
+    const i = toChInsight(penalties(jonah), { tour: PREVIEW_TOUR });
     expect(i).toMatchObject({ category: 'Course management', priority: 'high', strength: false, areaType: 'mental_game' });
     expect(i.evidence).toMatchObject({ sample: '21 rounds', window: 'All rounds', read: { level: 3 } });
-    expect(i.evidence.gauge).toMatchObject({ you: '1.1', cmp: 'College cohort avg 0.6', sec: 'PGA Tour avg 0.3', good: false, fromZero: true });
+    // The generator's own Tour tick (0.3, "PGA Tour avg") is the same number now drawn as the comparison, so it is not drawn twice.
+    expect(i.evidence.gauge).toMatchObject({ you: '1.1', cmp: 'Tour 0.3', sec: null, secPct: null, good: false, fromZero: true });
     const g = i.evidence.gauge!;
     // A display scale a step above the largest value; the marks keep their order.
     expect(g.youPct).toBeGreaterThan(g.cmpPct);
-    expect(g.cmpPct).toBeGreaterThan(g.secPct!);
     expect(g.youPct).toBeLessThan(100);
   });
 
@@ -169,10 +178,10 @@ describe('Generator output to the board', () => {
     expect(toChInsight(ins).week).toEqual({ title: null, text: 'Take one club less off the tee on holes with water right.', meta: null });
   });
 
-  it('ahead of the cohort at low priority is working, and its gauge is the green one', () => {
-    const i = toChInsight(bigNumber(jonah));
+  it('ahead of the generator’s own comparison at low priority is working, and its gauge is the green one, drawn against the Tour', () => {
+    const i = toChInsight(bigNumber(jonah), { tour: PREVIEW_TOUR });
     expect(i.strength).toBe(true);
-    expect(i.evidence.gauge).toMatchObject({ good: true, cmp: 'College cohort avg 4.8%' });
+    expect(i.evidence.gauge).toMatchObject({ good: true, cmp: 'Tour 2%' });
   });
 
   it('a break gap is a finding: a make rate below its comparison (higher is better in the registry) is amber, never working', () => {
@@ -199,10 +208,55 @@ describe('Generator output to the board', () => {
   });
 
   it('a value with no comparison draws no gauge and still names its sample', () => {
-    const p = penalties(jonah);
+    const p = ownBaseline(penalties(jonah));
     const lone = toChInsight({ ...p, evidence: { ...p.evidence, comparison_value: null as never } });
     expect(lone.evidence.gauge).toBeNull();
     expect(lone.evidence.sample).toBe('21 rounds');
+  });
+
+  it('Q-88 a women’s team’s college cohort is drawn as the LPGA Tour, never the men’s', () => {
+    const lpga: ChTourBaseline = { tour: 'lpga', values: new Map([['penalty_rate_per_round', 0.4]]) };
+    expect(toChInsight(penalties(jonah), { tour: lpga }).evidence.gauge).toMatchObject({ cmp: 'LPGA Tour 0.4', sec: null, secPct: null });
+  });
+
+  it('Q-88 a metric the tour has no value for, or a tour that is not known, draws no comparison and no gauge, and still names its sample', () => {
+    const none: ChTourBaseline = { tour: 'pga', values: new Map([['sg_total', 0.1]]) };
+    for (const extra of [{ tour: none }, { tour: null }, {}]) {
+      const i = toChInsight(penalties(jonah), extra);
+      expect(i.evidence.gauge).toBeNull();
+      expect(i.evidence.sample).toBe('21 rounds');
+    }
+  });
+
+  it('Q-88 every college source is treated the same: a division average is never drawn either', () => {
+    const p = penalties(jonah);
+    for (const source of ['cohort_avg', 'd1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg'] as const) {
+      const ins = { ...p, evidence: { ...p.evidence, comparison_source: source, comparison_label: 'D1 average' } };
+      expect(toChInsight(ins).evidence.gauge).toBeNull();
+      expect(toChInsight(ins, { tour: PREVIEW_TOUR }).evidence.gauge).toMatchObject({ cmp: 'Tour 0.3', sec: null });
+    }
+  });
+
+  it('Q-88 a comparison that is not a college one is drawn as the generator wrote it, with or without a Tour', () => {
+    const b = breakBias(jonah);
+    expect(toChInsight(b, { tour: PREVIEW_TOUR }).evidence.gauge).toMatchObject({ cmp: 'Your right-to-left make % (same band) 51%', sec: null });
+    const own = ownBaseline(penalties(jonah));
+    expect(toChInsight(own, { tour: PREVIEW_TOUR }).evidence.gauge).toMatchObject({ cmp: 'Your recent rounds 0.6', sec: 'PGA Tour avg 0.3' });
+    expect(toChInsight(own).evidence.gauge).toMatchObject({ cmp: 'Your recent rounds 0.6', sec: 'PGA Tour avg 0.3' });
+  });
+
+  it('Q-88 the sentence quoting the college average is not in the reasoning, and the rest of it is', () => {
+    const i = toChInsight(penalties(jonah), { tour: PREVIEW_TOUR });
+    expect(i.lede).toBe("Across all 21 rounds on file you're averaging 1.1 penalty strokes per round.");
+    expect(i.why).toBe('45.0% of your double-or-worse holes trace to penalties: pick a conservative line / bail-out target off the tee on these holes. Every penalty avoided is worth ~1.5 strokes per round.');
+    expect(toChInsight(bigNumber(jonah)).why).toBe('This is the #1 separator between 70s and 80s rounds.');
+    expect(withoutCollegeAverage('You average 1.1 per round. College players in our data average ~0.6. Keep going.')).toBe('You average 1.1 per round. Keep going.');
+    // The pressure gap's version carries the Tour in the same sentence: it goes with it, and the gauge draws the Tour.
+    expect(withoutCollegeAverage('A 2.1-stroke gap. College players in our data average a 2.1-stroke gap; the PGA Tour gap is ~0.5. Play it.')).toBe('A 2.1-stroke gap. Play it.');
+    expect(withoutCollegeAverage('No college sentence here.')).toBe('No college sentence here.');
+    // Only that sentence: another one that starts with College stays.
+    expect(withoutCollegeAverage('You average 1.1 per round. College golf is long. Keep going.')).toBe('You average 1.1 per round. College golf is long. Keep going.');
+    expect(withoutCollegeAverage(null)).toBe('');
   });
 
   it('a lifetime value counts rounds whatever the metric is called; the same metric in a window counts what it measures', () => {
@@ -214,8 +268,8 @@ describe('Generator output to the board', () => {
     expect(toChInsight({ ...p, evidence: { ...p.evidence, sample_n: 1 } }).evidence.sample).toBe('1 round');
   });
 
-  it('a Tour tick that equals the cohort is drawn once, and one with no label of its own is named the Tour', () => {
-    const p = penalties(jonah);
+  it('a Tour tick that equals the comparison is drawn once, and one with no label of its own is named the Tour', () => {
+    const p = ownBaseline(penalties(jonah));
     const same = toChInsight({ ...p, evidence: { ...p.evidence, secondary_value: p.evidence.comparison_value } }).evidence.gauge!;
     expect(same.sec).toBeNull();
     expect(same.secPct).toBeNull();
@@ -237,7 +291,7 @@ describe('Generator output to the board', () => {
   });
 
   it('a percent track never runs past 100, or past 1 for fractions', () => {
-    const b = bigNumber(jonah);
+    const b = ownBaseline(bigNumber(jonah));
     const track = (you: number, cmp: number) =>
       toChInsight({ ...b, evidence: { ...b.evidence, unit: 'percent', your_value: you, your_value_display: `${you}`, comparison_value: cmp, secondary_value: undefined } }).evidence.gauge!;
     expect(track(58, 81).youPct).toBeCloseTo(58);
@@ -247,7 +301,7 @@ describe('Generator output to the board', () => {
   });
 
   it('with no display of its own the headline is the number in its unit, and a label that carries its own number stands alone', () => {
-    const p = penalties(jonah);
+    const p = ownBaseline(penalties(jonah));
     const i = toChInsight({ ...p, evidence: { ...p.evidence, your_value_display: undefined as never, comparison_label: 'No penalties (your par 5 rate 12%)' } });
     expect(i.value).toBe('1.1');
     expect(i.evidence.gauge).toMatchObject({ you: '1.1', cmp: 'No penalties (your par 5 rate 12%)' });
@@ -256,7 +310,7 @@ describe('Generator output to the board', () => {
   });
 
   it('a track that has a negative mark starts below zero and draws only its ticks', () => {
-    const p = penalties(jonah);
+    const p = ownBaseline(penalties(jonah));
     const g = toChInsight({ ...p, evidence: { ...p.evidence, your_value: -0.4, your_value_display: '−0.4', comparison_value: 0.6 } }).evidence.gauge!;
     expect(g.fromZero).toBe(false);
     expect(g.youPct).toBeGreaterThanOrEqual(0);
@@ -443,7 +497,7 @@ describe('CoachHelm for the player, on screen', () => {
     expect(also.getByRole('button', { name: /Downhill putts inside 4-6 ft/ })).toBeTruthy();
   });
 
-  it('CH-13802 a gauge says every number in words: you, the cohort and the Tour, the sample and the window', async () => {
+  it('CH-13802 a gauge says every number in words: you, the Tour, the sample and the window, and no college cohort', async () => {
     const user = userEvent.setup();
     showPlayer(PREVIEW_HELM_PLAYER);
     await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
@@ -452,8 +506,11 @@ describe('CoachHelm for the player, on screen', () => {
     // The track is drawing only; the legend carries the numbers.
     expect(document.querySelector('.ch-hl-g__t')!.getAttribute('aria-hidden')).toBe('true');
     expect(card.getByText(/^You ·/).textContent).toBe('You · 1.1');
-    expect(card.getByText('College cohort avg 0.6')).toBeTruthy();
-    expect(card.getByText('PGA Tour avg 0.3')).toBeTruthy();
+    expect(card.getByText('Tour 0.3')).toBeTruthy();
+    // Q-88: the college cohort is not drawn, not in the legend and not in the reasoning beneath it.
+    expect(card.queryByText(/College cohort/)).toBeNull();
+    expect(card.queryByText(/PGA Tour avg/)).toBeNull();
+    expect(document.querySelector('.ch-hl-focus')!.textContent).not.toMatch(/College players in our data/);
     expect(card.getByText('21 rounds')).toBeTruthy();
     expect(card.getByText('All rounds')).toBeTruthy();
     expect(card.getByText('Priority')).toBeTruthy();
@@ -552,6 +609,147 @@ describe('CoachHelm for the player, on screen', () => {
     await expectCode('CH-13204', /Your focus couldn’t be shown\./);
     expect(inList('Working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
     quiet.mockRestore();
+  });
+});
+
+// ── A focus area a coach proposed, answered on the player's board (Q-77) ───
+
+describe('CoachHelm proposals, on the player’s board', () => {
+  const user = () => userEvent.setup();
+  const okPlayerWrites = (): ChPlayerWrites => ({
+    accept: vi.fn(() => Promise.resolve({ success: true })),
+    decline: vi.fn(() => Promise.resolve({ success: true })),
+  });
+  const showProposed = (w: ChPlayerWrites = okPlayerWrites(), data: ChPlayerHelm = PREVIEW_HELM_PLAYER_PROPOSED) => {
+    render(wrap(<PlayerBoard data={data} writes={w} />));
+    return w;
+  };
+  const row = (title: string) => screen.getByRole('group', { name: `Answer ${title}` });
+
+  it('CH-13807 130101 what a coach proposed is a labelled section above the insights: each focus, where it came from, and Accept and Decline', () => {
+    showProposed();
+    const sec = within(screen.getByRole('region', { name: 'Proposed for you' }));
+    expect(sec.getByText('Accept to start a focus, or decline to set it aside.')).toBeTruthy();
+    expect(sec.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Downhill putts inside 6 ftFrom: Downhill putts inside 4-6 ft: a real penaltyAcceptDecline',
+      'Lag putting from 30 ftYour coach proposed this as a focus.AcceptDecline',
+    ]);
+    expect(within(row('Lag putting from 30 ft')).getAllByRole('button').map((b) => b.textContent)).toEqual(['Accept', 'Decline']);
+    // It sits above the focus card, and the insights below are as they were.
+    const all = Array.from(document.querySelectorAll('.ch-hl > *'));
+    expect(all.findIndex((n) => n.classList.contains('ch-hl-prop'))).toBeLessThan(all.findIndex((n) => n.classList.contains('ch-hl-grid')));
+    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+  });
+
+  it('with nothing proposed there is no section, and with CoachHelm off there is none either', () => {
+    showPlayer(PREVIEW_HELM_PLAYER);
+    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Accept|Decline/ })).toBeNull();
+    cleanup();
+    showPlayer({ ...PREVIEW_HELM_PLAYER_OFF, proposals: PREVIEW_HELM_PLAYER_PROPOSED.proposals });
+    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
+    expect(code('CH-13304')).not.toBeNull();
+  });
+
+  it('130902 the coach’s board is never handed Accept or Decline: they are the player’s answer', () => {
+    showCoach();
+    expect(screen.queryByRole('button', { name: /^(Accept|Decline)/ })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
+  });
+
+  it('CH-13704 CH-13404 CH-13902 Accept: the focus id is sent, both buttons wait and say Accepting, then it is Started in place, with the light press and then success', async () => {
+    const u = user();
+    let done!: (v: { success: boolean }) => void;
+    const w = okPlayerWrites();
+    vi.mocked(w.accept).mockReturnValueOnce(new Promise((r) => (done = r)));
+    showProposed(w);
+    await u.click(within(row('Downhill putts inside 6 ft')).getByRole('button', { name: 'Accept' }));
+    expect(hapticSpy).toHaveBeenCalledWith('press');
+    expect(w.accept).toHaveBeenCalledWith('fa-ladder');
+    await expectCode('CH-13404', /Accepting/);
+    const pair = within(row('Downhill putts inside 6 ft')).getAllByRole('button') as HTMLButtonElement[];
+    expect(pair.map((b) => b.disabled)).toEqual([true, true]);
+    // The other proposal is its own: it is not waiting.
+    expect(within(row('Lag putting from 30 ft')).getAllByRole('button').every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+    done({ success: true });
+    await expectCode('CH-13902', /Started · Downhill putts inside 6 ft/);
+    expect(code('CH-13902')!.getAttribute('role')).toBe('status');
+    expect(screen.queryByRole('group', { name: 'Answer Downhill putts inside 6 ft' })).toBeNull();
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    // The chip is the confirmation: no toast, and the page is not refreshed away from it.
+    expect(document.querySelector('.ch-toast')).toBeNull();
+    expect(router.refresh).not.toHaveBeenCalled();
+    expect(w.decline).not.toHaveBeenCalled();
+  });
+
+  it('CH-13404 CH-13902 Decline: the focus id is sent, it says Declining while it works, then Declined in place', async () => {
+    const u = user();
+    let done!: (v: { success: boolean }) => void;
+    const w = okPlayerWrites();
+    vi.mocked(w.decline).mockReturnValueOnce(new Promise((r) => (done = r)));
+    showProposed(w);
+    await u.click(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' }));
+    expect(w.decline).toHaveBeenCalledWith('fa-lag');
+    await expectCode('CH-13404', /Declining/);
+    expect((within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Accept' }) as HTMLButtonElement).disabled).toBe(true);
+    done({ success: true });
+    await expectCode('CH-13902', /Declined · Lag putting from 30 ft/);
+    expect(w.accept).not.toHaveBeenCalled();
+  });
+
+  it('CH-13004 a failed Accept says so and keeps the buttons; Retry that works starts it, chip included', async () => {
+    const u = user();
+    const w = okPlayerWrites();
+    vi.mocked(w.accept).mockResolvedValueOnce({ success: false }).mockResolvedValueOnce({ success: true });
+    showProposed(w);
+    await u.click(within(row('Downhill putts inside 6 ft')).getByRole('button', { name: 'Accept' }));
+    await expectCode('CH-13004', /Couldn’t accept Downhill putts inside 6 ft/);
+    expect(screen.getByText('It is still waiting for you. Try again in a moment.')).toBeTruthy();
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(within(row('Downhill putts inside 6 ft')).getByRole('button', { name: 'Accept' })).toBeTruthy();
+    expect(code('CH-13902')).toBeNull();
+    await u.click(within(code('CH-13004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await expectCode('CH-13902', /Started · Downhill putts inside 6 ft/);
+    expect(w.accept).toHaveBeenCalledTimes(2);
+    expect(w.accept).toHaveBeenLastCalledWith('fa-ladder');
+  });
+
+  it('CH-13005 a failed Decline says so and keeps the buttons; Retry that works sets it aside', async () => {
+    const u = user();
+    const w = okPlayerWrites();
+    vi.mocked(w.decline).mockResolvedValueOnce({ success: false, error: 'Focus area not found or no longer pending' }).mockResolvedValueOnce({ success: true });
+    showProposed(w);
+    await u.click(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' }));
+    await expectCode('CH-13005', /Couldn’t decline Lag putting from 30 ft/);
+    expect(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' })).toBeTruthy();
+    await u.click(within(code('CH-13005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await expectCode('CH-13902', /Declined · Lag putting from 30 ft/);
+    expect(w.decline).toHaveBeenCalledTimes(2);
+  });
+
+  it('CH-13205 a proposals read that failed is its own notice, never "nothing proposed"; Try again reads the page again and the insights below are still there', async () => {
+    const u = user();
+    showPlayer(PREVIEW_HELM_PLAYER_PROPOSALS_FAILED);
+    await expectCode('CH-13205', /Your proposed focus areas didn’t load.*still waiting for you/);
+    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
+    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    await u.click(within(code('CH-13205') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-13204 a proposals section that crashes while drawing is contained: the insights stay', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    showPlayer({ ...PREVIEW_HELM_PLAYER_PROPOSED, proposals: { list: [null as never], error: false } });
+    await expectCode('CH-13204', /Proposed focus areas couldn’t be shown\./);
+    expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
+    quiet.mockRestore();
+  });
+
+  it('the dev preview’s writes: ?state=failproposal fails both answers, so the toast and its Retry can be seen', async () => {
+    const u = user();
+    render(wrap(<PreviewCoachHelmPlayer data={PREVIEW_HELM_PLAYER_PROPOSED} state="failproposal" />));
+    await u.click(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Accept' }));
+    await expectCode('CH-13004', /Couldn’t accept Lag putting from 30 ft/);
   });
 });
 
@@ -924,6 +1122,15 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(dismissInsight).toHaveBeenCalledWith('i1');
     expect(reactivateInsight).toHaveBeenCalledWith('i1', 'matured');
   });
+
+  it('the live answers are the actions Stats Development’s Accept and Decline call (Q-77), unchanged', async () => {
+    vi.mocked(acceptFocusArea).mockResolvedValue({ success: true });
+    vi.mocked(declineFocusArea).mockResolvedValue({ success: true });
+    await LIVE_PLAYER_WRITES.accept('fa1');
+    await LIVE_PLAYER_WRITES.decline('fa2');
+    expect(acceptFocusArea).toHaveBeenCalledWith('fa1');
+    expect(declineFocusArea).toHaveBeenCalledWith('fa2');
+  });
 });
 
 // ── Loading ────────────────────────────────────────────────────────────────
@@ -1095,13 +1302,158 @@ describe('CoachHelm loaders', () => {
           };
         },
       };
-      expect(await loadPlayerCoachHelm({ playerId: p1 })).toEqual({ off: null, insights: { list: [], error: false }, rounds: 2 });
+      expect(await loadPlayerCoachHelm({ playerId: p1 })).toEqual({ off: null, proposals: { list: [], error: false }, insights: { list: [], error: false }, rounds: 2 });
       tables.current = { ...tables.current, golf_rounds: { data: [] } };
       expect((await loadPlayerCoachHelm({ playerId: p1 })).rounds).toBe(0);
       tables.current = { ...tables.current, golf_rounds: { error: { message: 'boom' } } };
       const unknown = await loadPlayerCoachHelm({ playerId: p1 });
       expect(unknown.rounds).toBeNull();
       expect(unknown.insights.error).toBe(false);
+    });
+
+    describe('the Tour their insights are drawn against (Q-88)', () => {
+      const standards = (asked: string[]) => (f: Filters) => {
+        const tour = filter(f, 'eq', 'tour') as string;
+        asked.push(tour);
+        return { data: [{ metric_id: 'penalty_rate_per_round', pga_tour_value: tour === 'lpga' ? 0.4 : 0.3 }] };
+      };
+      const gaugeOf = async () => (await loadPlayerCoachHelm({ playerId: p1 })).insights.list[0]!.evidence.gauge;
+      beforeEach(() => {
+        vi.mocked(getInsightsForPlayer).mockResolvedValue([penalties(p1)]);
+      });
+
+      it('a men’s team is graded against the PGA Tour rows, and only those are read', async () => {
+        const asked: string[] = [];
+        tables.current = { golf_team_members: { data: { team_id: 't1', golf_teams: { gender: 'mens' } } }, golf_pga_standards: standards(asked), golf_player_focus_areas: { data: [] } };
+        expect(await gaugeOf()).toMatchObject({ cmp: 'Tour 0.3', sec: null });
+        expect(asked).toEqual(['pga']);
+      });
+
+      it('a women’s team is graded against the LPGA rows, never the men’s', async () => {
+        const asked: string[] = [];
+        tables.current = { golf_team_members: { data: { team_id: 't1', golf_teams: { gender: 'womens' } } }, golf_pga_standards: standards(asked), golf_player_focus_areas: { data: [] } };
+        expect(await gaugeOf()).toMatchObject({ cmp: 'LPGA Tour 0.4', sec: null });
+        expect(asked).toEqual(['lpga']);
+      });
+
+      it('a player with no team has no tour, so nothing is claimed: no Tour read and no comparison', async () => {
+        const asked: string[] = [];
+        tables.current = { golf_team_members: { data: null }, golf_pga_standards: standards(asked) };
+        expect(await gaugeOf()).toBeNull();
+        expect(asked).toEqual([]);
+      });
+
+      it('a team read that fails is logged and claims no benchmark, and the insights still load', async () => {
+        const asked: string[] = [];
+        tables.current = { golf_team_members: { error: { message: 'boom' } }, golf_pga_standards: standards(asked) };
+        const d = await loadPlayerCoachHelm({ playerId: p1 });
+        expect(d.insights.error).toBe(false);
+        expect(d.insights.list[0]!.evidence.gauge).toBeNull();
+        expect(asked).toEqual([]);
+        expect(logServer).toHaveBeenCalledWith('coachhelm', 'playerTeam', expect.anything(), 'coachhelm');
+      });
+
+      it('a Tour read that fails is logged and draws no comparison', async () => {
+        tables.current = { golf_team_members: { data: { team_id: 't1', golf_teams: { gender: 'mens' } } }, golf_pga_standards: { error: { message: 'boom' } }, golf_player_focus_areas: { data: [] } };
+        expect(await gaugeOf()).toBeNull();
+        expect(logServer).toHaveBeenCalledWith('coachhelm', 'tourBenchmarks', expect.anything());
+      });
+    });
+
+    describe('the focus areas proposed to them (Q-77)', () => {
+      const team = { data: { team_id: 't1', golf_teams: { gender: 'mens' } } };
+      it('their own proposed focus areas on their team, newest first, each with the insight it came from when that insight is on the page', async () => {
+        vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(p1)]);
+        const seen: Filters[] = [];
+        tables.current = {
+          golf_team_members: team,
+          golf_player_focus_areas: (f) => {
+            seen.push(f);
+            return {
+              data: [
+                { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from_insight_id: 'in-slope', created_at: '2026-10-12T14:00:00Z' },
+                { id: 'fa-lag', title: 'Lag putting from 30 ft', from_insight_id: null, created_at: '2026-10-10T14:00:00Z' },
+                { id: 'fa-gone', title: 'From an insight no longer on the page', from_insight_id: 'in-old', created_at: '2026-10-09T14:00:00Z' },
+              ],
+            };
+          },
+        };
+        const d = await loadPlayerCoachHelm({ playerId: p1 });
+        expect(d.proposals).toEqual({
+          list: [
+            { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from: 'Downhill putts inside 4-6 ft: a real penalty' },
+            { id: 'fa-lag', title: 'Lag putting from 30 ft', from: null },
+            { id: 'fa-gone', title: 'From an insight no longer on the page', from: null },
+          ],
+          error: false,
+        });
+        // Only this player's, on this team, that still wait for an answer.
+        expect(filter(seen[0]!, 'eq', 'player_id')).toBe(p1);
+        expect(filter(seen[0]!, 'eq', 'team_id')).toBe('t1');
+        expect(filter(seen[0]!, 'eq', 'status')).toBe('proposed');
+        expect(seen[0]!.find(([k]) => k === 'order')![1]).toEqual(['created_at', { ascending: false }]);
+      });
+
+      it('a first run still says what was proposed: no insights yet is not "nothing waiting"', async () => {
+        vi.mocked(getInsightsForPlayer).mockResolvedValue([]);
+        tables.current = {
+          golf_team_members: team,
+          golf_coach_insights: { data: [] },
+          golf_insight_player_feedback: { data: [] },
+          golf_rounds: { data: [] },
+          golf_player_focus_areas: { data: [{ id: 'fa-lag', title: 'Lag putting from 30 ft', from_insight_id: null, created_at: null }] },
+        };
+        const d = await loadPlayerCoachHelm({ playerId: p1 });
+        expect(d.insights).toEqual({ list: [], error: false });
+        expect(d.proposals).toEqual({ list: [{ id: 'fa-lag', title: 'Lag putting from 30 ft', from: null }], error: false });
+      });
+
+      it('a player with no team has nothing proposed to them, and none is read', async () => {
+        vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(p1)]);
+        const asked: Filters[] = [];
+        tables.current = {
+          golf_team_members: { data: null },
+          golf_player_focus_areas: (f) => {
+            asked.push(f);
+            return { data: [{ id: 'x', title: 'x', from_insight_id: null }] };
+          },
+        };
+        expect((await loadPlayerCoachHelm({ playerId: p1 })).proposals).toEqual({ list: [], error: false });
+        expect(asked).toEqual([]);
+      });
+
+      it('CH-13205 a failed read is an error, logged, never "nothing proposed", and the insights still load', async () => {
+        vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(p1)]);
+        tables.current = { golf_team_members: team, golf_player_focus_areas: { error: { message: 'boom' } } };
+        const d = await loadPlayerCoachHelm({ playerId: p1 });
+        expect(d.proposals).toEqual({ list: [], error: true });
+        expect(d.insights.error).toBe(false);
+        expect(logServer).toHaveBeenCalledWith('coachhelm', 'proposals', expect.anything(), 'coachhelm');
+      });
+
+      it('CH-13205 a team that could not be read leaves what was proposed unknown, and says so', async () => {
+        vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(p1)]);
+        tables.current = { golf_team_members: { error: { message: 'boom' } }, golf_player_focus_areas: { data: [] } };
+        expect((await loadPlayerCoachHelm({ playerId: p1 })).proposals).toEqual({ list: [], error: true });
+      });
+
+      it('CoachHelm off for them reads nothing else, proposals included', async () => {
+        vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...on, effectivelyEnabled: false, disabledBy: 'coach', disabledReason: 'Off for the offseason' });
+        const asked: Filters[] = [];
+        tables.current = {
+          golf_team_members: (f) => {
+            asked.push(f);
+            return team;
+          },
+          golf_player_focus_areas: (f) => {
+            asked.push(f);
+            return { data: [] };
+          },
+        };
+        const d = await loadPlayerCoachHelm({ playerId: p1 });
+        expect(d.proposals).toEqual({ list: [], error: false });
+        expect(asked).toEqual([]);
+      });
     });
   });
 
@@ -1300,6 +1652,52 @@ describe('CoachHelm loaders', () => {
       vi.mocked(getCoachProgramPulse).mockClear();
       expect(await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' })).toMatchObject({ off: null, roster: { error: true } });
       expect(getCoachProgramPulse).toHaveBeenCalledTimes(1);
+    });
+
+    describe('the Tour their players’ insights are drawn against (Q-88)', () => {
+      const standards = (asked: string[]) => (f: Filters) => {
+        const tour = filter(f, 'eq', 'tour') as string;
+        asked.push(tour);
+        return { data: [{ metric_id: 'penalty_rate_per_round', pga_tour_value: tour === 'lpga' ? 0.4 : 0.3 }] };
+      };
+      const eliGauge = async () => (await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' })).players.list.find((p) => p.id === eli.id)!.top.evidence.gauge;
+
+      it('the team’s own tour, read for the team the coach is working in: men’s the PGA rows, women’s the LPGA rows', async () => {
+        const asked: string[] = [];
+        const teamsAsked: Filters[] = [];
+        tables.current = {
+          ...tables.current,
+          golf_teams: (f) => {
+            teamsAsked.push(f);
+            return { data: { gender: 'mens' } };
+          },
+          golf_pga_standards: standards(asked),
+        };
+        expect(await eliGauge()).toMatchObject({ cmp: 'Tour 0.3', sec: null });
+        expect(filter(teamsAsked[0]!, 'eq', 'id')).toBe('t1');
+        tables.current = { ...tables.current, golf_teams: { data: { gender: 'womens' } } };
+        expect(await eliGauge()).toMatchObject({ cmp: 'LPGA Tour 0.4', sec: null });
+        expect(asked).toEqual(['pga', 'lpga']);
+      });
+
+      it('a team row that cannot be read claims no benchmark: it is logged, no Tour is read, and the players still load', async () => {
+        const asked: string[] = [];
+        tables.current = { ...tables.current, golf_teams: { error: { message: 'boom' } }, golf_pga_standards: standards(asked) };
+        const d = await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
+        expect(d.players.error).toBe(false);
+        expect(d.players.list.find((p) => p.id === eli.id)!.top.evidence.gauge).toBeNull();
+        expect(asked).toEqual([]);
+        expect(logServer).toHaveBeenCalledWith('coachhelm', 'team', expect.anything(), 'coachhelm');
+      });
+
+      it('a metric the tour has no value for draws no comparison', async () => {
+        tables.current = {
+          ...tables.current,
+          golf_teams: { data: { gender: 'mens' } },
+          golf_pga_standards: { data: [{ metric_id: 'sg_total', pga_tour_value: 0.1 }, { metric_id: 'penalty_rate_per_round', pga_tour_value: null }] },
+        };
+        expect(await eliGauge()).toBeNull();
+      });
     });
   });
 });

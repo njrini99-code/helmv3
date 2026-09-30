@@ -28,6 +28,9 @@ Date:       2026-09-30
 | --- | --- | --- |
 | `src/clubhouse/__tests__/hub.test.tsx` (95 cases) | every catalog row of kinds 0 to 5 (CH-10001 to CH-10406), and the hand contracts 100101, 100102, 100410, 100701, 100801 to 100803, 100901, 101201, 101301, 101401, 101402, 101501, 101901, 102001, 102101, 102301 and 102401 | pass: `npx vitest run src/clubhouse/__tests__/hub.test.tsx` exit 0, 95/95; 66 mutations of the page's code, each failing the suite as expected (the whole fix taken out, and single lines), and 25 more for Attach from Documents and Edit an announcement (Clickables gaps 5 and 11), each caught |
 
+| `src/clubhouse/__tests__/hub.test.tsx` (Q-82, Q-83, Q-84 additions, 129/129 cases in the file) | CH-10012, CH-10110, CH-10212, CH-10314, CH-10315, CH-10407 | pass: `npm run test:file -- src/clubhouse/__tests__/hub.test.tsx` exit 0; 45 of 45 mutations of the new code caught (the equivalent survivors are named in the report) |
+| `src/test/golf/actions/announcement-attachments.test.ts`, `src/test/golf/actions/travel-class-conflicts.test.ts` | the actions behind Q-82 and Q-84: scope (coach staffed on the team, travelers on its roster, only the chosen asked about), the window in the team's zone, what leaves the server | pass: `npm run test:file -- src/test/golf/actions/announcement-attachments.test.ts src/test/golf/actions/travel-class-conflicts.test.ts` exit 0, 2/2 and 16/16; 3 of 3 and 12 of 13 mutations caught (the survivor is equivalent) |
+
 What the suite forces, beyond the catalog: for each of the ten writes (twelve cases: a post, a task and a
 file each delete separately) it presses the control once and lands, presses it again with a refusal and
 then Retry, and presses it offline; it throws from a reply's write; it loads a player's and a coach's data

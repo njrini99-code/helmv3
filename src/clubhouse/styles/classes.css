@@ -107,6 +107,19 @@
 .ch-cl-danger {
   color: var(--ch-danger-600);
 }
+/* Delete all classes (CH-12503): a quiet row under the deck, red because it deletes (D-42). The ghost button's hover is green, so its red is set here. */
+.ch-cl-delall {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+.ch-cl-delall .ch-cl-danger:hover:not(:disabled) {
+  color: var(--ch-danger-600);
+}
+.ch-cl-delall .ch-cl-danger:hover:not(:disabled),
+.ch-cl-delall .ch-cl-danger:active:not(:disabled) {
+  background: var(--ch-danger-100);
+}
 
 /* The term overview */
 .ch-cl-tb {
@@ -1184,6 +1197,14 @@
   }
   .ch-cl-h__a > .ch-btn {
     flex: 1;
+  }
+  /* A full-width row, 44px tall: a thumb finds it without a mis-tap on a class card above. */
+  .ch-cl-delall {
+    margin-top: 2px;
+  }
+  .ch-cl-delall .ch-btn {
+    flex: 1;
+    height: 44px;
   }
   .ch-cl-sync {
     width: 100%;

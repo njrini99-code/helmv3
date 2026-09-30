@@ -17,6 +17,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
+import { CoachHelmTabs } from './chat/SubTabs';
 import { FocusCard, Head, PulseList } from './parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
 
@@ -258,7 +259,9 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   return (
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title">
       {phone && <PhoneTop start title="CoachHelm" />}
+      {phone && <CoachHelmTabs active="board" />}
       <Head who="Coach">{players.length > 0 && !data.off ? signalsLine(totalOpen, playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>
+      {!phone && <CoachHelmTabs active="board" />}
       {body}
     </main>
   );

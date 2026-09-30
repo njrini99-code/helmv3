@@ -864,7 +864,6 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
           >
             <span className="ch-ox-drop__in">
               {d.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- the player's own upload, a public avatar URL
                 <img src={d.photoUrl} alt="" />
               ) : (
                 <span className="ch-ox-drop__ph">
@@ -898,7 +897,6 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
             <span className="ch-ox-preview__k">How you’ll look on the roster</span>
             <div className="ch-ox-prow">
               {d.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- the player's own upload
                 <img className="ch-ox-av" src={d.photoUrl} alt="" />
               ) : (
                 <Avatar name={name} size={40} />

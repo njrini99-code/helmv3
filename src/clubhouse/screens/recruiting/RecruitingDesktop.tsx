@@ -191,7 +191,7 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
       <div className="ch-rec-panel__body">
         <ContactSection p={p} onAdd={() => c.startEdit(p, 'email')} />
         <NotesSection p={p} onAdd={() => c.startEdit(p, 'notes')} />
-        <Documents prospect={p} writes={c.writes} />
+        <Documents prospect={p} writes={c.writes} initialUpload={c.initialUpload} />
       </div>
       <footer className="ch-rec-panel__foot">
         <MetaLine p={p} now={c.now} tz={c.tz} />

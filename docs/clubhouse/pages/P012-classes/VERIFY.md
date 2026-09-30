@@ -156,4 +156,24 @@ Notes:             first-load JS and LCP (CH-1954) are open
   schedule and your calendar" (the hint of CH-12003), which is untrue for the calendar, and the class gets no "Not
   on your calendar" flag; the toast's Retry repeats both steps and clears it (read in `writes.remove` and the
   `removeAction` copy, not run).
-- Q-75 is an open owner question; the page is built on its reversible choices.
+- Q-75 is partly answered: Delete all classes (Q-75a) was approved on 2026-09-30 and is built (below); the rest is an
+  open owner question, built on its reversible choices.
+
+## Delete all classes (Q-75a), 2026-09-30
+
+What was run, and what was seen:
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npm run test:file -- src/clubhouse/__tests__/classes.test.tsx` | exit 0, 125/125 (16 new: `describe('Classes, delete all')` and three in `Classes live writes`) |
+| Mutations | one edit at a time to `writes.ts` or `ClassesView.tsx`, the file rerun, the edit undone | 15 of 15 caught: every id deleted, not only those off the calendar; the delete not scoped to the player; a failed calendar removal still deleting the row; the read-back skipped; an unreadable read-back claiming "gone"; a half-way answer not dropping what is gone; the off-calendar class not flagged; the question closing on a half-way answer; the control not off while a write runs; no warning haptic; the toast copy not refined; the question closable while it runs; the other-term count dropped; a single class not named; the singular wording lost. (A first M4 was a syntax error that failed the whole file; it was redone as a real logic change and caught by the two live-writes tests) |
+| Accessibility | a one-off axe scan (WCAG 2.0 to 2.2 AA) of the preview at 1280 and 390: the button, the question, the question with a class from another term, the half-way toast (`?state=failpartial`), the nothing-deleted toast (`?state=failwrites`) | 0 violations in 10 scans; no sideways scroll at 390; the phone button measured 358 x 44. The entries are not in `scripts/clubhouse/a11y.mjs` yet (the lead's file) |
+| Types | `npm run typecheck:fast` | 4 errors, none in Classes (two in another page's tests, `hub.test.tsx` and `travel-class-conflicts.test.ts`, one in `recruiting-upload.test.tsx`) |
+
+Seen by eye (screenshots at 1280 and 390): the button under the deck, the question, and the half-way outcome: three
+classes gone, BUSI 401 kept, EXSS 188 flagged "Not on your calendar", the question counting the 2 that are left.
+
+Not verified: the live `removeAll` against a real database and the real calendar action (the tests use a fake client
+and a fake action); Delete all with a real player account; a real iPhone (the button's feel, the sheet, the warning
+haptic); that a Retry after a really lost answer finds the rows gone (forced with fakes, not with a dropped
+connection). Not in `a11y.mjs` and `native.mjs` yet.

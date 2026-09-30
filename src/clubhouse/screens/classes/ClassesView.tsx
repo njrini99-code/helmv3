@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, Plus, TriangleAlert, Upload } from 'lucide-react';
+import { GraduationCap, Plus, Trash2, TriangleAlert, Upload } from 'lucide-react';
 import { classNameOf, conflictsOf, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
@@ -17,7 +17,7 @@ import { ClassDetail } from './ClassDetail';
 import { ClassForm } from './ClassForm';
 import { ImportSchedule } from './ImportSchedule';
 import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar } from './parts';
-import { newClassId, type ChClassesWrites } from './writes';
+import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
 
@@ -51,6 +51,8 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   // `id` is the new class's row id, made when the sheet opens: a retry, or a second tap on Add after an answer was lost, reaches the same row.
   const [form, setForm] = useState<{ editing: ChClass | null; id: string } | null>(null);
   const [asking, setAsking] = useState<ChClass | null>(null);
+  // "Delete all classes" is asked once for the whole list (CH-12503).
+  const [askingAll, setAskingAll] = useState(false);
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState<{ classes: ChClass[]; skipped: string[] } | null>(null);
   // The server sent fresh classes (Try again): they win over what this page holds.
@@ -171,6 +173,60 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     code: 'CH-12003',
   }));
 
+  // ── Delete all classes (CH-12005, CH-12006) ────────────────────────────────
+  // The calendar first for every class, then the rows of those that came off it. Whatever the answer says is gone leaves the page, even when the
+  // rest failed, so the list never shows a class the server has deleted (and the question's count is what is left). A class that is off the
+  // calendar but still saved is flagged, as a single remove flags it. A Retry repeats the same ids: a class already gone counts as removed.
+  const removeAllAction = async (ids: string[]) => {
+    const res = await writes.removeAll(ids);
+    const data = res.data;
+    if (data) {
+      const gone = new Set(data.removed);
+      if (gone.size) {
+        setClasses((prev) => prev.filter((x) => !gone.has(x.id)));
+        mark(data.removed, false);
+        for (const id of data.removed) startedFrom.current.delete(id);
+        setOpenId((id) => (id && gone.has(id) ? null : id));
+      }
+      if (data.offCalendar.length) mark(data.offCalendar, true);
+    }
+    if (normalise(res).success) setAskingAll(false);
+    return res;
+  };
+  const removeAll = useAction(
+    'classes.removeAll',
+    removeAllAction,
+    (ids: string[]) => ({
+      done: `${ids.length === 1 ? 'Class' : `All ${ids.length} classes`} deleted`,
+      failed: "Couldn't delete your classes",
+      hint: 'Nothing was deleted. Check your connection and try again.',
+      code: 'CH-12005',
+    }),
+    (result, c) => {
+      const data = (result.success ? undefined : result.data) as ChRemoveAllData | undefined;
+      if (result.success || !data) return c;
+      const { removed, kept, offCalendar } = data;
+      const total = removed.length + kept.length + offCalendar.length;
+      const nameOf = (id: string) => {
+        const k = classes.find((x) => x.id === id);
+        return k ? label(k) : 'A class';
+      };
+      const list = (ids: string[]) => `${ids.slice(0, 3).map(nameOf).join(', ')}${ids.length > 3 ? ' and more' : ''}`;
+      // Nothing changed: every calendar removal failed, so every class was kept.
+      if (!removed.length && !offCalendar.length) {
+        const why = friendlyReason(kept[0]?.reason);
+        return { ...c, hint: `${kept.length === 1 ? "It couldn't" : 'None of them could'} be taken off your calendar, so ${kept.length === 1 ? 'the class was' : `all ${kept.length} were`} kept${why ? `: ${why}` : '.'} Try again.` };
+      }
+      // Half-way: say what is gone, what stayed and what is off the calendar but still saved.
+      const parts = [
+        kept.length ? `${list(kept.map((k) => k.id))} couldn't be taken off your calendar, so ${kept.length === 1 ? 'it was' : 'they were'} kept.` : '',
+        offCalendar.length ? `${list(offCalendar)} ${offCalendar.length === 1 ? 'is' : 'are'} off your calendar but still on your schedule.` : '',
+        'Retry to finish.',
+      ].filter(Boolean);
+      return { ...c, failed: removed.length ? `${removed.length} of ${total} classes deleted` : "Couldn't finish deleting your classes", hint: parts.join(' '), code: 'CH-12006' };
+    },
+  );
+
   // ── Import (CH-12004): the rows are saved here, then put on the calendar ───
   const importAction = async (rows: ChImportRow[]) => {
     const res = await writes.importRows(rows);
@@ -223,6 +279,9 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     setImported(null);
     setImporting(true);
   };
+  // One write at a time: a save, an import or a calendar sync running beside a delete of everything would put back what was just taken off.
+  const busy = save.pending || remove.pending || doImport.pending || sync.pending || removeAll.pending;
+  const inOtherTerm = classes.filter((c) => !inTerm(c, term)).length;
   const askRemove = (c: ChClass) => {
     setOpenId(null);
     setAsking(c);
@@ -298,6 +357,22 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
                 ))}
                 <AddTile onAdd={startAdd} />
               </div>
+              {/* CH-12503: the way out of a whole schedule, quiet and below the deck, red because it deletes (D-42). The warning comes before the question (CH-12704). */}
+              <div className="ch-cl-delall">
+                <Button
+                  variant="ghost"
+                  className="ch-cl-danger"
+                  leftIcon={Trash2}
+                  feel="warning"
+                  disabled={busy}
+                  onClick={() => {
+                    chTrail('classes delete all');
+                    setAskingAll(true);
+                  }}
+                >
+                  Delete all classes
+                </Button>
+              </div>
             </SectionBoundary>
             <SectionBoundary surface="classes.side" label="This week's overlaps" code="CH-12203">
               <div className="ch-cl-side">
@@ -366,6 +441,30 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
               }}
             >
               {remove.pending ? 'Removing' : 'Remove class'}
+            </Button>
+          </>
+        }
+      />
+      <Modal
+        open={askingAll}
+        onClose={() => {
+          if (!removeAll.pending) setAskingAll(false);
+        }}
+        icon={TriangleAlert}
+        code="CH-12503"
+        title="Delete all classes?"
+        description={
+          classes.length === 1
+            ? `${classes[0] ? label(classes[0]) : 'This class'} comes off your schedule and your calendar. This can't be undone.`
+            : `All ${classes.length} classes come off your schedule and your calendar${inOtherTerm ? `, including ${inOtherTerm} from another term` : ''}. This can't be undone.`
+        }
+        footer={
+          <>
+            <Button variant="ghost" disabled={removeAll.pending} onClick={() => setAskingAll(false)}>
+              Keep them
+            </Button>
+            <Button variant="danger" disabled={removeAll.pending || classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
+              {removeAll.pending ? 'Deleting' : 'Delete all classes'}
             </Button>
           </>
         }

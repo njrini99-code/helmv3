@@ -31,11 +31,11 @@ signal worth acting on, and act on it in a tap.
 
 ### Primary action
 
-Player: read the focus (the page has no write). Coach: Assign as focus.
+Player: read the focus; when a coach proposed a focus area, Accept or Decline it (Q-77). Coach: Assign as focus.
 
 ### Secondary actions
 
-Player: open another insight into the focus card, open Why we think this. Coach: choose another player,
+Player: open another insight into the focus card, open Why we think this, try a failed proposals read again. Coach: choose another player,
 Dismiss an insight and Undo it, open Roster, and open CoachHelm settings. Both: try a failed section again.
 
 ### Information hierarchy

@@ -75,7 +75,6 @@ import { RecruitingNoTeam } from '@/clubhouse/screens/recruiting/RecruitingNoTea
 import { RecruitingSkeleton } from '@/clubhouse/screens/recruiting/RecruitingSkeleton';
 import { PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED } from '@/clubhouse/preview/fixtures-recruiting';
 import '@/clubhouse/styles/recruiting.css';
-import { PlayerBoard } from '@/clubhouse/screens/coachhelm/PlayerBoard';
 import { CoachHelmSkeleton } from '@/clubhouse/screens/coachhelm/CoachHelmSkeleton';
 import {
   PREVIEW_HELM_COACH,
@@ -91,9 +90,14 @@ import {
   PREVIEW_HELM_PLAYER_FAILED,
   PREVIEW_HELM_PLAYER_NO_ROUNDS,
   PREVIEW_HELM_PLAYER_OFF,
+  PREVIEW_HELM_PLAYER_PROPOSALS_FAILED,
+  PREVIEW_HELM_PLAYER_PROPOSED,
   PREVIEW_HELM_PLAYER_WORKING,
 } from '@/clubhouse/preview/fixtures-coachhelm';
+import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
+import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
 import '@/clubhouse/styles/coachhelm.css';
+import '@/clubhouse/styles/coachhelm-ask.css';
 
 /**
  * Dev-only Clubhouse preview: every screen and state rendered from the
@@ -120,7 +124,8 @@ import '@/clubhouse/styles/coachhelm.css';
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
  *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate   (the coach; Maya)
- *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading   (Jonah)
+ *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
+ *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  */
@@ -400,8 +405,15 @@ export default async function ClubhousePreview({
         state === 'loading' ? (
           <CoachHelmSkeleton view="player" />
         ) : (
-          <PlayerBoard data={{ empty: PREVIEW_HELM_PLAYER_EMPTY, norounds: PREVIEW_HELM_PLAYER_NO_ROUNDS, working: PREVIEW_HELM_PLAYER_WORKING, failed: PREVIEW_HELM_PLAYER_FAILED, off: PREVIEW_HELM_PLAYER_OFF }[state ?? ''] ?? PREVIEW_HELM_PLAYER} />
+          <PreviewCoachHelmPlayer
+            state={state}
+            data={{ empty: PREVIEW_HELM_PLAYER_EMPTY, norounds: PREVIEW_HELM_PLAYER_NO_ROUNDS, working: PREVIEW_HELM_PLAYER_WORKING, failed: PREVIEW_HELM_PLAYER_FAILED, off: PREVIEW_HELM_PLAYER_OFF, proposed: PREVIEW_HELM_PLAYER_PROPOSED, failproposal: PREVIEW_HELM_PLAYER_PROPOSED, proposalsfailed: PREVIEW_HELM_PLAYER_PROPOSALS_FAILED }[state ?? ''] ?? PREVIEW_HELM_PLAYER}
+          />
         ),
+    },
+    'coachhelm-ask': {
+      path: '/golf/dashboard/coachhelm',
+      node: <PreviewAsk state={state} kind={q} />,
     },
   };
   const entry = screens[screen];

@@ -9,6 +9,7 @@ import {
   fullName,
   isSort,
   isStage,
+  newRequestId,
   prospectFrom,
   sharesOf,
   stageMeta,
@@ -26,7 +27,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { useToast } from '../../ui/Toast';
-import type { RecCtx } from './ctx';
+import type { RecCtx, RecInitialUpload } from './ctx';
 import { ProspectForm, type RecFormState } from './ProspectForm';
 import { RecruitingDesktop } from './RecruitingDesktop';
 import { RecruitingPhone } from './RecruitingPhone';
@@ -46,6 +47,8 @@ export interface RecInitial {
   detail?: boolean;
   form?: 'add' | 'edit';
   asking?: boolean;
+  /** The upload dialog is open on this file when the open prospect's documents draw (the preview's upload and refusal states). */
+  upload?: RecInitialUpload;
 }
 
 /**
@@ -145,8 +148,20 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
 
   // ── Add a prospect (CH-14001) ──────────────────────────────────────────────
-  const addAction = async (input: RecruitInput) => {
-    const res = await writes.create(input);
+  // One request id per Add: the same form with the same contents sends the same id, whether Retry replays it or Save is pressed again, so a
+  // reply that was lost after the server stored the prospect cannot add them a second time (CH-14915). Changing the contents is a
+  // different prospect and gets a new id.
+  const attempt = useRef<{ nonce: number; sig: string; id: string } | null>(null);
+  const requestIdFor = (f: RecFormState, input: RecruitInput) => {
+    const sig = JSON.stringify(input);
+    const last = attempt.current;
+    if (last && last.nonce === f.nonce && last.sig === sig) return last.id;
+    const id = newRequestId();
+    attempt.current = { nonce: f.nonce, sig, id };
+    return id;
+  };
+  const addAction = async (input: RecruitInput, requestId: string) => {
+    const res = await writes.create(input, requestId);
     const r = normalise(res);
     if (r.success && r.data?.id) {
       const at = new Date().toISOString();
@@ -276,6 +291,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     // CH-14911: Try again asks the server for the list again.
     tryAgain: () => router.refresh(),
     error: data.error,
+    initialUpload: initial?.upload,
   };
 
   return (
@@ -287,7 +303,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
         saving={add.pending || save.pending}
         onClose={() => setForm(null)}
         onDelete={ctx.askDelete}
-        onSave={(input, f) => void (f.mode === 'add' || !f.prospect ? add.run(input) : save.run(f.prospect, input))}
+        onSave={(input, f) => void (f.mode === 'add' || !f.prospect ? add.run(input, requestIdFor(f, input)) : save.run(f.prospect, input))}
       />
       {phone ? (
         <RecActionSheet
