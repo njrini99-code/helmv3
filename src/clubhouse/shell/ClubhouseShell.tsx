@@ -8,6 +8,7 @@ import { SessionActivityProvider } from '@/components/providers/SessionActivityP
 import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
 import type { ChShellData } from '../data/shell';
 import { ClubhouseFrame } from './ClubhouseFrame';
+import { OfflineSync } from './OfflineSync';
 
 /**
  * The live Clubhouse shell: the non-UI providers pages rely on (golf user,
@@ -20,6 +21,7 @@ export function ClubhouseShell({ userData, shell, children }: { userData: GolfUs
   return (
     <SessionActivityProvider>
       <NativeSwipeBackBridge />
+      <OfflineSync />
       <GolfUserProvider userData={userData}>
         <NotificationBadgeProvider>
           <ClubhouseFrame userData={userData} shell={shell} pathname={pathname}>
