@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { getDocuments } from '@/app/golf/actions/documents';
@@ -412,10 +413,13 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   };
 }
 
-async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[]) {
+export async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[]) {
   const byEvent = new Map<string, Array<{ player: string; status: ChRsvp }>>();
   for (const ids of chunkIds([...new Set(eventIds)])) {
-    const { data, error } = await supabase.from('golf_event_attendance').select('event_id, player_id, status').in('event_id', ids).limit(2000);
+    // Paged: a season's events times a full roster passes PostgREST's 1000-row cap.
+    const { data, error } = await fetchAllRowsResult((from, to) =>
+      supabase.from('golf_event_attendance').select('event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
+    );
     if (error) {
       log('attendance', error);
       return { byEvent, error: true };
@@ -457,10 +461,13 @@ async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>,
   return closed;
 }
 
-async function assignmentsFor(supabase: Awaited<ReturnType<typeof createClient>>, taskIds: string[]) {
+export async function assignmentsFor(supabase: Awaited<ReturnType<typeof createClient>>, taskIds: string[]) {
   const byTask = new Map<string, { done: number; total: number }>();
   for (const ids of chunkIds(taskIds)) {
-    const { data, error } = await supabase.from('golf_task_assignments').select('task_id, status').in('task_id', ids).limit(5000);
+    // Paged: tasks times players passes PostgREST's 1000-row cap.
+    const { data, error } = await fetchAllRowsResult((from, to) =>
+      supabase.from('golf_task_assignments').select('task_id, status').in('task_id', ids).order('id', { ascending: true }).range(from, to),
+    );
     if (error) {
       log('assignments', error);
       return { byTask, error: true };
