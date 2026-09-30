@@ -28,6 +28,9 @@ import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { loadCoachHome } from '@/clubhouse/data/home';
 import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
+import { loadPlayerHome } from '@/clubhouse/data/player-home';
+import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
+import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
 
 export const dynamic = 'force-dynamic';
 
@@ -267,9 +270,13 @@ export default async function GolfDashboardPage({
     }
 
     // ── Player dashboard ──
-    // Clubhouse has no player Home yet: the shell shows "not rebuilt yet", so
-    // skip the Fairway player payload entirely.
-    if (player && isClubhouseFor('player')) return null;
+    // Clubhouse player Home: its own loader and screen, no Fairway payload.
+    if (player && isClubhouseFor('player')) {
+        const team = await resolveClubhouseTeam(session);
+        if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
+        const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' });
+        return <PlayerHome data={home} />;
+    }
     if (player) {
         // Get team via membership
         // This read used to be swallowed TWICE: a `try { } catch { }` that

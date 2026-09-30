@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { ClubhouseFrame } from '@/clubhouse/shell/ClubhouseFrame';
 import { CoachHome } from '@/clubhouse/screens/home/CoachHome';
+import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
+import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS } from '@/clubhouse/preview/fixtures-player-home';
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 import { PreviewError } from '@/clubhouse/preview/PreviewError';
 import { Roster } from '@/clubhouse/screens/roster/Roster';
@@ -48,6 +50,7 @@ import {
  * design/handoff/screenshots. 404 in production.
  *
  *   /clubhouse-preview/home   ?state=empty | noevents | failed | loading | error   (empty is the first-run page)
+ *   /clubhouse-preview/home-player ?state=empty | noevents | failed | loading   (Theo; empty is the first-run page)
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
@@ -104,6 +107,18 @@ export default async function ClubhousePreview({
         ) : (
           <CoachHome
             data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : PREVIEW_HOME}
+            now={PREVIEW_HOME_NOW}
+          />
+        ),
+    },
+    'home-player': {
+      path: '/golf/dashboard',
+      node:
+        state === 'loading' ? (
+          <HomeSkeleton />
+        ) : (
+          <PlayerHome
+            data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : PREVIEW_PLAYER_HOME}
             now={PREVIEW_HOME_NOW}
           />
         ),
@@ -213,7 +228,7 @@ export default async function ClubhousePreview({
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const user = screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const user = screen === 'home-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
 
   return (
     <PreviewBell state={bell}>

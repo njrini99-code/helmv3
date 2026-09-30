@@ -26,6 +26,9 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 | CH-2212 | The team's form crashes while drawing (phone) | "Team scoring couldn't be shown." The rest of Home stays | `SectionBoundary home.form` | home.test › CH-2212 |
 | CH-2213 | Up next crashes while drawing (phone) | "Up next couldn't be shown." inside the hero; the greeting stays | `SectionBoundary home.upNext` | home.test › CH-2213 |
 | CH-2214 | Today crashes while drawing (phone) | "Today couldn't be shown." | `SectionBoundary home.today` | home.test › CH-2214 |
+| CH-2215 | A player's own rounds don't load (player Home) | "Your rounds didn't load." + "Posted rounds are safe. Try again; the error has been reported." in Scoring's place; no brief, no parts of the game, never an empty line | `PlayerGame` Scoring, `RefreshNotice` | player-home.test › CH-2215 |
+| CH-2216 | Scrambling and three-putts don't load (player Home) | "Some of your figures didn't load." + "Scores, greens and putts are right; scrambling is missing." above the four parts, which stay | `PlayerGame` Legs | player-home.test › CH-2216 |
+| CH-2217 | The player's scoring or parts of the game crash while drawing | "Your scoring couldn't be shown." The rest of Home stays | `SectionBoundary home.game` | player-home.test › CH-2217 |
 
 ## 23xx Empty
 
@@ -39,7 +42,11 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 | CH-2306 | A player has fewer than three rounds | "Early read" in the SG column, with "Strokes gained appears after three rounds" on hover | `Leaderboard` | home.test › CH-2306 |
 | CH-2307 | A coach with no active team | The page empty state (v2 medallion): "You aren't on a team yet" + what Home shows once they are | `CoachHomeNoTeam` | home.test › CH-2307 |
 | CH-2308 | A team with nothing yet: no players, no events this week, no rounds, and every read answered | The v2 page empty state (gh-states.jsx `EMPTY.home.coach`, D-71): "Your season starts here" + "Add your players and your first event…" Invite players (Roster) and Add an event (Calendar's editor); the header's actions step aside | `HomeFirstRun` in `CoachHome` | home.test › CH-2308 |
-| CH-2309 | Nothing on the calendar ahead (phone) | Up next reads "No events scheduled" + what the card will hold, with Practice, Qualifier, Tournament and Meeting (each opens the editor on that type, `?new=1&type=`) and Add event. The week strip steps aside | `NoEvents` in `HomePhone` | home.test › CH-2309 |
+| CH-2309 | Nothing on the calendar ahead (phone). A player: "Your coach's practices and events will show here with a countdown.", no quick adds | Up next reads "No events scheduled" + what the card will hold, with Practice, Qualifier, Tournament and Meeting (each opens the editor on that type, `?new=1&type=`) and Add event. The week strip steps aside | `NoEvents` in `HomePhone` | home.test › CH-2309 |
+| CH-2310 | Fewer than two 18-hole rounds (player Home Scoring) | "One round so far." or "No rounds posted yet this season." + "Your scoring line starts with your second 18-hole round." | `PlayerGame` Scoring | player-home.test › CH-2310 |
+| CH-2311 | No fairways, greens, scrambling or putts logged (player Home) | "Nothing to break down yet." + "Fairways, greens, scrambling and putts fill in from rounds posted with those stats." | `PlayerGame` Legs | player-home.test › CH-2311 |
+| CH-2312 | A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71) | Page empty state "Welcome to the team" + "Post your first round to start your stats. Team updates and your schedule show up here too." Start a round and Add classes appear once round entry and Classes are rebuilt (Q-69) | `PlayerHome` `PlayerFirstRun` | player-home.test › CH-2312 |
+| CH-2313 | A player on no active team | "You aren't on a team yet" + "Ask your coach for your team's code or an invite. Once you join, Home shows your week, your rounds and your stats." | `PlayerHomeNoTeam` | player-home.test › CH-2313 |
 
 ## 24xx Loading
 

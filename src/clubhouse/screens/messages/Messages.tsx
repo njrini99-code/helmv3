@@ -95,21 +95,28 @@ export function Messages({ data }: { data: ChMessagesData }) {
     }
   }, [loading, selectedId, convs, paramsDone]);
 
-  // Deep links: ?conversation=<id>, or ?player=<golf_players.id> to open (or start) a direct thread.
+  // Deep links: ?conversation=<id>, or ?player=<golf_players.id> or ?user=<auth user id> (a player's
+  // "Message coach" on Home) to open (or start) a direct thread.
   useEffect(() => {
     if (loading || handledParams.current) return;
     const conv = params.get('conversation');
     const player = params.get('player');
+    const user = params.get('user');
     handledParams.current = true;
-    setParamsDone(!conv && !player);
+    setParamsDone(!conv && !player && !user);
     if (conv) {
       setSelectedId(conv);
       router.replace('/golf/dashboard/messages', { scroll: false });
-    } else if (player) {
-      const person = data.directory.find((p) => p.playerId === player);
+    } else if (player || user) {
+      const person = data.directory.find((p) => (player ? p.playerId === player : p.userId === user));
       router.replace('/golf/dashboard/messages', { scroll: false });
       if (!person) {
-        toast({ tone: 'error', title: "Couldn't open that conversation", body: 'That player isn’t on your team, or hasn’t set up their account yet.', code: 'CH-7001' });
+        toast({
+          tone: 'error',
+          title: "Couldn't open that conversation",
+          body: player ? 'That player isn’t on your team, or hasn’t set up their account yet.' : 'That person isn’t on your team, or hasn’t set up their account yet.',
+          code: 'CH-7001',
+        });
         return;
       }
       void startDirect(person.userId);

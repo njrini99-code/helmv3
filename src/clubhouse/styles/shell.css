@@ -1148,9 +1148,6 @@
   background: #ece8de;
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
 }
-.ch-bellp__row:active {
-  transform: scale(0.985);
-}
 .ch-bellp__ic {
   display: grid;
   flex: none;

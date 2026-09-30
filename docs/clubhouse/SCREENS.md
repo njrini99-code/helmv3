@@ -50,7 +50,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Settings** `/settings` — Account, notifications, preferences, joining a team
 - [x] **Settings: notifications** `/settings/notifications` — Old deep link; opens the Notifications section
 - [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link; opens the CoachHelm section
-- [ ] **Home** `/` — Their day: next event, recent rounds, what the coach asked for
+- [x] **Home** `/` — Their day: next event with a countdown, the latest round, scoring and the parts of the game (`PlayerHome`, 2026-09-30; spec `design/handoff/Player - Home.html`, phone `phone/home-player.md`)
 - [ ] **CoachHelm** `/coachhelm` — Their AI coach: Game, Plan (development), Profile and Standing views
 - [ ] **My rounds** `/rounds` — Their round history and each round's detail (with `/rounds/[id]`)
 - [ ] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring during a round (with `/rounds/continue/[id]`, `/rounds/recover`)

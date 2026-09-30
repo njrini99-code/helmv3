@@ -6,7 +6,7 @@ import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, summarizePlayer, type ChForm } from './season';
+import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, summarizePlayer, type ChForm, type ChRound } from './season';
 import { rsvpOf } from './calendar';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 
@@ -167,24 +167,179 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const supabase = await createClient();
   const now = new Date();
 
-  const { data: settings, error: settingsError } = await supabase
-    .from('golf_team_settings')
-    .select('timezone')
-    .eq('team_id', input.teamId)
-    .maybeSingle();
-  // CH-2210: without the team's timezone, Home reads the week in Eastern time (the product default).
+  const { tz, greeting, todayLabel } = await homeClock(supabase, input.teamId, now);
+  const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
+
+  // The roster, the team chat and the week load together; the week waits for the roster's names only to label invitees.
+  type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
+  const rosterRead = Promise.resolve(
+    supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
+  );
+  const rosterOf = (res: Awaited<typeof rosterRead>) =>
+    ((res.data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => p !== null);
+  const nameOf = fullName;
+  const [rosterRes, chatRes, wk] = await Promise.all([
+    rosterRead,
+    supabase.from('golf_conversations').select('id').eq('team_id', input.teamId).eq('is_team_chat', true).order('created_at', { ascending: true }).limit(1),
+    loadHomeWeek(supabase, { teamId: input.teamId, tz, now, names: rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, nameOf(p)]))) }),
+  ]);
+  // CH-2208: without the team chat, Message team opens Messages instead.
+  if (chatRes.error) log('team chat', chatRes.error);
+
+  // ── Roster ──
+  if (rosterRes.error) log('roster', rosterRes.error);
+  const roster = rosterOf(rosterRes);
+  const playerById = new Map(roster.map((p) => [p.id, p]));
+  const { today, weekStart, weekEnd } = wk;
+
+  // ── Season rounds ──
+  let roundsError = !!rosterRes.error;
+  let rounds: Awaited<ReturnType<typeof loadSeasonRounds>>['rounds'] = [];
+  if (!rosterRes.error && roster.length > 0) {
+    const res = await loadSeasonRounds(supabase, roster.map((p) => p.id), { surface: 'home' });
+    rounds = res.rounds;
+    roundsError = res.error;
+  }
+  const full = rounds.filter(isFull18);
+
+  // ── Latest rounds with hole-by-hole ──
+  const { rounds: latestRounds, holesError } = await latestWithHoles(supabase, full, (id) => {
+    const p = playerById.get(id);
+    return p ? nameOf(p) : 'Former player';
+  });
+
+  // ── Leaderboard ──
+  const byPlayer = groupByPlayer(full);
+  // Recency counts any countable round, nine holes included.
+  const lastPlayed = new Map<string, string>();
+  for (const r of rounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
+  const rows: ChLeaderRow[] = [];
+  for (const p of roster) {
+    const list = byPlayer.get(p.id);
+    if (!list?.length) continue;
+    const season = summarizePlayer(list);
+    rows.push({
+      playerId: p.id,
+      name: nameOf(p),
+      classYear: classYearLabel(p.graduation_year, now),
+      rounds: season.rounds,
+      avg: season.avg ?? 0,
+      toPar: season.toPar,
+      trend: season.trend,
+      sgPerRound: season.sgPerRound,
+      status: season.status,
+      quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
+    });
+  }
+  rows.sort((a, b) => a.avg - b.avg || b.rounds - a.rounds);
+
+  // ── Phone: the team's form ──
+  const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
+
+  return {
+    greeting: `${greeting}, ${firstName}.`,
+    teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
+    subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
+    todayLabel,
+    week: wk.week,
+    latestRounds: { rounds: latestRounds, error: roundsError, holesError },
+    leaderboard: { rows, scorecards: full.length, rosterSize: roster.length, error: roundsError },
+    phone: { next: wk.next, today: wk.todayEvents, form, weekNote: wk.weekNote },
+  };
+}
+
+/**
+ * The team's timezone (CH-2210: Eastern, the product default, when it doesn't
+ * load), the time-of-day greeting in it, and today's long date.
+ */
+export async function homeClock(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  teamId: string,
+  now: Date,
+): Promise<{ tz: string; greeting: string; todayLabel: string }> {
+  const { data: settings, error: settingsError } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
   if (settingsError) log('timezone', settingsError);
   const tz = settings?.timezone || 'America/New_York';
-
   let greeting = 'Welcome back';
   try {
     greeting = getGreeting(timeOfDayForHour(getCurrentDecimalHourInTz(tz)));
   } catch {
     /* unknown zone: the time-neutral phrase is never wrong */
   }
-  const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
   const todayLabel = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+  return { tz, greeting, todayLabel };
+}
 
+/**
+ * The newest three 18-hole rounds with their hole-by-hole card (null for a
+ * round posted as a total). `holesError`: the rounds loaded but the cards
+ * didn't, so each shows its totals only.
+ */
+export async function latestWithHoles(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  full: ChRound[],
+  nameFor: (playerId: string) => string,
+): Promise<{ rounds: ChLatestRound[]; holesError: boolean }> {
+  const latest = full.slice(0, 3);
+  const holesByRound = new Map<string, ChHoleScore[]>();
+  let holesError = false;
+  for (const ids of latest.length ? chunkIds(latest.map((r) => r.id)) : []) {
+    const { data, error } = await supabase.from('golf_holes').select('round_id, hole_number, par, score').in('round_id', ids).order('hole_number', { ascending: true });
+    if (error) {
+      log('holes', error);
+      holesError = true;
+      break;
+    }
+    for (const h of data ?? []) {
+      const list = holesByRound.get(h.round_id) ?? [];
+      list.push({ n: h.hole_number, par: h.par, score: h.score });
+      holesByRound.set(h.round_id, list);
+    }
+  }
+  const dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+  const rounds = latest.map((r) => {
+    const holes = holesByRound.get(r.id);
+    return {
+      id: r.id,
+      playerId: r.player_id,
+      playerName: nameFor(r.player_id),
+      meta: [r.course_name, dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)), r.tees_played ? `${r.tees_played} tees` : null].filter(Boolean).join(' · '),
+      score: r.total_score ?? 0,
+      toPar: r.score_to_par,
+      holes: holes && holes.length === 18 ? holes : null,
+      gir: r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
+      putts: r.total_putts,
+      sg: r.strokes_gained_total,
+    };
+  });
+  return { rounds, holesError };
+}
+
+export interface ChHomeWeek {
+  /** Team-local YYYY-MM-DD. */
+  today: string;
+  weekStart: string;
+  weekEnd: string;
+  week: { days: ChHomeDay[]; agenda: ChAgendaRow[]; error: boolean };
+  nextCompetition: { title: string; when: string } | null;
+  /** The next team event from now, today or later in the loaded window. */
+  next: ChHomeEvent | null;
+  todayEvents: ChHomeEvent[];
+  /** The first competition later this week, for the week strip's note. */
+  weekNote: { weekday: string; title: string } | null;
+}
+
+/**
+ * The team's week, shared by coach and player Home: the days with their
+ * counts, today's agenda and the week's competitions, Up next and Today.
+ * Team events only (class blocks are personal). `names` turns invitees into
+ * names; a player's Home passes none, so it never lists who else is invited.
+ */
+export async function loadHomeWeek(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  input: { teamId: string; tz: string; now: Date; names: Map<string, string> | Promise<Map<string, string>> },
+): Promise<ChHomeWeek> {
+  const { tz, now } = input;
   const today = ymd(now, tz);
   const weekStart = addDays(today, -weekdayIndexMonFirst(today));
   const weekEnd = addDays(weekStart, 6);
@@ -192,8 +347,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const windowStart = `${addDays(weekStart, -1)}T00:00:00Z`;
   const windowEnd = `${addDays(weekEnd, 2)}T00:00:00Z`;
 
-  const [eventsRes, rosterRes, chatRes] = await Promise.all([
-    supabase
+  const eventsRes = await supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, end_time, all_day, location')
       .eq('team_id', input.teamId)
@@ -202,16 +356,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       .gte('start_time', windowStart)
       .lt('start_time', windowEnd)
       .order('start_time', { ascending: true })
-      .limit(500),
-    supabase
-      .from('golf_team_members')
-      .select('player:golf_players(id, first_name, last_name, graduation_year)')
-      .eq('team_id', input.teamId)
-      .eq('status', 'active'),
-    supabase.from('golf_conversations').select('id').eq('team_id', input.teamId).eq('is_team_chat', true).order('created_at', { ascending: true }).limit(1),
-  ]);
-  // CH-2208: without the team chat, Message team opens Messages instead.
-  if (chatRes.error) log('team chat', chatRes.error);
+      .limit(500);
 
   // ── Week ──
   if (eventsRes.error) log('events', eventsRes.error);
@@ -228,15 +373,6 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       hasCompetition: dayEvents.some((e) => COMPETITION_TYPES.has(e.event_type)),
     };
   });
-  // ── Roster ──
-  if (rosterRes.error) log('roster', rosterRes.error);
-  type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
-  const roster = ((rosterRes.data ?? []) as Array<{ player: RosterPlayer | null }>)
-    .map((m) => m.player)
-    .filter((p): p is RosterPlayer => p !== null);
-  const nameOf = fullName;
-  const playerById = new Map(roster.map((p) => [p.id, p]));
-  const names = new Map(roster.map((p) => [p.id, nameOf(p)]));
 
   const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
   const clock = (iso: string) => timeFmt.format(new Date(iso)).replace(/\s?[AP]M$/, '');
@@ -267,6 +403,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     }
   }
   const inviteesOf = (id: string) => (attendanceError ? null : (invited.get(id) ?? []));
+  const names = await input.names;
 
   const agenda: ChAgendaRow[] = [
     ...todays.map((e) => ({
@@ -318,105 +455,17 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   };
   const firstLater = later.find((e) => e.localDate > today);
 
-  // ── Season rounds ──
-  let roundsError = !!rosterRes.error;
-  let rounds: Awaited<ReturnType<typeof loadSeasonRounds>>['rounds'] = [];
-  if (!rosterRes.error && roster.length > 0) {
-    const res = await loadSeasonRounds(supabase, roster.map((p) => p.id), { surface: 'home' });
-    rounds = res.rounds;
-    roundsError = res.error;
-  }
-  const full = rounds.filter(isFull18);
-
-  // ── Latest rounds with hole-by-hole ──
-  const latest = full.slice(0, 3);
-  const holesByRound = new Map<string, ChHoleScore[]>();
-  let holesError = false;
-  if (latest.length) {
-    for (const ids of chunkIds(latest.map((r) => r.id))) {
-      const { data, error } = await supabase
-        .from('golf_holes')
-        .select('round_id, hole_number, par, score')
-        .in('round_id', ids)
-        .order('hole_number', { ascending: true });
-      if (error) {
-        log('holes', error);
-        holesError = true;
-        break;
-      }
-      for (const h of data ?? []) {
-        const list = holesByRound.get(h.round_id) ?? [];
-        list.push({ n: h.hole_number, par: h.par, score: h.score });
-        holesByRound.set(h.round_id, list);
-      }
-    }
-  }
-  const dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
-  const latestRounds: ChLatestRound[] = latest.map((r) => {
-    const holes = holesByRound.get(r.id);
-    const p = playerById.get(r.player_id);
-    return {
-      id: r.id,
-      playerId: r.player_id,
-      playerName: p ? nameOf(p) : 'Former player',
-      meta: [r.course_name, dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)), r.tees_played ? `${r.tees_played} tees` : null]
-        .filter(Boolean)
-        .join(' · '),
-      score: r.total_score ?? 0,
-      toPar: r.score_to_par,
-      holes: holes && holes.length === 18 ? holes : null,
-      gir: r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
-      putts: r.total_putts,
-      sg: r.strokes_gained_total,
-    };
-  });
-
-  // ── Leaderboard ──
-  const byPlayer = groupByPlayer(full);
-  // Recency counts any countable round, nine holes included.
-  const lastPlayed = new Map<string, string>();
-  for (const r of rounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
-  const rows: ChLeaderRow[] = [];
-  for (const p of roster) {
-    const list = byPlayer.get(p.id);
-    if (!list?.length) continue;
-    const season = summarizePlayer(list);
-    rows.push({
-      playerId: p.id,
-      name: nameOf(p),
-      classYear: classYearLabel(p.graduation_year, now),
-      rounds: season.rounds,
-      avg: season.avg ?? 0,
-      toPar: season.toPar,
-      trend: season.trend,
-      sgPerRound: season.sgPerRound,
-      status: season.status,
-      quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
-    });
-  }
-  rows.sort((a, b) => a.avg - b.avg || b.rounds - a.rounds);
-
-  // ── Phone: the team's form ──
-  const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
-
   return {
-    greeting: `${greeting}, ${firstName}.`,
-    teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
-    subline: homeSubline(rows, {
-      roundsError,
-      nextCompetition: nextComp ? { title: nextComp.title, when: nextComp.localDate === today ? 'today' : longDay.format(new Date(nextComp.start_time)) } : null,
-    }),
-    todayLabel,
+    today,
+    weekStart,
+    weekEnd,
     week: { days, agenda, error: !!eventsRes.error },
-    latestRounds: { rounds: latestRounds, error: roundsError, holesError },
-    leaderboard: { rows, scorecards: full.length, rosterSize: roster.length, error: roundsError },
-    phone: {
-      next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
-      today: eventsRes.error ? [] : todays.map(toPhone),
-      form,
-      weekNote: firstLater ? { weekday: longDay.format(new Date(firstLater.start_time)), title: firstLater.title } : null,
-    },
+    nextCompetition: nextComp ? { title: nextComp.title, when: nextComp.localDate === today ? 'today' : longDay.format(new Date(nextComp.start_time)) } : null,
+    next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
+    todayEvents: eventsRes.error ? [] : todays.map(toPhone),
+    weekNote: firstLater ? { weekday: longDay.format(new Date(firstLater.start_time)), title: firstLater.title } : null,
   };
+
 }
 
 const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other']);

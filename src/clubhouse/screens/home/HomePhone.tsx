@@ -2,7 +2,7 @@
 
 import { BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -21,8 +21,8 @@ import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 
-const CALENDAR = '/golf/dashboard/calendar';
-const eventHref = (e: ChHomeEvent) => `${CALENDAR}?date=${e.date}&event=${e.id}`;
+export const CALENDAR = '/golf/dashboard/calendar';
+export const eventHref = (e: ChHomeEvent) => `${CALENDAR}?date=${e.date}&event=${e.id}`;
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -80,7 +80,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
 
         {!data.week.error && !nothingAhead && (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <WeekStrip data={data} />
+            <WeekStrip days={data.week.days} note={phone.weekNote} />
           </SectionBoundary>
         )}
 
@@ -95,7 +95,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
 }
 
 /** "In 50 min", "Happening now", "Tomorrow · 3:30 PM", "Thu · 8:42 AM". Before the clock is known, the day only. */
-function whenLabel(e: ChHomeEvent, now: Date | null): { text: string; soon: boolean } {
+export function whenLabel(e: ChHomeEvent, now: Date | null): { text: string; soon: boolean } {
   if (e.allDay) return { text: now && dayDiff(e.date, now) === 0 ? 'Today · all day' : `${weekday(e.date)} · all day`, soon: false };
   if (!now) return { text: e.startLabel, soon: false };
   const mins = Math.round((Date.parse(e.startIso) - now.getTime()) / 60000);
@@ -117,7 +117,8 @@ function dayDiff(date: string, now: Date): number {
 const WD = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
 const weekday = (date: string) => WD.format(new Date(`${date}T12:00:00Z`));
 
-function UpNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
+/** `children`: what closes the card (the player's countdown). */
+export function UpNext({ e, now, children }: { e: ChHomeEvent; now: Date | null; children?: ReactNode }) {
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
@@ -144,6 +145,7 @@ function UpNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
           <Icon icon={ChevronRight} size={17} />
         </span>
       )}
+      {children}
     </Link>
   );
 }
@@ -185,7 +187,8 @@ function NoEvents() {
   );
 }
 
-function Today({ list, now, failed, quiet }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean }) {
+/** `canPlan`: a coach gets Plan on an empty day; a player can't add team events. */
+export function Today({ list, now, failed, quiet, canPlan = true }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean }) {
   if (failed) return null;
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-today">
@@ -202,9 +205,9 @@ function Today({ list, now, failed, quiet }: { list: ChHomeEvent[]; now: Date | 
           <Icon icon={Sun} size={18} />
           <span>
             <b>Nothing scheduled</b>
-            <span>Players can still post rounds from the course.</span>
+            <span>{canPlan ? 'Players can still post rounds from the course.' : 'A good day to play a round.'}</span>
           </span>
-          {!quiet && (
+          {canPlan && !quiet && (
             <Button size="sm" leftIcon={Plus} href={newEventHref()}>
               Plan
             </Button>
@@ -300,15 +303,14 @@ function Form({ form }: { form: ChTeamForm }) {
   );
 }
 
-function WeekStrip({ data }: { data: ChCoachHome }) {
-  const note = data.phone.weekNote;
+export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote'] }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-week">This week</h2>
       </div>
       <ol className="ch-hm-week">
-        {data.week.days.map((d) => (
+        {days.map((d) => (
           <li key={d.date} className={(d.isToday ? 'is-today' : '') + (d.hasCompetition ? ' is-major' : '')} aria-current={d.isToday ? 'date' : undefined}>
             <Link href={`${CALENDAR}?view=day&date=${d.date}`} className="ch-hm-week__d">
               <em aria-hidden="true">{d.weekday.slice(0, 1)}</em>

@@ -118,7 +118,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/qualifiers',
     ...SETTINGS_ROUTES,
   ],
-  player: ['/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
+  player: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
 };
 
 /**

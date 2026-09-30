@@ -1,4 +1,5 @@
 import { CalendarDays, Flag } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { ChAgendaRow, ChCoachHome } from '../../data/home';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
@@ -11,7 +12,8 @@ export function dayLabel(count: number, competition: boolean): string {
   return competition ? `competition, ${events}` : events;
 }
 
-export function Week({ week }: { week: ChCoachHome['week'] }) {
+/** `between`: what sits between the days and the agenda (the player's Up next, Player - Home.html). */
+export function Week({ week, between }: { week: ChCoachHome['week']; between?: ReactNode }) {
   const todayRows = week.agenda.filter((r) => r.when === 'today');
   const laterRows = week.agenda.filter((r) => r.when === 'later');
   return (
@@ -48,6 +50,8 @@ export function Week({ week }: { week: ChCoachHome['week'] }) {
               </li>
             ))}
           </ol>
+
+          {between}
 
           <div className="ch-h-agenda">
             <div className="ch-h-agenda__label">Today</div>

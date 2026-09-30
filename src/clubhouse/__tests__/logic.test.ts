@@ -66,8 +66,8 @@ describe('nav', () => {
     expect(isRebuilt('/golf/dashboard/')).toBe(true);
     expect(rebuiltHref('/golf/dashboard/stats?player=1')).toBe('/golf/dashboard/stats?player=1');
     expect(rebuiltHref('/golf/dashboard/rounds')).toBeNull();
-    // Players share Stats but not the coach Home or Roster.
-    expect(isRebuilt('/golf/dashboard', 'player')).toBe(false);
+    // Players have their own Home (PlayerHome) and share Stats, but not Roster.
+    expect(isRebuilt('/golf/dashboard', 'player')).toBe(true);
     expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(false);
     expect(isRebuilt('/golf/dashboard/stats', 'player')).toBe(true);
     expect(isRebuilt('/golf/dashboard/calendar', 'player')).toBe(true);

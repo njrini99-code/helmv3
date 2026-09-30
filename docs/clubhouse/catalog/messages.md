@@ -17,7 +17,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7001 | A link opens a player who isn't on the team | "Couldn't open that conversation" + "That player isn't on your team, or hasn't set up their account yet." | `Messages` deep link | messages.test › CH-7001 |
+| CH-7001 | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team | "Couldn't open that conversation" + "That player isn't on your team, or hasn't set up their account yet." ("That person…" for `?user=`) | `Messages` deep link | messages.test › CH-7001 |
 | CH-7002 | Starting a direct thread fails | "Couldn't start the conversation" + "Try again in a moment." | `attempt('startDirect')` | messages.test › CH-7002 |
 | CH-7003 | Creating a group fails | "Couldn't create the group". Done: "Group created · Pinehurst travel" | `attempt('createGroup')` | messages.test › CH-7003 |
 | CH-7004 | Sending a message throws | "Couldn't send the message" + "Your message is still in the box. Try again." | `api.send` | messages.test › CH-7004 |

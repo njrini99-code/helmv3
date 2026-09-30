@@ -8,6 +8,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { rebuiltHref } from '../../shell/nav';
 import { firstName } from './model';
+import { MY_STATS } from './player-links';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { EmptyState } from '../../ui/States';
 import { ScrollRegion } from '../../ui/ScrollRegion';
@@ -52,7 +53,11 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
 
 const statsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
 
-export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
+/**
+ * `mine`: the player's Home ("My latest round", Player - Home.html): a flag in
+ * place of the avatar, and My stats in place of the player's stats.
+ */
+export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestRounds']; mine?: boolean }) {
   const [i, setI] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
   const reduced = useChReducedMotion();
@@ -67,7 +72,7 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
   return (
     <section className="ch-h-pane" aria-labelledby="ch-round-title">
       <div className="ch-h-pane__head">
-        <h2 id="ch-round-title">Latest round</h2>
+        <h2 id="ch-round-title">{mine ? 'My latest round' : 'Latest round'}</h2>
         {rounds.length > 1 && (
           <div className="ch-h-pager ch-well-soft">
             <span className="ch-num" aria-live="polite">
@@ -86,7 +91,12 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
           body="Posted rounds are safe. Try again, and if it keeps happening the error has already been reported."
         />
       ) : !r ? (
-        <EmptyState code="CH-2302" icon={Flag} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
+        <EmptyState
+          code="CH-2302"
+          icon={Flag}
+          title="No rounds posted yet this season."
+          body={mine ? 'Your newest 18-hole round appears here, hole by hole, as soon as you post it.' : 'The newest 18-hole round appears here as soon as a player posts it.'}
+        />
       ) : (
         <div className="ch-h-round-frame">
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
@@ -100,10 +110,16 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
             >
               <div className="ch-h-round__top">
                 <div className="ch-h-round__who">
-                  <Avatar name={r.playerName} size={36} />
+                  {mine ? (
+                    <span className="ch-h-flag" aria-hidden="true">
+                      <Flag size={16} />
+                    </span>
+                  ) : (
+                    <Avatar name={r.playerName} size={36} />
+                  )}
                   <div>
-                    <div className="ch-h-round__name">{r.playerName}</div>
-                    <div className="ch-h-round__meta">{r.meta}</div>
+                    <div className="ch-h-round__name">{mine ? (r.meta.split(' · ')[0] ?? r.meta) : r.playerName}</div>
+                    <div className="ch-h-round__meta">{mine ? r.meta.split(' · ').slice(1).join(' · ') : r.meta}</div>
                   </div>
                 </div>
                 <div className="ch-h-round__score">
@@ -113,7 +129,7 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
               </div>
 
               {r.holes ? (
-                <ScrollRegion label={`${r.playerName}'s scorecard`} className="ch-h-card ch-well-soft">
+                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}'s scorecard`} className="ch-h-card ch-well-soft">
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
                 </ScrollRegion>
@@ -140,11 +156,18 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
                     <b className={r.sg == null ? undefined : r.sg >= 0 ? 'is-gain' : 'is-loss'}>{formatSigned(r.sg)}</b>
                   </span>
                 </div>
-                {statsHref(r.playerId) && (
-                  // No single-round recap is rebuilt yet; this opens the player's stats, and says so.
-                  <Button href={statsHref(r.playerId)!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
-                    {firstName(r.playerName)}&apos;s stats
+                {mine ? (
+                  // No single-round recap is rebuilt yet; My stats holds every round.
+                  <Button href={MY_STATS} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                    My stats
                   </Button>
+                ) : (
+                  statsHref(r.playerId) && (
+                    // No single-round recap is rebuilt yet; this opens the player's stats, and says so.
+                    <Button href={statsHref(r.playerId)!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                      {firstName(r.playerName)}&apos;s stats
+                    </Button>
+                  )
                 )}
               </div>
             </m.div>

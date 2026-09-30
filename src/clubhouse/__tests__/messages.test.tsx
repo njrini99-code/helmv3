@@ -189,6 +189,20 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7001', /Couldn't open that conversation/);
   });
 
+  it('CH-7001 ?user= (a player’s Message coach) starts the thread with that person, or says they aren’t on the team', async () => {
+    a.createGolfConversation.mockResolvedValue({ error: 'nope' });
+    params.current = new URLSearchParams('user=eli');
+    const { unmount } = show();
+    // Found in the directory: the start is attempted (and here refused, CH-7002), never "not on your team".
+    await expectCode('CH-7002');
+    expect(a.createGolfConversation).toHaveBeenCalled();
+    expect(code('CH-7001')).toBeNull();
+    unmount();
+    params.current = new URLSearchParams('user=nobody');
+    show();
+    await expectCode('CH-7001', /That person isn’t on your team/);
+  });
+
   it('CH-7002 starting a direct thread fails', async () => {
     a.createGolfConversation.mockResolvedValue({ error: 'nope' });
     params.current = new URLSearchParams('player=p-eli');
