@@ -18,6 +18,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
  */
 
 const claimInsert = vi.fn();
+const claimRelease = vi.fn();
 const staffInsert = vi.fn();
 const fromMock = vi.fn();
 
@@ -50,15 +51,33 @@ const TEAM = '11111111-1111-4111-8111-111111111111';
 const ORG = '22222222-2222-4222-8222-222222222222';
 
 /** Minimal admin-client surface: the nonce claim, then the coach/staff reads. */
-function wireAdmin(opts: { claimError: { code?: string; message: string } | null }) {
+function wireAdmin(opts: { claimError: { code?: string; message: string } | null; coachOrg?: string }) {
   fromMock.mockImplementation((table: string) => {
     if (table === 'golf_staff_invite_redemptions') {
-      return { insert: (row: unknown) => (claimInsert(row), Promise.resolve({ error: opts.claimError })) };
+      return {
+        insert: (row: unknown) => (claimInsert(row), Promise.resolve({ error: opts.claimError })),
+        delete: () => {
+          const filters: Array<[string, unknown]> = [];
+          const chain = {
+            eq: (col: string, val: unknown) => {
+              filters.push([col, val]);
+              if (filters.length === 2) {
+                claimRelease(Object.fromEntries(filters));
+                return Promise.resolve({ error: null });
+              }
+              return chain;
+            },
+          };
+          return chain;
+        },
+      };
     }
     if (table === 'golf_coaches') {
       return {
         select: () => ({
-          eq: () => ({ maybeSingle: async () => ({ data: { id: 'coach-1', organization_id: ORG }, error: null }) }),
+          eq: () => ({
+            maybeSingle: async () => ({ data: { id: 'coach-1', organization_id: opts.coachOrg ?? ORG }, error: null }),
+          }),
         }),
       };
     }
@@ -80,6 +99,7 @@ describe('redeemStaffInvite — single use', () => {
 
   beforeEach(() => {
     claimInsert.mockReset();
+    claimRelease.mockReset();
     staffInsert.mockReset();
     fromMock.mockReset();
     process.env.COACHHELM_INTERNAL_SECRET = 'test-secret-for-staff-invites';
@@ -106,6 +126,33 @@ describe('redeemStaffInvite — single use', () => {
     expect(claimed.team_id).toBe(TEAM);
     expect(claimed.role).toBe('coach');
     expect(typeof claimed.nonce).toBe('string');
+  });
+
+  it('releases its own claim when redemption fails after it, so the invite still works', async () => {
+    // Signed in with an account that belongs to another program: the recipient
+    // can fix this by signing in with the right account, so spending the
+    // invite here would force the head coach to mint a new one.
+    wireAdmin({ claimError: null, coachOrg: '33333333-3333-4333-8333-333333333333' });
+    const token = signStaffInvite(TEAM, ORG, 'coach')!;
+
+    const result = await redeemStaffInvite(token, 'Wrong Account');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('another program');
+    expect(staffInsert).not.toHaveBeenCalled();
+    const claimed = claimInsert.mock.calls[0]![0] as Record<string, unknown>;
+    // Released by nonce AND claimant, so it can never free someone else's claim.
+    expect(claimRelease).toHaveBeenCalledWith({ nonce: claimed.nonce, redeemed_by: 'user-1' });
+  });
+
+  it('does not release the claim after a successful redemption', async () => {
+    wireAdmin({ claimError: null });
+    const token = signStaffInvite(TEAM, ORG, 'coach')!;
+
+    const result = await redeemStaffInvite(token, 'Jane Assistant');
+
+    expect(result.success).toBe(true);
+    expect(claimRelease).not.toHaveBeenCalled();
   });
 
   it('REFUSES a replay and writes no staff row', async () => {

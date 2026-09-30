@@ -29,8 +29,8 @@ import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { verifyStaffInvite } from '@/lib/golf/staff-invite';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { redeemStaffInvite } from '@/app/golf/actions/teams';
-import { joinTeamAsAssistantCoach } from '@/lib/golf/assistant-join';
 import { resolveStaffInviteCode } from '@/lib/golf/staff-invite-lookup';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
@@ -319,24 +319,25 @@ export type SignupResult = {
   success: boolean;
   error?: string;
   redirectTo?: string;
+  /**
+   * Set only when a staff invite code opened signup: true when the account was
+   * attached to the inviting program, false when redemption failed and the
+   * redirect points at the accept screen to retry. Lets a caller say "you're
+   * on staff" without parsing the redirect.
+   */
+  staffJoined?: boolean;
 };
 
 /**
  * Golf-specific signup with rate limiting
  */
 /**
- * What the signup form may ask for.
- *
- * `assistant_request` is deliberately NOT a role — it is a request for one. It
- * exists because the head coach and the assistant share ONE code (the team
- * join code), so the choice has to be made in the UI rather than sealed into a
- * separate credential. Everyone holding that code is on the roster, so letting
- * the choice grant itself would let any player self-promote to assistant coach
- * and read every teammate's rounds and PII. That is the escalation reverted in
- * 266d02d91 (2026-08-05); the approval step below is what lets the single-code
- * flow ship without re-opening it.
+ * What the signup form may ask for. There is no assistant role here: a team
+ * join code is shared with the whole roster, so it signs up players only, and
+ * assistants join with a staff invite code whose role is sealed in a signed
+ * token (see the staff-invite branch in signupActionImpl).
  */
-export type GolfSignupRole = 'player' | 'coach' | 'assistant_request';
+export type GolfSignupRole = 'player' | 'coach';
 
 async function signupActionImpl(
   email: string,
@@ -347,12 +348,7 @@ async function signupActionImpl(
 ): Promise<SignupResult> {
   const normalizedEmail = email.toLowerCase().trim();
 
-  // An assistant-coach REQUEST is a coach account as far as auth is concerned;
-  // what makes it a request rather than a grant is that no
-  // golf_team_coach_staff row is written for it below. Both access helpers
-  // (is_golf_team_coach / is_golf_team_head_coach) read that table and nothing
-  // else, so until a head coach approves, this account can see no team data.
-  const authRole: 'player' | 'coach' = role === 'assistant_request' ? 'coach' : role;
+  const authRole: 'player' | 'coach' = role;
 
   // Validate password strength FIRST (before rate limiting to provide immediate feedback)
   const passwordValidation = validatePassword(password);
@@ -397,6 +393,42 @@ async function signupActionImpl(
       success: false,
       error: 'Your access code could not be verified. Please reload this page and enter your invite code again.',
     };
+  }
+
+  // A ROSTER CODE SIGNS UP PLAYERS ONLY (owner decision 2026-09-30).
+  //
+  // The team join_code is handed to every player on the roster, so letting it
+  // mint a coach of any kind lets any player self-promote to staff and read
+  // every teammate's rounds and PII. Assistants join with a staff invite code,
+  // whose role is sealed in a signed token. `role` arrives from the browser, so
+  // this is checked here, BEFORE signUp, rather than trusted from the form: a
+  // refusal after signUp would strand an account with no team.
+  if (gate.teamJoinCode && role !== 'player') {
+    logSecurityEvent('Golf signup tried a non-player role with a team join code', 'warning', {
+      email: normalizedEmail,
+      ip,
+      sport: 'golf',
+    }).catch(() => {});
+    return {
+      success: false,
+      error: 'A team code is for players. Assistant coaches need a staff invite code from their head coach.',
+    };
+  }
+
+  // A STAFF CODE MUST STILL RESOLVE BEFORE AN ACCOUNT EXISTS. The code maps to
+  // a signed invite token, and that token (not the short code) is what the
+  // accept screen and redeemStaffInvite read. Resolving it here means an
+  // expired or revoked code fails without creating an account, and the retry
+  // link below carries the real token.
+  let staffToken: string | null = null;
+  if (gate.staffInviteCode) {
+    staffToken = await resolveStaffInviteCode(gate.staffInviteCode);
+    if (!staffToken) {
+      return {
+        success: false,
+        error: 'That staff code is no longer valid. Ask your head coach for a new one.',
+      };
+    }
   }
 
   const supabase = await createClient();
@@ -497,6 +529,10 @@ async function signupActionImpl(
     };
   }
 
+  // Same reason as loginAction: a stale idle marker from an earlier session
+  // would make middleware sign the brand-new account straight back out.
+  await resetSessionIdleMarker();
+
   // Log signup event (fire-and-forget)
   logSignup(data.user.id, normalizedEmail, authRole, { ip }).catch(() => {});
 
@@ -525,107 +561,34 @@ async function signupActionImpl(
   // this is safe to expose at signup: typing a code cannot choose a role, and
   // the roster join_code lives in a different namespace entirely, so a player
   // credential can still only ever produce a player.
-  if (gate.staffInviteCode) {
-    const token = await resolveStaffInviteCode(gate.staffInviteCode);
-    if (token) {
-      const redeemed = await redeemStaffInvite(
-        token,
-        [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
-      );
-      if (redeemed.success) {
-        return { success: true, redirectTo: '/golf/dashboard' };
-      }
-      // The account EXISTS at this point, so failing the whole signup would
-      // strand them with credentials and no program. Send them to the accept
-      // screen, which states the real reason (expired / already used) and lets
-      // them retry with a fresh code once signed in.
-      await logServerError(
-        `[signupAction] staff invite redemption failed after account creation: ${redeemed.error ?? 'unknown'}`,
-        { action: 'auth.signupAction' },
-        'warning',
-      );
-    }
-    return { success: true, redirectTo: `/golf/staff/join/${encodeURIComponent(gate.staffInviteCode)}` };
-  }
-
-  // ASSISTANT COACH on the shared team code — attached IMMEDIATELY.
-  //
-  // Creates a real coach profile bound to the inviting PROGRAM and writes a
-  // golf_team_coach_staff row for every team in it. Those rows are the whole of
-  // team access — both is_golf_team_coach and is_golf_team_head_coach are
-  // EXISTS() over that table and read nothing else — so writing them is what
-  // makes the account work on first sign-in, with no waiting page in between.
-  //
-  // There is deliberately NO approval step (owner decision 2026-08-20): "The
-  // approval is them having the access code, and putting it in when they hit
-  // sign up." See joinTeamAsAssistantCoach in lib/golf/assistant-join.ts for
-  // the trade-off that decision accepts. It is server-only, not an action: the
-  // user id it receives is `data.user.id` from signUp above, never a client value.
-  //
-  // Anchored to gate.teamJoinCode, never to anything the browser sent: without
-  // a team code there is no program to join, and the signup is refused rather
-  // than silently downgraded to a stray coach account.
-  // A ROSTER CODE OUTRANKS THE ROLE THE BROWSER SENT.
-  //
-  // `role` arrives from the client. The form derives 'assistant_request' from
-  // the resolved code scope, but the server never checked that, so a submission
-  // of role:'coach' carrying a roster code skipped the branch below and fell
-  // through to `role === 'coach' ? '/golf/coach'` — new-program onboarding, the
-  // duplicate-organization dead end this whole change exists to close.
-  //
-  // That is not hypothetical during a deploy. Anyone still holding the PREVIOUS
-  // bundle is holding the one that offers "Coach" on a roster code, and their
-  // tab posts to the NEW server — so the promote that fixes this also opens the
-  // window where it fires, for exactly the Guilford and Shenandoah users who are
-  // retrying right now.
-  //
-  // Holding a team code means joining THAT program; it cannot mean creating a
-  // new one. The staff-invite branch above already defends itself this way
-  // (see its comment: "typing a code cannot choose a role") — this is the same
-  // rule for the roster path, which was the one missing it.
-  const roleForGate: GolfSignupRole =
-    gate.teamJoinCode && role === 'coach' ? 'assistant_request' : role;
-
-  if (roleForGate === 'assistant_request') {
-    if (!gate.teamJoinCode) {
-      return {
-        success: false,
-        error: 'Assistant coaches need their team\'s code. Ask your head coach for it and try again.',
-      };
-    }
-    const joined = await joinTeamAsAssistantCoach(
-      data.user.id,
-      gate.teamJoinCode,
+  if (staffToken) {
+    const redeemed = await redeemStaffInvite(
+      staffToken,
       [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
-      normalizedEmail,
     );
-    if (!joined.success) {
-      // The auth account exists by now, so refusing the whole signup would
-      // strand them with credentials and nothing to sign into. But unlike the
-      // old request-and-wait flow, a failure here means they genuinely have NO
-      // team access — so say so instead of sending them to a dashboard that
-      // would render empty.
-      await logServerError(
-        `[signupAction] assistant coach team attach failed after account creation: ${joined.error ?? 'unknown'}`,
-        { action: 'auth.signupAction' },
-        'error',
-      );
-      return {
-        success: false,
-        error: joined.error ?? 'We created your account but could not add you to the team. Please sign in and try again.',
-      };
+    if (redeemed.success) {
+      return { success: true, redirectTo: '/golf/dashboard', staffJoined: true };
     }
-    // Straight to the dashboard. They are on the team.
-    return { success: true, redirectTo: '/golf/dashboard' };
+    // The account EXISTS at this point, so failing the whole signup would
+    // strand them with credentials and no program. Send them to the accept
+    // screen, which states the real reason (expired / already used) and lets
+    // them retry with a fresh code once signed in.
+    await logServerError(
+      `[signupAction] staff invite redemption failed after account creation: ${redeemed.error ?? 'unknown'}`,
+      { action: 'auth.signupAction' },
+      'warning',
+    );
+    return {
+      success: true,
+      redirectTo: `/golf/staff/join/${encodeURIComponent(staffToken)}`,
+      staffJoined: false,
+    };
   }
 
-  // `roleForGate`, not `role` — a roster code has already been resolved to
-  // 'assistant_request' above and handled there, so reaching this line with a
-  // team code in hand and 'coach' selected is no longer possible. Reading the
-  // gated value here too means a future edit cannot reopen that path by
-  // accident.
-  const carryJoinCode = roleForGate === 'player' && gate.teamJoinCode;
-  const redirectTo = roleForGate === 'coach'
+  // A roster code with any role but 'player' was refused before signUp above,
+  // so a team code here always belongs to a player: carry it into onboarding.
+  const carryJoinCode = role === 'player' && gate.teamJoinCode;
+  const redirectTo = role === 'coach'
     ? '/golf/coach'
     : carryJoinCode
       ? `/golf/player?joinCode=${encodeURIComponent(gate.teamJoinCode as string)}`
@@ -843,6 +806,29 @@ async function signupWithStaffInviteActionImpl(
     };
   }
 
+  // A SPENT INVITE CREATES NOTHING. redeemStaffInvite refuses a replayed nonce,
+  // but only after this function has already created the account, which left a
+  // coach login attached to no program. Checking the claim table first means a
+  // forwarded or reused link fails before any account exists. Fails closed: if
+  // the check itself cannot run, no account is created.
+  const { data: spent, error: spentError } = await createAdminClient()
+    .from('golf_staff_invite_redemptions')
+    .select('nonce')
+    .eq('nonce', verified.payload.n)
+    .maybeSingle();
+  if (spentError) {
+    await logServerError(`[Golf Staff Invite Signup] replay check failed: ${describeError(spentError)}`, {
+      action: 'auth.signupWithStaffInviteAction',
+    });
+    return { success: false, error: 'Could not verify that invitation. Please try again.' };
+  }
+  if (spent) {
+    return {
+      success: false,
+      error: 'That invitation has already been used. Ask your head coach for a new one.',
+    };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email: normalizedEmail,
@@ -901,6 +887,10 @@ async function signupWithStaffInviteActionImpl(
       error: 'Account created but session could not be established. Please try signing in.',
     };
   }
+
+  // Same reason as loginAction: a stale idle marker from an earlier session
+  // would make middleware sign the brand-new account straight back out.
+  await resetSessionIdleMarker();
 
   logSignup(data.user.id, normalizedEmail, 'coach', { ip }).catch(() => {});
   revalidatePath('/golf/dashboard');

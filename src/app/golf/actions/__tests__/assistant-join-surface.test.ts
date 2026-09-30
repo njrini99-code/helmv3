@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -7,8 +7,8 @@ import path from 'node:path';
  *
  * It writes with the service role for whatever user id it is handed. While it
  * was exported from actions/teams.ts ('use server') it was callable without a
- * session. It now lives in src/lib/golf/assistant-join.ts behind `server-only`
- * and signup passes it the id auth.signUp returned. These checks are static
+ * session. It was then removed outright: a team code now signs up
+ * players only, and assistants join with a staff invite code. These checks are static
  * on purpose: any export from a 'use server' file is an endpoint, whether or
  * not anything in the app calls it.
  */
@@ -47,15 +47,17 @@ describe('assistant join is not a callable server action', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('the implementation is server-only and not itself a server action', () => {
-    const src = read('src/lib/golf/assistant-join.ts');
-    expect(src.startsWith("import 'server-only';")).toBe(true);
-    expect(src).not.toMatch(/^\s*['"]use server['"]/m);
+  it('the service-role join helper is gone and signup does not reach for it', () => {
+    expect(existsSync(path.join(ROOT, 'src/lib/golf/assistant-join.ts'))).toBe(false);
+    const src = read('src/app/golf/actions/auth.ts');
+    expect(src).not.toMatch(/joinTeamAsAssistantCoach/);
   });
 
-  it('signup passes the id from its own auth.signUp result', () => {
+  it('signup refuses a non-player role on a team code before signUp', () => {
     const src = read('src/app/golf/actions/auth.ts');
-    expect(src).toMatch(/from '@\/lib\/golf\/assistant-join'/);
-    expect(src).toMatch(/joinTeamAsAssistantCoach\(\s*data\.user\.id,/);
+    const refusal = src.indexOf("if (gate.teamJoinCode && role !== 'player')");
+    const signUp = src.indexOf('supabase.auth.signUp(');
+    expect(refusal).toBeGreaterThan(-1);
+    expect(refusal).toBeLessThan(signUp);
   });
 });
