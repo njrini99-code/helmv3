@@ -4497,7 +4497,7 @@
     "item": 9,
     "name": "THE_SHARED_FILES_ARE_LOADING",
     "chCode": "CH-7409",
-    "meaning": "The shared files are loading (phone Details)",
+    "meaning": "The shared files are loading (Details)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -4587,7 +4587,7 @@
     "item": 6,
     "name": "NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION",
     "chCode": "CH-7306",
-    "meaning": "Nothing has been shared in the conversation (phone Details)",
+    "meaning": "Nothing has been shared in the conversation (Details)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -4851,7 +4851,7 @@
     "item": 16,
     "name": "A_SHARED_FILE_WONT_OPEN",
     "chCode": "CH-7021",
-    "meaning": "A shared file won't open (phone Details › Files)",
+    "meaning": "A shared file won't open (Details › Files)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -5005,7 +5005,7 @@
     "item": 30,
     "name": "THE_SHARED_FILES_DONT_LOAD",
     "chCode": "CH-7214",
-    "meaning": "The shared files don't load (phone Details)",
+    "meaning": "The shared files don't load (Details)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -8305,6 +8305,17 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100206,
+    "page": "P010",
+    "category": 2,
+    "item": 6,
+    "name": "AN_EDIT_IS_BEING_SAVED",
+    "chCode": "CH-10406",
+    "meaning": "An edit is being saved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100401,
     "page": "P010",
     "category": 4,
@@ -8428,13 +8439,24 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100412,
+    "page": "P010",
+    "category": 4,
+    "item": 12,
+    "name": "A_TEAM_WITH_NO_DOCUMENTS",
+    "chCode": "CH-10311",
+    "meaning": "A team with no documents",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100501,
     "page": "P010",
     "category": 5,
     "item": 1,
     "name": "POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS",
     "chCode": "CH-10101",
-    "meaning": "Posting with a headline under three characters",
+    "meaning": "Posting or saving an edit with a headline under three characters",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -8703,6 +8725,28 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100618,
+    "page": "P010",
+    "category": 6,
+    "item": 18,
+    "name": "SAVING_AN_EDIT_TO_AN_ANNOUNCEMENT_FAILS",
+    "chCode": "CH-10010",
+    "meaning": "Saving an edit to an announcement fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100619,
+    "page": "P010",
+    "category": 6,
+    "item": 19,
+    "name": "THE_TEAMS_DOCUMENTS_DONT_LOAD",
+    "chCode": "CH-10209",
+    "meaning": "The team's documents don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100701,
     "page": "P010",
     "category": 7,
@@ -8882,7 +8926,7 @@
     "item": 1,
     "name": "A_TAB_AN_RSVP_REPLY_AN_AUDIENCE",
     "chCode": "CH-10701",
-    "meaning": "A tab, an RSVP reply, an audience or transport choice, a player chip",
+    "meaning": "A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },

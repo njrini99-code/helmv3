@@ -16,7 +16,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
-import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet } from './sheets';
+import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import '../../styles/hub.css';
 
@@ -87,6 +87,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const [done, setDone] = useState(() => new Set<string>());
   const [gone, setGone] = useState(() => new Set<string>());
   const [compose, setCompose] = useState(false);
+  // The post open in the edit sheet, and the edits that have landed (shown at once; the page's read follows).
+  const [editing, setEditing] = useState<ChHubAnnouncement | null>(null);
+  const [edited, setEdited] = useState(() => new Map<string, ChAnnouncementEdit>());
   const [tripOpen, setTripOpen] = useState(false);
   const [assign, setAssign] = useState(false);
   const [confirm, setConfirm] = useState<Pending>(null);
@@ -225,7 +228,10 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     setConfirm(p);
   };
 
-  const anns = useMemo(() => data.announcements.rows.filter((a) => !gone.has(a.id)), [data.announcements.rows, gone]);
+  const anns = useMemo(
+    () => data.announcements.rows.filter((a) => !gone.has(a.id)).map((a) => (edited.has(a.id) ? { ...a, ...edited.get(a.id) } : a)),
+    [data.announcements.rows, gone, edited],
+  );
   const tasks = useMemo(() => ({ ...data.tasks, rows: data.tasks.rows.filter((t) => !gone.has(t.id)) }), [data.tasks, gone]);
   const docs = useMemo(() => ({ ...data.documents, folders: data.documents.folders.map((f) => ({ ...f, files: f.files.filter((d) => !gone.has(d.id)) })).filter((f) => f.files.length) }), [data.documents, gone]);
   const isAcked = (a: ChHubAnnouncement) => a.acked || acked.has(a.id);
@@ -346,7 +352,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                   {data.announcements.error ? (
                     <RefreshNotice code="CH-10206" title="Announcements didn't load." body="Nothing was lost. Try again; the error has been reported." />
                   ) : featured ? (
-                    <Announcement a={featured} role={data.role} featured acked={isAcked(featured)} onAck={onAck} onDelete={(a) => askDelete({ kind: 'ann', a })} />
+                    <Announcement a={featured} role={data.role} featured acked={isAcked(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} />
                   ) : null}
                 </SectionBoundary>
                 <SectionBoundary surface="hub.trip" label="The next trip" code="CH-10205">
@@ -381,7 +387,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                   <EmptyState compact code="CH-10307" icon={Megaphone} title="No announcements yet." body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 </div>
               ) : (
-                anns.map((a) => <Announcement key={a.id} a={a} role={data.role} acked={isAcked(a)} onAck={onAck} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
+                anns.map((a) => <Announcement key={a.id} a={a} role={data.role} acked={isAcked(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
               )}
             </div>
           </SectionBoundary>
@@ -432,7 +438,17 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
       {coach && (
         <>
-          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} write={writes.postAnnouncement} onDone={refresh} />
+          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} documents={docs} write={writes.postAnnouncement} onDone={refresh} />
+          <ComposeSheet
+            open={!!editing}
+            onClose={() => setEditing(null)}
+            players={data.players}
+            playersError={data.playersError}
+            documents={docs}
+            write={writes.postAnnouncement}
+            onDone={refresh}
+            edit={{ announcement: editing, write: writes.editAnnouncement, onSaved: (id, change) => setEdited((m) => new Map(m).set(id, change)) }}
+          />
           <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} write={writes.planTrip} onDone={refresh} />
           <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} />
           <ConfirmDelete

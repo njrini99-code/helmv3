@@ -102,7 +102,7 @@ player's trip says whether they are traveling only when the aggregate returns th
 
 `getPlayerHubSummaryData`, `getPlayerHubAnnouncements`, `getAnnouncementsWithMeta`, `getDocuments`,
 `getUnifiedNotifications` (reads), and `respondToEvent`, `acknowledgeAnnouncement`, `completeTask`,
-`getPreviewUrl`, `createEnrichedAnnouncement`, `deleteAnnouncement`, `createTask`, `deleteTask`,
+`getPreviewUrl`, `createEnrichedAnnouncement`, `updateAnnouncement`, `deleteAnnouncement`, `createTask`, `deleteTask`,
 `createGolfTravelItinerary`, `uploadGolfDocument`, `createGolfDocument`, `deleteGolfDocument`
 (writes). WIRING.md maps each.
 
@@ -127,8 +127,9 @@ state); Q-70 and Q-71 are open, and the page is built on their recommendations.
 
 Pin to the top, Schedule, a push promise, trip photos, the class clash check, a folder picker, and room
 and flight editors (they are shown as text when present). Also not built, though the design's data
-table lists `updateAnnouncement` and `updateGolfTravelItinerary`: editing a post or a trip after it is
-posted.
+table lists `updateGolfTravelItinerary`: editing a trip after it is posted. Editing a post is built
+(Clickables gap 11): Edit announcement in a post's More menu changes its headline, message and
+acknowledgement only, because `updateAnnouncement` takes no audience and no attachments.
 
 ## Fresh-build confirmation
 

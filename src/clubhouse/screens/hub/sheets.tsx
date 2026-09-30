@@ -1,11 +1,13 @@
 'use client';
 
-import { Megaphone, Plane, SquareCheck, TriangleAlert } from 'lucide-react';
+import { Check, FileText, Megaphone, Paperclip, Pencil, Plane, SquareCheck, TriangleAlert, X } from 'lucide-react';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
-import type { ChTeamHub } from '../../data/hub';
+import type { ChHubAnnouncement, ChHubFile, ChTeamHub } from '../../data/hub';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Switch } from '../../ui/Switch';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
@@ -90,32 +92,124 @@ function PlayerPicks({
   );
 }
 
+/**
+ * Files from the team's Documents to send with the post: the chosen ones as chips that come off with a tap, and a list to
+ * choose from. The team's documents came with the page, so the list has nothing to load. With none to show it says why: the
+ * read failed (CH-10209), or nothing has been added yet (CH-10311).
+ */
+function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['documents']; picked: string[]; onChange: (ids: string[]) => void }) {
+  const listId = useId();
+  const [listing, setListing] = useState(false);
+  const files = documents.folders.flatMap((f) => f.files);
+  const chosen = picked.map((id) => files.find((f) => f.id === id)).filter((f): f is ChHubFile => !!f);
+  const toggle = (id: string) => {
+    haptic('select');
+    onChange(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
+  };
+  if (documents.error) return <RefreshNotice code="CH-10209" title="Documents didn't load." body="Nothing was lost. Try again to attach files." />;
+  if (files.length === 0)
+    return (
+      <span className="ch-field__help" data-ch-code="CH-10311">
+        No documents yet. Add files in the Documents tab, then attach them here.
+      </span>
+    );
+  return (
+    <div className="ch-hb-attach">
+      {chosen.length > 0 && (
+        <ul className="ch-hb-chips" aria-label="Attached documents">
+          {chosen.map((f) => (
+            <li key={f.id}>
+              <button type="button" className="ch-hb-chip" aria-label={`Remove ${f.title}`} onClick={() => toggle(f.id)}>
+                <Icon icon={FileText} size={13} />
+                <span>{f.title}</span>
+                <Icon icon={X} size={13} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-expanded={listing} aria-controls={listId} onClick={() => setListing((v) => !v)}>
+        <Icon icon={Paperclip} size={14} />
+        <span>Attach from Documents</span>
+      </button>
+      {listing && (
+        <div className="ch-hb-dp" id={listId}>
+          {documents.folders.map((f) => (
+            <div key={f.name} role="group" aria-label={f.name}>
+              <span className="ch-hb-dp__f">{f.name}</span>
+              {f.files.map((d) => (
+                <button key={d.id} type="button" className="ch-hb-dp__row" aria-pressed={picked.includes(d.id)} aria-label={`${d.title}, ${d.type}`} onClick={() => toggle(d.id)}>
+                  <span className="ch-hb-dp__b">
+                    <b>{d.title}</b>
+                    <span className="ch-num">{[d.type, d.size, d.date].filter(Boolean).join(' · ')}</span>
+                  </span>
+                  <span className="ch-hb-dp__ck" aria-hidden="true">
+                    {picked.includes(d.id) && <Icon icon={Check} size={13} />}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** What an edit changes on the card: the page shows it at once, and the read that follows agrees with it. */
+export type ChAnnouncementEdit = Pick<ChHubAnnouncement, 'title' | 'body' | 'needAck'>;
+
+/**
+ * New announcement, and the same sheet to fix one already posted (`edit`). Editing changes the headline, the message and the
+ * acknowledgement only: updateAnnouncement takes no audience and no attachments, so those two fields are left out rather than
+ * offered and ignored. The form starts from the post once per opening, so a failed save or a page read that lands while it is
+ * open never puts the words back. Edit and New are two instances, so a draft of a new post survives an edit.
+ */
 export function ComposeSheet({
   open,
   onClose,
   players,
   playersError,
+  documents,
   write,
   onDone,
+  edit,
 }: {
   open: boolean;
   onClose: () => void;
   players: ChTeamHub['players'];
   playersError: boolean;
+  documents: ChTeamHub['documents'];
   write: ChHubWrites['postAnnouncement'];
-  /** After a post lands: the page reads again. */
+  /** After a post or an edit lands: the page reads again. */
   onDone: () => void;
+  /** Edit mode: the post being fixed (null while the sheet is shut) and how it is saved. `players`, `documents` and `write` are then unused. */
+  edit?: { announcement: ChHubAnnouncement | null; write: ChHubWrites['editAnnouncement']; onSaved: (id: string, change: ChAnnouncementEdit) => void };
 }) {
   const id = useId();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [aud, setAud] = useState<'all' | 'pick'>('all');
   const [picked, setPicked] = useState<string[]>([]);
+  const [docs, setDocs] = useState<string[]>([]);
   const [ack, setAck] = useState(true);
   const [tried, setTried] = useState(false);
+  const target = edit?.announcement ?? null;
+  const [seeded, setSeeded] = useState<ChHubAnnouncement | null>(null);
+  if (edit && seeded !== target) {
+    setSeeded(target);
+    if (target) {
+      setTitle(target.title);
+      setBody(target.body);
+      setAck(target.needAck);
+      setTried(false);
+    }
+  }
   const titleErr = tried && title.trim().length < 3 ? 'Give it a headline, at least three characters.' : null;
   const pickErr = tried && aud === 'pick' && picked.length === 0 ? 'Choose at least one player, or send it to the whole team.' : null;
-  const post = useAction(
+  // A file deleted from Documents while the sheet was open is not sent.
+  const attached = docs.filter((d) => documents.folders.some((f) => f.files.some((x) => x.id === d)));
+  const create = useAction(
     'hub.postAnnouncement',
     async (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => {
       const res = await write(i);
@@ -124,6 +218,7 @@ export function ComposeSheet({
         setBody('');
         setAud('all');
         setPicked([]);
+        setDocs([]);
         setTried(false);
         onClose();
         onDone();
@@ -132,30 +227,48 @@ export function ComposeSheet({
     },
     (i) => ({ done: `Posted "${i.title.trim()}"`, failed: 'Couldn’t post the announcement', hint: 'Your text is still here. Try again in a moment.', code: 'CH-10005' }),
   );
-  const pending = post.pending;
+  const save = useAction(
+    'hub.editAnnouncement',
+    async (announcementId: string, i: Parameters<ChHubWrites['editAnnouncement']>[1]) => {
+      // Only the edit sheet runs this, so `edit` is there.
+      const res = await edit!.write(announcementId, i);
+      if (normalise(res).success) {
+        edit!.onSaved(announcementId, { title: i.title.trim(), body: i.body.trim(), needAck: i.requiresAck });
+        onClose();
+        onDone();
+      }
+      return res;
+    },
+    (_announcementId, i) => ({ done: `Saved "${i.title.trim()}"`, failed: 'Couldn’t save the announcement', hint: 'Your changes are still here. Try again in a moment.', code: 'CH-10010' }),
+  );
+  const pending = edit ? save.pending : create.pending;
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     setTried(true);
-    if (title.trim().length < 3 || (aud === 'pick' && picked.length === 0)) {
+    if (title.trim().length < 3 || (!edit && aud === 'pick' && picked.length === 0)) {
       haptic('warning');
       return;
     }
-    void post.run({ title, body, requiresAck: ack, playerIds: aud === 'all' ? null : picked });
+    if (edit) {
+      if (target) void save.run(target.id, { title, body, urgency: target.urgency, requiresAck: ack });
+      return;
+    }
+    void create.run({ title, body, requiresAck: ack, playerIds: aud === 'all' ? null : picked, documentIds: attached });
   };
   return (
     <Modal
       open={open}
       onClose={onClose}
-      icon={Megaphone}
-      title="New announcement"
-      description="Players see it in Team Hub and the bell."
+      icon={edit ? Pencil : Megaphone}
+      title={edit ? 'Edit announcement' : 'New announcement'}
+      description={edit ? 'Players see the new wording in Team Hub. Who it went to and its attachments stay as posted.' : 'Players see it in Team Hub and the bell.'}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button variant="primary" disabled={pending} feel={null} onClick={() => void submit()}>
-            {pending ? <span data-ch-code="CH-10402">Posting</span> : 'Post'}
+            {pending ? edit ? <span data-ch-code="CH-10406">Saving</span> : <span data-ch-code="CH-10402">Posting</span> : edit ? 'Save changes' : 'Post'}
           </Button>
         </>
       }
@@ -175,36 +288,44 @@ export function ComposeSheet({
         <Field label="Message (optional)" id={`${id}-b`}>
           <textarea id={`${id}-b`} className="ch-textarea" rows={4} maxLength={4000} value={body} onChange={(e) => setBody(e.target.value)} />
         </Field>
-        <div className="ch-field">
-          <span className="ch-field__label">Send to</span>
-          <div className="ch-hb-aud" role="radiogroup" aria-label="Send to">
-            {(
-              [
-                ['all', playersError ? 'Whole team' : `Whole team · ${players.length}`],
-                ['pick', 'Choose players'],
-              ] as const
-            ).map(([k, l]) => (
-              <button
-                key={k}
-                type="button"
-                role="radio"
-                aria-checked={aud === k}
-                onClick={() => {
-                  haptic('select');
-                  setAud(k);
-                }}
-              >
-                {l}
-              </button>
-            ))}
+        {!edit && (
+          <div className="ch-field">
+            <span className="ch-field__label">Send to</span>
+            <div className="ch-hb-aud" role="radiogroup" aria-label="Send to">
+              {(
+                [
+                  ['all', playersError ? 'Whole team' : `Whole team · ${players.length}`],
+                  ['pick', 'Choose players'],
+                ] as const
+              ).map(([k, l]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={aud === k}
+                  onClick={() => {
+                    haptic('select');
+                    setAud(k);
+                  }}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            {aud === 'pick' && <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={picked} onChange={setPicked} label="Players who get it" />}
+            {pickErr && players.length > 0 && (
+              <span className="ch-field__help is-error" data-ch-code="CH-10102">
+                {pickErr}
+              </span>
+            )}
           </div>
-          {aud === 'pick' && <PlayerPicks players={players} error={playersError} onRetry={onDone} picked={picked} onChange={setPicked} label="Players who get it" />}
-          {pickErr && players.length > 0 && (
-            <span className="ch-field__help is-error" data-ch-code="CH-10102">
-              {pickErr}
-            </span>
-          )}
-        </div>
+        )}
+        {!edit && (
+          <div className="ch-field">
+            <span className="ch-field__label">Attachments (optional)</span>
+            <DocumentPicks documents={documents} picked={attached} onChange={setDocs} />
+          </div>
+        )}
         <div className="ch-hb-opts">
           <Switch checked={ack} onChange={setAck} label="Ask players to acknowledge" />
         </div>

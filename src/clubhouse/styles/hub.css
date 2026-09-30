@@ -792,6 +792,108 @@
   box-shadow: 0 0 0 1.5px var(--ch-green-600);
   color: var(--ch-green-800);
 }
+/* Attachments in New announcement: chosen files as chips, and the list to choose from (CH-10209, CH-10311). */
+.ch-hb-attach {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ch-hb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-green-50);
+  box-shadow: 0 0 0 1.5px var(--ch-green-600);
+  font: 500 13px/1 var(--ch-font-sans);
+  color: var(--ch-green-800);
+  cursor: pointer;
+}
+.ch-hb-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hb-dp {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--ch-ivory-50);
+}
+.ch-hb-dp__f {
+  display: block;
+  padding: 8px 10px 4px;
+  font: 600 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hb-dp__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-hb-dp__row:hover {
+  background: var(--ch-bg-hover);
+}
+.ch-hb-dp__row[aria-pressed='true'] {
+  background: var(--ch-green-50);
+}
+.ch-hb-dp__b {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-hb-dp__b b {
+  overflow: hidden;
+  font: 600 13.5px/1.2 var(--ch-font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hb-dp__b span {
+  font: 400 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hb-dp__ck {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1.5px rgb(28 25 18 / 0.25);
+  color: var(--ch-ivory-100);
+}
+.ch-hb-dp__row[aria-pressed='true'] .ch-hb-dp__ck {
+  background: var(--ch-green-800);
+  box-shadow: none;
+}
 .ch-hb-opts {
   padding: 12px 14px;
   border-radius: 12px;

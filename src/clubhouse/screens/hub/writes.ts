@@ -1,11 +1,12 @@
 'use client';
 
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
-import { createEnrichedAnnouncement, deleteAnnouncement } from '@/app/golf/actions/announcements';
+import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { respondToEvent } from '@/app/golf/actions/golf';
 import { completeTask, createTask, deleteTask } from '@/app/golf/actions/tasks';
 import { createGolfTravelItinerary } from '@/app/golf/actions/travel';
+import type { ChHubUrgency } from '../../data/hub';
 import type { ServerResult } from '../../lib/use-action';
 
 /**
@@ -19,7 +20,9 @@ export interface ChHubWrites {
   acknowledge(announcementId: string): Promise<ServerResult>;
   completeTask(taskId: string): Promise<ServerResult>;
   openDocument(documentId: string): Promise<ServerResult<{ url: string }>>;
-  postAnnouncement(input: { title: string; body: string; requiresAck: boolean; playerIds: string[] | null }): Promise<ServerResult<{ announcementId: string }>>;
+  postAnnouncement(input: { title: string; body: string; requiresAck: boolean; playerIds: string[] | null; documentIds: string[] }): Promise<ServerResult<{ announcementId: string }>>;
+  /** A posted announcement's headline, message and acknowledgement (updateAnnouncement takes no audience or attachments). */
+  editAnnouncement(id: string, input: { title: string; body: string; urgency: ChHubUrgency; requiresAck: boolean }): Promise<ServerResult>;
   deleteAnnouncement(id: string): Promise<ServerResult>;
   assignTask(input: { teamId: string; title: string; detail: string; dueDate: string | null; playerIds: string[] }): Promise<ServerResult>;
   deleteTask(id: string): Promise<ServerResult>;
@@ -54,7 +57,8 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
     return { success: true, data: { url: res.data.url } };
   },
   postAnnouncement: (i) =>
-    createEnrichedAnnouncement({ title: i.title.trim(), body: i.body.trim(), urgency: 'normal', requiresAcknowledgement: i.requiresAck, recipientPlayerIds: i.playerIds, documentIds: [], inlineTasks: [] }),
+    createEnrichedAnnouncement({ title: i.title.trim(), body: i.body.trim(), urgency: 'normal', requiresAcknowledgement: i.requiresAck, recipientPlayerIds: i.playerIds, documentIds: i.documentIds, inlineTasks: [] }),
+  editAnnouncement: (id, i) => updateAnnouncement(id, { title: i.title.trim(), body: i.body.trim(), urgency: i.urgency, requiresAcknowledgement: i.requiresAck }),
   deleteAnnouncement: (id) => deleteAnnouncement(id),
   assignTask: (i) => createTask(i.teamId, i.title.trim(), blank(i.detail), i.dueDate ?? undefined, undefined, i.playerIds),
   deleteTask: (id) => deleteTask(id),

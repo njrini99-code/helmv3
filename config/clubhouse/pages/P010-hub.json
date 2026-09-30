@@ -135,13 +135,35 @@
       "service": "src/app/golf/actions/announcements.ts#createEnrichedAnnouncement",
       "data": [
         "golf_announcements",
-        "golf_announcement_recipients"
+        "golf_announcement_recipients",
+        "golf_announcement_documents"
       ],
       "bridge": {
         "validation": 100501,
         "loading": 100202,
         "success": 100901,
         "failure": 100605,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-EDIT-ANNOUNCEMENT",
+      "label": "Edit an announcement (coach)",
+      "component": "src/clubhouse/screens/hub/sheets.tsx#ComposeSheet",
+      "handler": "submit",
+      "service": "src/app/golf/actions/announcements.ts#updateAnnouncement",
+      "data": [
+        "golf_announcements"
+      ],
+      "bridge": {
+        "validation": 100501,
+        "loading": 100206,
+        "success": 100901,
+        "failure": 100618,
         "recovery": 101401,
         "offline": 10703
       },

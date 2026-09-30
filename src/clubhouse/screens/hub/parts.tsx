@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -113,6 +113,7 @@ export function Announcement({
   featured = false,
   acked,
   onAck,
+  onEdit,
   onDelete,
 }: {
   a: ChHubAnnouncement;
@@ -120,6 +121,7 @@ export function Announcement({
   featured?: boolean;
   acked: boolean;
   onAck: (a: ChHubAnnouncement) => void;
+  onEdit: (a: ChHubAnnouncement) => void;
   onDelete: (a: ChHubAnnouncement) => void;
 }) {
   const coach = role === 'coach';
@@ -139,7 +141,10 @@ export function Announcement({
           <Menu
             label={`More for ${a.title}`}
             align="end"
-            items={[{ label: 'Delete announcement', icon: Trash2, danger: true, onSelect: () => onDelete(a) }]}
+            items={[
+              { label: 'Edit announcement', icon: Pencil, onSelect: () => onEdit(a) },
+              { label: 'Delete announcement', icon: Trash2, danger: true, onSelect: () => onDelete(a) },
+            ]}
             trigger={(p) => (
               <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
                 <Icon icon={MoreHorizontal} size={16} />

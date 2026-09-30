@@ -26,9 +26,9 @@ Date:       2026-09-30
 
 | Test | Contract | Result |
 | --- | --- | --- |
-| `src/clubhouse/__tests__/hub.test.tsx` (77 cases) | every catalog row of kinds 0 to 5 (CH-10001 to CH-10405), and the hand contracts 100101, 100102, 100410, 100701, 100801 to 100803, 100901, 101201, 101301, 101401, 101402, 101501, 101901, 102001, 102101, 102301 and 102401 | pass: `npx vitest run src/clubhouse/__tests__/hub.test.tsx` exit 0, 77/77; 66 mutations of the page's code, each failing the suite as expected (the whole fix taken out, and single lines) |
+| `src/clubhouse/__tests__/hub.test.tsx` (95 cases) | every catalog row of kinds 0 to 5 (CH-10001 to CH-10406), and the hand contracts 100101, 100102, 100410, 100701, 100801 to 100803, 100901, 101201, 101301, 101401, 101402, 101501, 101901, 102001, 102101, 102301 and 102401 | pass: `npx vitest run src/clubhouse/__tests__/hub.test.tsx` exit 0, 95/95; 66 mutations of the page's code, each failing the suite as expected (the whole fix taken out, and single lines), and 25 more for Attach from Documents and Edit an announcement (Clickables gaps 5 and 11), each caught |
 
-What the suite forces, beyond the catalog: for each of the nine writes (eleven cases: a post, a task and a
+What the suite forces, beyond the catalog: for each of the ten writes (twelve cases: a post, a task and a
 file each delete separately) it presses the control once and lands, presses it again with a refusal and
 then Retry, and presses it offline; it throws from a reply's write; it loads a player's and a coach's data
 through the loader with a fake database and checks what a player is sent; and it checks the loading route
@@ -58,10 +58,10 @@ Result:       built to the approved spec and seen at 390 in that pass; the iPhon
 | State | Contract | How forced | Observed result |
 | --- | --- | --- | --- |
 | Skeleton | CH-10405 | test (loading route inside and outside the shell) | the Clubhouse skeleton in the shell, Fairway's outside it |
-| Empty | CH-10301 to CH-10309, 100410 | tests, `?state=empty` | distinct from a failed read; Updates count |
+| Empty | CH-10301 to CH-10311, 100410 | tests, `?state=empty` | distinct from a failed read; Updates count |
 | Validation | CH-10101 to CH-10108 | tests | message under the field, nothing sent |
-| Server failure | CH-10001 to CH-10009, CH-10201 to CH-10207 | tests, `?state=failed`, `?state=failwrites` | toast or notice with its code; text kept |
-| Retry | 101401 | tests, eleven cases | the same write again; the tick, tab, sheet, refresh and row follow |
+| Server failure | CH-10001 to CH-10010, CH-10201 to CH-10209 | tests, `?state=failed`, `?state=failwrites` | toast or notice with its code; text kept |
+| Retry | 101401 | tests, twelve cases | the same write again; the tick, tab, sheet, refresh and row follow |
 | Offline | 10703, 100701 | tests, one per write | nothing sent; the shell's toast; no blank tab |
 | Permission | 100801 to 100803 | tests | no cross-role controls; nothing of a teammate's in a player's data; only invited, still open events offered |
 | Server refusal | 100804 | read, not run | reserved: no test forces a refusal |

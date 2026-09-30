@@ -43,10 +43,14 @@ export interface ChHubRsvp {
   counts: { going: number; maybe: number; no: number; none: number } | null;
 }
 
+export type ChHubUrgency = 'low' | 'normal' | 'high' | 'urgent';
+
 export interface ChHubAnnouncement {
   id: string;
   title: string;
   body: string;
+  /** Kept as posted: an edit sends it back unchanged (updateAnnouncement requires one; Clubhouse's composer has no control for it). */
+  urgency: ChHubUrgency;
   by: string;
   byRole: string | null;
   /** "Today 2:28 PM", "Yesterday", "Oct 9" */
@@ -435,6 +439,7 @@ function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: stri
     id: a.id,
     title: a.title,
     body: a.body ?? '',
+    urgency: a.urgency === 'low' || a.urgency === 'high' || a.urgency === 'urgent' ? a.urgency : 'normal',
     by: who?.name ?? 'Coach',
     byRole: who?.title ?? null,
     when: at ? f.ago(at) : '',

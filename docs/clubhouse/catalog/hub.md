@@ -2,7 +2,7 @@
 
 Route: `/golf/dashboard/team-hub` (`?tab=home|ann|travel|docs|tasks`), for coaches and players. Spec: `docs/clubhouse/phone/team-hub.md`.
 
-A player replies to events, acknowledges posts, checks off tasks and opens files; a coach posts, plans trips, assigns tasks, shares and deletes files, and sees who has replied, read and done each.
+A player replies to events, acknowledges posts, checks off tasks and opens files; a coach posts (with files from Documents), fixes the wording of a post, plans trips, assigns tasks, shares and deletes files, and sees who has replied, read and done each.
 
 Where things live:
 - Code: `src/clubhouse/screens/hub/` (`TeamHub`, `parts`, `sheets`, `writes`)
@@ -25,12 +25,13 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10007 | Assigning a task fails | "Couldn't assign Book physicals" + "What you entered is still here." Done: "Book physicals assigned to the team" (or "to 3 players") | `useAction('hub.assignTask')` → `createTask` | hub.test › CH-10007 |
 | CH-10008 | Uploading a file fails | "Couldn't upload Local rules.pdf" + "Check the file is under 50 MB and try again." Each file says so on its own. Done: "Local rules.pdf shared with the team" | `useAction('hub.uploadDocument')` → `uploadGolfDocument`, `createGolfDocument` | hub.test › CH-10008 |
 | CH-10009 | Deleting a post, task or file fails | "Couldn't delete NCAA hours log" + Retry; it stays. Done: "Deleted NCAA hours log" | `useAction('hub.delete')` → `deleteAnnouncement`, `deleteTask`, `deleteGolfDocument` | hub.test › CH-10009 |
+| CH-10010 | Saving an edit to an announcement fails | "Couldn't save the announcement" + "Your changes are still here. Try again in a moment." (the server's reason when it gave one, for example "Message is required.") The sheet stays open with the words; the card is unchanged. Done: "Saved "Bus leaves at 6"" | `useAction('hub.editAnnouncement')` → `updateAnnouncement` | hub.test › CH-10010 |
 
 ## 101xx Validation
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-10101 | Posting with a headline under three characters | "Give it a headline, at least three characters." Warning haptic; nothing is sent | `ComposeSheet` | hub.test › CH-10101 |
+| CH-10101 | Posting or saving an edit with a headline under three characters | "Give it a headline, at least three characters." Warning haptic; nothing is sent | `ComposeSheet` | hub.test › CH-10101 |
 | CH-10102 | Posting to chosen players with none chosen | "Choose at least one player, or send it to the whole team." | `ComposeSheet` | hub.test › CH-10102 |
 | CH-10103 | A trip with a name under three characters | "Name the trip, at least three characters." | `TripSheet` | hub.test › CH-10103 |
 | CH-10104 | A trip with no destination | "Where is the team going?" | `TripSheet` | hub.test › CH-10104 |
@@ -51,6 +52,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10206 | Announcements don't load | "Announcements didn't load." | `TeamHub` | hub.test › CH-10206 |
 | CH-10207 | Travel doesn't load | "Travel didn't load." + "Trips are safe." | `TeamHub` | hub.test › CH-10207 |
 | CH-10208 | The coach's roster doesn't load | In the announcement and task sheets, where players are chosen: "The roster didn't load, so players can't be chosen." + Try again (reads the page again; the roster that arrives starts fully chosen). "Whole team" loses its count and still posts; Assign stops with this line, never "For 0 of 0" | `PlayerPicks` (`playersError` from `loadTeamHub`) | hub.test › CH-10208 |
+| CH-10209 | The team's documents don't load | In New announcement, where files are attached: "Documents didn't load." + "Nothing was lost. Try again to attach files." + Try again (reads the page again; the files that arrive can be attached, and what was typed stays). The post still goes with none. Never "No documents yet" | `DocumentPicks`, `RefreshNotice` (`documents.error` from `loadTeamHub`) | hub.test › CH-10209 |
 
 ## 103xx Empty
 
@@ -66,6 +68,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10308 | No trips | "No trips planned." + who fills it | `TeamHub` | hub.test › CH-10308 |
 | CH-10309 | No team | "You aren't on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
 | CH-10310 | A team with nobody on the roster | In the sheets, where players are chosen: "No players on the roster yet. Add them in Roster, then choose them here." | `PlayerPicks` | hub.test › CH-10310 |
+| CH-10311 | A team with no documents | In New announcement, where files are attached: "No documents yet. Add files in the Documents tab, then attach them here." Nothing to attach; the post still goes | `DocumentPicks` | hub.test › CH-10311 |
 
 ## 104xx Loading
 
@@ -76,6 +79,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10403 | A trip is being saved | "Saving" | `TripSheet` | hub.test › CH-10403 |
 | CH-10404 | A task is being assigned | "Assigning" | `AssignSheet` | hub.test › CH-10404 |
 | CH-10405 | Team Hub is loading | The header, the tab strip and the two Home columns as grey blocks, in place (nothing for the first 150ms, then a fade); read as "Loading Team Hub" | `HubSkeleton` from `team-hub/loading.tsx` through `ClubhouseSwitch` | hub.test › CH-10405 |
+| CH-10406 | An edit is being saved | "Saving" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
 
 ## 105xx Confirm
 
@@ -89,7 +93,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-10701 | A tab, an RSVP reply, an audience or transport choice, a player chip | select; the current choice is silent | `haptic('select')` | hub.test › CH-10001 |
+| CH-10701 | A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off | select; the current choice is silent | `haptic('select')` | hub.test › CH-10001 |
 | CH-10702 | Delete (before the question), a form sent with a mistake | warning | `haptic('warning')` | hub.test › CH-10501 |
 
 ## 108xx Accessibility

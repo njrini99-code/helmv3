@@ -2,6 +2,32 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Attach from Documents, and Edit an announcement (Clickables gaps 5 and 11)
+
+```text
+Design package: none (the board draws neither control; CLICKABLES.md rows 5 and 11)
+PR/commit:      agent/clubhouse
+Contract IDs:   100618 (CH-10010), 100619 (CH-10209), 100412 (CH-10311), 100206 (CH-10406), minted by the sync
+Actions:        ACT-P010-EDIT-ANNOUNCEMENT (new); ACT-P010-POST-ANNOUNCEMENT now sends `documentIds`
+Data impact:    none (the page already reads the team's documents; `ChHubAnnouncement` now carries `urgency`)
+Held items:     none
+```
+
+### Added
+
+- **Attach from Documents in New announcement.** A coach picks files from the team's Documents, sees them as chips
+  that come off with a tap, and the post sends their ids (`createEnrichedAnnouncement`'s `documentIds`, which
+  Clubhouse had always sent as `[]`). The documents came with the page, so the list has nothing to load: a failed
+  read says so with Try again (CH-10209), and a team with no documents says where they are added (CH-10311). A
+  file deleted while the sheet is open is not sent. The files clear when the post lands, and are kept when it is
+  refused.
+- **Edit announcement in a post's More menu.** The same sheet, opened on the post: headline, message and the
+  acknowledgement switch, saved through `updateAnnouncement`. Who it went to and what is attached stay as
+  posted, so those fields are not shown. The post's urgency goes back as it was read (Messages posts `urgent`).
+  The card shows the new words at once and the page reads again; a refused save keeps the words and says why
+  (CH-10010, with Retry); the button says Saving while it is sent (CH-10406). The form starts from the post once
+  per opening, and is its own instance, so a draft of a new post survives an edit.
+
 ## 2026-09-30 — Tabs from the keyboard
 
 ```text

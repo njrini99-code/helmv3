@@ -32,6 +32,7 @@ The route skeleton (CH-10405) is the Clubhouse one inside the shell and the Fair
 | 100203 | CH-10403 | `A_TRIP_IS_BEING_SAVED` | A trip is being saved |
 | 100204 | CH-10404 | `A_TASK_IS_BEING_ASSIGNED` | A task is being assigned |
 | 100205 | CH-10405 | `TEAM_HUB_IS_LOADING` | Team Hub is loading |
+| 100206 | CH-10406 | `AN_EDIT_IS_BEING_SAVED` | An edit is being saved |
 
 ## 03 — Background loading / refresh
 
@@ -56,6 +57,7 @@ First run is the whole-page empty state, one for a coach (CH-10305, with New ann
 | 100409 | CH-10309 | `NO_TEAM` | No team |
 | 100410 | — | `PAGE_EMPTY_ONLY_WHEN_EVERY_READ_IS_EMPTY` | The whole-page empty state (CH-10305 for a coach, CH-10306 for a player) shows only when every section read answered and every one was empty, Updates included: a failed read, Updates too, shows its own notice with Try again instead, and an update to read is shown, never hidden behind No team updates yet. |
 | 100411 | CH-10310 | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | A team with nobody on the roster |
+| 100412 | CH-10311 | `A_TEAM_WITH_NO_DOCUMENTS` | A team with no documents |
 
 ## 05 — Validation
 
@@ -65,7 +67,7 @@ Checked before anything is sent, with the message under the field and the warnin
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 100501 | CH-10101 | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | Posting with a headline under three characters |
+| 100501 | CH-10101 | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | Posting or saving an edit with a headline under three characters |
 | 100502 | CH-10102 | `POSTING_TO_CHOSEN_PLAYERS_WITH_NONE_CHOSEN` | Posting to chosen players with none chosen |
 | 100503 | CH-10103 | `A_TRIP_WITH_A_NAME_UNDER_THREE` | A trip with a name under three characters |
 | 100504 | CH-10104 | `A_TRIP_WITH_NO_DESTINATION` | A trip with no destination |
@@ -99,6 +101,8 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 100615 | CH-10206 | `ANNOUNCEMENTS_DONT_LOAD` | Announcements don't load |
 | 100616 | CH-10207 | `TRAVEL_DOESNT_LOAD` | Travel doesn't load |
 | 100617 | CH-10208 | `THE_COACHS_ROSTER_DOESNT_LOAD` | The coach's roster doesn't load |
+| 100618 | CH-10010 | `SAVING_AN_EDIT_TO_AN_ANNOUNCEMENT_FAILS` | Saving an edit to an announcement fails |
+| 100619 | CH-10209 | `THE_TEAMS_DOCUMENTS_DONT_LOAD` | The team's documents don't load |
 
 ## 07 — Network / offline
 
@@ -214,7 +218,7 @@ Team Hub's own (CH-10701, CH-10702) on the v2 grammar (D-70): a tick for a tab, 
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 101701 | CH-10701 | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | A tab, an RSVP reply, an audience or transport choice, a player chip |
+| 101701 | CH-10701 | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off |
 | 101702 | CH-10702 | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | Delete (before the question), a form sent with a mistake |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.

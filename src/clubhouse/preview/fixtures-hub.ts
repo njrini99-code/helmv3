@@ -15,6 +15,7 @@ const ANNS: ChHubAnnouncement[] = [
   {
     id: 'a1',
     title: 'Pairings and tee times for Thursday',
+    urgency: 'high',
     body: 'First group off at 8:42. Warm-up on the range from 7:30. Bring your yardage book and two dozen balls. Pairings PDF is in Documents.',
     by: 'Maya Reyes',
     byRole: 'Head coach',
@@ -26,8 +27,8 @@ const ANNS: ChHubAnnouncement[] = [
     recipients: 6,
     documentCount: 1,
   },
-  { id: 'a2', title: 'Short-game block moves to Green 2', body: 'Maintenance on the practice green through Friday. Same time, 3:30.', by: 'Dan Whitfield', byRole: 'Assistant coach', when: 'Yesterday', createdAt: '2026-10-13T15:00:00Z', needAck: false, acked: false, ackCount: 6, recipients: 6, documentCount: 0 },
-  { id: 'a3', title: 'Team dinner after the qualifier', body: 'Carolina Inn, 7:30 PM on Thursday. Parents welcome, RSVP by Wednesday.', by: 'Maya Reyes', byRole: 'Head coach', when: 'Oct 9', createdAt: '2026-10-09T15:00:00Z', needAck: false, acked: false, ackCount: 4, recipients: 6, documentCount: 0 },
+  { id: 'a2', title: 'Short-game block moves to Green 2', urgency: 'normal', body: 'Maintenance on the practice green through Friday. Same time, 3:30.', by: 'Dan Whitfield', byRole: 'Assistant coach', when: 'Yesterday', createdAt: '2026-10-13T15:00:00Z', needAck: false, acked: false, ackCount: 6, recipients: 6, documentCount: 0 },
+  { id: 'a3', title: 'Team dinner after the qualifier', urgency: 'normal', body: 'Carolina Inn, 7:30 PM on Thursday. Parents welcome, RSVP by Wednesday.', by: 'Maya Reyes', byRole: 'Head coach', when: 'Oct 9', createdAt: '2026-10-09T15:00:00Z', needAck: false, acked: false, ackCount: 4, recipients: 6, documentCount: 0 },
 ];
 
 const TRIPS: ChHubTrip[] = [

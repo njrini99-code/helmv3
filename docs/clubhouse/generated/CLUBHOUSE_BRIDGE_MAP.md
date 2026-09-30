@@ -74,7 +74,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
-| P010 | 2 | 5 |  | 11 | 8 | 17 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 66 |
+| P010 | 2 | 6 |  | 12 | 8 | 19 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 70 |
 | P011 | 13 | 7 |  | 13 | 10 | 19 | 2 | 5 | 2 |  | 11 | 2 | 1 | 3 | 3 | 3 | 7 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 119 |
 | P012 | 3 | 3 |  | 7 | 16 | 10 | 3 | 3 | 2 |  | 2 | 1 |  | 4 | 4 | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P013 | 6 | 4 |  | 11 |  | 8 | 2 | 6 | 3 |  |  | 1 |  | 3 | 1 | 2 | 3 | 7 | 1 |  | 1 |  | 1 |  |  | 60 |
@@ -500,7 +500,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70206 | CH-7406 | 02 Initial loading / skeleton | `AN_ANNOUNCEMENTS_DETAILS_ARE_LOADING` | implemented | An announcement's details are loading |
 | 70207 | CH-7407 | 02 Initial loading / skeleton | `THE_MUTE_SETTING_IS_LOADING` | implemented | The mute setting is loading |
 | 70208 | CH-7408 | 02 Initial loading / skeleton | `A_MESSAGES_ATTACHMENTS_ARE_LOADING` | implemented | A message's attachments are loading |
-| 70209 | CH-7409 | 02 Initial loading / skeleton | `THE_SHARED_FILES_ARE_LOADING` | implemented | The shared files are loading (phone Details) |
+| 70209 | CH-7409 | 02 Initial loading / skeleton | `THE_SHARED_FILES_ARE_LOADING` | implemented | The shared files are loading (Details) |
 | 70210 | CH-7410 | 02 Initial loading / skeleton | `THE_ADD_SHEETS_LIST_IS_LOADING` | implemented | The Add sheet's list is loading |
 | 70301 |  | 03 Background loading / refresh | `REALTIME_UPDATES_ARRIVE` | implemented | New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way. |
 | 70401 | CH-7301 | 04 Empty | `NO_CONVERSATIONS_YET` | implemented | No conversations yet |
@@ -508,7 +508,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70403 | CH-7303 | 04 Empty | `NO_MESSAGE_MENTIONS_THE_SEARCH` | implemented | No message mentions the search |
 | 70404 | CH-7304 | 04 Empty | `A_THREAD_WITH_NO_MESSAGES` | implemented | A thread with no messages |
 | 70405 | CH-7305 | 04 Empty | `NOTHING_OPEN` | implemented | Nothing open |
-| 70406 | CH-7306 | 04 Empty | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | implemented | Nothing has been shared in the conversation (phone Details) |
+| 70406 | CH-7306 | 04 Empty | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | implemented | Nothing has been shared in the conversation (Details) |
 | 70407 | CH-7307 | 04 Empty | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | implemented | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 70409 | CH-7309 | 04 Empty | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | implemented | Nothing at all yet: no conversation and no announcement (D-71) |
@@ -532,7 +532,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70613 | CH-7016 | 06 Server / system error | `A_MESSAGE_IS_REFUSED` | implemented | A message is refused |
 | 70614 | CH-7018 | 06 Server / system error | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | implemented | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
 | 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet) |
-| 70616 | CH-7021 | 06 Server / system error | `A_SHARED_FILE_WONT_OPEN` | implemented | A shared file won't open (phone Details › Files) |
+| 70616 | CH-7021 | 06 Server / system error | `A_SHARED_FILE_WONT_OPEN` | implemented | A shared file won't open (Details › Files) |
 | 70617 | CH-7201 | 06 Server / system error | `CONVERSATIONS_DONT_LOAD` | implemented | Conversations don't load |
 | 70618 | CH-7202 | 06 Server / system error | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | implemented | A conversation's messages don't load |
 | 70619 | CH-7203 | 06 Server / system error | `MESSAGE_SEARCH_DOESNT_LOAD` | implemented | Message search doesn't load |
@@ -546,7 +546,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70627 | CH-7211 | 06 Server / system error | `AN_ANNOUNCEMENT_CRASHES` | implemented | An announcement crashes |
 | 70628 | CH-7212 | 06 Server / system error | `THE_THREAD_CRASHES` | implemented | The thread crashes |
 | 70629 | CH-7213 | 06 Server / system error | `DETAILS_CRASH` | implemented | Details crash |
-| 70630 | CH-7214 | 06 Server / system error | `THE_SHARED_FILES_DONT_LOAD` | implemented | The shared files don't load (phone Details) |
+| 70630 | CH-7214 | 06 Server / system error | `THE_SHARED_FILES_DONT_LOAD` | implemented | The shared files don't load (Details) |
 | 70631 | CH-7215 | 06 Server / system error | `THE_ADD_SHEETS_TEAM_LIST_DOESNT_LOAD` | implemented | The Add sheet's team list doesn't load |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
@@ -845,6 +845,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100203 | CH-10403 | 02 Initial loading / skeleton | `A_TRIP_IS_BEING_SAVED` | implemented | A trip is being saved |
 | 100204 | CH-10404 | 02 Initial loading / skeleton | `A_TASK_IS_BEING_ASSIGNED` | implemented | A task is being assigned |
 | 100205 | CH-10405 | 02 Initial loading / skeleton | `TEAM_HUB_IS_LOADING` | implemented | Team Hub is loading |
+| 100206 | CH-10406 | 02 Initial loading / skeleton | `AN_EDIT_IS_BEING_SAVED` | implemented | An edit is being saved |
 | 100401 | CH-10301 | 04 Empty | `NO_EVENTS_NEED_A_REPLY` | implemented | No events need a reply |
 | 100402 | CH-10302 | 04 Empty | `NO_UPDATES` | implemented | No updates |
 | 100403 | CH-10303 | 04 Empty | `NO_TASKS` | implemented | No tasks |
@@ -856,7 +857,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100409 | CH-10309 | 04 Empty | `NO_TEAM` | implemented | No team |
 | 100410 |  | 04 Empty | `PAGE_EMPTY_ONLY_WHEN_EVERY_READ_IS_EMPTY` | implemented | The whole-page empty state (CH-10305 for a coach, CH-10306 for a player) shows only when every section read answered and every one was empty, Updates included: a failed read, Updates too, shows its own notice with Try again instead, and an update to read is shown, never hidden behind No team updates yet. |
 | 100411 | CH-10310 | 04 Empty | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | implemented | A team with nobody on the roster |
-| 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting with a headline under three characters |
+| 100412 | CH-10311 | 04 Empty | `A_TEAM_WITH_NO_DOCUMENTS` | implemented | A team with no documents |
+| 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting or saving an edit with a headline under three characters |
 | 100502 | CH-10102 | 05 Validation | `POSTING_TO_CHOSEN_PLAYERS_WITH_NONE_CHOSEN` | implemented | Posting to chosen players with none chosen |
 | 100503 | CH-10103 | 05 Validation | `A_TRIP_WITH_A_NAME_UNDER_THREE` | implemented | A trip with a name under three characters |
 | 100504 | CH-10104 | 05 Validation | `A_TRIP_WITH_NO_DESTINATION` | implemented | A trip with no destination |
@@ -881,6 +883,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100615 | CH-10206 | 06 Server / system error | `ANNOUNCEMENTS_DONT_LOAD` | implemented | Announcements don't load |
 | 100616 | CH-10207 | 06 Server / system error | `TRAVEL_DOESNT_LOAD` | implemented | Travel doesn't load |
 | 100617 | CH-10208 | 06 Server / system error | `THE_COACHS_ROSTER_DOESNT_LOAD` | implemented | The coach's roster doesn't load |
+| 100618 | CH-10010 | 06 Server / system error | `SAVING_AN_EDIT_TO_AN_ANNOUNCEMENT_FAILS` | implemented | Saving an edit to an announcement fails |
+| 100619 | CH-10209 | 06 Server / system error | `THE_TEAMS_DOCUMENTS_DONT_LOAD` | implemented | The team's documents don't load |
 | 100701 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 | 100801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The role from the session decides the controls: a player is never drawn New announcement, Plan a trip, Assign, the drop zone or a delete menu, and a coach is never drawn a reply button, Got it or a task box. |
 | 100802 |  | 08 Permission / authorization | `PLAYER_GETS_ONLY_WHAT_IS_THEIRS` | implemented | A player's data carries none of their teammates' read receipts (an announcement's acknowledged and recipient counts), replies, task completions, traveler lists or names, and no roster; those are in a coach's data only, where the same post reads 5 of 6. |
@@ -895,7 +899,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 101401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows: the reply, Got it or task tick shows, the file opens in a tab of its own, the sheet closes and clears, the page reads again, the deleted row leaves and its dialog closes, and the drop zone reads Uploading. This holds for all nine writes: a reply, Got it, a task check, opening a file, posting, planning a trip, assigning a task, uploading, and deleting a post, a task or a file. |
 | 101402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a failed-read notice has the server read the whole page again; none re-reads a section on its own. |
 | 101501 |  | 15 Data freshness / sync | `PAGE_READS_AGAIN_AFTER_A_CHANGE` | implemented | After a coach's post, trip, task, upload or delete lands, the page reads again from the server (router.refresh). |
-| 101701 | CH-10701 | 17 Haptic | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | implemented | A tab, an RSVP reply, an audience or transport choice, a player chip |
+| 101701 | CH-10701 | 17 Haptic | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | implemented | A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off |
 | 101702 | CH-10702 | 17 Haptic | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | implemented | Delete (before the question), a form sent with a mistake |
 | 101801 | CH-10801 | 18 Accessibility | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | implemented | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |
 | 101802 | CH-10802 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |

@@ -26,7 +26,7 @@ const actions = vi.hoisted(() => ({
 }));
 vi.mock('@/app/golf/actions/player-hub-data', () => ({ getPlayerHubSummaryData: actions.summary }));
 vi.mock('@/app/golf/actions/player-notifications', () => ({ getPlayerHubAnnouncements: actions.playerAnns }));
-vi.mock('@/app/golf/actions/announcements', () => ({ getAnnouncementsWithMeta: actions.coachAnns, createEnrichedAnnouncement: vi.fn(), deleteAnnouncement: vi.fn() }));
+vi.mock('@/app/golf/actions/announcements', () => ({ getAnnouncementsWithMeta: actions.coachAnns, createEnrichedAnnouncement: vi.fn(), deleteAnnouncement: vi.fn(), updateAnnouncement: vi.fn() }));
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: actions.docs, createGolfDocument: vi.fn(), deleteGolfDocument: vi.fn(), getPreviewUrl: vi.fn(), uploadGolfDocument: vi.fn() }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: actions.notifs, markAllNotificationsRead: vi.fn(), markNotificationRead: vi.fn() }));
 vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: vi.fn() }));
@@ -43,7 +43,8 @@ import { folders, formatters, loadTeamHub, replyIsClosed, type ChTeamHub } from 
 import { ClubhouseHubRoute } from '../routes/hub';
 import { HubSkeleton } from '../screens/hub/HubSkeleton';
 import { parseHubTab, TeamHub, type ChHubTab } from '../screens/hub/TeamHub';
-import type { ChHubWrites } from '../screens/hub/writes';
+import { createEnrichedAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
+import { LIVE_HUB_WRITES, type ChHubWrites } from '../screens/hub/writes';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
@@ -62,6 +63,7 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
     completeTask: vi.fn(ok),
     openDocument: vi.fn(() => Promise.resolve({ success: true, data: { url: 'https://files.example/d1' } })),
     postAnnouncement: vi.fn(() => Promise.resolve({ success: true, data: { announcementId: 'n' } })),
+    editAnnouncement: vi.fn(ok),
     deleteAnnouncement: vi.fn(ok),
     assignTask: vi.fn(ok),
     deleteTask: vi.fn(ok),
@@ -238,7 +240,7 @@ describe('Team Hub · coach', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Eli Brandt' }));
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
     await expectCode('CH-10402', /Posting/);
-    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: ['eli'] });
+    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: ['eli'], documentIds: [] });
     release({ success: false });
     await expectCode('CH-10005', /Couldn’t post the announcement/);
     expect((within(dialog).getByRole('textbox', { name: 'Headline' }) as HTMLInputElement).value).toBe('Bus leaves at 6');
@@ -260,7 +262,7 @@ describe('Team Hub · coach', () => {
     await user.click(within(dialog).getByRole('radio', { name: 'Whole team' }));
     await user.type(within(dialog).getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
     await user.click(within(dialog).getByRole('button', { name: 'Post' }));
-    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null });
+    expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: [] });
   });
 
   it('CH-10208 CH-10310 a task with no roster to choose from: never "For 0 of 0", and Assign stops with the reason, not "Choose at least one player"', async () => {
@@ -528,6 +530,30 @@ describe('Team Hub · the loader', () => {
     expect((await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null })).playersError).toBe(false);
   });
 
+  it('101501 the posts a coach reads carry the urgency they were posted with, and one the server does not know reads as normal, so an edit sends it back as it was', async () => {
+    base();
+    const post = (id: string, urgency: string | null) => ({
+      id,
+      title: id,
+      body: 'x',
+      created_by: null,
+      published_at: '2026-10-14T17:00:00Z',
+      created_at: '2026-10-14T17:00:00Z',
+      urgency,
+      requires_acknowledgement: false,
+      acknowledged_count: 0,
+      recipient_count: 0,
+      total_recipients: 0,
+      task_count: 0,
+      completed_task_count: 0,
+      document_count: 0,
+    });
+    actions.coachAnns.mockResolvedValue({ success: true, data: [post('a', 'urgent'), post('b', 'low'), post('c', 'high'), post('d', null), post('e', 'panic')] });
+    tables.current = { golf_teams: team, golf_team_members: { data: [] } };
+    const coach = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(coach.announcements.rows.map((r) => r.urgency)).toEqual(['urgent', 'low', 'high', 'normal', 'normal']);
+  });
+
   it('files group into folders ("Team" for none), newest first, with a type and a size', () => {
     const f = formatters('America/New_York', new Date('2026-10-14T18:00:00Z'));
     const out = folders(
@@ -592,6 +618,7 @@ interface Scenario {
 
 const going = () => within(screen.getByRole('radiogroup', { name: 'Your reply for Team dinner' })).getByRole('radio', { name: 'Going' });
 const SHORT_GAME = 'Short-game block moves to Green 2';
+const SHORT_GAME_EDITED = 'Short-game block moves to Green 3';
 const scenarios: Scenario[] = [
   {
     name: 'a reply',
@@ -747,6 +774,35 @@ const scenarios: Scenario[] = [
       await refreshed();
       // The drop zone is free again.
       await waitFor(() => expect(code('CH-10401')).toBeNull());
+    },
+  },
+  {
+    name: 'editing an announcement',
+    code: 'CH-10010',
+    key: 'editAnnouncement',
+    data: PREVIEW_HUB_COACH,
+    tab: 'ann',
+    failed: /Couldn’t save the announcement/,
+    done: `Saved "${SHORT_GAME_EDITED}"`,
+    drive: async (user) => {
+      await openRowMenu(user, new RegExp(`More for ${SHORT_GAME}`), 'Edit announcement');
+      const d = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
+      await user.clear(d.getByRole('textbox', { name: 'Headline' }));
+      await user.type(d.getByRole('textbox', { name: 'Headline' }), SHORT_GAME_EDITED);
+      await user.click(d.getByRole('button', { name: 'Save changes' }));
+    },
+    notYet: () => {
+      // The words stay in the sheet, and the card still says what was posted.
+      expect(dialogOpen()).toBe(true);
+      expect((screen.getByRole('textbox', { name: 'Headline' }) as HTMLInputElement).value).toBe(SHORT_GAME_EDITED);
+      expect(screen.queryByRole('heading', { level: 3, name: SHORT_GAME_EDITED })).toBeNull();
+      expect(router.refresh).not.toHaveBeenCalled();
+    },
+    landed: async () => {
+      await waitFor(() => expect(dialogOpen()).toBe(false));
+      expect(screen.getByRole('heading', { level: 3, name: SHORT_GAME_EDITED })).toBeTruthy();
+      expect(screen.queryByRole('heading', { level: 3, name: SHORT_GAME })).toBeNull();
+      await refreshed();
     },
   },
   {
@@ -1161,6 +1217,235 @@ describe('Team Hub · phone', () => {
     // The tabs, their panel and the coach's one primary action are all there.
     expect(screen.getAllByRole('tab')).toHaveLength(5);
     expect(screen.getByRole('button', { name: 'New announcement' })).toBeTruthy();
+  });
+});
+
+const tree = (data: ChTeamHub, w: ChHubWrites, tab?: ChHubTab) => (
+  <LazyMotion features={domAnimation}>
+    <ToastProvider>
+      <div className="ch-root" data-ui="clubhouse">
+        <TeamHub data={data} writes={w} initialTab={tab} viewerName="Maya Reyes" />
+      </div>
+    </ToastProvider>
+  </LazyMotion>
+);
+const openCompose = async (user: User) => {
+  await user.click(screen.getByRole('button', { name: 'New announcement' }));
+  return within(await screen.findByRole('dialog', { name: 'New announcement' }));
+};
+const attached = (d: Pick<typeof screen, 'queryAllByRole'>) => d.queryAllByRole('button', { name: /^Remove / }).map((b) => b.getAttribute('aria-label'));
+const withDocuments = (documents: ChTeamHub['documents']): ChTeamHub => ({ ...PREVIEW_HUB_COACH, documents });
+
+describe('Team Hub · Attach from Documents in New announcement', () => {
+  it('CH-10005 101201 a post carries the files chosen from Documents, in the order chosen, as chips that come off; a refused post keeps them, Retry sends the same ones, and a landed post starts clear', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn().mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValue({ success: true, data: { announcementId: 'n' } });
+    show(PREVIEW_HUB_COACH, writes({ postAnnouncement: post }), 'ann');
+    const dialog = await openCompose(user);
+    expect(attached(dialog)).toEqual([]);
+    const attach = dialog.getByRole('button', { name: 'Attach from Documents' });
+    expect(attach.getAttribute('aria-expanded')).toBe('false');
+    await user.click(attach);
+    expect(attach.getAttribute('aria-expanded')).toBe('true');
+    // The team's files, by folder, as they are in Documents.
+    expect(dialog.getByRole('group', { name: 'Carolina Fall Invitational' })).toBeTruthy();
+    expect(dialog.getByRole('group', { name: 'Compliance' })).toBeTruthy();
+    hapticSpy.mockClear();
+    await user.click(dialog.getByRole('button', { name: 'Travel waiver, PDF' }));
+    await user.click(dialog.getByRole('button', { name: 'Pairings and tee times, PDF' }));
+    await user.click(dialog.getByRole('button', { name: 'Hotel confirmation, PDF' }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(dialog.getByRole('button', { name: 'Travel waiver, PDF' }).getAttribute('aria-pressed')).toBe('true');
+    expect(attached(dialog)).toEqual(['Remove Travel waiver', 'Remove Pairings and tee times', 'Remove Hotel confirmation']);
+    await user.click(dialog.getByRole('button', { name: 'Remove Pairings and tee times' }));
+    expect(attached(dialog)).toEqual(['Remove Travel waiver', 'Remove Hotel confirmation']);
+    expect(dialog.getByRole('button', { name: 'Pairings and tee times, PDF' }).getAttribute('aria-pressed')).toBe('false');
+
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Waiver and hotel');
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+    await expectCode('CH-10005');
+    expect(post).toHaveBeenCalledWith({ title: 'Waiver and hotel', body: '', requiresAck: true, playerIds: null, documentIds: ['d3', 'd2'] });
+    // Refused: the sheet and its files are still there.
+    expect(dialogOpen()).toBe(true);
+    expect(attached(dialog)).toEqual(['Remove Travel waiver', 'Remove Hotel confirmation']);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+    expect(post.mock.calls[1]).toEqual(post.mock.calls[0]);
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+    // The next post starts with nothing attached.
+    expect(attached(await openCompose(user))).toEqual([]);
+  });
+
+  it('CH-10311 a team with no documents yet: the sheet says where they are added, offers nothing to attach, and the post still goes with none', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn(ok);
+    show(withDocuments({ folders: [], error: false }), writes({ postAnnouncement: post }), 'ann');
+    const dialog = await openCompose(user);
+    await expectCode('CH-10311', /No documents yet\. Add files in the Documents tab/);
+    expect(code('CH-10209')).toBeNull();
+    expect(dialog.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: [] }));
+  });
+
+  it('CH-10209 documents that did not load: the sheet says so and is not passed off as empty; Try again reads the page again, and the files that arrive can be attached with the words kept', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn(ok);
+    const w = writes({ postAnnouncement: post });
+    const { rerender } = render(tree(withDocuments({ folders: [], error: true }), w, 'ann'));
+    const dialog = await openCompose(user);
+    await expectCode('CH-10209', /Documents didn't load/);
+    expect(code('CH-10311')).toBeNull();
+    expect(dialog.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.click(within(code('CH-10209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+    // The read that follows gives the files.
+    rerender(tree(PREVIEW_HUB_COACH, w, 'ann'));
+    expect(code('CH-10209')).toBeNull();
+    expect((dialog.getByRole('textbox', { name: 'Headline' }) as HTMLInputElement).value).toBe('Bus leaves at 6');
+    await user.click(dialog.getByRole('button', { name: 'Attach from Documents' }));
+    await user.click(dialog.getByRole('button', { name: 'Team handbook, PDF' }));
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: ['d5'] }));
+  });
+
+  it('a failed read with the post still possible: the failure does not stop a post with no files', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn(ok);
+    show(withDocuments({ folders: [], error: true }), writes({ postAnnouncement: post }), 'ann');
+    const dialog = await openCompose(user);
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Bus leaves at 6', body: '', requiresAck: true, playerIds: null, documentIds: [] }));
+  });
+
+  it('a file deleted from Documents while the post is being written comes off its chips and is not sent', async () => {
+    const user = userEvent.setup();
+    const post = vi.fn(ok);
+    const w = writes({ postAnnouncement: post });
+    const { rerender } = render(tree(PREVIEW_HUB_COACH, w, 'ann'));
+    const dialog = await openCompose(user);
+    await user.click(dialog.getByRole('button', { name: 'Attach from Documents' }));
+    await user.click(dialog.getByRole('button', { name: 'Travel waiver, PDF' }));
+    await user.click(dialog.getByRole('button', { name: 'Hotel confirmation, PDF' }));
+    const without = { ...PREVIEW_HUB_COACH.documents, folders: PREVIEW_HUB_COACH.documents.folders.map((f) => ({ ...f, files: f.files.filter((d) => d.id !== 'd3') })) };
+    rerender(tree(withDocuments(without), w, 'ann'));
+    expect(attached(dialog)).toEqual(['Remove Hotel confirmation']);
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Hotel is booked');
+    await user.click(dialog.getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Hotel is booked', body: '', requiresAck: true, playerIds: null, documentIds: ['d2'] }));
+  });
+});
+
+describe('Team Hub · Edit an announcement', () => {
+  it('101501 an edit starts from the post, offers only headline, message and acknowledgement, and sends the post’s id, the new words and its urgency as posted; the card shows it at once', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_COACH);
+    // Home shows the latest post: the same menu, the same sheet.
+    expect(screen.getByText('5 of 6 acknowledged')).toBeTruthy();
+    await openRowMenu(user, /More for Pairings and tee times for Thursday/, 'Edit announcement');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
+    const headline = () => dialog.getByRole('textbox', { name: 'Headline' }) as HTMLInputElement;
+    const message = () => dialog.getByRole('textbox', { name: 'Message (optional)' }) as HTMLTextAreaElement;
+    expect(headline().value).toBe('Pairings and tee times for Thursday');
+    expect(message().value).toMatch(/^First group off at 8:42\./);
+    expect((dialog.getByRole('switch', { name: 'Ask players to acknowledge' }) as HTMLInputElement).checked).toBe(true);
+    // Who it went to and what is attached stay as posted: nothing to change, so nothing offered.
+    expect(dialog.queryByRole('radiogroup', { name: 'Send to' })).toBeNull();
+    expect(dialog.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
+    // A headline under three characters is stopped, as in a new post.
+    await user.clear(headline());
+    await user.type(headline(), 'Hi');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-10101', /at least three characters/);
+    expect(w.editAnnouncement).not.toHaveBeenCalled();
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+
+    await user.clear(headline());
+    await user.type(headline(), 'Tee times moved to 8:50');
+    await user.clear(message());
+    await user.type(message(), 'Warm-up at 7:40.');
+    await user.click(dialog.getByRole('switch', { name: 'Ask players to acknowledge' }));
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.editAnnouncement).toHaveBeenCalledTimes(1));
+    expect(w.editAnnouncement).toHaveBeenCalledWith('a1', { title: 'Tee times moved to 8:50', body: 'Warm-up at 7:40.', urgency: 'high', requiresAck: false });
+    await screen.findByText('Saved "Tee times moved to 8:50"');
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+    // The card says what was saved: the headline, the message, and read (not acknowledged) receipts.
+    expect(screen.getByRole('heading', { level: 3, name: 'Tee times moved to 8:50' })).toBeTruthy();
+    expect(screen.getByText('Warm-up at 7:40.')).toBeTruthy();
+    expect(screen.getByText('5 of 6 read')).toBeTruthy();
+    expect(screen.queryByText('5 of 6 acknowledged')).toBeNull();
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('the sheet starts from the post once per opening: a page read that lands while it is open or a refused save leaves what was typed, reopening starts from the post again, and a draft of a new post survives an edit', async () => {
+    const user = userEvent.setup();
+    const w = writes({ editAnnouncement: refuse() });
+    const { rerender } = render(tree(PREVIEW_HUB_COACH, w, 'ann'));
+    let dialog = await openCompose(user);
+    await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Draft post');
+    await user.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+
+    await openRowMenu(user, /More for Pairings and tee times for Thursday/, 'Edit announcement');
+    dialog = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
+    const headline = () => dialog.getByRole('textbox', { name: 'Headline' }) as HTMLInputElement;
+    await user.type(headline(), ' (moved)');
+    // A read lands while it is open: the same rows, new objects.
+    rerender(tree({ ...PREVIEW_HUB_COACH, announcements: { rows: PREVIEW_HUB_COACH.announcements.rows.map((a) => ({ ...a })), error: false } }, w, 'ann'));
+    expect(headline().value).toBe('Pairings and tee times for Thursday (moved)');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-10010');
+    expect(headline().value).toBe('Pairings and tee times for Thursday (moved)');
+    await user.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+
+    await openRowMenu(user, /More for Pairings and tee times for Thursday/, 'Edit announcement');
+    dialog = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
+    expect(headline().value).toBe('Pairings and tee times for Thursday');
+    await user.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+    dialog = await openCompose(user);
+    expect((dialog.getByRole('textbox', { name: 'Headline' }) as HTMLInputElement).value).toBe('Draft post');
+  });
+
+  it('CH-10406 an edit being saved says Saving on its button, which cannot be pressed twice', async () => {
+    const user = userEvent.setup();
+    let release: (v: { success: boolean }) => void = () => {};
+    const save = vi.fn(() => new Promise<{ success: boolean }>((r) => (release = r)));
+    show(PREVIEW_HUB_COACH, writes({ editAnnouncement: save }), 'ann');
+    await openRowMenu(user, new RegExp(`More for ${SHORT_GAME}`), 'Edit announcement');
+    const dialog = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
+    // A post that asks for no acknowledgement opens with the switch off, and is saved as it was.
+    expect((dialog.getByRole('switch', { name: 'Ask players to acknowledge' }) as HTMLInputElement).checked).toBe(false);
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-10406', /Saving/);
+    expect((code('CH-10406')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
+    expect(code('CH-10402')).toBeNull();
+    release({ success: true });
+    await waitFor(() => expect(dialogOpen()).toBe(false));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith('a2', { title: SHORT_GAME, body: 'Maintenance on the practice green through Friday. Same time, 3:30.', urgency: 'normal', requiresAck: false });
+  });
+
+  it('a player has no menu on a post, so nothing to edit or delete', () => {
+    show(PREVIEW_HUB_PLAYER, writes(), 'ann');
+    expect(screen.getAllByRole('heading', { level: 3 }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /^More for / })).toBeNull();
+  });
+});
+
+describe('Team Hub · the live writes', () => {
+  it('101501 a post hands the files chosen to createEnrichedAnnouncement, and an edit hands the post’s id, its words, urgency and acknowledgement to updateAnnouncement', async () => {
+    vi.mocked(createEnrichedAnnouncement).mockResolvedValue({ success: true, data: { announcementId: 'n' } });
+    vi.mocked(updateAnnouncement).mockResolvedValue({ success: true });
+    await LIVE_HUB_WRITES.postAnnouncement({ title: ' Waiver ', body: ' Sign it ', requiresAck: true, playerIds: ['p1'], documentIds: ['d3', 'd2'] });
+    expect(createEnrichedAnnouncement).toHaveBeenCalledWith({ title: 'Waiver', body: 'Sign it', urgency: 'normal', requiresAcknowledgement: true, recipientPlayerIds: ['p1'], documentIds: ['d3', 'd2'], inlineTasks: [] });
+    await LIVE_HUB_WRITES.editAnnouncement('a1', { title: ' Tee times ', body: ' Warm-up ', urgency: 'urgent', requiresAck: false });
+    expect(updateAnnouncement).toHaveBeenCalledWith('a1', { title: 'Tee times', body: 'Warm-up', urgency: 'urgent', requiresAcknowledgement: false });
   });
 });
 
