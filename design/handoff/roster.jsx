@@ -75,7 +75,7 @@ function RowMenu({ p, onRemove, toast }) {
   return (
     <span className="popwrap" ref={ref} onClick={(e) => e.stopPropagation()}>
       <IconButton icon="ellipsis" label={'Actions for ' + p.name} size="sm" onClick={() => setOpen(!open)} />
-      {open && pos && <PopoverPanel style={pos} items={[{ label: 'View insights', icon: 'sparkles' }, { label: 'View stats', icon: 'chart-column', onSelect: () => (location.href = 'Stats.html?player=' + p.id) }, { label: 'Message', icon: 'message-square', onSelect: () => (location.href = 'Messages.html') }, 'separator', { label: 'Remove from team', icon: 'user-minus', danger: true, onSelect: () => { setOpen(false); onRemove(p); } }]} />}
+      {open && pos && <PopoverPanel style={pos} items={[{ label: 'View insights', icon: 'sparkles' }, { label: 'View stats', icon: 'chart-column', onSelect: () => (location.href = 'Coach - Stats.html?player=' + p.id) }, { label: 'Message', icon: 'message-square', onSelect: () => (location.href = 'Coach - Messages.html') }, 'separator', { label: 'Remove from team', icon: 'user-minus', danger: true, onSelect: () => { setOpen(false); onRemove(p); } }]} />}
     </span>
   );
 }
@@ -125,7 +125,7 @@ function Peek({ p, onClose, onSet }) {
         <h2>{p.name}</h2>
         <span className="rs-peek__sub">{p.role ? p.role + ' · ' : ''}{p.year} · Class of {p.cls}</span>
         <p className="rs-peek__about">{p.about}</p>
-        <div className="rs-peek__quick"><Button size="sm" leftIcon="message-square" onClick={() => (location.href = 'Messages.html')}>Message</Button><Button size="sm" leftIcon="calendar-plus">Schedule 1:1</Button></div>
+        <div className="rs-peek__quick"><Button size="sm" leftIcon="message-square" onClick={() => (location.href = 'Coach - Messages.html')}>Message</Button><Button size="sm" leftIcon="calendar-plus">Schedule 1:1</Button></div>
       </div>
       <dl className="rs-peek__facts">
         <div><dt><Icon name="map-pin" size={13} />Hometown</dt><dd>{p.home}</dd></div>
@@ -151,7 +151,7 @@ function Peek({ p, onClose, onSet }) {
         <div className="rs-peek__l"><b>Coach's note</b><span>Only coaches see this</span></div>
         <textarea className="rs-peek__memo" rows={2} defaultValue={p.id === 'jonah' ? 'Confidence dips after a bad hole. Keep 1:1s short and specific.' : ''} placeholder={'Something to remember about ' + p.name.split(' ')[0]}></textarea>
       </div>
-      <div className="rs-peek__foot"><Button variant="primary" rightIcon="arrow-right" onClick={() => (location.href = 'Stats.html?player=' + p.id)}>Open full profile</Button></div>
+      <div className="rs-peek__foot"><Button variant="primary" rightIcon="arrow-right" onClick={() => (location.href = 'Coach - Stats.html?player=' + p.id)}>Open full profile</Button></div>
       <span className="rs-peek__since">{p.since}</span>
     </aside>
   );

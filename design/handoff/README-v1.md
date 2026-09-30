@@ -1,18 +1,13 @@
-# Handoff: GolfHelm coach and player app on Fairway Clubhouse Edition
-
-> **Start here.** Open `Index.html` for every screen, grouped by role, with links to each screen’s loading and empty state. All files in this folder are current. Older versions live in the project’s `archive/` folder and are not part of this handoff.
->
-> **File names:** `Coach - <Screen>.html` and `Player - <Screen>.html` are desktop screens. `… - Mobile.html` files are phone boards; `Coach and Player - … - Mobile.html` shows both roles. Every desktop page declares `<meta name="gh-role">` and `<meta name="gh-page">`.
-
+# Handoff: GolfHelm coach app on Fairway Clubhouse Edition
 
 ## Overview
 This is the redesigned GolfHelm coach web app, built on the **Fairway Clubhouse Edition** design system. The owner approved five screens:
 
-1. **Home** (`Coach - Home.html`): the coach's day, with a calendar, latest rounds and a leaderboard.
-2. **Calendar** (`Coach - Calendar.html`): day, week, month and agenda views, a right-hand detail panel, and an event editor.
-3. **Messages** (`Coach - Messages.html`): team and direct message threads.
-4. **Roster** (`Coach - Roster.html`): player cards, a player drawer, and join requests.
-5. **Stats** (`Coach - Stats.html`): team stats, plus a player profile with Overview, Game detail, Rounds and Development tabs.
+1. **Home** (`Coach Home v3.html`): the coach's day, with a calendar, latest rounds and a leaderboard.
+2. **Calendar** (`Calendar.html`): day, week, month and agenda views, a right-hand detail panel, and an event editor.
+3. **Messages** (`Messages.html`): team and direct message threads.
+4. **Roster** (`Roster.html`): player cards, a player drawer, and join requests.
+5. **Stats** (`Stats.html`): team stats, plus a player profile with Overview, Game detail, Rounds and Development tabs.
 
 The target codebase is `njrini99-code/helmv3`. The design scopes golf styling to `data-helm-sport="golf"` and ports tokens into `src/styles/design-tokens.css`.
 
@@ -32,7 +27,7 @@ The screens are **high fidelity**. Colours, type, spacing, depth and interaction
 - `_ds/` is the compiled bundle the prototypes load (`window.FairwayClubhouseEdition_9c4f4d`).
 
 ### Non-negotiable rules
-- **Red means under par only.** Use `--score-under`/`--chart-flag` `#B03A2E` for that and the pin flag, nothing else. Gains are green `--chart-gain` `#155A39`. Losses, misses and below-benchmark readings are **amber** `--chart-loss` `#9A6512`.
+- **Red means under par, the pin flag, or a destructive action** (D-42). Use `--score-under`/`--chart-flag` `#B03A2E` for under par and the pin flag, and `--danger-600` for a destructive action such as Leave group or Delete, nothing else. Gains are green `--chart-gain` `#155A39`. Losses, misses and below-benchmark readings are **amber** `--chart-loss` `#9A6512`.
 - **Type:** Instrument Sans only, with JetBrains Mono for `kbd`. Use sentence case everywhere. No tracked uppercase eyebrows, no serif.
 - **Numbers:** always tabular (`.fw-num`). Use a true minus `−`, `E` for even and `—` for no data. Null, zero and "early read" must render differently.
 - **Motion:** no count-ups and no entrance staggers. Durations are 90, 150, 220 and 360ms, all eased with `cubic-bezier(.2,.8,.2,1)`. Pressed controls scale to 0.985.
@@ -123,14 +118,14 @@ The owner calls this "depth like the toggles". Use it for every recessed, raised
 
 ## Screens
 
-### 1. Home (`Coach - Home.html`, `coach-home-v3.jsx`)
+### 1. Home (`Coach Home v3.html`, `coach-home-v3.jsx`)
 - **Purpose:** the coach sees today at a glance.
 - **Layout:** `.h3-main`, 1120px maximum, 52px top padding.
 - **Header:** a greeting and today's date as a context line, then a large display title. The "New session" button was removed.
 - **Body:** the calendar sits on the left and recent rounds on the right, in one `dp-sheet` split by a hairline. The leaderboard follows, with trend lines that are smooth, coloured by outcome and drawn against a dashed mean.
 - **Style:** keep it calm and not card-heavy. The owner rejected card grids and imagery.
 
-### 2. Calendar (`Coach - Calendar.html`, `cal-*.jsx`, `cal.css`)
+### 2. Calendar (`Calendar.html`, `cal-*.jsx`, `cal.css`)
 - **Header:** a title button, for example "Oct 12 – 18", that opens a jump-to-date popover. Under it, "N team events this week · Eastern time".
 - **Toolbar:** Today (only when away from today), prev/next arrows in a soft well, a Day/Week/Month/Agenda segmented control, an overflow menu, and a primary "New event" button (keyboard N).
 - **Player filter bar:** chips in a `dp-well` ("Everyone" plus one per player), with a legend on the right.
@@ -164,20 +159,20 @@ The owner calls this "depth like the toggles". Use it for every recessed, raised
   - ← / →: step back or forward
   - Esc: clear the selection
 
-### 3. Messages (`Coach - Messages.html`, `messages.jsx`, `msg.css`)
+### 3. Messages (`Messages.html`, `messages.jsx`, `msg.css`)
 - The thread list sits on the left and the conversation on the right, both using the depth vocabulary.
 - Recreate it from the prototype; the owner approved it as is.
 
-### 4. Roster (`Coach - Roster.html`, `roster.jsx`, `roster.css`)
+### 4. Roster (`Roster.html`, `roster.jsx`, `roster.css`)
 - **Header:** a title, "Players / Staff" tabs, the join code and "Add player".
 - **Player cards:**
   - A monogram avatar with extra depth and a champagne ring, name, year, role (for example Captain) and a status pill (Active or Inactive).
   - Handicap, scoring average and strokes gained.
-- **Drawer:** "Open full profile" links to `Coach - Stats.html?player=<id>`; the overflow menu has "View stats".
+- **Drawer:** "Open full profile" links to `Stats.html?player=<id>`; the overflow menu has "View stats".
 - **Join requests:** approve or decline.
 - The roster cards were reverted to the version from before the ivory pass, then given more avatar depth.
 
-### 5. Stats (`Coach - Stats.html`, `stats*.jsx`, `stats*.css`)
+### 5. Stats (`Stats.html`, `stats*.jsx`, `stats*.css`)
 **Team view:**
 - **Header:** "Team stats", with a Last 10 / Season / Qualifiers switch and Export.
 - **Content:** focused on trends and strokes gained (the owner removed the team stat sheet). It covers the team scoring trend, strokes gained by leg against D1, the players table and team putting.
@@ -209,31 +204,6 @@ The owner calls this "depth like the toggles". Use it for every recessed, raised
 - **Early read:** players with under three rounds get an amber note explaining that strokes gained appears at three.
 - **Stat fields:** these map to `src/app/golf/actions/stats-data-types.ts` and `src/lib/utils/golf-stats-calculator-shots.ts`.
 
-### 6. Qualifiers (`Coach - Qualifiers.html`, `qual-core.jsx`, `qualifiers.jsx`, `qual.css`)
-Qualifier standings and counted rounds. Mobile: `Coach - Qualifiers - Mobile.html` (`qual-mobile.jsx`, `qual-mobile.css`).
-
-### 7. CoachHelm (`Coach - CoachHelm.html`, `Player - CoachHelm.html`, `helm3.jsx`, `helm3.css`)
-- **Player:** one focus insight at a time. Category, priority tag, title and first sentence, then an evidence panel, the week’s drill and a collapsed "Why we think this". Other insights are quiet rows; strengths sit under "Working".
-- **Coach:** Program pulse (headline templates from `program-pulse.ts`), a player list with each player’s top insight, and the selected player’s focus card with Assign as focus, Share and Dismiss (dismiss shows an undo row).
-- **Evidence panel fields** map to each generator’s `evidence` object: `metric_label`, `your_value_display`, `comparison_label`, `sample_n`, window, and `confidence` shown as Solid / Good / Early read.
-- Titles and body copy follow the generator templates in `src/lib/coachhelm/v3/generators`. Numbers are sample values.
-- Mobile: `Coach and Player - CoachHelm - Mobile.html`.
-
-### 8. Team Hub (`Coach - Team Hub.html`, `Player - Team Hub.html`, `hub.jsx`, `hub-data.js`, `hub.css`)
-- **Player tabs:** Home, Announcements, Travel, Documents. Home: RSVPs first (Going / Maybe / Can’t), the pinned announcement with Got it, the next trip, Updates and tasks.
-- **Coach tabs:** the same plus Tasks. RSVP reply bars, read and acknowledged counts, the announcement composer (audience, require acknowledgment, pin, attach), trip planner with class-clash warning, document upload, task completion rings.
-- Qualifiers are not trips; travel lists away tournaments only.
-- Mobile: `Coach and Player - Team Hub - Mobile.html`.
-
-### 9. Player Home (`Player - Home.html`, `player-home.jsx`, `player-home.css`)
-This week with a countdown to the next event, today’s agenda, the latest round with a round pager, the scoring trend (last 5, 10 or 20) and strokes gained by part of the game. Mobile: `Player - Home - Mobile.html` (`m-player-home.jsx`, `m-player-home.css`), six phones: practice day, scrolled to the latest round, scoring and parts of the game, competition day, and a week with no events. Desktop and mobile read the same sample data from `window.PH` in `player-home.jsx`.
-
-### 10. Rounds (`Player - Rounds.html`, `rounds-flow.jsx`, `rounds-course.jsx`, `rounds-track.jsx`, `rounds-review.jsx`, `rounds-flow.css`, `rounds-track.css`)
-Rounds list with the unfinished-round card, course picker, add a course (4 steps), setup and scorecard, shot tracking, hole complete and round review. Mobile: `Player - Rounds - Mobile.html`; add `?only=board-id,board-id` to show selected phones.
-
-### 11. Classes (`Player - Classes.html`, `classes.jsx`, `classes.css`)
-Term bar, travel conflicts, week grid, course cards, class detail, add a class, schedule import (pick, paste, reading, review, imported, four error states) and calendar sync (synced, syncing, failed). Mobile: `Player - Classes - Mobile.html`.
-
 ## Interactions and state
 - **Links between pages:** these are relative `.html` links. Replace them with Next routes: `/golf/dashboard`, `/calendar`, `/messages`, `/roster` and `/stats?player=`.
 - **Confirmations:** toasts use `ToastStack` and dismiss after about 4 seconds.
@@ -249,10 +219,22 @@ Term bar, travel conflicts, week grid, course cards, class detail, add a class, 
 The CoachHelm screen is still in iteration and is **not** included. Sidebar links to `CoachHelm.html` will 404 in this bundle.
 
 ## Screenshots (`screenshots/`)
-One capture per file, named after it. Desktop captures show the top of each screen in a 924px-wide window. Mobile captures show the first phones of each file at half size. They are for quick reference only; open the HTML files for every state and interaction.
+There are 42 reference captures at a 924px-wide viewport. Some tall sections were captured with the content above them hidden, so the part in question fills the frame.
+- **home:** 01 top, 02 leaderboard
+- **calendar:**
+  - Views: 01 week, 02 day, 03 month, 04 agenda
+  - Overlays: 05 jump to date, 06 new event, 07 edit event, 08 subscribe
+  - Detail panel: 09 today summary, 10 event, 11 attendance, 12 overlap
+- **messages:** 01 team thread, 02 direct thread, 03 group thread, 04 unread filter
+- **roster:** 01 requests and attention, 02 filters, 03 cards, 04 player drawer, 05 list view
+- **stats-team:** 01 header, 02 trend and strokes gained, 03 players table, 04 putting, 05 season bests
+- **stats-player:**
+  - 01 hero, 02 overview, 03 overview charts
+  - Game detail: 04 section nav, 05 scoring, 06 off the tee, 07 approach, 08 approach visuals, 09 short game, 10 putting, 11 putting visuals
+  - 12 rounds, 13 development, 14 early-read state (Luca)
 
 ## Files
-- **Screens:** `Coach - Home.html`, `Coach - Calendar.html`, `Coach - Messages.html`, `Coach - Roster.html`, `Coach - Stats.html`
+- **Screens:** `Coach Home v3.html`, `Calendar.html`, `Messages.html`, `Roster.html`, `Stats.html`
 - **Shared:** `depth.css`, `sidebar.css`, `assets/`, `_ds/`
 - **Home:** `coach-home-v3.jsx`
 - **Calendar:** `cal-data.js`, `cal-views.jsx`, `cal-inspector.jsx`, `cal-editor.jsx`, `cal.css`
@@ -260,42 +242,3 @@ One capture per file, named after it. Desktop captures show the top of each scre
 - **Roster:** `roster-data.js`, `roster.jsx`, `roster.css`
 - **Stats:** `stats.jsx`, `stats-game.jsx`, `stats-sg.jsx`, `stats-sheet.jsx` (legacy, still loaded but unused on the team view), `stats.css`, `stats-game.css`
 - **Design system source:** `design-system/` (SKILL.md, readme.md, tokens, components, guidelines)
-
-
-## Navigation (`gh-nav.js`)
-One list per role drives the desktop sidebar (`GH.items(role)`) and the mobile tab bar (`GH.tabs`). Pages call `GH.go(id)` from `onNavigate`. Only designed screens are listed.
-- Coach: Home, CoachHelm, Calendar, Team Hub, Messages. Team: Roster, Stats, Qualifiers.
-- Player: Home, CoachHelm, Team Hub. My game: Rounds. School: Classes.
-- Mobile tabs. Coach: Home, CoachHelm, Calendar, Stats, More. Player: Home, CoachHelm, Rounds, Team Hub, More. More opens a sheet with the rest of the sidebar (not drawn yet).
-
-## Loading and empty states (`gh-states.jsx`, `gh-polish.css`)
-- `<GHLayer />` sits right after the top bar on every desktop page. In the prototype, `?state=loading` or `?state=empty` (or the Prototype chip) covers the content area with that screen’s skeleton or empty state. In production, render these in place of the page body.
-- Skeletons copy the real grid of each screen. Show one only when data takes longer than 150ms, then keep it at least 300ms, then crossfade in 260ms. No spinners for page loads; spinners only inside a button while its action runs. Revisits show cached data and refresh quietly.
-- Empty states: one icon medallion, a title that names what belongs, one or two sentences on how the space fills, one primary action (secondary optional). Copy lives in `EMPTY` in `gh-states.jsx`. Classes uses its own designed empty state.
-- Mobile files end with a row of loading and empty phones (`<GHBoards />`).
-
-## Motion (`gh-polish.css`, `gh-core.js`)
-| Token | Value | Use |
-|---|---|---|
-| Press | 110ms ease-out, shrink ~6px (scale .96–.99 by width); release 280ms spring | Every tappable |
-| Quick | 180ms ease-out | Hover, toggles, tab underline |
-| Base | 260ms ease-out | Sheets, panels, state crossfades |
-| Reveal | 520ms ease-out, 10px rise, 55ms stagger, max 10 blocks | First paint of a page |
-| Shimmer | 1.9s linear, one sweep shared by all skeleton blocks | Skeletons |
-Curves: ease-out `cubic-bezier(.22,1,.36,1)`, spring `cubic-bezier(.34,1.3,.64,1)`, in-out `cubic-bezier(.65,0,.35,1)`. Under `prefers-reduced-motion`: no rise, press or shimmer.
-
-## Haptics (`gh-core.js`)
-Most taps are silent. `GH.haptic(kind)` uses `navigator.vibrate` where supported; native builds map the same kinds to UISelectionFeedbackGenerator, UIImpactFeedbackGenerator and UINotificationFeedbackGenerator. iOS web has no haptics, so press feedback carries it. Any element can set `data-haptic="…"` (or `none`).
-| Kind | When |
-|---|---|
-| selection | Tabs, segmented controls, switches, par picker, RSVP choice, checkboxes |
-| light | Primary buttons (Next, Continue, New round) |
-| medium | A sheet settling at a stop, a shot logged during tracking |
-| success | Post, Save, Import, Publish, Send, Share, Assign, Start round, Got it |
-| warning | Remove, Delete, Discard, Exit round, Dismiss |
-| error | An import or sync fails |
-
-## Not designed yet
-- Player: Calendar, Messages, My stats, a Qualifiers view.
-- Coach: Team rounds, Practice plans, Lineups, Events, Scouting (removed from the sidebar).
-- Both: Settings, the notifications panel, the mobile More sheet.

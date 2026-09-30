@@ -88,7 +88,7 @@ function Player({ id, back, openPlayer }) {
           <h1>{p.name}</h1>
           <p>{p.year} · Class of {p.cls} · {p.major} · {p.home}</p>
           <p className="pf-hero__about">{p.about}</p>
-          <div className="pf-hero__act"><Button leftIcon="message-square" onClick={() => (location.href = 'Messages.html')}>Message</Button><Button leftIcon="calendar-plus">Schedule 1:1</Button><Button variant="primary" leftIcon="target">Add focus area</Button></div>
+          <div className="pf-hero__act"><Button leftIcon="message-square" onClick={() => (location.href = 'Coach - Messages.html')}>Message</Button><Button leftIcon="calendar-plus">Schedule 1:1</Button><Button variant="primary" leftIcon="target">Add focus area</Button></div>
         </div>
         <dl className="pf-hero__figs">
           {[['Scoring avg', p.avg.toFixed(1), 'Team 72.8'], ['Handicap', hcp(p.hcp), 'Index'], ['SG / round', early ? '—' : sgn(p.sg), 'vs. D1'], ['Rounds', p.rounds, 'This season']].map(([l, v, s]) => <div key={l}><dt>{l}</dt><dd className={'fw-num' + (l === 'SG / round' && p.sg != null ? (p.sg >= 0 ? ' is-gain' : ' is-loss') : '')}>{v}</dd><span>{s}</span></div>)}

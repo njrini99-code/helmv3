@@ -1,0 +1,51 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Player · Classes (mobile)</title>
+<meta name="design_doc_mode" content="canvas">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="depth.css">
+<link rel="stylesheet" href="cal.css">
+<link rel="stylesheet" href="msg.css">
+<link rel="stylesheet" href="roster.css">
+<link rel="stylesheet" href="qual.css">
+<link rel="stylesheet" href="qual-mobile.css">
+<link rel="stylesheet" href="coachhelm2.css">
+<link rel="stylesheet" href="m.css">
+<link rel="stylesheet" href="sidebar.css">
+
+<style>.m-rowlabel{position:absolute;margin:0;font:600 28px/1 "Instrument Sans",sans-serif;letter-spacing:-.03em;color:#1C1B18}</style>
+
+<style>.m-rowlabel{position:absolute;margin:0;font:600 28px/1 "Instrument Sans",sans-serif;letter-spacing:-.03em;color:#1C1B18}</style>
+
+<link rel="stylesheet" href="rounds-flow.css">
+<link rel="stylesheet" href="classes.css">
+<style>.qm .cl-scroll{padding:0}</style>
+<meta name="gh-role" content="player">
+<meta name="gh-page" content="classes">
+<meta name="gh-kind" content="mobile">
+<script src="gh-nav.js"></script>
+<script src="gh-core.js"></script>
+<link rel="stylesheet" href="gh-polish.css">
+</head><body><div id="root"></div>
+<script type="text/babel" src="gh-states.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="m-shell.jsx"></script>
+<script type="text/babel" src="classes.jsx"></script>
+<script type="text/babel">
+const B=[["list","Classes","Synced, term bar, class cards",{}],["empty","Empty state","No classes yet",{"empty":true}],["imp","Import · pick","Screenshot, file or paste",{"empty":true,"imp":"pick"}],["paste","Import · paste text","Paste from the portal",{"empty":true,"imp":"paste"}],["read","Reading","Scanning the schedule",{"empty":true,"imp":"reading"}],["review","Review","Check classes before import",{"empty":true,"imp":"review"}],["ok","Imported","Success and conflicts found",{"imp":"success"}],["e1","Not a schedule","Wrong image uploaded",{"empty":true,"imp":"notSchedule"}],["e2","Too large","Over 12 MB",{"empty":true,"imp":"tooLarge"}],["e3","Reader failed","Fallback to paste text",{"empty":true,"imp":"fault"}],["e4","No classes found","Parsed nothing",{"empty":true,"imp":"none"}],["sync","Sync failed","Retry calendar sync",{"sync":"failed"}],["detail","Class detail","Meetings, deadlines, sharing",{"open":"stat"}],["add","Add a class","Inline card",{"addOpen":true}]];
+function ClassesM({ initial }) { return <div className="qm fairway"><MTop title="Classes" back="More" /><div className="qm-scroll cl-scroll"><ClassesPage initial={initial} /></div><MTabs on="more" /><MSafari /></div>; }
+function Boards(){return <>{B.map(([id,l,s,init],i)=><div key={id} className="qm-board" data-screen-label={String(i+1).padStart(2,'0')+' Classes · '+l} style={{left:60+(i%7)*482,top:60+Math.floor(i/7)*1000}}><p className="qm-board__l">{l}</p><p className="qm-board__s">{s}</p><IOSDevice><ClassesM initial={init} /></IOSDevice></div>)}</>;}
+ReactDOM.createRoot(document.getElementById('root')).render(<Boards />);
+</script><div id="gh-boards"></div>
+<script type="text/babel">ReactDOM.createRoot(document.getElementById('gh-boards')).render(<GHBoards boards={[{"page":"classes","role":"player","state":"loading","title":"Classes","tab":"more"}]} />);</script>
+</body></html>

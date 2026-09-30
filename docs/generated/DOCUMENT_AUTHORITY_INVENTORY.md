@@ -42,14 +42,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 37 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 57 | 6 | 31 | 25 |
+| `PLAN` | 39 | 5 | 18 | 74 |
+| `AUDIT_SNAPSHOT` | 58 | 6 | 32 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
-| `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 181 | 12 | 40 | 79 |
+| `INDEX` | 22 | 1 | 7 | 5 |
+| `UNKNOWN` | 201 | 12 | 46 | 84 |
 
 ## Files
 
@@ -334,6 +334,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 18 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 4 |
+| `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md` | current | yes | - | - | 3 |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | - |
 | `docs/plans/calendar-premium/DESIGN-PLAN.md` | current | - | - | yes | - |
@@ -408,6 +410,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | - |
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | - |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
@@ -551,7 +554,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `.circleci/README.md` | current | - | - | - | - |
 | `.claude/workflows/README.md` | current | - | - | - | - |
-| `design/handoff/README.md` | current | - | - | - | - |
 | `design/handoff/mobile/README.md` | current | - | - | - | - |
 | `docs/README.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/README.md` | current | - | - | - | - |
@@ -581,6 +583,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | - |
 | `.github/branch-protection.md` | current | - | - | - | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
+| `design/handoff/README-v1.md` | current | - | - | - | - |
 | `design/handoff/_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/readme.md` | current | - | - | - | 1 |
 | `design/handoff/design-system/SKILL.md` | current | - | - | - | - |
 | `design/handoff/design-system/components/buttons/Button.prompt.md` | current | - | - | - | - |
@@ -655,8 +658,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
+| `docs/clubhouse/HANDOFF.md` | current | - | - | - | 5 |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
@@ -667,6 +671,24 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/catalog/shell.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
+| `docs/clubhouse/foundation-v2/03_DIRECTORY_AND_REGISTRY_ARCHITECTURE.md` | current | - | - | yes | - |
+| `docs/clubhouse/foundation-v2/04_PAGE_CONTRACT_AND_BRIDGE_SPEC.md` | current | - | - | yes | - |
+| `docs/clubhouse/foundation-v2/05_FRESH_BUILD_RULES.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/06_DESIGN_TO_IMPLEMENTATION_PIPELINE.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/07_HELD_FEATURE_AND_MIGRATION_PROTOCOL.md` | current | - | - | - | 1 |
+| `docs/clubhouse/foundation-v2/08_CI_PROGRESS_AND_VERIFICATION.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/09_AGENT_MASTER_HANDOFF.md` | current | - | - | yes | - |
+| `docs/clubhouse/foundation-v2/FILE_INDEX.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/PHONE_HANDOFF_NOTE.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/START_HERE.md` | current | - | - | yes | - |
+| `docs/clubhouse/foundation-v2/starter-scaffold/PROPOSED_PAGE_NAMESPACE_MAP.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/templates/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/templates/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/templates/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/templates/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/foundation-v2/templates/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/foundation-v2/templates/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/message-attachments-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
