@@ -2,6 +2,21 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — The editor keeps what was typed through a page re-read
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new (60103's editor)
+Data impact:    none
+```
+
+### Fixed (with a test that fails without the fix)
+
+- **A re-read wiped the editor.** The editor seeded its fields whenever the team list changed identity, and
+  every page re-read brings it in a new array. A refresh that landed while the editor was open (one still in
+  flight from deleting busy time, or a Retry elsewhere) cleared the title and reset the type. It now seeds
+  once per opening.
+
 ## 2026-09-30 — The first-run page (D-71, CH-6309)
 
 ```text
@@ -81,7 +96,7 @@ Held items:     none
 - Shell, not this page: the toasts sit outside a native modal dialog, which a browser makes inert, so a Retry (and the announcement of an error toast) raised by a failure inside a dialog is probably not reachable until the dialog closes. Not verified in a browser; the jsdom tests do not see it. It affects every page's Retry.
 - A create whose answer is lost on the way back can be created twice by Retry (no idempotency key on
   `createGolfEvent`, `addCoachBlockedTime` or `createCalendarFeed`).
-- The editor sets its fields again whenever the page re-reads while it is open. Not reproduced.
+- The editor sets its fields again whenever the page re-reads while it is open. Not reproduced. (Reproduced and fixed since, above.)
 - Cancelling a series by scope deletes the events (with their replies and attendance) instead of soft-cancelling them as one event does; whether it should soft-cancel is the owner's call. Editing or cancelling a series by scope is limited to the coach who created it (`Not authorized` for a second coach), though the screen offers the scopes to every coach.
 - Attendance's Retry sends every changed mark again, including those that had saved; harmless, each is an upsert.
 - `getAttendanceReport` and the attendance select policy let an active team player read a whole event's attendance;

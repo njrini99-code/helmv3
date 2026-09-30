@@ -204,8 +204,15 @@ export function EventEditor({
   const [discarding, setDiscarding] = useState(false);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
 
+  // The editor seeds once per opening. A page re-read that lands while it is open (a slower refresh, a Retry
+  // elsewhere) brings the same team in new arrays, and seeding again would wipe what the coach has typed.
+  const latest = useRef({ people, today });
+  useEffect(() => {
+    latest.current = { people, today };
+  }, [people, today]);
   useEffect(() => {
     if (!seed) return;
+    const { people, today } = latest.current;
     const e = seed.event;
     const init = e
       ? {
@@ -243,7 +250,7 @@ export function EventEditor({
     setUntil(addDays(seed.date ?? today, 56));
     setScope('this');
     setTouched(false);
-  }, [seed, people, today]);
+  }, [seed]);
 
   const clashes = allDay ? [] : invited.filter((pid) => busyFor(events, pid, date, base?.id).some((b) => overlaps(win, [b.start!, b.end!])));
   const moved = !!base && !!seed?.proposal && (seed.proposal[0] !== base.start || seed.proposal[1] !== base.end);

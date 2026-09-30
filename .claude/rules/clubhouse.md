@@ -19,7 +19,9 @@ rejected the result; this tree exists so that cannot happen again.
   Supabase loaders, `@/lib/utils/capacitor`.
 - **Styling:** plain CSS files, with every selector under `.ch-*` or
   `[data-ui="clubhouse"]` and tokens from `src/clubhouse/styles/tokens.css`.
-  No Tailwind utilities in Clubhouse markup.
+  No Tailwind utilities in Clubhouse markup. Each page stylesheet has its own
+  class prefix (`.ch-rsu-`, `.ch-cal-ft`): `clubhouse:check` fails when two
+  page stylesheets anchor the same class.
 - **Doctrine:**
   - Red means under par, the pin flag, or a destructive action (D-42). Gains are green; losses are amber.
   - Instrument Sans only, in sentence case: no tracked uppercase, no serif.

@@ -364,6 +364,26 @@ describe('Calendar · seeds from other pages', () => {
     expect(screen.getByRole('radio', { name: 'Practice' }).getAttribute('aria-checked')).toBe('true');
   });
 
+  it('60103 a page re-read that lands while the editor is open (a slower refresh, a Retry elsewhere) keeps what the coach typed', async () => {
+    const user = userEvent.setup();
+    const tree = (data: ChCalendarData) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <Calendar data={data} initialNew />
+          </div>
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const { rerender } = render(tree(cal()));
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('radio', { name: 'Meeting' }));
+    // The same page, read again: equal data in new arrays.
+    rerender(tree(cal({ people: PREVIEW_CALENDAR.people.map((p) => ({ ...p })), events: [...PREVIEW_CALENDAR.events] })));
+    expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Short game');
+    expect(screen.getByRole('radio', { name: 'Meeting' }).getAttribute('aria-checked')).toBe('true');
+  });
+
   it('60103 Plan 1:1 (?new=1&with=<player>) opens a meeting with only that player invited (D-52), and the address is cleaned so a reload does not open it again', async () => {
     window.history.replaceState(null, '', '/golf/dashboard/calendar?new=1&with=jonah&type=meeting&date=2026-10-14');
     wrap(cal(), { initialNew: true, initialWith: 'jonah' });
