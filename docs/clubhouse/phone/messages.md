@@ -39,7 +39,7 @@ Open, with who owns each:
     More tab ─ Inbox ─┬─ Thread ─ Details
                       └─ New message ─ Thread (after the first send)
 
-- Each screen pushes with a 220ms slide, and back pops it.
+- Each screen pushes with a 260ms slide, and back pops it.
 - The tab bar shows on the Inbox only.
 - Opening a thread calls `api.select(id)`, and going back calls `api.select(null)`. Desktop opens a
   thread automatically only at 821px and wider (`Messages.tsx`), so a phone starts on the Inbox.

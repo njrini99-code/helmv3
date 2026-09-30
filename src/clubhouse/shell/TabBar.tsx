@@ -144,7 +144,7 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
               initial={reduced ? { opacity: 0 } : { y: '100%' }}
               animate={reduced ? { opacity: 1 } : { y: 0 }}
               exit={reduced ? { opacity: 0 } : { y: '100%' }}
-              transition={chTween('slow')}
+              transition={chTween('base')}
             >
               <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
               <div className="ch-more__head" onPointerDown={drag.onPointerDown}>

@@ -83,7 +83,53 @@
   border-radius: 16px;
 }
 
+/* First-paint reveal (D-64, v2 GH.reveal): a page's sections rise 10px into
+   place, 55ms apart, at most 10 steps. It runs once per page mount, so a
+   refresh with new data never replays it. This is the one allowed stagger
+   (clubhouse:check). Skeletons are excluded. */
+@keyframes ch-reveal {
+  from {
+    opacity: 0;
+    translate: 0 var(--ch-reveal-rise);
+  }
+}
+.ch-reveal > :not([aria-busy='true']) > * {
+  animation: ch-reveal var(--ch-dur-reveal) var(--ch-ease) backwards;
+  animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 9);
+}
+.ch-reveal > :not([aria-busy='true']) > :nth-child(1) { animation-delay: var(--ch-reveal-offset); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(2) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step)); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(3) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 2); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(4) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 3); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(5) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 4); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(6) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 5); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(7) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 6); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(8) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 7); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(9) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 8); }
+
+/* Route skeletons (every one is a main[aria-busy]): nothing for the first
+   150ms, so a fast load never flashes one, then a fade in over base. */
+@keyframes ch-skel-in {
+  from {
+    opacity: 0;
+  }
+}
+[data-ui='clubhouse'] main[aria-busy='true'] {
+  animation: ch-skel-in var(--ch-dur-base) var(--ch-ease) var(--ch-skel-delay) backwards;
+}
+
+/* Animations off (Settings) and reduced motion: no reveal, no skeleton delay. */
+[data-ui='clubhouse'][data-motion='off'] .ch-reveal > * > *,
+[data-motion='off'] [data-ui='clubhouse'] .ch-reveal > * > *,
+[data-ui='clubhouse'][data-motion='off'] main[aria-busy='true'] {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .ch-reveal > * > *,
+  [data-ui='clubhouse'] main[aria-busy='true'] {
+    animation: none !important;
+  }
   .ch-root *,
   .ch-root *::before,
   .ch-root *::after {

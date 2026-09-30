@@ -7,7 +7,7 @@
     "name": "MOVING_TO_ANOTHER_PAGE_2",
     "chCode": "CH-1904",
     "meaning": "Moving to another page",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -215,7 +215,7 @@
     "item": 1,
     "name": "MOVING_TO_ANOTHER_PAGE",
     "chCode": "CH-1601",
-    "meaning": "Moving to another page",
+    "meaning": "Moving to another page, or its first load",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -270,7 +270,7 @@
     "item": 6,
     "name": "PRESSING_ANY_BUTTON_ROW_OR_TAB",
     "chCode": "CH-1606",
-    "meaning": "Pressing any button, row or tab",
+    "meaning": "Pressing any button, row, tab or link",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

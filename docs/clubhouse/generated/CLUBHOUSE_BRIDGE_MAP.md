@@ -79,7 +79,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
-| 10101 | CH-1904 | 01 Default / core UI | `MOVING_TO_ANOTHER_PAGE_2` | reserved | Moving to another page |
+| 10101 | CH-1904 | 01 Default / core UI | `MOVING_TO_ANOTHER_PAGE_2` | implemented | Moving to another page |
 | 10201 | CH-1401 | 02 Initial loading / skeleton | `THE_BELL_IS_LOADING_ITS_LIST` | implemented | The bell is loading its list |
 | 10401 | CH-1301 | 04 Empty | `A_PAGE_THAT_HASNT_BEEN_REBUILT_IN` | implemented | A page that hasn't been rebuilt in Clubhouse |
 | 10402 | CH-1302 | 04 Empty | `THE_BELL_HAS_NOTHING` | implemented | The bell has nothing |
@@ -98,12 +98,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
 | 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice while offline |
-| 11601 | CH-1601 | 16 Micro animation | `MOVING_TO_ANOTHER_PAGE` | reserved | Moving to another page |
+| 11601 | CH-1601 | 16 Micro animation | `MOVING_TO_ANOTHER_PAGE` | reserved | Moving to another page, or its first load |
 | 11602 | CH-1602 | 16 Micro animation | `OPENING_MORE_ON_A_PHONE` | reserved | Opening More on a phone |
 | 11603 | CH-1603 | 16 Micro animation | `OPENING_THE_BELL_OR_ANY_MENU` | reserved | Opening the bell or any menu |
 | 11604 | CH-1604 | 16 Micro animation | `A_TOAST_ARRIVES_OR_LEAVES` | reserved | A toast arrives or leaves |
 | 11605 | CH-1605 | 16 Micro animation | `GOING_OFFLINE_OR_BACK_ONLINE` | reserved | Going offline or back online |
-| 11606 | CH-1606 | 16 Micro animation | `PRESSING_ANY_BUTTON_ROW_OR_TAB` | reserved | Pressing any button, row or tab |
+| 11606 | CH-1606 | 16 Micro animation | `PRESSING_ANY_BUTTON_ROW_OR_TAB` | reserved | Pressing any button, row, tab or link |
 | 11607 | CH-1607 | 16 Micro animation | `THE_FIRST_TAB_ON_A_PAGE` | reserved | The first Tab on a page |
 | 11608 | CH-1608 | 16 Micro animation | `ANIMATIONS_OFF_IN_SETTINGS_OR_THE_OS` | reserved | Animations off in Settings, or the OS asks for reduced motion |
 | 11609 | CH-1609 | 16 Micro animation | `A_PAGE_OR_SECTION_IS_LOADING` | reserved | A page or section is loading |

@@ -24,7 +24,8 @@ rejected the result; this tree exists so that cannot happen again.
   - Red means under par, the pin flag, or a destructive action (D-42). Gains are green; losses are amber.
   - Instrument Sans only, in sentence case: no tracked uppercase, no serif.
   - Tabular numbers everywhere. Use a true minus `−`, `E` for even and `—` for no data.
-  - Motion uses 90, 150, 220 and 360ms with `cubic-bezier(.2,.8,.2,1)`, and a 0.985 press. No count-ups, no entrance staggers.
+  - Motion follows v2 (D-64): press 110ms, quick 180ms, base 260ms, release 280ms and reveal 520ms, from the `--ch-dur-*` tokens and `CH_DUR`, on the v2 ease-out, in-out and spring curves. The press is `useChPress` (about 6px), and the only stagger is the first-paint `.ch-reveal`. No count-ups.
+  - Haptics follow v2 (D-70): selection, light for primary buttons, success for saves and sends, warning before destructive actions, medium only for a sheet settling, error on failure; other taps are silent.
   - No emoji and no exclamation marks.
 - **Haptics:** only through `src/clubhouse/lib/haptics.ts`.
 - **Phone:** iPhone only. The owner's phone board (`… - Mobile.html` in

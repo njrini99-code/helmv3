@@ -56,8 +56,8 @@ its own boundary, so a crash stays inside the tab.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-5601 | Changing tabs | The underline slides to the new tab (220ms) | `layoutId` on `.ch-tab-t__bar` | preview |
-| CH-5602 | Opening Add focus area | The sheet rises and fades in (220ms) | `Modal` | preview |
+| CH-5601 | Changing tabs | The underline slides to the new tab (260ms) | `layoutId` on `.ch-tab-t__bar` | preview |
+| CH-5602 | Opening Add focus area | The sheet rises and fades in (260ms) | `Modal` | preview |
 
 ## 57xx Haptics
 

@@ -37,9 +37,15 @@ test('ignores comments and non-null assertions', () => {
   assert.deepEqual(checkSource('src/clubhouse/c.ts', src), []);
 });
 
-test('flags off-scale durations', () => {
-  const v = checkSource('src/clubhouse/d.tsx', 'const t = { duration: 0.5 };\nconst ok = { duration: 0.22 };');
-  assert.equal(v.length, 1);
+test('flags durations off the v2 scale (D-64)', () => {
+  const v = checkSource('src/clubhouse/d.tsx', 'const t = { duration: 0.5 };\nconst old = { duration: 0.22 };\nconst ok = { duration: 0.26 };\nconst ok2 = { duration: 0.52 };');
+  assert.equal(v.length, 2);
+});
+
+test('flags the retired motion tokens (D-64)', () => {
+  const css = checkSource('src/clubhouse/styles/e.css', '.ch-a { transition: color var(--ch-dur-instant) var(--ch-ease); transform: scale(var(--ch-press-scale)); }');
+  assert.equal(css.filter((x) => x.includes('retired motion token')).length, 2);
+  assert.ok(checkSource('src/clubhouse/f.tsx', 'const s = CH_PRESS_SCALE;').some((x) => x.includes('retired motion token')));
 });
 
 const table = (row) =>

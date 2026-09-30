@@ -73,7 +73,7 @@ rows. Add to it when a row lands.
    state (a sheet, a gesture) gets a new number in the page's block, and a
    test like any other. Toasts sit above the tab bar.
 4. **Motion and haptics.** Same doctrine:
-   - Screens push and pop with a 220ms slide, and sheets rise in 360ms and
+   - Screens push and pop with a 260ms slide, and sheets rise in 260ms and
      follow the finger.
    - Reduced motion swaps both for fades.
    - Haptics go only through `haptic()`.

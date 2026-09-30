@@ -85,8 +85,8 @@ The Safari chrome is prototype framing, since the app is the Capacitor shell. To
 | --- | --- | --- |
 | Tap a pill | List filter | select |
 | Tap Create qualifier, Create | List, form top bar | press, then success or error on the result |
-| Tap a hero or card | List | none. The detail pushes with the 220ms slide |
-| Tap a leaderboard row | Detail | select. The sheet rises in 360ms |
+| Tap a hero or card | List | none. The detail pushes with the 260ms slide |
+| Tap a leaderboard row | Detail | select. The sheet rises in 260ms |
 | Tap a round chip | Player sheet | select |
 | Drag the sheet down, tap the scrim, tap close | Player sheet | none. The sheet follows the finger and dismisses past the threshold |
 | Toggle a player | Form | select |

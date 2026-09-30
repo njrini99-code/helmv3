@@ -10,7 +10,7 @@ const FLICK_PX_PER_MS = 0.5;
 
 /**
  * A phone sheet follows the finger down, and closes past 80px or on a quick
- * flick with the press haptic; let go sooner and it springs back in 360ms,
+ * flick with the press haptic; let go sooner and it springs back in 260ms (base),
  * the sheet's own duration. With reduced motion there is no drag (pass
  * `enabled: false`); Close, the scrim and Esc still close it. CH-1611.
  *
@@ -53,7 +53,7 @@ export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () =
           onClose();
           return;
         }
-        el.style.transition = 'translate var(--ch-dur-slow) var(--ch-ease)';
+        el.style.transition = 'translate var(--ch-dur-base) var(--ch-ease)';
         el.style.translate = '';
       };
       stop.current = () => {

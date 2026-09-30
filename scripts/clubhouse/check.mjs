@@ -8,7 +8,8 @@
  *      --ch-* custom properties.
  *   2. Hold the design doctrine the compiler can't: red only for under par,
  *      no emoji, no exclamation marks in copy, no tracked uppercase, no
- *      count-ups or entrance staggers, durations only from the tokens.
+ *      count-ups, no staggers but the first-paint reveal (.ch-reveal in
+ *      base.css), durations only from the v2 tokens (D-64).
  * It also validates docs/clubhouse/PROGRESS.md so the tracker can't drift
  * into a state its own gates forbid.
  *
@@ -22,7 +23,8 @@ import { runRegistryCheck } from './registry.mjs';
 
 const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
-const ALLOWED_DURATIONS_S = new Set(['0', '0.09', '.09', '0.15', '.15', '0.22', '.22', '0.36', '.36']);
+/** v2 motion (D-64): press, quick, base, release, reveal, in seconds. */
+const ALLOWED_DURATIONS_S = new Set(['0', '0.11', '.11', '0.18', '.18', '0.26', '.26', '0.28', '.28', '0.52', '.52']);
 const STATUSES = /^(todo|doing|done|blocked \(.+\))$/;
 const GATES = ['spec', 'desktop', 'wired', 'states', 'error-tracking', 'phone-spec', 'phone', 'motion', 'accessibility', 'performance', 'verified'];
 
@@ -69,7 +71,8 @@ export function checkSource(file, raw) {
   // 2. Doctrine
   scan(/\p{Extended_Pictographic}/gu, 'contains an emoji');
   scan(/text-transform:\s*uppercase|\buppercase\b|tracking-(wide|wider|widest)/g, 'tracked or uppercase text is banned');
-  scan(/staggerChildren|delayChildren|staggerDirection|\bstagger\(/g, 'entrance staggers are banned');
+  scan(/staggerChildren|delayChildren|staggerDirection|\bstagger\(/g, 'staggers are banned (the first-paint reveal is .ch-reveal)');
+  scan(/--ch-dur-(instant|slow)\b|--ch-press-scale|CH_PRESS_SCALE/g, 'retired motion token (D-64): use press, quick, base, release or reveal');
   scan(/count-?up|CountUp|useCountUp|animateNumber|useMotionValue\(.*\)\s*.*toFixed/gi, 'count-up animation is banned');
 
   if (ext === '.css') {

@@ -138,14 +138,14 @@ capture.
 
 The prototype is static. From `MOBILE.md`:
 
-- a sheet rises in 360ms and follows the finger
+- a sheet rises in 260ms and follows the finger
 - dragging it down dismisses it
 - reduced motion fades it instead
 - the swipe-back guard stays off while it is open (`data-state="open"`, as built)
 
-As built (2026-09-29): the More sheet, the bell's phone sheet and `Modal` rise in 360ms and follow the
+As built (2026-09-29): the More sheet, the bell's phone sheet and `Modal` rise in 260ms and follow the
 finger from the grab and the header; past 80px or on a flick they close with `press`, otherwise they
-spring back in 360ms; with reduced motion they fade and don't drag (`useSheetDrag`, CH-1611, CH-1612,
+spring back in 260ms; with reduced motion they fade and don't drag (`useSheetDrag`, CH-1611, CH-1612,
 CH-1811). The body scrolls and doesn't start a drag.
 
 ## Safe areas and the keyboard
@@ -183,9 +183,9 @@ The prototype responds to clicks only. The drawing shows none of these gestures;
 
 ## Motion
 
-- Screens push and pop with a 220ms slide, and sheets rise in 360ms. Both use the Clubhouse ease
+- Screens push and pop with a 260ms slide, and sheets rise in 260ms. Both use the Clubhouse ease
   (`MOBILE.md`).
-- Press scales to 0.985. The design also tints list rows to `--ch-bg-hover` while pressed, so rows do
+- The press is the v2 press (about 6px, D-64). The design also tints list rows to `--ch-bg-hover` while pressed, so rows do
   both.
 - Reduced motion swaps slides and sheet rises for fades.
 

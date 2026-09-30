@@ -42,14 +42,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 39 | 5 | 18 | 74 |
+| `PLAN` | 41 | 5 | 18 | 74 |
 | `AUDIT_SNAPSHOT` | 58 | 6 | 32 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 7 | 5 |
-| `UNKNOWN` | 205 | 12 | 46 | 81 |
+| `UNKNOWN` | 211 | 12 | 47 | 80 |
 
 ## Files
 
@@ -341,6 +341,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 4 |
 | `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
+| `docs/clubhouse/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
+| `docs/clubhouse/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md` | current | yes | - | - | 3 |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | - |
 | `docs/plans/calendar-premium/DESIGN-PLAN.md` | current | - | - | yes | - |
@@ -665,7 +667,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
-| `docs/clubhouse/HANDOFF.md` | current | - | - | - | 2 |
+| `docs/clubhouse/HANDOFF.md` | current | - | - | - | 1 |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
@@ -719,6 +721,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/screens/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/templates/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/templates/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/templates/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/templates/PAGE.md` | current | - | - | yes | - |
+| `docs/clubhouse/templates/VERIFY.md` | current | - | - | - | - |
+| `docs/clubhouse/templates/WIRING.md` | current | - | - | - | - |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |

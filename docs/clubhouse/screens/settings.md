@@ -89,11 +89,13 @@ Data (same tables and actions as the current Settings page):
 - [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
 
 ## motion
-- [x] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease (section change uses the route transition)
-- [x] Press scales to 0.985 on every tappable surface
-- [x] No count-ups and no entrance staggers; data is final on mount
-- [x] Reduced motion is honoured through `useChReducedMotion`, and the Animations preference now turns every Clubhouse transition off
-- [x] Haptics: select for sections, switches and pickers; commit on saves; error on failures; warning before delete
+<!-- Rewritten for v2 motion (D-64) and v2 haptics (D-70) on 2026-09-29; earlier evidence was against the old timings, so every box starts again. -->
+- [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
+- [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
+- [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
+- [ ] Skeletons wait 150ms, fade in, and share one shimmer sweep
+- [ ] Reduced motion and Animations off remove the rise, the press and the shimmer (`useChReducedMotion`)
+- [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
 - [x] Full keyboard path, with visible focus and no traps; Esc closes overlays

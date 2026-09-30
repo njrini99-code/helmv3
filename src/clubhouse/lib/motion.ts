@@ -1,28 +1,31 @@
 import type { Transition } from 'framer-motion';
 
 /**
- * Clubhouse motion doctrine, mirrored from the tokens:
- *   four durations (90, 150, 220, 360ms), one curve (.2,.8,.2,1),
- *   pressed controls scale to 0.985.
- * Banned: count-ups and entrance staggers. Data is final on mount; motion
- * only ever communicates a change the user caused (navigate, open, select).
+ * Clubhouse motion (D-64, the v2 design's gh-polish.css and gh-core.js),
+ * mirrored from the tokens:
+ *   press 110ms, quick 180ms (hover, toggles, the tab underline), base 260ms
+ *   (sheets, panels, pushes, crossfades), release 280ms on the spring,
+ *   reveal 520ms (first paint only, in CSS: `.ch-reveal`).
+ *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1), spring (.34,1.3,.64,1).
+ * Banned: count-ups, and any stagger other than the first-paint reveal.
  */
-export const CH_EASE = [0.2, 0.8, 0.2, 1] as const;
+export const CH_EASE = [0.22, 1, 0.36, 1] as const;
+export const CH_EASE_IO = [0.65, 0, 0.35, 1] as const;
+export const CH_SPRING = [0.34, 1.3, 0.64, 1] as const;
 
 export const CH_DUR = {
-  instant: 0.09,
-  quick: 0.15,
-  base: 0.22,
-  slow: 0.36,
+  press: 0.11,
+  quick: 0.18,
+  base: 0.26,
+  release: 0.28,
+  reveal: 0.52,
 } as const;
-
-export const CH_PRESS_SCALE = 0.985;
 
 export function chTween(duration: keyof typeof CH_DUR = 'base'): Transition {
   return { duration: CH_DUR[duration], ease: CH_EASE };
 }
 
-/** Route change: a short fade with a 6px settle. Never on first paint. */
+/** A panel's content swap inside a fixed frame (a Settings section): a base crossfade with a 6px settle. */
 export const CH_ROUTE = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },

@@ -49,7 +49,7 @@
   color: var(--ch-text-secondary);
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-set-rail__i > svg {
   flex: none;
@@ -73,9 +73,6 @@
 }
 .ch-set-rail__i.is-on:hover {
   background: rgb(21 90 57 / 0.09);
-}
-.ch-set-rail__i:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-set-rail__i.is-on {
   /* Flat selection: a soft green tint, no lift (owner, 2026-09-29). */
@@ -453,7 +450,7 @@
   border-top: 0;
 }
 .ch-set-rank__i.is-moved {
-  animation: ch-set-moved var(--ch-dur-slow) var(--ch-ease);
+  animation: ch-set-moved var(--ch-dur-base) var(--ch-ease);
 }
 @keyframes ch-set-moved {
   from {

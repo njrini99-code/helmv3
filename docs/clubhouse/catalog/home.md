@@ -46,8 +46,8 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-2601 | Paging the latest round | The round slides 12px out and the next slides in from that side (220ms); a fade only when motion is reduced | `chSwap`, `AnimatePresence popLayout` | preview |
-| CH-2602 | Hovering or pressing a leaderboard row | The row lifts onto a raised surface (150ms) and presses to 98.5% | `.ch-h-lb__row.is-link` | preview |
+| CH-2601 | Paging the latest round | The round slides 12px out and the next slides in from that side (260ms); a fade only when motion is reduced | `chSwap`, `AnimatePresence popLayout` | preview |
+| CH-2602 | Hovering or pressing a leaderboard row | The row lifts onto a raised surface (180ms) and shrinks about 6px (110ms) and springs back (280ms) | `.ch-h-lb__row.is-link` | preview |
 
 ## 27xx Haptics
 

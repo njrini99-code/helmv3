@@ -49,18 +49,18 @@ D-40 to D-43).
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-1601 | Moving to another page | The page fades in with a 6px settle (220ms); nothing on first load | `RouteFrame`, `CH_ROUTE` | preview |
-| CH-1602 | Opening More on a phone | The sheet slides up (360ms) over a fading scrim (220ms); dragging it down closes it (CH-1611) | `TabBar`, `chTween('slow')` | preview |
-| CH-1603 | Opening the bell or any menu | It scales out of its button (150ms) | `CH_POP` | preview |
-| CH-1604 | A toast arrives or leaves | Slides up 10px and fades (220ms); the stack reflows | `ToastProvider` | preview |
-| CH-1605 | Going offline or back online | The banner fades in and out (220ms) | `OfflineBanner` | preview |
-| CH-1606 | Pressing any button, row or tab | It presses in to 98.5% | `--ch-press-scale` | preview |
-| CH-1607 | The first Tab on a page | Skip to content slides into view (150ms) | `.ch-skip` | preview |
+| CH-1601 | Moving to another page, or its first load | The page's sections rise 10px into place once, 55ms apart (520ms each, at most 10 steps); a refresh with new data never replays it; none when motion is reduced or Animations is off (D-64) | `RouteFrame`, `.ch-reveal` in `base.css` | preview |
+| CH-1602 | Opening More on a phone | The sheet slides up (260ms) over a fading scrim (260ms); dragging it down closes it (CH-1611) | `TabBar`, `chTween('base')` | preview |
+| CH-1603 | Opening the bell or any menu | It scales out of its button (180ms) | `CH_POP` | preview |
+| CH-1604 | A toast arrives or leaves | Slides up 10px and fades (260ms); the stack reflows | `ToastProvider` | preview |
+| CH-1605 | Going offline or back online | The banner fades in and out (260ms) | `OfflineBanner` | preview |
+| CH-1606 | Pressing any button, row, tab or link | It shrinks about 6px (110ms) and springs back (280ms); none when motion is reduced or Animations is off (D-64) | `useChPress` (`lib/press.ts`), mounted by `RouteFrame` | preview |
+| CH-1607 | The first Tab on a page | Skip to content slides into view (180ms) | `.ch-skip` | preview |
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
-| CH-1609 | A page or section is loading | Skeletons shimmer left to right (1.4s loop); they hold still when Animations is off or motion is reduced | `.ch-skel` | preview |
-| CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 220ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
-| CH-1611 | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (360ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button | `useSheetDrag` in `TabBar`, `Bell` and `Modal` | shell.test › CH-1611 |
-| CH-1612 | Opening the bell on a phone | The notifications sheet rises (360ms) over a fading scrim (220ms), as More does; a fade when motion is reduced | `Bell`, `chTween('slow')` | preview |
+| CH-1609 | A page or section is loading | Nothing for the first 150ms, then the skeleton fades in (260ms); one shimmer sweep shared by every block (1.9s loop); they hold still when Animations is off or motion is reduced (D-64) | `.ch-skel`, `main[aria-busy]` in `base.css` | preview |
+| CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 260ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
+| CH-1611 | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (260ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button | `useSheetDrag` in `TabBar`, `Bell` and `Modal` | shell.test › CH-1611 |
+| CH-1612 | Opening the bell on a phone | The notifications sheet rises (260ms) over a fading scrim (260ms), as More does; a fade when motion is reduced | `Bell`, `chTween('base')` | preview |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
 

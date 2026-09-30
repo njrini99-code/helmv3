@@ -360,7 +360,7 @@ export function Bell() {
                 initial={reduced ? { opacity: 0 } : { y: '100%' }}
                 animate={reduced ? { opacity: 1 } : { y: 0 }}
                 exit={reduced ? { opacity: 0 } : { y: '100%' }}
-                transition={chTween('slow')}
+                transition={chTween('base')}
               >
                 <div className="ch-bellp__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
                 <div className="ch-bellp__shead" onPointerDown={drag.onPointerDown}>

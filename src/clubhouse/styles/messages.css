@@ -81,16 +81,13 @@
   cursor: pointer;
   transition:
     background var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-instant) var(--ch-ease);
+    transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ms-row:first-child {
   border-top: 0;
 }
 .ch-ms-row:hover {
   background: var(--ch-bg-hover);
-}
-.ch-ms-row:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-ms-row:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -455,15 +452,12 @@
   cursor: pointer;
   transition:
     background var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-instant) var(--ch-ease);
+    transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ms-reactbar__b:hover,
 .ch-ms-reactbar__b.is-on {
   background: var(--ch-green-50);
   color: var(--ch-green-700);
-}
-.ch-ms-reactbar__b:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-ms-reacts {
   display: flex;
@@ -529,7 +523,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--ch-ink-300);
-  animation: ch-ms-type calc(var(--ch-dur-slow) * 4) var(--ch-ease) infinite;
+  animation: ch-ms-type calc(var(--ch-dur-base) * 4) var(--ch-ease) infinite;
 }
 .ch-ms-typing i:nth-child(2) {
   animation-delay: var(--ch-dur-base);
@@ -609,7 +603,7 @@
   transition:
     background var(--ch-dur-quick) var(--ch-ease),
     color var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-instant) var(--ch-ease);
+    transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ms-send.is-ready {
   background: var(--ch-green-600);
@@ -619,9 +613,6 @@
 }
 .ch-ms-send.is-ready:hover {
   background: var(--ch-green-700);
-}
-.ch-ms-send.is-ready:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-ms-send:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -982,16 +973,13 @@
     font: 500 13.5px/1 var(--ch-font-sans);
     color: var(--ch-text-secondary);
     cursor: pointer;
-    transition: transform var(--ch-dur-instant) var(--ch-ease);
+    transition: transform var(--ch-dur-quick) var(--ch-ease);
   }
   /* A 44px target around the 34px chip (the 6px gaps shared out, for a short chip such as All). */
   .ch-msp-chip::before {
     content: '';
     position: absolute;
     inset: -5px -3px;
-  }
-  .ch-msp-chip:active {
-    transform: scale(var(--ch-press-scale));
   }
   .ch-msp-chip[aria-pressed='true'] {
     background: var(--ch-raised-bg);
@@ -1322,13 +1310,10 @@
     color: var(--ch-green-700);
     text-decoration: none;
     cursor: pointer;
-    transition: transform var(--ch-dur-instant) var(--ch-ease), background var(--ch-dur-quick) var(--ch-ease);
+    transition: transform var(--ch-dur-quick) var(--ch-ease), background var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-msp-tile span {
     color: var(--ch-text-secondary);
-  }
-  .ch-msp-tile:active {
-    transform: scale(var(--ch-press-scale));
   }
   .ch-msp-tile[aria-pressed='true'] {
     background: var(--ch-green-50);

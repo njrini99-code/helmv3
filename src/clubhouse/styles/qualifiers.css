@@ -87,7 +87,7 @@
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   cursor: pointer;
   touch-action: manipulation;
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-qf-pill span {
   font-variant-numeric: tabular-nums;
@@ -95,9 +95,6 @@
 }
 .ch-qf-pill:hover {
   box-shadow: inset 0 0 0 1px var(--ch-border-strong);
-}
-.ch-qf-pill:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-qf-pill[aria-pressed='true'] {
   background: var(--ch-bg-selected);
@@ -135,12 +132,9 @@
   color: inherit;
   text-decoration: none;
   cursor: pointer;
-  transition: box-shadow var(--ch-dur-base) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-base) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-qf-hero:active,
-.ch-qf-card:active {
-  transform: scale(var(--ch-press-scale));
-}
 .ch-qf-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
@@ -511,12 +505,9 @@
 }
 .ch-qf-open,
 .ch-qf-picker__row {
-  transition: transform var(--ch-dur-instant) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-qf-open:active,
-.ch-qf-picker__row:active {
-  transform: scale(var(--ch-press-scale));
-}
 .ch-qf-rowbtn {
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);

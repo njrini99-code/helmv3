@@ -194,10 +194,10 @@ Haptics go only through `haptic()`. Outcome haptics come from `useAction`.
 
 | Gesture | Result | Haptic |
 | --- | --- | --- |
-| Tap a player row | Push the profile (220ms slide) | `select` (CH-3701) |
+| Tap a player row | Push the profile (260ms slide) | `select` (CH-3701) |
 | Back button, or an edge swipe from the profile | Pop to the list (URL back) | none (system) |
 | Change the sort | Re-sort in place, with no animation | `select` (CH-3701) |
-| Tap the join requests banner | Open the sheet (360ms rise) | `press` |
+| Tap the join requests banner | Open the sheet (260ms rise) | `press` |
 | Drag a sheet down past its threshold, or tap the scrim | Dismiss | `press` on a drag dismiss, as the More sheet does |
 | Approve or Decline | The card leaves optimistically | `commit` on success, `error` on failure (`useAction`) |
 | Approve all | Every card leaves | one `commit` at the end, or `error` when any failed (D-55) |
@@ -213,11 +213,11 @@ tap path.
 
 ## Motion
 
-- Push and pop use a 220ms slide. This replaces the desktop panel's 16px
+- Push and pop use a 260ms slide. This replaces the desktop panel's 16px
   slide-in (CH-3601) on the phone.
-- Sheets rise in 360ms and follow the finger.
+- Sheets rise in 260ms and follow the finger.
 - Reduced motion swaps both for fades.
-- Rows press to 0.985.
+- Rows take the v2 press (about 6px, D-64).
 - The design's sort and approval transitions add no motion beyond this.
 
 ## Catalog on the phone
@@ -312,7 +312,7 @@ foundation, Roster needs:
    - a scrolling body, with a footer pinned above the home indicator
    - `data-state="open"` for the swipe-back guard
 5. **An action-sheet form of `Menu`,** for ⋯.
-6. **The push and pop transition** (220ms).
+6. **The push and pop transition** (260ms).
 7. **The neutral phone avatar tokens.**
 8. **Toasts above the tab bar** (shell.css does this today).
 

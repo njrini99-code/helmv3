@@ -67,11 +67,13 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] Checked on a real iPhone through `npm run ios:dev` (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics felt
 
 ## motion
-- [ ] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease
-- [ ] Press scales to 0.985 on every tappable surface
-- [ ] No count-ups and no entrance staggers; data is final on mount
-- [ ] Reduced motion is honoured through `useChReducedMotion`
-- [ ] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
+<!-- Rewritten for v2 motion (D-64) and v2 haptics (D-70) on 2026-09-29; earlier evidence was against the old timings, so every box starts again. -->
+- [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
+- [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
+- [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
+- [ ] Skeletons wait 150ms, fade in, and share one shimmer sweep
+- [ ] Reduced motion and Animations off remove the rise, the press and the shimmer (`useChReducedMotion`)
+- [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays

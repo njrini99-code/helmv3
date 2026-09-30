@@ -108,7 +108,7 @@ Every save goes through `useAction`, so these belong to the shell:
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-09601 | Pressing a card, the hero or a status pill | A 0.985 press over 90ms | `--ch-press-scale`, `--ch-dur-instant` | preview |
+| CH-09601 | Pressing a card, the hero or a status pill | It shrinks about 6px (110ms) and springs back (280ms) (the shell's CH-1606) | `useChPress` | preview |
 | CH-09602 | Opening a leaderboard row | The scorecards appear in place, final on mount; no count-up, no stagger. The Live dot is static (D-33) | `Leaderboard` | preview |
 
 ## 097xx Haptics

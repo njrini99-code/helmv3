@@ -85,7 +85,7 @@ file is optimistic with Undo, and refuses offline the same way.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6601 | Hovering or selecting an event | It lifts and takes a green ring (150ms); pressing presses to 98.5% | `calendar.css` | preview |
+| CH-6601 | Hovering or selecting an event | It lifts and takes a green ring (180ms); pressing shrinks about 6px (110ms) and springs back (280ms) | `calendar.css` | preview |
 | CH-6602 | Dragging the time band in Find a time | The band follows in 15-minute steps; the overlapped lanes turn amber as it passes | `FindTime` | preview |
 | CH-6603 | The current time | A green line with the time moves down the grid | `ch-wk__now` | preview |
 

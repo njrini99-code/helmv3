@@ -17,11 +17,11 @@
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12);
   container-type: inline-size;
 }
-.ch-route {
+.ch-frame-route {
   min-height: calc(100% - var(--ch-topbar-h));
 }
 /* The skip target takes focus without a ring: the page itself is the destination. */
-.ch-route:focus {
+.ch-frame-route:focus {
   outline: none;
 }
 
@@ -120,7 +120,7 @@
   letter-spacing: -0.006em;
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease),
-    box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+    box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-navitem svg {
   color: #cfc7b2;
@@ -132,9 +132,6 @@
 }
 .ch-navitem:hover svg {
   color: #f4f1e8;
-}
-.ch-navitem:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-navitem:focus-visible {
   outline: 2px solid #dccda6;
@@ -174,13 +171,10 @@
   color: var(--ch-text-primary);
   text-decoration: none;
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.4), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
-  transition: transform var(--ch-dur-instant) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-next:hover {
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff;
-}
-.ch-next:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-next__k {
   display: flex;
@@ -405,11 +399,13 @@
   font: var(--ch-type-body-s);
   color: var(--ch-text-secondary);
 }
+/* One sweep shared by every block on the page (a viewport-fixed gradient,
+   v2 .gh-sk). iOS WebKit may ignore the fixed attachment, so on the phone
+   each block can sweep on its own (noted under D-64). */
 .ch-skel {
   display: block;
-  background: linear-gradient(90deg, #ebe7dc 0%, #f3f0e8 50%, #ebe7dc 100%);
-  background-size: 200% 100%;
-  animation: ch-shimmer 1.4s linear infinite;
+  background: linear-gradient(100deg, #ebe7dc 42%, #f3f0e8 50%, #ebe7dc 58%) 0 0 / 200vw 100% fixed;
+  animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
 }
 /* Animations off in Settings: skeletons hold still. */
 .ch-root[data-motion='off'] .ch-skel {
@@ -417,10 +413,15 @@
 }
 @keyframes ch-shimmer {
   from {
-    background-position: 100% 0;
+    background-position: 100vw 0;
   }
   to {
-    background-position: -100% 0;
+    background-position: -100vw 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-skel {
+    animation: none !important;
   }
 }
 .ch-toast__txt {
@@ -516,13 +517,12 @@
   color: var(--ch-text-primary);
   font: 500 14.5px/1.25 var(--ch-font-sans);
   text-decoration: none;
-  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-more__row:first-child {
   border-top: 0;
 }
 .ch-more__row:active {
-  transform: scale(var(--ch-press-scale));
   background: var(--ch-bg-hover);
 }
 .ch-more__ic {
@@ -659,10 +659,7 @@
     text-decoration: none;
     cursor: pointer;
     touch-action: manipulation;
-    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
-  }
-  .ch-tab:active {
-    transform: scale(var(--ch-press-scale));
+    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-tab[aria-current='page'] {
     color: var(--ch-green-700);
@@ -716,7 +713,7 @@
     font: 500 16px/1 var(--ch-font-sans);
     color: var(--ch-green-700);
     cursor: pointer;
-    transition: transform var(--ch-dur-instant) var(--ch-ease);
+    transition: transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-pbar__back.is-text {
     margin-left: -4px;
@@ -729,9 +726,6 @@
   }
   .ch-pbar__back:active,
   .ch-pbar__icon:active,
-  .ch-pbar__text:active {
-    transform: scale(var(--ch-press-scale));
-  }
   .ch-pbar__title {
     position: absolute;
     top: env(safe-area-inset-top);
@@ -783,7 +777,7 @@
     background: none;
     color: var(--ch-text-secondary);
     cursor: pointer;
-    transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+    transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-pbar__icon:active {
     background: rgb(28 25 18 / 0.06);
@@ -796,7 +790,7 @@
     font: 600 16px/44px var(--ch-font-sans);
     color: var(--ch-green-700);
     cursor: pointer;
-    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+    transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-pbar__text[aria-disabled='true'] {
     color: var(--ch-text-tertiary);
@@ -957,7 +951,7 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-bellp__row:hover,
 .ch-bellp__row:focus-visible {

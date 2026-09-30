@@ -209,13 +209,10 @@
   cursor: pointer;
   transition:
     box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-instant) var(--ch-ease);
+    transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-pp__trigger:hover {
   box-shadow: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.05);
-}
-.ch-pp__trigger:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-pp__trigger[aria-expanded='true'] {
   box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
@@ -350,10 +347,7 @@
   border-radius: 9px;
   background: transparent;
   cursor: pointer;
-  transition: transform var(--ch-dur-instant) var(--ch-ease);
-}
-.ch-wk__day:active {
-  transform: scale(var(--ch-press-scale));
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-wk__day:focus-visible {
   outline: 2px solid rgb(21 90 57 / 0.45);
@@ -479,10 +473,7 @@
   cursor: pointer;
   transition:
     box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-instant) var(--ch-ease);
-}
-.ch-ev:active {
-  transform: scale(var(--ch-press-scale));
+    transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ev:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -587,10 +578,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: transform var(--ch-dur-instant) var(--ch-ease);
-}
-.ch-ev-bar:active {
-  transform: scale(var(--ch-press-scale));
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ev-bar span {
   overflow: hidden;
@@ -1049,10 +1037,7 @@
   color: var(--ch-ivory-100);
   text-align: left;
   cursor: pointer;
-  transition: transform var(--ch-dur-instant) var(--ch-ease);
-}
-.ch-in__next:active {
-  transform: scale(var(--ch-press-scale));
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-in__next:focus-visible {
   outline: 2px solid var(--ch-border-focus);

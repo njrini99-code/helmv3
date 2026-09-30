@@ -23,7 +23,7 @@
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
   touch-action: manipulation;
-  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-seg--sm .ch-seg__b {
   height: 26px;
@@ -32,9 +32,6 @@
 }
 .ch-seg__b:hover {
   color: var(--ch-text-primary);
-}
-.ch-seg__b:active {
-  transform: translateY(0.5px) scale(var(--ch-press-scale));
 }
 .ch-seg__b.is-on {
   color: var(--ch-green-700);
@@ -77,14 +74,11 @@
   cursor: pointer;
   touch-action: manipulation;
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
-    background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-instant) var(--ch-ease);
+    background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-pill:hover {
   color: var(--ch-text-primary);
   box-shadow: inset 0 0 0 1px var(--ch-border-strong);
-}
-.ch-pill:active {
-  transform: scale(var(--ch-press-scale));
 }
 .ch-pill[aria-pressed='true'] {
   background: #edf4ef;
@@ -359,7 +353,7 @@
     max-height: 92dvh;
     padding-bottom: env(safe-area-inset-bottom);
     border-radius: 20px 20px 0 0;
-    animation: ch-rise var(--ch-dur-slow) var(--ch-ease);
+    animation: ch-rise var(--ch-dur-base) var(--ch-ease);
   }
   .ch-modal__grab {
     display: block;

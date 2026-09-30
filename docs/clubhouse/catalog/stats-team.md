@@ -54,8 +54,8 @@ component inside its own boundary, so a crash in one never reaches the page.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-4601 | Focusing a player on the trend | Their line comes forward in green, the others fade back (150ms) | `TeamTrend` | preview |
-| CH-4602 | Choosing a leg | The card takes the green ring and the grid column highlights (150ms) | `LegTrend`, `.is-col` | preview |
+| CH-4601 | Focusing a player on the trend | Their line comes forward in green, the others fade back (180ms) | `TeamTrend` | preview |
+| CH-4602 | Choosing a leg | The card takes the green ring and the grid column highlights (180ms) | `LegTrend`, `.is-col` | preview |
 
 ## 47xx Haptics
 

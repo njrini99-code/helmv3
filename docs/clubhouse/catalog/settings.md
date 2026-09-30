@@ -109,13 +109,13 @@ Success confirmations are listed next to their error: the toast shows for 4 seco
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8601 | Switching section | The old section fades out, the new one fades in with a 6px settle (220ms) | `AnimatePresence` + `CH_ROUTE` | preview |
-| CH-8602 | Save status changes | "Unsaved changes" → "Saved" with a check fades in and settles after 1.8s (150ms) | `SaveBar` | preview |
-| CH-8603 | Flipping a switch | The thumb slides with a small spring (220ms) | `.ch-switch` CSS | preview |
-| CH-8604 | A confirm opens | The dialog rises and fades in (220ms) | `Modal` | preview |
-| CH-8605 | A toast appears or leaves | Slides up 10px and fades in; stacks reflow (220ms) | `ToastProvider` | preview |
-| CH-8606 | Moving a CoachHelm priority | The moved row glows green briefly (360ms) | `ch-set-moved` keyframes | preview |
-| CH-8607 | Pressing a section or button | It presses in to 98.5% | `--ch-press-scale` | preview |
+| CH-8601 | Switching section | The old section fades out, the new one fades in with a 6px settle (260ms) | `AnimatePresence` + `CH_ROUTE` | preview |
+| CH-8602 | Save status changes | "Unsaved changes" → "Saved" with a check fades in and settles after 1.8s (180ms) | `SaveBar` | preview |
+| CH-8603 | Flipping a switch | The thumb slides with a small spring (260ms) | `.ch-switch` CSS | preview |
+| CH-8604 | A confirm opens | The dialog rises and fades in (260ms) | `Modal` | preview |
+| CH-8605 | A toast appears or leaves | Slides up 10px and fades in; stacks reflow (260ms) | `ToastProvider` | preview |
+| CH-8606 | Moving a CoachHelm priority | The moved row glows green briefly (260ms) | `ch-set-moved` keyframes | preview |
+| CH-8607 | Pressing a section or button | It shrinks about 6px (110ms) and springs back (280ms) (the shell's CH-1606) | `useChPress` | preview |
 | CH-8608 | Animations turned off in Preferences | Every Clubhouse transition becomes instant | `data-motion="off"` + `useChReducedMotion` | settings.test › CH-8608 |
 
 ## 87xx Haptics (iOS app only; off when Haptics is off)
