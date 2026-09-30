@@ -60,7 +60,7 @@ describe('Round setup: rules', () => {
     expect(holesForRound(holes.slice(0, 9), 9, 'back')[0]!.n).toBe(1);
   });
 
-  it('names the one thing that stops Start, in the order a player fixes it (CH-11107, CH-11109)', () => {
+  it('110510 names the one thing that stops Start, in the order a player fixes it (CH-11107, CH-11109)', () => {
     expect(setupBlocker({ ...form, pick: null }, PREVIEW_SETUP_TODAY)).toBe('Choose a course to start');
     expect(setupBlocker({ ...form, date: '2026-10-15' }, PREVIEW_SETUP_TODAY)).toBe("The round's date can't be after today");
     expect(setupBlocker({ ...form, type: 'qualifier' }, PREVIEW_SETUP_TODAY)).toBe('Choose the qualifier round');
@@ -101,8 +101,8 @@ describe('Round setup: rules', () => {
   });
 });
 
-describe('Round setup: picking a course', () => {
-  it('CH-11309 before a course, Start waits and the scorecard holds its place', () => {
+describe('112401 Round setup: picking a course', () => {
+  it('110103 CH-11309 before a course, Start waits and the scorecard holds its place', () => {
     setup();
     expect(code('CH-11309')).toHaveTextContent('Your scorecard appears here once you pick a course and tees.');
     expect(dock()).toHaveTextContent('Choose a course to start');
@@ -130,7 +130,7 @@ describe('Round setup: picking a course', () => {
     expect(code('CH-11403')).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('picking tees loads the scorecard; edits are counted and marked', async () => {
+  it('110103 picking tees loads the scorecard; edits are counted and marked', async () => {
     const { user, ports } = setup();
     await pickFinleyBlue(user);
     expect(ports.teeHoles).toHaveBeenCalledWith('finley-blue');
@@ -143,14 +143,14 @@ describe('Round setup: picking a course', () => {
     expect(dock()).toHaveTextContent('Par 73');
   });
 
-  it('a 9-hole tee plays 9, and 18 is off', async () => {
+  it('110111 a 9-hole tee plays 9, and 18 is off', async () => {
     const { user } = setup({ teeHoles: vi.fn((id: string) => ok(previewTeeHoles(id).slice(0, 9))) });
     await pickFinleyBlue(user);
     expect(dock()).toHaveTextContent('Finley GC · Blue · 9 holes · Par 36');
     expect(within(screen.getByRole('radiogroup', { name: 'Holes' })).getByRole('radio', { name: '18 holes' })).toBeDisabled();
   });
 
-  it('a slow tee read for a course left behind never replaces the next course’s tees', async () => {
+  it('111503 a slow tee read for a course left behind never replaces the next course’s tees', async () => {
     let late: (v: { ok: true; data: ChSetupTee[] }) => void = () => {};
     const listTees = vi.fn((id: string) => (id === 'finley' ? new Promise<{ ok: true; data: ChSetupTee[] }>((r) => (late = r)) : ok([])));
     const { user } = setup({ listTees });
@@ -164,7 +164,7 @@ describe('Round setup: picking a course', () => {
     expect(screen.queryByRole('button', { name: /Play the Blue tees/ })).toBeNull();
   });
 
-  it('9 holes: the back nine is chosen and totalled', async () => {
+  it('110111 9 holes: the back nine is chosen and totalled', async () => {
     const { user } = setup();
     await pickFinleyBlue(user);
     await user.click(within(screen.getByRole('radiogroup', { name: 'Holes' })).getByRole('radio', { name: '9 holes' }));
@@ -174,7 +174,7 @@ describe('Round setup: picking a course', () => {
     expect(dock()).toHaveTextContent('9 holes · Par 36');
   });
 
-  it('CH-11209 the library didn’t load, with Try again', async () => {
+  it('111402 CH-11209 the library didn’t load, with Try again', async () => {
     const listCourses = vi.fn().mockReturnValueOnce(fail()).mockReturnValue(ok(PREVIEW_SETUP_COURSES));
     const { user } = setup({ listCourses });
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
@@ -193,7 +193,7 @@ describe('Round setup: picking a course', () => {
     await waitFor(() => expect(code('CH-11311')).toHaveTextContent('Chapel Ridge GC has no tees ready to play yet'));
   });
 
-  it('CH-11210 the scorecard didn’t load: Start waits, Try again reloads it', async () => {
+  it('111402 CH-11210 the scorecard didn’t load: Start waits, Try again reloads it', async () => {
     const teeHoles = vi
       .fn()
       .mockReturnValueOnce(fail())
@@ -212,7 +212,7 @@ describe('Round setup: picking a course', () => {
 });
 
 describe('Round setup: details and starting', () => {
-  it('Start sends the round and opens it; CH-11007 a failed start retries and still opens it', async () => {
+  it('111401 110110 Start sends the round and opens it; CH-11007 a failed start retries and still opens it', async () => {
     const start = vi
       .fn()
       .mockReturnValueOnce(fail('The server is busy'))
@@ -238,7 +238,7 @@ describe('Round setup: details and starting', () => {
     expect(startBtn()).toBeDisabled();
   });
 
-  it('the open qualifier plays its course and tees, and says which round it is', async () => {
+  it('110805 110113 the open qualifier plays its course and tees, and says which round it is', async () => {
     const { user, ports } = setup();
     await user.click(screen.getByRole('button', { name: /Fall qualifier 2/ }));
     await waitFor(() => expect(screen.getByRole('region', { name: 'Scorecard' })).toBeInTheDocument());
@@ -248,7 +248,7 @@ describe('Round setup: details and starting', () => {
     expect(screen.getByRole('radio', { name: /Pinehurst travel qualifier/ })).toBeDisabled();
   });
 
-  it('CH-11312 no qualifier open; CH-11211 the qualifiers didn’t load', async () => {
+  it('110805 CH-11312 no qualifier open; CH-11211 the qualifiers didn’t load', async () => {
     const first = setup({}, []);
     await first.user.click(screen.getByRole('radio', { name: 'Qualifier' }));
     expect(code('CH-11312')).toHaveTextContent('No qualifier is open for you right now');
@@ -258,7 +258,7 @@ describe('Round setup: details and starting', () => {
     expect(code('CH-11211')).toHaveTextContent("Your qualifiers didn't load");
   });
 
-  it('CH-11511 a course typed in by hand becomes the round’s, saved when asked', async () => {
+  it('110110 CH-11511 a course typed in by hand becomes the round’s, saved when asked', async () => {
     const { user, ports } = setup();
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
     await user.click(await screen.findByRole('button', { name: /Add a course/ }));

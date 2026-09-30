@@ -128,7 +128,10 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       }
       if (!removal?.success) return { success: false, error: `Couldn't take this class off your calendar: ${removal?.error ?? 'unknown error'}. The class was kept so you can try again.` };
       const { error } = await sb.from('golf_player_classes').delete().eq('id', id).eq('player_id', ctx.playerId);
-      return res(error);
+      if (!error) return { success: true };
+      // The calendar part landed; only the row is left. Say so (the toast shows this reason), and mark it, so the page flags the class.
+      chReport(new Error(error.message || 'delete failed'), { surface: 'classes.remove', action: 'delete', severity: 'low' });
+      return { success: false, error: 'It is off your calendar but still on your schedule. Try again to finish removing it.', data: { offCalendar: true } };
     },
 
     async sync(c, opts) {

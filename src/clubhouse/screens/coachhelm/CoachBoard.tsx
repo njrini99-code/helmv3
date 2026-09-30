@@ -207,7 +207,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES }: { data: ChC
                       <b>Insight dismissed.</b> It no longer shows on your board or on {firstName(cur.name)}’s. Undo brings it back.
                     </span>
                     <Button size="sm" variant="ghost" disabled={busy} onClick={() => void undo.run(cur)}>
-                      {undo.pending ? 'Undoing' : 'Undo'}
+                      {undo.pending ? <span data-ch-code="CH-13403">Undoing</span> : 'Undo'}
                     </Button>
                   </div>
                 ) : (

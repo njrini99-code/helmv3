@@ -35,6 +35,9 @@ const label = (c: { code: string; name: string }) => c.code || c.name;
  * own Retry, and the sheet must not stay locked, nor "Still saving" fire, for a
  * save that is done.
  */
+/** A remove whose calendar part landed and whose row delete did not (writes.remove). */
+const offCalendar = (r: { success?: boolean; data?: unknown }) => !r.success && (r.data as { offCalendar?: boolean } | undefined)?.offCalendar === true;
+
 export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChClassesWrites }) {
   const phone = useChPhone();
   const router = useRouter();
@@ -150,6 +153,8 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   // ── Remove a class (CH-12003) ──────────────────────────────────────────────
   const removeAction = async (c: ChClass) => {
     const res = await writes.remove(c.id);
+    // Off the calendar but still saved: flag it (Retry sync puts it back; Remove again finishes the job).
+    if (offCalendar(res)) mark([c.id], true);
     if (normalise(res).success) {
       setClasses((prev) => prev.filter((x) => x.id !== c.id));
       mark([c.id], false);

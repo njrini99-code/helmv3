@@ -194,12 +194,13 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     gate = await isCoachHelmEnabledForCoach(input.coachId);
   } catch (err) {
     log('gate', err);
-    return { ...none, roster: { count: 0, error: true } };
+    // The pulse is the program's, not the gate's: it still reads, so the board never says "nothing flagged" unread.
+    return { ...none, roster: { count: 0, error: true }, pulse: await pulseOf() };
   }
   if (!gate.effectivelyEnabled) {
     if (gate.disabledBy === null && gate.disabledReason && LOOKUP_FAILED.test(gate.disabledReason)) {
       log('gate', gate.disabledReason);
-      return { ...none, roster: { count: 0, error: true } };
+      return { ...none, roster: { count: 0, error: true }, pulse: await pulseOf() };
     }
     const by = gate.disabledBy === 'user' || gate.disabledBy === 'team' ? gate.disabledBy : 'global';
     const reason = by !== 'global' && gate.disabledReason && !/^Disabled by (user|team)$/.test(gate.disabledReason) ? gate.disabledReason : null;

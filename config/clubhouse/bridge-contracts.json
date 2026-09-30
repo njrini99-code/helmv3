@@ -8985,6 +8985,176 @@
     ]
   },
   {
+    "id": 110101,
+    "page": "P011",
+    "category": 1,
+    "item": 1,
+    "name": "LIBRARY_READY",
+    "meaning": "Rounds opens for a player on \"Your rounds\", read on the server before first paint: the round in progress (or the idle card, \"No round in progress\") beside the season card, then the search and grouping tools and every posted round by month or by course. The header reads \"Since August 1 · N counted rounds\". Only the player's own rounds are read (110803).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/routes/rounds.tsx#ClubhouseRoundsRoute; src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/app/golf/(dashboard)/dashboard/rounds/page.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 110102,
+    "page": "P011",
+    "category": 1,
+    "item": 2,
+    "name": "REVIEW_READY",
+    "meaning": "A round's review at /golf/dashboard/rounds/[id] opens for the player who played it and for a coach of their team: the hero (day, date and type, the course, tee swatch, yards, rating and slope, then the score and its to par), the figures (Front 9, Back 9 on an 18-hole round, Putts, Fairways, Greens), the scorecard as two captioned nines, the hole card with the shots of the picked hole, the scoring distribution, and the round recap and the player's notes when there are any. It opens on the first hole over par, else the first hole. Back goes to Rounds for a player and, for a coach, to that player's rounds on Stats with the player's name (D-53); a coach's kicker names the player and the notes are labelled with the player's first name (\"Jonah's notes\" in the preview).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview; src/clubhouse/routes/round-review.tsx#ClubhouseRoundReviewRoute; src/clubhouse/data/round-review.ts#loadRoundReview; src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 110103,
+    "page": "P011",
+    "category": 1,
+    "item": 3,
+    "name": "SETUP_READY",
+    "meaning": "A new round's setup (preview only until the engine move) opens on the green band with its steps (Course, Scorecard, Track), the course card (\"Choose a course\", Browse courses), an open qualifier when there is one, Round details (type, date, holes), the scorecard's place held (\"Your scorecard appears here once you pick a course and tees.\") and the dock, whose Start round is off and names why (\"Choose a course to start\"). Picking tees reads that tee's holes and fills the scorecard; a hole changed for this round is counted and marked (\"1 hole edited for this round\"), edits never leave this round, and the dock then reads \"Course · Tee · N holes · Par P\".",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/setup/HoleConfig.tsx#HoleConfig; src/clubhouse/screens/rounds/setup/shape.ts",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 110104,
+    "page": "P011",
+    "category": 1,
+    "item": 4,
+    "name": "TRACKING_READY",
+    "meaning": "The shot screen (preview only until the engine move) opens on the hole it is given: the top bar with Exit and Scorecard, the hole strip, the hole hero (hole number, par, yards, \"Shot N\" and the distance to the pin), the hole map and the shot log, and the shot entry, whose Next shot is off with the one thing missing named above it. Every rule and write is useShotTracking, the hook the Fairway screen runs; the round screen around it owns Exit, the scorecard, Round complete and Submit.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/screens/rounds/track/ShotEntry.tsx#ShotEntry; src/hooks/golf/use-shot-tracking.ts#useShotTracking",
+    "tests": [
+      "src/clubhouse/__tests__/round-tracking.test.tsx"
+    ]
+  },
+  {
+    "id": 110105,
+    "page": "P011",
+    "category": 1,
+    "item": 5,
+    "name": "UNBUILT_TARGETS_ARE_NOT_DRAWN",
+    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are not rebuilt (the shell draws its not-rebuilt notice there), so none is drawn today; every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 110106,
+    "page": "P011",
+    "category": 1,
+    "item": 6,
+    "name": "UNFINISHED_ROUNDS_ARE_LISTED",
+    "meaning": "The newest unfinished round fills the card; every other one is listed under \"N more unfinished rounds\" with Discard and, once round entry is rebuilt, Continue or Submit. A round whose every hole has a score reads \"Ready to submit\" (the card says \"Submit round\"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/parts.tsx#UnfinishedCard; src/clubhouse/data/rounds.ts#loadUnfinished",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 110107,
+    "page": "P011",
+    "category": 1,
+    "item": 7,
+    "name": "NOT_COUNTED_ROUNDS_STILL_LIST",
+    "meaning": "A posted round that does not count (isCountableRound) is still listed, with a \"Not counted\" pill, and sets no season figure. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/parts.tsx#RoundRow; src/clubhouse/data/rounds-shape.ts#toLibraryRound; src/clubhouse/data/rounds-shape.ts#seasonFrom",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 110108,
+    "page": "P011",
+    "category": 1,
+    "item": 8,
+    "name": "SEARCH_AND_GROUP_THE_BOOK",
+    "meaning": "The book is searched by course (client side, any part of the name, ignoring case) and grouped by month, newest first, or by course, in the order of each course's newest round; each group shows its round count, its average over its 18-hole rounds and its low. A search with no match says so (CH-11303) and keeps the tools where they are.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#groupRounds; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 110109,
+    "page": "P011",
+    "category": 1,
+    "item": 9,
+    "name": "A_ROUND_STILL_BEING_PLAYED_GOES_TO_BE_CONTINUED",
+    "meaning": "Opening a round that is still in progress at /rounds/[id] redirects to /rounds/continue/[id], as the legacy page does. That screen is not rebuilt, so a Clubhouse player sees the shell's not-rebuilt notice there until the engine move.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/round-review.tsx#ClubhouseRoundReviewRoute",
+    "tests": [
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 110110,
+    "page": "P011",
+    "category": 1,
+    "item": 10,
+    "name": "START_HANDS_THE_WHOLE_FORM_TO_THE_ROUND_SCREEN",
+    "meaning": "Start round hands the round screen's port one form: the course and tee ids (or the course typed by hand), the round type, the date, 9 or 18 holes and which nine, every hole's par and yardage as edited, the qualifier and the round it counts as, and whether to save a typed course. It goes through useAction; the round opens (onStarted) only when the port answers with the new round's id, and that follow-up is inside the action, so a Retry opens it too (111401).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (start); src/clubhouse/screens/rounds/setup/shape.ts#ChSetupPorts",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 110111,
+    "page": "P011",
+    "category": 1,
+    "item": 11,
+    "name": "A_NINE_HOLE_ROUND_PLAYS_ONE_NINE",
+    "meaning": "A 9-hole tee set plays 9 and turns 18 off. On an 18-hole card, choosing 9 holes offers Front 9 or Back 9, and the dock and the scorecard total the chosen nine (\"9 holes · Par 36\").",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/shape.ts#holesForRound; src/clubhouse/screens/rounds/setup/HoleConfig.tsx#HoleConfig; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 110112,
+    "page": "P011",
+    "category": 1,
+    "item": 12,
+    "name": "TRACKING_FOLLOWS_THE_DISTANCE_UNIT",
+    "meaning": "The shot screen follows the player's distance unit: the hero, the section labels (\"Distance remaining (m)\") and the quick picks read in meters when the preference is meters. What the engine stores stays yards and feet.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/labels.ts#heroDistance; src/clubhouse/screens/rounds/track/labels.ts#quickPicks; src/clubhouse/screens/rounds/track/ShotEntry.tsx#ShotEntry",
+    "tests": [
+      "src/clubhouse/__tests__/round-tracking.test.tsx"
+    ]
+  },
+  {
+    "id": 110113,
+    "page": "P011",
+    "category": 1,
+    "item": 13,
+    "name": "THE_OPEN_QUALIFIER_SETS_THE_ROUND",
+    "meaning": "When the player has an open qualifier, it is offered above Round details. Play sets the type to Qualifier, the course and the tees, and the note says which round it counts as (\"This counts as round 3 of 3 in Fall qualifier 2\"). Choosing the Qualifier type lists the player's qualifiers; one with no round open is listed but cannot be chosen (110805).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (playQualifier)",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
     "id": 110201,
     "page": "P011",
     "category": 2,
@@ -9038,6 +9208,16 @@
     "meaning": "The picked tees' scorecard is loading",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110206,
+    "page": "P011",
+    "category": 2,
+    "item": 6,
+    "name": "REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON",
+    "meaning": "A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405.",
+    "status": "reserved",
+    "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx"
   },
   {
     "id": 110401,
@@ -9172,6 +9352,19 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110413,
+    "page": "P011",
+    "category": 4,
+    "item": 13,
+    "name": "FIRST_RUN_ONLY_WHEN_EVERY_READ_ANSWERED",
+    "meaning": "The first-run page (\"No rounds yet\", CH-11301) shows only when the posted-rounds read and the in-progress read both answered and both were empty: a failed list read shows its own notice (CH-11201) and a failed in-progress check its own (CH-11202), never the first-run page.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary (nothing)",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
     "id": 110501,
     "page": "P011",
     "category": 5,
@@ -9269,6 +9462,19 @@
     "meaning": "The round's date is after today",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110510,
+    "page": "P011",
+    "category": 5,
+    "item": 10,
+    "name": "START_NAMES_THE_ONE_THING_STOPPING_IT",
+    "meaning": "Start round is off until the setup is complete, and the dock names the one thing stopping it, in the order a player fixes it: no course (\"Choose a course to start\"), no date, a date after today (CH-11109), the qualifier round when the type is Qualifier, a 9-hole card played as 9, then the first hole with no yardage or a yardage over 999 (CH-11107). While the scorecard loads or fails to load, the dock says so instead.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/shape.ts#setupBlocker; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (blocker)",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
   },
   {
     "id": 110601,
@@ -9469,6 +9675,20 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110619,
+    "page": "P011",
+    "category": 6,
+    "item": 19,
+    "name": "A_PARTIAL_READ_STILL_RENDERS_THE_REST",
+    "meaning": "A read that fails is logged, flagged on its own part and never thrown, so the rest of the page renders. In the library the posted rounds (CH-11201) and the in-progress check (CH-11202) fail apart, and a failed hole read leaves the in-progress card without its strip and never says it is ready to submit. In the review the holes and the shots fail apart (CH-11204, CH-11205) with the hero and the figures still drawn. The round itself failing is CH-11206.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/round-review.ts#loadRoundReview",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -9478,6 +9698,102 @@
     "meaning": "The round saves in the background",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110702,
+    "page": "P011",
+    "category": 7,
+    "item": 2,
+    "name": "WRITES_REFUSE_OFFLINE",
+    "meaning": "Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says \"Reconnect, then try again.\"). No P011 test forces offline; the shell's tests cover useAction's refusal.",
+    "status": "reserved",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview"
+  },
+  {
+    "id": 110801,
+    "page": "P011",
+    "category": 8,
+    "item": 1,
+    "name": "LIBRARY_IS_FOR_PLAYERS",
+    "meaning": "/golf/dashboard/rounds is Clubhouse only for a player: a coach session renders nothing from the Clubhouse route and the Fairway page keeps the coach (v2 has no coach Rounds library), and the shell does not list the library as rebuilt for a coach. A player's rounds are theirs with or without a team (the team only sets the time zone that decides today).",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/rounds.tsx#ClubhouseRoundsRoute; src/app/golf/(dashboard)/dashboard/rounds/page.tsx; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 110802,
+    "page": "P011",
+    "category": 8,
+    "item": 2,
+    "name": "REVIEW_IS_FOR_THE_PLAYER_AND_THEIR_COACHES",
+    "meaning": "A round's review opens for the player who played it and for a coach of a team the player is an active member of. Anyone else, a missing round and a test round get the same \"This round isn't here\" page, so it never confirms that someone else's round exists (CH-11307). A failed access check is not a permission answer: a round or a coach's membership read that fails gives \"This round didn't load\" with Try again (CH-11206), never \"not found\".",
+    "status": "implemented",
+    "where": "src/clubhouse/data/round-review.ts#loadRoundReview; src/clubhouse/routes/round-review.tsx#ClubhouseRoundReviewRoute",
+    "tests": [
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 110803,
+    "page": "P011",
+    "category": 8,
+    "item": 3,
+    "name": "LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS",
+    "meaning": "The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Read in this pass, not run: no test asserts the player filter.",
+    "status": "reserved",
+    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/rounds.ts#loadUnfinished"
+  },
+  {
+    "id": 110804,
+    "page": "P011",
+    "category": 8,
+    "item": 4,
+    "name": "DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION",
+    "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Read in this pass, not run: no test here forces a refusal; the action is the legacy library's, unchanged.",
+    "status": "reserved",
+    "where": "src/app/golf/actions/golf.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES"
+  },
+  {
+    "id": 110805,
+    "page": "P011",
+    "category": 8,
+    "item": 5,
+    "name": "A_CLOSED_QUALIFIER_CANT_BE_CHOSEN",
+    "meaning": "A qualifier with no round the player can still enter is listed but cannot be chosen, and its row says why; only one with a round open is offered above Round details (closed means closed, D-31). Choosing the Qualifier type with none open says \"No qualifier is open for you right now\" (CH-11312), and a qualifiers read that failed says so (CH-11211).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (qualifiers)",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 110901,
+    "page": "P011",
+    "category": 9,
+    "item": 1,
+    "name": "DISCARD_LANDED",
+    "meaning": "A discard that lands says so in a toast (\"Round discarded\") with the success haptic, and the card leaves and the idle card (\"No round in progress\") takes its place, whether the discard came from the question or from the toast's Retry.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary (discardRound, useAction rounds.discard)",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 110902,
+    "page": "P011",
+    "category": 9,
+    "item": 2,
+    "name": "ROUND_POSTED_SAYS_SO",
+    "meaning": "A submitted round says \"Round posted\" with the course, names the coach (\"Coach Reyes can see it now.\", else \"Your coach can see it now.\") and links View round review (a preview-only surface until the engine move). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#SubmitOverlay",
+    "tests": [
+      "src/clubhouse/__tests__/round-tracking.test.tsx"
+    ]
   },
   {
     "id": 111101,
@@ -9599,6 +9915,121 @@
     "meaning": "Add a course",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111201,
+    "page": "P011",
+    "category": 12,
+    "item": 1,
+    "name": "SETUP_KEPT_WHEN_START_FAILS",
+    "meaning": "A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Read in this pass: the CH-11007 test proves that Retry opens the round, not that every field is kept, so no test covers this.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup"
+  },
+  {
+    "id": 111202,
+    "page": "P011",
+    "category": 12,
+    "item": 2,
+    "name": "SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE",
+    "meaning": "When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). The test forces the failure and the retry, not the kept shots, so no test covers this.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/hooks/golf/use-shot-tracking.ts#handleRetryHoleCheckpoint"
+  },
+  {
+    "id": 111301,
+    "page": "P011",
+    "category": 13,
+    "item": 1,
+    "name": "DISCARD_WAITS_FOR_THE_SERVER",
+    "meaning": "Nothing on the library is optimistic: Discard keeps the card until the server has deleted the round, and the card leaves only on success, from the question or from Retry. The device's emergency copy is cleared only when the delete worked.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary (discardRound); src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 111401,
+    "page": "P011",
+    "category": 14,
+    "item": 1,
+    "name": "RETRY_FINISHES_THE_JOB",
+    "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-up lives inside the action: a Discard's Retry removes the card and closes the question, and a Start's Retry opens the round.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary (discardRound); src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup (start)",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 111402,
+    "page": "P011",
+    "category": 14,
+    "item": 2,
+    "name": "TRY_AGAIN_READS_AGAIN",
+    "meaning": "Try again on a failed-read notice asks again. The library's and the review's ask the server to read the page again (router.refresh); setup's read the course library, a course's tees or a tee's scorecard again through the port, and Start stays off while the scorecard is missing. The tees' Try again is drawn but no test presses it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary (refresh); src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview (refresh); src/clubhouse/screens/rounds/ReviewLoadFailed.tsx#ReviewLoadFailed; src/clubhouse/screens/rounds/setup/CoursePicker.tsx#useRead; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#loadHoles",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx",
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
+  },
+  {
+    "id": 111403,
+    "page": "P011",
+    "category": 14,
+    "item": 3,
+    "name": "HOLE_SAVE_AND_SUBMIT_TRY_AGAIN_RUN_AGAIN",
+    "meaning": "On the shot screen, Try again on a hole that did not save runs the hole's checkpoint again (the round moves on only when it lands), and Try again on a failed submit runs the submit again (preview-only surfaces until the engine move). Offline, the first only warns (110702).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/track/HoleReview.tsx#HoleReview; src/clubhouse/screens/rounds/track/round-sheets.tsx#SubmitOverlay",
+    "tests": [
+      "src/clubhouse/__tests__/round-tracking.test.tsx"
+    ]
+  },
+  {
+    "id": 111501,
+    "page": "P011",
+    "category": 15,
+    "item": 1,
+    "name": "TOTALS_AND_SEASON_MATCH_HOME_AND_STATS",
+    "meaning": "A round's total is the canonical one (withCanonicalRoundTotal: front plus back over a stale stored total), in the library and in the review. The season figures and the ribbon come from countable 18-hole rounds since August 1, the rule Home and Stats use, so the numbers agree across screens; the window and the sample are stated in the words (\"Since August 1\", \"18-hole\", \"Not counted\").",
+    "status": "implemented",
+    "where": "src/clubhouse/data/rounds-shape.ts#toLibraryRound; src/clubhouse/data/rounds-shape.ts#seasonFrom; src/clubhouse/data/round-review-shape.ts#toReview",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 111502,
+    "page": "P011",
+    "category": 15,
+    "item": 2,
+    "name": "REVIEW_SHOWS_ONLY_WHAT_WAS_RECORDED",
+    "meaning": "The review never invents a figure: a nine with a hole not scored has no total (\"—\") rather than a short one, a par 3 never counts a fairway whatever was stored, a hole scored without shots says so (CH-11306), a round posted as a total says so (CH-11305), and the recap and the notes are drawn only when they were written.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/round-review-shape.ts#toHoles; src/clubhouse/data/round-review-shape.ts#nineOf; src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview",
+    "tests": [
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 111503,
+    "page": "P011",
+    "category": 15,
+    "item": 3,
+    "name": "A_STALE_TEE_READ_IS_IGNORED",
+    "meaning": "A slow read for a course the player has left never replaces the next course's tees: the picker keeps only the latest answer of each read.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/CoursePicker.tsx#useRead",
+    "tests": [
+      "src/clubhouse/__tests__/round-setup.test.tsx"
+    ]
   },
   {
     "id": 111601,
@@ -9799,6 +10230,162 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 111809,
+    "page": "P011",
+    "category": 18,
+    "item": 9,
+    "name": "NO_AXE_VIOLATIONS_IN_THE_SCANNED_PREVIEW_PAGES",
+    "meaning": "No axe violations on the 12 Rounds preview pages in clubhouse:a11y (the library: default, empty, failed; the review: default, coach, no shots; setup: default and failed courses; tracking: default, putt, holed and card) at 1280px and 390px, 24 scans, clean on 2026-09-30 after the fixes. It is a script (scripts/clubhouse/a11y.mjs), not a vitest test, so this stays reserved; the other preview states, the open sheets and the untouched tracking states are not scanned.",
+    "status": "reserved",
+    "where": "scripts/clubhouse/a11y.mjs#CH_A11Y_PAGES"
+  },
+  {
+    "id": 111810,
+    "page": "P011",
+    "category": 18,
+    "item": 10,
+    "name": "THE_SCORECARD_SCROLLS_IN_A_FOCUSABLE_REGION",
+    "meaning": "The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, \"Scorecard\"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; no vitest test asserts the region.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/rounds/track/round-sheets.tsx#Scorecard"
+  },
+  {
+    "id": 111811,
+    "page": "P011",
+    "category": 18,
+    "item": 11,
+    "name": "FIGURES_ARE_DEFINITION_LISTS",
+    "meaning": "The season and review figures are description lists in which a term is followed by its value and then its sub-line as a second description (label, figure, then \"avg · +1.9 to par\" or \"+1\"), never a bare span inside the list (axe definition-list).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/parts.tsx#SeasonCard; src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview (figs)",
+    "tests": [
+      "src/clubhouse/__tests__/round-review.test.tsx",
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 111901,
+    "page": "P011",
+    "category": 19,
+    "item": 1,
+    "name": "LIBRARY_AND_REVIEW_PHONE_LAYOUT",
+    "meaning": "At phone width the library and the review are the phone build (useChPhone), not a shrunken desktop. The library's top bar is the tab root's \"Rounds\" with no back link and it keeps its own header; below 860px the round card and the season card stack, and at 640px and below the book drops Out · In · Tot and the meters to a date tile, the course and tee, and the to-par box (a group's header drops its average and low). The review's top bar is \"Round\" with \"‹ Rounds\" (or \"‹ Stats\" for a coach), its hero stacks and its card scrolls sideways inside its own frame. Not tested (PhoneTop needs the shell's slot and the layout is CSS): seen headless at 390 on 2026-09-30, not on an iPhone.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary; src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview; src/clubhouse/styles/rounds.css"
+  },
+  {
+    "id": 111902,
+    "page": "P011",
+    "category": 19,
+    "item": 2,
+    "name": "PHONE_RIBBON_DRAWS_THE_LAST_TEN",
+    "meaning": "On the phone the season ribbon draws the last ten rounds on a narrower canvas, so its labels stay readable; the desktop draws the last twenty.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/parts.tsx#SeasonCard; src/clubhouse/screens/rounds/parts.tsx#PHONE_RIBBON",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx"
+    ]
+  },
+  {
+    "id": 111903,
+    "page": "P011",
+    "category": 19,
+    "item": 3,
+    "name": "SETUP_AND_TRACKING_ARE_FULL_SCREEN_ON_THE_PHONE",
+    "meaning": "A new round and the shot screen are full-screen flows on the phone: the tab bar hides while either is open (usePhoneTabsHidden). Setup keeps Start round in a dock above the home indicator and Back in its band; the shot screen keeps Exit and Scorecard in its own top bar. Not tested: setup and tracking were driven in real Chromium at 390 on 2026-09-30 (a shot recorded; the dock read \"Finley GC · Blue · 18 holes · Par 72\"), not on an iPhone.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/track/RoundTracking.tsx#RoundTracking; src/clubhouse/shell/phone-chrome.tsx#usePhoneTabsHidden"
+  },
+  {
+    "id": 112001,
+    "page": "P011",
+    "category": 20,
+    "item": 1,
+    "name": "SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS",
+    "meaning": "Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. No P011 test presses Esc. Not built: arrow keys inside the radio groups (each choice is its own Tab stop) and the iOS number pad's Done bar.",
+    "status": "reserved",
+    "where": "src/clubhouse/ui/Modal.tsx#Modal; src/clubhouse/screens/rounds/track/parts.tsx#Seg; src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup"
+  },
+  {
+    "id": 112101,
+    "page": "P011",
+    "category": 21,
+    "item": 1,
+    "name": "LOADERS_READ_IN_ROUNDS",
+    "meaning": "The library loader reads on the server before first paint, never one request per round: the team's time zone (when there is a team), then the posted rounds (paged), then the in-progress rounds, then their holes together (paged, at most 20 rounds at once). The review reads the round, then a coach's membership check, then the holes, the shots (paged), the tee's yards and the player's name together. A read that fails is flagged on its own part and logged, never thrown (110619). No test asserts the order.",
+    "status": "reserved",
+    "where": "src/clubhouse/data/rounds.ts#loadRoundsLibrary; src/clubhouse/data/round-review.ts#loadRoundReview"
+  },
+  {
+    "id": 112301,
+    "page": "P011",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_ARE_LOGGED_BY_NAME",
+    "meaning": "A read that fails in a loader is logged through chLogServer under its surface and read (rounds with list, unfinished or unfinished-holes; rounds.review with round, membership, holes, shots, tee or player) and named on the page. A write that fails goes through useAction, which reports it under its action (rounds.discard, rounds.start), at low severity when the server refused it. A section that crashes is contained and reported under its own surface (rounds.unfinished, rounds.season, rounds.book, rounds.review.card, rounds.review.hole). Setup's course and tee reads run in the browser and report nothing themselves: the round screen's ports must.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/rounds.ts; src/clubhouse/data/round-review.ts; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/ui/SectionBoundary.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
+  },
+  {
+    "id": 112401,
+    "page": "P011",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "The page's four test files (rounds.test, round-review.test, round-setup.test and round-tracking.test) name in a test title every P011 catalog code of kinds 0 to 5 that is not marked preview (clubhouse:check enforces it), and every hand contract they prove by its Bridge ID. Until those titles carry the Bridge IDs this stays reserved.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/rounds.test.tsx; src/clubhouse/__tests__/round-review.test.tsx; src/clubhouse/__tests__/round-setup.test.tsx; src/clubhouse/__tests__/round-tracking.test.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/rounds.test.tsx",
+      "src/clubhouse/__tests__/round-review.test.tsx",
+      "src/clubhouse/__tests__/round-setup.test.tsx",
+      "src/clubhouse/__tests__/round-tracking.test.tsx"
+    ]
+  },
+  {
+    "id": 120101,
+    "page": "P012",
+    "category": 1,
+    "item": 1,
+    "name": "CLASSES_READY",
+    "meaning": "Classes opens for a player with everything the server read before first paint, so nothing is fetched in the browser to draw it: the header (the term and its dates, the title, Import schedule and Add class), the term overview, every class as a card in the order the week unfolds with the Add tile at the end, this week's overlaps with the team's events, and a note on what the coach can see.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView; src/clubhouse/routes/classes.tsx#ClubhouseClassesRoute; src/clubhouse/data/classes.ts#loadClasses; src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120102,
+    "page": "P012",
+    "category": 1,
+    "item": 2,
+    "name": "A_CLASS_IS_DRAWN_AS_WHAT_IT_IS",
+    "meaning": "A class card is drawn from the class's own data: a class in another term is named for that term and left out of this term's credits and overlaps, a class saved with no term counts as the current term, and the week strip has five days, or seven when the class meets on a weekend day. A screen reader gets one button per class, named for its code, name and when it meets (CH-12801), and the strip is hidden (CH-12802).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/parts.tsx#ClassCard, TermBar; src/clubhouse/data/classes-shape.ts#inTerm, inTermLabel",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120103,
+    "page": "P012",
+    "category": 1,
+    "item": 3,
+    "name": "A_CLASS_SHEET_SHOWS_WHEN_AND_WHERE",
+    "meaning": "Opening a class shows when and where it meets, its instructor, term and notes, and its next four meetings, each marked when it overlaps a team event. The meetings run from the later of today and the first day of the class's own term to the end of that term, so a class in next term lists next term's first meetings. A class with no time lists none. Nothing the table has no column for (a grade, a deadline, a share switch) is drawn.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/ClassDetail.tsx#ClassDetail; src/clubhouse/data/classes-shape.ts#upcomingMeetings",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
     "id": 120201,
     "page": "P012",
     "category": 2,
@@ -9896,6 +10483,19 @@
     "meaning": "An import where every class is already on the schedule",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120407,
+    "page": "P012",
+    "category": 4,
+    "item": 7,
+    "name": "FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED",
+    "meaning": "The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, with no Add class or Import schedule beside it, and the header offers neither. Removing the last class returns to the first-run page.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (nothing, data.classes.error)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
   },
   {
     "id": 120501,
@@ -10052,6 +10652,32 @@
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
+    "id": 120515,
+    "page": "P012",
+    "category": 5,
+    "item": 15,
+    "name": "IMPORT_SKIPS_WHAT_IS_ALREADY_ON_THE_SCHEDULE",
+    "meaning": "An import reads the classes the player already has before it writes, and skips any with the same stored name and term, so importing a schedule twice never doubles the calendar. A class saved with no term, or a blank one, is in the current term, so it is the same class; the same class in another term is another class and is imported. A read that fails stops the import with nothing saved. When every class is already there nothing is inserted and nothing is synced (CH-12307).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/writes.ts#createLiveClassesWrites (importRows); src/clubhouse/data/classes-shape.ts#importKey",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120516,
+    "page": "P012",
+    "category": 5,
+    "item": 16,
+    "name": "ONLY_CLASSES_IN_THE_SAME_TERM_COUNT",
+    "meaning": "Every check that compares classes counts only the classes of the term in question. The exact-same-time refusal (CH-12107) and the overlap note (CH-12108) count only classes in the term the form is set to. This week's overlaps with the team (CH-12109), on the overview, the cards, the side card, the form and the import result, count only classes in the current term, because the week's events are this term's. A class with no term is in the current term. The same days and times in another term never refuse a save.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/classes-shape.ts#checkDraft, overlapsAmong, inTermLabel, inTerm; src/clubhouse/screens/classes/ClassForm.tsx#ClassForm; src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (conflicts); src/clubhouse/screens/classes/ImportSchedule.tsx#ImportedView",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
     "id": 120601,
     "page": "P012",
     "category": 6,
@@ -10140,6 +10766,32 @@
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
+    "id": 120609,
+    "page": "P012",
+    "category": 6,
+    "item": 9,
+    "name": "AN_UPDATE_A_POLICY_HIDES_IS_A_FAILURE",
+    "meaning": "An edit whose update a row-level-security policy hides comes back from the database with no error and no row. The page treats that as a failure (\"Nothing was saved. This class was not found, or you can't change it.\") and never as \"Class updated\". An edit is limited to the class's id and the player's own id.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/writes.ts#createLiveClassesWrites (save)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120610,
+    "page": "P012",
+    "category": 6,
+    "item": 10,
+    "name": "A_SYNC_THAT_WROTE_NOTHING_IS_A_FAILURE",
+    "meaning": "A calendar sync that returns no error but wrote no meetings for a class that has days and a time is a failure, so the class is flagged and CH-12002 says why, instead of a quietly empty calendar. A class with no days has nothing to write and is not a failure. A sync that throws is reported (surface classes.sync, low severity) and its reason reads \"The calendar sync did not finish\".",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/writes.ts#createLiveClassesWrites (sync)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
     "id": 120701,
     "page": "P012",
     "category": 7,
@@ -10162,6 +10814,81 @@
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
+    "id": 120703,
+    "page": "P012",
+    "category": 7,
+    "item": 3,
+    "name": "WRITES_REFUSE_OFFLINE",
+    "meaning": "Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (every useAction); src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120801,
+    "page": "P012",
+    "category": 8,
+    "item": 1,
+    "name": "THE_PAGE_IS_THE_PLAYERS",
+    "meaning": "Clubhouse Classes is the player's page. A session that is a player with a player profile, with the Clubhouse on for the player role, gets it; a coach (including a coach who also has a player profile), a signed-out session and everyone else get the current Fairway page, unchanged. The route itself renders nothing for a session with no player profile, and a team where the member's role is not player gets the no-team page (CH-12305).",
+    "status": "reserved",
+    "where": "src/app/golf/(dashboard)/dashboard/classes/page.tsx; src/clubhouse/routes/classes.tsx#ClubhouseClassesRoute",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120802,
+    "page": "P012",
+    "category": 8,
+    "item": 2,
+    "name": "A_PLAYER_CHANGES_ONLY_THEIR_OWN_CLASSES",
+    "meaning": "Every read and write the page makes is limited to the player's own rows: the classes are read with the session's player id, an edit updates and a remove deletes by the class's id and that player id, and a new class carries the player's id and team id. Row-level security is the gate that counts: the baseline policies let only the owning player insert, update or delete a class and let its player and an active coach of the team read it, and teammates cannot (read in the baseline migration; the policies were not run for this page).",
+    "status": "reserved",
+    "where": "src/clubhouse/data/classes.ts#loadClasses; src/clubhouse/screens/classes/writes.ts#createLiveClassesWrites (save, remove)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120803,
+    "page": "P012",
+    "category": 8,
+    "item": 3,
+    "name": "SERVER_ACTIONS_ARE_THE_GATE",
+    "meaning": "The calendar actions check the caller again, whatever the screen shows. syncClassToCalendar refuses a caller who is not signed in, whose player profile is not the player named, who is not a member of the team, or whose class row is not theirs. removeClassFromCalendar refuses a caller with no player profile, a team they are not on and a class that another player owns (looked up with the admin client on purpose, so a row the policies hide is not mistaken for an absent one), and cleans up an orphaned class's events only on the caller's own teams. Read in this pass, not run: the tests replace both actions, so no test here forces a refusal.",
+    "status": "reserved",
+    "where": "src/app/golf/actions/calendar-sync.ts#syncClassToCalendar, removeClassFromCalendar"
+  },
+  {
+    "id": 120901,
+    "page": "P012",
+    "category": 9,
+    "item": 1,
+    "name": "CHANGE_LANDED",
+    "meaning": "A change that lands names itself in a toast with the success haptic: Class added, Class updated, STAT 201 removed. The calendar sync's landing shows no toast (the header's \"Adding to your calendar…\" goes away, and a class's flag clears), and an import that lands shows the Schedule imported view instead of a toast.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (save, remove, doImport useAction copy)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 120902,
+    "page": "P012",
+    "category": 9,
+    "item": 2,
+    "name": "THE_IMPORT_RESULT_SAYS_WHAT_REACHED_THE_CALENDAR",
+    "meaning": "The Schedule imported view says how many classes were imported and counts as on the calendar only those that can be: \"3 of 4 are on your calendar and repeat weekly until Dec 15\" (until each class's own term end, or \"until the end of their terms, Dec 15 and May 15\" when they differ), then \"Not on your calendar: PHIL 150 (no meeting days) and HIST 210 (no time set). Open the class to add what's missing.\" It says \"Adding them to your calendar…\" while the sync runs, and \"Some didn't reach your calendar. Use Retry sync on the Classes page.\" when one failed. An import where no class can be on the calendar never says they are.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ImportSchedule.tsx#ImportedView; src/clubhouse/data/classes-shape.ts#calendarGap, gapReason, termEnd",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
     "id": 121101,
     "page": "P012",
     "category": 11,
@@ -10182,6 +10909,123 @@
     "meaning": "Cancel or close a form that has changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 121201,
+    "page": "P012",
+    "category": 12,
+    "item": 1,
+    "name": "FORM_KEPT_ON_FAILURE",
+    "meaning": "A class that fails to save leaves its sheet open with every field as typed; nothing is cleared until the save lands, and the failure toast is inside the open sheet so its Retry is where the person is looking. An import that fails to save leaves the review as it was. A remove that fails leaves the question open and the class in the list. Cancel or close on a form with changes asks first (CH-12502), and each time the sheet opens it starts from the class being edited, or blank.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/ClassForm.tsx#ClassForm; src/clubhouse/screens/classes/ImportSchedule.tsx#ImportSchedule; src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (saveAction, importAction, removeAction)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121401,
+    "page": "P012",
+    "category": 14,
+    "item": 1,
+    "name": "RETRY_FINISHES_THE_JOB",
+    "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: a save's Retry adds the class to the list, closes the sheet and starts the calendar sync; a remove's Retry takes the class out of the list and closes the question; an import's Retry shows the imported view and starts the sync; a sync's Retry puts the failed classes on the calendar. A failed sync's Retry never saves the class a second time.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (saveAction, removeAction, importAction, syncAction); src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121402,
+    "page": "P012",
+    "category": 14,
+    "item": 2,
+    "name": "RETRY_REPLAYS_THE_STORED_START",
+    "meaning": "Every calendar sync starts each class from the day its last attempt did. The toast's Retry replays the same arguments; the header's Retry sync and a class sheet's Retry sync pass no start, so each class takes the start held for it this visit. A Retry therefore never moves a class to a start its own term would refuse, and a class saved from its whole term is re-synced from its whole term, so a re-sync never removes the meetings already held.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (syncClasses, startedFrom)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121403,
+    "page": "P012",
+    "category": 14,
+    "item": 3,
+    "name": "TRY_AGAIN_REREADS_THE_PAGE",
+    "meaning": "Try again on the classes' failed-load notice (CH-12201) and on the team events' notice (CH-12202) has the server read the whole page again (router.refresh); classes the server sends afresh replace what the page holds.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (InlineNotice onRetry, the classes effect); src/clubhouse/screens/classes/parts.tsx#OverlapsCard",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121404,
+    "page": "P012",
+    "category": 14,
+    "item": 4,
+    "name": "A_SAVE_RETRIED_AFTER_A_LOST_ANSWER_REACHES_THE_SAME_ROW",
+    "meaning": "A new class's row id is made in the browser once per sheet, when the sheet opens, and travels with every attempt to save it: the toast's Retry, a second tap on Add class and an attempt after a lost answer all carry the same id. A duplicate-key answer on that id (the table's only unique column) means an earlier attempt stored the row, so the save updates that row with what was sent this time and keeps the color it has, and there is no second copy. Any other failure is still a failure, a colliding row that is not the player's is \"Nothing was saved\", and the next sheet gets a new id.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/writes.ts#newClassId, createLiveClassesWrites (save); src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (startAdd, form.id)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121501,
+    "page": "P012",
+    "category": 15,
+    "item": 1,
+    "name": "SAVE_DOES_NOT_WAIT_FOR_THE_CALENDAR",
+    "meaning": "Saving a class and putting it on the calendar are two actions. The save is done, and \"Class added\" shows, as soon as the row is stored: the sheet is free (Add class is enabled again) while the header says \"Adding to your calendar…\" (CH-12403) until the sync lands. An import works the same way: its result shows at once. A class saved while another sync is still running is not dropped: it is flagged \"Not on your calendar\" with no error toast, and the header's Retry sync puts it there.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (saveAction, importAction, syncClasses); src/clubhouse/screens/classes/parts.tsx#SyncStatus",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121502,
+    "page": "P012",
+    "category": 15,
+    "item": 2,
+    "name": "SYNC_STARTS_FROM_THE_CLASS_OWN_TERM",
+    "meaning": "An import puts a class on the calendar from next Monday, so a schedule read mid-term does not fill the calendar with meetings already held, but only where that Monday is inside the class's own term and leaves the term standing, which is the window the sync will derive. A class in next term, one imported before its term begins and one in the last weeks of a term (under 21 days left) is put on its term's whole window, with no start given. A class with no term is in the current term. A save syncs the whole term.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/classes-shape.ts#syncStartFor, nextMonday; src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (importAction)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121503,
+    "page": "P012",
+    "category": 15,
+    "item": 3,
+    "name": "A_CLASS_WITH_NO_TIME_IS_TAKEN_OFF_THE_CALENDAR",
+    "meaning": "A class with days but no start or no end time is never put on the calendar: the server would place it from 08:00 to 09:00, a block the coach could plan around that is not real. The sync takes it off the calendar instead (a no-op if it was never on it, and it clears a block an earlier save put there), and the class says so: its card reads \"No meeting time, not on your calendar\" and \"Add the time this class meets.\", its sheet reads \"No time set\" and \"Not on your calendar: no time set\" with no meetings listed, there is no week strip, and the import result names it. A class with times and no days is flagged \"No meeting days, not on your calendar\" (CH-12304).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/classes/writes.ts#createLiveClassesWrites (sync); src/clubhouse/data/classes-shape.ts#hasTime, hasNoTime, calendarGap; src/clubhouse/screens/classes/parts.tsx#ClassCard; src/clubhouse/screens/classes/ClassDetail.tsx#ClassDetail",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 121504,
+    "page": "P012",
+    "category": 15,
+    "item": 4,
+    "name": "A_FAILED_SYNC_IS_REMEMBERED_FOR_THE_VISIT",
+    "meaning": "No column records a calendar sync, so the classes whose last sync failed, and the start each was synced from, are held by the page for the visit only: a reload starts clean, and the page never says \"synced 2 minutes ago\". A class that is not on the calendar is flagged on its card, in the header (\"1 class is not on your calendar\", with Retry sync) and in its own sheet (with Retry sync), and a Retry that lands clears all three.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (failedSync, mark); src/clubhouse/screens/classes/parts.tsx#SyncStatus, ClassCard; src/clubhouse/screens/classes/ClassDetail.tsx#ClassDetail",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
   },
   {
     "id": 121601,
@@ -10305,6 +11149,153 @@
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
+    "id": 121806,
+    "page": "P012",
+    "category": 18,
+    "item": 6,
+    "name": "NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE",
+    "meaning": "No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it.",
+    "status": "reserved",
+    "where": "scripts/clubhouse/a11y.mjs (CH_A11Y_PAGES)"
+  },
+  {
+    "id": 121901,
+    "page": "P012",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_LAYOUT",
+    "meaning": "At 820px and below Classes is the phone build, never a shrunken desktop: the shell's top bar reads \"Classes\" with \"‹ More\" going back to More, the page keeps its own header, and the same classes and actions are there; the sheets are bottom sheets. Below a 1000px container the side column goes under the deck, and below 640px the deck is one column, the overview stacks and the two header buttons share the row.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (phone, PhoneTop); src/clubhouse/lib/use-phone.ts#useChPhone; src/clubhouse/styles/classes.css",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 122001,
+    "page": "P012",
+    "category": 20,
+    "item": 1,
+    "name": "ENTER_SAVES_AND_ESC_CLOSES",
+    "meaning": "Enter in a field of the Add or Edit form saves it (the form has a hidden submit button and the same refusals as the Save button), and Esc closes any sheet through the same path as Cancel or Close, so a form with changes asks first (CH-12502), with focus returning to what opened it. The day picker's days are native buttons with a pressed state, and the import's drop zone is a native button (CH-12805). Not tested here: no test presses Enter or Esc.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/classes/ClassForm.tsx#ClassForm (form onSubmit); src/clubhouse/ui/Modal.tsx#Modal (onCancel)"
+  },
+  {
+    "id": 122101,
+    "page": "P012",
+    "category": 21,
+    "item": 1,
+    "name": "LOADER_READS_IN_ONE_PASS",
+    "meaning": "The server loader reads the page before first paint in one pass: the team's time zone, then the player's classes and the team's events for the week together (each limited to 500 rows). Each failed read is flagged on its own (classes.error, week.error) and logged, never thrown, so the other still shows. \"Today\" is the team's day in the team's zone (in the evening in New York it is already tomorrow in UTC), and the week runs Monday to Sunday around it.",
+    "status": "reserved",
+    "where": "src/clubhouse/data/classes.ts#loadClasses",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 122301,
+    "page": "P012",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A read that fails in the loader is logged through chLogServer(\"classes\", \"classes\" or \"events\") and named on the page. A write that fails is reported through chReport under the classes surface with its action (classes.save, classes.remove, classes.import, classes.sync), at low severity when the server refused it, after a chTrail breadcrumb for the intent. A calendar removal or sync that throws is reported under classes.remove or classes.sync. A section that crashes reports under its own surface (classes.term, classes.deck, classes.side).",
+    "status": "reserved",
+    "where": "src/clubhouse/data/classes.ts#loadClasses; src/clubhouse/screens/classes/writes.ts#createLiveClassesWrites (remove, sync); src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (SectionBoundary)",
+    "tests": [
+      "src/clubhouse/__tests__/classes.test.tsx"
+    ]
+  },
+  {
+    "id": 122401,
+    "page": "P012",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/classes.test.tsx names every Classes catalog code of kinds 0 to 5 it forces (clubhouse:check fails a row that no test names), and every hand contract it proves by its Bridge ID in a test title. Reserved: no test title carries a Bridge ID yet, and no test asserts this.",
+    "status": "reserved",
+    "where": "scripts/clubhouse/check.mjs; src/clubhouse/__tests__/classes.test.tsx"
+  },
+  {
+    "id": 130101,
+    "page": "P013",
+    "category": 1,
+    "item": 1,
+    "name": "COACHHELM_OPENS_FOR_THE_ROLE",
+    "meaning": "One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (up to five), Working (up to five) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of open signals across players), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130102,
+    "page": "P013",
+    "category": 1,
+    "item": 2,
+    "name": "THE_FOCUS_IS_THE_TOP_INSIGHT_THAT_IS_NOT_WORKING",
+    "meaning": "The player's focus card is the insight the person picked or, without a pick, the top-ranked insight that is not a strength, in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; Also worth knowing keeps at most five findings and Working at most five strengths; with only strengths there is no focus and CH-13303 says nothing needs work. On the coach's board the focus is the chosen player's top insight.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm-shape.ts#partitionInsights; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130103,
+    "page": "P013",
+    "category": 1,
+    "item": 3,
+    "name": "PLAYERS_ARE_ORDERED_MOST_PRESSING_FIRST",
+    "meaning": "The coach's By player list is ordered by how pressing each player's top insight is (Priority, then Worth closing, then Minor; a strength last, whatever its own priority), then by how many open signals the player has, then by name. The first player's focus is open when the page opens, and picking a player (a toggle, aria-pressed) shows that player's focus.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm-shape.ts#sortCoachPlayers; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130104,
+    "page": "P013",
+    "category": 1,
+    "item": 4,
+    "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
+    "meaning": "?view=development, ?view=profile and ?view=standing (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) show the shell's not-rebuilt page (CH-1301) naming Development, Game profile or Standing, with Back to Home, instead of the board. The page passes ?view= to the route and the route checks it before it reads the session, so it holds for a coach as well as a player. ?view=insights, no view and any other value (?view=deep-dive is a Fairway view) draw the board (Q-76, open).",
+    "status": "reserved",
+    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (VIEWS_NOT_REBUILT); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/shell/NotRebuilt.tsx#NotRebuilt",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130105,
+    "page": "P013",
+    "category": 1,
+    "item": 5,
+    "name": "OPEN_SIGNALS_FOLLOW_DISMISSALS",
+    "meaning": "The header's count of open signals across players is the sum of each player's open signals, and each row shows its player's count. Dismissing a player's top insight here takes one off that player's count and off the header, and a player left with none leaves the count of players; Undo puts both back. The row reads Dismissed while the notice is up.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (open, totalOpen, playersOpen); src/clubhouse/data/coachhelm-shape.ts#signalsLine",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130106,
+    "page": "P013",
+    "category": 1,
+    "item": 6,
+    "name": "INSIGHTS_ARE_GENERATOR_OUTPUT_ONLY",
+    "meaning": "Every insight is a delivery-action row (EvidenceInsight) re-shaped by toChInsight; nothing is generated, ranked or computed here beyond a gauge's display scale. The value is the generator's own display; the downhill-penalty finding is two bars and no gauge, any other insight with a comparison is a gauge (you, the cohort, and the Tour when it differs) and one with no comparison draws no gauge; the sample names what it counts and the window is days or All rounds; the read is a word; the drill is the attached drill (its text read from golf_drills.description) and the generator's placeholder action is not shown as a drill. An insight is working when it is resolved or encouraging, or ahead of its comparison at low priority (isNegativePolarityMetric decides which way a number is good).",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm-map.ts#toChInsight; src/clubhouse/data/coachhelm-map.ts#splitContent; src/clubhouse/data/coachhelm-map.ts#formatComparison",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
     "id": 130201,
     "page": "P013",
     "category": 2,
@@ -10336,6 +11327,19 @@
     "meaning": "Assign or Dismiss is saving",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130204,
+    "page": "P013",
+    "category": 2,
+    "item": 4,
+    "name": "THE_ROUTE_SKELETON_TAKES_THE_ROLES_SHAPE",
+    "meaning": "The route's loading.tsx draws the Clubhouse skeleton only inside the Clubhouse shell (Fairway's skeleton everywhere else), in the shape of the signed-in role's page: the coach's program pulse, then the players beside the focus card; the player's focus card beside a short list. The player's shape is used until the role is known.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/coachhelm/loading.tsx#CoachHelmLoading; src/clubhouse/screens/coachhelm/CoachHelmSkeleton.tsx#CoachHelmRouteSkeleton",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
   },
   {
     "id": 130401,
@@ -10448,6 +11452,19 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130411,
+    "page": "P013",
+    "category": 4,
+    "item": 11,
+    "name": "A_FAILED_READ_IS_NEVER_DRAWN_AS_EMPTY",
+    "meaning": "The delivery actions answer an empty list or map when a read fails, so the loaders tell a failed read from a first run. An empty feed, or empty top insights, while a drawable visible insight is on file (for a player, one they have not dismissed themselves: the newest feedback row per insight decides) is a failed read (CH-13201, CH-13202), and so is a failed visible-insights, feedback or roster read; only when that check finds nothing is it a first run (CH-13301, CH-13302, CH-13306). A player who dismissed every insight themselves is a first run, not a failure, and a failed roster read is never an empty team (CH-13307).",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm; src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm; src/clubhouse/data/coachhelm.ts#loadVisible; src/clubhouse/data/coachhelm.ts#loadPlayerDismissed",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
     "id": 130601,
     "page": "P013",
     "category": 6,
@@ -10525,6 +11542,19 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130608,
+    "page": "P013",
+    "category": 6,
+    "item": 8,
+    "name": "A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF",
+    "meaning": "The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Found in this pass, not fixed: on a coach's gate failure the pulse is not read, and the board draws its empty line 'Nothing is flagged in the pulse right now.' beside the CH-13202 notice.",
+    "status": "reserved",
+    "where": "src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm (gate); src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm (gate); src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -10534,6 +11564,198 @@
     "meaning": "An insight is dismissed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130702,
+    "page": "P013",
+    "category": 7,
+    "item": 2,
+    "name": "WRITES_REFUSE_OFFLINE",
+    "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
+    "status": "reserved",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo)",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130801,
+    "page": "P013",
+    "category": 8,
+    "item": 1,
+    "name": "CONTROLS_FOLLOW_THE_ROLE",
+    "meaning": "The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130802,
+    "page": "P013",
+    "category": 8,
+    "item": 2,
+    "name": "A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS",
+    "meaning": "A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130803,
+    "page": "P013",
+    "category": 8,
+    "item": 3,
+    "name": "A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS",
+    "meaning": "A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130804,
+    "page": "P013",
+    "category": 8,
+    "item": 4,
+    "name": "SERVER_ACTIONS_ARE_THE_GATE",
+    "meaning": "Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Read in this pass, not run: no test here forces a refusal.",
+    "status": "reserved",
+    "where": "src/app/golf/actions/insights.ts#dismissInsight; src/app/golf/actions/insights.ts#reactivateInsight; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2; src/lib/auth/verify-player-access.ts#verifyInsightAccess"
+  },
+  {
+    "id": 130805,
+    "page": "P013",
+    "category": 8,
+    "item": 5,
+    "name": "THE_PAGE_GIVES_CLUBHOUSE_ONLY_BEHIND_THE_FLAG",
+    "meaning": "With golf_clubhouse_ui on, a signed-in coach or player gets the Clubhouse route, drawn in place with no redirect, and ?view= is handed to it. With it off, everyone keeps the Fairway page (a coach gets its pointer to the Brief), and no session goes to sign in.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/gate.ts#isClubhouseFor",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130806,
+    "page": "P013",
+    "category": 8,
+    "item": 6,
+    "name": "ASSIGN_IS_OFFERED_ONLY_FOR_A_FINDING_NOT_YET_MADE",
+    "meaning": "Assign as focus is offered only when the chosen player's top insight is a finding and no focus has been made from it. One that is working can be dismissed but not assigned. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/data/coachhelm.ts#assignedByInsight",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130901,
+    "page": "P013",
+    "category": 9,
+    "item": 1,
+    "name": "CHANGE_LANDED",
+    "meaning": "A change that lands confirms itself in place with the success haptic and no toast: Assign becomes the chip Assigned as Jonah’s focus, Dismiss becomes the dismissed notice, Undo brings the focus card back. The one toast is the existing-focus outcome (130903).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130902,
+    "page": "P013",
+    "category": 9,
+    "item": 2,
+    "name": "ASSIGN_MAKES_A_PROPOSAL_THE_PLAYER_ACCEPTS",
+    "meaning": "Assign as focus sends the insight's own title, first sentence, area type and metric to createFocusAreaFromInsightV2, which makes a proposal (a coach's use is a prescription), not an active focus. The chip says Assigned and the line under it says the player sees it as a proposal and accepts it to start. The player answers it in Stats, Development (Q-77); this board has no Accept or Decline.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130903,
+    "page": "P013",
+    "category": 9,
+    "item": 3,
+    "name": "AN_EXISTING_ACTIVE_FOCUS_IS_THE_OUTCOME_WANTED",
+    "meaning": "When the write answers ACTIVE_FOCUS_DUPLICATE_ERROR (the player already has an active focus on that metric), Assign is done, not failed: the chip shows and a toast says the player already has a focus on this, with no failure toast and no error haptic. The proposal line is left out, because it is not known whether they have started it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign)",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 131201,
+    "page": "P013",
+    "category": 12,
+    "item": 1,
+    "name": "THIS_VISITS_CHANGES_STAY_WHILE_THE_PAGE_IS_OPEN",
+    "meaning": "The Assigned chip, the dismissed notice and the chosen player are held in the page's own state: choosing another player and coming back finds the chip still there. A reload reads the server again and opens on the first player (the chip then comes from the focus-area read). The chosen player or insight is not kept in the address.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (sel, assigned, dismissed); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (picked)",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 131401,
+    "page": "P013",
+    "category": 14,
+    "item": 1,
+    "name": "RETRY_FINISHES_THE_JOB",
+    "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: Assign shows the chip, Dismiss the notice, Undo the returned focus card. Every control on the board waits while any of the three is running.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 131402,
+    "page": "P013",
+    "category": 14,
+    "item": 2,
+    "name": "TRY_AGAIN_REREADS_THE_PAGE",
+    "meaning": "Try again on a failed-read notice (CH-13201, CH-13202, CH-13203) has the server read the whole page again (router.refresh); no section re-reads itself and nothing retries a read on its own.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/ui/Notices.tsx#InlineNotice",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 131403,
+    "page": "P013",
+    "category": 14,
+    "item": 3,
+    "name": "UNDO_RESTORES_THE_STATE_THE_INSIGHT_HAD",
+    "meaning": "Undo calls reactivateInsight with the lifecycle state the insight had when it was dismissed (detected, matured, addressed or resolved), so it returns to the feed where it was rather than always as new. The dismissed notice stays until it has landed.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (undo); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 131501,
+    "page": "P013",
+    "category": 15,
+    "item": 1,
+    "name": "THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ",
+    "meaning": "Nothing on the page refreshes in the background. A landed Assign, Dismiss or Undo changes the page in place from the board's own state and does not call router.refresh (the dismissed notice is never refreshed away); Try again on a failed-read notice is the one client re-read (131402).",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
   },
   {
     "id": 131601,
@@ -10655,5 +11877,54 @@
     "meaning": "Priority",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131807,
+    "page": "P013",
+    "category": 18,
+    "item": 7,
+    "name": "NO_AXE_VIOLATIONS_IN_THE_AXE_PREVIEW_STATES",
+    "meaning": "No axe violations in the ten preview states clubhouse:a11y walks for CoachHelm (the coach's default, assigned, empty, failed, off and loading; the player's default, empty, norounds and failed), at 1280px and 390px: 20 runs, clean on 2026-09-30 as reported by the lead in PROGRESS.md. Checked by npm run clubhouse:a11y (CH_A11Y_PAGES in scripts/clubhouse/a11y.mjs), not by a unit test. Not walked: the coach's noroster, pulsefailed, quiet, failwrites, failundo and duplicate states and the player's working, off and loading states.",
+    "status": "reserved",
+    "where": "scripts/clubhouse/a11y.mjs#CH_A11Y_PAGES"
+  },
+  {
+    "id": 131901,
+    "page": "P013",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_LAYOUT",
+    "meaning": "At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is.",
+    "status": "reserved",
+    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (phone); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (phone, pick); src/clubhouse/lib/use-phone.ts#useChPhone",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 132101,
+    "page": "P013",
+    "category": 21,
+    "item": 1,
+    "name": "LOADER_READS_IN_ROUNDS",
+    "meaning": "The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it.",
+    "status": "reserved",
+    "where": "src/clubhouse/data/coachhelm.ts#loadCoachCoachHelm; src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 132301,
+    "page": "P013",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players).",
+    "status": "reserved",
+    "where": "src/clubhouse/data/coachhelm.ts#log; src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/ui/SectionBoundary.tsx#SectionBoundary",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
   }
 ]

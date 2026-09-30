@@ -108,28 +108,28 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 
 - Design: approved
 - Implementation: in_progress
-- Contract: partial; 9 of 25 categories have catalog contracts
-- Bridge: reserved; 74 IDs, 73 on an element or in code, 1 reserved
+- Contract: complete; 21 of 25 categories have catalog contracts
+- Bridge: reserved; 118 IDs, 105 on an element or in code, 13 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
-- Docs: missing
+- Docs: current
 
 ## P012 Classes
 
 - Design: approved
 - Implementation: in_progress
-- Contract: partial; 9 of 25 categories have catalog contracts
-- Bridge: reserved; 46 IDs, 45 on an element or in code, 1 reserved
+- Contract: complete; 20 of 25 categories have catalog contracts
+- Bridge: reserved; 75 IDs, 59 on an element or in code, 16 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
-- Docs: missing
+- Docs: current
 
 ## P013 CoachHelm
 
 - Design: approved
 - Implementation: in_progress
-- Contract: partial; 7 of 25 categories have catalog contracts
-- Bridge: reserved; 32 IDs, 31 on an element or in code, 1 reserved
+- Contract: complete; 16 of 25 categories have catalog contracts
+- Bridge: reserved; 60 IDs, 49 on an element or in code, 11 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
-- Docs: missing
+- Docs: current

@@ -17,10 +17,10 @@ import '../styles/coachhelm.css';
  */
 /**
  * The Fairway page's `?view=` drills, which the old /my-development, /my-game-profile and /my-standing addresses
- * (and focus-area cards) redirect to. The Clubhouse board is not those views, so a link to one says it isn't rebuilt
+ * (and focus-area cards) redirect to, and the player nav's Deep dive. The Clubhouse board is not those views, so a link to one says it isn't rebuilt
  * yet rather than landing on the board as if it were (Q-76). `?view=insights` is the board.
  */
-const VIEWS_NOT_REBUILT: Record<string, string> = { development: 'Development', profile: 'Game profile', standing: 'Standing' };
+const VIEWS_NOT_REBUILT: Record<string, string> = { development: 'Development', profile: 'Game profile', standing: 'Standing', 'deep-dive': 'Deep dive' };
 
 export async function ClubhouseCoachHelmRoute({ view }: { view?: string } = {}) {
   const notYet = view ? VIEWS_NOT_REBUILT[view] : undefined;

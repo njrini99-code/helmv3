@@ -64,7 +64,7 @@ afterEach(() => {
   updateShot.mockReset();
 });
 
-describe('Round tracking: words', () => {
+describe('112401 Round tracking: words', () => {
   it('names shots, lines, scores and the round so far', () => {
     expect(shotTitle(TEE)).toBe('Tee · Driver');
     expect(shotLine(TEE, 'yards')).toBe('420 yds → fairway · 150 yds');
@@ -96,7 +96,7 @@ describe('Round tracking: words', () => {
 });
 
 describe('Round tracking: recording a shot', () => {
-  it('CH-11101 names the one thing still missing, then records the shot (CH-11705)', async () => {
+  it('110104 CH-11101 names the one thing still missing, then records the shot (CH-11705)', async () => {
     const { user } = setup();
     expect(screen.getByText('420')).toBeInTheDocument();
     expect(code('CH-11101')).toHaveTextContent('Select a shot result');
@@ -167,7 +167,7 @@ describe('Round tracking: recording a shot', () => {
     expect(code('CH-11101')).toBeNull();
   });
 
-  it('meters: the hero, the label and the quick picks follow the preference', async () => {
+  it('110112 meters: the hero, the label and the quick picks follow the preference', async () => {
     localStorage.setItem('golf_distance_unit_pref', 'meters');
     const { user } = setup();
     await waitFor(() => expect(screen.getByText('meters to the pin')).toBeInTheDocument());
@@ -255,7 +255,7 @@ describe('Round tracking: undo, penalty, moving between holes', () => {
 });
 
 describe('Round tracking: holing out', () => {
-  it('CH-11402 saving the hole, then CH-11003 when it fails, with Try again', async () => {
+  it('111403 CH-11402 saving the hole, then CH-11003 when it fails, with Try again', async () => {
     let finish: (ok: boolean) => void = () => {};
     const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
     const { user } = setup({ currentHoleIndex: 2, onHoleComplete });
@@ -354,7 +354,7 @@ describe('Round tracking: the round sheets', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  it('CH-11603 submitting names the real shot count; CH-11005 a failed submit offers Try again', async () => {
+  it('111403 110902 CH-11603 submitting names the real shot count; CH-11005 a failed submit offers Try again', async () => {
     const user = userEvent.setup();
     const onRetry = vi.fn();
     const { rerender } = render(<SubmitOverlay state="saving" course="Finley GC" shots={71} coach="Coach Reyes" reviewHref="/r" error={null} onRetry={onRetry} />);

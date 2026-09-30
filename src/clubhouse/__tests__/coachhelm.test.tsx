@@ -131,7 +131,7 @@ afterEach(() => {
 describe('Generator output to the board', () => {
   const jonah = HELM_PLAYERS.jonah.id;
 
-  it('the downhill penalty: two make rates as bars, no gauge, the sample in putts, the window in days, the drill from the attached drill', () => {
+  it('130106 the downhill penalty: two make rates as bars, no gauge, the sample in putts, the window in days, the drill from the attached drill', () => {
     const i = toChInsight(slope(jonah), { drillText: 'Start 2 ft below the hole.' });
     expect(i).toMatchObject({ category: 'Putting', priority: 'medium', strength: false, value: '23 pts', areaType: 'putting', lifecycle: 'detected', metric: 'putt_slope_downhill_penalty_pct' });
     expect(i.evidence.bars).toEqual([
@@ -305,7 +305,7 @@ describe('Generator output to the board', () => {
 describe('Which insight leads, and who is most pressing', () => {
   const list = PREVIEW_HELM_PLAYER.insights.list;
 
-  it('the focus is the top-ranked insight that is not working; the rest split into the other things to look at and what is working', () => {
+  it('130102 the focus is the top-ranked insight that is not working; the rest split into the other things to look at and what is working', () => {
     const { focus, also, working } = partitionInsights(list);
     expect(focus?.title).toBe('Downhill putts inside 4-6 ft: a real penalty');
     expect(also.map((i) => i.title)).toEqual(['Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10-20 ft)']);
@@ -337,7 +337,7 @@ describe('Which insight leads, and who is most pressing', () => {
     expect(pulseRows(items).map((r) => r.id)).toEqual(['rsvp-0', 'rsvp-1', 'rsvp-2', 'rsvp-3', 'rsvp-4', 'rsvp-5']);
   });
 
-  it('players: the most pressing top insight first, then the most signals, then the name; a strength last', () => {
+  it('130103 players: the most pressing top insight first, then the most signals, then the name; a strength last', () => {
     const p = PREVIEW_HELM_COACH.players.list;
     expect(p.map((x) => x.name)).toEqual(['Eli Brandt', 'Jonah Okafor', 'Priya Natarajan', 'Theo Marchetti']);
     const tied = sortCoachPlayers([
@@ -381,7 +381,7 @@ describe('Which insight leads, and who is most pressing', () => {
 // ── The player's board ─────────────────────────────────────────────────────
 
 describe('CoachHelm for the player, on screen', () => {
-  it('CH-13801 one focus: the page is labelled by its title, the claim is the card’s heading, and there are no coach controls', () => {
+  it('130801 130101 CH-13801 one focus: the page is labelled by its title, the claim is the card’s heading, and there are no coach controls', () => {
     showPlayer(PREVIEW_HELM_PLAYER);
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
@@ -546,7 +546,7 @@ describe('CoachHelm for the player, on screen', () => {
     expect(code('CH-13304')!.textContent).toMatch(/Your coach turned it off: “Off during the offseason”/);
   });
 
-  it('CH-13201 the insights fail to load: said so, Try again asks the server again, never "no insights"', async () => {
+  it('131402 CH-13201 the insights fail to load: said so, Try again asks the server again, never "no insights"', async () => {
     const user = userEvent.setup();
     showPlayer(PREVIEW_HELM_PLAYER_FAILED);
     await expectCode('CH-13201', /Your insights didn’t load.*Nothing is lost/);
@@ -617,7 +617,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(screen.getAllByRole('button').some((b) => /Share|Send/.test(b.textContent ?? ''))).toBe(false);
   });
 
-  it('CH-13702 CH-13403 Assign as focus: sends the insight’s own title, first sentence, area and metric; while it works the button says so; then it is assigned, as a proposal the player accepts', async () => {
+  it('130902 130901 CH-13702 CH-13403 Assign as focus: sends the insight’s own title, first sentence, area and metric; while it works the button says so; then it is assigned, as a proposal the player accepts', async () => {
     const u = user();
     let done!: (v: { success: boolean }) => void;
     const w = okWrites();
@@ -652,7 +652,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(code('CH-13601')).not.toBeNull();
   });
 
-  it('CH-13001 a failed assign says so and keeps the button; Retry that works finishes it, chip included', async () => {
+  it('131401 CH-13001 a failed assign says so and keeps the button; Retry that works finishes it, chip included', async () => {
     const u = user();
     const w = okWrites();
     vi.mocked(w.assign).mockResolvedValueOnce({ success: false, error: 'refused' }).mockResolvedValueOnce({ success: true });
@@ -668,7 +668,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(w.assign).toHaveBeenCalledTimes(2);
   });
 
-  it('a player who already has an active focus on the metric is the outcome wanted: assigned, said in a toast, not an error', async () => {
+  it('130903 a player who already has an active focus on the metric is the outcome wanted: assigned, said in a toast, not an error', async () => {
     const u = user();
     const w = okWrites();
     vi.mocked(w.assign).mockResolvedValueOnce({ success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR });
@@ -691,7 +691,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(screen.getByText('Jonah sees it as a proposal and accepts it to start.')).toBeTruthy();
   });
 
-  it('CH-13703 CH-13901 Dismiss: the warning comes first, then the write; the insight is replaced by a notice that says so, and the count drops', async () => {
+  it('130105 CH-13703 CH-13901 Dismiss: the warning comes first, then the write; the insight is replaced by a notice that says so, and the count drops', async () => {
     const u = user();
     const w = showCoach();
     await pick(u, 'Jonah Okafor');
@@ -710,7 +710,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(router.refresh).not.toHaveBeenCalled();
   });
 
-  it('Undo brings it back: the write restores the state it had, and the focus card returns', async () => {
+  it('131403 Undo brings it back: the write restores the state it had, and the focus card returns', async () => {
     const u = user();
     const w = showCoach();
     await pick(u, 'Jonah Okafor');
@@ -742,6 +742,7 @@ describe('CoachHelm for the coach, on screen', () => {
     await u.click(screen.getByRole('button', { name: 'Dismiss' }));
     await u.click(await screen.findByRole('button', { name: 'Undo' }));
     const busy = await screen.findByRole('button', { name: 'Undoing' });
+    expect(busy.querySelector('[data-ch-code="CH-13403"]')).not.toBeNull();
     expect((busy as HTMLButtonElement).disabled).toBe(true);
     done({ success: true });
     await waitFor(() => expect(code('CH-13901')).toBeNull());
@@ -802,7 +803,7 @@ describe('CoachHelm for the coach, on screen', () => {
     }
   });
 
-  it('a top insight that is working is not assigned as a focus, but it can be dismissed', async () => {
+  it('130806 a top insight that is working is not assigned as a focus, but it can be dismissed', async () => {
     const u = user();
     showCoach();
     await pick(u, 'Theo Marchetti');
@@ -944,7 +945,7 @@ describe('CoachHelm route skeleton', () => {
     expect(main.querySelector('.ch-hl-sk--coach .ch-hl-sk__card')).not.toBeNull();
   });
 
-  it('the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known', () => {
+  it('130204 the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known', () => {
     const user = (role: 'coach' | 'player') => ({ role, userId: 'u', name: 'X' });
     const { unmount } = render(
       <GolfUserProvider userData={user('coach')}>
@@ -1022,7 +1023,7 @@ describe('CoachHelm loaders', () => {
       expect(logServer).toHaveBeenCalledWith('coachhelm', 'feed', expect.anything(), 'coachhelm');
     });
 
-    it('CH-13201 an empty feed with insights on file is the feed having failed (it answers [] on failure), never a first run', async () => {
+    it('130411 CH-13201 an empty feed with insights on file is the feed having failed (it answers [] on failure), never a first run', async () => {
       vi.mocked(getInsightsForPlayer).mockResolvedValue([]);
       tables.current = { golf_coach_insights: { data: [slope(p1)] }, golf_insight_player_feedback: { data: [] } };
       expect((await loadPlayerCoachHelm({ playerId: p1 })).insights).toEqual({ list: [], error: true });
@@ -1146,7 +1147,7 @@ describe('CoachHelm loaders', () => {
       };
     });
 
-    it('the team’s players only, each with their top insight and how many signals they have; the pulse without the signals item', async () => {
+    it('130802 the team’s players only, each with their top insight and how many signals they have; the pulse without the signals item', async () => {
       const d = await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
       expect(isCoachHelmEnabledForCoach).toHaveBeenCalledWith('c1');
       // Only this team's active members are asked for, and only their ids reach every insight read.
@@ -1290,7 +1291,15 @@ describe('CoachHelm loaders', () => {
 
     it('CH-13202 a failed gate lookup is a failed read, not "off"', async () => {
       vi.mocked(isCoachHelmEnabledForCoach).mockResolvedValueOnce({ ...on, effectivelyEnabled: false, disabledBy: null, disabledReason: 'Coach record lookup failed' });
+      vi.mocked(getCoachProgramPulse).mockClear();
+      const failed = await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
+      expect(failed).toMatchObject({ off: null, roster: { error: true } });
+      // The pulse still reads (CH-13309 is never drawn over an unread pulse).
+      expect(getCoachProgramPulse).toHaveBeenCalledTimes(1);
+      vi.mocked(isCoachHelmEnabledForCoach).mockRejectedValueOnce(new Error('gate down'));
+      vi.mocked(getCoachProgramPulse).mockClear();
       expect(await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' })).toMatchObject({ off: null, roster: { error: true } });
+      expect(getCoachProgramPulse).toHaveBeenCalledTimes(1);
     });
   });
 });
@@ -1352,12 +1361,13 @@ describe('CoachHelm route', () => {
     expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30 });
   });
 
-  it('CH-1301 a link to a Fairway drill (?view=development, profile, standing) says it is not rebuilt; ?view=insights is the board', async () => {
+  it('CH-1301 a link to a Fairway drill (?view=development, profile, standing, deep-dive) says it is not rebuilt; ?view=insights is the board', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     for (const [view, label] of [
       ['development', 'Development'],
       ['profile', 'Game profile'],
       ['standing', 'Standing'],
+      ['deep-dive', 'Deep dive'],
     ]) {
       document.body.innerHTML = '';
       render(wrap(await ClubhouseCoachHelmRoute({ view })));
@@ -1390,7 +1400,7 @@ describe('CoachHelm route', () => {
     expect(getTopInsightsForPlayers).not.toHaveBeenCalled();
   });
 
-  it('a player needs no team: their insights are their own', async () => {
+  it('130803 a player needs no team: their insights are their own', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     teamOf.current = null;
     render(wrap(await ClubhouseCoachHelmRoute()));
@@ -1398,7 +1408,7 @@ describe('CoachHelm route', () => {
   });
 
   const noView = { searchParams: Promise.resolve({}) };
-  it('the page gives a Clubhouse coach or player the new screen, and Fairway’s page is unchanged everywhere else', async () => {
+  it('130805 the page gives a Clubhouse coach or player the new screen, and Fairway’s page is unchanged everywhere else', async () => {
     const isRoute = (el: unknown) => (el as { type?: unknown } | null)?.type === ClubhouseCoachHelmRoute;
     gate.on = true;
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };

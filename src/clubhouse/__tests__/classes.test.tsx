@@ -360,7 +360,7 @@ describe('Classes shaping', () => {
     expect(upcomingMeetings({ days: [], start: '09:00' }, '2026-10-14', '2026-12-15', 4)).toEqual([]);
   });
 
-  it('CH-12002 a class goes on the calendar from next Monday only when that is inside its own term and leaves the term standing; otherwise from the term’s own window', () => {
+  it('121502 CH-12002 a class goes on the calendar from next Monday only when that is inside its own term and leaves the term standing; otherwise from the term’s own window', () => {
     // In this term, with weeks left; a class saved with no term is in the current one.
     expect(syncStartFor('Fall 2026', 'Fall 2026', '2026-10-14')).toBe('2026-10-19');
     expect(syncStartFor(null, 'Fall 2026', '2026-10-14')).toBe('2026-10-19');
@@ -380,7 +380,7 @@ describe('Classes shaping', () => {
     expect(parseSemesterDates('Fall 2026', syncStartFor('Fall 2026', 'Fall 2026', '2026-10-14'))).toEqual({ start: '2026-10-19', end: '2026-12-15' });
   });
 
-  it('CH-12107 a class is only the same as another in its own term: last spring’s class at the same days and times does not refuse this fall’s', () => {
+  it('120516 CH-12107 a class is only the same as another in its own term: last spring’s class at the same days and times does not refuse this fall’s', () => {
     const stat = PREVIEW_CLASSES.classes.list.find((c) => c.code === 'STAT 201')!;
     const same = { ...draftOf(null, 'Fall 2026'), code: 'X 1', name: 'X', days: ['T', 'Th'], start: '09:00', end: '10:15' };
     const spring = { ...stat, id: 'sp', semester: 'Spring 2026' };
@@ -540,7 +540,7 @@ describe('Classes route and page', () => {
     expect(screen.queryByRole('button', { name: /Add|Import/ })).toBeNull();
   });
 
-  it('a player on a team sees their classes, read on the server', async () => {
+  it('120101 a player on a team sees their classes, read on the server', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-14T16:00:00Z'));
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'p1' } };
@@ -626,7 +626,7 @@ describe('Classes live writes', () => {
     expect((c.args[0] as { color: string }).color).toMatch(/^#[0-9A-F]{6}$/i);
   });
 
-  it('an edit updates only that player’s row, keeps its color, and a row a policy hides is a failure, not "saved"', async () => {
+  it('120609 an edit updates only that player’s row, keeps its color, and a row a policy hides is a failure, not "saved"', async () => {
     const cls = toChClasses([PREVIEW_CLASS_ROWS[0]!])[0]!;
     client.answers['golf_player_classes.update'] = { data: [PREVIEW_CLASS_ROWS[0]] };
     expect(await live().save(input(), cls, 'new-1')).toMatchObject({ success: true });
@@ -664,7 +664,8 @@ describe('Classes live writes', () => {
     );
     actions.remove.mockResolvedValueOnce({ success: true });
     client.answers['golf_player_classes.delete'] = { error: { message: 'gone wrong' } };
-    expect(await w.remove('k1')).toEqual({ success: false, error: 'gone wrong' });
+    // Off the calendar already: the answer says so, for the page's flag and hint.
+    expect(await w.remove('k1')).toEqual({ success: false, error: 'It is off your calendar but still on your schedule. Try again to finish removing it.', data: { offCalendar: true } });
   });
 
   it('the sync gets the class as the current importer sends it: the stored term, the caller’s zone and offset, and the start date when there is one', async () => {
@@ -696,7 +697,7 @@ describe('Classes live writes', () => {
     expect(syncDataOf({ ...cls, semester: 'Spring 2026' }, 'Fall 2026').semester).toBe('Spring 2026');
   });
 
-  it('a sync that fails, throws, or writes nothing for a class that has meetings is a failure; for an online class it is not', async () => {
+  it('120610 a sync that fails, throws, or writes nothing for a class that has meetings is a failure; for an online class it is not', async () => {
     const cls = toChClasses([PREVIEW_CLASS_ROWS[0]!])[0]!;
     const online = { ...cls, days: [], start: null, end: null };
     actions.sync.mockResolvedValueOnce({ success: false, error: 'Could not determine semester dates' });
@@ -713,7 +714,7 @@ describe('Classes live writes', () => {
     expect(actions.sync).toHaveBeenCalledTimes(3);
   });
 
-  it('an import skips what is already on the schedule, reads before it writes, and stops when it cannot read', async () => {
+  it('120515 an import skips what is already on the schedule, reads before it writes, and stops when it cannot read', async () => {
     const rows = PREVIEW_PARSED.map(toImportRow);
     client.answers['golf_player_classes.select'] = { data: [{ class_name: 'STAT 201 - Probability and Statistics', semester: 'Fall 2026' }] };
     client.answers['golf_player_classes.insert'] = (rec: Call) => ({
@@ -755,7 +756,7 @@ describe('Classes live writes', () => {
     expect(client.log.filter((c) => c.op === 'insert')).toHaveLength(1);
   });
 
-  it('CH-12001 a class is inserted under the id the page made, and a retry after a lost answer reaches that row instead of adding a second copy', async () => {
+  it('121404 CH-12001 a class is inserted under the id the page made, and a retry after a lost answer reaches that row instead of adding a second copy', async () => {
     client.answers['golf_player_classes.insert'] = { data: saved };
     expect(await live().save(input(), null, 'id-77')).toMatchObject({ success: true, data: { row: { id: 'new-1' } } });
     expect(last('insert').args[0]).toMatchObject({ id: 'id-77', player_id: 'p1', team_id: 't1' });
@@ -796,7 +797,7 @@ describe('Classes live writes', () => {
     }
   });
 
-  it('CH-12002 CH-12304 a class with days and no start or no end is taken off the calendar, not synced: the server would put it there from 08:00 to 09:00', async () => {
+  it('121503 CH-12002 CH-12304 a class with days and no start or no end is taken off the calendar, not synced: the server would put it there from 08:00 to 09:00', async () => {
     const cls = toChClasses([PREVIEW_CLASS_ROWS[0]!])[0]!;
     actions.remove.mockResolvedValue({ success: true });
     for (const times of [
@@ -905,7 +906,7 @@ describe('Classes, states', () => {
     expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
   });
 
-  it('CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and offers no add or import', async () => {
+  it('120407 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and offers no add or import', async () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_FAILED);
     await expectCode('CH-12201', /Your classes didn't load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
@@ -989,7 +990,7 @@ describe('Classes, states', () => {
     expect(online.querySelector('[data-ch-code="CH-12304"]')).toBeNull();
   });
 
-  it('a class from another term is named for it and kept out of this term’s figures; one with no term counts as this term; a weekend class draws seven days', () => {
+  it('120102 a class from another term is named for it and kept out of this term’s figures; one with no term counts as this term; a weekend class draws seven days', () => {
     show(PREVIEW_CLASSES_MIXED);
     expect(within(card(/^GEOG 110/)).getByText('Spring 2026')).toBeTruthy();
     expect(within(card(/^STAT 201/)).queryByText('Fall 2026')).toBeNull();
@@ -1020,7 +1021,7 @@ describe('Classes, states', () => {
     expect(within(screen.getByRole('region', { name: 'A team event overlaps your classes' })).queryByText('GEOG 110')).toBeNull();
   });
 
-  it('opening a class shows when and where it meets and its next meetings; the one that overlaps the trip says so; nothing the table has no column for is drawn', async () => {
+  it('120103 opening a class shows when and where it meets and its next meetings; the one that overlaps the trip says so; nothing the table has no column for is drawn', async () => {
     const user = userEvent.setup();
     show();
     await user.click(card(/^STAT 201/));
@@ -1115,7 +1116,7 @@ const failing = <T,>(first: T, then: (...a: never[]) => unknown) =>
     .mockImplementation(then as never);
 
 describe('Classes, add and edit', () => {
-  it('CH-12001 adding a class saves it once as typed, adds it in the order the week unfolds, closes the sheet, and puts it on the calendar; overlaps warn while typing and do not block', async () => {
+  it('120901 CH-12001 adding a class saves it once as typed, adds it in the order the week unfolds, closes the sheet, and puts it on the calendar; overlaps warn while typing and do not block', async () => {
     const user = userEvent.setup();
     const w = show();
     await fillGeog(user);
@@ -1281,7 +1282,7 @@ describe('Classes, add and edit', () => {
 });
 
 describe('Classes, writes that fail', () => {
-  it('CH-12001 a save that fails says so in the sheet, keeps what was typed, sends nothing to the calendar, and Retry saves it', async () => {
+  it('121201 CH-12001 a save that fails says so in the sheet, keeps what was typed, sends nothing to the calendar, and Retry saves it', async () => {
     const user = userEvent.setup();
     const base = fakeWrites();
     // A reason no one should read: the hint takes its place.
@@ -1435,6 +1436,18 @@ describe('Classes, writes that fail', () => {
     await waitFor(() => expect(names()).not.toContain('Probability and Statistics'));
     expect(remove).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('CH-12003 a remove that took the class off the calendar but could not delete it says so and flags it', async () => {
+    const user = userEvent.setup();
+    const remove = vi.fn(() => Promise.resolve({ success: false, error: 'It is off your calendar but still on your schedule. Try again to finish removing it.', data: { offCalendar: true } }));
+    show(PREVIEW_CLASSES, { remove });
+    await user.click(card(/^STAT 201/));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
+    await user.click(await screen.findByRole('button', { name: 'Remove class' }));
+    await expectCode('CH-12003', /off your calendar but still on your schedule/);
+    expect(code('CH-12003')!.textContent).not.toMatch(/still on your schedule and your calendar/);
+    expect(within(card(/^STAT 201/)).getByText('Not on your calendar')).toBeTruthy();
   });
 
   it('removing the last class returns to the first-run page', async () => {
@@ -1836,7 +1849,7 @@ const pageWith = (...extra: ChClassRow[]): ChClassesPage => ({ ...PREVIEW_CLASSE
 const factsOf = (root: HTMLElement) => Object.fromEntries([...root.querySelectorAll('.ch-cl-facts > div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]));
 
 describe('Classes, calendar sync in the background', () => {
-  it('CH-12403 CH-12002 a saved class goes on the calendar in the background: the sheet is free meanwhile, and a class saved then is flagged with no toast, and Retry sync puts it there', async () => {
+  it('121501 CH-12403 CH-12002 a saved class goes on the calendar in the background: the sheet is free meanwhile, and a class saved then is flagged with no toast, and Retry sync puts it there', async () => {
     const user = userEvent.setup();
     const held = later<{ success: boolean }>();
     const w = show(PREVIEW_CLASSES, { sync: vi.fn((c: ChClass) => (c.code === 'GEOG 110' ? held.promise : Promise.resolve({ success: true }))) });

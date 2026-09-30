@@ -6,7 +6,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 ## spec
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a gap (`phone/classes.md` "Board to data" and "Differences from the board")
-- [x] Every control is mapped to an existing server action or the RLS-scoped write the current page uses: Add, Edit and Import write `golf_player_classes` then `syncClassToCalendar`; Remove is `removeClassFromCalendar` then delete; the reader is `extractClassesFromScheduleImage` or `parseScheduleText`. No new action and no migration
+- [x] Every control is mapped to an existing server action or the RLS-scoped write the current page uses: Add, Edit and Import write `golf_player_classes` then `syncClassToCalendar` (its own action, not waited on; an import starts each class from its own day, `syncStartFor`; a class with no start or end time is taken off the calendar with `removeClassFromCalendar` instead of synced); Remove is `removeClassFromCalendar` then delete; the reader is `extractClassesFromScheduleImage` or `parseScheduleText`. No new action and no migration
 - [ ] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (the gaps are written in `phone/classes.md`; the tracker entry is the lead's)
 
 ## desktop
@@ -22,7 +22,7 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [x] Everything is read server-side in one pass, so final data is on first paint (the classes and the team's events for the week are read in parallel)
 - [x] Reads go through the RLS-scoped client and writes through the browser client under the same policies; the calendar sync and removal are the current server actions, unchanged
 - [x] Every Supabase call reads `error` (`classes.error`, `week.error` are separate; a failed read is never an empty page); both lists are limited to 500
-- [x] Null, zero and "no fixed meeting" render differently: an online class, times with no days, a class from another term, and a class with no term are each drawn as what they are
+- [x] Null, zero and "no fixed meeting" render differently: an online class, times with no days, days with no time ("No meeting time, not on your calendar"), a class from another term, and a class with no term are each drawn as what they are
 - [x] Dates and times are resolved in the team's timezone on the server (`todayIso`, the week, the events), with no hydration mismatch; the class's own wall-clock times go to the sync with the caller's zone, as the current importer does
 - [x] Unit tests cover the loader's derivations and the write shapes (`classes.test › Classes loader`, `Classes live writes`)
 
@@ -35,8 +35,8 @@ Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surf
 - [ ] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
 - [ ] Not found and no access: plain words and a way back
 - [x] Offline or slow network: a write says so instead of spinning (CH-1903, CH-1902); a screenshot read says so and offers the paste (CH-12901, CH-12902)
-- [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event (CH-12001 to CH-12004); Retry finishes the job, and a failed sync's Retry never saves the class again
-- [x] Forms: every rule shows beside its field, and the first field that needs it takes focus (CH-12101 to CH-12114)
+- [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event (CH-12001 to CH-12004); Retry finishes the job, a failed sync's Retry never saves the class again and starts each class from the day its first attempt did, and a save does not wait for the calendar (the sheet is free while the header says "Adding to your calendar…")
+- [x] Forms: every rule shows beside its field, and the first field that needs it takes focus (CH-12101 to CH-12114); the duplicate and overlap checks count only the classes of the term the form is set to
 - [x] Destructive actions: a confirm step (CH-12501), and a question before a form with changes is thrown away (CH-12502)
 - [x] N/A: nothing is optimistic; a class joins the list when the server has stored it
 

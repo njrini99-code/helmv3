@@ -78,8 +78,8 @@ afterEach(() => {
   tables.current = {};
 });
 
-describe('Rounds library, on screen', () => {
-  it('shows the round in progress: course, tees, type, holes, and the score through the holes played', () => {
+describe('112401 Rounds library, on screen', () => {
+  it('110101 shows the round in progress: course, tees, type, holes, and the score through the holes played', () => {
     show(PREVIEW_ROUNDS);
     expect(screen.getByRole('heading', { level: 1, name: 'Your rounds' })).toBeTruthy();
     expect(screen.getByText('In progress')).toBeTruthy();
@@ -88,7 +88,7 @@ describe('Rounds library, on screen', () => {
     expect(screen.getByText('Since August 1 · 8 counted rounds')).toBeTruthy();
   });
 
-  it('draws no control whose screen is not rebuilt yet: no New round or Continue; every round opens its review', () => {
+  it('110105 draws no control whose screen is not rebuilt yet: no New round or Continue; every round opens its review', () => {
     show(PREVIEW_ROUNDS);
     expect(screen.queryByRole('link', { name: /New round/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Continue at hole/ })).toBeNull();
@@ -97,7 +97,7 @@ describe('Rounds library, on screen', () => {
     expect(all).toHaveLength(PREVIEW_ROUNDS.rounds.list.length);
   });
 
-  it('a round whose review can’t be opened is still there to read, as one named group', () => {
+  it('110105 a round whose review can’t be opened is still there to read, as one named group', () => {
     const odd = { ...PREVIEW_ROUNDS_IDLE.rounds.list[0]!, id: 'not-a-round-id' };
     show({ ...PREVIEW_ROUNDS_IDLE, rounds: { list: [odd], error: false } });
     expect(screen.getByRole('group', { name: 'Sep 26, Finley GC, 72 (E)' })).toBeTruthy();
@@ -141,7 +141,7 @@ describe('Rounds library, on screen', () => {
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('−1 through 2');
   });
 
-  it('a round with every hole scored reads Ready to submit, and its link says Submit round', () => {
+  it('110106 a round with every hole scored reads Ready to submit, and its link says Submit round', () => {
     links.all = true;
     const done = PREVIEW_ROUNDS_MANY.unfinished.list[2]!;
     show({ ...PREVIEW_ROUNDS_MANY, unfinished: { list: [done], error: false } });
@@ -150,7 +150,7 @@ describe('Rounds library, on screen', () => {
     expect(document.querySelector('.ch-rd-strip .is-next')).toBeNull();
   });
 
-  it('more than one unfinished round: the newest in the card, the rest listed with Continue or Submit', () => {
+  it('110106 more than one unfinished round: the newest in the card, the rest listed with Continue or Submit', () => {
     links.all = true;
     show(PREVIEW_ROUNDS_MANY);
     const more = screen.getByRole('region', { name: '2 more unfinished rounds' });
@@ -180,7 +180,7 @@ describe('Rounds library, on screen', () => {
     expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
   });
 
-  it('CH-11201 the posted rounds fail to load: said so, Try again asks the server again, never "no rounds"', async () => {
+  it('111402 CH-11201 the posted rounds fail to load: said so, Try again asks the server again, never "no rounds"', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_FAILED);
     await expectCode('CH-11201', /Your rounds didn't load/);
@@ -192,7 +192,7 @@ describe('Rounds library, on screen', () => {
     expect(router.refresh).toHaveBeenCalled();
   });
 
-  it('CH-11201 a failed list with no round in progress is still the error, never the first-run page', async () => {
+  it('110413 CH-11201 a failed list with no round in progress is still the error, never the first-run page', async () => {
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [], error: false } });
     await expectCode('CH-11201', /Your rounds didn't load/);
     expect(code('CH-11301')).toBeNull();
@@ -217,7 +217,7 @@ describe('Rounds library, on screen', () => {
     quiet.mockRestore();
   });
 
-  it('CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
+  it('110107 CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
     show(PREVIEW_ROUNDS_NO_SEASON);
     await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
     const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
@@ -236,7 +236,7 @@ describe('Rounds library, on screen', () => {
     expect(screen.getAllByRole('link').map((g) => g.getAttribute('aria-label'))).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
   });
 
-  it('groups by month (newest first) or by course, each with its count and low', async () => {
+  it('110108 groups by month (newest first) or by course, each with its count and low', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['September 2026', 'August 2026']);
@@ -247,7 +247,7 @@ describe('Rounds library, on screen', () => {
     expect(within(finley).getByText('low').textContent).toBe('low 38');
   });
 
-  it('a round under par is marked in red on its score only; a round that does not count says Not counted', () => {
+  it('110107 a round under par is marked in red on its score only; a round that does not count says Not counted', () => {
     const nc = toLibraryRound({ ...previewRow(30, ['2026-09-01', 'Finley GC', 'Blue', 'practice', 40, 72, 20, [2, 14], 2, 20]) });
     show({ ...PREVIEW_ROUNDS_IDLE, rounds: { list: [...PREVIEW_ROUNDS_IDLE.rounds.list, nc!], error: false } });
     const under = screen.getByRole('link', { name: 'Aug 18, Carolina GC, 69 (−3)' });
@@ -276,7 +276,7 @@ describe('Rounds library, on screen', () => {
     expect(screen.getByText('Under par')).toBeTruthy();
   });
 
-  it('on the phone the ribbon draws the last ten rounds, on a narrower canvas', () => {
+  it('111902 on the phone the ribbon draws the last ten rounds, on a narrower canvas', () => {
     const many = Array.from({ length: 14 }, (_, i) => ({ id: 'x' + i, date: '2026-09-' + String(i + 1).padStart(2, '0'), score: 72 + (i % 4), toPar: i % 4, type: null }));
     render(<SeasonCard season={{ ...PREVIEW_ROUNDS_IDLE.season, ribbon: many }} phone />);
     const rib = screen.getByRole('img', { name: /last 10 rounds/ });
@@ -284,7 +284,7 @@ describe('Rounds library, on screen', () => {
     expect([...rib.querySelectorAll('title')].map((t) => t.textContent)[0]).toMatch(/^Sep 5 /);
   });
 
-  it('the season figures: average, to par, best, putts and greens from countable 18-hole rounds', () => {
+  it('111811 the season figures: average, to par, best, putts and greens from countable 18-hole rounds', () => {
     show(PREVIEW_ROUNDS_IDLE);
     const season = screen.getByRole('region', { name: 'Season scoring' });
     expect(within(season).getByText('73.4')).toBeTruthy();
@@ -296,7 +296,7 @@ describe('Rounds library, on screen', () => {
 });
 
 describe('Discarding an unfinished round', () => {
-  it('CH-11701 CH-11501 the warning comes first, then the question; Discard round deletes it and the idle card takes its place', async () => {
+  it('110901 CH-11701 CH-11501 the warning comes first, then the question; Discard round deletes it and the idle card takes its place', async () => {
     const user = userEvent.setup();
     const w = show(PREVIEW_ROUNDS);
     await user.click(screen.getByRole('button', { name: 'Discard the round at Finley GC' }));
@@ -318,7 +318,7 @@ describe('Discarding an unfinished round', () => {
     expect(screen.getByText('In progress')).toBeTruthy();
   });
 
-  it('CH-11001 a failed discard says so and keeps the card; Retry that works removes it', async () => {
+  it('111401 111301 CH-11001 a failed discard says so and keeps the card; Retry that works removes it', async () => {
     const user = userEvent.setup();
     const discard = vi.fn().mockResolvedValueOnce({ success: false, error: 'refused' }).mockResolvedValueOnce({ success: true });
     show(PREVIEW_ROUNDS, { discard });
@@ -332,7 +332,7 @@ describe('Discarding an unfinished round', () => {
     expect(discard).toHaveBeenCalledTimes(2);
   });
 
-  it('the live discard is the legacy action, and clears the device copy only when it worked', async () => {
+  it('111301 the live discard is the legacy action, and clears the device copy only when it worked', async () => {
     vi.mocked(deleteInProgressRound).mockResolvedValueOnce({ success: false, error: 'nope' } as never);
     await LIVE_ROUNDS_WRITES.discard('u1', 'p1');
     expect(clearEmergencySave).not.toHaveBeenCalled();
@@ -361,7 +361,7 @@ describe('Rounds loader', () => {
     updated_at: '2026-10-14T13:12:00Z',
   };
 
-  it('lists every completed round with its canonical total, and sets the season from countable 18-hole rounds since August 1', async () => {
+  it('111501 lists every completed round with its canonical total, and sets the season from countable 18-hole rounds since August 1', async () => {
     tables.current = {
       golf_team_settings: { data: { timezone: 'America/New_York' } },
       golf_rounds: (f) =>
@@ -388,7 +388,7 @@ describe('Rounds loader', () => {
     expect(d.season.avg).toBe(72);
   });
 
-  it('CH-11201 a failed list read is an error, logged, never an empty library', async () => {
+  it('112301 CH-11201 a failed list read is an error, logged, never an empty library', async () => {
     tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { error: { message: 'boom' } } : { data: [] }) };
     const d = await loadRoundsLibrary({ playerId: 'p1', teamId: null });
     expect(d.rounds).toEqual({ list: [], error: true });
@@ -411,7 +411,7 @@ describe('Rounds loader', () => {
     expect(d.unfinished.list[0]).toMatchObject({ played: [{ n: 1 }, { n: 2 }, { n: 3 }], nextHole: 4, toParThru: 1, readyToSubmit: false, tee: 'Blue tees' });
   });
 
-  it('every hole scored is ready to submit, unless a completed round already holds that course and day', async () => {
+  it('110106 every hole scored is ready to submit, unless a completed round already holds that course and day', async () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ round_id: 'u1', hole_number: i + 1, par: 4, score: 4 }));
     tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { data: [] } : { data: [inProgress] }), golf_holes: { data: all } };
     expect((await loadRoundsLibrary({ playerId: 'p1', teamId: null })).unfinished.list[0]).toMatchObject({ readyToSubmit: true, nextHole: null });
@@ -422,14 +422,14 @@ describe('Rounds loader', () => {
     expect((await loadRoundsLibrary({ playerId: 'p1', teamId: null })).unfinished.list[0]!.readyToSubmit).toBe(false);
   });
 
-  it('a failed hole read keeps the card, falls back to the saved current hole, and never claims ready to submit', async () => {
+  it('112301 110619 a failed hole read keeps the card, falls back to the saved current hole, and never claims ready to submit', async () => {
     tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { data: [] } : { data: [inProgress] }), golf_holes: { error: { message: 'boom' } } };
     const d = await loadRoundsLibrary({ playerId: 'p1', teamId: null });
     expect(d.unfinished.list[0]).toMatchObject({ played: [], nextHole: 4, readyToSubmit: false });
     expect(logServer).toHaveBeenCalledWith('rounds', 'unfinished-holes', expect.anything());
   });
 
-  it('CH-11202 a failed in-progress read is its own error', async () => {
+  it('110619 CH-11202 a failed in-progress read is its own error', async () => {
     tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { data: [] } : { error: { message: 'boom' } }) };
     const d = await loadRoundsLibrary({ playerId: 'p1', teamId: null });
     expect(d.unfinished).toEqual({ list: [], error: true });
@@ -447,7 +447,7 @@ describe('Rounds loader', () => {
     expect(seasonFrom(list, '2026-09-01').rounds).toBe(5);
   });
 
-  it('groupRounds: by month in date order, by course in order of each course’s newest round', () => {
+  it('110108 groupRounds: by month in date order, by course in order of each course’s newest round', () => {
     const list = PREVIEW_ROUNDS_IDLE.rounds.list;
     expect(groupRounds(list, 'course', '').map((g) => g.key)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
     expect(groupRounds(list, 'month', 'CHATHAM').map((g) => [g.key, g.rounds.length])).toEqual([['August 2026', 1]]);
@@ -455,12 +455,12 @@ describe('Rounds loader', () => {
 });
 
 describe('Rounds route', () => {
-  it('is for players: a coach session renders nothing here (the Fairway page keeps the coach)', async () => {
+  it('110801 is for players: a coach session renders nothing here (the Fairway page keeps the coach)', async () => {
     session.current = { userId: 'u1', coach: { id: 'c1' }, player: null };
     expect(await ClubhouseRoundsRoute()).toBeNull();
   });
 
-  it('a player without a team still sees their own rounds', async () => {
+  it('110801 a player without a team still sees their own rounds', async () => {
     session.current = { userId: 'u2', coach: null, player: { id: 'p1' } };
     teamOf.current = null;
     tables.current = { golf_rounds: { data: [] } };

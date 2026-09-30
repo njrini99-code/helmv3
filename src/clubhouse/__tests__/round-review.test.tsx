@@ -70,8 +70,8 @@ afterEach(() => {
   tables.current = {};
 });
 
-describe('Round review, on screen', () => {
-  it('the hero: date and type, course, tees with yards, rating and slope, then the score and to par', () => {
+describe('112401 Round review, on screen', () => {
+  it('110102 the hero: date and type, course, tees with yards, rating and slope, then the score and to par', () => {
     show(PREVIEW_REVIEW);
     const hero = screen.getByRole('banner');
     expect(within(hero).getByText('Wed Oct 14 · Practice')).toBeTruthy();
@@ -87,7 +87,7 @@ describe('Round review, on screen', () => {
     expect(within(screen.getByRole('banner')).getByText('−2').className).toContain('is-under');
   });
 
-  it('the five figures: front and back with to par, putts per hole, fairways and greens with their rates', () => {
+  it('111811 the five figures: front and back with to par, putts per hole, fairways and greens with their rates', () => {
     show(PREVIEW_REVIEW);
     const fig = (k: string) => {
       const dt = screen.getByText(k, { selector: 'dt' });
@@ -100,7 +100,7 @@ describe('Round review, on screen', () => {
     expect(fig('Greens')[1]).toBe(`${Math.round((PREVIEW_REVIEW.greens!.hit / 18) * 100)}%`);
   });
 
-  it('opens on the first hole over par, with every shot: club, distances, where it finished, the miss and the read', () => {
+  it('110102 opens on the first hole over par, with every shot: club, distances, where it finished, the miss and the read', () => {
     show(PREVIEW_REVIEW);
     expect(holeTitle()).toBe('Hole 2 · Par 5 · 518 yds');
     const shots = within(screen.getByRole('list')).getAllByRole('listitem');
@@ -161,7 +161,7 @@ describe('Round review, on screen', () => {
     expect(screen.getByRole('link', { name: /Rounds/ }).getAttribute('href')).toBe('/golf/dashboard/rounds');
   });
 
-  it('a coach viewing: the player’s name in the kicker, "Jonah’s notes", and back to that player’s rounds on Stats', () => {
+  it('110102 a coach viewing: the player’s name in the kicker, "Jonah’s notes", and back to that player’s rounds on Stats', () => {
     show(PREVIEW_REVIEW_COACH);
     expect(within(screen.getByRole('banner')).getByText('Jonah Okafor · Wed Oct 14 · Practice')).toBeTruthy();
     expect(screen.getByRole('heading', { name: "Jonah's notes" })).toBeTruthy();
@@ -214,7 +214,7 @@ describe('Round review, shaping', () => {
     expect(toShot(shot({ result: 'lipout' })).lie).toBe('other');
   });
 
-  it('a nine with a hole unscored has no total, rather than a short one', () => {
+  it('111502 a nine with a hole unscored has no total, rather than a short one', () => {
     const holes = toHoles(
       PREVIEW_REVIEW_HOLES.map((h) => (h.hole_number === 4 ? { ...h, score: null } : h)),
       [],
@@ -223,12 +223,12 @@ describe('Round review, shaping', () => {
     expect(nineOf(holes, 10, 18).score).toBe(37);
   });
 
-  it('a par 3 never counts a fairway, whatever was stored', () => {
+  it('111502 a par 3 never counts a fairway, whatever was stored', () => {
     const holes = toHoles([{ hole_number: 3, par: 3, yardage: 170, score: 3, putts: 2, fairway_hit: false, gir: true, penalty_strokes: 0 }], []);
     expect(holes[0]!.fairway).toBeNull();
   });
 
-  it('the review opens on the first hole over par, or the first hole', () => {
+  it('110102 the review opens on the first hole over par, or the first hole', () => {
     expect(firstHole(PREVIEW_REVIEW.holes)).toBe(2);
     expect(firstHole(PREVIEW_REVIEW.holes.map((h) => ({ ...h, score: h.par })))).toBe(1);
     expect(distribution([]).every((d) => d.count === 0)).toBe(true);
@@ -258,31 +258,31 @@ describe('Round review loader', () => {
     expect(r.review.holes[1]!.shots).toHaveLength(6);
   });
 
-  it('the total is the canonical one: front plus back over a stale total_score', async () => {
+  it('111501 the total is the canonical one: front plus back over a stale total_score', async () => {
     tables.current = full({ total_score: 71, score_to_par: -1 });
     const r = await loadRoundReview('x', { role: 'player', playerId: 'p1' });
     expect(r.kind === 'ok' && [r.review.score, r.review.toPar]).toEqual([74, 2]);
   });
 
-  it('another player’s round is "not found", never confirmed', async () => {
+  it('110802 another player’s round is "not found", never confirmed', async () => {
     tables.current = full();
     expect(await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p2' })).toEqual({ kind: 'notFound' });
   });
 
-  it('a coach sees a round of a player on their team, with the player’s name; off the team is "not found"', async () => {
+  it('110802 a coach sees a round of a player on their team, with the player’s name; off the team is "not found"', async () => {
     tables.current = full();
     const ok = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'coach', teamId: 'team1' });
     expect(ok.kind === 'ok' && ok.review.playerName).toBe('Jonah Okafor');
     expect(await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'coach', teamId: 'team2' })).toEqual({ kind: 'notFound' });
   });
 
-  it('a failed membership check is an error, not a permission answer', async () => {
+  it('112301 110802 a failed membership check is an error, not a permission answer', async () => {
     tables.current = { ...full(), golf_team_members: { error: { message: 'down' } } };
     expect(await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'coach', teamId: 'team1' })).toEqual({ kind: 'error' });
     expect(logServer).toHaveBeenCalledWith('rounds.review', 'membership', expect.anything());
   });
 
-  it('a missing or test round is "not found"; a failed read is an error; a round still being played is in progress', async () => {
+  it('110802 a missing or test round is "not found"; a failed read is an error; a round still being played is in progress', async () => {
     tables.current = { ...full(), golf_rounds: { data: null } };
     expect((await loadRoundReview('x', { role: 'player', playerId: 'p1' })).kind).toBe('notFound');
     tables.current = full({ is_test: true });
@@ -293,7 +293,7 @@ describe('Round review loader', () => {
     expect((await loadRoundReview('x', { role: 'player', playerId: 'p1' })).kind).toBe('inProgress');
   });
 
-  it('failed hole or shot reads each flag only their part', async () => {
+  it('110619 failed hole or shot reads each flag only their part', async () => {
     tables.current = { ...full(), golf_shots: { error: { message: 'boom' } } };
     const a = await loadRoundReview('x', { role: 'player', playerId: 'p1' });
     expect(a.kind === 'ok' && [a.review.holes.length, a.review.shotsError, a.review.holesError]).toEqual([18, true, false]);
@@ -322,7 +322,7 @@ describe('Round review route', () => {
     expect(screen.getByRole('link', { name: 'Go to Stats' })).toBeTruthy();
   });
 
-  it('CH-11206 the round didn’t load: said so, and Try again asks the server again', async () => {
+  it('111402 CH-11206 the round didn’t load: said so, and Try again asks the server again', async () => {
     const user = userEvent.setup();
     session.current = { userId: 'u2', coach: null, player: { id: 'p1' } };
     teamOf.current = null;
@@ -333,14 +333,14 @@ describe('Round review route', () => {
     expect(router.refresh).toHaveBeenCalled();
   });
 
-  it('a round still being played goes to be continued, as on the legacy page', async () => {
+  it('110109 a round still being played goes to be continued, as on the legacy page', async () => {
     session.current = { userId: 'u2', coach: null, player: { id: 'p1' } };
     teamOf.current = null;
     tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'in_progress', is_test: false } } };
     await expect(ClubhouseRoundReviewRoute({ id: 'r-live' })).rejects.toThrow('NEXT_REDIRECT /golf/dashboard/rounds/continue/r-live');
   });
 
-  it('the review is rebuilt for both roles; the coach’s Rounds library is not', () => {
+  it('110801 110105 the review is rebuilt for both roles; the coach’s Rounds library is not', () => {
     const id = PREVIEW_REVIEW_ROUND.id;
     expect([isRebuilt(`/golf/dashboard/rounds/${id}`, 'coach'), isRebuilt(`/golf/dashboard/rounds/${id}`, 'player')]).toEqual([true, true]);
     expect([isRebuilt('/golf/dashboard/rounds', 'coach'), isRebuilt(`/golf/dashboard/rounds/${id}/review`, 'player'), isRebuilt('/golf/dashboard/rounds/new', 'player')]).toEqual([
