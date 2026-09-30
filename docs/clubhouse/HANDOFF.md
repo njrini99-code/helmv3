@@ -6,8 +6,11 @@ data gaps, verification log).
 
 ## Where everything is
 
-- **Branch:** `agent/clubhouse` in `~/worktrees/helmv3/clubhouse`. It is local
-  only. Nothing is pushed and there is no PR.
+- **Branch:** `agent/clubhouse` in `~/worktrees/helmv3/clubhouse`. Draft PR #2102
+  is open on `origin/agent/clubhouse`, but the local branch is far ahead of it
+  (78 commits on 2026-09-29): the merges and later work are not pushed.
+- **Design:** the owner's v2 coach and player design is in `design/handoff/`
+  (`VERSIONS.md`, D-63 to D-67).
 - **Merged in:** `agent/clubhouse-messages-mobile`,
   `agent/clubhouse-roster-mobile` and `agent/clubhouse-qualifiers`. Those three
   branches and their worktrees can be retired once this branch lands.
