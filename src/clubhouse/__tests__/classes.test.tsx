@@ -756,6 +756,18 @@ describe('Classes live writes', () => {
     expect(client.log.filter((c) => c.op === 'insert')).toHaveLength(1);
   });
 
+  it('CH-12307 a schedule that lists a class twice saves it once, and names the repeat as skipped', async () => {
+    const stat = PREVIEW_PARSED.filter((p) => p.course_code === 'STAT 201').map(toImportRow);
+    client.answers['golf_player_classes.select'] = { data: [] };
+    const w = live();
+    const twice = [...stat, ...stat].map((r) => ({ ...r, semester: 'Fall 2026' }));
+    const res = await w.importRows(twice);
+    expect(res).toMatchObject({ success: true, data: { skipped: ['STAT 201 - Probability and Statistics'] } });
+    const inserts = client.log.filter((c) => c.op === 'insert');
+    expect(inserts).toHaveLength(1);
+    expect((inserts[0]!.args![0] as unknown[]).length).toBe(stat.length);
+  });
+
   it('121404 CH-12001 a class is inserted under the id the page made, and a retry after a lost answer reaches that row instead of adding a second copy', async () => {
     client.answers['golf_player_classes.insert'] = { data: saved };
     expect(await live().save(input(), null, 'id-77')).toMatchObject({ success: true, data: { row: { id: 'new-1' } } });

@@ -61,7 +61,7 @@ The review's states: the card didn't load (CH-11204), the shots didn't load (CH-
 
 - The top bar is the tab root's: "Rounds", left-aligned, with no back link.
 - The page keeps its own header ("Your rounds" and New round), as the board draws it.
-- Below 640px the card and the season stack. The book drops the Out · In · Tot grid and the meters to a date tile, course and tee, and the to-par box. Group headers drop avg and low.
+- Below 860px of page width the card and the season stack. Below 640px the book drops the Out · In · Tot grid and the meters to a date tile, course and tee, and the to-par box. Group headers drop avg and low.
 - The tab bar stays. There are no sheets on the library; the discard question is a Modal, which is a bottom sheet on the phone.
 - The review's top bar is "Round", with "‹ Rounds" (or "‹ Stats" for a coach). The hero stacks, the score sits beside its to par, and the figures wrap to three columns. The card scrolls sideways inside its own frame, never the page.
 

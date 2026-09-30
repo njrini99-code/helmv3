@@ -167,8 +167,17 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       if (existing.error) return { success: false, error: `Couldn't check for classes you already have: ${existing.error.message}` };
       // A row saved before the term column was filled is in the current term (the page reads it so); every new row carries a term.
       const taken = new Set((existing.data ?? []).map((r) => importKey(r.class_name, r.semester?.trim() || ctx.term)));
-      const fresh = payloads.filter((p) => !taken.has(importKey(p.class_name, p.semester)));
-      const skipped = payloads.filter((p) => taken.has(importKey(p.class_name, p.semester))).map((p) => p.class_name);
+      // The batch checks itself too: a schedule that lists a class twice (a reader's repeat, a pasted table's duplicate row) saves it once.
+      const fresh: typeof payloads = [];
+      const skipped: string[] = [];
+      for (const p of payloads) {
+        const key = importKey(p.class_name, p.semester);
+        if (taken.has(key)) skipped.push(p.class_name);
+        else {
+          taken.add(key);
+          fresh.push(p);
+        }
+      }
       if (!fresh.length) return { success: true, data: { rows: [], skipped } };
       const { data, error } = await sb.from('golf_player_classes').insert(fresh).select(COLUMNS);
       if (error) return res<{ rows: ChClassRow[]; skipped: string[] }>(error);
