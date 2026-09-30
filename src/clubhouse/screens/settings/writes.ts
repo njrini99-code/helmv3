@@ -24,6 +24,12 @@ import type { ChResult, ChSettingsWrites } from './model';
  */
 
 const res = <T = unknown,>(error: { message?: string } | null | undefined): ChResult<T> => (error ? { success: false, error: error.message || 'failed' } : { success: true });
+/**
+ * An UPDATE whose row a policy hides does not fail: it comes back with no error and no row. `count: 'exact'` tells
+ * the two apart, so a refused save is a failure the person sees rather than a card that says "saved".
+ */
+const changed = <T = unknown,>(error: { message?: string } | null | undefined, count: number | null, what: string): ChResult<T> =>
+  error ? res<T>(error) : count === 0 ? { success: false, error: `Nothing was saved. ${what} was not found, or you are not allowed to change it.` } : { success: true };
 const num = (s: string) => (s.trim() === '' ? null : Number(s));
 
 export function createLiveWrites(ctx: {
@@ -40,11 +46,11 @@ export function createLiveWrites(ctx: {
     refresh: ctx.refresh,
 
     async saveProfile(p) {
-      const { error } =
+      const { error, count } =
         ctx.role === 'coach'
-          ? await sb.from('golf_coaches').update({ full_name: p.fullName.trim(), avatar_url: p.avatarUrl }).eq('user_id', ctx.userId)
-          : await sb.from('golf_players').update({ first_name: p.firstName.trim(), last_name: p.lastName.trim(), avatar_url: p.avatarUrl }).eq('user_id', ctx.userId);
-      return res(error);
+          ? await sb.from('golf_coaches').update({ full_name: p.fullName.trim(), avatar_url: p.avatarUrl }, { count: 'exact' }).eq('user_id', ctx.userId)
+          : await sb.from('golf_players').update({ first_name: p.firstName.trim(), last_name: p.lastName.trim(), avatar_url: p.avatarUrl }, { count: 'exact' }).eq('user_id', ctx.userId);
+      return changed(error, count, 'Your profile');
     },
 
     async uploadAvatar(file) {
@@ -114,32 +120,39 @@ export function createLiveWrites(ctx: {
       if (t.org) {
         // Blank clears the field (the current page couldn't clear one once set).
         const blank = (v: string) => (v.trim() === '' ? null : v.trim());
-        const { error } = await sb
+        const { error, count } = await sb
           .from('organizations')
-          .update({ name: t.org.name.trim(), location_city: blank(t.org.city), location_state: blank(t.org.state), division: blank(t.org.division), conference: blank(t.org.conference), updated_at: at })
+          .update(
+            { name: t.org.name.trim(), location_city: blank(t.org.city), location_state: blank(t.org.state), division: blank(t.org.division), conference: blank(t.org.conference), updated_at: at },
+            { count: 'exact' },
+          )
           .eq('id', t.org.id);
-        if (error) return res(error);
+        const school = changed(error, count, 'The school');
+        if (!school.success) return school;
       }
-      const { error } = await sb.from('golf_teams').update({ name: t.name.trim(), season: t.season.trim() || null, updated_at: at }).eq('id', t.id);
-      return res(error);
+      const { error, count } = await sb.from('golf_teams').update({ name: t.name.trim(), season: t.season.trim() || null, updated_at: at }, { count: 'exact' }).eq('id', t.id);
+      return changed(error, count, 'The team');
     },
 
     regenerateCode: () => regenerateJoinCode(ctx.teamId!),
 
     async saveGolf(d) {
-      const { error } = await sb
+      const { error, count } = await sb
         .from('golf_players')
-        .update({
-          handicap: num(d.handicap),
-          handicap_index: num(d.handicapIndex),
-          graduation_year: num(d.graduationYear),
-          hometown: d.hometown.trim() || null,
-          state: d.state.trim().toUpperCase() || null,
-          phone: d.phone.trim() || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(
+          {
+            handicap: num(d.handicap),
+            handicap_index: num(d.handicapIndex),
+            graduation_year: num(d.graduationYear),
+            hometown: d.hometown.trim() || null,
+            state: d.state.trim().toUpperCase() || null,
+            phone: d.phone.trim() || null,
+            updated_at: new Date().toISOString(),
+          },
+          { count: 'exact' },
+        )
         .eq('id', ctx.playerId!);
-      return res(error);
+      return changed(error, count, 'Your golf profile');
     },
 
     async leaveTeam() {
@@ -174,8 +187,9 @@ export function createLiveWrites(ctx: {
     async savePhilosophy(id, patch) {
       const cols = tsToDb(patch);
       if (id) {
-        const { error } = await fromUntyped(sb, 'golf_coach_philosophy').update(cols).eq('id', id);
-        if (error) return res(error);
+        const { error, count } = await fromUntyped(sb, 'golf_coach_philosophy').update(cols, { count: 'exact' }).eq('id', id);
+        const done = changed<{ id: string }>(error, count, 'Your coaching settings');
+        if (!done.success) return done;
         await revalidateCoachingPhilosophyPaths();
         return { success: true, data: { id } };
       }

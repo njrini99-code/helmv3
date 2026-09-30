@@ -814,6 +814,72 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20408,
+    "page": "P002",
+    "category": 4,
+    "item": 8,
+    "name": "A_TEAM_WITH_NOTHING_YET_NO_PLAYERS",
+    "chCode": "CH-2308",
+    "meaning": "A team with nothing yet: no players, no events this week, no rounds, and every read answered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20409,
+    "page": "P002",
+    "category": 4,
+    "item": 9,
+    "name": "NOTHING_ON_THE_CALENDAR_AHEAD",
+    "chCode": "CH-2309",
+    "meaning": "Nothing on the calendar ahead (phone). A player: \"Your coach's practices and events will show here with a countdown.\", no quick adds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20410,
+    "page": "P002",
+    "category": 4,
+    "item": 10,
+    "name": "FEWER_THAN_TWO_18_HOLE_ROUNDS",
+    "chCode": "CH-2310",
+    "meaning": "Fewer than two 18-hole rounds (player Home Scoring)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20411,
+    "page": "P002",
+    "category": 4,
+    "item": 11,
+    "name": "NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED",
+    "chCode": "CH-2311",
+    "meaning": "No fairways, greens, scrambling or putts logged (player Home)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20412,
+    "page": "P002",
+    "category": 4,
+    "item": 12,
+    "name": "A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON",
+    "chCode": "CH-2312",
+    "meaning": "A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20413,
+    "page": "P002",
+    "category": 4,
+    "item": 13,
+    "name": "A_PLAYER_ON_NO_ACTIVE_TEAM",
+    "chCode": "CH-2313",
+    "meaning": "A player on no active team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 20601,
     "page": "P002",
     "category": 6,
@@ -920,6 +986,83 @@
     "name": "THE_TEAMS_TIMEZONE_DOESNT_LOAD",
     "chCode": "CH-2210",
     "meaning": "The team's timezone doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20611,
+    "page": "P002",
+    "category": 6,
+    "item": 11,
+    "name": "THE_TEAMS_FORM_DOESNT_LOAD",
+    "chCode": "CH-2211",
+    "meaning": "The team's form doesn't load (phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20612,
+    "page": "P002",
+    "category": 6,
+    "item": 12,
+    "name": "THE_TEAMS_FORM_CRASHES_WHILE_DRAWING",
+    "chCode": "CH-2212",
+    "meaning": "The team's form crashes while drawing (phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20613,
+    "page": "P002",
+    "category": 6,
+    "item": 13,
+    "name": "UP_NEXT_CRASHES_WHILE_DRAWING",
+    "chCode": "CH-2213",
+    "meaning": "Up next crashes while drawing (phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20614,
+    "page": "P002",
+    "category": 6,
+    "item": 14,
+    "name": "TODAY_CRASHES_WHILE_DRAWING",
+    "chCode": "CH-2214",
+    "meaning": "Today crashes while drawing (phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20615,
+    "page": "P002",
+    "category": 6,
+    "item": 15,
+    "name": "A_PLAYERS_OWN_ROUNDS_DONT_LOAD",
+    "chCode": "CH-2215",
+    "meaning": "A player's own rounds don't load (player Home)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20616,
+    "page": "P002",
+    "category": 6,
+    "item": 16,
+    "name": "SCRAMBLING_AND_THREE_PUTTS_DONT_LOAD",
+    "chCode": "CH-2216",
+    "meaning": "Scrambling and three-putts don't load (player Home)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20617,
+    "page": "P002",
+    "category": 6,
+    "item": 17,
+    "name": "THE_PLAYERS_SCORING_OR_PARTS_OF_THE",
+    "chCode": "CH-2217",
+    "meaning": "The player's scoring or parts of the game crash while drawing",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1045,6 +1188,32 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 30101,
+    "page": "P003",
+    "category": 1,
+    "item": 1,
+    "name": "ROSTER_READY",
+    "meaning": "Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30102,
+    "page": "P003",
+    "category": 1,
+    "item": 2,
+    "name": "DEEP_LINK_OPENS_PROFILE",
+    "meaning": "On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
     "id": 30201,
     "page": "P003",
     "category": 2,
@@ -1076,6 +1245,19 @@
     "meaning": "Approve all is in flight (phone join requests sheet, D-55)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30303,
+    "page": "P003",
+    "category": 3,
+    "item": 3,
+    "name": "ROSTER_FOLLOWS_A_REFRESH",
+    "meaning": "When the server sends the page again (Try again, or the page a write revalidated), the players and join requests on screen become the new ones: an approved player appears, and a read that failed and now succeeds shows the players, never No players yet.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#Roster; src/clubhouse/screens/roster/useJoinRequests.ts#useJoinRequests",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
   },
   {
     "id": 30401,
@@ -1133,6 +1315,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30406,
+    "page": "P003",
+    "category": 4,
+    "item": 6,
+    "name": "A_COACH_SIGNED_IN_WITH_NO_ACTIVE",
+    "chCode": "CH-3306",
+    "meaning": "A coach signed in with no active team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30501,
     "page": "P003",
     "category": 5,
@@ -1142,6 +1335,19 @@
     "meaning": "A coach's note is within 200 characters of its 2,000 limit",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30502,
+    "page": "P003",
+    "category": 5,
+    "item": 2,
+    "name": "EXPORT_CELLS_ARE_TEXT",
+    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#exportCsv, asText",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
   },
   {
     "id": 30601,
@@ -1320,6 +1526,71 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30701,
+    "page": "P003",
+    "category": 7,
+    "item": 1,
+    "name": "WRITES_REFUSED_OFFLINE",
+    "meaning": "Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction, used by Roster.tsx#remove, useJoinRequests.ts, RosterPeek.tsx#CoachNote",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30801,
+    "page": "P003",
+    "category": 8,
+    "item": 1,
+    "name": "COACH_ONLY_ROSTER",
+    "meaning": "Only a coach gets the Clubhouse roster: the page hands it over for a coach with the flag on, the route checks the coach again before any read, and a player on this address gets the shell's not-rebuilt notice, never the list, the notes or the join requests.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/roster/page.tsx#GolfRosterPage; src/clubhouse/routes/roster.tsx#ClubhouseRosterRoute",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30802,
+    "page": "P003",
+    "category": 8,
+    "item": 2,
+    "name": "NOTES_PRIVATE_TO_THE_COACH",
+    "meaning": "The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/roster.ts#loadRoster, loadNotes",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30803,
+    "page": "P003",
+    "category": 8,
+    "item": 3,
+    "name": "REFUSED_CHANGE_SHOWN_AND_UNDONE",
+    "meaning": "When the server refuses a removal, an approval, a decline or a note (not on your team, already processed, a saved round in progress, not authorized), its sentence is shown in the error toast and the screen goes back: the player stays and the dialog stays open, the request returns to its place, and the text stays in the field.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#remove; useJoinRequests.ts#decideOne; RosterPeek.tsx#CoachNote",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30901,
+    "page": "P003",
+    "category": 9,
+    "item": 1,
+    "name": "CHANGE_LANDED",
+    "meaning": "A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; Roster.tsx#remove",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
     "id": 31101,
     "page": "P003",
     "category": 11,
@@ -1329,6 +1600,97 @@
     "meaning": "Remove from team (row menu; on the phone, the profile's ⋯ sheet)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31201,
+    "page": "P003",
+    "category": 12,
+    "item": 1,
+    "name": "NOTE_KEPT_ON_FAILURE",
+    "meaning": "A note that fails to save stays in the field, and the toast says so; leaving the field again or the toast's Retry saves it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/RosterPeek.tsx#CoachNote",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 31202,
+    "page": "P003",
+    "category": 12,
+    "item": 2,
+    "name": "LAYOUT_REMEMBERED",
+    "meaning": "The cards or list choice is stored on the device (ch-roster-view) and applied when Roster opens; a device that refuses storage still switches for the visit. Search, filter and sort are not kept.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#changeView",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 31203,
+    "page": "P003",
+    "category": 12,
+    "item": 3,
+    "name": "SAVED_NOTE_READS_BACK",
+    "meaning": "A saved note is written into the roster the screen holds, so closing a player and opening them again, on desktop or the phone, shows the new text; an emptied note reads back empty.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#noteSaved; RosterPeek.tsx#CoachNote",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 31301,
+    "page": "P003",
+    "category": 13,
+    "item": 1,
+    "name": "REQUEST_DECISIONS_OPTIMISTIC",
+    "meaning": "Approve and Decline take the request off the list at once and put it back in its place if the server refuses or throws, and while one decision is in flight every other Approve and Decline waits; Remove is not optimistic, it waits with the dialog open and the button reading Removing.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/useJoinRequests.ts#decideOne",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 31401,
+    "page": "P003",
+    "category": 14,
+    "item": 1,
+    "name": "APPROVE_ALL_RETRIES_ONLY_FAILURES",
+    "meaning": "Approve all goes one request at a time; those that landed leave the list, and the toast's Retry re-runs only the ones that failed, never approving anyone twice.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/useJoinRequests.ts#approveEach",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 31402,
+    "page": "P003",
+    "category": 14,
+    "item": 2,
+    "name": "TRY_AGAIN_REFRESHES_THE_PAGE",
+    "meaning": "Try again on the roster, season stats, join requests or join code notice asks the server for the whole page again (router.refresh), not one section alone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#Roster (onRetry); RosterPhone.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 31403,
+    "page": "P003",
+    "category": 14,
+    "item": 3,
+    "name": "TOAST_RETRY_FINISHES_THE_JOB",
+    "meaning": "The Retry on a failed-change toast completes the change on screen as well as on the server: a retried removal removes the player and closes the dialog, a retried approval or decline keeps the request off the list, and a retried note save marks the note saved.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#remove; useJoinRequests.ts#decideOne; RosterPeek.tsx#CoachNote",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
   },
   {
     "id": 31601,
@@ -1384,6 +1746,19 @@
     "meaning": "The code or link is copied",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31704,
+    "page": "P003",
+    "category": 17,
+    "item": 4,
+    "name": "REMOVE_PLAYER_WARNS",
+    "meaning": "Pressing Remove player in the confirm fires the warning haptic (D-70), then the success pattern when the removal lands or the error pattern when it fails; Cancel is silent.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/Roster.tsx#dialogs",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
   },
   {
     "id": 31801,
@@ -1450,6 +1825,71 @@
     "meaning": "Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31901,
+    "page": "P003",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_LIST_AND_PROFILE",
+    "meaning": "At 820px and below Roster is the phone screen: a top bar with the back link to More and Invite players, the join requests banner, the sorted list, and each player as a pushed profile that is a history entry, so the edge swipe and Back return to the list.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/RosterPhone.tsx#RosterPhone",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 32001,
+    "page": "P003",
+    "category": 20,
+    "item": 1,
+    "name": "NOTE_SAVES_ON_LEAVING_THE_FIELD",
+    "meaning": "The coach's note saves when the field loses focus, only if its trimmed text changed, and an emptied note saves as no note.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/RosterPeek.tsx#CoachNote",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 32101,
+    "page": "P003",
+    "category": 21,
+    "item": 1,
+    "name": "LOADER_NEVER_THROWS",
+    "meaning": "loadRoster reads the team, the members and the join requests in one parallel round, then rounds, focus areas, goals and this coach's notes in a second (it needs the member ids); every failed read is logged through chLogServer and flagged, never thrown, and a failed read is never shown as empty.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/roster.ts#loadRoster",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 32301,
+    "page": "P003",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "A failed change is reported through chReport with surface roster and its action name (roster.removePlayer, roster.approveRequest, roster.declineRequest, roster.approveAll, roster.coachNote), a crash with its section surface (roster.requests, roster.list, roster.peek), and a failed server read through chLogServer('roster', ...); each intent leaves a chTrail breadcrumb.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; SectionBoundary; data/roster.ts",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 32401,
+    "page": "P003",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "src/clubhouse/__tests__/roster.test.tsx names, in a test title, every Roster catalog code of kinds 0 to 5 that is not marked preview, and each hand contract above.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/roster.test.tsx (32401)",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
   },
   {
     "id": 40201,
@@ -1760,6 +2200,17 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 41703,
+    "page": "P004",
+    "category": 17,
+    "item": 3,
+    "name": "SORTING_THE_PHONES_PLAYERS_BY_AVG_OR",
+    "chCode": "CH-4703",
+    "meaning": "Sorting the phone's players by Avg or SG",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 41801,
     "page": "P004",
     "category": 18,
@@ -1801,6 +2252,17 @@
     "chCode": "CH-4804",
     "meaning": "No axe violations in any preview state, 1280px and 390px",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 41805,
+    "page": "P004",
+    "category": 18,
+    "item": 5,
+    "name": "THE_PHONES_SCORING_LINE_IS_AN_IMAGE",
+    "chCode": "CH-4805",
+    "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…\"); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -1991,6 +2453,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50610,
+    "page": "P005",
+    "category": 6,
+    "item": 10,
+    "name": "SHARING_A_PLAYERS_STATS_FROM_THE_PHONE",
+    "chCode": "CH-5002",
+    "meaning": "Sharing a player's stats from the phone fails (the browser blocks the clipboard)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50801,
     "page": "P005",
     "category": 8,
@@ -2120,6 +2593,17 @@
     "chCode": "CH-5806",
     "meaning": "On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 51807,
+    "page": "P005",
+    "category": 18,
+    "item": 7,
+    "name": "ON_THE_PHONE_ALL_N_ROUNDS_IS",
+    "chCode": "CH-5807",
+    "meaning": "On the phone, \"All N rounds\" is a button that says whether the full list is open; Game detail's section chips say which one is showing",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -2262,6 +2746,17 @@
     "name": "SIGNED_IN_WITH_NO_TEAM",
     "chCode": "CH-6307",
     "meaning": "Signed in with no team (coach or player)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60408,
+    "page": "P006",
+    "category": 4,
+    "item": 8,
+    "name": "A_DAY_WITH_NOTHING_ON_IT",
+    "chCode": "CH-6308",
+    "meaning": "A day with nothing on it (phone Day view)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -3367,7 +3862,7 @@
     "item": 1,
     "name": "A_LINK_OPENS_A_PLAYER_WHO_ISNT",
     "chCode": "CH-7001",
-    "meaning": "A link opens a player who isn't on the team",
+    "meaning": "A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -3728,6 +4223,34 @@
     ]
   },
   {
+    "id": 80101,
+    "page": "P008",
+    "category": 1,
+    "item": 1,
+    "name": "SETTINGS_READY",
+    "meaning": "Settings is open: a header naming the role, team and email, the rail of the sections this role has, and the opened section (Account by default) with its cards; the page needs no team.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/settings.tsx#ClubhouseSettingsRoute; src/clubhouse/screens/settings/SettingsView.tsx#SettingsView",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx",
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80102,
+    "page": "P008",
+    "category": 1,
+    "item": 2,
+    "name": "DEEP_LINK_OPENS_SECTION",
+    "meaning": "?section=<id> opens that section, /golf/dashboard/settings/notifications opens Notifications and /golf/dashboard/settings/coaching-intelligence opens CoachHelm for a coach or Account for a player; choosing a section in the rail writes ?section= into the address.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/settings/page.tsx; settings/notifications/page.tsx; settings/coaching-intelligence/layout.tsx; src/clubhouse/screens/settings/SettingsView.tsx#show",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx",
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
     "id": 80201,
     "page": "P008",
     "category": 2,
@@ -3814,6 +4337,19 @@
     "meaning": "No profile photo",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80405,
+    "page": "P008",
+    "category": 4,
+    "item": 5,
+    "name": "SETTINGS_OPEN_WITHOUT_A_TEAM",
+    "meaning": "A coach or player with no team still gets Settings, never a no-team page: Account, Notifications and Preferences work, a coach's Team section says why it is empty (CH-8301) and a player's Golf profile offers Join a team (CH-8302).",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/settings.tsx#ClubhouseSettingsRoute (teamId null)",
+    "tests": [
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
   },
   {
     "id": 80501,
@@ -4377,6 +4913,165 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 80701,
+    "page": "P008",
+    "category": 7,
+    "item": 1,
+    "name": "INSTANT_SAVE_REFUSED_OFFLINE",
+    "meaning": "While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/parts.tsx#useInstantSave; src/clubhouse/screens/settings/CoachHelm.tsx#usePhilosophy",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 80801,
+    "page": "P008",
+    "category": 8,
+    "item": 1,
+    "name": "SECTIONS_BY_ROLE",
+    "meaning": "The rail lists only the sections the role has (coach: Account, Notifications, Team, CoachHelm, Preferences; player: Account, Golf profile, Notifications, Preferences), and a link naming a section the role does not have opens Account.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/model.ts#SECTIONS, parseSection",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx",
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80802,
+    "page": "P008",
+    "category": 8,
+    "item": 2,
+    "name": "COACHING_LINK_BY_ROLE",
+    "meaning": "The old /settings/coaching-intelligence link opens the CoachHelm section for a coach; a player lands on their own Settings (Account) instead of a coach-only page.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/layout.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80803,
+    "page": "P008",
+    "category": 8,
+    "item": 3,
+    "name": "NO_PROFILE_NO_PAGE",
+    "meaning": "The Settings route renders nothing, and reads nothing, for a session that has neither a coach nor a player profile, and the old notifications and coaching links send a signed-out visitor to /golf/login.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/settings.tsx#ClubhouseSettingsRoute; settings/notifications/page.tsx; settings/coaching-intelligence/layout.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80804,
+    "page": "P008",
+    "category": 8,
+    "item": 4,
+    "name": "TEAM_COACHHELM_HEAD_COACH_ONLY",
+    "meaning": "The switch that turns CoachHelm off for the whole team can be changed only by the team's head coach: an assistant sees it disabled with 'Only the head coach can change this.', the loader never creates the team row for an assistant, and the server action refuses too. When the check itself fails the loader does not guess: it logs the failure and leaves the switch out, so a head coach is never told they may not change it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/CoachHelm.tsx#PowerCard; src/clubhouse/data/settings.ts#loadCoachHelm; src/app/golf/actions/insights.ts#updateTeamCoachHelmSettings",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx",
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80805,
+    "page": "P008",
+    "category": 8,
+    "item": 5,
+    "name": "TEAM_CARDS_FOR_EVERY_STAFF_COACH",
+    "meaning": "Team details, the invite code, scoring and event reminders are shown to every coach on the team, assistants included; the screen does not tell head and assistant coaches apart there, so a save the database refuses arrives as that card's own failure toast (80808).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/Team.tsx#TeamSection",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 80806,
+    "page": "P008",
+    "category": 8,
+    "item": 6,
+    "name": "WRITES_SCOPED_TO_THE_CALLER",
+    "meaning": "Every write is scoped to the signed-in person: profile rows by their own user id, golf details by their own player id, leaving by their own membership of their team, and join requests, invite codes and the team CoachHelm switch by their own player or team id, which the server actions and row policies check again.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/writes.ts#createLiveWrites",
+    "tests": [
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80807,
+    "page": "P008",
+    "category": 8,
+    "item": 7,
+    "name": "PASSWORD_NEEDS_THE_CURRENT_ONE",
+    "meaning": "A new password is set only after the current password signs in; a wrong current password changes nothing and says 'Your current password is incorrect.'",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/writes.ts#changePassword",
+    "tests": [
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80808,
+    "page": "P008",
+    "category": 8,
+    "item": 8,
+    "name": "REFUSED_UPDATE_IS_A_FAILURE",
+    "meaning": "An update the database refuses by hiding the row (no error, no row changed) is a failure the person sees, not a save: profile, team details (the school, then the team), golf details and the coaching settings count the rows they change and fail with 'Nothing was saved. <what> was not found, or you are not allowed to change it.', which the toast shows as 'Your account doesn’t have access to do this.'; the card stays unsaved with its edits. Leaving a team already did this.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/writes.ts#changed",
+    "tests": [
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 80901,
+    "page": "P008",
+    "category": 9,
+    "item": 1,
+    "name": "CHANGE_LANDED",
+    "meaning": "A save that lands (profile, team details, scoring, reminders, golf details, email confirmation sent, password updated, new invite code, left the team, join request sent or cancelled) fires the success haptic and shows a toast naming what landed; a card with a Save button also says Saved for about two seconds.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/settings/parts.tsx#SaveBar, useSaveAction",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 80902,
+    "page": "P008",
+    "category": 9,
+    "item": 2,
+    "name": "INSTANT_SAVE_SILENT",
+    "meaning": "A switch, segment, slider or CoachHelm autosave that lands says nothing: no toast and no success haptic, because its selection tick was the feedback (D-70); the CoachHelm status line reads All changes saved.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/parts.tsx#useInstantSave; src/clubhouse/screens/settings/CoachHelm.tsx#usePhilosophy",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 80903,
+    "page": "P008",
+    "category": 9,
+    "item": 3,
+    "name": "ACCOUNT_DELETE_LANDED",
+    "meaning": "Once the account is deleted a toast says so and the success haptic fires, then this device's caches, active team and session are cleared and the person is sent to the sign-in page in the app or the home page on the web.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/Account.tsx#SessionCard; src/clubhouse/screens/settings/writes.ts#cleanupAfterDelete, afterDeleteHref",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx",
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
     "id": 81001,
     "page": "P008",
     "category": 10,
@@ -4386,6 +5081,32 @@
     "meaning": "Report a problem can't open the in-app form (info, not an error)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 81002,
+    "page": "P008",
+    "category": 10,
+    "item": 2,
+    "name": "PUSH_BLOCKED_IN_BROWSER",
+    "meaning": "When the browser blocks notifications for GolfHelm the Push on this device switch is disabled and its row says how to allow them; when push is not supported the row is not shown.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/Notifications.tsx#DeliveryCard",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 81003,
+    "page": "P008",
+    "category": 10,
+    "item": 3,
+    "name": "QUIET_MODE_PAUSES_UPDATES",
+    "meaning": "With quiet mode on, every update except messages reads Paused by quiet mode and its switches are disabled; the CoachHelm updates card marks round reviews and goals from the coach Always delivered.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/Notifications.tsx#DeliveryCard, RoutingCard",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
   },
   {
     "id": 81101,
@@ -4476,6 +5197,45 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 81204,
+    "page": "P008",
+    "category": 12,
+    "item": 4,
+    "name": "SAVED_VALUES_KEPT_ACROSS_SECTIONS",
+    "meaning": "A value saved in a section is still there when the person leaves the section and comes back: the page keeps a copy of its data with each landed write applied, a fresh server read replaces that copy, and an unsaved draft is never kept.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/live.ts#keepSaved; src/clubhouse/screens/settings/SettingsView.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 81205,
+    "page": "P008",
+    "category": 12,
+    "item": 5,
+    "name": "FAILED_SAVE_KEEPS_EDITS",
+    "meaning": "A card save that fails keeps what the person typed: the card stays unsaved with Save enabled, and the toast's Retry sends the same values again; if the person kept typing before a Retry landed, the newer typing stays as an unsaved edit and is not overwritten.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/parts.tsx#useSaveAction, useDraft",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 81206,
+    "page": "P008",
+    "category": 12,
+    "item": 6,
+    "name": "WAITING_SLIDER_SAVED_ON_LEAVING",
+    "meaning": "A CoachHelm slider moved less than 600 ms before the person leaves the section is saved when they leave, not dropped.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/CoachHelm.tsx#usePhilosophy",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
     "id": 81301,
     "page": "P008",
     "category": 13,
@@ -4485,6 +5245,58 @@
     "meaning": "A switch is saving",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 81302,
+    "page": "P008",
+    "category": 13,
+    "item": 2,
+    "name": "OPTIMISTIC_ROLLBACK",
+    "meaning": "A switch, segment, slider or CoachHelm setting that saves on change shows its new value at once; when the save fails it goes back to the value it had, alone (a control changed meanwhile keeps its position), with an error toast and the error haptic.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/parts.tsx#useInstantSave; src/clubhouse/screens/settings/CoachHelm.tsx#PowerCard, usePhilosophy",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 81401,
+    "page": "P008",
+    "category": 14,
+    "item": 1,
+    "name": "TRY_AGAIN_READS_THE_PAGE",
+    "meaning": "Try again on a section that did not load reads the whole page again on the server (router.refresh); the fresh read replaces the page's copy, so the notice becomes the card, and the open section and any unsaved edits in other cards stay; it does not re-read only that section.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/parts.tsx#ReadFailed; src/clubhouse/screens/settings/Settings.tsx#refresh",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 81402,
+    "page": "P008",
+    "category": 14,
+    "item": 2,
+    "name": "RETRY_FINISHES_THE_SAVE",
+    "meaning": "Retry on a failed save's toast finishes it the way its button would: a form card is clean and the page refreshes, a new invite code shows, a dialog closes, and a switch flips again and sends the same value.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/parts.tsx#useSaveAction, useInstantSave",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 81501,
+    "page": "P008",
+    "category": 15,
+    "item": 1,
+    "name": "SERVER_VIEW_REFRESHED_AFTER_SAVE",
+    "meaning": "A save that changes what the server renders (profile, team details, leaving a team, asking to join) asks for a fresh server read (router.refresh) after it lands, and a failed save does not.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/Account.tsx#ProfileCard; Team.tsx#TeamCard; Golf.tsx#MembershipCard; Settings.tsx#refresh",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
   },
   {
     "id": 81601,
@@ -4652,6 +5464,19 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 81708,
+    "page": "P008",
+    "category": 17,
+    "item": 8,
+    "name": "DISCARD_WARNS",
+    "meaning": "Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/parts.tsx#SaveBar, useUnsavedGuard; src/clubhouse/screens/settings/SettingsView.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
     "id": 81801,
     "page": "P008",
     "category": 18,
@@ -4729,6 +5554,68 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 81901,
+    "page": "P008",
+    "category": 19,
+    "item": 1,
+    "name": "PHONE_LAYOUT",
+    "meaning": "At a canvas of 860px or less the rail becomes a scrolling strip above the section, and at 560px or less form grids stack and the notification switches keep 48px columns; the native phone design (a grouped list that pushes to each section, docs/clubhouse/phone/settings.md) is a draft awaiting the owner and is not built.",
+    "status": "reserved",
+    "where": "src/clubhouse/styles/settings.css (@container 860px, 560px)"
+  },
+  {
+    "id": 82001,
+    "page": "P008",
+    "category": 20,
+    "item": 1,
+    "name": "ENTER_SUBMITS_TWO_FORMS",
+    "meaning": "Enter in the New email field sends the confirmation and Enter in the invite code field asks to join; every other card saves only with its Save button.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/settings/Account.tsx#EmailCard; src/clubhouse/screens/settings/Golf.tsx#MembershipCard",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 82101,
+    "page": "P008",
+    "category": 21,
+    "item": 1,
+    "name": "LOADER_NEVER_FAILS_THE_PAGE",
+    "meaning": "The server loader reads everything the page shows before first paint, in parallel batches; a read that returns an error or throws becomes that section's failed flag and a chLogServer line, and never fails the page.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/settings.ts#loadSettings",
+    "tests": [
+      "src/clubhouse/__tests__/settings-server.test.tsx"
+    ]
+  },
+  {
+    "id": 82301,
+    "page": "P008",
+    "category": 23,
+    "item": 1,
+    "name": "FAILURES_REPORTED",
+    "meaning": "Every client failure is reported through chReport with surface settings (form saves, by action name), settings.notifications, settings.routing or settings.coachhelm (switches and autosave), settings.profile, settings.invite or settings.session (cards) or settings.<section> (a crash, high severity); server reads log through chLogServer('settings', read, error, area); each intent leaves a chTrail breadcrumb.",
+    "status": "implemented",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/settings/parts.tsx#useInstantSave; src/clubhouse/data/settings.ts#log",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
+    "id": 82401,
+    "page": "P008",
+    "category": 24,
+    "item": 1,
+    "name": "TESTS_NAME_CONTRACTS",
+    "meaning": "settings.test.tsx and settings-server.test.tsx name every catalog code of kinds 0 to 5 they force, and every hand contract they prove by its Bridge ID in a test title; the settings model checks are in logic.test.ts.",
+    "status": "implemented",
+    "where": "src/clubhouse/__tests__/settings.test.tsx; settings-server.test.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/settings.test.tsx"
+    ]
+  },
+  {
     "id": 90201,
     "page": "P009",
     "category": 2,
@@ -4769,6 +5656,17 @@
     "name": "COURSES_OR_TEES_ARE_LOADING_IN_THE",
     "chCode": "CH-09407",
     "meaning": "Courses or tees are loading in the picker",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90205,
+    "page": "P009",
+    "category": 2,
+    "item": 5,
+    "name": "A_SELECTION_WRITE_IS_IN_FLIGHT",
+    "chCode": "CH-09408",
+    "meaning": "A selection write is in flight",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -4916,6 +5814,28 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90411,
+    "page": "P009",
+    "category": 4,
+    "item": 11,
+    "name": "NOBODY_CAN_BE_A_COACHS_PICK",
+    "chCode": "CH-09315",
+    "meaning": "Nobody can be a coach's pick",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90412,
+    "page": "P009",
+    "category": 4,
+    "item": 12,
+    "name": "NO_PLACE_ON_SCORE_IS_FILLED",
+    "chCode": "CH-09316",
+    "meaning": "No place on score is filled",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90501,
     "page": "P009",
     "category": 5,
@@ -5022,6 +5942,28 @@
     "name": "ANY_OF_THE_ABOVE_ON_SUBMIT",
     "chCode": "CH-09110",
     "meaning": "Any of the above on submit",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90511,
+    "page": "P009",
+    "category": 5,
+    "item": 11,
+    "name": "A_COACHS_PICK_WITH_NO_REASON",
+    "chCode": "CH-09111",
+    "meaning": "A coach's pick with no reason",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90512,
+    "page": "P009",
+    "category": 5,
+    "item": 12,
+    "name": "SAVE_PICK_WITH_NO_PLAYER_CHOSEN",
+    "chCode": "CH-09112",
+    "meaning": "Save pick with no player chosen",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -5268,6 +6210,83 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90623,
+    "page": "P009",
+    "category": 6,
+    "item": 23,
+    "name": "START_SELECTING_FAILS",
+    "chCode": "CH-09005",
+    "meaning": "Start selecting fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90624,
+    "page": "P009",
+    "category": 6,
+    "item": 24,
+    "name": "SAVING_A_COACHS_PICK_FAILS",
+    "chCode": "CH-09006",
+    "meaning": "Saving a coach's pick fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90625,
+    "page": "P009",
+    "category": 6,
+    "item": 25,
+    "name": "REMOVING_A_COACHS_PICK_FAILS",
+    "chCode": "CH-09007",
+    "meaning": "Removing a coach's pick fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90626,
+    "page": "P009",
+    "category": 6,
+    "item": 26,
+    "name": "CONFIRMING_THE_SQUAD_FAILS",
+    "chCode": "CH-09008",
+    "meaning": "Confirming the squad fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90627,
+    "page": "P009",
+    "category": 6,
+    "item": 27,
+    "name": "MANAGE_SELECTIONS_DOESNT_LOAD",
+    "chCode": "CH-09218",
+    "meaning": "Manage selections doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90628,
+    "page": "P009",
+    "category": 6,
+    "item": 28,
+    "name": "MANAGE_SELECTIONS_CRASHES",
+    "chCode": "CH-09219",
+    "meaning": "Manage selections crashes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90701,
+    "page": "P009",
+    "category": 7,
+    "item": 1,
+    "name": "THE_SQUAD_IS_CONFIRMED",
+    "chCode": "CH-09903",
+    "meaning": "The squad is confirmed (Manage selections)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90801,
     "page": "P009",
     "category": 8,
@@ -5285,7 +6304,7 @@
     "item": 2,
     "name": "A_PLAYER_OPENS_NEW_OR_EDIT",
     "chCode": "CH-09311",
-    "meaning": "A player opens /new or /edit",
+    "meaning": "A player opens /new, /edit or /selection",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -5308,6 +6327,39 @@
     "name": "CLOSE_QUALIFIER",
     "chCode": "CH-09501",
     "meaning": "Close qualifier",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 91102,
+    "page": "P009",
+    "category": 11,
+    "item": 2,
+    "name": "START_SELECTING",
+    "chCode": "CH-09503",
+    "meaning": "Start selecting",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 91103,
+    "page": "P009",
+    "category": 11,
+    "item": 3,
+    "name": "REMOVE_A_COACHS_PICK",
+    "chCode": "CH-09504",
+    "meaning": "Remove a coach's pick",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 91104,
+    "page": "P009",
+    "category": 11,
+    "item": 4,
+    "name": "CONFIRM_THE_SQUAD",
+    "chCode": "CH-09505",
+    "meaning": "Confirm the squad",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -5351,7 +6403,7 @@
     "item": 1,
     "name": "A_STATUS_PILL_A_LEADERBOARD_ROW_A",
     "chCode": "CH-09701",
-    "meaning": "A status pill, a leaderboard row, a player checkbox, a course or a tee",
+    "meaning": "A status pill, a leaderboard row, a player checkbox, a course, a tee, or a player in the pick dialog",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -5363,6 +6415,17 @@
     "name": "CLOSE_QUALIFIER_DISCARD",
     "chCode": "CH-09702",
     "meaning": "Close qualifier, Discard",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 91703,
+    "page": "P009",
+    "category": 17,
+    "item": 3,
+    "name": "START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK",
+    "chCode": "CH-09703",
+    "meaning": "Start selecting, Confirm squad, Remove a pick",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },

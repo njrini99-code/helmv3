@@ -5,9 +5,8 @@ import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { useAction } from '../../lib/use-action';
 import { golfDetailsProblem, type ChGolfDetails, type ChSettingsData, type ChSettingsWrites } from './model';
-import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty } from './parts';
+import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function GolfSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   return (
@@ -21,7 +20,7 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
 function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSettingsWrites }) {
   const f = useDraft(details);
   useReportDirty('golf', f.dirty);
-  const save = useAction('settings.saveGolf', writes.saveGolf, { done: 'Golf details saved', failed: "Couldn't save your golf details", code: 'CH-8016' });
+  const save = useSaveAction('settings.saveGolf', writes.saveGolf, { done: 'Golf details saved', failed: "Couldn't save your golf details", code: 'CH-8016' }, (_r, saved) => f.commit(saved));
   const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => f.setDraft((d) => ({ ...d, [k]: e.target.value }));
   return (
     <Card
@@ -35,10 +34,7 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
           invalid={golfDetailsProblem(f.draft)}
           savedAt={f.savedAt}
           onReset={f.reset}
-          onSave={async () => {
-            const r = await save.run(f.draft);
-            if (r.success) f.commit();
-          }}
+          onSave={() => void save.run(f.draft)}
         />
       }
     >
@@ -62,9 +58,18 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
   const [note, setNote] = useState('');
   const [leaving, setLeaving] = useState(false);
   useReportDirty('join', code.trim() !== '');
-  const leave = useAction('settings.leaveTeam', writes.leaveTeam, { done: 'You left the team', failed: "Couldn't leave the team", code: 'CH-8017' });
-  const join = useAction('settings.requestJoin', writes.requestJoin, { done: 'Request sent to the coaches', failed: "Couldn't send your request", hint: 'Check the code with your coach.', code: 'CH-8018' });
-  const cancel = useAction('settings.cancelRequest', writes.cancelRequest, { done: 'Request cancelled', failed: "Couldn't cancel the request", code: 'CH-8019' });
+  const leave = useSaveAction('settings.leaveTeam', writes.leaveTeam, { done: 'You left the team', failed: "Couldn't leave the team", code: 'CH-8017' }, () => {
+    setLeaving(false);
+    writes.refresh();
+  });
+  const join = useSaveAction('settings.requestJoin', writes.requestJoin, { done: 'Request sent to the coaches', failed: "Couldn't send your request", hint: 'Check the code with your coach.', code: 'CH-8018' }, () => {
+    setCode('');
+    setNote('');
+    writes.refresh();
+  });
+  const cancel = useSaveAction('settings.cancelRequest', writes.cancelRequest, { done: 'Request cancelled', failed: "Couldn't cancel the request", code: 'CH-8019' }, (_r, id) => {
+    setRequests((x) => x.filter((y) => y.id !== id));
+  });
 
   if (m.team) {
     return (
@@ -89,13 +94,7 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
               <Button
                 variant="danger"
                 disabled={leave.pending}
-                onClick={async () => {
-                  const r = await leave.run();
-                  if (r.success) {
-                    setLeaving(false);
-                    writes.refresh();
-                  }
-                }}
+                onClick={() => void leave.run()}
               >
                 {leave.pending ? 'Leaving…' : 'Leave team'}
               </Button>
@@ -121,10 +120,7 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
                 size="sm"
                 variant="ghost"
                 disabled={cancel.pending}
-                onClick={async () => {
-                  const res = await cancel.run(r.id);
-                  if (res.success) setRequests((x) => x.filter((y) => y.id !== r.id));
-                }}
+                onClick={() => void cancel.run(r.id)}
               >
                 Cancel
               </Button>
@@ -139,12 +135,7 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
           onSubmit={async (e) => {
             e.preventDefault();
             if (!code.trim()) return;
-            const r = await join.run(code, note);
-            if (r.success) {
-              setCode('');
-              setNote('');
-              writes.refresh();
-            }
+            await join.run(code, note);
           }}
         >
           <Field id="set-join-code" label="Invite code" autoComplete="off" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />

@@ -1265,11 +1265,11 @@
 .ch-ph-chart__dot.is-under {
   fill: var(--ch-green-600);
 }
-.ch-ph-pin line {
+.ch-ph-pinflag line {
   stroke: var(--ch-text-primary);
   stroke-width: 1.2;
 }
-.ch-ph-pin path {
+.ch-ph-pinflag path {
   fill: var(--ch-chart-flag);
 }
 .ch-ph-figs {

@@ -11,7 +11,6 @@ import { useToast } from '../../ui/Toast';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
-import { useAction } from '../../lib/use-action';
 import {
   HANDICAP_OPTIONS,
   hoursLabel,
@@ -26,7 +25,7 @@ import {
   type ChSettingsWrites,
   type ChTeamInfo,
 } from './model';
-import { Card, Field, ReadFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty } from './parts';
+import { Card, Field, ReadFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function TeamSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.teamId) {
@@ -49,7 +48,10 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
 function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites }) {
   const f = useDraft(team);
   useReportDirty('team', f.dirty);
-  const save = useAction('settings.saveTeam', writes.saveTeam, { done: 'Team details saved', failed: "Couldn't save team details", code: 'CH-8011' });
+  const save = useSaveAction('settings.saveTeam', writes.saveTeam, { done: 'Team details saved', failed: "Couldn't save team details", code: 'CH-8011' }, (_r, saved) => {
+    f.commit(saved);
+    writes.refresh();
+  });
   const org = f.draft.org;
   const setOrg = (k: keyof NonNullable<ChTeamInfo['org']>, v: string) => f.setDraft((d) => (d.org ? { ...d, org: { ...d.org, [k]: v } } : d));
   const invalid = teamProblem(f.draft);
@@ -65,13 +67,7 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
           invalid={invalid}
           savedAt={f.savedAt}
           onReset={f.reset}
-          onSave={async () => {
-            const r = await save.run(f.draft);
-            if (r.success) {
-              f.commit();
-              writes.refresh();
-            }
-          }}
+          onSave={() => void save.run(f.draft)}
         />
       }
     >
@@ -102,7 +98,9 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
   const [canShare, setCanShare] = useState(false);
   useEffect(() => setCanShare(typeof navigator.share === 'function'), []);
   const toast = useToast();
-  const regen = useAction('settings.regenerateCode', writes.regenerateCode, { done: 'New invite code ready', failed: "Couldn't make a new invite code", code: 'CH-8012' });
+  const regen = useSaveAction('settings.regenerateCode', writes.regenerateCode, { done: 'New invite code ready', failed: "Couldn't make a new invite code", code: 'CH-8012' }, (r) => {
+    if (r.data?.joinCode) setCode(r.data.joinCode);
+  });
   const link = typeof window === 'undefined' ? `/golf/join/${code}` : `${window.location.origin}/golf/join/${code}`;
   const copy = async (what: 'code' | 'link') => {
     chTrail(`settings copy invite ${what}`);
@@ -167,10 +165,9 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
             </Button>
             <Button
               variant="primary"
-              onClick={async () => {
+              onClick={() => {
                 setConfirm(false);
-                const r = await regen.run();
-                if (r.success && r.data?.joinCode) setCode(r.data.joinCode);
+                void regen.run();
               }}
             >
               Make a new code
@@ -192,7 +189,7 @@ const TEES = [
 function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettingsWrites }) {
   const f = useDraft(scoring);
   useReportDirty('scoring', f.dirty);
-  const save = useAction('settings.saveScoring', writes.saveScoring, { done: 'Scoring settings saved', failed: "Couldn't save scoring settings", code: 'CH-8014' });
+  const save = useSaveAction('settings.saveScoring', writes.saveScoring, { done: 'Scoring settings saved', failed: "Couldn't save scoring settings", code: 'CH-8014' }, (_r, saved) => f.commit(saved));
   return (
     <Card
       id="set-scoring"
@@ -204,10 +201,7 @@ function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettin
           pending={save.pending}
           savedAt={f.savedAt}
           onReset={f.reset}
-          onSave={async () => {
-            const r = await save.run(f.draft);
-            if (r.success) f.commit();
-          }}
+          onSave={() => void save.run(f.draft)}
         />
       }
     >
@@ -239,7 +233,7 @@ function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettin
 function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: ChSettingsWrites }) {
   const f = useDraft(reminders);
   useReportDirty('reminders', f.dirty);
-  const save = useAction('settings.saveReminders', writes.saveReminders, { done: 'Reminder schedule saved', failed: "Couldn't save the reminder schedule", code: 'CH-8015' });
+  const save = useSaveAction('settings.saveReminders', writes.saveReminders, { done: 'Reminder schedule saved', failed: "Couldn't save the reminder schedule", code: 'CH-8015' }, (_r, saved) => f.commit(saved));
   const invalid = remindersProblem(f.draft);
   return (
     <Card
@@ -253,10 +247,7 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
           invalid={invalid}
           savedAt={f.savedAt}
           onReset={f.reset}
-          onSave={async () => {
-            const r = await save.run(f.draft);
-            if (r.success) f.commit();
-          }}
+          onSave={() => void save.run(f.draft)}
         />
       }
     >

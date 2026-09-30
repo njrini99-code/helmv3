@@ -37,6 +37,8 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
   const idRef = useRef(initial.id);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const timers = useRef(new Map<string, number>());
+  // The save each waiting timer will run, so leaving the section can run it now instead of dropping it.
+  const waiting = useRef(new Map<string, () => void>());
   const inflight = useRef(0);
   // The value before a debounced run of slider moves, so a failure restores where the drag began.
   const snapshots = useRef(new Map<string, Partial<CoachPhilosophy>>());
@@ -47,7 +49,14 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
 
   useEffect(() => {
     const t = timers.current;
-    return () => t.forEach((x) => window.clearTimeout(x));
+    const w = waiting.current;
+    return () => {
+      // A slider moved less than 600ms before the person leaves the section is still saved (81206).
+      [...w.entries()].forEach(([key, run]) => {
+        window.clearTimeout(t.get(key));
+        run();
+      });
+    };
   }, []);
 
   const send = (patch: Partial<CoachPhilosophy>, before: Partial<CoachPhilosophy>) => {
@@ -94,18 +103,19 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
     setP((x) => ({ ...x, ...patch }));
     if (!opts.debounce) return send(patch, before);
     const t = timers.current;
-    const prev = t.get(opts.debounce);
+    const key = opts.debounce;
+    const prev = t.get(key);
     if (prev) window.clearTimeout(prev);
-    else snapshots.current.set(opts.debounce, before);
-    t.set(
-      opts.debounce,
-      window.setTimeout(() => {
-        t.delete(opts.debounce!);
-        const snap = snapshots.current.get(opts.debounce!) ?? before;
-        snapshots.current.delete(opts.debounce!);
-        send(patch, snap);
-      }, 600),
-    );
+    else snapshots.current.set(key, before);
+    const run = () => {
+      t.delete(key);
+      waiting.current.delete(key);
+      const snap = snapshots.current.get(key) ?? before;
+      snapshots.current.delete(key);
+      send(patch, snap);
+    };
+    waiting.current.set(key, run);
+    t.set(key, window.setTimeout(run, 600));
   };
   return { p, change, status };
 }
@@ -314,8 +324,9 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
   const [confirmOff, setConfirmOff] = useState(false);
   const save = useInstantSave('coachhelm');
   const setC = (patch: Partial<ChCoachHelmSettings['coach']>, failed: string) => {
-    const before = coach;
-    return save.run({ key: Object.keys(patch).join(','), apply: () => setCoach((c) => ({ ...c, ...patch })), rollback: () => setCoach(before), write: () => writes.setCoachHelmCoach(patch), failed, code: 'CH-8020' });
+    // Only the switch that failed goes back; another one flipped meanwhile keeps its position (81302).
+    const before = Object.fromEntries(Object.keys(patch).map((k) => [k, coach[k as keyof typeof coach]])) as Partial<typeof coach>;
+    return save.run({ key: Object.keys(patch).join(','), apply: () => setCoach((c) => ({ ...c, ...patch })), rollback: () => setCoach((c) => ({ ...c, ...before })), write: () => writes.setCoachHelmCoach(patch), failed, code: 'CH-8020' });
   };
   return (
     <Card id="set-power" title="CoachHelm" description="The AI coaching assistant on your dashboards." aside={<Icon icon={Sparkles} size={17} />}>

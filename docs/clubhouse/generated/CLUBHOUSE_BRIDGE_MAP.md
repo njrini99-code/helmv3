@@ -66,14 +66,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 2 | 1 | 1 | 4 |  | 9 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 6 | 11 | 1 | 1 | 1 | 3 | 1 | 1 |  | 64 |
-| P002 |  | 1 |  | 7 |  | 10 |  |  |  |  |  |  |  | 1 |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 29 |
-| P003 |  | 1 | 2 | 5 | 1 | 16 |  |  |  |  | 1 |  |  |  |  | 2 | 3 | 6 |  |  |  |  |  |  |  | 37 |
-| P004 |  | 1 | 1 | 9 |  | 11 | 2 |  |  |  |  |  |  |  |  | 2 | 2 | 4 |  |  |  |  |  |  |  | 32 |
-| P005 |  |  | 2 | 5 | 1 | 9 |  | 2 |  |  |  |  |  |  |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 29 |
-| P006 |  | 5 | 1 | 7 | 4 | 24 |  |  |  |  | 2 | 1 |  |  |  | 3 | 3 | 4 |  |  |  |  |  |  |  | 54 |
+| P002 |  | 1 |  | 13 |  | 17 |  |  |  |  |  |  |  | 1 |  | 2 | 2 | 6 |  |  |  |  |  |  |  | 42 |
+| P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
+| P004 |  | 1 | 1 | 9 |  | 11 | 2 |  |  |  |  |  |  |  |  | 2 | 3 | 5 |  |  |  |  |  |  |  | 34 |
+| P005 |  |  | 2 | 5 | 1 | 10 |  | 2 |  |  |  |  |  |  |  | 2 | 2 | 7 |  |  |  |  |  |  |  | 31 |
+| P006 |  | 5 | 1 | 8 | 4 | 24 |  |  |  |  | 2 | 1 |  |  |  | 3 | 3 | 4 |  |  |  |  |  |  |  | 55 |
 | P007 | 2 | 10 | 1 | 8 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 89 |
-| P008 |  | 1 | 3 | 4 | 15 | 36 |  |  |  | 1 | 5 | 3 | 1 |  |  | 8 | 7 | 7 |  |  |  |  |  |  |  | 91 |
-| P009 |  | 4 | 3 | 10 | 10 | 22 |  | 2 |  | 1 | 1 | 1 |  |  |  | 2 | 2 | 3 |  |  |  |  |  |  |  | 61 |
+| P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 5 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 121 |
+| P009 |  | 5 | 3 | 12 | 12 | 28 | 1 | 2 |  | 1 | 4 | 1 |  |  |  | 2 | 3 | 3 |  |  |  |  |  |  |  | 77 |
 
 ## P001 Shell
 
@@ -156,6 +156,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20405 | CH-2305 | 04 Empty | `PLAYERS_BUT_NO_18_HOLE_ROUNDS` | implemented | Players, but no 18-hole rounds |
 | 20406 | CH-2306 | 04 Empty | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | implemented | A player has fewer than three rounds |
 | 20407 | CH-2307 | 04 Empty | `A_COACH_WITH_NO_ACTIVE_TEAM` | implemented | A coach with no active team |
+| 20408 | CH-2308 | 04 Empty | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | implemented | A team with nothing yet: no players, no events this week, no rounds, and every read answered |
+| 20409 | CH-2309 | 04 Empty | `NOTHING_ON_THE_CALENDAR_AHEAD` | implemented | Nothing on the calendar ahead (phone). A player: "Your coach's practices and events will show here with a countdown.", no quick adds |
+| 20410 | CH-2310 | 04 Empty | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | implemented | Fewer than two 18-hole rounds (player Home Scoring) |
+| 20411 | CH-2311 | 04 Empty | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | implemented | No fairways, greens, scrambling or putts logged (player Home) |
+| 20412 | CH-2312 | 04 Empty | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | implemented | A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71) |
+| 20413 | CH-2313 | 04 Empty | `A_PLAYER_ON_NO_ACTIVE_TEAM` | implemented | A player on no active team |
 | 20601 | CH-2201 | 06 Server / system error | `THE_WEEKS_EVENTS_DONT_LOAD` | implemented | The week's events don't load |
 | 20602 | CH-2202 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD` | implemented | Season rounds (or the roster behind them) don't load |
 | 20603 | CH-2203 | 06 Server / system error | `A_ROUND_LOADS_BUT_ITS_HOLE_BY` | implemented | A round loads but its hole-by-hole scores don't |
@@ -166,6 +172,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20608 | CH-2208 | 06 Server / system error | `THE_TEAM_CHAT_DOESNT_LOAD` | implemented | The team chat doesn't load |
 | 20609 | CH-2209 | 06 Server / system error | `EVENT_REPLIES_DONT_LOAD` | implemented | Event replies don't load |
 | 20610 | CH-2210 | 06 Server / system error | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | implemented | The team's timezone doesn't load |
+| 20611 | CH-2211 | 06 Server / system error | `THE_TEAMS_FORM_DOESNT_LOAD` | implemented | The team's form doesn't load (phone) |
+| 20612 | CH-2212 | 06 Server / system error | `THE_TEAMS_FORM_CRASHES_WHILE_DRAWING` | implemented | The team's form crashes while drawing (phone) |
+| 20613 | CH-2213 | 06 Server / system error | `UP_NEXT_CRASHES_WHILE_DRAWING` | implemented | Up next crashes while drawing (phone) |
+| 20614 | CH-2214 | 06 Server / system error | `TODAY_CRASHES_WHILE_DRAWING` | implemented | Today crashes while drawing (phone) |
+| 20615 | CH-2215 | 06 Server / system error | `A_PLAYERS_OWN_ROUNDS_DONT_LOAD` | implemented | A player's own rounds don't load (player Home) |
+| 20616 | CH-2216 | 06 Server / system error | `SCRAMBLING_AND_THREE_PUTTS_DONT_LOAD` | implemented | Scrambling and three-putts don't load (player Home) |
+| 20617 | CH-2217 | 06 Server / system error | `THE_PLAYERS_SCORING_OR_PARTS_OF_THE` | implemented | The player's scoring or parts of the game crash while drawing |
 | 21401 | CH-2402 | 14 Retry / recovery | `TRY_AGAIN_WAS_PRESSED_ON_A_SECTION` | reserved | Try again was pressed on a section |
 | 21601 | CH-2601 | 16 Micro animation | `PAGING_THE_LATEST_ROUND` | reserved | Paging the latest round |
 | 21602 | CH-2602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | reserved | Hovering or pressing a leaderboard row |
@@ -182,15 +195,20 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
+| 30101 |  | 01 Default / core UI | `ROSTER_READY` | implemented | Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows. |
+| 30102 |  | 01 Default / core UI | `DEEP_LINK_OPENS_PROFILE` | implemented | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. |
 | 30201 | CH-3401 | 02 Initial loading / skeleton | `ROSTER_IS_LOADING` | implemented | Roster is loading |
 | 30301 | CH-3402 | 03 Background loading / refresh | `A_REMOVE_IS_IN_FLIGHT` | implemented | A remove is in flight |
 | 30302 | CH-3403 | 03 Background loading / refresh | `APPROVE_ALL_IS_IN_FLIGHT` | implemented | Approve all is in flight (phone join requests sheet, D-55) |
+| 30303 |  | 03 Background loading / refresh | `ROSTER_FOLLOWS_A_REFRESH` | implemented | When the server sends the page again (Try again, or the page a write revalidated), the players and join requests on screen become the new ones: an approved player appears, and a read that failed and now succeeds shows the players, never No players yet. |
 | 30401 | CH-3301 | 04 Empty | `NO_PLAYERS_YET` | implemented | No players yet |
 | 30402 | CH-3302 | 04 Empty | `A_SEARCH_MATCHES_NOBODY` | implemented | A search matches nobody |
 | 30403 | CH-3303 | 04 Empty | `A_STATUS_FILTER_HAS_NOBODY` | implemented | A status filter has nobody |
 | 30404 | CH-3304 | 04 Empty | `THE_TEAM_HAS_NO_JOIN_CODE` | implemented | The team has no join code |
 | 30405 | CH-3305 | 04 Empty | `A_PLAYER_HAS_NO_18_HOLE_ROUNDS` | implemented | A player has no 18-hole rounds |
+| 30406 | CH-3306 | 04 Empty | `A_COACH_SIGNED_IN_WITH_NO_ACTIVE` | implemented | A coach signed in with no active team |
 | 30501 | CH-3101 | 05 Validation | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | implemented | A coach's note is within 200 characters of its 2,000 limit |
+| 30502 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
 | 30601 | CH-3001 | 06 Server / system error | `REMOVING_A_PLAYER_FAILS` | implemented | Removing a player fails |
 | 30602 | CH-3002 | 06 Server / system error | `APPROVING_A_JOIN_REQUEST_FAILS` | implemented | Approving a join request fails |
 | 30603 | CH-3003 | 06 Server / system error | `DECLINING_A_JOIN_REQUEST_FAILS` | implemented | Declining a join request fails |
@@ -207,18 +225,36 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30614 | CH-3207 | 06 Server / system error | `THE_TEAM_ROW_DOESNT_LOAD` | implemented | The team row doesn't load |
 | 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | implemented | Focus areas or goals don't load |
 | 30616 | CH-3209 | 06 Server / system error | `THIS_COACHS_NOTES_DONT_LOAD` | implemented | This coach's notes don't load |
+| 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
+| 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | Only a coach gets the Clubhouse roster: the page hands it over for a coach with the flag on, the route checks the coach again before any read, and a player on this address gets the shell's not-rebuilt notice, never the list, the notes or the join requests. |
+| 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
+| 30803 |  | 08 Permission / authorization | `REFUSED_CHANGE_SHOWN_AND_UNDONE` | implemented | When the server refuses a removal, an approval, a decline or a note (not on your team, already processed, a saved round in progress, not authorized), its sentence is shown in the error toast and the screen goes back: the player stays and the dialog stays open, the request returns to its place, and the text stays in the field. |
+| 30901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile. |
 | 31101 | CH-3501 | 11 Destructive | `REMOVE_FROM_TEAM` | implemented | Remove from team (row menu; on the phone, the profile's ⋯ sheet) |
+| 31201 |  | 12 State preservation | `NOTE_KEPT_ON_FAILURE` | implemented | A note that fails to save stays in the field, and the toast says so; leaving the field again or the toast's Retry saves it. |
+| 31202 |  | 12 State preservation | `LAYOUT_REMEMBERED` | implemented | The cards or list choice is stored on the device (ch-roster-view) and applied when Roster opens; a device that refuses storage still switches for the visit. Search, filter and sort are not kept. |
+| 31203 |  | 12 State preservation | `SAVED_NOTE_READS_BACK` | implemented | A saved note is written into the roster the screen holds, so closing a player and opening them again, on desktop or the phone, shows the new text; an emptied note reads back empty. |
+| 31301 |  | 13 Optimistic UI | `REQUEST_DECISIONS_OPTIMISTIC` | implemented | Approve and Decline take the request off the list at once and put it back in its place if the server refuses or throws, and while one decision is in flight every other Approve and Decline waits; Remove is not optimistic, it waits with the dialog open and the button reading Removing. |
+| 31401 |  | 14 Retry / recovery | `APPROVE_ALL_RETRIES_ONLY_FAILURES` | implemented | Approve all goes one request at a time; those that landed leave the list, and the toast's Retry re-runs only the ones that failed, never approving anyone twice. |
+| 31402 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on the roster, season stats, join requests or join code notice asks the server for the whole page again (router.refresh), not one section alone. |
+| 31403 |  | 14 Retry / recovery | `TOAST_RETRY_FINISHES_THE_JOB` | implemented | The Retry on a failed-change toast completes the change on screen as well as on the server: a retried removal removes the player and closes the dialog, a retried approval or decline keeps the request off the list, and a retried note save marks the note saved. |
 | 31601 | CH-3601 | 16 Micro animation | `OPENING_OR_SWITCHING_A_PLAYER` | reserved | Opening or switching a player |
 | 31602 | CH-3602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | reserved | Hovering or pressing a face card or row |
 | 31701 | CH-3701 | 17 Haptic | `OPENING_A_PLAYER_CHANGING_A_FILTER_LAYOUT` | reserved | Opening a player; changing a filter, layout or sort |
 | 31702 | CH-3702 | 17 Haptic | `AN_EXPORT_LANDS` | reserved | An export lands |
 | 31703 | CH-3703 | 17 Haptic | `THE_CODE_OR_LINK_IS_COPIED` | implemented | The code or link is copied |
+| 31704 |  | 17 Haptic | `REMOVE_PLAYER_WARNS` | implemented | Pressing Remove player in the confirm fires the warning haptic (D-70), then the success pattern when the removal lands or the error pattern when it fails; Cancel is silent. |
 | 31801 | CH-3801 | 18 Accessibility | `THE_DESKTOP_LIST_VIEW_IS_A_TABLE` | reserved | The desktop list view is a table (phone rows: CH-3806): every value, including the player's open button, sits in a cell under a column header |
 | 31802 | CH-3802 | 18 Accessibility | `A_FACE_CARD_READS_ITS_STATUS_AS` | reserved | A face card reads its status as a word; the green dot is decoration |
 | 31803 | CH-3803 | 18 Accessibility | `ESC_CLOSES_THE_PLAYER_PANEL_EXCEPT_WHILE` | reserved | Esc closes the player panel, except while typing a note (desktop; on the phone, Back and the edge swipe pop the profile, CH-1906) |
 | 31804 | CH-3804 | 18 Accessibility | `THE_NOTE_COUNTER_IS_ANNOUNCED_POLITELY_A` | reserved | The note counter is announced politely; a locked note says why it's locked |
 | 31805 | CH-3805 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, both layouts, 1280px and 390px |
 | 31806 | CH-3806 | 18 Accessibility | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | implemented | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
+| 31901 |  | 19 Responsive layout | `PHONE_LIST_AND_PROFILE` | implemented | At 820px and below Roster is the phone screen: a top bar with the back link to More and Invite players, the join requests banner, the sorted list, and each player as a pushed profile that is a history entry, so the edge swipe and Back return to the list. |
+| 32001 |  | 20 Keyboard / input | `NOTE_SAVES_ON_LEAVING_THE_FIELD` | implemented | The coach's note saves when the field loses focus, only if its trimmed text changed, and an emptied note saves as no note. |
+| 32101 |  | 21 Performance | `LOADER_NEVER_THROWS` | implemented | loadRoster reads the team, the members and the join requests in one parallel round, then rounds, focus areas, goals and this coach's notes in a second (it needs the member ids); every failed read is logged through chLogServer and flagged, never thrown, and a failed read is never shown as empty. |
+| 32301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed change is reported through chReport with surface roster and its action name (roster.removePlayer, roster.approveRequest, roster.declineRequest, roster.approveAll, roster.coachNote), a crash with its section surface (roster.requests, roster.list, roster.peek), and a failed server read through chLogServer('roster', ...); each intent leaves a chTrail breadcrumb. |
+| 32401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/roster.test.tsx names, in a test title, every Roster catalog code of kinds 0 to 5 that is not marked preview, and each hand contract above. |
 
 ## P004 Stats (team)
 
@@ -252,10 +288,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | reserved | Choosing a leg |
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | 17 Haptic | `AN_EXPORT_LANDS_FAILS` | reserved | An export lands / fails |
+| 41703 | CH-4703 | 17 Haptic | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | implemented | Sorting the phone's players by Avg or SG |
 | 41801 | CH-4801 | 18 Accessibility | `THE_TREND_CHART_IS_AN_IMAGE_WITH` | reserved | The trend chart is an image with a written summary ("Strokes gained by week. The team has gained about 1.0 a round…"); the player list beside it is the chart's values as buttons |
 | 41802 | CH-4802 | 18 Accessibility | `THE_STROKES_GAINED_GRID_IS_A_TABLE` | reserved | The strokes gained grid is a table with a header for every value |
 | 41803 | CH-4803 | 18 Accessibility | `LOSS_AMBER_ON_A_TINTED_GRID_CELL` | reserved | Loss amber on a tinted grid cell is darkened to hold 4.5:1 |
 | 41804 | CH-4804 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
+| 41805 | CH-4805 | 18 Accessibility | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | implemented | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 
 ## P005 Stats (player)
 
@@ -278,6 +316,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50607 | CH-5206 | 06 Server / system error | `THE_ROUNDS_TABLE_CRASHES` | implemented | The rounds table crashes |
 | 50608 | CH-5207 | 06 Server / system error | `DEVELOPMENT_CRASHES` | implemented | Development crashes |
 | 50609 | CH-5208 | 06 Server / system error | `D1_BENCHMARKS_DONT_LOAD` | implemented | D1 benchmarks don't load |
+| 50610 | CH-5002 | 06 Server / system error | `SHARING_A_PLAYERS_STATS_FROM_THE_PHONE` | implemented | Sharing a player's stats from the phone fails (the browser blocks the clipboard) |
 | 50801 | CH-5306 | 08 Permission / authorization | `A_COACH_OPENS_A_PLAYER_WHO_ISNT` | implemented | A coach opens a player who isn't on their team |
 | 50802 | CH-5307 | 08 Permission / authorization | `A_PLAYER_WHO_ISNT_ON_AN_ACTIVE` | implemented | A player who isn't on an active roster |
 | 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | reserved | Changing tabs |
@@ -290,6 +329,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51804 | CH-5804 | 18 Accessibility | `THE_FOCUS_AREA_FIELDS_NAME_IS_JUST` | reserved | The focus-area field's name is just "What to work on"; its help or error is read as its description |
 | 51805 | CH-5805 | 18 Accessibility | `NO_AXE_VIOLATIONS_ON_EVERY_TAB_AND` | reserved | No axe violations on every tab and state, 1280px and 390px |
 | 51806 | CH-5806 | 18 Accessibility | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | reserved | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
+| 51807 | CH-5807 | 18 Accessibility | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | implemented | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
 
 ## P006 Calendar
 
@@ -308,6 +348,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60405 | CH-6305 | 04 Empty | `AN_OPENED_EVENT_LEFT_THE_LOADED_RANGE` | implemented | An opened event left the loaded range |
 | 60406 | CH-6306 | 04 Empty | `NOTHING_NEEDS_ATTENTION_THIS_WEEK` | implemented | Nothing needs attention this week |
 | 60407 | CH-6307 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
+| 60408 | CH-6308 | 04 Empty | `A_DAY_WITH_NOTHING_ON_IT` | implemented | A day with nothing on it (phone Day view) |
 | 60501 | CH-6101 | 05 Validation | `AN_EVENT_WITH_NO_TITLE` | implemented | An event with no title |
 | 60502 | CH-6102 | 05 Validation | `AN_EVENT_THAT_ENDS_BEFORE_IT_STARTS` | implemented | An event that ends before it starts |
 | 60503 | CH-6103 | 05 Validation | `BUSY_TIME_WITH_NO_NAME` | implemented | Busy time with no name |
@@ -412,7 +453,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70630 | CH-7214 | 06 Server / system error | `THE_SHARED_FILES_DONT_LOAD` | implemented | The shared files don't load (phone Details) |
 | 70631 | CH-7215 | 06 Server / system error | `THE_ADD_SHEETS_TEAM_LIST_DOESNT_LOAD` | implemented | The Add sheet's team list doesn't load |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send |
-| 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player who isn't on the team |
+| 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |
 | 70901 |  | 09 Success | `MESSAGE_SEND_LANDED` | implemented | A message sends: it takes its place in the thread with no toast, and the success haptic fires. |
 | 70902 |  | 09 Success | `CHANGE_LANDED` | implemented | A change lands (edited, deleted, group created, member added, left, muted, acknowledged, task done, announcement posted): a toast names what landed, with the success haptic. |
@@ -448,6 +489,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
+| 80101 |  | 01 Default / core UI | `SETTINGS_READY` | implemented | Settings is open: a header naming the role, team and email, the rail of the sections this role has, and the opened section (Account by default) with its cards; the page needs no team. |
+| 80102 |  | 01 Default / core UI | `DEEP_LINK_OPENS_SECTION` | implemented | ?section=<id> opens that section, /golf/dashboard/settings/notifications opens Notifications and /golf/dashboard/settings/coaching-intelligence opens CoachHelm for a coach or Account for a player; choosing a section in the rail writes ?section= into the address. |
 | 80201 | CH-8401 | 02 Initial loading / skeleton | `THE_PAGE_IS_LOADING` | implemented | The page is loading |
 | 80301 | CH-8402 | 03 Background loading / refresh | `A_FORM_IS_SAVING` | implemented | A form is saving |
 | 80302 | CH-8404 | 03 Background loading / refresh | `A_PHOTO_IS_UPLOADING` | reserved | A photo is uploading |
@@ -456,6 +499,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80402 | CH-8302 | 04 Empty | `A_PLAYER_WITH_NO_TEAM_OPENS_GOLF` | implemented | A player with no team opens Golf profile |
 | 80403 | CH-8303 | 04 Empty | `A_PLAYER_HAS_ASKED_TO_JOIN_AND` | implemented | A player has asked to join and is waiting |
 | 80404 | CH-8304 | 04 Empty | `NO_PROFILE_PHOTO` | implemented | No profile photo |
+| 80405 |  | 04 Empty | `SETTINGS_OPEN_WITHOUT_A_TEAM` | implemented | A coach or player with no team still gets Settings, never a no-team page: Account, Notifications and Preferences work, a coach's Team section says why it is empty (CH-8301) and a player's Golf profile offers Join a team (CH-8302). |
 | 80501 | CH-8101 | 05 Validation | `A_COACH_CLEARS_THEIR_NAME` | implemented | A coach clears their name |
 | 80502 | CH-8102 | 05 Validation | `A_PLAYER_CLEARS_FIRST_OR_LAST_NAME` | implemented | A player clears first or last name |
 | 80503 | CH-8103 | 05 Validation | `NEW_EMAIL_ISNT_AN_ADDRESS` | implemented | New email isn't an address |
@@ -507,7 +551,21 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80634 | CH-8210 | 06 Server / system error | `TEAM_MEMBERSHIP_DOESNT_LOAD` | implemented | Team membership doesn't load (player) |
 | 80635 | CH-8211 | 06 Server / system error | `COACHHELM_SETTINGS_DONT_LOAD` | implemented | CoachHelm settings don't load (coach) |
 | 80636 | CH-8212 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
+| 80701 |  | 07 Network / offline | `INSTANT_SAVE_REFUSED_OFFLINE` | implemented | While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed. |
+| 80801 |  | 08 Permission / authorization | `SECTIONS_BY_ROLE` | implemented | The rail lists only the sections the role has (coach: Account, Notifications, Team, CoachHelm, Preferences; player: Account, Golf profile, Notifications, Preferences), and a link naming a section the role does not have opens Account. |
+| 80802 |  | 08 Permission / authorization | `COACHING_LINK_BY_ROLE` | implemented | The old /settings/coaching-intelligence link opens the CoachHelm section for a coach; a player lands on their own Settings (Account) instead of a coach-only page. |
+| 80803 |  | 08 Permission / authorization | `NO_PROFILE_NO_PAGE` | implemented | The Settings route renders nothing, and reads nothing, for a session that has neither a coach nor a player profile, and the old notifications and coaching links send a signed-out visitor to /golf/login. |
+| 80804 |  | 08 Permission / authorization | `TEAM_COACHHELM_HEAD_COACH_ONLY` | implemented | The switch that turns CoachHelm off for the whole team can be changed only by the team's head coach: an assistant sees it disabled with 'Only the head coach can change this.', the loader never creates the team row for an assistant, and the server action refuses too. When the check itself fails the loader does not guess: it logs the failure and leaves the switch out, so a head coach is never told they may not change it. |
+| 80805 |  | 08 Permission / authorization | `TEAM_CARDS_FOR_EVERY_STAFF_COACH` | implemented | Team details, the invite code, scoring and event reminders are shown to every coach on the team, assistants included; the screen does not tell head and assistant coaches apart there, so a save the database refuses arrives as that card's own failure toast (80808). |
+| 80806 |  | 08 Permission / authorization | `WRITES_SCOPED_TO_THE_CALLER` | implemented | Every write is scoped to the signed-in person: profile rows by their own user id, golf details by their own player id, leaving by their own membership of their team, and join requests, invite codes and the team CoachHelm switch by their own player or team id, which the server actions and row policies check again. |
+| 80807 |  | 08 Permission / authorization | `PASSWORD_NEEDS_THE_CURRENT_ONE` | implemented | A new password is set only after the current password signs in; a wrong current password changes nothing and says 'Your current password is incorrect.' |
+| 80808 |  | 08 Permission / authorization | `REFUSED_UPDATE_IS_A_FAILURE` | implemented | An update the database refuses by hiding the row (no error, no row changed) is a failure the person sees, not a save: profile, team details (the school, then the team), golf details and the coaching settings count the rows they change and fail with 'Nothing was saved. <what> was not found, or you are not allowed to change it.', which the toast shows as 'Your account doesn’t have access to do this.'; the card stays unsaved with its edits. Leaving a team already did this. |
+| 80901 |  | 09 Success | `CHANGE_LANDED` | implemented | A save that lands (profile, team details, scoring, reminders, golf details, email confirmation sent, password updated, new invite code, left the team, join request sent or cancelled) fires the success haptic and shows a toast naming what landed; a card with a Save button also says Saved for about two seconds. |
+| 80902 |  | 09 Success | `INSTANT_SAVE_SILENT` | implemented | A switch, segment, slider or CoachHelm autosave that lands says nothing: no toast and no success haptic, because its selection tick was the feedback (D-70); the CoachHelm status line reads All changes saved. |
+| 80903 |  | 09 Success | `ACCOUNT_DELETE_LANDED` | implemented | Once the account is deleted a toast says so and the success haptic fires, then this device's caches, active team and session are cleared and the person is sent to the sign-in page in the app or the home page on the web. |
 | 81001 | CH-8025 | 10 Warning | `REPORT_A_PROBLEM_CANT_OPEN_THE_IN` | implemented | Report a problem can't open the in-app form (info, not an error) |
+| 81002 |  | 10 Warning | `PUSH_BLOCKED_IN_BROWSER` | implemented | When the browser blocks notifications for GolfHelm the Push on this device switch is disabled and its row says how to allow them; when push is not supported the row is not shown. |
+| 81003 |  | 10 Warning | `QUIET_MODE_PAUSES_UPDATES` | implemented | With quiet mode on, every update except messages reads Paused by quiet mode and its switches are disabled; the CoachHelm updates card marks round reviews and goals from the coach Always delivered. |
 | 81101 | CH-8501 | 11 Destructive | `DELETE_ACCOUNT` | implemented | Delete account |
 | 81102 | CH-8502 | 11 Destructive | `LEAVE_TEAM` | implemented | Leave team (player) |
 | 81103 | CH-8503 | 11 Destructive | `MAKE_A_NEW_INVITE_CODE` | implemented | Make a new invite code |
@@ -516,7 +574,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81201 | CH-8506 | 12 State preservation | `FOLLOWING_A_LINK_OFF_SETTINGS_WITH_UNSAVED` | implemented | Following a link off Settings with unsaved changes |
 | 81202 | CH-8507 | 12 State preservation | `SWITCHING_SECTION_WITH_UNSAVED_CHANGES` | implemented | Switching section with unsaved changes |
 | 81203 | CH-8508 | 12 State preservation | `CLOSING_OR_RELOADING_THE_TAB_WITH_UNSAVED` | implemented | Closing or reloading the tab with unsaved changes |
+| 81204 |  | 12 State preservation | `SAVED_VALUES_KEPT_ACROSS_SECTIONS` | implemented | A value saved in a section is still there when the person leaves the section and comes back: the page keeps a copy of its data with each landed write applied, a fresh server read replaces that copy, and an unsaved draft is never kept. |
+| 81205 |  | 12 State preservation | `FAILED_SAVE_KEEPS_EDITS` | implemented | A card save that fails keeps what the person typed: the card stays unsaved with Save enabled, and the toast's Retry sends the same values again; if the person kept typing before a Retry landed, the newer typing stays as an unsaved edit and is not overwritten. |
+| 81206 |  | 12 State preservation | `WAITING_SLIDER_SAVED_ON_LEAVING` | implemented | A CoachHelm slider moved less than 600 ms before the person leaves the section is saved when they leave, not dropped. |
 | 81301 | CH-8403 | 13 Optimistic UI | `A_SWITCH_IS_SAVING` | implemented | A switch is saving |
+| 81302 |  | 13 Optimistic UI | `OPTIMISTIC_ROLLBACK` | implemented | A switch, segment, slider or CoachHelm setting that saves on change shows its new value at once; when the save fails it goes back to the value it had, alone (a control changed meanwhile keeps its position), with an error toast and the error haptic. |
+| 81401 |  | 14 Retry / recovery | `TRY_AGAIN_READS_THE_PAGE` | implemented | Try again on a section that did not load reads the whole page again on the server (router.refresh); the fresh read replaces the page's copy, so the notice becomes the card, and the open section and any unsaved edits in other cards stay; it does not re-read only that section. |
+| 81402 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_SAVE` | implemented | Retry on a failed save's toast finishes it the way its button would: a form card is clean and the page refreshes, a new invite code shows, a dialog closes, and a switch flips again and sends the same value. |
+| 81501 |  | 15 Data freshness / sync | `SERVER_VIEW_REFRESHED_AFTER_SAVE` | implemented | A save that changes what the server renders (profile, team details, leaving a team, asking to join) asks for a fresh server read (router.refresh) after it lands, and a failed save does not. |
 | 81601 | CH-8601 | 16 Micro animation | `SWITCHING_SECTION` | reserved | Switching section |
 | 81602 | CH-8602 | 16 Micro animation | `SAVE_STATUS_CHANGES` | reserved | Save status changes |
 | 81603 | CH-8603 | 16 Micro animation | `FLIPPING_A_SWITCH` | reserved | Flipping a switch |
@@ -532,6 +597,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81705 | CH-8705 | 17 Haptic | `COPYING_THE_INVITE_CODE_OR_LINK` | reserved | Copying the invite code or link |
 | 81706 | CH-8706 | 17 Haptic | `PRESSING_A_PRIMARY_BUTTON` | reserved | Pressing a primary button (Save changes) |
 | 81707 | CH-8707 | 17 Haptic | `TURNING_HAPTICS_BACK_ON` | reserved | Turning Haptics back on |
+| 81708 |  | 17 Haptic | `DISCARD_WARNS` | implemented | Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70). |
 | 81801 | CH-8801 | 18 Accessibility | `THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK` | reserved | The section list is a navigation landmark; the open section is marked current |
 | 81802 | CH-8802 | 18 Accessibility | `EVERY_SWITCH_HAS_A_NAME_A_SCREEN` | reserved | Every switch has a name a screen reader reads (for example "Messages by email") |
 | 81803 | CH-8803 | 18 Accessibility | `SAVE_STATUS_CHANGES_ARE_ANNOUNCED` | reserved | Save status changes are announced |
@@ -539,6 +605,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81805 | CH-8805 | 18 Accessibility | `THE_NOTIFICATION_GRIDS_ARE_TABLES` | reserved | The notification grids are tables |
 | 81806 | CH-8806 | 18 Accessibility | `DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS` | reserved | Dialogs trap focus, Esc closes, focus returns to the button |
 | 81807 | CH-8807 | 18 Accessibility | `EVERY_FIELD_HAS_A_LABEL_AND_ITS` | reserved | Every field has a label, and its help or error is read with it |
+| 81901 |  | 19 Responsive layout | `PHONE_LAYOUT` | reserved | At a canvas of 860px or less the rail becomes a scrolling strip above the section, and at 560px or less form grids stack and the notification switches keep 48px columns; the native phone design (a grouped list that pushes to each section, docs/clubhouse/phone/settings.md) is a draft awaiting the owner and is not built. |
+| 82001 |  | 20 Keyboard / input | `ENTER_SUBMITS_TWO_FORMS` | implemented | Enter in the New email field sends the confirmation and Enter in the invite code field asks to join; every other card saves only with its Save button. |
+| 82101 |  | 21 Performance | `LOADER_NEVER_FAILS_THE_PAGE` | implemented | The server loader reads everything the page shows before first paint, in parallel batches; a read that returns an error or throws becomes that section's failed flag and a chLogServer line, and never fails the page. |
+| 82301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | Every client failure is reported through chReport with surface settings (form saves, by action name), settings.notifications, settings.routing or settings.coachhelm (switches and autosave), settings.profile, settings.invite or settings.session (cards) or settings.<section> (a crash, high severity); server reads log through chLogServer('settings', read, error, area); each intent leaves a chTrail breadcrumb. |
+| 82401 |  | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | settings.test.tsx and settings-server.test.tsx name every catalog code of kinds 0 to 5 they force, and every hand contract they prove by its Bridge ID in a test title; the settings model checks are in logic.test.ts. |
 
 ## P009 Qualifiers
 
@@ -548,6 +619,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90202 | CH-09402 | 02 Initial loading / skeleton | `A_QUALIFIER_IS_LOADING` | implemented | A qualifier is loading |
 | 90203 | CH-09403 | 02 Initial loading / skeleton | `THE_FORM_IS_LOADING` | implemented | The form is loading |
 | 90204 | CH-09407 | 02 Initial loading / skeleton | `COURSES_OR_TEES_ARE_LOADING_IN_THE` | implemented | Courses or tees are loading in the picker |
+| 90205 | CH-09408 | 02 Initial loading / skeleton | `A_SELECTION_WRITE_IS_IN_FLIGHT` | implemented | A selection write is in flight |
 | 90301 | CH-09404 | 03 Background loading / refresh | `A_CREATE_OR_SAVE_IS_IN_FLIGHT` | implemented | A create or save is in flight |
 | 90302 | CH-09405 | 03 Background loading / refresh | `A_CLOSE_IS_IN_FLIGHT` | implemented | A close is in flight |
 | 90303 | CH-09406 | 03 Background loading / refresh | `A_REOPEN_IS_IN_FLIGHT` | implemented | A reopen is in flight |
@@ -561,6 +633,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90408 | CH-09309 | 04 Empty | `NOT_ON_A_TEAM` | implemented | Not on a team |
 | 90409 | CH-09312 | 04 Empty | `THE_COURSE_SEARCH_MATCHES_NOTHING` | implemented | The course search matches nothing |
 | 90410 | CH-09314 | 04 Empty | `A_COURSE_HAS_NO_TEE_SETS` | implemented | A course has no tee sets |
+| 90411 | CH-09315 | 04 Empty | `NOBODY_CAN_BE_A_COACHS_PICK` | implemented | Nobody can be a coach's pick |
+| 90412 | CH-09316 | 04 Empty | `NO_PLACE_ON_SCORE_IS_FILLED` | implemented | No place on score is filled |
 | 90501 | CH-09101 | 05 Validation | `THE_NAME_IS_EMPTY` | implemented | The name is empty |
 | 90502 | CH-09102 | 05 Validation | `THERE_IS_NO_START_DATE` | implemented | There is no start date |
 | 90503 | CH-09103 | 05 Validation | `THE_END_DATE_IS_BEFORE_THE_START` | implemented | The end date is before the start |
@@ -571,6 +645,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90508 | CH-09108 | 05 Validation | `SQUAD_SIZE_ISNT_1_TO_12` | implemented | Squad size isn't 1 to 12 |
 | 90509 | CH-09109 | 05 Validation | `MORE_COACHS_PICKS_THAN_PLACES` | implemented | More coach's picks than places |
 | 90510 | CH-09110 | 05 Validation | `ANY_OF_THE_ABOVE_ON_SUBMIT` | implemented | Any of the above on submit |
+| 90511 | CH-09111 | 05 Validation | `A_COACHS_PICK_WITH_NO_REASON` | implemented | A coach's pick with no reason |
+| 90512 | CH-09112 | 05 Validation | `SAVE_PICK_WITH_NO_PLAYER_CHOSEN` | implemented | Save pick with no player chosen |
 | 90601 | CH-09001 | 06 Server / system error | `CREATING_A_QUALIFIER_FAILS` | implemented | Creating a qualifier fails |
 | 90602 | CH-09002 | 06 Server / system error | `SAVING_AN_EDIT_FAILS` | implemented | Saving an edit fails |
 | 90603 | CH-09003 | 06 Server / system error | `CLOSING_A_QUALIFIER_FAILS` | implemented | Closing a qualifier fails |
@@ -593,15 +669,26 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90620 | CH-09216 | 06 Server / system error | `THE_FORM_CRASHES` | implemented | The form crashes |
 | 90621 | CH-09217 | 06 Server / system error | `THE_ROUND_COURSES_DONT_LOAD_IN_THE` | implemented | The round courses don't load in the edit form |
 | 90622 | CH-09902 | 06 Server / system error | `AN_EDIT_SAVED_ONLY_IN_PART_OR` | implemented | An edit saved only in part, or not at all |
+| 90623 | CH-09005 | 06 Server / system error | `START_SELECTING_FAILS` | implemented | Start selecting fails |
+| 90624 | CH-09006 | 06 Server / system error | `SAVING_A_COACHS_PICK_FAILS` | implemented | Saving a coach's pick fails |
+| 90625 | CH-09007 | 06 Server / system error | `REMOVING_A_COACHS_PICK_FAILS` | implemented | Removing a coach's pick fails |
+| 90626 | CH-09008 | 06 Server / system error | `CONFIRMING_THE_SQUAD_FAILS` | implemented | Confirming the squad fails |
+| 90627 | CH-09218 | 06 Server / system error | `MANAGE_SELECTIONS_DOESNT_LOAD` | implemented | Manage selections doesn't load |
+| 90628 | CH-09219 | 06 Server / system error | `MANAGE_SELECTIONS_CRASHES` | implemented | Manage selections crashes |
+| 90701 | CH-09903 | 07 Network / offline | `THE_SQUAD_IS_CONFIRMED` | implemented | The squad is confirmed (Manage selections) |
 | 90801 | CH-09310 | 08 Permission / authorization | `THE_QUALIFIER_ISNT_ON_THE_VIEWERS_TEAM` | implemented | The qualifier isn't on the viewer's team, or doesn't exist |
-| 90802 | CH-09311 | 08 Permission / authorization | `A_PLAYER_OPENS_NEW_OR_EDIT` | implemented | A player opens /new or /edit |
+| 90802 | CH-09311 | 08 Permission / authorization | `A_PLAYER_OPENS_NEW_OR_EDIT` | implemented | A player opens /new, /edit or /selection |
 | 91001 | CH-09901 | 10 Warning | `THE_QUALIFIER_IS_CLOSED` | implemented | The qualifier is closed |
 | 91101 | CH-09501 | 11 Destructive | `CLOSE_QUALIFIER` | implemented | Close qualifier |
+| 91102 | CH-09503 | 11 Destructive | `START_SELECTING` | implemented | Start selecting |
+| 91103 | CH-09504 | 11 Destructive | `REMOVE_A_COACHS_PICK` | implemented | Remove a coach's pick |
+| 91104 | CH-09505 | 11 Destructive | `CONFIRM_THE_SQUAD` | implemented | Confirm the squad |
 | 91201 | CH-09502 | 12 State preservation | `CANCEL_OR_BACK_WITH_UNSAVED_CHANGES_IN` | implemented | Cancel or Back with unsaved changes in the form |
 | 91601 | CH-09601 | 16 Micro animation | `PRESSING_A_CARD_THE_HERO_OR_A` | reserved | Pressing a card, the hero or a status pill |
 | 91602 | CH-09602 | 16 Micro animation | `OPENING_A_LEADERBOARD_ROW` | reserved | Opening a leaderboard row |
-| 91701 | CH-09701 | 17 Haptic | `A_STATUS_PILL_A_LEADERBOARD_ROW_A` | reserved | A status pill, a leaderboard row, a player checkbox, a course or a tee |
+| 91701 | CH-09701 | 17 Haptic | `A_STATUS_PILL_A_LEADERBOARD_ROW_A` | reserved | A status pill, a leaderboard row, a player checkbox, a course, a tee, or a player in the pick dialog |
 | 91702 | CH-09702 | 17 Haptic | `CLOSE_QUALIFIER_DISCARD` | reserved | Close qualifier, Discard |
+| 91703 | CH-09703 | 17 Haptic | `START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK` | reserved | Start selecting, Confirm squad, Remove a pick |
 | 91801 | CH-09801 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 91802 | CH-09802 | 18 Accessibility | `THE_LEADERBOARD_AND_ROUND_BY_ROUND_ARE` | reserved | The leaderboard and round-by-round are tables (rows, column headers, a row header per player); each row's scorecards open from a button with aria-expanded, and each scorecard is a table with a caption |
 | 91803 | CH-09803 | 18 Accessibility | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | implemented | A live update to the standings is announced |

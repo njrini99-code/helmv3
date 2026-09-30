@@ -11,9 +11,8 @@ import { Modal } from '../../ui/Modal';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
-import { useAction } from '../../lib/use-action';
 import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
-import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty } from './parts';
+import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
   return (
@@ -34,7 +33,10 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
   const file = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const toast = useToast();
-  const save = useAction('settings.saveProfile', writes.saveProfile, { done: 'Profile saved', failed: "Couldn't save your profile", code: 'CH-8001' });
+  const save = useSaveAction('settings.saveProfile', writes.saveProfile, { done: 'Profile saved', failed: "Couldn't save your profile", code: 'CH-8001' }, (_r, saved) => {
+    f.commit(saved);
+    writes.refresh();
+  });
   // The coin keeps the saved initials while the name field is being edited or is empty.
   const name = (coach ? f.draft.fullName : `${f.draft.firstName} ${f.draft.lastName}`).trim() || profile.fullName;
   const invalid = profileProblem(data.role, f.draft);
@@ -71,13 +73,7 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
           invalid={invalid}
           savedAt={f.savedAt}
           onReset={f.reset}
-          onSave={async () => {
-            const r = await save.run(f.draft);
-            if (r.success) {
-              f.commit();
-              writes.refresh();
-            }
-          }}
+          onSave={() => void save.run(f.draft)}
         />
       }
     >
@@ -135,7 +131,16 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   useReportDirty('email', next.trim() !== '');
-  const send = useAction('settings.changeEmail', writes.changeEmail, (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn't start the email change", code: 'CH-8003' }));
+  const send = useSaveAction(
+    'settings.changeEmail',
+    writes.changeEmail,
+    (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn't start the email change", code: 'CH-8003' }),
+    (_r, v) => {
+      setSentTo(v);
+      setNext('');
+      setTouched(false);
+    },
+  );
   const problem = next.trim() ? emailProblem(next, email) : null;
   return (
     <Card id="set-email" title="Email" description="Where GolfHelm sends sign-in links and email notifications.">
@@ -152,13 +157,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
           e.preventDefault();
           setTouched(true);
           if (problem || !next.trim()) return;
-          const v = next.trim();
-          const r = await send.run(v);
-          if (r.success) {
-            setSentTo(v);
-            setNext('');
-            setTouched(false);
-          }
+          await send.run(next.trim());
         }}
       >
         <Field
@@ -186,7 +185,12 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
   const [confirm, setConfirm] = useState('');
   const [tried, setTried] = useState(false);
   useReportDirty('password', !!(cur || next || confirm));
-  const change = useAction('settings.changePassword', writes.changePassword, { done: 'Password updated', failed: "Couldn't update your password", code: 'CH-8004' });
+  const change = useSaveAction('settings.changePassword', writes.changePassword, { done: 'Password updated', failed: "Couldn't update your password", code: 'CH-8004' }, () => {
+    setCur('');
+    setNext('');
+    setConfirm('');
+    setTried(false);
+  });
   const problem = passwordProblem(cur, next, confirm);
   return (
     <Card
@@ -213,13 +217,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
                 haptic('warning');
                 return;
               }
-              const r = await change.run(cur, next);
-              if (r.success) {
-                setCur('');
-                setNext('');
-                setConfirm('');
-                setTried(false);
-              }
+              await change.run(cur, next);
             }}
           >
             {change.pending ? 'Updating…' : 'Update password'}
@@ -293,7 +291,10 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
   const toast = useToast();
-  const del = useAction('settings.deleteAccount', writes.deleteAccount, { done: 'Your account was deleted', failed: "Couldn't delete your account", code: 'CH-8023' });
+  const del = useSaveAction('settings.deleteAccount', writes.deleteAccount, { done: 'Your account was deleted', failed: "Couldn't delete your account", code: 'CH-8023' }, () => {
+    setConfirming(false);
+    onDeleted();
+  });
   return (
     <>
       <Card id="set-session" title="Session and account" tone="danger">
@@ -357,13 +358,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
             <Button
               variant="danger"
               disabled={typed.trim().toLowerCase() !== 'delete' || del.pending}
-              onClick={async () => {
-                const r = await del.run();
-                if (r.success) {
-                  setConfirming(false);
-                  onDeleted();
-                }
-              }}
+              onClick={() => void del.run()}
             >
               {del.pending ? 'Deleting…' : 'Delete account'}
             </Button>

@@ -51,8 +51,8 @@ Success confirmations are listed next to their error: the toast shows for 4 seco
 | CH-8109 | School name cleared | "The school needs a name." | `teamProblem` | settings.test › CH-8109 |
 | CH-8110 | School state isn't two letters | "Use the two-letter state code." | `teamProblem` | settings.test › CH-8110 |
 | CH-8111 | First reminder isn't earlier than the final one | "The first reminder has to come before the final one." | `remindersProblem` | settings.test › CH-8111 |
-| CH-8112 | Handicap outside −10 to 54 | "Handicap must be between -10 and 54." | `golfDetailsProblem` | settings.test › CH-8112 |
-| CH-8113 | Handicap index outside −10 to 54 | "Handicap index must be between -10 and 54." | `golfDetailsProblem` | settings.test › CH-8113 |
+| CH-8112 | Handicap outside −10 to 54 | "Handicap must be between −10 and 54." | `golfDetailsProblem` | settings.test › CH-8112 |
+| CH-8113 | Handicap index outside −10 to 54 | "Handicap index must be between −10 and 54." | `golfDetailsProblem` | settings.test › CH-8113 |
 | CH-8114 | Graduation year not 2000–2100 | "Graduation year looks wrong." | `golfDetailsProblem` | settings.test › CH-8114 |
 | CH-8115 | Player state isn't two letters | "Use the two-letter state code." | `golfDetailsProblem` | settings.test › CH-8115 |
 
@@ -86,7 +86,7 @@ Success confirmations are listed next to their error: the toast shows for 4 seco
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8401 | The page is loading | A skeleton of the title, the section list and two cards, in the page's own layout | `SettingsSkeleton`, route `loading.tsx` | settings.test › CH-8401 |
+| CH-8401 | The page is loading | A skeleton of the title, the section list and two cards, in the page's own layout | `SettingsSkeleton`, route `loading.tsx` (and the two old links' `loading.tsx`) | settings.test › CH-8401, settings-server.test › CH-8401 |
 | CH-8402 | A form is saving | The button reads "Saving…" (or "Sending…", "Updating…", "Deleting…", "Leaving…") and can't be pressed twice | `useAction.pending` | settings.test › CH-8402 |
 | CH-8403 | A switch is saving | The switch holds its new position and can't be flipped again until it lands | `Switch busy` | settings.test › CH-8403 |
 | CH-8404 | A photo is uploading | The photo dims and the button reads "Uploading…" | `ProfileCard` | preview |
@@ -105,7 +105,7 @@ Success confirmations are listed next to their error: the toast shows for 4 seco
 | CH-8507 | Switching section with unsaved changes | "Leave without saving?" + "Your changes in this section haven't been saved." | `SettingsView` | settings.test › CH-8507 |
 | CH-8508 | Closing or reloading the tab with unsaved changes | The browser's own "Leave site?" prompt | `beforeunload` in `useUnsavedGuard` | settings.test › CH-8508 |
 
-## 86xx Motion (90, 150, 220, 360ms, one ease; off when Animations is off or the OS asks for reduced motion)
+## 86xx Motion (v2, D-64: press 110, quick 180, base 260, release 280ms; off when Animations is off or the OS asks for reduced motion)
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
@@ -123,7 +123,7 @@ Success confirmations are listed next to their error: the toast shows for 4 seco
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-8701 | Picking a section, flipping a switch, choosing a segment, each slider step | A selection tick | `haptic('select')` | settings.test › CH-8701 |
-| CH-8702 | A Save changes that lands | The OS success pattern (D-70). A switch, segment or slider that saves on change stays silent when it lands: its selection tick (CH-8701) was the feedback | `haptic('commit')` | settings.test › CH-8702 |
+| CH-8702 | A Save changes that lands | The OS success pattern (D-70). A switch, segment or slider that saves on change stays silent when it lands: its selection tick (CH-8701) was the feedback | `haptic('success')` through `useAction` | settings.test › CH-8702 |
 | CH-8703 | A save fails or a photo is rejected | The OS error pattern | `haptic('error')` | settings.test › CH-8703 |
 | CH-8704 | Opening Delete account, or pressing Update password with a problem | The OS warning pattern | `haptic('warning')` | settings.test › CH-8704 |
 | CH-8705 | Copying the invite code or link | The OS success pattern | `haptic('success')` | settings.test › CH-8705 |

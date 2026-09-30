@@ -52,6 +52,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   if (userRes.error) log('user', userRes.error, 'auth');
   if (deliveryRes.error || !deliveryRes.data) log('deliveryPrefs', deliveryRes.error ?? 'no data', 'notifications');
   if (profileRes.error) log('profile', profileRes.error);
+  else if (!profileRes.data) log('profile', 'no profile row');
   if (teamNameRes.error) log('teamName', teamNameRes.error, 'teams');
 
   const p = profileRes.error ? null : (profileRes.data as Record<string, unknown> | null);
@@ -163,6 +164,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
     base.reminders = settingsRes.error ? failed : ok({ enabled: r.enabled, earlyHours: r.earlyHours, lateMinutes: r.lateMinutes });
 
     if (teamRes.error) log('team', teamRes.error, 'teams');
+    else if (!teamRes.data) log('team', 'no team row', 'teams');
     type OrgRow = { id: string; name: string | null; location_city: string | null; location_state: string | null; division: string | null; conference: string | null };
     const t = teamRes.data as { id: string; name: string; season: string | null; join_code: string | null; organization: OrgRow | null } | null;
     base.team =
@@ -203,19 +205,25 @@ async function loadCoachHelm(
 
   let team: ChCoachHelmSettings['team'] = null;
   if (teamId) {
-    const access = await getTeamCoachHelmAccess(teamId);
-    if (!access.success) log('teamCoachhelmAccess', access.error ?? 'unknown', 'coachhelm_ai');
-    const head = access.success && access.isHeadCoach;
-    if (head) {
-      // The head coach may create the team row on first read, as the current page does.
-      const settings = await getOrCreateTeamCoachHelmSettings(teamId);
-      if (!settings.success || !settings.settings) log('teamCoachhelm', settings.error ?? 'no settings', 'coachhelm_ai');
-      else team = { enabled: settings.settings.enabled, disabledAt: settings.settings.disabled_at, isHeadCoach: true };
-    } else {
-      // Assistants only read; with no row yet, CoachHelm is on for the team (the default).
-      const { data, error } = await _supabase.from('golf_team_coachhelm_settings').select('enabled, disabled_at').eq('team_id', teamId).maybeSingle();
-      if (error) log('teamCoachhelm', error, 'coachhelm_ai');
-      else team = { enabled: data?.enabled ?? true, disabledAt: data?.disabled_at ?? null, isHeadCoach: false };
+    // These team actions throw where the loader's other reads return an error; a throw here must not
+    // take the whole page down (82101), so it is logged and the team switch is left out, as a failed read is.
+    try {
+      const access = await getTeamCoachHelmAccess(teamId);
+      // A failed check is not "an assistant": that would tell a head coach only the head coach may change this (80804).
+      if (!access.success) log('teamCoachhelmAccess', access.error ?? 'unknown', 'coachhelm_ai');
+      else if (access.isHeadCoach) {
+        // The head coach may create the team row on first read, as the current page does.
+        const settings = await getOrCreateTeamCoachHelmSettings(teamId);
+        if (!settings.success || !settings.settings) log('teamCoachhelm', settings.error ?? 'no settings', 'coachhelm_ai');
+        else team = { enabled: settings.settings.enabled, disabledAt: settings.settings.disabled_at, isHeadCoach: true };
+      } else {
+        // Assistants only read; with no row yet, CoachHelm is on for the team (the default).
+        const { data, error } = await _supabase.from('golf_team_coachhelm_settings').select('enabled, disabled_at').eq('team_id', teamId).maybeSingle();
+        if (error) log('teamCoachhelm', error, 'coachhelm_ai');
+        else team = { enabled: data?.enabled ?? true, disabledAt: data?.disabled_at ?? null, isHeadCoach: false };
+      }
+    } catch (err) {
+      log('teamCoachhelm', err, 'coachhelm_ai');
     }
   }
 

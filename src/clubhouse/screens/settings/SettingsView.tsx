@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m } from 'framer-motion';
 import { Bell, Flag, Settings2, Sparkles, UserRound, Users, type LucideIcon } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
@@ -11,6 +11,7 @@ import { haptic } from '../../lib/haptics';
 import { CH_ROUTE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chTrail } from '../../lib/track';
+import { keepSaved } from './live';
 import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from './model';
 import { DirtyContext, useUnsavedGuard } from './parts';
 import { AccountSection } from './Account';
@@ -38,8 +39,8 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
  * theirs. Moving away with unsaved edits asks first.
  */
 export function SettingsView({
-  data,
-  writes,
+  data: served,
+  writes: raw,
   device,
   initialSection,
   onDeleted,
@@ -51,6 +52,15 @@ export function SettingsView({
   onDeleted: () => void;
 }) {
   const reduced = useChReducedMotion();
+  // The page's copy of the data: what the server rendered, plus what has been saved since (81204).
+  // A section reads it when it opens; a fresh server read (after a refresh) replaces it.
+  const [data, setData] = useState(served);
+  const [seen, setSeen] = useState(served);
+  if (seen !== served) {
+    setSeen(served);
+    setData(served);
+  }
+  const writes = useMemo(() => keepSaved(raw, setData), [raw]);
   const sections = SECTIONS[data.role];
   const [section, setSection] = useState<ChSettingsSection>(initialSection);
   const [ask, setAsk] = useState<ChSettingsSection | null>(null);
@@ -143,6 +153,7 @@ export function SettingsView({
             </Button>
             <Button
               variant="danger"
+              feel="warning"
               onClick={() => {
                 const next = ask;
                 setAsk(null);

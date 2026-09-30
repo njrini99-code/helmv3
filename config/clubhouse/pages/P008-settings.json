@@ -21,11 +21,11 @@
   "status": {
     "design": "draft",
     "implementation": "in_progress",
-    "contract": "partial",
+    "contract": "complete",
     "bridge": "reserved",
     "data": "existing",
     "verification": "partial",
-    "docs": "missing"
+    "docs": "current"
   },
   "design": {
     "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
@@ -41,12 +41,583 @@
     "route": "src/clubhouse/routes/settings.tsx",
     "styles": "src/clubhouse/styles/settings.css",
     "tests": [
-      "src/clubhouse/__tests__/settings.test.tsx"
+      "src/clubhouse/__tests__/settings.test.tsx",
+      "src/clubhouse/__tests__/settings-server.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/settings.md",
   "checklist": "docs/clubhouse/screens/settings.md",
   "phoneSpec": "docs/clubhouse/phone/settings.md",
-  "actions": [],
+  "actions": [
+    {
+      "id": "ACT-P008-OPEN-SECTION",
+      "label": "Open a section",
+      "component": "src/clubhouse/screens/settings/SettingsView.tsx#SettingsView",
+      "handler": "show",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "deepLink": 80102,
+        "permission": 80801,
+        "confirm": 81202
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SAVE-PROFILE",
+      "label": "Save your name and photo",
+      "component": "src/clubhouse/screens/settings/Account.tsx#ProfileCard",
+      "handler": "save.run (useSaveAction settings.saveProfile)",
+      "service": "src/clubhouse/screens/settings/writes.ts#saveProfile",
+      "data": [
+        "golf_coaches",
+        "golf_players"
+      ],
+      "bridge": {
+        "validation": 80501,
+        "success": 80901,
+        "failure": 80601,
+        "loadFailed": 80625,
+        "offline": 10703,
+        "refresh": 81501,
+        "retry": 81402,
+        "keepsEdits": 81205,
+        "refused": 80808
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-UPLOAD-PHOTO",
+      "label": "Upload a profile photo",
+      "component": "src/clubhouse/screens/settings/Account.tsx#ProfileCard",
+      "handler": "upload",
+      "service": "src/clubhouse/screens/settings/writes.ts#uploadAvatar",
+      "data": [
+        "storage avatars"
+      ],
+      "bridge": {
+        "failure": 80602,
+        "loading": 80302,
+        "empty": 80404
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-CHANGE-EMAIL",
+      "label": "Send the email-change confirmation",
+      "component": "src/clubhouse/screens/settings/Account.tsx#EmailCard",
+      "handler": "send.run (useSaveAction settings.changeEmail)",
+      "service": "src/clubhouse/screens/settings/writes.ts#changeEmail",
+      "data": [
+        "Supabase Auth"
+      ],
+      "bridge": {
+        "validation": 80503,
+        "success": 80901,
+        "failure": 80603,
+        "offline": 10703,
+        "submit": 82001
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-CHANGE-PASSWORD",
+      "label": "Change your password",
+      "component": "src/clubhouse/screens/settings/Account.tsx#PasswordCard",
+      "handler": "change.run (useSaveAction settings.changePassword)",
+      "service": "src/clubhouse/screens/settings/writes.ts#changePassword",
+      "data": [
+        "Supabase Auth"
+      ],
+      "bridge": {
+        "validation": 80505,
+        "success": 80901,
+        "failure": 80604,
+        "permission": 80807,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-DELIVERY",
+      "label": "Turn an email or push update on or off",
+      "component": "src/clubhouse/screens/settings/Notifications.tsx#DeliveryCard",
+      "handler": "flip (useInstantSave)",
+      "service": "src/app/actions/notification-preferences.ts#updateNotificationPreferences",
+      "data": [
+        "users.notification_preferences"
+      ],
+      "bridge": {
+        "success": 80902,
+        "failure": 80605,
+        "rollback": 81302,
+        "busy": 81301,
+        "loadFailed": 80626,
+        "offline": 80701,
+        "retry": 81402,
+        "warning": 81003
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-DIGEST",
+      "label": "Turn the weekly team email on or off (coach)",
+      "component": "src/clubhouse/screens/settings/Notifications.tsx#DeliveryCard",
+      "handler": "save.run (useInstantSave digest)",
+      "service": "src/app/golf/actions/coaching-philosophy.ts#saveCoachingPhilosophy",
+      "data": [
+        "golf_coach_philosophy"
+      ],
+      "bridge": {
+        "success": 80902,
+        "failure": 80606,
+        "rollback": 81302,
+        "loadFailed": 80628,
+        "offline": 80701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-TOGGLE-DEVICE-PUSH",
+      "label": "Turn push on or off on this device",
+      "component": "src/clubhouse/screens/settings/Notifications.tsx#DeliveryCard",
+      "handler": "togglePush",
+      "service": "src/hooks/golf/use-push-subscription.ts#usePushSubscription",
+      "data": [
+        "browser push subscription"
+      ],
+      "bridge": {
+        "failure": 80607,
+        "warning": 81002
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-ROUTING",
+      "label": "Turn a CoachHelm update channel on or off (player)",
+      "component": "src/clubhouse/screens/settings/Notifications.tsx#RoutingCard",
+      "handler": "setCell",
+      "service": "src/app/golf/actions/v3/notification-prefs.ts#setCategoryChannel",
+      "data": [
+        "golf_player_notification_state"
+      ],
+      "bridge": {
+        "success": 80902,
+        "failure": 80608,
+        "rollback": 81302,
+        "loadFailed": 80627,
+        "offline": 80701,
+        "warning": 81003
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-BULK-ROUTING",
+      "label": "Mute push, mute email or reset the CoachHelm updates (player)",
+      "component": "src/clubhouse/screens/settings/Notifications.tsx#RoutingCard",
+      "handler": "bulk",
+      "service": "src/app/golf/actions/v3/notification-prefs.ts#setAllChannels",
+      "data": [
+        "golf_player_notification_state"
+      ],
+      "bridge": {
+        "confirm": 81104,
+        "failure": 80609,
+        "rollback": 81302,
+        "offline": 80701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-ROUTING-QUIET",
+      "label": "Turn CoachHelm quiet mode on or off (player)",
+      "component": "src/clubhouse/screens/settings/Notifications.tsx#RoutingCard",
+      "handler": "save.run (useInstantSave quiet)",
+      "service": "src/app/golf/actions/v3/notification-prefs.ts#setQuietMode",
+      "data": [
+        "golf_player_notification_state"
+      ],
+      "bridge": {
+        "failure": 80610,
+        "rollback": 81302,
+        "offline": 80701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SAVE-TEAM",
+      "label": "Save team and school details (coach)",
+      "component": "src/clubhouse/screens/settings/Team.tsx#TeamCard",
+      "handler": "save.run (useSaveAction settings.saveTeam)",
+      "service": "src/clubhouse/screens/settings/writes.ts#saveTeam",
+      "data": [
+        "golf_teams",
+        "organizations"
+      ],
+      "bridge": {
+        "validation": 80508,
+        "success": 80901,
+        "failure": 80611,
+        "loadFailed": 80629,
+        "offline": 10703,
+        "refresh": 81501,
+        "permission": 80805,
+        "refused": 80808
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-COPY-INVITE",
+      "label": "Copy or share the invite code or link (coach)",
+      "component": "src/clubhouse/screens/settings/Team.tsx#InviteCard",
+      "handler": "copy, share",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "failure": 80613,
+        "haptic": 81705
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-REGENERATE-CODE",
+      "label": "Make a new invite code (coach)",
+      "component": "src/clubhouse/screens/settings/Team.tsx#InviteCard",
+      "handler": "regen.run (useSaveAction settings.regenerateCode)",
+      "service": "src/app/golf/actions/teams.ts#regenerateJoinCode",
+      "data": [
+        "golf_teams"
+      ],
+      "bridge": {
+        "confirm": 81103,
+        "success": 80901,
+        "failure": 80612,
+        "loadFailed": 80630,
+        "offline": 10703,
+        "permission": 80806,
+        "retry": 81402
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SAVE-SCORING",
+      "label": "Save scoring and format (coach)",
+      "component": "src/clubhouse/screens/settings/Team.tsx#ScoringCard",
+      "handler": "save.run (useSaveAction settings.saveScoring)",
+      "service": "src/clubhouse/screens/settings/writes.ts#saveScoring",
+      "data": [
+        "golf_team_settings"
+      ],
+      "bridge": {
+        "success": 80901,
+        "failure": 80614,
+        "loadFailed": 80631,
+        "offline": 10703,
+        "kept": 81204
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SAVE-REMINDERS",
+      "label": "Save the event reminder schedule (coach)",
+      "component": "src/clubhouse/screens/settings/Team.tsx#RemindersCard",
+      "handler": "save.run (useSaveAction settings.saveReminders)",
+      "service": "src/clubhouse/screens/settings/writes.ts#saveReminders",
+      "data": [
+        "golf_team_settings"
+      ],
+      "bridge": {
+        "validation": 80511,
+        "success": 80901,
+        "failure": 80615,
+        "loadFailed": 80632,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SAVE-GOLF",
+      "label": "Save golf details (player)",
+      "component": "src/clubhouse/screens/settings/Golf.tsx#DetailsCard",
+      "handler": "save.run (useSaveAction settings.saveGolf)",
+      "service": "src/clubhouse/screens/settings/writes.ts#saveGolf",
+      "data": [
+        "golf_players"
+      ],
+      "bridge": {
+        "validation": 80512,
+        "success": 80901,
+        "failure": 80616,
+        "loadFailed": 80633,
+        "offline": 10703,
+        "refused": 80808
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-LEAVE-TEAM",
+      "label": "Leave the team (player)",
+      "component": "src/clubhouse/screens/settings/Golf.tsx#MembershipCard",
+      "handler": "leave.run (useSaveAction settings.leaveTeam)",
+      "service": "src/clubhouse/screens/settings/writes.ts#leaveTeam",
+      "data": [
+        "golf_team_members"
+      ],
+      "bridge": {
+        "confirm": 81102,
+        "success": 80901,
+        "failure": 80617,
+        "loadFailed": 80634,
+        "offline": 10703,
+        "permission": 80806,
+        "refresh": 81501
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-REQUEST-JOIN",
+      "label": "Ask to join a team with an invite code (player)",
+      "component": "src/clubhouse/screens/settings/Golf.tsx#MembershipCard",
+      "handler": "join.run (useSaveAction settings.requestJoin)",
+      "service": "src/app/golf/actions/teams.ts#createTeamJoinRequest",
+      "data": [
+        "golf_team_join_requests"
+      ],
+      "bridge": {
+        "empty": 80402,
+        "success": 80901,
+        "failure": 80618,
+        "offline": 10703,
+        "permission": 80806,
+        "refresh": 81501,
+        "submit": 82001
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-CANCEL-JOIN-REQUEST",
+      "label": "Cancel a join request (player)",
+      "component": "src/clubhouse/screens/settings/Golf.tsx#MembershipCard",
+      "handler": "cancel.run (useSaveAction settings.cancelRequest)",
+      "service": "src/app/golf/actions/teams.ts#cancelJoinRequest",
+      "data": [
+        "golf_team_join_requests"
+      ],
+      "bridge": {
+        "pending": 80403,
+        "success": 80901,
+        "failure": 80619,
+        "offline": 10703,
+        "kept": 81204
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-COACHHELM-COACH",
+      "label": "Turn CoachHelm, insights, predictions or patterns on or off on your dashboards (coach)",
+      "component": "src/clubhouse/screens/settings/CoachHelm.tsx#PowerCard",
+      "handler": "setC (useInstantSave)",
+      "service": "src/clubhouse/screens/settings/writes.ts#setCoachHelmCoach",
+      "data": [
+        "golf_coachhelm_settings"
+      ],
+      "bridge": {
+        "confirm": 81105,
+        "failure": 80620,
+        "rollback": 81302,
+        "offline": 80701,
+        "loadFailed": 80635
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-COACHHELM-TEAM",
+      "label": "Turn CoachHelm on or off for the whole team (head coach)",
+      "component": "src/clubhouse/screens/settings/CoachHelm.tsx#PowerCard",
+      "handler": "save.run (useInstantSave team)",
+      "service": "src/app/golf/actions/insights.ts#updateTeamCoachHelmSettings",
+      "data": [
+        "golf_team_coachhelm_settings"
+      ],
+      "bridge": {
+        "permission": 80804,
+        "failure": 80621,
+        "rollback": 81302,
+        "offline": 80701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SAVE-PHILOSOPHY",
+      "label": "Change a CoachHelm priority, threshold, alert, signal or display setting (coach)",
+      "component": "src/clubhouse/screens/settings/CoachHelm.tsx#usePhilosophy",
+      "handler": "change",
+      "service": "src/clubhouse/screens/settings/writes.ts#savePhilosophy",
+      "data": [
+        "golf_coach_philosophy"
+      ],
+      "bridge": {
+        "failure": 80622,
+        "loading": 80303,
+        "rollback": 81302,
+        "offline": 80701,
+        "waiting": 81206,
+        "kept": 81204,
+        "refused": 80808
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-ANIMATIONS",
+      "label": "Turn animations on or off on this device",
+      "component": "src/clubhouse/screens/settings/Preferences.tsx#PreferencesSection",
+      "handler": "updatePreferences",
+      "service": "src/hooks/golf/use-appearance-preferences.ts#useAppearancePreferences",
+      "data": [
+        "this device's storage"
+      ],
+      "bridge": {
+        "motion": 81608
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SET-HAPTICS",
+      "label": "Turn haptics on or off on this device (app)",
+      "component": "src/clubhouse/screens/settings/Preferences.tsx#PreferencesSection",
+      "handler": "setHapticsEnabled",
+      "service": "src/lib/utils/haptics-pref.ts#setHapticsEnabled",
+      "data": [
+        "this device's storage"
+      ],
+      "bridge": {
+        "haptic": 81707
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-REPORT-PROBLEM",
+      "label": "Report a problem",
+      "component": "src/clubhouse/screens/settings/Account.tsx#HelpCard",
+      "handler": "report",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "warning": 81001
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-SIGN-OUT",
+      "label": "Sign out",
+      "component": "src/clubhouse/screens/settings/Account.tsx#SessionCard",
+      "handler": "writes.signOut",
+      "service": "src/clubhouse/screens/settings/writes.ts#signOut",
+      "data": [
+        "Supabase Auth"
+      ],
+      "bridge": {
+        "failure": 80624
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/native.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-DELETE-ACCOUNT",
+      "label": "Delete your account",
+      "component": "src/clubhouse/screens/settings/Account.tsx#SessionCard",
+      "handler": "del.run (useSaveAction settings.deleteAccount)",
+      "service": "src/app/api/account/delete/route.ts#DELETE",
+      "data": [
+        "the account and the rows tied to it"
+      ],
+      "bridge": {
+        "confirm": 81101,
+        "success": 80903,
+        "failure": 80623,
+        "offline": 10703,
+        "retry": 81402
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx",
+        "src/clubhouse/__tests__/settings-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P008-RETRY-READ",
+      "label": "Try again on a section that did not load",
+      "component": "src/clubhouse/screens/settings/parts.tsx#ReadFailed",
+      "handler": "onRetry (router.refresh)",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "recovery": 81401
+      },
+      "tests": [
+        "src/clubhouse/__tests__/settings.test.tsx"
+      ]
+    }
+  ],
   "held": []
 }

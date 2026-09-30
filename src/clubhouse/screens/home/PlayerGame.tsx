@@ -189,7 +189,7 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
         </g>
       ))}
       {!phone && (
-        <g transform={`translate(${x(bi).toFixed(1)},${(y(best) - (labelled ? 14 : 4)).toFixed(1)})`} className="ch-ph-pin">
+        <g transform={`translate(${x(bi).toFixed(1)},${(y(best) - (labelled ? 14 : 4)).toFixed(1)})`} className="ch-ph-pinflag">
           <line y1="-6" y2="-34" />
           <path d="M0,-34 L16,-29 L0,-24 Z" />
           <text x="20" y="-26" className="ch-ph-chart__ann">

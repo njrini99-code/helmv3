@@ -209,8 +209,8 @@ export function golfDetailsProblem(d: ChGolfDetails): ChProblem | null {
   const h = num(d.handicap);
   const hi = num(d.handicapIndex);
   const y = num(d.graduationYear);
-  if (h != null && (!Number.isFinite(h) || h < -10 || h > 54)) return problem('CH-8112', 'Handicap must be between -10 and 54.');
-  if (hi != null && (!Number.isFinite(hi) || hi < -10 || hi > 54)) return problem('CH-8113', 'Handicap index must be between -10 and 54.');
+  if (h != null && (!Number.isFinite(h) || h < -10 || h > 54)) return problem('CH-8112', 'Handicap must be between −10 and 54.');
+  if (hi != null && (!Number.isFinite(hi) || hi < -10 || hi > 54)) return problem('CH-8113', 'Handicap index must be between −10 and 54.');
   if (y != null && (!Number.isInteger(y) || y < 2000 || y > 2100)) return problem('CH-8114', 'Graduation year looks wrong.');
   if (d.state.trim() && !/^[A-Za-z]{2}$/.test(d.state.trim())) return problem('CH-8115', 'Use the two-letter state code.');
   return null;

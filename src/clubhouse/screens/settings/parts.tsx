@@ -11,7 +11,7 @@ import { Switch } from '../../ui/Switch';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chReport, chTrail } from '../../lib/track';
-import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
+import { CH_SLOW_SAVE_AFTER, isOffline, useAction, type ActionCopy } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { useToast } from '../../ui/Toast';
 import type { ChProblem, ChResult } from './model';
@@ -158,7 +158,7 @@ export function SaveBar({
         </AnimatePresence>
       </span>
       {onReset && dirty && !pending && (
-        <Button variant="ghost" size="sm" onClick={onReset}>
+        <Button variant="ghost" size="sm" feel="warning" onClick={onReset}>
           Discard
         </Button>
       )}
@@ -229,6 +229,7 @@ export function useUnsavedGuard(dirty: boolean) {
           </Button>
           <Button
             variant="danger"
+            feel="warning"
             onClick={() => {
               const href = pendingHref;
               setPendingHref(null);
@@ -244,6 +245,29 @@ export function useUnsavedGuard(dirty: boolean) {
   return modal;
 }
 
+/**
+ * useAction for a save whose landing finishes the card: commit the draft, clear
+ * the fields, close the dialog, ask for a fresh read. That work runs inside the
+ * action, so it happens when the toast's Retry lands the save too (the toast
+ * re-runs the action, not the button's handler).
+ */
+export function useSaveAction<A extends unknown[], T>(
+  name: string,
+  write: (...a: A) => Promise<ChResult<T>>,
+  copy: ActionCopy | ((...a: A) => ActionCopy),
+  landed: (r: ChResult<T>, ...a: A) => void,
+) {
+  return useAction(
+    name,
+    async (...a: A) => {
+      const r = await write(...a);
+      if (r.success || r.ok) landed(r, ...a);
+      return r;
+    },
+    copy,
+  );
+}
+
 /** Tracks a form against its last saved value. */
 export function useDraft<T>(saved: T) {
   const [base, setBase] = useState(saved);
@@ -256,9 +280,10 @@ export function useDraft<T>(saved: T) {
     dirty,
     savedAt,
     reset: () => setDraft(base),
+    // `v` is what was sent. The draft is left as it is: when it still equals `v` it is clean, and when the person
+    // kept typing during a slow save, or before a Retry landed, that typing stays and shows as unsaved (81205).
     commit: (v: T = draft) => {
       setBase(v);
-      setDraft(v);
       setSavedAt(Date.now());
     },
   };

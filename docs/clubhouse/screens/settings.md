@@ -51,7 +51,7 @@ Data (same tables and actions as the current Settings page):
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked (no list reads here)
 - [x] N/A: no statistics on this page
 - [x] N/A: no dates shown except join-request dates
-- [ ] Unit tests cover the loader's derivations (model validation is tested; the loader itself is not)
+- [x] Unit tests cover the loader's derivations (`settings-server.test.tsx`: both roles, every failed read flagged and logged, a throwing action; model validation is in `logic.test.ts`)
 
 ## states
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
