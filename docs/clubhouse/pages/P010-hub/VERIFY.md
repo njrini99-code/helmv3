@@ -71,7 +71,7 @@ Result:       built to the approved spec and seen at 390 in that pass; the iPhon
 ## Accessibility
 
 ```text
-Keyboard:       Tab reaches the tabs and reply buttons and Enter or Space presses them (hub.test 102001); Esc
+Keyboard:       the tabs are one stop, moved by the arrows, Home and End; Enter or Space presses a reply (hub.test 102001); Esc
                 closes a sheet and focus returns to its opener (hub.test 102001, on the sheet's cancel event).
                 Not built: arrow keys between tabs. A full keyboard walk at 1280 and 390 is open.
 VoiceOver:      not tried on a device.

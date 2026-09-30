@@ -1091,15 +1091,27 @@ describe('Team Hub · roles, states and layout', () => {
     expect(code('CH-10405')).not.toBeNull();
   });
 
-  it('102001 the tabs and the reply buttons work from the keyboard: Tab reaches them, Enter and Space press them', async () => {
+  it('102001 the tabs are one stop: arrows, Home and End move and select, Tab goes on to the panel; Enter and Space press the reply buttons', async () => {
     const user = userEvent.setup();
     const w = show(PREVIEW_HUB_PLAYER);
-    screen.getByRole('tab', { name: 'Home' }).focus();
+    const tabs = screen.getAllByRole('tab');
+    const selected = () => screen.getByRole('tab', { selected: true });
+    expect(tabs.map((t) => t.tabIndex)).toEqual(tabs.map((_, i) => (i === 0 ? 0 : -1)));
+    tabs[0]!.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(selected()).toBe(screen.getByRole('tab', { name: 'Announcements' }));
+    expect(document.activeElement).toBe(selected());
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    await user.keyboard('{End}');
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]);
+    await user.keyboard('{ArrowRight}');
+    expect(selected()).toBe(tabs[0]);
+    await user.keyboard('{ArrowLeft}');
+    expect(selected()).toBe(tabs[tabs.length - 1]);
+    await user.keyboard('{Home}');
+    expect(document.activeElement).toBe(tabs[0]);
     await user.keyboard('{Tab}');
-    expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Announcements' }));
-    await user.keyboard('{Enter}');
-    expect(screen.getByRole('tab', { name: 'Announcements' }).getAttribute('aria-selected')).toBe('true');
-    await user.click(screen.getByRole('tab', { name: 'Home' }));
+    expect(document.activeElement?.getAttribute('role')).not.toBe('tab');
     going().focus();
     await user.keyboard(' ');
     expect(w.reply).toHaveBeenCalledWith('r2', 'accepted');

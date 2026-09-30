@@ -204,6 +204,24 @@ describe('Stats player · empty', () => {
 describe('Stats player · opened from a link', () => {
   const selected = () => screen.getByRole('tab', { selected: true }).textContent;
 
+  it('52001 the profile tabs are one stop: arrows, Home and End move and select', async () => {
+    const user = userEvent.setup();
+    wrap(<StatsPlayer data={player()} coachId="c1" />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.filter((t) => t.tabIndex === 0)).toEqual([tabs[0]]);
+    tabs[0]!.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(tabs[1]);
+    expect(tabs[1]!.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe(tabs[1]!.id);
+    await user.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]);
+    await user.keyboard('{Home}');
+    expect(selected()).toBe(tabs[0]!.textContent);
+    await user.keyboard('{End}');
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]);
+  });
+
   it("50102 ?tab=rounds opens the Rounds tab (Roster's All N, D-53)", () => {
     wrap(<StatsPlayer data={player()} coachId="c1" initialTab="rounds" />);
     expect(selected()).toMatch(/Rounds/);
@@ -747,7 +765,7 @@ describe('Stats player · the page', () => {
     await waitFor(() => expect(createFocusArea).toHaveBeenCalledTimes(1));
   });
 
-  it('52001 each section tab is one Tab stop, chosen with Enter or Space', async () => {
+  it('52001 the section tabs are one Tab stop; a click, Enter or Space on a tab still chooses it', async () => {
     const user = userEvent.setup();
     show(player());
     const rounds = screen.getByRole('tab', { name: /Rounds/ });
@@ -758,8 +776,8 @@ describe('Stats player · the page', () => {
     dev.focus();
     await user.keyboard(' ');
     expect(dev.getAttribute('aria-selected')).toBe('true');
-    // Not a roving group: every tab is reachable with Tab.
-    for (const tab of screen.getAllByRole('tab')) expect(tab.getAttribute('tabindex')).not.toBe('-1');
+    // A roving group: only the chosen tab is in the Tab order (the arrows are the test above).
+    expect(screen.getAllByRole('tab').filter((t) => t.tabIndex === 0)).toEqual([dev]);
   });
 });
 

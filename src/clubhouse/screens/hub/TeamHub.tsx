@@ -13,6 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
+import { tabListKeys } from '../../lib/tabs';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet } from './sheets';
@@ -253,6 +254,12 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     chTrail(`hub tab ${t}`);
     setTab(t);
   };
+  const tabKeys = tabListKeys(
+    TABS[data.role].map(([k]) => k),
+    tab,
+    pick,
+    (k) => `ch-hb-tab-${k}`,
+  );
   const openCompose = () => {
     setTab('ann');
     setCompose(true);
@@ -283,7 +290,17 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
       {/* CH-10801: real tabs, each controlling its panel. */}
       <div className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
         {TABS[data.role].map(([k, l]) => (
-          <button key={k} type="button" role="tab" id={`ch-hb-tab-${k}`} aria-selected={tab === k} aria-controls={`ch-hb-panel-${k}`} onClick={() => pick(k)}>
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            id={`ch-hb-tab-${k}`}
+            aria-selected={tab === k}
+            aria-controls={`ch-hb-panel-${k}`}
+            tabIndex={tab === k ? 0 : -1}
+            onClick={() => pick(k)}
+            onKeyDown={tabKeys}
+          >
             {l}
           </button>
         ))}

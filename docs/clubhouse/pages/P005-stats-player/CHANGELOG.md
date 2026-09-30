@@ -2,6 +2,19 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Tabs from the keyboard
+
+```text
+PR/commit:      agent/clubhouse
+Contract IDs:   none new
+Data impact:    none
+```
+
+### Fixed (with a test that fails without the fix)
+
+- **The profile tabs had no arrow keys.** They are now one Tab stop, and the arrows (wrapping), Home and End
+  move between them and select, as in the Segmented control (52001, reworded).
+
 ## 2026-09-30 — Page docs, permission proven, six bugs fixed
 
 ```text

@@ -233,11 +233,11 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it (52001). Each section tab is one Tab stop, chosen with Enter or Space. Esc closes the focus-area sheet (the shell's Modal).
+The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it (52001). The section tabs are one Tab stop, where the arrows (wrapping), Home and End move between them and select, as in every Clubhouse tab list and the Segmented control. Esc closes the focus-area sheet (the shell's Modal).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 52001 | — | `KEYBOARD_PATH` | The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it; each section tab is one Tab stop chosen with Enter or Space. |
+| 52001 | — | `KEYBOARD_PATH` | The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it; the section tabs are one Tab stop, where the arrows, Home and End move between them and select. |
 
 ## 21 — Performance
 

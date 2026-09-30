@@ -24,6 +24,7 @@ import { chTrail } from '../../lib/track';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
+import { tabListKeys } from '../../lib/tabs';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
@@ -101,12 +102,25 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     ['SG / round', w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), 'Per round', w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss'],
     ['Rounds', String(data.season.rounds), 'This season'],
   ];
+  const pickTab = (t: Tab) => {
+    if (t !== tab) {
+      haptic('select');
+      chTrail(`stats tab ${t}`);
+    }
+    setTab(t);
+  };
   const tabs: Array<[Tab, string, number?]> = [
     ['overview', 'Overview'],
     ['game', 'Game detail'],
     ['rounds', 'Rounds', data.rounds.length],
     ['dev', 'Development'],
   ];
+  const tabKeys = tabListKeys(
+    tabs.map(([t]) => t),
+    tab,
+    pickTab,
+    (t) => `tab-${t}`,
+  );
 
   const sheet = coach && coachId && <FocusAreaSheet open={focusOpen} onClose={() => setFocusOpen(false)} playerId={data.id} coachId={coachId} first={first} />;
 
@@ -200,14 +214,10 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
               id={`tab-${t}`}
               aria-selected={tab === t}
               aria-controls={`panel-${t}`}
+              tabIndex={tab === t ? 0 : -1}
               className="ch-tab-t"
-              onClick={() => {
-                if (t !== tab) {
-                  haptic('select');
-                  chTrail(`stats tab ${t}`);
-                }
-                setTab(t);
-              }}
+              onClick={() => pickTab(t)}
+              onKeyDown={tabKeys}
             >
               {l}
               {n != null && <span className="ch-tab-t__n ch-num">{n}</span>}

@@ -55,6 +55,7 @@ First run is the whole-page empty state, one for a coach (CH-10305, with New ann
 | 100408 | CH-10308 | `NO_TRIPS` | No trips |
 | 100409 | CH-10309 | `NO_TEAM` | No team |
 | 100410 | — | `PAGE_EMPTY_ONLY_WHEN_EVERY_READ_IS_EMPTY` | The whole-page empty state (CH-10305 for a coach, CH-10306 for a player) shows only when every section read answered and every one was empty, Updates included: a failed read, Updates too, shows its own notice with Try again instead, and an update to read is shown, never hidden behind No team updates yet. |
+| 100411 | CH-10310 | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | A team with nobody on the roster |
 
 ## 05 — Validation
 
@@ -97,6 +98,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 100614 | CH-10205 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
 | 100615 | CH-10206 | `ANNOUNCEMENTS_DONT_LOAD` | Announcements don't load |
 | 100616 | CH-10207 | `TRAVEL_DOESNT_LOAD` | Travel doesn't load |
+| 100617 | CH-10208 | `THE_COACHS_ROSTER_DOESNT_LOAD` | The coach's roster doesn't load |
 
 ## 07 — Network / offline
 
@@ -246,11 +248,11 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-The tabs and the reply buttons are native buttons in the tab order (102001), as is every other control on the page. Esc closes a sheet and focus returns to the button that opened it (102001). No shortcuts of its own.
+The tabs are one stop in the tab order: left and right arrows (wrapping), Home and End move between them and select, and Tab goes on to the panel (102001). The reply buttons and every other control on the page are native buttons in the tab order. Esc closes a sheet and focus returns to the button that opened it (102001). No shortcuts of its own.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 102001 | — | `TABS_AND_REPLIES_WORK_FROM_THE_KEYBOARD` | The tabs and the reply buttons are native buttons in the tab order: Tab reaches them and Enter or Space presses them; Esc closes a sheet and focus goes back to the button that opened it. |
+| 102001 | — | `TABS_AND_REPLIES_WORK_FROM_THE_KEYBOARD` | The tabs are one stop in the tab order: left and right arrows (wrapping), Home and End move between them and select, and Tab goes on to the panel. The reply buttons are native buttons: Enter or Space presses them. Esc closes a sheet and focus goes back to the button that opened it. |
 
 ## 21 — Performance
 
