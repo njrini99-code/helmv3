@@ -1,8 +1,14 @@
 # Clubhouse complete-swap audit
 
-The finding register for the owner's swap audit (`GolfHelm_Clubhouse_Complete_Swap_Audit.md`, 2026-09-30). The owner chose "fix as I go": each finding fixed on the branch carries its commit and regression test. Owner decisions are logged in `PROGRESS.md` as Q-n. The CHANGELOG (`CHANGELOG.md`) lists each fix.
+The finding register for the owner's swap audit
+(`GolfHelm_Clubhouse_Complete_Swap_Audit.md`, 2026-09-30). The owner chose "fix
+as I go": each finding fixed on the branch carries its commit and regression
+test. Owner decisions are logged in `PROGRESS.md` as Q-n. The CHANGELOG
+(`CHANGELOG.md`) lists each fix.
 
-Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Documented, not reverified**, **Risk to test**, **Owner decision**, **Passed**, **Blocked / not exercised**.
+Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA),
+**Documented, not reverified**, **Risk to test**, **Owner decision**,
+**Passed**, **Blocked / not exercised**.
 
 ## 1. Baselines
 
@@ -13,7 +19,12 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Doc
 | Clubhouse candidate (#2102) | `c221d1ca2` | `agent/clubhouse` |
 | Release train | PR #2110, `agent/release-train` at `c0f1b17fe` (#2102, #2104 round engine, #2108 security, #2109 stats engine, plus the audit fixes) | local `next build` exit 0 at `24a4bbca2` (later commits: docs, lint layout, the Hub read fix, one test timeout); CI rerunning at `c0f1b17fe` |
 
-**Production flag state:** `golf_clubhouse_ui` and `golf_clubhouse_front_door` are off in production and on in preview and development (`config/feature-flags.yml`). Per Q-4, production stays off until the owner has done a live preview pass. A train deploy therefore ships the flag-off (Fairway) experience plus the shared fixes. Every finding below that says "flag on" affects no customer until the flag is flipped.
+**Production flag state:** `golf_clubhouse_ui` and `golf_clubhouse_front_door`
+are off in production and on in preview and development
+(`config/feature-flags.yml`). Per Q-4, production stays off until the owner has
+done a live preview pass. A train deploy therefore ships the flag-off (Fairway)
+experience plus the shared fixes. Every finding below that says "flag on"
+affects no customer until the flag is flipped.
 
 ## 2. Scorecard (audit §20)
 
@@ -35,13 +46,24 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Doc
 
 ## 3. Role × route table (F-01)
 
-`isRebuilt(path, role)` in `src/clubhouse/shell/nav.ts` decides whether the Clubhouse shell draws a route. Anything else renders the NotRebuilt placeholder when the flag is on. An alias is `redirectToClubhouse` in a route layout (`src/clubhouse/routes/alias.ts`).
+`isRebuilt(path, role)` in `src/clubhouse/shell/nav.ts` decides whether the
+Clubhouse shell draws a route. Anything else renders the NotRebuilt placeholder
+when the flag is on. An alias is `redirectToClubhouse` in a route layout
+(`src/clubhouse/routes/alias.ts`).
 
 ### Rebuilt (flag on)
 
-- **Coach:** `/golf/dashboard`, `coachhelm` (plus `?view=ask`), `calendar`, `messages`, `roster`, `recruiting`, `stats`, `stats/team`, `qualifiers` (plus `new`, `[id]`, `[id]/edit`, `[id]/selection`), `team-hub`, `settings` (plus `notifications`, `coaching-intelligence`), `rounds/[uuid]`.
-- **Player:** `/golf/dashboard`, `coachhelm`, `calendar`, `team-hub`, `messages`, `rounds`, `rounds/new`, `rounds/[uuid]`, `rounds/continue/[uuid]`, `classes`, `stats`, `qualifiers`, `my-qualifiers`, `settings` (plus both sub-pages).
-- **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub tabs; `roster/[id]` goes to `stats?player=`; `rounds/[id]/review` goes to `rounds/[id]`; `coachhelm/chat` goes to `coachhelm?view=ask` (coach).
+- **Coach:** `/golf/dashboard`, `coachhelm` (plus `?view=ask`), `calendar`,
+  `messages`, `roster`, `recruiting`, `stats`, `stats/team`, `qualifiers` (plus
+  `new`, `[id]`, `[id]/edit`, `[id]/selection`), `team-hub`, `settings` (plus
+  `notifications`, `coaching-intelligence`), `rounds/[uuid]`.
+- **Player:** `/golf/dashboard`, `coachhelm`, `calendar`, `team-hub`,
+  `messages`, `rounds`, `rounds/new`, `rounds/[uuid]`, `rounds/continue/[uuid]`,
+  `classes`, `stats`, `qualifiers`, `my-qualifiers`, `settings` (plus both
+  sub-pages).
+- **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
+  tabs; `roster/[id]` goes to `stats?player=`; `rounds/[id]/review` goes to
+  `rounds/[id]`; `coachhelm/chat` goes to `coachhelm?view=ask` (coach).
 
 ### Not rebuilt with the flag on (owner decides after this audit)
 
@@ -72,7 +94,11 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA), **Doc
 | `roster` | 65 | rebuilt. `roster?tab=requests` (code source) is **ignored** by Clubhouse Roster; requests show in the Roster header instead (P2) |
 | `team` | 3 | **NotRebuilt** (see table) |
 
-Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias drops `task`; P2. Source-confirmed against Next.js 16.2.9: a layout never receives `searchParams`, so no layout alias can carry a query string; it needs a page or Proxy redirect, and Clubhouse Team Hub has no single-task view to land on), `intelligence*`, `my-development`, `coachhelm?view=development`.
+Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias
+drops `task`; P2. Source-confirmed against Next.js 16.2.9: a layout never
+receives `searchParams`, so no layout alias can carry a query string; it needs a
+page or Proxy redirect, and Clubhouse Team Hub has no single-task view to land
+on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 
 ## 4. Findings
 
@@ -107,9 +133,14 @@ Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias dro
 
 ## 5. Schema compatibility (flag-off deploy with no migration applied)
 
-- No source file outside tests reads a column added only by a held migration (`availability*`, `rank_factors`, attribution interval).
-- Every `.rpc()` the app calls exists in production except five pre-existing, non-golf names and `golf_qualifier_selection_reasons` (held D-35). `readQualifierSelectionReasons` falls back to the column when the function is missing (PGRST202), and fails loudly after the apply.
-- Held migrations stay held. For an owner-run apply, the order and conditions are in `supabase/migrations/HELD.md` and `docs/operations/APPLY_PATH.md`.
+- No source file outside tests reads a column added only by a held migration
+  (`availability*`, `rank_factors`, attribution interval).
+- Every `.rpc()` the app calls exists in production except five pre-existing,
+  non-golf names and `golf_qualifier_selection_reasons` (held D-35).
+  `readQualifierSelectionReasons` falls back to the column when the function is
+  missing (PGRST202), and fails loudly after the apply.
+- Held migrations stay held. For an owner-run apply, the order and conditions
+  are in `supabase/migrations/HELD.md` and `docs/operations/APPLY_PATH.md`.
 
 ## 6. Release package (tonight)
 
@@ -117,4 +148,6 @@ See `docs/clubhouse/RELEASE_2026-09-30.md`.
 
 ## Links
 
-Parity: `pages/P005-stats-player/PARITY.md` · Clickables: `CLICKABLES.md` · Catalogs: `catalog/` · Contracts: `pages/*/CONTRACT.md` · Decisions: `PROGRESS.md`.
+Parity: `pages/P005-stats-player/PARITY.md` · Clickables: `CLICKABLES.md` ·
+Catalogs: `catalog/` · Contracts: `pages/*/CONTRACT.md` · Decisions:
+`PROGRESS.md`.
