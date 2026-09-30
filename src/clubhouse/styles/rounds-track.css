@@ -1475,3 +1475,9 @@ button.ch-rt-strip__h.is-done:hover {
     font-size: 54px;
   }
 }
+
+/* An option row while its sheet's action runs (round-entry dialogs): it reads as waiting, not as a live tap. */
+.ch-rt-xopt:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

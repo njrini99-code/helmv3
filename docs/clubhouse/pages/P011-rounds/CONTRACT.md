@@ -150,6 +150,12 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110617 | CH-11210 | `THE_PICKED_TEES_SCORECARD_DOESNT_LOAD` | The picked tees' scorecard doesn't load |
 | 110618 | CH-11211 | `THE_PLAYERS_QUALIFIERS_DONT_LOAD` | The player's qualifiers don't load (Qualifier chosen) |
 | 110619 | — | `A_PARTIAL_READ_STILL_RENDERS_THE_REST` | A read that fails is logged, flagged on its own part and never thrown, so the rest of the page renders. In the library the posted rounds (CH-11201) and the in-progress check (CH-11202) fail apart, and a failed hole read leaves the in-progress card without its strip and never says it is ready to submit. In the review the holes and the shots fail apart (CH-11204, CH-11205) with the hero and the figures still drawn. The round itself failing is CH-11206. |
+| 110620 | CH-11008 | `RESTORING_THE_ROUND_SAVED_ON_THIS_DEVICE` | Restoring the round saved on this device fails |
+| 110621 | CH-11009 | `DISCARDING_THE_ROUND_ALREADY_IN_PROGRESS_FAILS` | Discarding the round already in progress fails |
+| 110622 | CH-11010 | `SAVE_FOR_LATER_FAILS` | Save for later fails |
+| 110623 | CH-11011 | `DISCARDING_FAILS_WHERE_NO_DISCARD_QUESTION_HOLDS` | Discarding fails where no discard question holds the message |
+| 110624 | CH-11012 | `CHANGING_A_ROUND_TO_PRACTICE_FAILS` | Changing a round to practice fails (qualifier closed) |
+| 110625 | CH-11013 | `THE_ROUND_REPORTS_AN_ERROR_WHILE_TRACKING` | The round reports an error while tracking (a failed checkpoint or auto-save, a restore or discard that didn't work) |
 
 ## 07 — Network / offline
 
@@ -165,6 +171,7 @@ did not load, with Try again (CH-11208 to CH-11210).
 | --- | --- | --- | --- |
 | 110701 | CH-11901 | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | The round saves in the background |
 | 110702 | — | `WRITES_REFUSE_OFFLINE` | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). No P011 test forces offline; the shell's tests cover useAction's refusal. |
+| 110703 | CH-11902 | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | The round changed on another device and this one stopped saving |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -238,6 +245,12 @@ also holds sheets that are not destructive (Penalty, Exit, Scorecard, Round comp
 | 111109 | CH-11509 | `SCORECARD_FROM_THE_TOP_BAR` | Scorecard, from the top bar |
 | 111110 | CH-11510 | `BROWSE_COURSES` | Browse courses (or Change course) |
 | 111111 | CH-11511 | `ADD_A_COURSE` | Add a course |
+| 111112 | CH-11512 | `A_ROUND_SAVED_ON_THIS_DEVICE_IS` | A round saved on this device is found on opening (an interrupted round) |
+| 111113 | CH-11513 | `DISCARD_ON_THAT_DIALOG` | Discard saved shots on that dialog |
+| 111114 | CH-11514 | `STARTING_A_ROUND_FINDS_ONE_ALREADY_IN` | Starting a round finds one already in progress for this course and date, with real progress |
+| 111115 | CH-11515 | `DISCARD_ON_THAT_DIALOG_2` | Discard on that dialog |
+| 111116 | CH-11516 | `A_SUBMIT_IS_REFUSED_BECAUSE_THE_COACH` | A submit is refused because the coach closed the round's qualifier (the refusal contains "qualifier" and "already been completed") |
+| 111117 | CH-11517 | `DISCARD_ROUND_ON_THAT_SHEET` | Discard round on that sheet |
 
 ## 12 — State preservation
 
@@ -331,6 +344,8 @@ without it (CH-11707); success and error come from the shell for every write.
 | 111705 | CH-11705 | `A_SHOT_IS_RECORDED` | A shot is recorded (Next shot or Hole out) |
 | 111706 | CH-11706 | `GOING_TO_ANOTHER_HOLE` | Going to another hole |
 | 111707 | CH-11707 | `UNDO_DELETE_SHOT_DISCARD_ROUND_LEAVE_WITHOUT` | Undo, Delete shot, Discard round, Leave without it |
+| 111708 | CH-11708 | `THE_SECOND_TAP_OF_A_DISCARD_IN` | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
+| 111709 | CH-11709 | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
 
