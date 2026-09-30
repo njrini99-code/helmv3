@@ -50,7 +50,7 @@ D-40 to D-43).
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-1601 | Moving to another page | The page fades in with a 6px settle (220ms); nothing on first load | `RouteFrame`, `CH_ROUTE` | preview |
-| CH-1602 | Opening More on a phone | The sheet slides up (360ms) over a fading scrim (220ms); a swipe down past 80px closes it | `TabBar`, `chTween('slow')` | preview |
+| CH-1602 | Opening More on a phone | The sheet slides up (360ms) over a fading scrim (220ms); dragging it down closes it (CH-1611) | `TabBar`, `chTween('slow')` | preview |
 | CH-1603 | Opening the bell or any menu | It scales out of its button (150ms) | `CH_POP` | preview |
 | CH-1604 | A toast arrives or leaves | Slides up 10px and fades (220ms); the stack reflows | `ToastProvider` | preview |
 | CH-1605 | Going offline or back online | The banner fades in and out (220ms) | `OfflineBanner` | preview |
@@ -59,6 +59,7 @@ D-40 to D-43).
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
 | CH-1609 | A page or section is loading | Skeletons shimmer left to right (1.4s loop); they hold still when Animations is off or motion is reduced | `.ch-skel` | preview |
 | CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 220ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
+| CH-1611 | Someone drags a phone sheet (More, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (220ms, instant when motion is reduced). The Close button inside stays a button | `useSheetDrag` in `TabBar` and `Modal` | shell.test › CH-1611 |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
 

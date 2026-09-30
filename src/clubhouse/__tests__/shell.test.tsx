@@ -45,6 +45,8 @@ import { TabBar } from '../shell/TabBar';
 import { PhoneScreen } from '../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory } from '../shell/phone-chrome';
 import { PhoneBar } from '../ui/PhoneBar';
+import { Modal } from '../ui/Modal';
+import './dialog-polyfill';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -309,6 +311,84 @@ describe('Shell · navigation and accessibility', () => {
     expect(document.activeElement).toBe(focusables[0]);
     await user.keyboard('{Escape}');
     await waitFor(() => expect(document.activeElement).toBe(more));
+  });
+
+  describe('CH-1611 a phone sheet follows the finger', () => {
+    // Down at y=100, then to 100 + `to`. A pause before letting go, so the release is not a flick.
+    const drag = async (handle: HTMLElement, sheet: HTMLElement, to: number) => {
+      act(() => {
+        handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + to }));
+      });
+      expect(sheet.style.translate).toBe(`0 ${to}px`);
+      await new Promise((r) => setTimeout(r, 20));
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + to }));
+        window.dispatchEvent(new MouseEvent('pointerup', { clientY: 100 + to }));
+      });
+    };
+
+    it('the More sheet springs back short of 80px, and closes past it with the press haptic', async () => {
+      const user = userEvent.setup();
+      wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+      const more = screen.getByRole('button', { name: 'More' });
+      await user.click(more);
+      await expectCode('CH-1802');
+      const sheet = code('CH-1802') as HTMLElement;
+      const head = sheet.querySelector('.ch-more__head') as HTMLElement;
+      hapticSpy.mockClear();
+      await drag(head, sheet, 40);
+      expect(sheet.style.translate).toBe('');
+      expect(more.getAttribute('aria-expanded')).toBe('true');
+      expect(hapticSpy).not.toHaveBeenCalled();
+      await drag(head, sheet, 120);
+      expect(hapticSpy).toHaveBeenCalledWith('press');
+      // Closed; the sheet itself leaves with its exit animation.
+      expect(more.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('a Modal is a sheet on the phone: its header drags it shut, its Close button stays a button', async () => {
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        const onCloseSpy = vi.fn();
+        const Harness = () => {
+          const [open, setOpen] = useState(true);
+          return (
+            <Modal
+              open={open}
+              onClose={() => {
+                onCloseSpy();
+                setOpen(false);
+              }}
+              title="Requests"
+            >
+              Body
+            </Modal>
+          );
+        };
+        wrap(<Harness />);
+        const dialog = document.querySelector('dialog.ch-modal') as HTMLElement;
+        const head = dialog.querySelector('.ch-modal__head') as HTMLElement;
+        const close = screen.getByRole('button', { name: 'Close' });
+        act(() => {
+          close.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
+          window.dispatchEvent(new MouseEvent('pointermove', { clientY: 200 }));
+        });
+        expect(dialog.style.translate).toBe('');
+        act(() => {
+          window.dispatchEvent(new MouseEvent('pointerup', { clientY: 200 }));
+        });
+        await drag(head, dialog, 30);
+        expect(onCloseSpy).not.toHaveBeenCalled();
+        await drag(head, dialog, 100);
+        expect(onCloseSpy).toHaveBeenCalledTimes(1);
+        expect(hapticSpy).toHaveBeenCalledWith('press');
+        await waitFor(() => expect(dialog.hasAttribute('open')).toBe(false));
+      } finally {
+        window.matchMedia = real;
+      }
+    });
   });
 
   it('CH-1803 the current page is marked in the navigation, and landmarks are named', () => {

@@ -56,7 +56,7 @@ Route: (shell, tokens, primitives)   Surface tag: `shell`
 ## phone
 - [x] Built at 390px and 430px, respecting the safe areas (the phone top bar, ivory tab bar with role sets and the More badge, More sheet, pushed screens and neutral avatars from `phone/foundation.md`, D-40 to D-43; the top bar pads by `safe-area-inset-top`, and the tab bar, sheets and composers by `safe-area-inset-bottom`. Captures of every preview page at both widths: scratchpad `phone-shell/built-{390,430}-*`. Tests CH-1808, CH-1809, CH-1810, CH-1906)
 - [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent (a hit-test probe at 390px (every control drawn under 44px must take a tap 21px from its centre) over the More sheet, top bar, tab bar and pushed screens: 0 misses on 2026-09-29. Controls drawn smaller keep the design's size and carry a 44px hit area. Home's own 36px header buttons belong to Home's phone gate)
-- [ ] Sheets are used instead of popovers, and they drag to dismiss (the More sheet drags to dismiss; `Modal` sheets show a grab handle but don't drag yet, and the Bell is still a popover on the phone)
+- [ ] Sheets are used instead of popovers, and they drag to dismiss (the More sheet and every `Modal` sheet follow the finger and close past 80px, CH-1611 in shell.test; the check at 390px in a browser waits for a server slot, and the Bell is still a popover on the phone)
 - [x] The bottom tab bar and toasts don't overlap content (a list scrolled to its end clears the tab bar, capture `built-390-02-inbox-scrolled`; toasts sit above the tab bar, and above the composer on a pushed screen, `shell.css` `.ch-toasts` phone rules)
 - [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
 

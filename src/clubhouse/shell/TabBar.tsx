@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { AnimatePresence, m } from 'framer-motion';
 import { LayoutGrid, Settings, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
 import { chTween } from '../lib/motion';
+import { useSheetDrag } from '../lib/sheet-drag';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import type { ChShellData } from '../data/shell';
 import { activeNavItem, phoneTabsFor, type ChRole } from './nav';
@@ -33,6 +34,8 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
 
   const moreBtn = useRef<HTMLButtonElement>(null);
   const sheet = useRef<HTMLDivElement>(null);
+  const closeMore = useCallback(() => setMoreOpen(false), []);
+  const drag = useSheetDrag(sheet, closeMore, { reduced });
 
   useEffect(() => setMoreOpen(false), [pathname]);
   // The sheet is modal: focus moves into it, Tab stays inside, Esc closes it,
@@ -142,18 +145,9 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
               animate={reduced ? { opacity: 1 } : { y: 0 }}
               exit={reduced ? { opacity: 0 } : { y: '100%' }}
               transition={chTween('slow')}
-              drag={reduced ? false : 'y'}
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.6 }}
-              onDragEnd={(_, info) => {
-                if (info.offset.y > 80 || info.velocity.y > 500) {
-                  haptic('press');
-                  setMoreOpen(false);
-                }
-              }}
             >
-              <div className="ch-more__grab" aria-hidden="true" />
-              <div className="ch-more__head">
+              <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+              <div className="ch-more__head" onPointerDown={drag.onPointerDown}>
                 <span>More</span>
                 <button type="button" className="ch-more__x" aria-label="Close" onClick={() => setMoreOpen(false)}>
                   <Icon icon={X} size={16} />
