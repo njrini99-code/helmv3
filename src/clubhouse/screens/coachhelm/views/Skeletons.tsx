@@ -8,7 +8,7 @@ import { Skeleton } from '../../../ui/States';
  * when the read lands. `coachhelm/loading.tsx` cannot see `?view=`, so the route wraps each view in its own Suspense
  * (routes/coachhelm.tsx) and these are the fallbacks.
  */
-function Chrome({ label, code, children }: { label: string; code: string; children: React.ReactNode }) {
+function Chrome({ label, code, chained, children }: { label: string; code: string; chained?: boolean; children: React.ReactNode }) {
   const phone = useChPhone();
   // The sub-navigation: a bar the height of the radiogroup (desktop) or the chip row (phone), where the page puts it.
   const tabs = (
@@ -17,7 +17,7 @@ function Chrome({ label, code, children }: { label: string; code: string; childr
     </div>
   );
   return (
-    <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-ch-code={code}>
+    <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-skel={chained ? 'chained' : undefined} data-ch-code={code}>
       {phone && tabs}
       <header className="ch-hl-h">
         <Skeleton width={62} height={24} radius={12} />
@@ -48,9 +48,9 @@ function MeasureSkeleton() {
 }
 
 /** The Game profile: the persona card, then the seven measures (CH-13460). */
-export function ProfileSkeleton() {
+export function ProfileSkeleton({ chained }: { chained?: boolean } = {}) {
   return (
-    <Chrome label="Loading your game profile" code="CH-13460">
+    <Chrome label="Loading your game profile" code="CH-13460" chained={chained}>
       <div className="ch-hg-sk__hero">
         <Skeleton width={150} height={11} />
         <Skeleton width="78%" height={32} radius={8} />
@@ -91,9 +91,9 @@ function StandingGroupSkeleton({ rows }: { rows: number }) {
 }
 
 /** Standing: the green card with what is most to gain, then the groups of stats (CH-13470). */
-export function StandingSkeleton() {
+export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
   return (
-    <Chrome label="Loading your standing" code="CH-13470">
+    <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
       <div className="ch-hs-sk__hero">
         <div className="ch-hs-sk__col">
           <Skeleton width={150} height={11} />
@@ -111,10 +111,10 @@ export function StandingSkeleton() {
 }
 
 /** Deep dive: the green summary, the list of reads and, on desktop, the read beside it (CH-13480). */
-export function DiveSkeleton() {
+export function DiveSkeleton({ chained }: { chained?: boolean } = {}) {
   const phone = useChPhone();
   return (
-    <Chrome label="Loading your deep dive" code="CH-13480">
+    <Chrome label="Loading your deep dive" code="CH-13480" chained={chained}>
       <div className="ch-hd-sk__hero">
         <div className="ch-hd-sk__col">
           <Skeleton width={150} height={11} />

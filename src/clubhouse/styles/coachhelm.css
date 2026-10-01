@@ -873,3 +873,9 @@
   opacity: 0.55;
   pointer-events: none;
 }
+
+/* A skeleton that follows the route's own (loading.tsx) in the same place does not fade in again: a second fade from nothing would
+   dip the page between two skeletons. Skeletons only (aria-label 'Loading ...'), as the fade rule is (base.css). */
+[data-ui='clubhouse'] main[aria-busy='true'][aria-label^='Loading'][data-skel='chained'] {
+  animation: none;
+}

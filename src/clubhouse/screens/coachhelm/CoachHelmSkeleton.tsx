@@ -55,13 +55,14 @@ function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
 /**
  * Route loading for CoachHelm, in each role's own shape (gh-states.jsx): the
  * player's focus beside a short list; the coach's program pulse, then the
- * players beside the focus. CH-13401 (player) and CH-13402 (coach).
+ * players beside the focus. CH-13401 (player) and CH-13402 (coach). `chained`: the page's own Suspense draws it after the route's
+ * `loading.tsx` skeleton, in the same place, so it does not fade in again over it (a second fade would dip the page).
  */
-export function CoachHelmSkeleton({ view }: { view: 'coach' | 'player' }) {
+export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player'; chained?: boolean }) {
   const coach = view === 'coach';
   const phone = useChPhone();
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-ch-code={coach ? 'CH-13402' : 'CH-13401'}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'}>
       {phone && <StripSkeleton coach={coach} phone />}
       <header className="ch-hl-h">
         <Skeleton width={62} height={24} radius={12} />

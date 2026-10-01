@@ -70,12 +70,15 @@ async function PlayerHelmView({ playerId, drill, insight }: { playerId: string; 
   return <DeepDive load={closed ?? (await loadPlayerDeepDive({ playerId }))} initialId={insight ?? null} />;
 }
 
-/** The skeleton of the view an address names (each in its final shape and height, so nothing jumps when the read lands). */
+/**
+ * The skeleton of the view an address names (each in its final shape and height, so nothing jumps when the read lands). It is
+ * `chained`: it follows the route's `loading.tsx` skeleton in the same place, so it does not fade in over it a second time.
+ */
 function viewSkeleton(view: PlayerHelmView): ReactNode {
-  if (view === 'profile') return <ProfileSkeleton />;
-  if (view === 'standing') return <StandingSkeleton />;
-  if (view === 'deep-dive') return <DiveSkeleton />;
-  return <CoachHelmSkeleton view="player" />;
+  if (view === 'profile') return <ProfileSkeleton chained />;
+  if (view === 'standing') return <StandingSkeleton chained />;
+  if (view === 'deep-dive') return <DiveSkeleton chained />;
+  return <CoachHelmSkeleton view="player" chained />;
 }
 
 /** `?player=<golf_players.id>` opens a coach's board on that player (Roster's View insights); an id not on the board is ignored. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. */
@@ -101,7 +104,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
     // The Ask sub-tab is the coach's alone: a player's `?view=ask` falls through to their own board below.
     const ask = view === 'ask';
     return (
-      <Suspense fallback={ask ? <AskSkeleton /> : <CoachHelmSkeleton view="coach" />}>
+      <Suspense fallback={ask ? <AskSkeleton chained /> : <CoachHelmSkeleton view="coach" chained />}>
         <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} />
       </Suspense>
     );
