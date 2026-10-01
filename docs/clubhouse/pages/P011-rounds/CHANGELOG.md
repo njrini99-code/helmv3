@@ -50,10 +50,11 @@ is not done. The evidence, in the order a change would meet it:
 - **What is already safe.** The hole is on the device before any network call
   (`emergencySave` in `handleHoleComplete`), and every save sends the whole
   scorecard (`buildPartialRoundData` reads `completedHoleStatsRef`), so a slow
-  or failed save of hole N is carried by the next successful one. The next
-  hole's pill is already enabled while hole N saves (the screen sets the score
-  locally at the tap, `TrackStrip` allows the frontier), so a player is never
-  locked in; the engine's own comments (B8) expect it.
+  or failed save of hole N is carried by the next successful one. By the code
+  (not exercised on a device), the next hole's pill is already enabled while
+  hole N saves (the engine sets the score locally at the tap and `TrackStrip`
+  allows the frontier), so a player is not locked in; the engine's own
+  comments (B8) expect it.
 - **The engine says to wait.** `persistCompletedHole` opens with "keep the
   player on the hole until this complete snapshot is acknowledged", and
   `handleHoleComplete` moves on (`setCurrentHoleIndex`, the finish prompt,
