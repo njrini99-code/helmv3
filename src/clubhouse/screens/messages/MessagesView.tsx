@@ -42,6 +42,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { useThreadAnchor } from "./use-thread-anchor";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
@@ -1010,10 +1011,8 @@ function Thread({
     api.viewer.role,
   );
 
-  useLayoutEffect(() => {
-    const s = scroller.current;
-    if (s) s.scrollTop = s.scrollHeight;
-  }, [conv.id, api.msgs.length, api.typing]);
+  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
+  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
   useEffect(() => setPicking(null), [conv.id]);
   useEffect(() => {
     if (!picking) return;
@@ -1178,6 +1177,11 @@ function Thread({
           )}
         </div>
       </div>
+      {anchor.unseen > 0 && (
+        <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
+          {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
+        </button>
+      )}
       <Composer key={conv.id} api={api} conv={conv} />
 
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />

@@ -25,7 +25,6 @@ import {
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -76,6 +75,7 @@ import {
   personOf,
   type ChMessagesApi,
 } from "./MessagesView";
+import { useThreadAnchor } from "./use-thread-anchor";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
@@ -331,10 +331,8 @@ function PhoneThread({
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
-  useLayoutEffect(() => {
-    const s = scroller.current;
-    if (s) s.scrollTop = s.scrollHeight;
-  }, [conv.id, api.msgs.length, api.typing]);
+  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
+  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
   useEffect(() => {
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
@@ -436,6 +434,11 @@ function PhoneThread({
           </div>
         </div>
       </SectionBoundary>
+      {anchor.unseen > 0 && (
+        <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
+          {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
+        </button>
+      )}
       <Composer
         key={conv.id}
         api={api}

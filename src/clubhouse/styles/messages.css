@@ -1665,3 +1665,21 @@
     padding: 18px;
   }
 }
+
+/* "N new messages": shown when messages arrive while the reader is scrolled up (audit T25); it sits just above the
+   composer, over the end of the thread, and takes the reader down. */
+.ch-ms-below {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  margin: -48px auto 12px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-green-800);
+  color: var(--ch-ivory-100);
+  font: 600 13px/36px var(--ch-font-sans);
+  box-shadow: 0 4px 12px -4px rgb(11 58 37 / 0.45);
+  cursor: pointer;
+}

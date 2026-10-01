@@ -69,6 +69,10 @@ run). A fix proven only in jsdom says so.
 - T21 to T23 round safety: local-stack e2e covers save, continue and submit
   (`clubhouse-round`); offline and kill/resume not exercised.
 - T24 message retry: unit (bubble keeps the id; Q-135).
-- T25 to T32: not exercised.
+- T25 thread anchoring: fixed. Both thread views jumped to the end on any
+  new message or typing dots; now they follow only a reader at the end (or
+  their own message), and "N new messages" takes a reader who is up down
+  (`use-thread-anchor.ts`, `thread-anchor.test.tsx`). Device not exercised.
+- T26 to T32: not exercised.
 
 No composite score is given: most runtime evidence is missing.
