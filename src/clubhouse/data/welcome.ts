@@ -61,7 +61,7 @@ export async function loadWelcome(): Promise<WelcomeLoad> {
       news: shapeWelcomeNews({ feed: items, lastSeenAt }),
       lastSeenAt,
       isAdmin: (account.data?.role as string | undefined) === 'admin',
-      clubhouseDashboard: isClubhouseFor(role),
+      clubhouseDashboard: (await isClubhouseFor(role)),
     },
   };
 }

@@ -296,7 +296,7 @@ export default async function GolfDashboardLayout({
   //    hamburger drawer) — the legacy GolfDashboardShell fork was removed.
   // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
   // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
-  if (isClubhouseFor(userData.role)) {
+  if ((await isClubhouseFor(userData.role))) {
     const [shell, phone] = await Promise.all([loadClubhouseShell(userData.teamId), phoneHint()]);
     return (
       <ClubhouseShell userData={userData} shell={shell} phone={phone}>

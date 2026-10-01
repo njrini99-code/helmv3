@@ -574,7 +574,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
   // Clubhouse (golf_clubhouse_ui) draws the same round over the same engine, from everything loaded above. It leaves
   // the live-round type editor below to Fairway: that is a Fairway component, and its qualifier reads are skipped.
-  if (isClubhouseFor('player')) {
+  if ((await isClubhouseFor('player'))) {
     return (
       <ClubhouseContinueRoundRoute
         roundId={id}

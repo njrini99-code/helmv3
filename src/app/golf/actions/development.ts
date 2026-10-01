@@ -500,7 +500,7 @@ async function createFocusAreaImpl(
           coach.full_name?.trim() || 'Your Coach',
           // Fairway's link redirects to a Development drill Clubhouse does not draw: send a Clubhouse player to the
           // screen that is rebuilt, where the focus area and its Accept and Decline are.
-          isClubhouseFor('player') ? CLUBHOUSE_DEV_PLAN_PATH : undefined
+          (await isClubhouseFor('player')) ? CLUBHOUSE_DEV_PLAN_PATH : undefined
         );
       }
     }

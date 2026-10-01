@@ -15,7 +15,7 @@ import { isRebuilt } from '../shell/nav';
 export async function redirectToClubhouse(target: Partial<Record<'coach' | 'player', string>>): Promise<void> {
   const session = await getGolfSessionProfile();
   const role = session?.coach ? 'coach' : session?.player ? 'player' : null;
-  if (!role || !isClubhouseFor(role)) return;
+  if (!role || !(await isClubhouseFor(role))) return;
   const href = target[role];
   if (href && isRebuilt(href.split('?')[0] ?? href, role)) redirect(href);
 }

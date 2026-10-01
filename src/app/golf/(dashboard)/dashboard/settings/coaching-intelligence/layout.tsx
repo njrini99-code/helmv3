@@ -24,7 +24,7 @@ export default async function CoachingIntelligenceLayout({
   if (!session) redirect('/golf/login');
 
   // Clubhouse: this link opens Settings at CoachHelm for coaches; a player lands on their own Settings.
-  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) {
+  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) {
     return <ClubhouseSettingsRoute section={session.coach ? 'coachhelm' : undefined} />;
   }
 

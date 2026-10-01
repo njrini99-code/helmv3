@@ -1,13 +1,42 @@
 import 'server-only';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { getGolfSessionProfile } from '@/lib/auth/session';
+import { resolveClubhouseTeam } from './routes/team';
+
+/**
+ * Teams Clubhouse is limited to while it is rolled out (owner, Q-131): a comma-separated list of golf_teams ids in
+ * `HELM_CLUBHOUSE_TEAMS`. Unset or empty means no limit, so the flag alone decides, as before. A server-only env value,
+ * so the canary is a configuration change, not a code change.
+ */
+export function clubhouseTeamAllowlist(): Set<string> | null {
+  const ids = (process.env.HELM_CLUBHOUSE_TEAMS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return ids.length ? new Set(ids) : null;
+}
 
 /**
  * The one switch between Fairway and Clubhouse, for coaches and players.
  * Players get the shared screens (Stats, Calendar, Messages) with their own
  * permissions; their other screens show "not rebuilt yet" until designed.
+ * With a team allowlist set, only the signed-in user's active team gets
+ * Clubhouse; a user whose team cannot be read gets Fairway (fail closed to the
+ * screens every team already uses). The session and team reads are
+ * request-cached, so calling this from a layout and its page costs one read.
  */
-export function isClubhouseFor(role: 'coach' | 'player' | null | undefined): boolean {
-  return (role === 'coach' || role === 'player') && isFlagEnabled('golf_clubhouse_ui');
+export async function isClubhouseFor(role: 'coach' | 'player' | null | undefined): Promise<boolean> {
+  if (!(role === 'coach' || role === 'player') || !isFlagEnabled('golf_clubhouse_ui')) return false;
+  const allow = clubhouseTeamAllowlist();
+  if (!allow) return true;
+  try {
+    const session = await getGolfSessionProfile();
+    if (!session) return false;
+    const team = await resolveClubhouseTeam(session);
+    return team != null && team.role === role && allow.has(team.teamId);
+  } catch {
+    return false;
+  }
 }
 
 /**

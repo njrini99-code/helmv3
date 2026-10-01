@@ -86,7 +86,7 @@ export default async function GolfRosterPage() {
   const { coach, player } = session;
 
   // Clubhouse Roster (golf_clubhouse_ui): coaches only, with its own route, loader and screen.
-  if (coach && isClubhouseFor('coach')) return <ClubhouseRosterRoute />;
+  if (coach && (await isClubhouseFor('coach'))) return <ClubhouseRosterRoute />;
 
   const supabase = await createClient();
 

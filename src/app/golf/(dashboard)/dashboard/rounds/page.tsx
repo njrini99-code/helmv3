@@ -42,7 +42,7 @@ export default async function RoundsPage() {
 
   // Clubhouse Rounds (golf_clubhouse_ui): the player's library. Coaches keep
   // this page; v2 has no coach Rounds library.
-  if (userRole === 'player' && player && isClubhouseFor('player')) return <ClubhouseRoundsRoute />;
+  if (userRole === 'player' && player && (await isClubhouseFor('player'))) return <ClubhouseRoundsRoute />;
 
   const supabase = await createClient();
 
