@@ -20,7 +20,7 @@ import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/forma
 import { sgBaseline } from '../../lib/sg';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
-import { SgBars, SgChangeChip } from './charts';
+import { SgBars } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -29,6 +29,7 @@ import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
+import { devProgress, devTitle, goalLine } from './dev-format';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -197,12 +198,17 @@ export function StatsPlayerPhone({
   );
 }
 
-/** Scoring average, strokes gained a round, and form (the newer half of the rounds against the older half; lower is better). */
+/**
+ * The board's three figures (m-stats.jsx Player, m.css .m-figs): scoring average, strokes gained a round in green or
+ * amber, and the trend in words ("down 1.4", lower scores are better). One caption line each, never a stack (F-54).
+ */
 function Figures({ data }: { data: ChPlayerProfile }) {
   const w = data.win;
   const sgTone = w.sgPerRound == null ? '' : w.sgPerRound >= 0 ? ' ch-gain' : ' ch-loss';
   const form = w.formChange;
-  const formTone = form == null || Math.abs(form) < 0.05 ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
+  const flat = form != null && Math.abs(form) < 0.05;
+  const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
+  const d = data.sgChange.delta;
   return (
     <dl className="ch-stm-figs is-three">
       <div>
@@ -213,14 +219,13 @@ function Figures({ data }: { data: ChPlayerProfile }) {
       <div>
         <dt>SG / round</dt>
         <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound)}</dd>
-        <dd>
-          {w.sgPerRound == null ? 'After three rounds' : sgBaseline(data.tour).vs}
-          {w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) && <SgChangeChip change={data.sgChange} code="CH-5310" />}
+        <dd className={'ch-num' + (d == null || Math.abs(d) < 0.05 ? '' : d > 0 ? ' ch-gain' : ' ch-loss')} data-ch-code={w.sgPerRound != null && d == null ? 'CH-5310' : undefined}>
+          {w.sgPerRound == null ? 'After three rounds' : d != null ? `${formatSigned(d)} vs before` : sgBaseline(data.tour).vs}
         </dd>
       </div>
       <div>
-        <dt>Form</dt>
-        <dd className={'ch-num' + formTone}>{form == null ? NO_DATA : formatSigned(form)}</dd>
+        <dt>Trend</dt>
+        <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${form < 0 ? 'down' : 'up'} ${Math.abs(form).toFixed(1)}`}</dd>
         <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
       </div>
     </dl>
@@ -378,10 +383,8 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
         <ul className="ch-spm-dev">
           {data.focusAreas.map((f) => (
             <li key={f.id}>
-              <b>{f.title}</b>
-              <span className="ch-num">
-                {f.status === 'proposed' ? 'Proposed, waiting to be accepted' : f.target != null ? `${f.current ?? f.baseline ?? NO_DATA} → target ${f.target}` : 'No target set'}
-              </span>
+              <b>{devTitle(f.title)}</b>
+              <span className="ch-num">{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
               {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
             </li>
           ))}
@@ -400,9 +403,9 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
               <li key={g.id} className={done ? 'is-done' : undefined}>
                 <b>
                   <span className="ch-sr-only">{done ? 'Achieved: ' : 'In progress: '}</span>
-                  {g.title}
+                  {devTitle(g.title)}
                 </b>
-                <span className="ch-num">{g.current != null ? `Now ${g.current}${g.target != null ? ` · target ${g.target}` : ''}` : (g.state ?? 'Active')}</span>
+                <span className="ch-num">{goalLine(g)}</span>
               </li>
             );
           })}

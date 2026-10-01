@@ -502,7 +502,7 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="Make rate by distance" wide note={`Green line is the player, dashed champagne is the Tour. Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`}>
+        <Panel title="Make rate by distance" wide note={`${phone ? 'Bars are the make rate; the tick is the Tour. Amber is below it.' : 'Green line is the player, dashed champagne is the Tour.'} Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`}>
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn't load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
           {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
         </Panel>

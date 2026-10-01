@@ -42,6 +42,7 @@ import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { changeWords, WindowSwitch } from './WindowSwitch';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
+import { devProgress, devTitle, goalLine } from './dev-format';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -497,14 +498,8 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
               return (
                 <div key={f.id} className="ch-pf-focus">
                   <div>
-                    <b>{f.title}</b>
-                    <span>
-                      {f.status === 'proposed'
-                        ? 'Proposed, waiting to be accepted'
-                        : f.target != null
-                          ? `${f.current ?? f.baseline ?? NO_DATA} → target ${f.target}`
-                          : 'No target set'}
-                    </span>
+                    <b>{devTitle(f.title)}</b>
+                    <span>{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
                     {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
                   </div>
                   <div className="ch-pf-bar" aria-hidden="true">
@@ -535,8 +530,8 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                   </span>
                   <span className="ch-sr-only">{done ? 'Achieved:' : 'In progress:'}</span>
                   <div>
-                    <b>{g.title}</b>
-                    <span>{g.current != null ? `Now ${g.current}${g.target != null ? ` · target ${g.target}` : ''}` : (g.state ?? 'Active')}</span>
+                    <b>{devTitle(g.title)}</b>
+                    <span>{goalLine(g)}</span>
                   </div>
                 </div>
               );

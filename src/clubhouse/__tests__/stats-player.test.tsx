@@ -358,7 +358,12 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
     expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds · 3.9 hcp');
     const figs = document.querySelector('.ch-stm-figs')!;
-    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Form']);
+    // The board's three (m-stats.jsx Player): the trend in words, green when scores come down, amber when they rise (F-54).
+    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Trend']);
+    const trend = figs.querySelector('dd.is-words')!;
+    expect(trend.textContent).toMatch(/^(down|up) \d+\.\d$|^level$|^—$/);
+    if (trend.textContent!.startsWith('down')) expect(trend.classList.contains('ch-gain')).toBe(true);
+    if (trend.textContent!.startsWith('up')) expect(trend.classList.contains('ch-loss')).toBe(true);
     // One section: Scoring first; a chip switches it with a tick.
     expect(screen.getByRole('heading', { level: 2, name: 'Scoring' })).toBeTruthy();
     expect(screen.queryByRole('heading', { level: 2, name: 'Approach' })).toBeNull();

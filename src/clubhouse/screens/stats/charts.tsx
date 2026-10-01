@@ -381,7 +381,10 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
         <div key={r.par} className="ch-par3__t">
           <span className="ch-par3__l">Par {r.par}s</span>
           <span className="ch-par3__v ch-num">{r.avg == null ? NO_DATA : r.avg.toFixed(2)}</span>
-          <span className="ch-par3__to ch-num">{r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}</span>
+          {/* Against the Tour's average for the par when there is one (lower is better), so the colour says how it compares (F-54). */}
+          <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
+            {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}
+          </span>
           {r.bench != null && <span className="ch-par3__d ch-num">Tour {r.bench.toFixed(2)}</span>}
         </div>
       ))}
@@ -443,7 +446,8 @@ export function Compare({ rows, unit = '', max }: { rows: Array<{ label: string;
           <span className="ch-cmp__bar" aria-hidden="true">
             {r.value != null && <span style={{ width: `${Math.min(100, (r.value / m) * 100)}%` }} />}
           </span>
-          <b className="ch-num">{r.value == null ? NO_DATA : `${Math.round(r.value * 10) / 10}${unit}`}</b>
+          {/* Percentages are whole numbers everywhere else in Stats ("55.6%" beside "50%" read as noise, F-54). */}
+          <b className="ch-num">{r.value == null ? NO_DATA : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
         </div>
       ))}
     </div>
@@ -518,6 +522,31 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
 }
 
 /** Make rate by distance: the player's line against the Tour's dashed line. Bands under 10 putts aren't graded. */
+/**
+ * Make rate by distance on the phone, as the board draws it (m-stats.jsx Putting, m.css .m-putt): a row per band, the
+ * bar in green or amber under the Tour's tick, the rate on the right. The desktop curve's labels are unreadable at
+ * phone width (F-54). A band grades only with 10 or more putts, as on desktop.
+ */
+export function MakeRows({ bands }: { bands: Array<{ band: string; value: number | null; bench: number | null; n: number }> }) {
+  return (
+    <div className="ch-stm-putt">
+      {bands.map((b) => {
+        const low = b.value != null && b.bench != null && b.n >= 10 && b.value < b.bench;
+        return (
+          <div key={b.band} className="ch-stm-putt__r">
+            <span className="ch-num">{b.band} ft</span>
+            <span className="ch-stm-putt__bar" aria-hidden="true">
+              {b.value != null && <i className={low ? 'is-low' : ''} style={{ width: `${Math.min(100, b.value)}%` }} />}
+              {b.bench != null && <em style={{ left: `${b.bench}%` }} />}
+            </span>
+            <b className={'ch-num' + (low ? ' ch-loss' : '')}>{b.value == null ? NO_DATA : `${Math.round(b.value)}%`}</b>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MakeCurve({ bands }: { bands: Array<{ band: string; value: number | null; bench: number | null; n: number }> }) {
   const w = 760;
   const h = 210;

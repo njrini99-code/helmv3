@@ -1334,8 +1334,10 @@ a.ch-lg__r:focus-visible {
 .ch-lad__fill.is-loss {
   background: linear-gradient(180deg, #c49043, var(--ch-chart-loss));
 }
+/* No benchmark to grade against: the player's own figure, in the chart green (board: bars are green, amber only when
+   below the benchmark). Grey read as missing data (F-54). */
 .ch-lad__fill.is-neutral {
-  background: linear-gradient(180deg, #a5a197, var(--ch-ink-400));
+  background: linear-gradient(180deg, #4f8a64, var(--ch-green-600));
 }
 .ch-lad__bench {
   position: absolute;
@@ -2527,5 +2529,71 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-controls .ch-sf.is-phone:has(.ch-sf__chips) {
     grid-column: 1 / -1;
+  }
+}
+
+/* Player stats on the phone, to the board (m-stats.jsx Player, m.css, qual-mobile.css .qm-panel), F-54: each game
+   section is one panel with a 15.5px title, its lead as the green italic note, the figures as a hairline-split strip
+   with 20px values and 11.5px captions (the old rule sized the captions as values), and the panels' titles plain. */
+@media (max-width: 820px) {
+  .ch-stm-figs.is-three dd.is-words {
+    font-size: 15px;
+    letter-spacing: -0.01em;
+  }
+  .ch-gd.is-phone .ch-gm {
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), 0 1px 3px rgb(28 25 18 / 0.08);
+  }
+  .ch-gd.is-phone .ch-gm__head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 14px 16px 10px;
+  }
+  .ch-gd.is-phone .ch-gm__ic {
+    display: none;
+  }
+  .ch-gd.is-phone .ch-gm__t h2 {
+    margin-bottom: 6px;
+    font: 600 15.5px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.01em;
+    font-variation-settings: normal;
+  }
+  .ch-gd.is-phone .ch-gm__t p {
+    font: italic 400 13px/1.45 var(--ch-font-sans);
+    color: var(--ch-green-700);
+  }
+  .ch-gd.is-phone .ch-gm__figs {
+    margin: 0 16px;
+  }
+  .ch-gd.is-phone .ch-gm__figs dt {
+    font: 500 11.5px/1.15 var(--ch-font-sans);
+  }
+  .ch-gd.is-phone .ch-gm__figs dd:not(.ch-gm__sub) {
+    font: 500 20px/1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    font-variation-settings: normal;
+  }
+  .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
+    padding-top: 0;
+    font: 500 11.5px/1.2 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+    white-space: normal;
+  }
+  .ch-gd.is-phone .ch-gx-rule {
+    padding: 10px 16px 0;
+  }
+  .ch-gd.is-phone .ch-gm__body {
+    margin-top: 12px;
+  }
+  .ch-gd.is-phone .ch-gm-p {
+    gap: 12px;
+    padding: 14px 16px 16px;
+    background: var(--ch-bg-surface);
+  }
+  .ch-gd.is-phone .ch-gm-p__t {
+    font: 600 14.5px/1.25 var(--ch-font-sans);
+  }
+  .ch-gd.is-phone .ch-gx-more > summary {
+    padding: 0 16px;
   }
 }
