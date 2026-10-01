@@ -434,6 +434,38 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   reads it as before. Kept out: test rounds, rounds in progress, implausible
   totals (the stroke floor) and nine-hole totals (the rule names 18-hole
   totals).
+- Q-128 (open, 2026-10-01; nothing applied) Held OD-01
+  (`20260924120000`) would drop the 14 rounds posted as totals only (7
+  Demo players, all since 24 Sep) from the stats cache and standings, which
+  Ask CoachHelm reads, while Stats counts them in scores (Q-123). Recommended:
+  amend OD-01 to count a total-only 18-hole round in score figures before it
+  is applied (the md5 guards in `20260924140000`, `20260925120000` and
+  `20260928150000` then need regenerating). Kept: held as written.
+- Q-129 (open, 2026-10-01; unchanged) Held `20260928160000` (SG shot end)
+  is superseded by `20260930150000` and has no guard: applied after it, it
+  silently reverts the penalty rule. Recommended: mark it SUPERSEDED in
+  `HELD.md` (your call). Kept: HOLD.
+- Q-130 (open, 2026-10-01; reversible choices made) Aliases with
+  Clubhouse on: `/intelligence` opens CoachHelm (coach) and the old
+  qualifying workspace opens that qualifier's selection (§14 D6, D8; part of
+  Q-103). Still for you: the team switcher (one head coach staffs two teams;
+  Clubhouse has none), recurring tasks, reminders and templates, travel
+  expenses, budgets and CSV, and document versions (Fairway only today).
+- Q-131 (open, 2026-10-01; nothing changed) Turning Clubhouse on reaches
+  every coach and player at once, so there is no group to compare against if
+  something breaks. Recommended: a team allowlist in `isClubhouseFor` for the
+  first activation (Demo team, then one real team). Kept: no allowlist.
+- Q-132 (open, 2026-10-01; nothing changed) The nightly integrity check
+  (`completed_round_zero_scored_holes`) has read 14 every night since 28 Sep,
+  so a new lost round reads 15 and raises the same standing alert.
+  Recommended for the activation window: run it hourly, alert only on rounds
+  created after the deploy, and add holes-short and total-mismatch checks.
+  Kept: as is.
+- Q-133 (open, 2026-10-01; built, reversible) The §14 fixes needed phone UI
+  that no board covers: Settings coaching staff (invite code, pending
+  assistants, current staff), the distance unit picker row and the Team Hub
+  trip menu (Edit, Delete). They reuse the approved phone grammar. Recommended:
+  review on a phone and keep. Kept: built as described.
 - Q-127 (open, 2026-10-01; nothing changed) The Demo team carries QA
   leftovers that look real in Clubhouse: eleven unfinished rounds for the
   demo player not flagged as tests ("Progress Test Course", "QA Hell Enum

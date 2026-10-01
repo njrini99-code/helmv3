@@ -14,7 +14,7 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA),
 
 | Baseline | SHA | How it was established |
 | --- | --- | --- |
-| Production (served) | `6ee77e98e` | `npm run release:status`, at session start |
+| Production (served) | `ef6e017a2` | `npm run release:status`, 2026-10-01 |
 | main | `c706fc80e` | `origin/main` |
 | Clubhouse candidate (#2102) | `c221d1ca2` | `agent/clubhouse` |
 | Release train | PR #2110, `agent/release-train` at `c0f1b17fe` (#2102, #2104 round engine, #2108 security, #2109 stats engine, plus the audit fixes) | local `next build` exit 0 at `24a4bbca2` (later commits: docs, lint layout, the Hub read fix, one test timeout); CI rerunning at `c0f1b17fe` |
@@ -41,7 +41,7 @@ affects no customer until the flag is flipped.
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
 | Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
 | Build/regression | Local gates on `c7e24b4f9`: typecheck, lint ratchet, Supabase-error and fail-open audits, `clubhouse:check`, `docs:check` all 0; unit suite 2067 files, 22182 tests, all pass; local production build used for the F-56 timings. CI on PR #2111 at `9d65dd3ff`: see §4 | §4 |
-| Cutover/rollback | Release package in §6; rollback = flag off (Clubhouse) or redeploy `6ee77e98e` (owner) | §6 |
+| Cutover/rollback | **Open**: Q-131, Q-132; rollback target (§18) | §18 |
 | Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
 
 ## 3. Role × route table (F-01)
@@ -313,6 +313,36 @@ quiet rerun.
   hole-by-hole rule, so a team posting qualifiers as totals read "no rounds
   in 60 days". It now uses the Q-123 score rule (shared in
   `src/lib/golf/round-score-countable.ts`).
+- **§14 Adjacent capabilities (run 2026-10-01, source and read-only SQL).**
+  Connected: roster, Team Hub reads and posts, Classes, Settings, round
+  setup's courses, sign-in and onboarding, Recruiting, exports; Practice,
+  lineups and scouting have no golf production data. No Baseball or Lift Lab
+  regression in the branch diff. Defects: D1 (P1) coaching staff invites
+  and approvals had no Clubhouse screen (fixed `322ca7cfd`); D2 (P1) a Team
+  Hub trip could not be edited or deleted (fixed `12f07da99`); D3 (P2) a
+  calendar link could not be replaced or removed (fixed `40419c193`); D4 (P2) 30 unread dev-plan
+  notifications opened a placeholder (fixed `5c4a9c33a`); D5 (P2, live in
+  production, both UIs) push taps never deep-linked: the payload URL is
+  absolute and the guard rejects "//" (fixed `a99fa9638`); D6, D8 aliases for
+  `/intelligence` and the old qualifying workspace (fixed `5c4a9c33a`); D7
+  (P3) distance unit not settable (fixed `4e3b87d44`); D9 (P3, dev only) the
+  strict-mode double effect can clear the sync player. Owner: Q-130.
+- **§16 Held migrations (run 2026-10-01, read-only).** None of the 15 held
+  files is applied; every app path that needs one has a fallback. Fixed:
+  `20260928150000` missed the `r2` calls in the trend subqueries and would
+  have reported success with test rounds still in last 5/10 (`ec65c44f6`).
+  Owner: Q-128 (OD-01 drops the 14 totals-only rounds Stats counts) and
+  Q-129 (`20260928160000` is superseded but unguarded). Apply order notes:
+  SG recompute before the cache and standing refreshes; local replay runs
+  the held schema, so local stats results are not production's.
+- **§18 Rollback and observability (run 2026-10-01).** The flag is compiled
+  in: a flip and its undo are deploys. The documented rollback target was
+  stale (now the train deployment; RELEASE doc corrected). Fixed
+  (`8a1dd47f8`): a queued round that fails to sync now reports to Sentry,
+  high when retries end, and server events carry `ui` and `surface` tags.
+  Open, owner: Q-131 (no canary), Q-132 (the nightly lost-round detector has
+  read 14 since 28 Sep, so a new loss looks the same). Production delivery of
+  Clubhouse events is unverified while the flag is off (preview: 20 events).
 - **CI on PR #2111 (fixed `55bb26a51`).** The layout test lacked the F-36
   cookie mock, the held migration's HELD.md row lacked its date and its
   registry owner, and four test reads were unchecked.
