@@ -1,0 +1,282 @@
+{
+  "id": "P003",
+  "name": "Roster",
+  "slug": "roster",
+  "bridgeNamespace": 3,
+  "routes": [
+    "/golf/dashboard/roster"
+  ],
+  "roles": [
+    "coach"
+  ],
+  "semanticFeatures": [
+    "roster_team"
+  ],
+  "progressRow": "Roster",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "complete",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Roster.html",
+      "design/handoff/Roster.html",
+      "design/handoff/roster.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Roster - Mobile.html",
+      "design/handoff/mobile/Roster Mobile.html",
+      "design/handoff/m-roster.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/roster",
+    "loader": "src/clubhouse/data/roster.ts",
+    "route": "src/clubhouse/routes/roster.tsx",
+    "styles": "src/clubhouse/styles/roster.css",
+    "tests": [
+      "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/roster.md",
+  "checklist": "docs/clubhouse/screens/roster.md",
+  "phoneSpec": "docs/clubhouse/phone/roster.md",
+  "actions": [
+    {
+      "id": "ACT-P003-REMOVE-PLAYER",
+      "label": "Remove a player from the team",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "handler": "remove.run",
+      "service": "src/app/golf/actions/roster.ts#removePlayerFromTeam",
+      "data": [
+        "golf_team_members"
+      ],
+      "bridge": {
+        "confirm": 31101,
+        "warning": 31704,
+        "loading": 30301,
+        "success": 30901,
+        "failure": 30601,
+        "permission": 30803,
+        "recovery": 31403,
+        "offline": 30701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-APPROVE-REQUEST",
+      "label": "Approve a join request",
+      "component": "src/clubhouse/screens/roster/RosterRequests.tsx#RosterRequests",
+      "handler": "jr.decide(request, true)",
+      "service": "src/app/golf/actions/teams.ts#acceptJoinRequest",
+      "data": [
+        "golf_team_join_requests",
+        "golf_team_members",
+        "notifications"
+      ],
+      "bridge": {
+        "optimistic": 31301,
+        "success": 30901,
+        "failure": 30602,
+        "permission": 30803,
+        "recovery": 31403,
+        "offline": 30701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-DECLINE-REQUEST",
+      "label": "Decline a join request",
+      "component": "src/clubhouse/screens/roster/RosterRequests.tsx#RosterRequests",
+      "handler": "jr.decide(request, false)",
+      "service": "src/app/golf/actions/teams.ts#rejectJoinRequest",
+      "data": [
+        "golf_team_join_requests",
+        "notifications"
+      ],
+      "bridge": {
+        "optimistic": 31301,
+        "success": 30901,
+        "failure": 30603,
+        "permission": 30803,
+        "recovery": 31403,
+        "offline": 30701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-APPROVE-ALL",
+      "label": "Approve every join request (phone)",
+      "component": "src/clubhouse/screens/roster/RosterPhone.tsx#RequestsSheet",
+      "handler": "jr.approveAll",
+      "service": "src/app/golf/actions/teams.ts#acceptJoinRequest",
+      "data": [
+        "golf_team_join_requests",
+        "golf_team_members",
+        "notifications"
+      ],
+      "bridge": {
+        "loading": 30302,
+        "success": 30901,
+        "partial": 30607,
+        "recovery": 31401,
+        "offline": 30701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-SAVE-NOTE",
+      "label": "Save the coach's note about a player",
+      "component": "src/clubhouse/screens/roster/RosterPeek.tsx#CoachNote",
+      "handler": "save.run",
+      "service": "src/app/golf/actions/v3/intent.ts#setIntent",
+      "data": [
+        "golf_coach_player_intent"
+      ],
+      "bridge": {
+        "validation": 30501,
+        "success": 30901,
+        "failure": 30604,
+        "loadFailed": 30616,
+        "permission": 30803,
+        "recovery": 31403,
+        "offline": 30701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-EXPORT-CSV",
+      "label": "Export the roster as a CSV (desktop)",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "handler": "exportCsv",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "validation": 30502,
+        "success": 31702,
+        "failure": 30605
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-COPY-JOIN-CODE",
+      "label": "Copy the team code or the join link",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#InviteModal",
+      "handler": "copy",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "success": 31703,
+        "failure": 30606,
+        "empty": 30404,
+        "loadFailed": 30614
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-SHARE-INVITE",
+      "label": "Share the join link",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#InviteModal",
+      "handler": "share",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "failure": 30606
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-OPEN-PLAYER",
+      "label": "Open a player (panel on desktop, pushed profile on the phone)",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#RosterList",
+      "handler": "select, openPlayer",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "core": 30101,
+        "deepLink": 30102,
+        "empty": 30405,
+        "loadFailed": 30615,
+        "haptic": 31701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-FILTER-PLAYERS",
+      "label": "Search, filter by status and sort the players",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "handler": "setQ, setShow, setSort",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "empty": 30402,
+        "emptyFilter": 30403,
+        "haptic": 31701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-CHANGE-LAYOUT",
+      "label": "Switch between cards and a list (desktop)",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "handler": "changeView",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "kept": 31202,
+        "haptic": 31701,
+        "accessibility": 31801
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-TRY-AGAIN",
+      "label": "Try again on a notice that a read did not load",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "handler": "router.refresh",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "refresh": 30303,
+        "recovery": 31402,
+        "rosterFailed": 30608,
+        "statsFailed": 30609,
+        "requestsFailed": 30610
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    }
+  ],
+  "held": [
+    "docs/clubhouse/held/data/roster-availability.md"
+  ]
+}

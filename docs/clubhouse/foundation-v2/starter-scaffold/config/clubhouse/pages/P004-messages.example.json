@@ -1,0 +1,67 @@
+{
+  "id": "P004",
+  "name": "Messages",
+  "route": "/golf/dashboard/messages",
+  "bridgeNamespace": 4,
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "team_communications"
+  ],
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "implementationRoot": "src/clubhouse/screens/messages",
+  "designPackage": "design/handoff/Messages.html",
+  "actions": [
+    "ACT-P004-SEND-MESSAGE",
+    "ACT-P004-OPEN-NEW-MESSAGE",
+    "ACT-P004-REACT-TO-MESSAGE"
+  ],
+  "components": [
+    "src/clubhouse/screens/messages/Messages.tsx",
+    "src/clubhouse/screens/messages/MessagesView.tsx",
+    "src/clubhouse/screens/messages/MessagesSkeleton.tsx"
+  ],
+  "hooks": [],
+  "services": [],
+  "dataResources": [
+    "DATA-MESSAGES"
+  ],
+  "contractIds": [
+    4021,
+    4041,
+    4042,
+    4051,
+    4061,
+    4071,
+    4091,
+    4161,
+    4171,
+    4181,
+    4231,
+    4241,
+    4251
+  ],
+  "tests": [
+    "TEST-P004-MESSAGE-BODY-REQUIRED",
+    "TEST-P004-SEND-FAILURE"
+  ],
+  "held": [],
+  "docs": {
+    "page": "docs/clubhouse/pages/P004-messages/PAGE.md",
+    "design": "docs/clubhouse/pages/P004-messages/DESIGN.md",
+    "contract": "docs/clubhouse/pages/P004-messages/CONTRACT.md",
+    "wiring": "docs/clubhouse/pages/P004-messages/WIRING.md",
+    "verify": "docs/clubhouse/pages/P004-messages/VERIFY.md",
+    "changelog": "docs/clubhouse/pages/P004-messages/CHANGELOG.md"
+  }
+}

@@ -1,0 +1,200 @@
+/*
+ * Clubhouse tokens: the Fairway Clubhouse Edition spec, ported fresh.
+ * Source: design/handoff/design-system/tokens/*.css and design/handoff/depth.css.
+ *
+ * Everything is namespaced --ch-* and defined only under [data-ui="clubhouse"],
+ * so nothing here reaches the Fairway tree and nothing from Fairway's :root
+ * tokens is read in here. `npm run clubhouse:check` enforces both directions.
+ * Light theme only until the owner signs off a dark pass (tracker: D-2).
+ */
+[data-ui='clubhouse'] {
+  /* Ivory neutrals */
+  --ch-ivory-0: #ffffff;
+  --ch-ivory-25: #fdfcf8;
+  --ch-ivory-50: #f9f7f1;
+  --ch-ivory-100: #f4f2ea;
+  --ch-ivory-150: #eeebe2;
+  --ch-ivory-200: #e7e3d8;
+  --ch-ivory-300: #dcd6c8;
+  --ch-ivory-400: #c9c2b1;
+  /* Ink */
+  --ch-ink-950: #141412;
+  --ch-ink-900: #1c1b18;
+  --ch-ink-700: #3a3833;
+  --ch-ink-600: #55524b;
+  --ch-ink-500: #6b6860;
+  --ch-ink-400: #8f8b81;
+  --ch-ink-300: #b3afa5;
+  /* Augusta green */
+  --ch-green-25: #f5f9f6;
+  --ch-green-50: #eef5f0;
+  --ch-green-100: #ddebe1;
+  --ch-green-200: #bcd6c4;
+  --ch-green-400: #4f8a64;
+  --ch-green-500: #1f6b45;
+  --ch-green-600: #155a39;
+  --ch-green-700: #0f4a2f;
+  --ch-green-800: #0b3a25;
+  --ch-green-900: #082b1c;
+  /* The mint accents on the green hero (v2 phone Home, m-home.css). */
+  --ch-hero-mint: #9fe0b6;
+  --ch-hero-mint-strong: #7bc79a;
+  --ch-frame: #0a331f;
+  /* Champagne: hairline detail only */
+  --ch-champagne-100: #efe6d2;
+  --ch-champagne-300: #dccda6;
+  --ch-champagne-500: #b09560;
+  /* Status (text on tint) */
+  --ch-positive-600: #1c6b43;
+  --ch-positive-100: #e6f2ea;
+  --ch-warning-600: #94600e;
+  --ch-warning-100: #faf0dc;
+  --ch-danger-600: #b03a2e;
+  --ch-danger-100: #fbe9e6;
+  --ch-info-600: #2d5c77;
+  --ch-info-100: #e6eef3;
+  /* Scoring. Red means under par, and nothing else. */
+  --ch-score-under: #b03a2e;
+  --ch-score-under-bg: #fbe9e6;
+  --ch-score-over-bg: #efece4;
+  --ch-score-double: #1c1b18;
+  /* Charts (yardage book) */
+  --ch-chart-paper: #fbf8ef;
+  --ch-chart-gain: #155a39;
+  --ch-chart-loss: #9a6512;
+  /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
+  --ch-chart-loss-on-tint: #744a06;
+  --ch-chart-flag: #b03a2e;
+  --ch-chart-fairway: #cbddcc;
+  --ch-chart-fairway-alt: #bfd5c1;
+  --ch-chart-rough: #e4e6d6;
+
+  /* Semantic */
+  --ch-bg-page: var(--ch-ivory-100);
+  --ch-bg-surface: var(--ch-ivory-25);
+  --ch-bg-subtle: var(--ch-ivory-50);
+  --ch-bg-inset: var(--ch-ivory-150);
+  --ch-bg-hover: var(--ch-ivory-50);
+  --ch-bg-selected: var(--ch-green-50);
+  --ch-text-primary: var(--ch-ink-900);
+  --ch-text-secondary: var(--ch-ink-600);
+  --ch-text-tertiary: var(--ch-ink-500);
+  --ch-text-disabled: var(--ch-ink-300);
+  --ch-text-on-accent: #ffffff;
+  --ch-accent: var(--ch-green-600);
+  --ch-accent-hover: var(--ch-green-700);
+  --ch-accent-press: var(--ch-green-800);
+  --ch-border-hairline: rgb(28 25 18 / 0.07);
+  --ch-border-subtle: rgb(28 25 18 / 0.1);
+  --ch-border-control: rgb(28 25 18 / 0.14);
+  --ch-border-strong: rgb(28 25 18 / 0.24);
+  --ch-border-focus: var(--ch-ink-900);
+  /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
+  --ch-green-ring: rgb(21 90 57 / 0.28);
+  --ch-green-rule: rgb(21 90 57 / 0.4);
+  --ch-ink-rule: rgb(28 25 18 / 0.2);
+  --ch-champagne-ring: rgb(110 84 36 / 0.14);
+  --ch-champagne-rule: rgb(176 149 96 / 0.25);
+  --ch-focus-halo: rgb(28 25 18 / 0.1);
+
+  /* Type */
+  --ch-font-sans: var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --ch-font-mono: var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace;
+  --ch-type-display-l: 600 36px/1.08 var(--ch-font-sans);
+  --ch-type-display-s: 600 22px/1.2 var(--ch-font-sans);
+  --ch-type-title: 600 15px/1.35 var(--ch-font-sans);
+  --ch-type-body-l: 400 16px/1.55 var(--ch-font-sans);
+  --ch-type-body: 400 14px/1.5 var(--ch-font-sans);
+  --ch-type-body-s: 400 13px/1.45 var(--ch-font-sans);
+  --ch-type-label: 500 13.5px/1.3 var(--ch-font-sans);
+  --ch-type-label-s: 500 12.5px/1.3 var(--ch-font-sans);
+  --ch-type-caption: 400 12.5px/1.4 var(--ch-font-sans);
+  --ch-type-figure-l: 500 40px/1 var(--ch-font-sans);
+  --ch-type-mono: 500 11px/1 var(--ch-font-mono);
+
+  /* Space and layout */
+  --ch-gutter: 40px;
+  --ch-sidebar-w: 240px;
+  --ch-topbar-h: 56px;
+  /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
+  --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
+  --ch-tabbar-h: 56px;
+
+  /* Radius */
+  --ch-radius-xs: 5px;
+  --ch-radius-sm: 7px;
+  --ch-radius-md: 10px;
+  --ch-radius-lg: 14px;
+  --ch-radius-xl: 20px;
+
+  /* Elevation */
+  --ch-shadow-sm: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.04), 0 2px 4px -2px rgb(28 25 18 / 0.04);
+  --ch-shadow-md: 0 0 0 1px rgb(28 25 18 / 0.06), 0 2px 4px -1px rgb(28 25 18 / 0.04), 0 10px 24px -8px rgb(28 25 18 / 0.1);
+  --ch-shadow-lg: 0 0 0 1px rgb(28 25 18 / 0.06), 0 8px 16px -6px rgb(28 25 18 / 0.08), 0 28px 56px -16px rgb(28 25 18 / 0.2);
+  --ch-glass-bg: rgb(250 248 241 / 0.7);
+  --ch-glass-blur: 34px;
+  --ch-phone-bar-bg: rgb(247 245 239 / 0.9);
+  --ch-phone-tabbar-bg: rgb(253 252 248 / 0.92);
+  --ch-phone-composer-bg: rgb(253 252 248 / 0.94);
+  /* The one neutral coin: every avatar on the phone (D-43), and the default tone on desktop. */
+  --ch-avatar-neutral-bg: #e9e3d3;
+  --ch-avatar-neutral-fg: #5a4e36;
+  --ch-avatar-neutral-ring: rgb(90 78 54 / 0.22);
+
+  /* Depth vocabulary ("depth like the toggles") */
+  --ch-well-bg: linear-gradient(180deg, #dcd7ca 0%, #e6e2d7 55%, #ece8de 100%);
+  --ch-well-shadow: inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16),
+    inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 0 #fff,
+    0 0 0 1px rgb(255 255 255 / 0.35);
+  --ch-well-soft-bg: linear-gradient(180deg, #e9e5da 0%, #efece3 60%, #f2efe7 100%);
+  --ch-well-soft-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),
+    inset 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 0 rgb(255 255 255 / 0.9);
+  --ch-raised-bg: linear-gradient(180deg, #fffefb 0%, #f7f5ef 60%, #efece4 100%);
+  --ch-raised-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 1px rgb(28 25 18 / 0.14), 0 3px 6px -2px rgb(28 25 18 / 0.22),
+    0 8px 14px -8px rgb(28 25 18 / 0.28), inset 0 1px 0 #fff, inset 0 -1px 0 rgb(28 25 18 / 0.06);
+  --ch-sheet-bg: linear-gradient(180deg, #fffefb 0%, #fdfcf8 40%, #faf8f2 100%);
+  --ch-sheet-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.06), 0 6px 14px -6px rgb(28 25 18 / 0.12),
+    0 22px 40px -22px rgb(28 25 18 / 0.22), inset 0 1px 0 #fff;
+  --ch-green-raised-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 55%, #0f4a2f 100%);
+  --ch-green-raised-shadow: 0 0 0 1px rgb(8 43 28 / 0.6), 0 1px 1px rgb(8 43 28 / 0.3), 0 4px 8px -3px rgb(8 43 28 / 0.4),
+    inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);
+
+  /* Motion (D-64, the v2 design's gh-polish.css and gh-core.js). No count-ups.
+     press: every tappable shrinks about 6px (lib/press.ts) and springs back in release.
+     quick: hover, toggles, the tab underline. base: sheets, panels, pushes, crossfades.
+     reveal: first paint only, a 10px rise, 55ms apart, at most 10 blocks (.ch-reveal). */
+  --ch-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ch-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --ch-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --ch-dur-press: 110ms;
+  --ch-dur-quick: 180ms;
+  --ch-dur-base: 260ms;
+  --ch-dur-release: 280ms;
+  --ch-dur-reveal: 520ms;
+  --ch-reveal-offset: 40ms;
+  --ch-reveal-step: 55ms;
+  --ch-reveal-rise: 10px;
+  --ch-dur-shimmer: 1.9s;
+  /* Skeletons wait this long before showing, then fade in over base. */
+  --ch-skel-delay: 150ms;
+
+  /* Z */
+  --ch-z-sticky: 40;
+  --ch-z-overlay: 80;
+  --ch-z-toast: 100;
+}
+
+/* Settings > Preferences > Animations off: every Clubhouse transition becomes
+   instant (portaled menus and dialogs carry their own data-ui, so both forms). */
+[data-ui='clubhouse'][data-motion='off'],
+[data-motion='off'] [data-ui='clubhouse'] {
+  --ch-dur-press: 0ms;
+  --ch-dur-quick: 0ms;
+  --ch-dur-base: 0ms;
+  --ch-dur-release: 0ms;
+  --ch-dur-reveal: 0ms;
+  --ch-reveal-offset: 0ms;
+  --ch-reveal-step: 0ms;
+  --ch-reveal-rise: 0px;
+  --ch-skel-delay: 0ms;
+}

@@ -10,6 +10,17 @@
 
 import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
 import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
+import {
+  isPuttMade,
+  normalizePuttFeet,
+  puttMakeBandFor,
+  puttMakeStartFeet,
+  tallyPuttMakes,
+} from '@/lib/golf/putt-make';
+
+// The putt make % definition lives in one place (src/lib/golf/putt-make.ts);
+// these two stay importable from here for existing callers and tests.
+export { MAX_PUTT_FEET, normalizePuttFeet } from '@/lib/golf/putt-make';
 
 // ============================================================================
 // TYPES - Raw Data from Database
@@ -59,6 +70,13 @@ export interface HoleInfo {
   fairway_hit?: boolean | null;
   gir?: boolean | null;
   sand_save?: boolean | null; // canonical greenside-bunker up-and-down flag (golf_holes.sand_save)
+  /**
+   * The canonical penalty count for the hole (golf_holes.penalty_strokes; the DB
+   * cache sums COALESCE(penalty_strokes, 0)). When the loader provides the field
+   * (even as null = 0) it is THE count; only when it is absent (undefined) does
+   * the calculator fall back to counting is_penalty shot rows.
+   */
+  penalty_strokes?: number | null;
 }
 
 export interface RoundInfo {
@@ -360,15 +378,24 @@ export interface GolfStats {
   scramblingPercentage: number | null;
   scramblingPctFairway: number | null;
   scramblingPctRough: number | null;
+  /** Same figure as `sandSavePercentage` (golf_holes.sand_save), by design. */
   scramblingPctSand: number | null;
+  /** Chip distance <= 10 yd. */
   scramblingPct0_10: number | null;
+  /** Chip distance > 10 and <= 20 yd. */
   scramblingPct10_20: number | null;
+  /**
+   * Chip distance > 20 yd, out to the around-the-green threshold
+   * (AROUND_GREEN_THRESHOLD_YARDS = 50), NOT 20-30 yd despite the key. The key
+   * is kept for existing readers; label it "20+ yd".
+   */
   scramblingPct20_30: number | null;
 
   // Around the green
   atgEfficiencyAvg: number | null;
   atgEfficiency0_10: number | null;
   atgEfficiency10_20: number | null;
+  /** Shots from > 20 yd out to the 50 yd threshold (see `scramblingPct20_30`): "20+ yd". */
   atgEfficiency20_30: number | null;
   atgEffFairway: number | null;
   atgEffRough: number | null;
@@ -383,7 +410,9 @@ export interface GolfStats {
     };
   };
 
-  // Sand saves
+  // Sand saves — ONE figure: attempt = golf_holes.sand_save non-null, made =
+  // true. `scrambleSandAttempts` / `scrambleSandMade` / `scramblingPctSand`
+  // carry these same numbers.
   sandSaveAttempts: number;
   sandSavesMade: number;
   sandSavePercentage: number | null;
@@ -446,7 +475,8 @@ export interface GolfStats {
   atgProximityAvg: number | null;
   atgProximityByLie: { fairway: number | null; rough: number | null; sand: number | null };
 
-  // Penalties
+  // Penalties — ONE count: golf_holes.penalty_strokes (is_penalty shot rows
+  // only when the hole row does not carry the field). Per-18-hole rate.
   totalPenalties: number;
   penaltiesPerRound: number | null;
 
@@ -527,28 +557,6 @@ export function normalizeToFeet(distance: number | null | undefined, unit: strin
   return unit === 'yards' ? distance * 3 : distance;
 }
 
-/**
- * Longest realistic putt, in feet. Anything beyond this is a unit/entry error
- * (e.g. a putt distance recorded in yards then ×3'd to a 390-foot "putt").
- */
-/** @internal - exported for testing */
-export const MAX_PUTT_FEET = 120;
-
-/**
- * Putt distances are ALWAYS feet, regardless of the stored `distance_unit`.
- *
- * SG-2: putts mis-stored with `distance_unit === 'yards'` were being ×3'd by
- * `normalizeToFeet`, producing impossible 390-foot putts. A putt is on the
- * green by definition, so the raw value is the distance in feet — never convert
- * it. We additionally clamp to {@link MAX_PUTT_FEET} so a stray yards-as-feet
- * tail (or a fat-fingered entry) can't poison putting SG.
- */
-/** @internal - exported for testing */
-export function normalizePuttFeet(distance: number | null | undefined): number {
-  if (distance == null) return 0;
-  return Math.min(Math.max(distance, 0), MAX_PUTT_FEET);
-}
-
 /** @internal - exported for testing */
 export function normalizeShotType(shotType: string | null | undefined): string | null {
   if (!shotType) return null;
@@ -591,17 +599,14 @@ export function safeAverage(total: number, count: number): number | null {
   return Math.round((total / count) * 100) / 100;
 }
 
-/** @internal - exported for testing */
+/**
+ * The fine putt-distance band for a start distance in feet, (lo, hi]
+ * upper-inclusive. The edges live in `@/lib/golf/putt-make` so the calculator,
+ * the leak map and the cache writer cannot drift apart.
+ * @internal - exported for testing
+ */
 export function getPuttDistanceBucket(distance: number): string {
-  if (distance <= 3) return '0_3';
-  if (distance <= 5) return '3_5';
-  if (distance <= 10) return '5_10';
-  if (distance <= 15) return '10_15';
-  if (distance <= 20) return '15_20';
-  if (distance <= 25) return '20_25';
-  if (distance <= 30) return '25_30';
-  if (distance <= 35) return '30_35';
-  return '35_plus';
+  return puttMakeBandFor(distance);
 }
 
 /** @internal - exported for testing */
@@ -898,6 +903,41 @@ function resolvePenaltyOrigin(penalty: RawShot, holeShots?: readonly RawShot[]):
   return before ?? after ?? penalty;
 }
 
+/**
+ * Q-89: a shot ENDS where the next non-penalty shot on the hole STARTS (the
+ * place the ball was actually played from), not where the shot itself recorded
+ * its end. The two disagree across a lie break ("rough" after, "fairway"
+ * before), and when they do the per-shot values stop telescoping: with this
+ * rule a hole's SG is exactly expected(first shot) - strokes, so the round
+ * reconciles with the score and only the split across categories moves where a
+ * break sat. Mirrors the SQL functions recalculate_/calculate_round_strokes_gained
+ * (migration 20260930150000): a holed shot, and the last shot of a hole (or a
+ * shot whose next shot has no usable start), keep their own recorded end.
+ *
+ * @internal - exported for testing
+ */
+export function withNextShotStart(shot: RawShot, holeShots: readonly RawShot[]): RawShot {
+  if (shot.putt_made === true || shot.result === 'hole' || shot.result === 'holed') {
+    // Holed: nothing remains (SQL is_holed = putt_made OR result IN ('holed','hole')).
+    return shot.result === 'hole' ? shot : { ...shot, result: 'hole' };
+  }
+  let next: RawShot | null = null;
+  for (const s of holeShots) {
+    if (s.shot_number <= shot.shot_number) continue;
+    if (s.is_penalty === true || s.shot_type === 'penalty' || s.result === 'penalty') continue;
+    if (s.distance_to_hole_before == null || s.distance_to_hole_before <= 0) continue;
+    if (!s.lie_before && s.shot_type !== 'putting') continue;
+    if (!next || s.shot_number < next.shot_number) next = s;
+  }
+  if (!next) return shot;
+  return {
+    ...shot,
+    lie_after: next.shot_type === 'putting' ? 'green' : next.lie_before,
+    distance_to_hole_after: next.distance_to_hole_before,
+    distance_unit_after: next.distance_unit_before,
+  };
+}
+
 // ============================================================================
 // SHOT-BASED HOLE CALCULATOR
 // ============================================================================
@@ -989,9 +1029,14 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     // scramble attempt — we cannot know whether it converted.
     scrambleAttempt: !greenInRegulation && score !== null,
     scrambleMade: !greenInRegulation && score !== null && score <= hole.par,
-    sandSaveAttempt: false,
-    sandSaveMade: false,
-    penalties: 0,
+    // One sand-save figure: the golf_holes.sand_save flag (attempt = flag is
+    // non-null, made = flag true), the same source the DB cache and
+    // shot-analytics read. A scorecard-only hole still carries it.
+    sandSaveAttempt: hole.sand_save != null,
+    sandSaveMade: hole.sand_save === true,
+    // One penalty count: golf_holes.penalty_strokes (null = 0, like the DB's
+    // COALESCE). No shots here, so there is no is_penalty fallback to take.
+    penalties: hole.penalty_strokes ?? 0,
     threePutts: putts !== null && putts >= 3,
     shots: [],
   };
@@ -1004,7 +1049,7 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
 /** @internal - exported for testing */
 export function calculateHoleStatsFromShots(
   shots: RawShot[],
-  holeInfoOrPar: number | Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir' | 'sand_save'>
+  holeInfoOrPar: number | Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir' | 'sand_save' | 'penalty_strokes'>
 ): CalculatedHoleStats {
   // Sort shots by shot number
   const sortedShots = [...shots].sort((a, b) => a.shot_number - b.shot_number);
@@ -1020,7 +1065,7 @@ export function calculateHoleStatsFromShots(
         putts: null,
         fairway_hit: null,
         gir: null,
-        // sand_save intentionally left undefined → shot-derived fallback below
+        // sand_save / penalty_strokes intentionally left undefined → shot-derived fallbacks below
       }
     : holeInfoOrPar;
 
@@ -1132,7 +1177,7 @@ export function calculateHoleStatsFromShots(
   // UNIT HONESTY: an earlier author suspected converting the off-green finish (stored
   // in YARDS, distance_unit_after='yards') through normalizeToFeet (×3) was an
   // inflation bug, and hard-coded miss proximity to null. It is not — the live write
-  // path (resolveDistanceAfterShot in FairwayShotTracking.tsx) deterministically tags
+  // path (resolveDistanceAfterShot in src/hooks/golf/use-shot-tracking.ts) deterministically tags
   // 'feet' only for a hole/green finish and 'yards' for every other result; verified
   // against production golf_shots (2026-07-21): ~99% of off-green approach finishes
   // carry the correct 'yards' tag with sane yardages (~25-65 yd avg, i.e. ~75-195 ft —
@@ -1163,9 +1208,7 @@ export function calculateHoleStatsFromShots(
   // normalizeToFeet, which would ×3 a 'yards'-tagged putt into an impossible
   // distance. Both the start distance and the leave are on-green putts.
   const firstPutt = puttingShots[0];
-  const firstPuttDistance = firstPutt && firstPutt.distance_to_hole_before !== null
-    ? normalizePuttFeet(firstPutt.distance_to_hole_before)
-    : null;
+  const firstPuttDistance = firstPutt ? puttMakeStartFeet(firstPutt) : null;
   const firstPuttLeave = firstPutt && firstPutt.result !== 'hole' && firstPutt.distance_to_hole_after !== null
     ? normalizePuttFeet(firstPutt.distance_to_hole_after)
     : null;
@@ -1175,15 +1218,10 @@ export function calculateHoleStatsFromShots(
   // All-putt make% by distance band: every putt on the hole, bucketed by ITS OWN
   // start distance, made = holed. This is the conventional PGA "make % from
   // distance" (matches golf_pga_standards + the cache writer), not first-putt
-  // only — a 0-3ft tap-in is a real make from 0-3ft.
-  const puttMakeByBand: Record<string, { made: number; total: number }> = {};
-  for (const p of puttingShots) {
-    if (p.distance_to_hole_before === null) continue;
-    const band = getPuttDistanceBucket(normalizePuttFeet(p.distance_to_hole_before));
-    if (!puttMakeByBand[band]) puttMakeByBand[band] = { made: 0, total: 0 };
-    puttMakeByBand[band].total++;
-    if (p.result === 'hole' || p.putt_made === true) puttMakeByBand[band].made++;
-  }
+  // only — a 0-3ft tap-in is a real make from 0-3ft. The definition (start
+  // distance, made, (lo, hi] bands) is the shared one in `@/lib/golf/putt-make`,
+  // the same one the leak map uses; a putt without a start distance is not banded.
+  const puttMakeByBand = tallyPuttMakes(puttingShots) as Record<string, { made: number; total: number }>;
 
   // Scrambling = missed GIR but made par or better
   const scrambleAttempt = !greenInRegulation;
@@ -1244,8 +1282,13 @@ export function calculateHoleStatsFromShots(
     ? sandFlag === true
     : (aroundGreenShot?.lie_before === 'sand' && !greenInRegulation && strokesFromSand <= 2);
 
-  // Penalties
-  const penalties = normalizedShots.filter(s => s.is_penalty).length;
+  // Penalties. ONE count: golf_holes.penalty_strokes (null = 0, like the DB
+  // cache's COALESCE(penalty_strokes, 0) and the Standing rate). The is_penalty
+  // shot rows only stand in when the loader did not provide the field at all
+  // (the number-only path and shot-only callers).
+  const penalties = holeInfo.penalty_strokes !== undefined
+    ? (holeInfo.penalty_strokes ?? 0)
+    : normalizedShots.filter(s => s.is_penalty).length;
 
   // 3-putts
   const threePutts = putts >= 3;
@@ -1840,7 +1883,6 @@ function aggregateRoundStats(rounds: Array<{
 
   const scrambleFairway = { made: 0, total: 0 };
   const scrambleRough = { made: 0, total: 0 };
-  const scrambleSand = { made: 0, total: 0 };
   const scrambleFringe = { made: 0, total: 0 };
   const scramble0_10 = { made: 0, total: 0 };
   const scramble10_20 = { made: 0, total: 0 };
@@ -2225,14 +2267,15 @@ function aggregateRoundStats(rounds: Array<{
         }
         const breakData = puttStatsByBreak[breakType];
         if (!breakData) continue;
-        const holed = putt.result === 'hole' || putt.putt_made === true;
+        const holed = isPuttMade(putt);
 
         breakData.attempts++;
         if (holed) breakData.makes++;
 
         // Per-distance-band split needs the putt's own start distance.
-        if (putt.distance_to_hole_before !== null) {
-          const band = getPuttDistanceBucket(normalizePuttFeet(putt.distance_to_hole_before));
+        const breakStartFeet = puttMakeStartFeet(putt);
+        if (breakStartFeet !== null) {
+          const band = getPuttDistanceBucket(breakStartFeet);
           if (!breakData.make[band]) {
             breakData.make[band] = { made: 0, total: 0 };
           }
@@ -2258,7 +2301,7 @@ function aggregateRoundStats(rounds: Array<{
       // A missed putt with null distance_to_hole_after is excluded (null-honest).
       for (const putt of hole.shots) {
         if (putt.shot_type !== 'putting') continue;
-        const holed = putt.result === 'hole' || putt.putt_made === true;
+        const holed = isPuttMade(putt);
         // Leave = 0 for holed putts; distance_to_hole_after for misses.
         // Skip misses whose leave distance is unknown (null-honest).
         const leave = holed ? 0 : (putt.distance_to_hole_after != null
@@ -2269,8 +2312,9 @@ function aggregateRoundStats(rounds: Array<{
         approachPuttSumLeave += leave;
         approachPuttCountLeave++;
         // Per-band split requires a known starting distance for the band key.
-        if (putt.distance_to_hole_before == null) continue;
-        const band = getPuttDistanceBucket(normalizePuttFeet(putt.distance_to_hole_before));
+        const leaveStartFeet = puttMakeStartFeet(putt);
+        if (leaveStartFeet === null) continue;
+        const band = getPuttDistanceBucket(leaveStartFeet);
         approachPuttSumLeaveByBand[band] = (approachPuttSumLeaveByBand[band] ?? 0) + leave;
         approachPuttCountLeaveByBand[band] = (approachPuttCountLeaveByBand[band] ?? 0) + 1;
       }
@@ -2393,10 +2437,9 @@ function aggregateRoundStats(rounds: Array<{
         } else if (hole.chipLie === 'rough') {
           scrambleRough.total++;
           if (hole.scrambleMade) scrambleRough.made++;
-        } else if (hole.chipLie === 'sand') {
-          scrambleSand.total++;
-          if (hole.scrambleMade) scrambleSand.made++;
         } else if (hole.chipLie === 'fringe') {
+          // (A chip from sand is NOT split out here: "from sand" is the one
+          // sand-save figure below, read from golf_holes.sand_save.)
           scrambleFringe.total++;
           if (hole.scrambleMade) scrambleFringe.made++;
         }
@@ -2559,7 +2602,7 @@ function aggregateRoundStats(rounds: Array<{
           continue;
         }
 
-        const sg = calculateStrokesGainedForShot(shot, sgScale);
+        const sg = calculateStrokesGainedForShot(withNextShotStart(shot, hole.shots), sgScale);
         const category = getStrokesGainedCategory(shot, hole.par);
 
         // Accumulate by category - only when SG is calculable (not null)
@@ -3059,7 +3102,11 @@ function aggregateRoundStats(rounds: Array<{
   stats.scramblingPercentage = safePercent(stats.scramblesMade, stats.scrambleAttempts);
   stats.scramblingPctFairway = safePercent(scrambleFairway.made, scrambleFairway.total);
   stats.scramblingPctRough = safePercent(scrambleRough.made, scrambleRough.total);
-  stats.scramblingPctSand = safePercent(scrambleSand.made, scrambleSand.total);
+  // "Scrambling from sand" IS the sand-save figure: one definition, the
+  // golf_holes.sand_save flag (attempt = flag non-null, made = flag true), the
+  // same numbers as sandSaveAttempts / sandSavesMade / sandSavePercentage. The
+  // lie split of scrambling (fairway / rough / fringe) stays lie-based.
+  stats.scramblingPctSand = safePercent(stats.sandSavesMade, stats.sandSaveAttempts);
   stats.scramblingPct0_10 = safePercent(scramble0_10.made, scramble0_10.total);
   stats.scramblingPct10_20 = safePercent(scramble10_20.made, scramble10_20.total);
   stats.scramblingPct20_30 = safePercent(scramble20_30.made, scramble20_30.total);
@@ -3070,8 +3117,8 @@ function aggregateRoundStats(rounds: Array<{
   stats.scrambleFairwayMade = scrambleFairway.made;
   stats.scrambleRoughAttempts = scrambleRough.total;
   stats.scrambleRoughMade = scrambleRough.made;
-  stats.scrambleSandAttempts = scrambleSand.total;
-  stats.scrambleSandMade = scrambleSand.made;
+  stats.scrambleSandAttempts = stats.sandSaveAttempts;
+  stats.scrambleSandMade = stats.sandSavesMade;
   stats.scramblingPctFringe = safePercent(scrambleFringe.made, scrambleFringe.total);
   stats.scrambleFringeAttempts = scrambleFringe.total;
   stats.scrambleFringeMade = scrambleFringe.made;

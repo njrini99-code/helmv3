@@ -62,11 +62,11 @@ const many = (n: number, make: () => PuttShot) => Array.from({ length: n }, make
  * depthed 6 (short 4), both under the floor, so no lean is called.
  */
 const PUTTS: PuttShot[] = [
-  putt(0, 25, true, { first: true, brk: 'lr', slope: 'up' }),
-  putt(0, 25, false, { first: true, brk: 'rl', slope: 'down', side: 'low', depth: 'short', leaveFeet: 3 }),
-  putt(0, 25, false, { first: true, brk: 'rl', slope: 'down', side: 'low', leaveFeet: 2 }),
-  putt(0, 25, false, { first: true, brk: 'rl', slope: 'down', depth: 'short', leaveFeet: 4 }),
-  putt(0, 25, false, {
+  putt(0, 26, true, { first: true, brk: 'lr', slope: 'up' }),
+  putt(0, 26, false, { first: true, brk: 'rl', slope: 'down', side: 'low', depth: 'short', leaveFeet: 3 }),
+  putt(0, 26, false, { first: true, brk: 'rl', slope: 'down', side: 'low', leaveFeet: 2 }),
+  putt(0, 26, false, { first: true, brk: 'rl', slope: 'down', depth: 'short', leaveFeet: 4 }),
+  putt(0, 26, false, {
     first: true,
     threePutt: true,
     brk: 'rl',
@@ -75,11 +75,11 @@ const PUTTS: PuttShot[] = [
     depth: 'long',
     leaveFeet: 6,
   }),
-  putt(0, 25, false, { first: true, brk: 'rl', slope: 'down', side: 'low', depth: 'short', leaveFeet: 2.5 }),
-  putt(0, 25, false, { first: true, brk: 'lr', slope: 'up', depth: 'short', leaveFeet: 1.5 }),
-  putt(0, 25, false, { first: true, threePutt: true, brk: 'lr', slope: 'up', side: 'low', leaveFeet: 5 }),
-  putt(0, 25, false, { first: true, brk: 'lr', slope: 'up', leaveFeet: 3 }),
-  putt(0, 25, false, { first: true, brk: 'lr', slope: 'up', side: 'low' }),
+  putt(0, 26, false, { first: true, brk: 'rl', slope: 'down', side: 'low', depth: 'short', leaveFeet: 2.5 }),
+  putt(0, 26, false, { first: true, brk: 'lr', slope: 'up', depth: 'short', leaveFeet: 1.5 }),
+  putt(0, 26, false, { first: true, threePutt: true, brk: 'lr', slope: 'up', side: 'low', leaveFeet: 5 }),
+  putt(0, 26, false, { first: true, brk: 'lr', slope: 'up', leaveFeet: 3 }),
+  putt(0, 26, false, { first: true, brk: 'lr', slope: 'up', side: 'low' }),
   putt(0, 4, true, { brk: 'st', slope: 'level' }),
   putt(0, 4, true, { brk: 'st', slope: 'level' }),
   putt(0, 4, true, { brk: 'st', slope: 'level' }),

@@ -84,7 +84,13 @@ still use `getPlayerStatsDashboardBundle`.
   `stats-intelligence.ts`, `player-profile-stats.ts` and the team-stats page
   filters `.eq('is_test', false)`; shots and holes follow the filtered round
   ids. `golf_player_stats_cache` does not read the flag yet, so cached
-  aggregates still include flagged rounds.
+  aggregates still include flagged rounds (held migration `20260928150000`
+  adds the flag to the cache functions; held migration `20260930150000` stores
+  NULL strokes gained for test rounds so the cache's SG and Standing's `sg_*`
+  skip them). The leak maps, `getWorstHoleAnalysis`, the progress drivers and
+  the Intelligence page filter it too, and `isCountableRound` takes an optional
+  `is_test` (reason `test_round`) so a loader that selects the flag cannot let a
+  test round into an average.
 - Putt leak-map bands (`stats-leak-maps.ts`) are upper-inclusive: "3-5 ft" is
   (3, 5], the same edges as the cache writer (`putt_make_pct_3_5ft`) and the
   calculator's `getPuttDistanceBucket`, so the chart and the Putting-by-distance
@@ -128,14 +134,85 @@ still use `getPlayerStatsDashboardBundle`.
   reviewing the set. Career-only standing, trends, leak maps, and CoachHelm
   patterns must stay out of this scoped report so two different scopes are
   never presented as one result.
+- **Tour only (owner decision Q-93, 2026-09-30: "change it all to PGA moving
+  forward").** No golf stats screen renders a D1, division, college or NCAA
+  benchmark, target, column, verdict, footnote or grade. Every reference is the
+  Tour (`golf_pga_standards`, `pga_tour_value`): the PGA Tour for a men's team,
+  the LPGA Tour for a women's team, labelled "PGA Tour" / "LPGA Tour" and never
+  the wrong one (neutral "the Tour" when the tour is not known yet).
+  `src/lib/golf/benchmarks/tour.ts` is the one cited static mirror (`TOUR_STANDARDS`,
+  `tourFor(gender)`, `tourLabel`, `resolveStageTour`); `tour.test.ts` pins it.
+  The stage resolves the tour once (leak map `tour`, else the standing rows'
+  `is_womens`) and passes it to the bento and the Putting, Approach and Short
+  game drills. A comparison the Tour has no value for is dropped, not
+  approximated: 0-3 ft putts, fairway %, overall scrambling %, birdies and
+  3-putts per round, GIR by distance band or lie, par-5 GIR, scrambling by
+  distance or miss direction, strokes to hole out.
+- **One definition each (owner decision Q-93, 2026-09-30: "fix putting and
+  scrambling"), shared by the current app and Clubhouse.**
+  - Putt make %: `src/lib/golf/putt-make.ts`. Start distance =
+    `distance_to_hole_before` in feet (clamped to 120, never unit-converted,
+    `putt_distance_feet` is not read); made = `result === 'hole'` OR
+    `putt_made === true` (a holed putt with a null `putt_made` is a make); a putt
+    with no start distance is not banded; bands are (lo, hi], upper-inclusive;
+    rounds are real (`is_test = false`) and countable. Used by the calculator
+    (`puttMakePct*`, break and leave splits), the leak map (`aggregatePuttBuckets`
+    selects `distance_to_hole_before, result, putt_made`; rows with a null
+    `putt_made` are no longer dropped), the player shot analytics and the Team
+    Intelligence putt list. It is the same rule as the SQL cache writer
+    `update_player_putt_make_pct`, which still reads test rounds until held
+    migration `20260928120000` is applied and feeds Standing. Not rerouted (own
+    bucket edges): the round-review putt buckets (`putt-distance-buckets.ts`,
+    `PuttHeatmap`) and the CoachHelm mining and putt-bias generators.
+  - Sand save: the `golf_holes.sand_save` flag (attempt = flag non-null, made =
+    flag true). `scramblingPctSand`, `scrambleSandAttempts` and
+    `scrambleSandMade` carry the same numbers as `sandSavePercentage`,
+    `sandSaveAttempts` and `sandSavesMade`; the fairway, rough and fringe
+    scrambling split is unchanged.
+  - Penalties: `golf_holes.penalty_strokes` (null is 0, like the DB cache). The
+    calculator counts `is_penalty` shot rows only for a hole row that does not
+    carry the field. The two counts agree on every production hole today.
+  - Rounds: the 100-round cap (and "last 5/10/20") applies AFTER the countable
+    filter in `getDetailedStats`; `truncated` compares the countable total.
+  - Labels: scrambling "20+ yds" (`scramblingPct20_30`, uncapped) and ATG
+    efficiency "20-50 yds" (`atgEfficiency20_30`, the 50-yard threshold); the
+    field names are kept.
+  - `getPlayerPatterns` ranks by absolute `stroke_impact` before taking ten, so
+    the biggest leaks (negative) are no longer dropped.
+- **Strokes gained rules (Q-89, 2026-09-30; migration
+  `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql`, written, not
+  applied).** A penalty is charged to the shot that earned it (previous real shot,
+  else the next, else the row: `getPenaltyCategory`); a shot ends where the next
+  non-penalty shot starts (`withNextShotStart`), so a hole's SG is expected(first
+  shot) minus strokes; `is_test` rounds store NULL SG. The TypeScript engine and
+  both SQL functions are pinned to the same numbers by
+  `src/lib/utils/__tests__/fixtures/sg-shot-rules.json` (vitest and
+  `supabase/tests/rls/strokes_gained_shot_rules.sql`). Before and after
+  numbers: `docs/operations/2026-09-30-sg-penalty-and-shot-end-before-after.md`.
+  The round review's per-hole narrative charges a penalty the same way; its
+  per-shot `sg` values are still each shot's own "what this swing did".
 - Putting benchmarks (DASH-12, 2026-09-25): `src/lib/golf/benchmarks/putting.ts`
-  mirrors the `golf_pga_standards` putt-make rows (PGA and LPGA, Tour and D1,
-  five bands from 3 ft; 0-3 ft has no standard) with each row's source cited.
-  The Putting drill's benchmark sheet grades the career leak-map buckets
-  against it, prefers the live reference on the bucket, and grades a band only
-  at 10+ putts. `getPlayerLeakMaps` returns `windowFrom`/`windowTo` (dates of
-  the same countable rounds as `roundsIncluded`) and `tour` (the reference
-  set it routed to), so the sheet and LeakMap never guess either.
+  grades against the `tour.ts` putt-make rows (PGA and LPGA, five bands from
+  3 ft; 0-3 ft has no standard) with each row's source cited. The Putting
+  drill's benchmark sheet grades the career leak-map buckets against the Tour
+  alone (at or above, or N points below), prefers the live reference on the
+  bucket, and grades a band only at 10+ putts. `getPlayerLeakMaps` returns
+  `windowFrom`/`windowTo` (dates of the same countable rounds as
+  `roundsIncluded`) and `tour` (the reference set it routed to), so the sheet
+  and LeakMap never guess either. In the drill's make-rate ramp only 3-5, 5-10
+  and 10-15 ft are coloured (the bands with an exact Tour band).
+- Priorities (`generateStatisticalStrengthsWeaknesses(stats, tour)`, `tour`
+  required because GolfStats has no gender): strokes gained stays self-relative
+  (each category against the player's own average); the rest is Tour-based:
+  putting 3-5, 5-10 and 10-15 ft, penalties per round, sand saves
+  (`scrambling_pct_sand`) and double-bogey-or-worse per 100 holes
+  (`big_number_rate`). "Est. strokes" = gap to the Tour x the player's own
+  events per 18 holes x a lower-bound cost per event (1 stroke); the spine
+  prints it with "est.". The Putting drill's cost line is
+  `puttingStrokesVsTour` (net over those three bands, priced against the
+  team's tour). The qualifying-vs-practice gap was removed from Priorities: its
+  raw-score basis does not match the Tour's to-par `practice_tournament_delta`
+  (the Standing drill shows that gap on the right basis).
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.
 - Team analytics should not mix players across teams or organizations.
 - CoachHelm can consume stats but should not own stat calculation truth.
@@ -268,3 +345,18 @@ still use `getPlayerStatsDashboardBundle`.
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `docs/v3-research-golf-domain.md`
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, `/golf/dashboard/stats` renders Clubhouse Stats (`src/clubhouse/routes/stats.tsx`): team stats for
+coaches, `?player=<id>` profiles for coaches (team members only), and the player's own profile for players (`?player`
+ignored). Windows: `?window=last10|season|qualifiers`. Shot-level detail comes from `getDetailedStats` behind its
+existing access gate; D1 benchmarks from `golf_pga_standards.div1_avg_value` (LPGA for a women's team, PGA fallback).
+Checklists: `docs/clubhouse/screens/stats-team.md`, `stats-player.md`.
+
+`?tab=overview|game|rounds|dev` opens that profile tab, for coaches and players (D-53); any other value, or none,
+opens Overview. It is read once on load (`StatsPlayer({ initialTab })`, passed through
+`ClubhouseStatsRoute({ tab })`), and switching tabs afterwards doesn't rewrite the URL. Roster's phone profile links
+"All N" to `?player=<id>&window=season&tab=rounds`. The season window counts the same countable 18-hole season rounds
+as Roster's `rounds`, so the Rounds tab's count matches the N on the link. Tests: `src/clubhouse/__tests__/stats-player.test.tsx`
+› "Stats player · opened from a link" (commit 041ef83ee).

@@ -68,13 +68,14 @@ const RECIPIENT = 'recipient-1';
 async function runFanout(opts: {
   rlsUsersRows: Row[];
   adminUsersRows: Row[];
+  participant?: Row;
 }): Promise<{ rlsTables: string[]; adminTables: string[] }> {
   const rlsTables: string[] = [];
   const adminTables: string[] = [];
 
   const rls = makeClient(
     {
-      golf_conversation_participants: [{ user_id: RECIPIENT }],
+      golf_conversation_participants: [opts.participant ?? { user_id: RECIPIENT }],
       golf_coaches: [{ full_name: 'Coach Rini' }],
       golf_players: [],
       users: opts.rlsUsersRows,
@@ -235,5 +236,38 @@ describe('notifyGolfMessageRecipients', () => {
       expect.stringContaining('resolved to 0 user rows'),
       expect.objectContaining({ action: 'notifications.notifyGolfMessageRecipients' }),
     );
+  });
+
+  describe('conversation mute', () => {
+    const optedIn = [{ id: RECIPIENT, email: 'player@example.com', notification_preferences: { push_messages: true } }];
+
+    it('sends nothing to a participant who muted the conversation', async () => {
+      const { adminTables } = await runFanout({
+        rlsUsersRows: [],
+        adminUsersRows: optedIn,
+        participant: { user_id: RECIPIENT, notification_level: 'muted', muted_until: null },
+      });
+      expect(notifyNewMessageMock).not.toHaveBeenCalled();
+      expect(sendPushNotificationMock).not.toHaveBeenCalled();
+      expect(adminTables).not.toContain('golf_calendar_notifications');
+    });
+
+    it('delivers again once muted_until has passed', async () => {
+      await runFanout({
+        rlsUsersRows: [],
+        adminUsersRows: optedIn,
+        participant: { user_id: RECIPIENT, notification_level: 'muted', muted_until: '2020-01-01T00:00:00Z' },
+      });
+      expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+      expect(sendPushNotificationMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps a timed mute until it runs out', async () => {
+      const { isConversationMuted } = await import('@/lib/notifications/golf-message-fanout');
+      const now = Date.parse('2026-10-14T12:00:00Z');
+      expect(isConversationMuted({ notification_level: 'muted', muted_until: '2026-10-14T20:00:00Z' }, now)).toBe(true);
+      expect(isConversationMuted({ notification_level: 'muted', muted_until: '2026-10-14T08:00:00Z' }, now)).toBe(false);
+      expect(isConversationMuted({ notification_level: 'all', muted_until: null }, now)).toBe(false);
+    });
   });
 });

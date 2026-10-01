@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
@@ -15,6 +17,9 @@ export const metadata: Metadata = {
 export default async function NewQualifierPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
+
+  // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
+  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) return <ClubhouseQualifiersRoute view="new" />;
 
   const { role, coach } = session;
   // Renders in place rather than redirecting to /qualifiers — see

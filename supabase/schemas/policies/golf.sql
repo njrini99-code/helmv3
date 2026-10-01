@@ -883,7 +883,9 @@ CREATE POLICY "golf_qualifier_entries_delete_coach" ON "public"."golf_qualifier_
 
 CREATE POLICY "golf_qualifier_entries_insert_coach" ON "public"."golf_qualifier_entries" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"
-  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id")))));
+  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id") AND (EXISTS ( SELECT 1
+           FROM "public"."golf_team_members" "m"
+          WHERE (("m"."team_id" = "q"."team_id") AND ("m"."player_id" = "golf_qualifier_entries"."player_id") AND ("m"."status" = 'active'::"public"."team_member_status"))))))));
 
 CREATE POLICY "golf_qualifier_entries_select_team" ON "public"."golf_qualifier_entries" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"
@@ -891,7 +893,11 @@ CREATE POLICY "golf_qualifier_entries_select_team" ON "public"."golf_qualifier_e
 
 CREATE POLICY "golf_qualifier_entries_update_coach" ON "public"."golf_qualifier_entries" FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"
-  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id")))));
+  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."golf_qualifiers" "q"
+  WHERE (("q"."id" = "golf_qualifier_entries"."qualifier_id") AND "public"."is_golf_team_coach"("q"."team_id") AND (EXISTS ( SELECT 1
+           FROM "public"."golf_team_members" "m"
+          WHERE (("m"."team_id" = "q"."team_id") AND ("m"."player_id" = "golf_qualifier_entries"."player_id") AND ("m"."status" = 'active'::"public"."team_member_status"))))))));
 
 CREATE POLICY "golf_qualifier_round_courses_delete_coach" ON "public"."golf_qualifier_round_courses" FOR DELETE USING ((EXISTS ( SELECT 1
    FROM "public"."golf_qualifiers" "q"

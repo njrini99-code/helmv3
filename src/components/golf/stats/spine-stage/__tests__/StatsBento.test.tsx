@@ -293,3 +293,46 @@ describe('StatsBento — Scoring cell trend mini-viz', () => {
     expect(sparkline).toHaveAttribute('data-state', 'insufficient-data');
   });
 });
+
+describe('StatsBento — Tour labels (owner decision Q-93: Tour only, by team gender)', () => {
+  const MENS_TOUR_LABEL = /(?<!L)PGA Tour/;
+
+  function bento(tour: 'pga' | 'lpga' | null | undefined) {
+    return render(
+      <StatsBento
+        detailedStats={null}
+        standingByMetric={new Map()}
+        trendData={null}
+        strengths={[]}
+        weaknesses={[]}
+        leakArea="putting"
+        tour={tour}
+      />,
+    );
+  }
+
+  it("names the PGA Tour for a men's team", () => {
+    bento('pga');
+    expect(screen.getByText('Make rate by distance band, vs the PGA Tour tick.')).toBeInTheDocument();
+    expect(screen.getByText('Every metric vs the PGA Tour and the team.')).toBeInTheDocument();
+  });
+
+  it("names the LPGA Tour for a women's team and never the PGA Tour", () => {
+    const { container } = bento('lpga');
+    expect(screen.getByText('Make rate by distance band, vs the LPGA Tour tick.')).toBeInTheDocument();
+    expect(screen.getByText('Every metric vs the LPGA Tour and the team.')).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(MENS_TOUR_LABEL);
+  });
+
+  it('stays neutral (the Tour), not PGA, when the stage does not know the tour yet', () => {
+    const { container } = bento(null);
+    expect(screen.getByText('Make rate by distance band, vs the Tour tick.')).toBeInTheDocument();
+    expect(screen.getByText('Every metric vs the Tour and the team.')).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(MENS_TOUR_LABEL);
+  });
+
+  it('defaults to neutral when no tour prop is passed', () => {
+    const { container } = bento(undefined);
+    expect(container.textContent).not.toMatch(MENS_TOUR_LABEL);
+  });
+});

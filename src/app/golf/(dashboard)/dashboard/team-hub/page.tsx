@@ -12,6 +12,8 @@ import { LEGACY_TAB_ROUTES } from '@/components/fairway/pages/team-hub/team-hub-
 import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseHubRoute } from '@/clubhouse/routes/hub';
 
 export const metadata: Metadata = {
   title: 'Team Hub',
@@ -29,10 +31,17 @@ export default async function TeamHubPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  // Clubhouse Team Hub (golf_clubhouse_ui): one page for coaches and players,
+  // with its own tabs, so `?tab=` opens a tab there instead of redirecting.
+  const legacyTab = (await searchParams)?.tab;
+  const chSession = await getGolfSessionProfile();
+  if (chSession && ((chSession.coach && isClubhouseFor('coach')) || (chSession.player && isClubhouseFor('player')))) {
+    return <ClubhouseHubRoute tab={legacyTab} />;
+  }
+
   // Legacy deep links (Cmd+K / bookmarks): the tabbed hub's /team-hub?tab=X
   // URLs now redirect to the canonical detail pages the bento cards route to.
   // `overview` (and any unknown value) was the hub itself and just renders it.
-  const legacyTab = (await searchParams)?.tab;
   const legacyTarget = legacyTab ? LEGACY_TAB_ROUTES[legacyTab] : undefined;
   if (legacyTarget) {
     redirect(legacyTarget);

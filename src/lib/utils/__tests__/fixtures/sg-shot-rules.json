@@ -1,0 +1,550 @@
+{
+  "description": "Shared SG shot-rule fixtures: one hole per case. `expected` is the production SQL function (calculate_round_strokes_gained after migration 20260930150000) computed on these exact shots; the TypeScript engine and the pgTAP test both assert it. `before_migration` is the live function before the migration, kept to show which rules each case exercises.",
+  "cases": [
+    {
+      "id": "tee-penalty-logged-after-the-shot",
+      "par": 4,
+      "note": "Par 4: tee shot into the water, penalty row written AFTER it with the drop position (fairway, 175 yd). The penalty belongs to Off the tee.",
+      "shots": [
+        {
+          "shot_number": 1,
+          "shot_type": "tee",
+          "lie_before": "tee",
+          "distance_to_hole_before": 420,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 175,
+          "distance_unit_after": "yards",
+          "result": "other"
+        },
+        {
+          "shot_number": 2,
+          "shot_type": "penalty",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 175,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 175,
+          "distance_unit_after": "yards",
+          "result": "penalty",
+          "is_penalty": true
+        },
+        {
+          "shot_number": 3,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 175,
+          "distance_unit_before": "yards",
+          "lie_after": "green",
+          "distance_to_hole_after": 25,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 4,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 25,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 3,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 5,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 3,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 0,
+          "distance_unit_after": "feet",
+          "result": "hole",
+          "putt_made": true
+        }
+      ],
+      "expected": {
+        "off_tee": -0.974,
+        "approach": 0.134,
+        "around_green": 0,
+        "putting": -0.075,
+        "total": -0.915
+      },
+      "before_migration": {
+        "off_tee": 0.026,
+        "approach": -0.866,
+        "around_green": 0,
+        "putting": -0.075,
+        "total": -0.915
+      }
+    },
+    {
+      "id": "penalty-logged-before-the-tee-shot",
+      "par": 5,
+      "note": "Par 5: the penalty row is written BEFORE the shot it belongs to (shot 1), with the tee position. Origin is the next real shot: from the tee, so Off the tee.",
+      "shots": [
+        {
+          "shot_number": 1,
+          "shot_type": "penalty",
+          "lie_before": "tee",
+          "distance_to_hole_before": 500,
+          "distance_unit_before": "yards",
+          "lie_after": "tee",
+          "distance_to_hole_after": 500,
+          "distance_unit_after": "yards",
+          "result": "penalty",
+          "is_penalty": true
+        },
+        {
+          "shot_number": 2,
+          "shot_type": "tee",
+          "lie_before": "tee",
+          "distance_to_hole_before": 500,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 260,
+          "distance_unit_after": "yards",
+          "result": "fairway"
+        },
+        {
+          "shot_number": 3,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 260,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 90,
+          "distance_unit_after": "yards",
+          "result": "fairway"
+        },
+        {
+          "shot_number": 4,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 90,
+          "distance_unit_before": "yards",
+          "lie_after": "green",
+          "distance_to_hole_after": 12,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 5,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 12,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 0,
+          "distance_unit_after": "feet",
+          "result": "hole",
+          "putt_made": true
+        }
+      ],
+      "expected": {
+        "off_tee": -1.099,
+        "approach": -0.118,
+        "around_green": 0,
+        "putting": 0.678,
+        "total": -0.539
+      },
+      "before_migration": {
+        "off_tee": -1.099,
+        "approach": -0.118,
+        "around_green": 0,
+        "putting": 0.678,
+        "total": -0.539
+      }
+    },
+    {
+      "id": "approach-penalty-from-200-out",
+      "par": 4,
+      "note": "Par 4: second shot from 190 yd into the water, drop at 100 yd. Charged to Approach (origin is 190 yd out).",
+      "shots": [
+        {
+          "shot_number": 1,
+          "shot_type": "tee",
+          "lie_before": "tee",
+          "distance_to_hole_before": 400,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 190,
+          "distance_unit_after": "yards",
+          "result": "fairway"
+        },
+        {
+          "shot_number": 2,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 190,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 100,
+          "distance_unit_after": "yards",
+          "result": "other"
+        },
+        {
+          "shot_number": 3,
+          "shot_type": "penalty",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 100,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 100,
+          "distance_unit_after": "yards",
+          "result": "penalty",
+          "is_penalty": true
+        },
+        {
+          "shot_number": 4,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 100,
+          "distance_unit_before": "yards",
+          "lie_after": "green",
+          "distance_to_hole_after": 10,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 5,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 10,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 0,
+          "distance_unit_after": "feet",
+          "result": "hole",
+          "putt_made": true
+        }
+      ],
+      "expected": {
+        "off_tee": -0.145,
+        "approach": -1.475,
+        "around_green": 0,
+        "putting": 0.61,
+        "total": -1.01
+      },
+      "before_migration": {
+        "off_tee": -0.145,
+        "approach": -1.475,
+        "around_green": 0,
+        "putting": 0.61,
+        "total": -1.01
+      }
+    },
+    {
+      "id": "short-shot-penalty-drop-farther-out",
+      "par": 4,
+      "note": "Par 4: a 30 yd shot from the rough goes in the water and the drop is 60 yd out. The penalty is Around the green (origin 30 yd), not Approach (the drop row is 60 yd).",
+      "shots": [
+        {
+          "shot_number": 1,
+          "shot_type": "tee",
+          "lie_before": "tee",
+          "distance_to_hole_before": 380,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 130,
+          "distance_unit_after": "yards",
+          "result": "fairway"
+        },
+        {
+          "shot_number": 2,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 130,
+          "distance_unit_before": "yards",
+          "lie_after": "rough",
+          "distance_to_hole_after": 30,
+          "distance_unit_after": "yards",
+          "result": "rough"
+        },
+        {
+          "shot_number": 3,
+          "shot_type": "around_green",
+          "lie_before": "rough",
+          "distance_to_hole_before": 30,
+          "distance_unit_before": "yards",
+          "lie_after": "rough",
+          "distance_to_hole_after": 60,
+          "distance_unit_after": "yards",
+          "result": "other"
+        },
+        {
+          "shot_number": 4,
+          "shot_type": "penalty",
+          "lie_before": "rough",
+          "distance_to_hole_before": 60,
+          "distance_unit_before": "yards",
+          "lie_after": "rough",
+          "distance_to_hole_after": 60,
+          "distance_unit_after": "yards",
+          "result": "penalty",
+          "is_penalty": true
+        },
+        {
+          "shot_number": 5,
+          "shot_type": "approach",
+          "lie_before": "rough",
+          "distance_to_hole_before": 60,
+          "distance_unit_before": "yards",
+          "lie_after": "green",
+          "distance_to_hole_after": 12,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 6,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 12,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 0,
+          "distance_unit_after": "feet",
+          "result": "hole",
+          "putt_made": true
+        }
+      ],
+      "expected": {
+        "off_tee": 0.052,
+        "approach": -0.634,
+        "around_green": -2.161,
+        "putting": 0.678,
+        "total": -2.065
+      },
+      "before_migration": {
+        "off_tee": 0.052,
+        "approach": -1.634,
+        "around_green": -1.161,
+        "putting": 0.678,
+        "total": -2.065
+      }
+    },
+    {
+      "id": "par-3-tee-penalty",
+      "par": 3,
+      "note": "Par 3: the first shot (recorded as an approach from the tee) goes in the water. A par-3 tee penalty is Approach, never Off the tee.",
+      "shots": [
+        {
+          "shot_number": 1,
+          "shot_type": "approach",
+          "lie_before": "tee",
+          "distance_to_hole_before": 180,
+          "distance_unit_before": "yards",
+          "lie_after": "tee",
+          "distance_to_hole_after": 180,
+          "distance_unit_after": "yards",
+          "result": "other"
+        },
+        {
+          "shot_number": 2,
+          "shot_type": "penalty",
+          "lie_before": "tee",
+          "distance_to_hole_before": 180,
+          "distance_unit_before": "yards",
+          "lie_after": "tee",
+          "distance_to_hole_after": 180,
+          "distance_unit_after": "yards",
+          "result": "penalty",
+          "is_penalty": true
+        },
+        {
+          "shot_number": 3,
+          "shot_type": "approach",
+          "lie_before": "tee",
+          "distance_to_hole_before": 180,
+          "distance_unit_before": "yards",
+          "lie_after": "green",
+          "distance_to_hole_after": 25,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 4,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 25,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 3,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 5,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 3,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 0,
+          "distance_unit_after": "feet",
+          "result": "hole",
+          "putt_made": true
+        }
+      ],
+      "expected": {
+        "off_tee": 0,
+        "approach": -1.873,
+        "around_green": 0,
+        "putting": -0.075,
+        "total": -1.948
+      },
+      "before_migration": {
+        "off_tee": 0,
+        "approach": -1.873,
+        "around_green": 0,
+        "putting": -0.075,
+        "total": -1.948
+      }
+    },
+    {
+      "id": "out-of-bounds-re-tee",
+      "par": 4,
+      "note": "Par 4: OB off the tee, penalty row written after it from the tee, then a second tee shot. The penalty is Off the tee (origin is the previous real shot).",
+      "shots": [
+        {
+          "shot_number": 1,
+          "shot_type": "tee",
+          "lie_before": "tee",
+          "distance_to_hole_before": 400,
+          "distance_unit_before": "yards",
+          "lie_after": "tee",
+          "distance_to_hole_after": 400,
+          "distance_unit_after": "yards",
+          "result": "other"
+        },
+        {
+          "shot_number": 2,
+          "shot_type": "penalty",
+          "lie_before": "tee",
+          "distance_to_hole_before": 400,
+          "distance_unit_before": "yards",
+          "lie_after": "tee",
+          "distance_to_hole_after": 400,
+          "distance_unit_after": "yards",
+          "result": "penalty",
+          "is_penalty": true
+        },
+        {
+          "shot_number": 3,
+          "shot_type": "tee",
+          "lie_before": "tee",
+          "distance_to_hole_before": 400,
+          "distance_unit_before": "yards",
+          "lie_after": "fairway",
+          "distance_to_hole_after": 150,
+          "distance_unit_after": "yards",
+          "result": "fairway"
+        },
+        {
+          "shot_number": 4,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 150,
+          "distance_unit_before": "yards",
+          "lie_after": "green",
+          "distance_to_hole_after": 20,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 5,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 20,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 2,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 6,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 2,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 0,
+          "distance_unit_after": "feet",
+          "result": "hole",
+          "putt_made": true
+        }
+      ],
+      "expected": {
+        "off_tee": -1.963,
+        "approach": 0.082,
+        "around_green": 0,
+        "putting": -0.13,
+        "total": -2.011
+      },
+      "before_migration": {
+        "off_tee": -1.963,
+        "approach": 0.082,
+        "around_green": 0,
+        "putting": -0.13,
+        "total": -2.011
+      }
+    },
+    {
+      "id": "lie-break-between-shots",
+      "par": 4,
+      "note": "Par 4, no penalty: the tee shot records \"rough, 150 yd\" as its end but the next shot records it was played from \"fairway, 155 yd\". A shot ends where the next shot starts.",
+      "shots": [
+        {
+          "shot_number": 1,
+          "shot_type": "tee",
+          "lie_before": "tee",
+          "distance_to_hole_before": 400,
+          "distance_unit_before": "yards",
+          "lie_after": "rough",
+          "distance_to_hole_after": 150,
+          "distance_unit_after": "yards",
+          "result": "rough"
+        },
+        {
+          "shot_number": 2,
+          "shot_type": "approach",
+          "lie_before": "fairway",
+          "distance_to_hole_before": 155,
+          "distance_unit_before": "yards",
+          "lie_after": "green",
+          "distance_to_hole_after": 15,
+          "distance_unit_after": "feet",
+          "result": "green"
+        },
+        {
+          "shot_number": 3,
+          "shot_type": "putting",
+          "lie_before": "green",
+          "distance_to_hole_before": 15,
+          "distance_unit_before": "feet",
+          "lie_after": "green",
+          "distance_to_hole_after": 0,
+          "distance_unit_after": "feet",
+          "result": "hole",
+          "putt_made": true
+        }
+      ],
+      "expected": {
+        "off_tee": 0.016,
+        "approach": 0.194,
+        "around_green": 0,
+        "putting": 0.78,
+        "total": 0.99
+      },
+      "before_migration": {
+        "off_tee": -0.23,
+        "approach": 0.194,
+        "around_green": 0,
+        "putting": 0.78,
+        "total": 0.744
+      }
+    }
+  ]
+}

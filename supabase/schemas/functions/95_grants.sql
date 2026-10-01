@@ -2,6 +2,8 @@ REVOKE ALL ON FUNCTION "helm_private"."configure_trace_context"("p_round_data" "
 
 REVOKE ALL ON FUNCTION "helm_private"."guard_golf_round_lifecycle"() FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION "helm_private"."prevent_qualifier_entry_active_round_stranding"() FROM PUBLIC, "anon", "authenticated";
+
 REVOKE ALL ON FUNCTION "helm_private"."prevent_active_team_member_deactivation"() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION "helm_private"."reject_completed_round_child_mutation"() FROM PUBLIC;
@@ -597,6 +599,10 @@ REVOKE ALL ON FUNCTION "public"."golf_normalize_name"("p" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."golf_normalize_name"("p" "text") TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."golf_normalize_name"("p" "text") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") FROM PUBLIC, "anon";
+
+GRANT EXECUTE ON FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") TO "authenticated", "service_role";
 
 REVOKE ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() FROM PUBLIC;
 

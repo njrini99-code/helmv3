@@ -8,6 +8,8 @@ import { Users } from 'lucide-react';
 import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseStatsRoute } from '@/clubhouse/routes/stats';
 import { TeamStatsBoard } from '@/components/golf/stats/team-board/TeamStatsBoard';
 import { earliestTimestamp } from '@/components/golf/stats/team-board/teamStatsFreshness';
 import { ViewHeader, EmptyState, Button } from '@/components/fairway';
@@ -106,6 +108,11 @@ export default async function TeamStatsPage() {
 
   const { coach } = session;
   if (!coach) redirect('/golf/dashboard/stats'); // coach-only page
+
+  // Clubhouse: the old Team stats address opens the rebuilt Team stats in place
+  // (a redirect() from a conditional branch is what crashed /stats, see the
+  // note in ../page.tsx). Players never reach this page.
+  if (isClubhouseFor('coach')) return <ClubhouseStatsRoute />;
 
   const supabase = await createClient();
 

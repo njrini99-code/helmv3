@@ -1,0 +1,95 @@
+/*
+ * Sign up and onboarding: the design's own motion, as tokens (the same scoped
+ * D-64 exception as auth-tokens.css, written up in
+ * docs/clubhouse/pages/P015-auth/DESIGN.md). Source: design/handoff/auth/src/ox.css.
+ * Every other onboarding stylesheet reads these; a token file is the only place
+ * a literal duration or easing is allowed.
+ */
+[data-ui='clubhouse'] {
+  --ch-ox-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ch-ox-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ch-ox-t-step: 720ms;
+  --ch-ox-t-pane: 900ms;
+  --ch-ox-t-card: 700ms;
+  --ch-ox-t-key: 260ms;
+  --ch-ox-t-pop: 520ms;
+  --ch-ox-t-shake: 380ms;
+  --ch-ox-t-flash: 900ms;
+  --ch-ox-t-issue: 1100ms;
+  --ch-ox-issue-delay: 250ms;
+  --ch-ox-t-stamp: 700ms;
+  --ch-ox-stamp-delay: 1100ms;
+  --ch-ox-t-cam: 1800ms;
+  --ch-ox-t-hover: 260ms;
+  --ch-ox-t-quick: 200ms;
+  --ch-ox-t-err: 220ms;
+  --ch-ox-t-spin: 700ms;
+  --ch-ox-t-caret: 1s;
+  --ch-ox-t-leave: 420ms;
+  --ch-ox-t-leave-move: 620ms;
+  --ch-ox-t-fold: 900ms;
+  --ch-ox-t-paper: 700ms;
+  --ch-ox-paper-delay: 250ms;
+  --ch-ox-t-fold-cam: 1600ms;
+  --ch-ox-t-home: 500ms;
+  --ch-ox-home-delay: 900ms;
+  --ch-ox-slot-step: 40ms;
+  --ch-ox-seal-delay: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='clubhouse'] {
+    --ch-ox-t-step: 1ms;
+    --ch-ox-t-pane: 1ms;
+    --ch-ox-t-card: 1ms;
+    --ch-ox-t-key: 1ms;
+    --ch-ox-t-pop: 1ms;
+    --ch-ox-t-shake: 1ms;
+    --ch-ox-t-flash: 1ms;
+    --ch-ox-t-issue: 1ms;
+    --ch-ox-issue-delay: 0ms;
+    --ch-ox-t-stamp: 1ms;
+    --ch-ox-stamp-delay: 0ms;
+    --ch-ox-t-cam: 1ms;
+    --ch-ox-t-hover: 1ms;
+    --ch-ox-t-quick: 1ms;
+    --ch-ox-t-err: 1ms;
+    --ch-ox-t-leave: 1ms;
+    --ch-ox-t-leave-move: 1ms;
+    --ch-ox-t-fold: 1ms;
+    --ch-ox-t-paper: 1ms;
+    --ch-ox-paper-delay: 0ms;
+    --ch-ox-t-fold-cam: 1ms;
+    --ch-ox-t-home: 1ms;
+    --ch-ox-home-delay: 0ms;
+    --ch-ox-slot-step: 0ms;
+    --ch-ox-seal-delay: 0ms;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] {
+  --ch-ox-t-step: 1ms;
+  --ch-ox-t-pane: 1ms;
+  --ch-ox-t-card: 1ms;
+  --ch-ox-t-key: 1ms;
+  --ch-ox-t-pop: 1ms;
+  --ch-ox-t-shake: 1ms;
+  --ch-ox-t-flash: 1ms;
+  --ch-ox-t-issue: 1ms;
+  --ch-ox-issue-delay: 0ms;
+  --ch-ox-t-stamp: 1ms;
+  --ch-ox-stamp-delay: 0ms;
+  --ch-ox-t-cam: 1ms;
+  --ch-ox-t-hover: 1ms;
+  --ch-ox-t-quick: 1ms;
+  --ch-ox-t-err: 1ms;
+  --ch-ox-t-leave: 1ms;
+  --ch-ox-t-leave-move: 1ms;
+  --ch-ox-t-fold: 1ms;
+  --ch-ox-t-paper: 1ms;
+  --ch-ox-paper-delay: 0ms;
+  --ch-ox-t-fold-cam: 1ms;
+  --ch-ox-t-home: 1ms;
+  --ch-ox-home-delay: 0ms;
+  --ch-ox-slot-step: 0ms;
+  --ch-ox-seal-delay: 0ms;
+}

@@ -5,21 +5,25 @@
  * ----------------------------------------------------------------------------
  * Covers the new wiring: the top-of-drill CategoryInsightStrip (patterns
  * filtered to the `short_game` category via `buildCategoryInsights`), the
- * Efficiency tab's RampMatrix banding (was a plain colorless table), and the
- * new Misses sub-tab (up-and-down by miss direction, up-and-down by lie incl.
- * fringe, and average chip proximity) — all reading the additive
+ * Efficiency tab's RampMatrix (neutral: the Tour has no standard for it), and
+ * the new Misses sub-tab (up-and-down by miss direction, up-and-down by lie
+ * incl. fringe, and average chip proximity) — all reading the additive
  * golf-stats-calculator-shots.ts fields.
+ *
+ * Owner decision Q-93: the only graded cells are up-and-down by lie (fairway,
+ * rough, sand) against the Tour's scrambling rate for that lie (PGA Tour for
+ * men's teams, LPGA Tour for women's). No college or division yardstick.
  * Renders real framer-motion (CategoryInsightStrip/RailBars need no mock,
  * matching sibling drill test files). `useStage()` requires a real
  * `StageRouter` ancestor — `next/navigation` is globally mocked in
  * src/test/setup.tsx.
  * ========================================================================== */
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { ComponentProps } from 'react';
 
 import { StageRouter } from '@/components/fairway/modules';
-import { ShortGameDrill } from '../ShortGameDrill';
+import { ShortGameDrill, buildScramblingByDistanceRows } from '../ShortGameDrill';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { CategorizablePatternWithImpact } from '../buildStatsViewModel';
 
@@ -147,9 +151,32 @@ describe('ShortGameDrill', () => {
     expect(screen.getByRole('radio', { name: 'Misses' })).toBeInTheDocument();
   });
 
-  describe('Efficiency tab', () => {
-    it('renders a banded RampMatrix (not a plain colorless table)', () => {
+  describe('distance labels say what the calculator measures', () => {
+    it('labels the last scrambling band "20+ yds" (uncapped), not "20-30 yds"', () => {
+      expect(buildScramblingByDistanceRows(fixtureStats()).map((r) => r.label)).toEqual([
+        '0-10 yds',
+        '10-20 yds',
+        '20+ yds',
+      ]);
       renderShortGame({ detailedStats: fixtureStats() });
+      expect(screen.getByText('20+ yds')).toBeInTheDocument();
+      expect(screen.queryByText('20-30 yds')).not.toBeInTheDocument();
+    });
+
+    it('labels the last efficiency row "20-50 yds" (out to the 50 yd threshold), not "20+ yds"', () => {
+      renderShortGame({ detailedStats: fixtureStats() });
+      fireEvent.click(screen.getByRole('radio', { name: 'Efficiency' }));
+      const matrix = document.querySelector<HTMLElement>('[data-slot="ramp-matrix"]')!;
+      expect(within(matrix).getByText('0-10 yds')).toBeInTheDocument();
+      expect(within(matrix).getByText('10-20 yds')).toBeInTheDocument();
+      expect(within(matrix).getByText('20-50 yds')).toBeInTheDocument();
+      expect(within(matrix).queryByText('20+ yds')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Efficiency tab', () => {
+    it('renders the strokes-to-hole-out values neutrally: the Tour has no standard, so no grade and no legend', () => {
+      renderShortGame({ detailedStats: fixtureStats(), tour: 'pga' });
       fireEvent.click(screen.getByRole('radio', { name: 'Efficiency' }));
 
       const matrices = document.querySelectorAll('[data-slot="ramp-matrix"]');
@@ -157,14 +184,14 @@ describe('ShortGameDrill', () => {
       const cells = matrices[0]!.querySelectorAll('td');
       expect(cells.length).toBeGreaterThan(0);
 
-      // Row 1 (0-10 yds), Overall column: 2.10 strokes -> best band (band 4).
+      // These cells used to grade on hand-set bands (2.10 best, 3.00 worst,
+      // Needs work ... Excellent). Values stay, colour goes.
       expect(cells[0]!.textContent).toContain('2.10');
-      expect(cells[0]!.className).toContain('bg-ramp-4');
-
-      // Row 3 (20+ yds), Overall column: 3.00 strokes -> worst band (band 1).
       // 4 cols per row (Overall/Fairway/Rough/Sand) -> row 3's Overall cell is index 8.
       expect(cells[8]!.textContent).toContain('3.00');
-      expect(cells[8]!.className).toContain('bg-ramp-1');
+      for (const cell of Array.from(cells)) expect(cell.className).not.toContain('bg-ramp-');
+      expect(screen.queryByText('Needs work')).not.toBeInTheDocument();
+      expect(screen.queryByText('Excellent')).not.toBeInTheDocument();
     });
 
     it('shows an honest em-dash + sunken band for a cell with no data', () => {
@@ -191,13 +218,14 @@ describe('ShortGameDrill', () => {
       expect(matrices.length).toBe(2);
 
       const missDirCells = matrices[0]!.querySelectorAll('td');
-      // Short: 70% pct, n=10 -> band 4 (>=65).
+      // The Tour publishes no scrambling rate by miss direction, so these
+      // cells carry the value and the sample and no grade (they used to band
+      // on college-informed 35 / 50 / 65 cut-offs).
       expect(missDirCells[0]!.textContent).toContain('70%');
       expect(missDirCells[0]!.textContent).toContain('n=10');
-      expect(missDirCells[0]!.className).toContain('bg-ramp-4');
-      // Long: 33% pct, n=6 -> band 1 (<35).
+      expect(missDirCells[0]!.className).not.toContain('bg-ramp-');
       expect(missDirCells[1]!.textContent).toContain('33%');
-      expect(missDirCells[1]!.className).toContain('bg-ramp-1');
+      expect(missDirCells[1]!.className).not.toContain('bg-ramp-');
       // Left/Right never happened -> omitted, honest em-dash + band 0 (no badge).
       expect(missDirCells[2]!.textContent).toContain('—');
       expect(missDirCells[2]!.textContent).not.toContain('n=');
@@ -218,7 +246,7 @@ describe('ShortGameDrill', () => {
     });
 
     it('renders up-and-down by lie including the new Fringe column', () => {
-      renderShortGame({ detailedStats: fixtureStats() });
+      renderShortGame({ detailedStats: fixtureStats(), tour: 'pga' });
       fireEvent.click(screen.getByRole('radio', { name: 'Misses' }));
 
       expect(screen.getByText('Up-and-down by lie')).toBeInTheDocument();
@@ -227,13 +255,60 @@ describe('ShortGameDrill', () => {
       expect(within(lieMatrix).getByText('Fringe')).toBeInTheDocument();
 
       const cells = lieMatrix.querySelectorAll('td');
-      // Fairway 60% n=10 -> band 3 (>=50, <65).
       expect(cells[0]!.textContent).toContain('60%');
       expect(cells[0]!.textContent).toContain('n=10');
-      // Fringe (4th column) 20% n=4 -> band 1 (<35).
+      // Fringe (4th column) 20% n=4: the Tour publishes no fringe scrambling
+      // rate, so it draws neutral however low it is.
       expect(cells[3]!.textContent).toContain('20%');
       expect(cells[3]!.textContent).toContain('n=4');
-      expect(cells[3]!.className).toContain('bg-ramp-1');
+      expect(cells[3]!.className).not.toContain('bg-ramp-');
+    });
+
+    describe('up-and-down by lie is graded against the Tour for that lie', () => {
+      // PGA Tour lie rates 65 / 58 / 50 -> thresholds at 0.6 / 0.85 / 1.05 of each.
+      //   fairway 30: < 39      -> band 1 (bg-ramp-1)
+      //   rough   40: 34.8-49.3 -> band 2 (bg-ramp-2)
+      //   sand    60: >= 52.5   -> band 4 (bg-ramp-4)
+      // LPGA Tour rates are 62 / 55 / 45, so sand 40 sits in a different band:
+      //   PGA (thresholds 30 / 42.5 / 52.5) -> band 2 ; LPGA (27 / 38.3 / 47.3) -> band 3 (bg-ramp-4).
+      function lieCells(props: Partial<ShortGameDrillProps>) {
+        renderShortGame(props);
+        fireEvent.click(screen.getByRole('radio', { name: 'Misses' }));
+        const matrices = document.querySelectorAll<HTMLElement>('[data-slot="ramp-matrix"]');
+        return { matrix: matrices[1]!, cells: Array.from(matrices[1]!.querySelectorAll('td')) };
+      }
+
+      it("men's team: PGA Tour rates, with a Tour legend", () => {
+        const { matrix, cells } = lieCells({
+          tour: 'pga',
+          detailedStats: fixtureStats({ scramblingPctFairway: 30, scramblingPctRough: 40, scramblingPctSand: 60 }),
+        });
+        expect(cells[0]!.className).toContain('bg-ramp-1');
+        expect(cells[1]!.className).toContain('bg-ramp-2');
+        expect(cells[2]!.className).toContain('bg-ramp-4');
+        expect(within(matrix.parentElement as HTMLElement).getByText('Well behind Tour')).toBeInTheDocument();
+        expect(screen.getByText(/coloured against the PGA Tour; fringe has no Tour standard/)).toBeInTheDocument();
+      });
+
+      it("women's team: LPGA Tour rates, never the PGA Tour", () => {
+        const pga = lieCells({ tour: 'pga', detailedStats: fixtureStats({ scramblingPctSand: 40 }) });
+        expect(pga.cells[2]!.className).toContain('bg-ramp-2');
+        cleanup();
+
+        const lpga = lieCells({ tour: 'lpga', detailedStats: fixtureStats({ scramblingPctSand: 40 }) });
+        expect(lpga.cells[2]!.className).toContain('bg-ramp-4');
+        expect(screen.getByText(/coloured against the LPGA Tour; fringe has no Tour standard/)).toBeInTheDocument();
+        expect(document.body.textContent).not.toMatch(/(?<!L)PGA Tour/);
+      });
+
+      it('unknown tour: every cell neutral and no legend', () => {
+        const { cells } = lieCells({
+          tour: null,
+          detailedStats: fixtureStats({ scramblingPctFairway: 30, scramblingPctRough: 40, scramblingPctSand: 60 }),
+        });
+        for (const cell of cells) expect(cell.className).not.toContain('bg-ramp-');
+        expect(screen.queryByText('Well behind Tour')).not.toBeInTheDocument();
+      });
     });
 
     it('renders average chip proximity overall and by lie', () => {

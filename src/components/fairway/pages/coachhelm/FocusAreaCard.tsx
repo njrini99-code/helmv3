@@ -215,6 +215,14 @@ export interface FocusAreaCardData {
    */
   outcome_status?: FocusAreaOutcome | string | null;
   /**
+   * The focus area's OWN recorded verdict (`golf_player_focus_areas.outcome_status`,
+   * written by `recordFocusAreaOutcome` for every area, with or without a source
+   * insight). `outcome_status` above only reflects the SOURCE INSIGHT, so an area
+   * graded without one read as ungraded and kept asking "How did it go?" (Q-86).
+   * The card shows this first and falls back to `outcome_status`.
+   */
+  recordedOutcomeStatus?: string | null;
+  /**
    * Persisted progress history (oldest→newest values) for the per-area
    * Sparkline. When fewer than 2 points exist the Sparkline shows an em-dash.
    */
@@ -351,6 +359,14 @@ const OUTCOME_META: Record<
 };
 
 const OUTCOME_ORDER: FocusAreaOutcome[] = ['improved', 'no_change', 'worsened'];
+
+/**
+ * The verdict a card shows: the area's own recorded outcome first, the source
+ * insight's as the fallback for areas graded before the column existed.
+ */
+function recordedVerdict(focusArea: FocusAreaCardData): string | null {
+  return focusArea.recordedOutcomeStatus || focusArea.outcome_status || null;
+}
 
 function outcomeMeta(
   outcome: string | null | undefined,
@@ -1012,7 +1028,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
 
     // A server-recorded effectiveness verdict, if any (reflected as a read-only
     // pill on both the active and completed render paths).
-    const recordedOutcome = outcomeMeta(focusArea.outcome_status);
+    const recordedOutcome = outcomeMeta(recordedVerdict(focusArea));
 
     const hasTarget =
       focusArea.target_value != null && focusArea.target_value > 0;
@@ -1127,7 +1143,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 <OutcomeCapture
                   focusArea={focusArea}
                   onRecordOutcome={onRecordOutcome!}
-                  recordedOutcome={focusArea.outcome_status}
+                  recordedOutcome={recordedVerdict(focusArea)}
                   prompt="How did it go?"
                 />
               </div>
@@ -1436,7 +1452,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               <OutcomeCapture
                 focusArea={focusArea}
                 onRecordOutcome={onRecordOutcome!}
-                recordedOutcome={focusArea.outcome_status}
+                recordedOutcome={recordedVerdict(focusArea)}
               />
             </Inset>
           ) : null}

@@ -10,6 +10,9 @@ import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
+import { loadClubhouseShell } from '@/clubhouse/data/shell';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -290,6 +293,17 @@ export default async function GolfDashboardLayout({
   // 4. Render the client shell with resolved data — no loading spinner needed.
   //    Fairway is now the only dashboard shell (AppShell rail + glass top bar +
   //    hamburger drawer) — the legacy GolfDashboardShell fork was removed.
+  // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
+  // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
+  if (isClubhouseFor(userData.role)) {
+    const shell = await loadClubhouseShell(userData.teamId);
+    return (
+      <ClubhouseShell userData={userData} shell={shell}>
+        {children}
+      </ClubhouseShell>
+    );
+  }
+
   return (
     <>
       <FairwayDashboardShell userData={userData}>

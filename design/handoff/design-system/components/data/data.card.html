@@ -1,0 +1,32 @@
+<!-- @dsCard group="Components" viewport="700x470" name="Data" subtitle="Hero figure + trend, stat band with rate bars, deltas, tornado, scorecard" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-page)}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-caption);color:var(--text-tertiary);width:78px;flex:none}</style>
+</head><body class="fairway"><div id="root" style="padding:24px"></div>
+<script type="text/babel">
+const NS = window.FairwayClubhouseEdition_9c4f4d;
+
+const { Sparkline, StatStrip, RoundStrip, DeltaChip } = NS;
+const par=[4,5,3,4,4,3,4,5,4,4,4,3,5,4,4,3,4,5];const sc=[4,4,3,5,4,2,4,6,4,3,4,3,null,null,null,null,null,null];
+function App(){return <div className="col" style={{gap:14}}>
+<div className="fw-card" style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr)',alignItems:'stretch'}}>
+ <div style={{padding:'18px 22px 18px 20px',display:'flex',flexDirection:'column',gap:10,minWidth:200}}>
+  <span style={{font:'500 13px/1 var(--font-sans)',color:'var(--green-700)'}}>Scoring average</span>
+  <span style={{font:'500 60px/0.9 var(--font-display)',letterSpacing:'-0.055em',fontVariationSettings:'"wdth" 92',fontVariantNumeric:'tabular-nums'}}>71.8</span>
+  <div style={{display:'flex',alignItems:'center',gap:8,font:'var(--type-caption)',color:'var(--text-tertiary)'}}><DeltaChip value="−1.4" direction="down" tone="positive"/>vs. previous 10</div>
+ </div>
+ <div style={{position:'relative',borderLeft:'1px solid var(--border-hairline)',display:'flex',flexDirection:'column',justifyContent:'flex-end',paddingTop:14}}>
+  <div style={{position:'absolute',top:14,left:16,right:16,display:'flex',justifyContent:'space-between',font:'500 11.5px/1 var(--font-sans)',color:'var(--text-tertiary)'}}><span>Last 10 rounds</span><span>- - avg 72.7</span></div>
+  <Sparkline fluid height={110} data={[74.1,73.6,73.9,72.8,72.4,72.9,71.9,72.1,71.4,71.8]} goodWhen="down" invert baseline="mean" strokeWidth={2.25} inset={[30,20,0,0]}/>
+ </div>
+</div>
+<StatStrip items={[{label:'Greens in reg.',value:'61',unit:'%',bar:61,lead:true,delta:{value:'+4',direction:'up',tone:'positive'}},{label:'Fairways',value:'68',unit:'%',bar:68},{label:'Putts / round',value:'29.4',delta:{value:'+0.6',direction:'up',tone:'negative'}},{label:'Up & down',value:'54',unit:'%',bar:54}]}/>
+<div className="fw-card" style={{padding:'6px 16px 10px'}}><RoundStrip current={13} holes={par.map((p,i)=>({n:i+1,par:p,score:sc[i]}))}/></div>
+</div>}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

@@ -10,6 +10,7 @@ import {
   APPROACH_BUCKETS,
   type CohortGender,
 } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import { TOUR_STANDARDS } from '@/lib/golf/benchmarks/tour';
 
 describe('cohortAnchor', () => {
   it('returns the men\'s Tour value unchanged for mens (no behavior change)', () => {
@@ -18,18 +19,18 @@ describe('cohortAnchor', () => {
     expect(cohortAnchor('scrambling_pct_sand', 'mens')).toBe(50);
   });
 
-  it('uses a realistic women\'s sand-save target (~38%), NOT the men\'s 50%', () => {
-    const w = cohortAnchor('scrambling_pct_sand', 'womens');
-    expect(w).toBeGreaterThanOrEqual(36);
-    expect(w).toBeLessThanOrEqual(40);
-    // strictly easier than the men's Tour anchor — the bug this fixes
-    expect(w).toBeLessThan(cohortAnchor('scrambling_pct_sand', 'mens')!);
+  it("a women's team gets the LPGA Tour value, never a college estimate (Q-88)", () => {
+    expect(cohortAnchor('scrambling_pct_sand', 'womens')).toBe(TOUR_STANDARDS.lpga.scramblingPct.sand);
+    expect(cohortAnchor('scrambling_pct_rough', 'womens')).toBe(TOUR_STANDARDS.lpga.scramblingPct.rough);
+    expect(cohortAnchor('scrambling_pct_fairway', 'womens')).toBe(TOUR_STANDARDS.lpga.scramblingPct.fairway);
+    expect(cohortAnchor('gir_pct', 'womens')).toBe(TOUR_STANDARDS.lpga.girPct);
+    expect(cohortAnchor('putts_made_3_5ft_pct', 'womens')).toBe(TOUR_STANDARDS.lpga.putts['3_5']);
   });
 
-  it('uses a higher women\'s 3-5ft make target than the synthetic cohort (62.8%) but below men\'s Tour', () => {
-    const w = cohortAnchor('putts_made_3_5ft_pct', 'womens')!;
-    expect(w).toBeGreaterThan(62.8);   // beats the synthetic app-population cohort
-    expect(w).toBeLessThan(90.5);      // still below men's Tour
+  it("men's scrambling and GIR match golf_pga_standards (65 / 58 / 50, GIR 66)", () => {
+    expect(cohortAnchor('scrambling_pct_fairway', 'mens')).toBe(65);
+    expect(cohortAnchor('scrambling_pct_rough', 'mens')).toBe(58);
+    expect(cohortAnchor('gir_pct', 'mens')).toBe(66);
   });
 
   it('returns null for an unknown metric (caller falls back to pga_value)', () => {
@@ -45,21 +46,19 @@ describe('green-hit anchors are their own identity (repair plan Package 2)', () 
     }
   });
 
-  it('greenHitAnchor is keyed by approach band and keeps the historical values', () => {
+  it("greenHitAnchor keeps the men's approximate Tour bands and has none for women (no LPGA value)", () => {
     expect(greenHitAnchor('50_125ft', 'mens')).toBe(80);
     expect(greenHitAnchor('125_175ft', 'mens')).toBe(65);
     expect(greenHitAnchor('175_plus_ft', 'mens')).toBe(50);
-    expect(greenHitAnchor('50_125ft', 'womens')).toBe(70);
-    expect(greenHitAnchor('125_175ft', 'womens')).toBe(56);
-    expect(greenHitAnchor('175_plus_ft', 'womens')).toBe(42);
+    for (const b of APPROACH_BUCKETS) expect(greenHitAnchor(b, 'womens')).toBeNull();
   });
 });
 
 describe('anchor labels and sources say what the number is (repair plan N16)', () => {
-  it("women's anchors are estimated targets, men's are the Tour average", () => {
-    expect(cohortAnchorLabel('womens', 'sand save')).toBe("Women's college sand save target (est.)");
+  it('labels name the tour, and the source is always the Tour baseline', () => {
+    expect(cohortAnchorLabel('womens', 'sand save')).toBe('LPGA Tour sand save avg');
     expect(cohortAnchorLabel('mens', 'sand save')).toBe('PGA Tour sand save avg');
-    expect(cohortAnchorSource('womens')).toBe('estimated_target');
+    expect(cohortAnchorSource('womens')).toBe('pga_baseline');
     expect(cohortAnchorSource('mens')).toBe('pga_baseline');
   });
 });
@@ -70,23 +69,15 @@ describe('anchor labels and sources say what the number is (repair plan N16)', (
  * check is a real data assertion, not a read of prose.
  */
 describe('typed provenance metadata (repair plan N16)', () => {
-  it('women\'s putt-make anchors are "measured" LPGA rows; every other women\'s anchor is "derived" with a non-empty sourceNote', () => {
+  it("every women's anchor is a measured LPGA row; there is no women's green-hit anchor", () => {
     for (const id of cohortAnchorMetricIds()) {
       const p = cohortAnchorProvenance(id, 'womens');
       expect(p, `no provenance for ${id}/womens`).not.toBeNull();
-      if (id.startsWith('putts_made_')) {
-        // Owner decision 2026-09-25: one source with lib/golf/benchmarks/putting.ts.
-        expect(p!.provenance).toBe('measured');
-        expect(p!.sourceNote).toMatch(/golf_pga_standards tour=lpga/);
-      } else {
-        expect(p!.provenance).toBe('derived');
-        expect(p!.sourceNote.length).toBeGreaterThan(0);
-      }
+      expect(p!.provenance).toBe('measured');
+      expect(p!.sourceNote).toMatch(/tour=lpga/);
     }
     for (const bucket of APPROACH_BUCKETS) {
-      const p = greenHitAnchorProvenance(bucket, 'womens');
-      expect(p.provenance).toBe('derived');
-      expect(p.sourceNote.length).toBeGreaterThan(0);
+      expect(greenHitAnchorProvenance(bucket, 'womens')).toBeNull();
     }
   });
 
@@ -106,7 +97,7 @@ describe('typed provenance metadata (repair plan N16)', () => {
     // module header used to have before this audit (N16, 2026-09-23).
     for (const bucket of APPROACH_BUCKETS) {
       const p = greenHitAnchorProvenance(bucket, 'mens');
-      expect(p.provenance).toBe('derived');
+      expect(p?.provenance).toBe('derived');
     }
   });
 

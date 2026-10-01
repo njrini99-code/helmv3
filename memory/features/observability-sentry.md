@@ -66,7 +66,7 @@ Breadcrumbs: `recordHelmBreadcrumb(category, message, data?)`
 name, or email) both at the type level and again at runtime, and never
 throws. Wired at three round-entry outcome sites: autosave
 (`use-shot-state-machine.ts`), per-shot edit save
-(`use-edit-shot-modal.ts`), and round submit (`continue-round-client.tsx`).
+(`use-edit-shot-modal.ts`), and round submit (`use-continue-round-session.ts`, moved out of `continue-round-client.tsx`).
 
 Tags: `beforeSend` sets the existing coarse `sport` bucket
 (admin/lifting/baseball/golf/marketing — untouched, Sentry alert rules key

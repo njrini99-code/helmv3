@@ -25,6 +25,12 @@ import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/a
 import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { loadCoachHome } from '@/clubhouse/data/home';
+import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
+import { loadPlayerHome } from '@/clubhouse/data/player-home';
+import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
+import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
 
 export const dynamic = 'force-dynamic';
 
@@ -187,6 +193,13 @@ export default async function GolfDashboardPage({
             teamId = (await resolveCoachActiveTeamIdForRequest(coach.organization_id, coach.id)) ?? undefined;
         }
 
+        // Clubhouse Home: its own loader and screen, no Fairway payload.
+        if (isClubhouseFor('coach')) {
+            if (!teamId) return <CoachHomeNoTeam />;
+            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach' });
+            return <CoachHome data={home} />;
+        }
+
         if (teamId) {
             // P002/P426: a real DB/network outage must SURFACE — the route
             // error.tsx (RouteErrorBoundary) offers a retry. Previously this caught
@@ -257,6 +270,13 @@ export default async function GolfDashboardPage({
     }
 
     // ── Player dashboard ──
+    // Clubhouse player Home: its own loader and screen, no Fairway payload.
+    if (player && isClubhouseFor('player')) {
+        const team = await resolveClubhouseTeam(session);
+        if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
+        const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' });
+        return <PlayerHome data={home} />;
+    }
     if (player) {
         // Get team via membership
         // This read used to be swallowed TWICE: a `try { } catch { }` that

@@ -8,6 +8,8 @@
 -- WHERE tablename = 'golf_message_reactions';
 -- SELECT * FROM pg_publication_tables
 -- WHERE tablename = 'golf_message_reactions';
+-- VERIFY: the two reads above return the reaction policies and the realtime
+-- publication row.
 -- ROLLBACK: local verification wraps this twice in a transaction and rolls it
 -- back. Do not remove the already-live production access contract to undo a
 -- reconciliation; the app can roll back independently without dropping data.

@@ -9,7 +9,18 @@ import { logError } from '@/lib/error-logging';
 import { Eye, EyeOff } from 'lucide-react';
 
 import { fwHapticSequence } from '@/lib/fairway/haptics';
-import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
+import {
+  EMPTY_FIELDS_MESSAGE,
+  STALE_BUNDLE_MESSAGE,
+  UNEXPECTED_MESSAGE,
+  getErrorMessage,
+  hasReloadedForStaleBundle,
+  invalidFieldFor,
+  isStaleBundleError,
+  markReloadedForStaleBundle,
+  resolveSignInHref,
+  type InvalidField,
+} from '@/lib/auth/golf-sign-in-logic';
 import { IconButton } from '@/components/fairway/controls/button';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import {
@@ -20,54 +31,7 @@ import {
   authTextLinkClass,
 } from '@/components/auth/golf-auth-canvas';
 
-type InvalidField = 'email' | 'password' | 'both' | null;
-
-const CREDENTIALS_MESSAGE = 'Incorrect email or password. Please check your credentials and try again.';
-
 const ERROR_ID = 'golf-signin-error';
-
-function getErrorMessage(error: string): string {
-  const lower = error.toLowerCase();
-  if (lower.includes('invalid login') || lower.includes('invalid credentials')) {
-    return CREDENTIALS_MESSAGE;
-  }
-  if (lower.includes('email not confirmed')) {
-    return 'Please verify your email address before signing in. Check your inbox for the confirmation link.';
-  }
-  if (lower.includes('too many requests') || lower.includes('rate limit')) {
-    return 'Too many sign-in attempts. Please wait a moment and try again.';
-  }
-  if (lower.includes('network') || lower.includes('fetch')) {
-    return 'Unable to reach the server. Please check your internet connection and try again.';
-  }
-  return error;
-}
-
-
-/**
- * One reload per tab. sessionStorage rather than component state, because the
- * reload itself destroys state — without this the guard would reset on every
- * pass and a genuinely broken deploy would loop the sign-in screen.
- */
-const STALE_BUNDLE_RELOAD_KEY = 'golf.signin.staleBundleReloaded';
-
-function hasReloadedForStaleBundle(): boolean {
-  try {
-    return window.sessionStorage.getItem(STALE_BUNDLE_RELOAD_KEY) === '1';
-  } catch {
-    // Private mode / storage disabled — treat as "already reloaded" so we show
-    // the message rather than risk a loop we cannot track.
-    return true;
-  }
-}
-
-function markReloadedForStaleBundle(): void {
-  try {
-    window.sessionStorage.setItem(STALE_BUNDLE_RELOAD_KEY, '1');
-  } catch {
-    /* nothing to do — hasReloadedForStaleBundle() fails closed */
-  }
-}
 
 export function GolfSignInForm() {
   const [email, setEmail] = useState('');
@@ -165,7 +129,7 @@ export function GolfSignInForm() {
     // a blank email — a bucket shared by every user who hits this.
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
-      setError('Enter your email and password to sign in.');
+      setError(EMPTY_FIELDS_MESSAGE);
       setInvalidField(!trimmedEmail ? 'email' : 'password');
       setErrorNonce((n) => n + 1);
       return;
@@ -188,7 +152,7 @@ export function GolfSignInForm() {
         setError(message);
         // A credentials rejection is about both fields. Other failures
         // (rate limit, network) aren't about field content.
-        setInvalidField(message === CREDENTIALS_MESSAGE ? 'both' : null);
+        setInvalidField(invalidFieldFor(message));
         setErrorNonce((n) => n + 1);
         setIsLoading(false);
         return;
@@ -209,54 +173,19 @@ export function GolfSignInForm() {
       // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('golf_login_returnTo');
 
-      // Validate returnTo to prevent open redirect attacks — shared with the
-      // already-authenticated fast path (page.tsx) and the welcome screen so
-      // the safe-path allowlist (/golf/, /baseball/, and the Helm Bridge
-      // /admin surface) can't drift between entry points.
-      const isValidReturnTo = isSafeInternalPath;
-
-      // Only use returnTo verbatim if the user is fully onboarded (redirectTo =
-      // dashboard). If they still need onboarding, send them there first — but
-      // we must preserve the join code so they auto-join the inviting team after
-      // onboarding (the onboarding page reads ?joinCode). Player onboarding wires
-      // the code through; coach onboarding ignores it (a coach can't join as a
-      // player), so forwarding it is harmless there.
-      const needsOnboarding = result.redirectTo === '/golf/coach' || result.redirectTo === '/golf/player';
-
-      // Extract a join code from a returnTo that points at the invite route,
-      // e.g. /golf/join/ABC123 → "ABC123" (strip any query/hash).
-      const extractJoinCode = (path: string): string | null => {
-        const match = path.match(/^\/golf\/join\/([^/?#]+)/);
-        return match?.[1] ? decodeURIComponent(match[1]) : null;
-      };
-
       // Clear ref regardless of path — it's been forwarded to the server already
       sessionStorage.removeItem('golf_login_ref');
 
-      let destination: string;
-      if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
-        sessionStorage.removeItem('golf_login_returnTo');
-        destination = storedReturnTo;
-      } else if (storedReturnTo && needsOnboarding && isValidReturnTo(storedReturnTo)) {
-        // Heading into onboarding — carry the join code forward so the new
-        // player auto-joins the inviting team on completion.
-        const joinCode = extractJoinCode(storedReturnTo);
-        sessionStorage.removeItem('golf_login_returnTo');
-        const base = result.redirectTo || '/golf/dashboard';
-        destination = joinCode ? `${base}?joinCode=${encodeURIComponent(joinCode)}` : base;
-      } else {
-        // Clear stale returnTo if present — onboarding takes priority
-        if (storedReturnTo) sessionStorage.removeItem('golf_login_returnTo');
-        destination = result.redirectTo || '/golf/dashboard';
-      }
-
-      // Skip the greeting animation for onboarding flows (user hasn't set up
-      // their profile yet — the animation wouldn't know their name).
-      if (needsOnboarding) {
-        router.push(destination);
-      } else {
-        router.push(`/golf/welcome?next=${encodeURIComponent(destination)}`);
-      }
+      // Where to go is decided in src/lib/auth/golf-sign-in-logic.ts, shared
+      // with the Clubhouse form so the two cannot drift: returnTo is honoured
+      // only when it is a safe internal path (open-redirect guard) and the user
+      // is fully onboarded; heading into onboarding it keeps the invite's join
+      // code so the new player auto-joins on completion; onboarding skips the
+      // greeting (no profile yet, so it has no name to show).
+      const href = resolveSignInHref(result.redirectTo, storedReturnTo);
+      // A stored returnTo is spent whichever branch used it (or dropped it).
+      if (storedReturnTo) sessionStorage.removeItem('golf_login_returnTo');
+      router.push(href);
     } catch (err) {
       // "An unexpected response was received from the server" is Next's message
       // for a Server Action whose response it could not parse. It is NOT a
@@ -279,9 +208,7 @@ export function GolfSignInForm() {
       // it cannot use, and one reload replaces it. That is why this recovers
       // without claiming to know why it broke.
       const message = err instanceof Error ? err.message : String(err);
-      const bundleIsStale =
-        /unexpected response was received from the server/i.test(message) ||
-        /failed to find server action/i.test(message);
+      const bundleIsStale = isStaleBundleError(message);
 
       if (bundleIsStale && !hasReloadedForStaleBundle()) {
         markReloadedForStaleBundle();
@@ -301,11 +228,7 @@ export function GolfSignInForm() {
         { component: 'GolfSignInForm', action: 'loginAction', sport: 'golf' },
         'high'
       );
-      setError(
-        bundleIsStale
-          ? 'The app updated in the background. Please try signing in once more.'
-          : 'An unexpected error occurred. Please try again.',
-      );
+      setError(bundleIsStale ? STALE_BUNDLE_MESSAGE : UNEXPECTED_MESSAGE);
       setIsLoading(false);
     }
     // Note: We don't set isLoading to false on success because

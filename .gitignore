@@ -88,6 +88,8 @@ helm-vid/
 *.png
 # Hosted email assets must reach prod — exempt them from the global *.png ignore.
 !public/email/*.png
+# Clubhouse's sign-in and sign-up marks are served from public/clubhouse/ and must ship.
+!public/clubhouse/**/*.png
 # QA visual audit packs (labeled screenshots + manifests).
 #
 # This read `!docs/qa/**/*.png` until 2026-08-31 — a blanket re-inclusion of

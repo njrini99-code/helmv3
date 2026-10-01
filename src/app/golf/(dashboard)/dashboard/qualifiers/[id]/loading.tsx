@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { QualifierDetailSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { Skeleton, Surface } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -22,7 +24,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * Replaces the legacy `surface-matte rounded-3xl` / `skeleton-shimmer` chrome,
  * which reshaped the page (CLS) when the redesigned surface mounted.
  */
-export default function Loading() {
+function LegacyLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -84,4 +86,9 @@ export default function Loading() {
       </div>
     </div>
   );
+}
+
+/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<QualifierDetailSkeleton />} fallback={<LegacyLoading />} />;
 }

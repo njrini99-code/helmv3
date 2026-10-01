@@ -63,6 +63,7 @@ export type CoachHelmPattern = NonNullable<
   Awaited<ReturnType<typeof getPlayerPatterns>>['patterns']
 >[number];
 
+import { resolveStageTour } from '@/lib/golf/benchmarks/tour';
 import { biggestLeakArea, buildLedger, buildPriorities, buildStandingTrack, buildVerdict } from './buildStatsViewModel';
 import { StatsSpine } from './StatsSpine';
 import { StatsBento } from './StatsBento';
@@ -573,6 +574,12 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     return map;
   }, [standingRows]);
 
+  // The tour every Tour reference on this stage is labelled with: the leak
+  // map's own `tour`, else the standing rows' `is_womens` flag. Null (neither
+  // loaded yet) keeps labels neutral ("the Tour") rather than guessing PGA.
+  const leakTour = leakMaps?.tour;
+  const tour = useMemo(() => resolveStageTour(leakTour, standingRows), [leakTour, standingRows]);
+
   const sgTotal = finite(standingByMetric.get('sg_total')?.player_value ?? null);
   const sgTeamAvg = finite(standingByMetric.get('sg_total')?.team_avg ?? null);
 
@@ -864,6 +871,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           strengths={strengths}
           weaknesses={weaknesses}
           leakArea={leakArea}
+          tour={tour}
         />
       ),
     },
@@ -874,7 +882,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           detailedStats={detailedStats}
           leakMaps={leakMaps}
           standingByMetric={standingByMetric}
-          weaknesses={weaknesses}
+          tour={tour}
           leakError={leakError}
           onRetryLeak={() => void retryLeakMaps(playerId)}
           retryingLeak={leakLoading}
@@ -901,6 +909,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           detailedStats={detailedStats}
           leakMaps={leakMaps}
           sprayData={sprayData}
+          tour={tour}
           leakError={leakError}
           onRetryLeak={() => void retryLeakMaps(playerId)}
           retryingLeak={leakLoading}
@@ -909,7 +918,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         />
       ),
     },
-    { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} patterns={patterns} /> },
+    { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} patterns={patterns} tour={tour} /> },
     {
       key: 'scoring',
       node: (

@@ -63,6 +63,12 @@ export interface LeakMapProps {
   unit: 'percent' | 'feet';
   /** Plot height in px (forwarded to ChartFrame). */
   height?: number;
+  /**
+   * What the reference column of the "View as table" view is called: "PGA Tour"
+   * for a men's team, "LPGA Tour" for a women's team (`tourLabel(tour)`).
+   * Defaults to the neutral "Tour" rather than guessing the PGA Tour.
+   */
+  referenceLabel?: string;
   /** Explicit state override for honest empties. Auto-derived when omitted. */
   state?: ChartFrameState;
   /** Optional copy overriding the default empty/insufficient/error message. */
@@ -114,6 +120,7 @@ export function LeakMap({
   direction,
   unit,
   height = 260,
+  referenceLabel,
   state,
   actions,
   className,
@@ -123,11 +130,11 @@ export function LeakMap({
     state ?? (data.length === 0 || !hasAnySample ? 'insufficient-data' : 'ready');
 
   const tableData: ChartTableData = {
-    caption: `${typeof title === 'string' ? title : 'Leak map'} by distance vs PGA Tour`,
+    caption: `${typeof title === 'string' ? title : 'Leak map'} by distance vs ${referenceLabel ?? 'the Tour'}`,
     columns: [
       { key: 'label', label: 'Distance' },
       { key: 'you', label: unit === 'percent' ? 'You' : 'You (ft)', numeric: true },
-      { key: 'pga', label: 'PGA Tour', numeric: true },
+      { key: 'pga', label: referenceLabel ?? 'Tour', numeric: true },
       { key: 'delta', label: 'Δ', numeric: true },
       { key: 'n', label: 'Shots', numeric: true },
     ],

@@ -559,26 +559,59 @@ BEGIN
       CASE WHEN gs.distance_unit_before='feet' THEN gs.distance_to_hole_before/3.0 ELSE gs.distance_to_hole_before END AS dist_before_yards,
       (gs.putt_made=TRUE OR gs.result IN ('holed','hole')) AS is_holed,
       CASE WHEN gs.putt_made=TRUE OR gs.result IN ('holed','hole') THEN 0
+        WHEN nx.distance_to_hole_before IS NOT NULL THEN
+          CASE WHEN nx.distance_unit_before='feet' THEN nx.distance_to_hole_before/3.0 ELSE nx.distance_to_hole_before END
         WHEN gs.distance_to_hole_after IS NOT NULL THEN
           CASE WHEN gs.distance_unit_after='feet' THEN gs.distance_to_hole_after/3.0 ELSE gs.distance_to_hole_after END
-        ELSE CASE WHEN LEAD(gs.distance_unit_before) OVER w='feet'
-          THEN COALESCE(LEAD(gs.distance_to_hole_before) OVER w,0)/3.0
-          ELSE COALESCE(LEAD(gs.distance_to_hole_before) OVER w,0) END END AS dist_after_yards,
+        ELSE 0 END AS dist_after_yards,
       CASE WHEN gs.putt_made=TRUE OR gs.result IN ('holed','hole') THEN 'green'
+        WHEN nx.distance_to_hole_before IS NOT NULL THEN
+          CASE WHEN nx.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(nx.lie_before) END
         WHEN gs.lie_after IS NOT NULL THEN sg_normalize_lie(gs.lie_after)
-        ELSE sg_normalize_lie(LEAD(gs.lie_before) OVER w) END AS lie_after_norm,
-      COALESCE(gs.is_penalty,FALSE) AS is_penalty
+        ELSE NULL END AS lie_after_norm,
+      COALESCE(gs.is_penalty,FALSE) AS is_penalty,
+      org.has_origin AS org_found, org.lie_norm AS org_lie_norm, org.dist_yards AS org_dist_yards
     FROM golf_shots gs JOIN golf_holes gh ON gh.id=gs.hole_id
-    WHERE gs.round_id=p_round_id AND gs.shot_type IS NOT NULL
-      AND gs.distance_to_hole_before IS NOT NULL AND gs.distance_to_hole_before>0
-    WINDOW w AS (PARTITION BY gs.hole_id ORDER BY gs.shot_number)
+    LEFT JOIN LATERAL (
+      SELECT n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
+      FROM golf_shots n
+      WHERE n.hole_id = gs.hole_id AND n.shot_number > gs.shot_number
+        AND NOT COALESCE(n.is_penalty, FALSE)
+        AND n.distance_to_hole_before IS NOT NULL AND n.distance_to_hole_before > 0
+        AND (n.lie_before IS NOT NULL OR n.shot_type = 'putting')
+      ORDER BY n.shot_number, n.id
+      LIMIT 1
+    ) nx ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT TRUE AS has_origin,
+        CASE WHEN o.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(o.lie_before) END AS lie_norm,
+        CASE WHEN o.distance_to_hole_before IS NULL THEN NULL
+             WHEN o.distance_unit_before='feet' THEN o.distance_to_hole_before/3.0
+             ELSE o.distance_to_hole_before END AS dist_yards
+      FROM golf_shots o
+      WHERE COALESCE(gs.is_penalty, FALSE)
+        AND o.hole_id = gs.hole_id AND o.shot_number <> gs.shot_number
+        AND NOT COALESCE(o.is_penalty, FALSE) AND COALESCE(o.shot_type, '') <> 'penalty'
+      ORDER BY (o.shot_number < gs.shot_number) DESC,
+               CASE WHEN o.shot_number < gs.shot_number THEN -o.shot_number ELSE o.shot_number END, o.id
+      LIMIT 1
+    ) org ON TRUE
+    WHERE gs.round_id=p_round_id
+      AND (COALESCE(gs.is_penalty, FALSE)
+           OR (gs.shot_type IS NOT NULL AND gs.distance_to_hole_before IS NOT NULL AND gs.distance_to_hole_before>0))
+  ),
+  attributed AS (
+    SELECT normalized.*,
+      CASE WHEN org_found THEN org_lie_norm ELSE lie_before_norm END AS pen_lie,
+      CASE WHEN org_found THEN org_dist_yards ELSE dist_before_yards END AS pen_dist_yards
+    FROM normalized
   ),
   categorized AS (
     SELECT CASE
              WHEN is_penalty THEN
-               CASE WHEN lie_before_norm='tee' THEN (CASE WHEN par=3 THEN 'approach' ELSE 'off_tee' END)
-                    WHEN lie_before_norm='green' THEN 'around_green'
-                    WHEN dist_before_yards<=50 THEN 'around_green'
+               CASE WHEN pen_lie='tee' THEN (CASE WHEN par=3 THEN 'approach' ELSE 'off_tee' END)
+                    WHEN pen_lie='green' THEN 'around_green'
+                    WHEN pen_dist_yards<=50 THEN 'around_green'
                     ELSE 'approach' END
              WHEN shot_type='putting' THEN 'putting'
              WHEN shot_type='tee' THEN 'off_tee'
@@ -587,7 +620,7 @@ BEGIN
       CASE WHEN is_penalty THEN 0 ELSE sg_expected_strokes(lie_before_norm,dist_before_yards,v_scale) END AS exp_before,
       CASE WHEN is_penalty THEN 0 WHEN is_holed THEN 0 WHEN dist_after_yards>0 THEN sg_expected_strokes(lie_after_norm,dist_after_yards,v_scale) ELSE 0 END AS exp_after,
       CASE WHEN is_penalty THEN TRUE ELSE (is_holed OR dist_after_yards>0) END AS has_after
-    FROM normalized WHERE dist_before_yards>0
+    FROM attributed WHERE dist_before_yards>0 OR is_penalty
   )
   SELECT
     ROUND(COALESCE(SUM(CASE WHEN category='off_tee' AND has_after THEN exp_before-exp_after-1 END),0)::NUMERIC,3),
@@ -4949,6 +4982,21 @@ ALTER FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_pl
 
 COMMENT ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) IS 'W13 / OD-01 (2026-09-24). The DB copy of isCountableRound (src/lib/golf/round-countable.ts). Keep the two in step; supabase/tests/rls/golf_round_is_countable.sql pins the shared cases.';
 
+CREATE OR REPLACE FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") RETURNS TABLE("player_id" "uuid", "coach_reasoning" "text")
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT s.player_id, s.coach_reasoning
+  FROM public.golf_qualifier_selections s
+  JOIN public.golf_qualifiers q ON q.id = s.qualifier_id
+  WHERE s.qualifier_id = p_qualifier_id
+    AND public.is_team_coach(q.team_id);
+$$;
+
+ALTER FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") IS 'D-35: a qualifier''s coach''s-pick reasons, for a coach of its team only (is_team_coach). Players get no rows. Signed-in users cannot select golf_qualifier_selections.coach_reasoning directly.';
+
 CREATE OR REPLACE FUNCTION "public"."golf_recruit_documents_assert_same_team"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
@@ -6750,7 +6798,7 @@ COMMENT ON FUNCTION "public"."is_super_admin"() IS 'Helm Bridge gate: true iff a
 
 CREATE OR REPLACE FUNCTION "public"."is_team_coach"("team_uuid" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   RETURN EXISTS (
@@ -6769,7 +6817,7 @@ COMMENT ON FUNCTION "public"."is_team_coach"("team_uuid" "uuid") IS 'v3 RLS help
 
 CREATE OR REPLACE FUNCTION "public"."is_team_player"("team_uuid" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   RETURN EXISTS (
@@ -7150,14 +7198,34 @@ CREATE OR REPLACE FUNCTION "public"."recalculate_round_strokes_gained"("p_round_
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 DECLARE
-  v_player_id UUID; v_shot_count INTEGER;
+  v_player_id UUID; v_is_test BOOLEAN; v_shot_count INTEGER;
   v_sg_off_tee NUMERIC := 0; v_sg_approach NUMERIC := 0; v_sg_around NUMERIC := 0;
   v_sg_putting NUMERIC := 0; v_sg_total NUMERIC := 0;
   v_scale NUMERIC := 1.0;
 BEGIN
   PERFORM set_config('helm.golf_lifecycle_write', 'stats_cache', true);
-  SELECT player_id INTO v_player_id FROM golf_rounds WHERE id = p_round_id;
+  SELECT player_id, is_test INTO v_player_id, v_is_test FROM golf_rounds WHERE id = p_round_id;
   IF NOT FOUND THEN RETURN; END IF;
+
+  -- A test (QA / demo) round carries no strokes gained: NULL keeps it out of
+  -- the player cache and Standing, which aggregate only non-null SG.
+  IF v_is_test THEN
+    UPDATE golf_round_stats_cache SET strokes_gained_total=NULL, strokes_gained_tee=NULL,
+      strokes_gained_approach=NULL, strokes_gained_around_green=NULL,
+      strokes_gained_putting=NULL, updated_at=now()
+    WHERE round_id=p_round_id AND (
+      strokes_gained_total IS NOT NULL OR strokes_gained_tee IS NOT NULL
+      OR strokes_gained_approach IS NOT NULL OR strokes_gained_around_green IS NOT NULL
+      OR strokes_gained_putting IS NOT NULL);
+    UPDATE golf_rounds SET strokes_gained_total=NULL, strokes_gained_tee=NULL,
+      strokes_gained_approach=NULL, strokes_gained_around_green=NULL, strokes_gained_putting=NULL
+    WHERE id=p_round_id AND (
+      strokes_gained_total IS NOT NULL OR strokes_gained_tee IS NOT NULL
+      OR strokes_gained_approach IS NOT NULL OR strokes_gained_around_green IS NOT NULL
+      OR strokes_gained_putting IS NOT NULL);
+    RETURN;
+  END IF;
+
   v_scale := sg_scale_for_player(v_player_id);
 
   SELECT COUNT(*) INTO v_shot_count FROM golf_shots gs
@@ -7170,27 +7238,64 @@ BEGIN
         CASE WHEN gs.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(gs.lie_before) END AS lie_before_norm,
         CASE WHEN gs.distance_unit_before='feet' THEN gs.distance_to_hole_before/3.0 ELSE gs.distance_to_hole_before END AS dist_before_yards,
         (gs.putt_made=TRUE OR gs.result IN ('holed','hole')) AS is_holed,
+        -- a shot ends where the next non-penalty shot starts; its own recorded
+        -- end only for the last shot of the hole (20260928160000)
         CASE WHEN gs.putt_made=TRUE OR gs.result IN ('holed','hole') THEN 0
+          WHEN nx.distance_to_hole_before IS NOT NULL THEN
+            CASE WHEN nx.distance_unit_before='feet' THEN nx.distance_to_hole_before/3.0 ELSE nx.distance_to_hole_before END
           WHEN gs.distance_to_hole_after IS NOT NULL THEN
             CASE WHEN gs.distance_unit_after='feet' THEN gs.distance_to_hole_after/3.0 ELSE gs.distance_to_hole_after END
-          ELSE CASE WHEN LEAD(gs.distance_unit_before) OVER w='feet'
-            THEN COALESCE(LEAD(gs.distance_to_hole_before) OVER w,0)/3.0
-            ELSE COALESCE(LEAD(gs.distance_to_hole_before) OVER w,0) END END AS dist_after_yards,
+          ELSE 0 END AS dist_after_yards,
         CASE WHEN gs.putt_made=TRUE OR gs.result IN ('holed','hole') THEN 'green'
+          WHEN nx.distance_to_hole_before IS NOT NULL THEN
+            CASE WHEN nx.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(nx.lie_before) END
           WHEN gs.lie_after IS NOT NULL THEN sg_normalize_lie(gs.lie_after)
-          ELSE sg_normalize_lie(LEAD(gs.lie_before) OVER w) END AS lie_after_norm,
-        COALESCE(gs.is_penalty,FALSE) AS is_penalty
+          ELSE NULL END AS lie_after_norm,
+        COALESCE(gs.is_penalty,FALSE) AS is_penalty,
+        org.has_origin AS org_found, org.lie_norm AS org_lie_norm, org.dist_yards AS org_dist_yards
       FROM golf_shots gs JOIN golf_holes gh ON gh.id=gs.hole_id
-      WHERE gs.round_id=p_round_id AND gs.shot_type IS NOT NULL
-        AND gs.distance_to_hole_before IS NOT NULL AND gs.distance_to_hole_before>0
-      WINDOW w AS (PARTITION BY gs.hole_id ORDER BY gs.shot_number)
+      LEFT JOIN LATERAL (
+        SELECT n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
+        FROM golf_shots n
+        WHERE n.hole_id = gs.hole_id AND n.shot_number > gs.shot_number
+          AND NOT COALESCE(n.is_penalty, FALSE)
+          AND n.distance_to_hole_before IS NOT NULL AND n.distance_to_hole_before > 0
+          AND (n.lie_before IS NOT NULL OR n.shot_type = 'putting')
+        ORDER BY n.shot_number, n.id
+        LIMIT 1
+      ) nx ON TRUE
+      -- where a penalty was earned: the nearest preceding non-penalty shot, else
+      -- the nearest following one (TS resolvePenaltyOrigin); no row for a shot
+      LEFT JOIN LATERAL (
+        SELECT TRUE AS has_origin,
+          CASE WHEN o.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(o.lie_before) END AS lie_norm,
+          CASE WHEN o.distance_to_hole_before IS NULL THEN NULL
+               WHEN o.distance_unit_before='feet' THEN o.distance_to_hole_before/3.0
+               ELSE o.distance_to_hole_before END AS dist_yards
+        FROM golf_shots o
+        WHERE COALESCE(gs.is_penalty, FALSE)
+          AND o.hole_id = gs.hole_id AND o.shot_number <> gs.shot_number
+          AND NOT COALESCE(o.is_penalty, FALSE) AND COALESCE(o.shot_type, '') <> 'penalty'
+        ORDER BY (o.shot_number < gs.shot_number) DESC,
+                 CASE WHEN o.shot_number < gs.shot_number THEN -o.shot_number ELSE o.shot_number END, o.id
+        LIMIT 1
+      ) org ON TRUE
+      WHERE gs.round_id=p_round_id
+        AND (COALESCE(gs.is_penalty, FALSE)
+             OR (gs.shot_type IS NOT NULL AND gs.distance_to_hole_before IS NOT NULL AND gs.distance_to_hole_before>0))
+    ),
+    attributed AS (
+      SELECT normalized.*,
+        CASE WHEN org_found THEN org_lie_norm ELSE lie_before_norm END AS pen_lie,
+        CASE WHEN org_found THEN org_dist_yards ELSE dist_before_yards END AS pen_dist_yards
+      FROM normalized
     ),
     categorized AS (
       SELECT CASE
                WHEN is_penalty THEN
-                 CASE WHEN lie_before_norm='tee' THEN (CASE WHEN par=3 THEN 'approach' ELSE 'off_tee' END)
-                      WHEN lie_before_norm='green' THEN 'around_green'
-                      WHEN dist_before_yards<=50 THEN 'around_green'
+                 CASE WHEN pen_lie='tee' THEN (CASE WHEN par=3 THEN 'approach' ELSE 'off_tee' END)
+                      WHEN pen_lie='green' THEN 'around_green'
+                      WHEN pen_dist_yards<=50 THEN 'around_green'
                       ELSE 'approach' END
                WHEN shot_type='putting' THEN 'putting'
                WHEN shot_type='tee' THEN 'off_tee'
@@ -7199,7 +7304,7 @@ BEGIN
         CASE WHEN is_penalty THEN 0 ELSE sg_expected_strokes(lie_before_norm,dist_before_yards,v_scale) END AS exp_before,
         CASE WHEN is_penalty THEN 0 WHEN is_holed THEN 0 WHEN dist_after_yards>0 THEN sg_expected_strokes(lie_after_norm,dist_after_yards,v_scale) ELSE 0 END AS exp_after,
         CASE WHEN is_penalty THEN TRUE ELSE (is_holed OR dist_after_yards>0) END AS has_after
-      FROM normalized WHERE dist_before_yards>0
+      FROM attributed WHERE dist_before_yards>0 OR is_penalty
     )
     SELECT
       ROUND(COALESCE(SUM(CASE WHEN category='off_tee' AND has_after THEN exp_before-exp_after-1 END),0)::NUMERIC,3),

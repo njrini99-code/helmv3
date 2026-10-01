@@ -1,0 +1,59 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Player · Rounds (mobile)</title>
+<meta name="design_doc_mode" content="canvas">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="depth.css">
+<link rel="stylesheet" href="cal.css">
+<link rel="stylesheet" href="msg.css">
+<link rel="stylesheet" href="roster.css">
+<link rel="stylesheet" href="qual.css">
+<link rel="stylesheet" href="qual-mobile.css">
+<link rel="stylesheet" href="coachhelm2.css">
+<link rel="stylesheet" href="m.css">
+<link rel="stylesheet" href="sidebar.css">
+
+<style>.m-rowlabel{position:absolute;margin:0;font:600 28px/1 "Instrument Sans",sans-serif;letter-spacing:-.03em;color:#1C1B18}</style>
+
+<style>.m-rowlabel{position:absolute;margin:0;font:600 28px/1 "Instrument Sans",sans-serif;letter-spacing:-.03em;color:#1C1B18}</style>
+
+<link rel="stylesheet" href="rounds-flow.css">
+<link rel="stylesheet" href="rounds-track.css">
+<style>.m-sb{flex:none;height:50px;background:var(--bg-page,#F7F5EF)}.qm .rf-scroll{padding:0}.rf-mwrap{flex:1;min-height:0;display:flex;flex-direction:column}</style>
+<meta name="gh-role" content="player">
+<meta name="gh-page" content="rounds">
+<meta name="gh-kind" content="mobile">
+<script src="gh-nav.js"></script>
+<script src="gh-core.js"></script>
+<link rel="stylesheet" href="gh-polish.css">
+</head><body><div id="root"></div>
+<script src="rounds-data.js"></script>
+<script type="text/babel" src="gh-states.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="m-shell.jsx"></script>
+<script type="text/babel" src="rounds-track.jsx"></script>
+<script type="text/babel" src="rounds-review.jsx"></script>
+<script type="text/babel" src="rounds-course.jsx"></script>
+<script type="text/babel" src="rounds-flow.jsx"></script>
+<script type="text/babel">
+const B=[["lib","Rounds","Unfinished round, stats, history",{"view":"library"}],["lib-empty","Rounds · none in progress","Empty state for the round card",{"view":"library","noUnfinished":true}],["pick","Course picker","Opens as a sheet on New round",{"view":"setup","picker":"courses"}],["tees","Choose tees","Tee cards with hole-length strip",{"view":"setup","picker":"tees","pickCourse":"finley"}],["ac1","Add a course","Name, location, holes",{"view":"setup","addCourse":true}],["ac2","Add a course · tees","Colour, rating, slope",{"view":"setup","addCourse":true,"addStep":1}],["ac3","Add a course · holes","Par and yardage per hole",{"view":"setup","addCourse":true,"addStep":2}],["ac4","Add a course · review","Check and save",{"view":"setup","addCourse":true,"addStep":3}],["setup","Setup · course picked","Course, qualifier shortcut, round details",{"view":"setup","course":"finley","tee":"blue"}],["holes","Scorecard","Edit par and yardage per hole",{"view":"setup","course":"finley","tee":"blue","scroll":true}],["qual","Qualifier round","Round type set to Qualifier",{"view":"setup","course":"finley","tee":"blue","type":"qualifier"}],["nine","9 holes","Front or back nine",{"view":"setup","course":"hope","tee":"blue","count":9,"scroll":true}],["empty","Setup · no course","Before a course is picked",{"view":"setup"}],["t-tee","Tracking · tee shot","Club, result, distance",{"view":"tracking","track":{"hole":4}}],["t-tee2","Tee shot · missed","Miss direction and distance left",{"view":"tracking","track":{"hole":4,"entry":{"club":"Driver","result":"rough","miss":"right","dist":"142"}}}],["t-app","Approach · missed green","Miss grid around the green",{"view":"tracking","track":{"hole":4,"shots":[{"type":"Tee","club":"Driver","lie":"fairway","from":395,"fromUnit":"yds","to":152,"unit":"yds"}],"entry":{"result":"sand","amiss":"short_right","dist":"18"}}}],["t-putt","Putt","Break, slope, result, miss tags, leave",{"view":"tracking","track":{"hole":4,"shots":[{"type":"Tee","club":"Driver","lie":"fairway","from":395,"fromUnit":"yds","to":152,"unit":"yds"},{"type":"Approach","lie":"green","from":152,"fromUnit":"yds","to":24,"unit":"ft"}],"entry":{"brk":"left_to_right","slope":"uphill","result":"green","tags":["Short"],"dist":"3"}}}],["t-pen","Penalty","Type and which shot",{"view":"tracking","track":{"hole":4,"shots":[{"type":"Tee","club":"Driver","lie":"fairway","from":395,"fromUnit":"yds","to":152,"unit":"yds"}],"modal":"penalty"}}],["t-done","Hole complete","Shot review, then next hole",{"view":"tracking","track":{"hole":4,"shots":[{"type":"Tee","club":"Driver","lie":"fairway","from":395,"fromUnit":"yds","to":152,"unit":"yds"},{"type":"Approach","lie":"green","from":152,"fromUnit":"yds","to":24,"unit":"ft"},{"type":"Putt","lie":"green","from":24,"fromUnit":"ft","to":3,"unit":"ft","brk":"left_to_right","slope":"uphill"},{"type":"Putt","lie":"hole","from":3,"fromUnit":"ft","to":0,"unit":"ft"}],"holeDone":true}}],["t-exit","Exit · save round","Save for later, keep playing or discard",{"view":"tracking","track":{"hole":4,"shots":[{"type":"Tee","club":"Driver","lie":"fairway","from":395,"fromUnit":"yds","to":152,"unit":"yds"}],"modal":"save"}}],["t-card","Scorecard","Holes played so far",{"view":"tracking","track":{"hole":8,"modal":"card"}}],["t-sum","Round complete","Summary before submitting",{"view":"tracking","track":{"hole":18,"modal":"summary"}}],["t-sub","Submitting","Posting shots and stats",{"view":"tracking","track":{"hole":18,"submit":"loading"}}],["t-posted","Round posted","Then round review",{"view":"tracking","track":{"hole":18,"submit":"done"}}],["rev","Round review","Open a past round from Rounds",{"view":"review"}]];
+function RoundsM({ initial }) {
+  const lib = initial.view === 'library';
+  return <div className="qm fairway">{lib ? <MTop title="Rounds" /> : <div className="m-sb"></div>}<div className={"qm-scroll rf-scroll" + (initial.view === "tracking" ? " is-track" : "")}><RoundsFlow initial={initial} /></div>{lib && <MTabs on="rounds" />}<MSafari /></div>;
+}
+const ONLY=new URLSearchParams(location.search).get('only');
+function Boards(){const L=ONLY?B.filter(b=>ONLY.split(',').includes(b[0])):B;return <>{L.map(([id,l,s,init],i)=><div key={id} className="qm-board" data-screen-label={String(i+1).padStart(2,'0')+' Rounds · '+l} style={ONLY?{left:20+i*440,top:10}:{left:60+(i%9)*482,top:60+Math.floor(i/9)*1000}}><p className="qm-board__l">{l}</p><p className="qm-board__s">{s}</p><IOSDevice><RoundsM initial={init} /></IOSDevice></div>)}</>;}
+ReactDOM.createRoot(document.getElementById('root')).render(<Boards />);
+</script><div id="gh-boards"></div>
+<script type="text/babel">ReactDOM.createRoot(document.getElementById('gh-boards')).render(<GHBoards boards={[{"page":"rounds","role":"player","state":"loading","title":"Rounds","tab":"rounds"},{"page":"rounds","role":"player","state":"empty","title":"Rounds","tab":"rounds"}]} />);</script>
+</body></html>

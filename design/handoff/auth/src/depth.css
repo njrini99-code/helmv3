@@ -1,0 +1,22 @@
+/* Depth vocabulary lifted from the Fairway Segmented toggle: a recessed well, a raised pressed chip, a lit sheet. */
+:root{
+--dp-well-bg:linear-gradient(180deg,#DCD7CA 0%,#E6E2D7 55%,#ECE8DE 100%);
+--dp-well-shadow:inset 0 2px 3px rgb(28 25 18/.20),inset 0 4px 10px -2px rgb(28 25 18/.16),inset 0 -1px 0 rgb(255 255 255/.55),inset 0 0 0 1px rgb(28 25 18/.09),0 1px 0 #fff,0 0 0 1px rgb(255 255 255/.35);
+--dp-well-soft-bg:linear-gradient(180deg,#E9E5DA 0%,#EFECE3 60%,#F2EFE7 100%);
+--dp-well-soft-shadow:inset 0 1px 2px rgb(28 25 18/.12),inset 0 3px 8px -3px rgb(28 25 18/.10),inset 0 0 0 1px rgb(28 25 18/.06),0 1px 0 rgb(255 255 255/.9);
+--dp-raised-bg:linear-gradient(180deg,#FFFEFB 0%,#F7F5EF 60%,#EFECE4 100%);
+--dp-raised-shadow:0 0 0 1px rgb(28 25 18/.10),0 1px 1px rgb(28 25 18/.14),0 3px 6px -2px rgb(28 25 18/.22),0 8px 14px -8px rgb(28 25 18/.28),inset 0 1px 0 #fff,inset 0 -1px 0 rgb(28 25 18/.06);
+--dp-sheet-bg:linear-gradient(180deg,#FFFEFB 0%,#FDFCF8 40%,#FAF8F2 100%);
+--dp-sheet-shadow:0 0 0 1px rgb(28 25 18/.08),0 1px 2px rgb(28 25 18/.06),0 6px 14px -6px rgb(28 25 18/.12),0 22px 40px -22px rgb(28 25 18/.22),inset 0 1px 0 #fff;
+--dp-green-raised-bg:linear-gradient(180deg,#1E6A45 0%,#155A39 55%,#0F4A2F 100%);
+--dp-green-raised-shadow:0 0 0 1px rgb(8 43 28/.6),0 1px 1px rgb(8 43 28/.3),0 4px 8px -3px rgb(8 43 28/.4),inset 0 1px 0 rgb(255 255 255/.18),inset 0 -1px 0 rgb(0 0 0/.15);
+}
+.dp-well{background:var(--dp-well-bg);box-shadow:var(--dp-well-shadow);border-radius:12px}
+.dp-well-soft{background:var(--dp-well-soft-bg);box-shadow:var(--dp-well-soft-shadow);border-radius:12px}
+.dp-raised{background:var(--dp-raised-bg);box-shadow:var(--dp-raised-shadow);border-radius:9px}
+.dp-sheet{background:var(--dp-sheet-bg);box-shadow:var(--dp-sheet-shadow);border-radius:16px}
+.dp-chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;font:500 13px/1 var(--font-sans);color:#6F6A5F;text-shadow:0 1px 0 rgb(255 255 255/.6);cursor:pointer;transition:background var(--dur-quick),color var(--dur-quick),box-shadow var(--dur-quick),transform var(--dur-instant)}
+.dp-chip:hover{color:var(--text-primary)}.dp-chip:active{transform:translateY(.5px)}
+.dp-chip[aria-pressed="true"]{color:var(--green-700);font-weight:600;text-shadow:none;background:var(--dp-raised-bg);box-shadow:var(--dp-raised-shadow)}
+.dp-chip:focus-visible{outline:2px solid rgb(21 90 57/.45);outline-offset:1px}
+.dp-chips{display:inline-flex;gap:3px;padding:4px}

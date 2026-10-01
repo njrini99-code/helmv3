@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 66 routes, 45 components, 30 apis, 91 actions, 103 services, 65 tests, 134 tables, 164 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 983 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 29 features, 68 routes, 56 components, 30 apis, 93 actions, 106 services, 73 tests, 134 tables, 165 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1012 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -102,7 +102,7 @@ Calendar And Events · active · criticality high · owner product
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** none
-- **Test surfaces:** 2
+- **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
 
 ### `coach_intelligence_triage`
@@ -159,7 +159,7 @@ Feature Awareness System · active · criticality high · owner platform
 
 Golf Round Lifecycle · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 23 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 24 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
 - **RPCs:** `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
@@ -179,7 +179,7 @@ iOS Native Shell · active · criticality high · owner product
 
 Sentry Observability — Telemetry Vocabulary · active · criticality medium · owner platform
 
-- **Relations:** 4 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 4 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `helm_debug_finalize_trace`, `helm_debug_record_trace_step`, `helm_debug_start_trace`
 - **Test surfaces:** 2
@@ -199,7 +199,7 @@ Supabase Database Observability — Zero-Cost Error/Health Control Plane · acti
 
 Player CoachHelm And Development · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 17 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 18 import-graph-only (weak)
 - **Tables:** `golf_focus_area_criteria`, `golf_focus_area_practice_sessions`
 - **RPCs:** `ingest_external_round_atomic`, `sg_scale_for_player`
 - **Test surfaces:** 3
@@ -221,8 +221,8 @@ Qualifiers · active · criticality high · owner product
 
 - **Relations:** 1 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** `golf_qualifier_round_courses`
-- **RPCs:** none
-- **Test surfaces:** 2
+- **RPCs:** `golf_qualifier_selection_reasons`
+- **Test surfaces:** 5
 - **Sentry/admin_events signals:** `my_qualifiers`, `qualifiers`
 
 ### `recruiting`
@@ -232,7 +232,7 @@ Recruiting HQ · active · criticality medium · owner product
 - **Relations:** 0 doc/structurally-evidenced, 3 import-graph-only (weak)
 - **Tables:** `golf_recruit_documents`
 - **RPCs:** none
-- **Test surfaces:** 0
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `recruiting_prospect_tracking`
 
 ### `roster_team`
@@ -259,7 +259,7 @@ Settings And Preferences · active · criticality medium · owner product
 
 Shot Tracking · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 4 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 6 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** none
 - **Test surfaces:** 4
@@ -269,7 +269,7 @@ Shot Tracking · active · criticality high · owner product
 
 Stats And Analytics · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** `baseball_legacy_backfill_manifest`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
 - **Test surfaces:** 3
@@ -300,7 +300,7 @@ Team Communications · active · criticality high · owner product
 Team Operations · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
-- **Tables:** `golf_recruit_documents`
+- **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** `coach_dashboard`, `documents`, `task_management`, `travel`
@@ -423,6 +423,7 @@ Team Operations · active · criticality high · owner product
 | `golf_round_lifecycle` | `observability_sentry` | import_graph (weak) |
 | `golf_round_lifecycle` | `player_coachhelm_development` | import_graph (weak) |
 | `golf_round_lifecycle` | `roster_team` | import_graph (weak) |
+| `golf_round_lifecycle` | `shot_tracking` | import_graph (weak) |
 | `golf_round_lifecycle` | `stats_analytics` | import_graph (weak) |
 | `observability_sentry` | `admin_platform` | import_graph (weak) |
 | `observability_sentry` | `auth_onboarding_join` | feature_doc_contract, import_graph |
@@ -439,6 +440,7 @@ Team Operations · active · criticality high · owner product
 | `player_coachhelm_development` | `golf_round_lifecycle` | import_graph (weak) |
 | `player_coachhelm_development` | `observability_sentry` | import_graph (weak) |
 | `player_coachhelm_development` | `settings_preferences` | import_graph (weak) |
+| `player_coachhelm_development` | `stats_analytics` | import_graph (weak) |
 | `player_hub` | `admin_platform` | import_graph (weak) |
 | `player_hub` | `auth_onboarding_join` | import_graph (weak) |
 | `player_hub` | `calendar_events` | import_graph (weak) |
@@ -462,6 +464,7 @@ Team Operations · active · criticality high · owner product
 | `shot_tracking` | `admin_platform` | import_graph (weak) |
 | `shot_tracking` | `auth_onboarding_join` | import_graph (weak) |
 | `shot_tracking` | `golf_round_lifecycle` | import_graph (weak) |
+| `shot_tracking` | `observability_sentry` | import_graph (weak) |
 | `stats_analytics` | `admin_platform` | import_graph (weak) |
 | `stats_analytics` | `auth_onboarding_join` | import_graph (weak) |
 | `stats_analytics` | `coachhelm_ai` | import_graph (weak) |

@@ -225,6 +225,30 @@ describe('sumHoleStrokesGainedByCategory', () => {
     expect(result.approach).toBeNull();
   });
 
+  it('charges a penalty written AFTER the errant tee shot to Off the tee, not to the drop position (Q-89)', () => {
+    // The penalty row carries the drop (fairway, 175 yd) — where the ball is played
+    // from next. The stroke belongs to the tee shot that earned it.
+    const shots: CategorizableShot[] = [
+      { shot_type: 'tee', lie_before: 'tee', distance_to_hole_before: 420, sg: -0.3 },
+      { shot_type: 'penalty', lie_before: 'fairway', distance_to_hole_before: 175, is_penalty: true, sg: -1 },
+      { shot_type: 'approach', lie_before: 'fairway', distance_to_hole_before: 175, sg: 0.2 },
+    ];
+    const result = sumHoleStrokesGainedByCategory(shots, 4);
+    expect(result.tee).toBeCloseTo(-1.3, 10);
+    expect(result.approach).toBeCloseTo(0.2, 10);
+  });
+
+  it('charges a penalty after a short shot to Around the green even when the drop is farther out (Q-89)', () => {
+    const shots: CategorizableShot[] = [
+      { shot_type: 'around_green', lie_before: 'rough', distance_to_hole_before: 30, sg: -0.4 },
+      { shot_type: 'penalty', lie_before: 'rough', distance_to_hole_before: 60, is_penalty: true, sg: -1 },
+      { shot_type: 'approach', lie_before: 'rough', distance_to_hole_before: 60, sg: 0.1 },
+    ];
+    const result = sumHoleStrokesGainedByCategory(shots, 4);
+    expect(result.around_green).toBeCloseTo(-1.4, 10);
+    expect(result.approach).toBeCloseTo(0.1, 10);
+  });
+
   it('buckets a tee-shot penalty into approach on a PAR-3 (matches getStrokesGainedCategory\'s own par-3 tee-as-approach rule)', () => {
     const shots: CategorizableShot[] = [
       { shot_type: 'penalty', lie_before: 'tee', distance_to_hole_before: 175, is_penalty: true, sg: -1.6 },

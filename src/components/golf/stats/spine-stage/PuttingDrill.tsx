@@ -20,8 +20,9 @@
  * plan's dedupe rule, now with a per-cell n= sample badge) + a break-overview
  * `RailBars` + miss-direction `RailBars` (overall, and per-break where the
  * calculator exposes it) + an n-gated `RxCard` prescription + a plain-
- * language cost line + the existing `LeakMap` chart (make% vs PGA Tour by
- * distance, reused verbatim).
+ * language cost line (vs the Tour, from `puttingStrokesVsTour`) + the existing
+ * `LeakMap` chart (make% vs the team's Tour, PGA or LPGA, by distance, reused
+ * verbatim).
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
@@ -60,7 +61,8 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import { PuttingBenchmarkSheet } from './PuttingBenchmarkSheet';
-import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
+import { PUTTING_VS_TOUR_RANGE, puttingStrokesVsTour } from '@/lib/golf/strokes-gained';
+import { tourLabel, type TourKey } from '@/lib/golf/benchmarks/tour';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import {
   buildCategoryInsights,
@@ -213,6 +215,11 @@ const DISTANCE_BANDS: ReadonlyArray<{
   /** The per-cell attempt count backing `field` — feeds the matrix's n=
    *  badge and the RxCard's sample-size gate. */
   countField: keyof BreakStats;
+  /** The Tour standard for this band, only where the Tour publishes an EXACT
+   *  band (3-5, 5-10, 10-15 ft). A sub-band (15-20 ft inside the Tour's 15-25
+   *  ft) or a band with no standard (0-3 ft) is `null` and draws neutral: a
+   *  Tour 15-25 ft average is not a fair yardstick for the shorter half of
+   *  that band. */
   pgaMetricId: string | null;
   /** All-break aggregate ALL-PUTT make% for the hero `MakeCurve`. */
   overallField: PuttMakePctField;
@@ -226,24 +233,41 @@ const DISTANCE_BANDS: ReadonlyArray<{
   { label: '3-5ft', field: 'makePct3_5', countField: 'count3_5', pgaMetricId: 'putts_made_3_5ft_pct', overallField: 'puttMakePct3_5', overallCountField: 'puttMakeCount3_5' },
   { label: '5-10ft', field: 'makePct5_10', countField: 'count5_10', pgaMetricId: 'putts_made_5_10ft_pct', overallField: 'puttMakePct5_10', overallCountField: 'puttMakeCount5_10' },
   { label: '10-15ft', field: 'makePct10_15', countField: 'count10_15', pgaMetricId: 'putts_made_10_15ft_pct', overallField: 'puttMakePct10_15', overallCountField: 'puttMakeCount10_15' },
-  { label: '15-20ft', field: 'makePct15_20', countField: 'count15_20', pgaMetricId: 'putts_made_15_25ft_pct', overallField: 'puttMakePct15_20', overallCountField: 'puttMakeCount15_20' },
-  { label: '20-25ft', field: 'makePct20_25', countField: 'count20_25', pgaMetricId: 'putts_made_15_25ft_pct', overallField: 'puttMakePct20_25', overallCountField: null },
-  { label: '25-30ft', field: 'makePct25_30', countField: 'count25_30', pgaMetricId: 'putts_made_25_plus_ft_pct', overallField: 'puttMakePct25_30', overallCountField: null },
-  { label: '30-35ft', field: 'makePct30_35', countField: 'count30_35', pgaMetricId: 'putts_made_25_plus_ft_pct', overallField: 'puttMakePct30_35', overallCountField: null },
-  { label: '35+ft', field: 'makePct35Plus', countField: 'count35Plus', pgaMetricId: 'putts_made_25_plus_ft_pct', overallField: 'puttMakePct35Plus', overallCountField: null },
+  { label: '15-20ft', field: 'makePct15_20', countField: 'count15_20', pgaMetricId: null, overallField: 'puttMakePct15_20', overallCountField: 'puttMakeCount15_20' },
+  { label: '20-25ft', field: 'makePct20_25', countField: 'count20_25', pgaMetricId: null, overallField: 'puttMakePct20_25', overallCountField: null },
+  { label: '25-30ft', field: 'makePct25_30', countField: 'count25_30', pgaMetricId: null, overallField: 'puttMakePct25_30', overallCountField: null },
+  { label: '30-35ft', field: 'makePct30_35', countField: 'count30_35', pgaMetricId: null, overallField: 'puttMakePct30_35', overallCountField: null },
+  { label: '35+ft', field: 'makePct35Plus', countField: 'count35Plus', pgaMetricId: null, overallField: 'puttMakePct35Plus', overallCountField: null },
 ];
 
-/** Band thresholds for the ramp: proportional to the PGA standard when known
- *  (no standard yet for 0-3ft, so it uses a flat near-automatic-make scale). */
-function bandThresholds(pga: number | null): [number, number, number] {
-  if (pga === null) return [70, 85, 95];
-  return [pga * 0.6, pga * 0.85, pga * 1.05];
+/** Ramp band for a make %, proportional to the Tour standard. A band with no
+ *  exact Tour standard (0-3 ft, and the sub-bands of the Tour's 15-25 and 25+
+ *  ft) has nothing honest to be graded against, so it draws neutral (band 0)
+ *  rather than on an invented scale. */
+function makeBandFor(pct: number | null, tourPct: number | null): 0 | 1 | 2 | 3 | 4 {
+  if (tourPct === null) return 0;
+  return rampBandForValue(pct, [tourPct * 0.6, tourPct * 0.85, tourPct * 1.05]);
+}
+
+/** The Tour value a band is graded against, from the standing rows; null when
+ *  the band has no exact standard or the loader omitted the reference. */
+function tourValueFor(
+  standingByMetric: Map<string, PlayerStandingRow>,
+  metricId: string | null,
+): number | null {
+  if (!metricId) return null;
+  const row = standingByMetric.get(metricId);
+  if (!row || row.pga_omitted) return null;
+  return finite(row.pga_value);
 }
 
 /** Minimum tracked putts a cell needs before it can drive the "Work on next"
  *  Rx — matches the CoachHelm 8-per-distance-bucket insight floor so a
  *  single missed putt (1 attempt, 0%) can't outrank a well-sampled cell. */
 const RX_MIN_N = 8;
+
+/** Why only some make-rate cells are coloured. */
+const TOUR_BAND_NOTE = 'Colour is shown for 3-5, 5-10 and 10-15 ft, the bands with an exact Tour standard.';
 
 const PUTTING_DISTANCE_DETAIL = [
   { label: '0-3ft', key: '0_3', make: 'puttMakePct0_3', efficiency: 'puttEff0_5', proximity: 'puttProximity0_5' },
@@ -269,7 +293,10 @@ export interface PuttingDrillProps {
   detailedStats: GolfStats | null;
   leakMaps: PlayerLeakMaps | null;
   standingByMetric: Map<string, PlayerStandingRow>;
-  weaknesses: StatisticalStrengthWeakness[];
+  /** The tour this player's references come from, resolved once by the stage
+   *  (`resolveStageTour`); falls back to the leak map's own `tour`. Null keeps
+   *  the labels neutral and hides the cost line (it needs a tour to be true). */
+  tour?: TourKey | null;
   /** True when the leak-map fetch genuinely FAILED (distinct from no-data). */
   leakError?: boolean;
   onRetryLeak?: () => void;
@@ -293,7 +320,7 @@ export function PuttingDrill({
   detailedStats,
   leakMaps,
   standingByMetric,
-  weaknesses,
+  tour: tourProp = null,
   leakError = false,
   onRetryLeak,
   retryingLeak = false,
@@ -304,6 +331,7 @@ export function PuttingDrill({
   const s = detailedStats;
   const [detail, setDetail] = useState<PuttingDetail>('distance');
   const puttingByBreak = s?.puttingByBreak ?? null;
+  const tour: TourKey | null = tourProp ?? leakMaps?.tour ?? null;
 
   // --- CoachHelm "what it sees" + putts-per-round trend (FIX 2/3/4) --------
   const categoryTrends = useMemo(() => buildCategoryTrends(trends), [trends]);
@@ -337,13 +365,13 @@ export function PuttingDrill({
       const breakStats = puttingByBreak?.[col.breakKey];
       const pct = finite(breakStats?.[band.field] as number | null | undefined);
       const n = countAt(breakStats, band.countField);
-      const pga = band.pgaMetricId ? finite(standingByMetric.get(band.pgaMetricId)?.pga_value ?? null) : null;
+      const pga = tourValueFor(standingByMetric, band.pgaMetricId);
       return {
         value: pct === null ? '—' : `${Math.round(pct)}`,
         // Sample-size badge so a 1-putt "0%" cell doesn't read as trustworthy
         // as a 40-putt one — omitted (not "n=0") when the cell has no data.
         n: n > 0 ? `n=${n}` : undefined,
-        band: rampBandForValue(pct, bandThresholds(pga)),
+        band: makeBandFor(pct, pga),
       };
     }),
   }));
@@ -368,9 +396,10 @@ export function PuttingDrill({
     }
   }
 
-  const puttingCost = weaknesses
-    .filter((w) => w.subcategory === 'putting')
-    .reduce((sum, w) => sum + Math.abs(w.strokeImpact), 0);
+  // Net estimated strokes per round putting gains or costs against the Tour
+  // across the 3-15 ft bands that have an exact Tour band and enough putts
+  // (`puttingStrokesVsTour`). Needs the tour: PGA and LPGA values differ.
+  const puttingVsTour = tour && s ? puttingStrokesVsTour(s, tour) : null;
 
   // --- Putting efficiency readouts (FIX 4) ---------------------------------
   const puttsPerRound = finite(s?.puttsPerRound);
@@ -515,15 +544,15 @@ export function PuttingDrill({
                   const num = (value: unknown, digits = 1) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
                   // Same RampMatrix band language the Breaks tab uses for this
                   // exact metric (all-break ALL-PUTT make%) — banding both
-                  // tabs off the SAME `bandThresholds`/`rampBandForValue` call
+                  // tabs off the SAME `makeBandFor`/`rampBandForValue` call
                   // (and the SAME n, reused from `heroPoints` by index — both
                   // arrays share the DISTANCE_BANDS ordering) is what makes
                   // the two sub-tabs read as one system rather than two
                   // independently-styled tables.
                   const bandMeta = DISTANCE_BANDS[i];
                   const makePct = finite(s?.[band.make]);
-                  const pga = bandMeta?.pgaMetricId ? finite(standingByMetric.get(bandMeta.pgaMetricId)?.pga_value ?? null) : null;
-                  const makeBand = rampBandForValue(makePct, bandThresholds(pga));
+                  const pga = tourValueFor(standingByMetric, bandMeta?.pgaMetricId ?? null);
+                  const makeBand = makeBandFor(makePct, pga);
                   const makeN = heroPoints[i]?.n ?? 0;
                   return (
                     <tr key={band.key} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary">
@@ -552,6 +581,7 @@ export function PuttingDrill({
                 </span>
               ))}
             </div>
+            <p className="font-fw-sans text-microlabel normal-case tracking-normal text-text-tertiary">{TOUR_BAND_NOTE}</p>
           </Surface>
         ) : null}
 
@@ -560,7 +590,7 @@ export function PuttingDrill({
             <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
               <div>
                 <Eyebrow as="h4">Make rate by distance and break</Eyebrow>
-                <p className="mt-1 text-caption text-text-tertiary">Swipe the table on smaller screens.</p>
+                <p className="mt-1 text-caption text-text-tertiary">Swipe the table on smaller screens. {TOUR_BAND_NOTE}</p>
               </div>
               <div className="overflow-x-auto">
                 <RampMatrix cols={BREAK_COLS.map((c) => c.colLabel)} rows={rows} legend={RAMP_LEGEND} />
@@ -571,7 +601,11 @@ export function PuttingDrill({
               <RxCard title="Work on next">
                 {worst ? `${worst.distance} putts breaking ${worst.band.toLowerCase()} are converting at ${Math.round(worst.pct)}% (n=${worst.n}), the weakest reliable practice target.` : `No distance × break cell has ${RX_MIN_N} tracked putts yet, so there is not a reliable practice target.`}
               </RxCard>
-              {puttingCost > 0 ? <p className="font-fw-sans text-caption text-text-tertiary">Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.</p> : null}
+              {tour && puttingVsTour && puttingVsTour.strokes <= -0.05 ? (
+                <p className="font-fw-sans text-caption text-text-tertiary">
+                  Putts from {PUTTING_VS_TOUR_RANGE} are costing an estimated {Math.abs(puttingVsTour.strokes).toFixed(1)} strokes per round vs the {tourLabel(tour)}.
+                </p>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -614,7 +648,7 @@ export function PuttingDrill({
               }
             />
           ) : null}
-          {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle={`Make rate by distance vs ${leakMaps?.tour === 'lpga' ? 'LPGA' : 'PGA Tour'}`} takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
+          {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle={`Make rate by distance vs ${tourLabel(tour)}`} referenceLabel={tour ? tourLabel(tour) : undefined} takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
         </div>
       </div>
     </DrillPanel>
