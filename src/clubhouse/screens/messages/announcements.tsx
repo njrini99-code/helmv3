@@ -37,7 +37,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
             <button
               key={a.id}
               type="button"
-              className={'ch-ms-row' + (mine ? ' is-unread' : '') + (api.selectedAnnId === a.id ? ' is-sel' : '')}
+              className={'ch-ms-row is-ann' + (mine ? ' is-unread' : '') + (api.selectedAnnId === a.id ? ' is-sel' : '')}
               aria-current={api.selectedAnnId === a.id ? 'true' : undefined}
               onClick={() => {
                 haptic('select');

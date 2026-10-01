@@ -478,6 +478,12 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(hapticSpy).not.toHaveBeenCalledWith('press');
   });
 
+  it('CH-3301 no players yet on the phone: Invite players first and Copy team code second, as the board draws it', () => {
+    phone(roster({ players: [], requests: [] }));
+    const el = code('CH-3301') as HTMLElement;
+    expect(within(el).getAllByRole('button').map((b) => b.textContent)).toEqual(['Invite players', 'Copy team code']);
+  });
+
   it('30101 CH-3701 the phone opens on the list: active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
     const user = userEvent.setup();
     phone(roster());

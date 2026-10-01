@@ -121,10 +121,15 @@ function usePhoneEdges(hero: boolean) {
     const html = document.documentElement;
     const meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const before = meta?.content;
-    html.setAttribute('data-ch-edge', hero ? 'hero' : 'page');
+    const body = document.body;
+    const was = { html: html.style.backgroundColor, body: body.style.backgroundColor };
+    // Inline, not a global stylesheet rule: Clubhouse CSS stays scoped to .ch-root (clubhouse:check).
+    html.style.backgroundColor = hero ? EDGE_HERO : EDGE_PAGE;
+    body.style.backgroundColor = EDGE_PAGE;
     if (meta) meta.content = hero ? EDGE_HERO : EDGE_PAGE;
     return () => {
-      html.removeAttribute('data-ch-edge');
+      html.style.backgroundColor = was.html;
+      body.style.backgroundColor = was.body;
       if (meta && before !== undefined) meta.content = before;
     };
   }, [hero]);

@@ -973,13 +973,28 @@
   .ch-hb-h > a {
     width: 100%;
   }
+  /* The route skeleton: the page title is the top bar's, so there is no title bar here either. */
+  .ch-hb[aria-busy='true'] .ch-hb-h > div > :nth-child(n + 2):nth-child(-n + 4) {
+    display: none;
+  }
+  /* The role chip and the team line share one row (the title is the top bar's; the h1 is read, not drawn). */
+  .ch-hb-h > div:first-child {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    min-width: 0;
+  }
+  /* All five tabs sit on a 390px screen (the board draws them at 13px with no frame): spread across the row. */
   .ch-hb-tabs {
-    gap: 18px;
+    justify-content: space-between;
+    gap: 8px;
     margin: -4px -14px 0;
     padding: 0 14px;
   }
   .ch-hb-tabs button {
     height: 40px;
+    font-size: 13px;
   }
   .ch-hb-card__h {
     padding: 14px 14px 8px;
@@ -995,6 +1010,22 @@
   }
   .ch-hb-pass__f {
     gap: 14px;
+  }
+  /* The next trip is the page's pass; the trips after it are rows (board: hb-trip). */
+  .ch-hb-pass.is-big .ch-hb-pass__main > b {
+    font-size: 22px;
+  }
+  .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__main {
+    gap: 4px;
+    padding: 14px 16px;
+  }
+  .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__main > b {
+    font-size: 16px;
+  }
+  .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__f {
+    gap: 18px;
+    margin-top: 6px;
+    padding-top: 8px;
   }
 }
 

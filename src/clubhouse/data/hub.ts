@@ -281,7 +281,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
             eventId: e.event_id,
             title: e.title,
             ...f.day(e.start_time),
-            meta: [f.time(e.start_time), e.location].filter(Boolean).join(' · '),
+            meta: [closed.allDay.has(e.event_id) ? 'All day' : f.time(e.start_time), e.location].filter(Boolean).join(' · '),
             mandatory: e.is_mandatory,
             mine: (e.rsvp_status ?? 'pending') as ChRsvp,
             counts: null,
@@ -329,7 +329,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       .limit(HUB_TASK_CAP),
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, location')
+      .select('id, title, event_type, start_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
@@ -378,7 +378,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           eventId: e.id,
           title: e.title,
           ...f.day(e.start_time),
-          meta: [f.time(e.start_time), e.location].filter(Boolean).join(' · '),
+          // An all-day event has no clock time: its midnight start read "12:00 AM" (swap audit F-53).
+          meta: [e.all_day ? 'All day' : f.time(e.start_time), e.location].filter(Boolean).join(' · '),
           // golf_events has no mandatory column (get_player_hub_events returns FALSE too); Q-71.
           mandatory: false,
           mine: null,
@@ -469,16 +470,22 @@ export function replyIsClosed(e: { status: string | null; cancelled_at: string |
   return !!e.rsvp_deadline && new Date(e.rsvp_deadline).getTime() < nowMs;
 }
 
-/** Which of these events no longer take a reply. A read that fails closes nothing: the row stays and the server still decides. */
-async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], nowMs: number): Promise<Set<string>> {
-  const closed = new Set<string>();
+/**
+ * Which of these events no longer take a reply, and which are all day (the hub summary carries no all_day, F-53).
+ * A read that fails closes nothing: the row stays and the server still decides.
+ */
+async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], nowMs: number): Promise<Set<string> & { allDay: Set<string> }> {
+  const closed = Object.assign(new Set<string>(), { allDay: new Set<string>() });
   for (const ids of chunkIds([...new Set(eventIds)])) {
     const { data, error } = await supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline').in('id', ids);
     if (error) {
       log('eventReplyRules', error);
       continue;
     }
-    for (const e of data ?? []) if (replyIsClosed(e, nowMs)) closed.add(e.id);
+    for (const e of data ?? []) {
+      if (replyIsClosed(e, nowMs)) closed.add(e.id);
+      if (e.all_day) closed.allDay.add(e.id);
+    }
   }
   return closed;
 }

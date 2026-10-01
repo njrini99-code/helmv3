@@ -76,6 +76,7 @@ export function RosterPhone({
   children?: ReactNode;
 }) {
   const backFromMore = useBackFromMore();
+  const copy = useCopyText();
   const [sort, setSort] = useState<PhoneSort>('avg');
   const [requestsOpen, setRequestsOpen] = useState(false);
   const [acting, setActing] = useState(false);
@@ -155,6 +156,13 @@ export function RosterPhone({
               <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
                 Invite players
               </Button>
+            }
+            secondaryAction={
+              data.joinCode ? (
+                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Join code')}>
+                  Copy team code
+                </Button>
+              ) : undefined
             }
           />
         ) : (

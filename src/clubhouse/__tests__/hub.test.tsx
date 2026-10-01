@@ -1209,6 +1209,11 @@ describe('Team Hub · what is sent to a player', () => {
     const player = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
     expect(player.announcements.rows[0]).toMatchObject({ needAck: true, acked: false, ackCount: 0, recipients: 0 });
     expect(player.rsvps.rows[0]).toMatchObject({ eventId: 'e1', mine: 'pending', counts: null });
+    // F-53: the summary has no all_day; the event read supplies it, so an all-day event never reads "12:00 AM".
+    expect(player.rsvps.rows[0]?.meta).not.toMatch(/All day/);
+    tables.current = { ...tables.current, golf_events: { data: [{ id: 'e1', status: null, cancelled_at: null, all_day: true, start_time: soon, rsvp_deadline: null }] } };
+    const allDay = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
+    expect(allDay.rsvps.rows[0]?.meta).toBe('All day · Carolina Inn');
     expect(player.trips.rows[0]).toMatchObject({ mine: true, travelers: null, travelerCount: null });
     expect(player.tasks.rows[0]).toMatchObject({ done: null });
     expect(player.players).toEqual([]);
@@ -1412,6 +1417,20 @@ describe('Team Hub · phone', () => {
     // The tabs, their panel and the coach's one primary action are all there.
     expect(screen.getAllByRole('tab')).toHaveLength(5);
     expect(screen.getByRole('button', { name: 'New announcement' })).toBeTruthy();
+  });
+
+  it('101901 the coach’s reply line on a phone names only the counts there (the board’s "4 going · 1 no reply"); desktop spells out all four', () => {
+    show(PREVIEW_HUB_COACH);
+    expect(screen.getByText('4 going · 1 maybe · 1 no reply')).toBeTruthy();
+    expect(screen.queryByText('4 going · 1 maybe · 0 can’t · 1 no reply')).toBeNull();
+    cleanup();
+    show({ ...PREVIEW_HUB_COACH, rsvps: { ...PREVIEW_HUB_COACH.rsvps, rows: PREVIEW_HUB_COACH.rsvps.rows.map((r) => ({ ...r, counts: { going: 0, maybe: 0, no: 0, none: 0 } })) } });
+    expect(screen.getAllByText('No one invited yet').length).toBeGreaterThan(0);
+  });
+
+  it('F-53 an event no one is invited to draws no empty reply bar', () => {
+    show({ ...PREVIEW_HUB_COACH, rsvps: { ...PREVIEW_HUB_COACH.rsvps, rows: PREVIEW_HUB_COACH.rsvps.rows.map((r) => ({ ...r, counts: { going: 0, maybe: 0, no: 0, none: 0 } })) } });
+    expect(document.querySelectorAll('.ch-hb-rsvp__bar')).toHaveLength(0);
   });
 });
 

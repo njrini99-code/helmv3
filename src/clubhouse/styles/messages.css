@@ -1094,6 +1094,24 @@
   .ch-msp .ch-ms-row__bot em {
     font-weight: 500;
   }
+  /* Announcements are a header above the inbox, not a second inbox: a smaller mark and one line of the post,
+     so the first screen still reaches the conversations (the board's inbox has none; D-44 keeps them). */
+  .ch-msp .ch-ms-row.is-ann {
+    grid-template-columns: 36px minmax(0, 1fr);
+    min-height: 60px;
+    padding: 8px 16px;
+  }
+  .ch-msp .ch-ms-row.is-ann .ch-ms-grp {
+    width: 36px;
+    height: 36px;
+  }
+  .ch-msp .ch-ms-row.is-ann .ch-ms-grp svg {
+    width: 16px;
+    height: 16px;
+  }
+  .ch-msp .ch-ms-row.is-ann .ch-ms-row__bot > span:first-child {
+    -webkit-line-clamp: 1;
+  }
 
   /* Pushed screens: a thread, details, a new message */
   .ch-msp-who {

@@ -208,29 +208,34 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   ];
   return (
     <div className="ch-msp-page">
-      <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
-      <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
-        {(
-          [
-            ["all", "All"],
-            ["unread", `Unread · ${unread}`],
-            ["groups", "Groups"],
-          ] as Array<[ChConvFilter, string]>
-        ).map(([k, l]) => (
-          <button
-            key={k}
-            type="button"
-            className="ch-msp-chip ch-num"
-            aria-pressed={filter === k}
-            onClick={() => {
-              if (filter !== k) haptic("select");
-              setFilter(k);
-            }}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
+      {/* With nothing to search or filter the page is the first-run empty alone (board: Empty state), not controls over nothing. */}
+      {!isMessagesFirstRun(api) && (
+        <>
+          <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
+          <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
+            {(
+              [
+                ["all", "All"],
+                ["unread", `Unread · ${unread}`],
+                ["groups", "Groups"],
+              ] as Array<[ChConvFilter, string]>
+            ).map(([k, l]) => (
+              <button
+                key={k}
+                type="button"
+                className="ch-msp-chip ch-num"
+                aria-pressed={filter === k}
+                onClick={() => {
+                  if (filter !== k) haptic("select");
+                  setFilter(k);
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {api.convsError ? (
         <InlineNotice
           code="CH-7201"

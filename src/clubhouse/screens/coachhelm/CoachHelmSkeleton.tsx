@@ -2,6 +2,7 @@
 
 import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { Skeleton } from '../../ui/States';
+import { useChPhone } from '../../lib/use-phone';
 import '../../styles/coachhelm.css';
 
 function FocusSkeleton() {
@@ -45,8 +46,9 @@ function RowsSkeleton({ rows, avatar }: { rows: number; avatar: number }) {
  */
 export function CoachHelmSkeleton({ view }: { view: 'coach' | 'player' }) {
   const coach = view === 'coach';
+  const phone = useChPhone();
   return (
-    <main className="ch-hl" aria-busy="true" aria-label="Loading CoachHelm" data-ch-code={coach ? 'CH-13402' : 'CH-13401'}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-ch-code={coach ? 'CH-13402' : 'CH-13401'}>
       <header className="ch-hl-h">
         <Skeleton width={62} height={24} radius={12} />
         <Skeleton width={190} height={44} radius={10} />

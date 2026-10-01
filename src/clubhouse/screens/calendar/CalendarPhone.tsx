@@ -129,8 +129,14 @@ function DayView({
   const team = list.filter((e) => e.type !== 'class' && e.type !== 'busy');
   const blocks = list.length - team.length;
   const isToday = anchor === now.date;
-  // The now line sits before the first timed event still to start.
+  // The now line sits before the first timed event still to start; when the rest of the day is behind us it closes the list.
   const nowAt = isToday ? list.findIndex((e) => !e.allDay && (e.start ?? 0) > now.hour) : -1;
+  const nowLast = isToday && nowAt === -1 && list.some((e) => !e.allDay && (e.end ?? 0) <= now.hour);
+  const nowLine = (
+    <div className="ch-calm-now" role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
+      <span className="ch-num">{fmtHour(now.hour)}</span>
+    </div>
+  );
   return (
     <>
       <ol className="ch-calm-week" aria-label="This week">
@@ -179,11 +185,7 @@ function DayView({
             const block = e.type === 'class' || e.type === 'busy';
             return (
               <li key={`${e.id}${e.date}`}>
-                {i === nowAt && (
-                  <div className="ch-calm-now" role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
-                    <span className="ch-num">{fmtHour(now.hour)}</span>
-                  </div>
-                )}
+                {i === nowAt && nowLine}
                 <button
                   type="button"
                   className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
@@ -209,6 +211,7 @@ function DayView({
                     <Badge tone="accent">Now</Badge>
                   ) : null}
                 </button>
+                {nowLast && i === list.length - 1 && nowLine}
               </li>
             );
           })}

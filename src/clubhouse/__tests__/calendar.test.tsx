@@ -150,6 +150,75 @@ describe('Calendar · saves that fail', () => {
     expect(document.querySelector('dialog[open]')).not.toBeNull();
   });
 
+  // C-17: no request id meant a Retry, or a second Publish, after a reply lost AFTER the server stored the event
+  // published it twice and invited and notified everyone twice.
+  it('C-17 a Retry or a second Publish of the same event sends the same request id; changing the event sends a new one', async () => {
+    const user = userEvent.setup();
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    a.createGolfEvent.mockImplementation(fail);
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await expectCode('CH-6001', /Couldn't publish Short game/);
+    // Pressing Publish again, then the toast's Retry: the same event, so the same id.
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(2));
+    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    await user.click(retries[retries.length - 1]!);
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(3));
+    const ids = () => a.createGolfEvent.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
+    expect(ids()[0]).toMatch(UUID);
+    expect(ids()[1]).toBe(ids()[0]);
+    expect(ids()[2]).toBe(ids()[0]);
+    // Different contents are a different event.
+    await user.type(screen.getByRole('textbox', { name: 'Event title' }), ' drills');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(4));
+    expect(ids()[3]).toMatch(UUID);
+    expect(ids()[3]).not.toBe(ids()[0]);
+  });
+
+  it('C-17 a repeating event sends a request id too, and keeps it across a Retry', async () => {
+    const user = userEvent.setup();
+    a.createRecurringEvent.mockImplementation(fail);
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Lifting');
+    await user.click(screen.getByRole('radio', { name: 'Weekly' }));
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createRecurringEvent).toHaveBeenCalledTimes(1));
+    await expectCode('CH-6001', /Couldn't publish Lifting/);
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createRecurringEvent).toHaveBeenCalledTimes(2));
+    const sent = a.createRecurringEvent.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
+    expect(sent[0]).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(sent[1]).toBe(sent[0]);
+    expect(a.createGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('C-17 a published event whose invitations did not go out says so, and does not claim players were notified', async () => {
+    const user = userEvent.setup();
+    a.createGolfEvent.mockResolvedValue({ success: true, data: { eventId: 'new-1', invitationsError: "The event was created, but its invitations didn't all go out." } });
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Published · Short game · invitations didn't go out/);
+    expect(alert.textContent).toMatch(/invite them again/);
+    expect(screen.queryByText(/players notified/)).toBeNull();
+  });
+
+  it('C-17 a clean publish still says players were notified', async () => {
+    const user = userEvent.setup();
+    a.createGolfEvent.mockResolvedValue({ success: true, data: { eventId: 'new-1' } });
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
+    await screen.findByText(/Published · Short game · players notified/);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('CH-6102 an end before the start is refused', async () => {
     const user = userEvent.setup();
     wrap(cal(), { initialNew: true });
@@ -582,6 +651,26 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
+  });
+
+  it('61901 Day: once the day is behind us the now line closes the agenda, and with events still to come it sits before them', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 11:30 PM Wed 14 October in New York: every event is over.
+      vi.setSystemTime(new Date('2026-10-15T03:30:00Z'));
+      const { unmount } = wrap(cal());
+      const lines = screen.getAllByRole('separator', { name: /^Now,/ });
+      expect(lines).toHaveLength(1);
+      expect(document.querySelector('.ch-calm-agenda')!.lastElementChild!.contains(lines[0]!)).toBe(true);
+      unmount();
+      // 2:40 PM: the line sits before the first event still to start.
+      vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
+      wrap(cal());
+      const mid = screen.getByRole('separator', { name: /^Now,/ });
+      expect(mid.nextElementSibling!.getAttribute('aria-label')).toMatch(/^Short-game block/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('61901 an event opens the detail panel in a sheet, with its responses', async () => {

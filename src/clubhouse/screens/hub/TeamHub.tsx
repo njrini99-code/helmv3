@@ -349,7 +349,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             <div className="ch-hb-home">
               <div className="ch-hb-col">
                 <SectionBoundary surface="hub.rsvps" label="RSVPs" code="CH-10205">
-                  <Rsvps role={data.role} data={data.rsvps} replies={replies} onReply={onReply} />
+                  <Rsvps role={data.role} data={data.rsvps} replies={replies} onReply={onReply} compact={phone} />
                 </SectionBoundary>
                 <SectionBoundary surface="hub.announcement" label="The latest announcement" code="CH-10205">
                   {data.announcements.error ? (
@@ -416,7 +416,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                   {data.trips.rows
                     .filter((t) => t !== nextTrip)
                     .map((t) => (
-                      <TripPass key={t.id} t={t} role={data.role} />
+                      <TripPass key={t.id} t={t} later role={data.role} />
                     ))}
                 </>
               )}

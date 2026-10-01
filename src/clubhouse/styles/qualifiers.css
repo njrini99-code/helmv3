@@ -1144,7 +1144,7 @@
 
   /* 01 List: the desktop list, restyled. */
   .ch-qf--list .ch-qf-head {
-    flex-direction: column;
+    flex-flow: column nowrap;
     align-items: stretch;
     gap: 14px;
     margin: 0;
@@ -1168,12 +1168,26 @@
   }
   .ch-qf--list .ch-qf-head__act .ch-btn {
     width: 100%;
-    height: 48px;
+    height: 44px;
+  }
+  .ch-qf--list .ch-qf-eyebrow__k {
+    display: none;
   }
   .ch-qf-tools {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+  }
+  /* The route skeleton: bars sized for a desktop never run past the screen, and the action is the full-width one. */
+  .ch-qf[aria-busy='true'] .ch-skel {
+    max-width: 100%;
+  }
+  .ch-qf--list[aria-busy='true'] .ch-qf-head > .ch-skel,
+  .ch-qf--list[aria-busy='true'] .ch-qf-tools > .ch-skel:last-child {
+    width: 100% !important;
+  }
+  .ch-qf--list[aria-busy='true'] .ch-qf-head > .ch-skel {
+    height: 44px !important;
   }
   .ch-qf-pills {
     flex-wrap: nowrap;
@@ -1191,9 +1205,13 @@
   .ch-qf-search {
     width: 100%;
   }
+  /* The hero reads as the board's (qual-mobile.jsx qm-hero): pill, name, two meta lines, the top three in a well
+     with "N of M rounds in" under them, then the link. The desktop markup puts the link and the well in other
+     places, so the main block dissolves into the card and order puts them back. */
   .ch-qf-hero {
     grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+    justify-items: start;
+    gap: 10px;
     padding: 16px;
     background: var(--ch-bg-surface);
     box-shadow: 0 0 0 1px var(--ch-border-subtle), var(--ch-shadow-md);
@@ -1205,20 +1223,71 @@
     letter-spacing: -0.025em;
   }
   .ch-qf-hero__main {
-    gap: 10px;
+    display: contents;
   }
   .ch-qf-hero__main > p {
     display: none;
   }
+  .ch-qf-hero .ch-qf-lead {
+    order: 5;
+  }
+  .ch-qf-hero .ch-qf-mine {
+    order: 6;
+  }
+  .ch-qf-hero .ch-qf-cta {
+    order: 7;
+    margin-top: 0;
+  }
+  /* Meta: the dates, then the course and the spots on one line. */
   .ch-qf-meta {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 16px;
+    font-size: 13px;
+  }
+  .ch-qf-meta > span:first-child {
+    flex: 0 0 100%;
+  }
+  .ch-qf-meta__w {
+    order: 1;
+  }
+  .ch-qf-meta > span:nth-child(2) {
+    order: 2;
+  }
+  .ch-qf-card .ch-qf-meta__w {
+    display: none;
   }
   .ch-qf-lead {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     padding: 6px 12px;
+  }
+  /* Three rows, no thru column, the count as a caption under them (board: qm-lead). */
+  .ch-qf-lead__h {
+    order: 9;
+    justify-content: flex-start;
+    padding: 6px 0 4px;
+    font: 400 12px/1 var(--ch-font-sans);
+  }
+  .ch-qf-lead__h span:first-child,
+  .ch-qf-lead__th {
+    display: none;
+  }
+  .ch-qf-lead > div:nth-child(n + 5) {
+    display: none;
+  }
+  .ch-qf-lead__r {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 0;
+  }
+  .ch-qf-lead__h + div .ch-qf-lead__r {
+    border-top: 0;
+  }
+  .ch-qf-lead__n {
+    font-size: 14px;
   }
   .ch-qf-grid {
     grid-template-columns: minmax(0, 1fr);

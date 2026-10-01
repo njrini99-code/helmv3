@@ -1360,16 +1360,3 @@ button.ch-more__row[disabled] {
     border-radius: 12px;
   }
 }
-
-
-/* The phone's edges carry the app's colour (F-49, usePhoneEdges): no pale strip under the status bar
-   or under the tab bar. Hex because html sits outside .ch-root's tokens. */
-@media (max-width: 820px) {
-  html[data-ch-edge],
-  html[data-ch-edge] body {
-    background-color: #e2dccd;
-  }
-  html[data-ch-edge='hero'] {
-    background-color: #0b3a25;
-  }
-}

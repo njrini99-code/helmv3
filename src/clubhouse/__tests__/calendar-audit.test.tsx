@@ -123,6 +123,32 @@ describe('Calendar · swap audit §8 edits', () => {
     ev({ id: 'tour', type: 'tournament', title: 'Fall Invitational', date: d, start: null, end: null, allDay: true, span: { from: '2026-10-16', to: '2026-10-18' }, startIso: '2026-10-16T00:00:00+00:00' }),
   );
 
+  // C-17: updateGolfEvent used to swallow a failed invitation write, so the coach saw a clean "Saved" for players who
+  // were never invited. It now answers `data.invitationsError`, and the editor says so instead of a plain "Saved".
+  it('C-17 an edit that saved without its new invitations says so, and does not toast a plain "Saved"', async () => {
+    const user = userEvent.setup();
+    a.updateGolfEvent.mockResolvedValue({ success: true, data: { invitationsError: "The changes were saved, but the new invitations didn't go out." } });
+    wrap(cal(tour), 'tour');
+    await user.click(await screen.findByRole('button', { name: 'Edit event' }));
+    await retitle(user, 'Fall Invitational (final)');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(a.updateGolfEvent).toHaveBeenCalledTimes(1));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Saved · Fall Invitational \(final\) · invitations didn't go out/);
+    expect(alert.textContent).toMatch(/new invitations didn't go out/);
+    expect(screen.queryByText(/^Saved · Fall Invitational \(final\)$/)).toBeNull();
+  });
+
+  it('C-17 a clean edit still toasts a plain "Saved"', async () => {
+    const user = userEvent.setup();
+    wrap(cal(tour), 'tour');
+    await user.click(await screen.findByRole('button', { name: 'Edit event' }));
+    await retitle(user, 'Fall Invitational (final)');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await screen.findByText('Saved · Fall Invitational (final)');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('CAL-06 a title-only edit of a three-day tournament keeps all three days', async () => {
     const user = userEvent.setup();
     wrap(cal(tour), 'tour');
@@ -317,3 +343,4 @@ describe('Calendar · swap audit §8 attendance', () => {
     expect(a.markAttendance.mock.calls[0]![1]).toBe('theo');
   });
 });
+

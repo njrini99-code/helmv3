@@ -66,8 +66,12 @@ export function QualifiersList({ data }: { data: ChQList }) {
       <header className="ch-qf-head">
         <div>
           <span className="ch-qf-eyebrow ch-num">
-            {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
-            {!data.listError && ` · ${act.length} active · ${con.length} concluded`}
+            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). */}
+            <span className="ch-qf-eyebrow__k">
+              {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
+              {!data.listError && ' · '}
+            </span>
+            {!data.listError && `${act.length} active · ${con.length} concluded`}
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>

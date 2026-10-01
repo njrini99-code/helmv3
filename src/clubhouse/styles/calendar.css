@@ -1581,7 +1581,8 @@
 }
 
 /* ── Phone (v2: design/handoff/Coach - Calendar - Mobile.html, m-cal.jsx, m.css) ── */
-.ch-calm {
+.ch-calm,
+.ch-calm-skel {
   display: none;
 }
 @media (max-width: 820px) {
@@ -1594,6 +1595,42 @@
     flex-direction: column;
     gap: 12px;
     padding: 14px 14px 24px;
+  }
+  /* The route skeleton on a phone: its own shape, the desktop's bars out of the way. */
+  .ch-cal[aria-busy='true'] {
+    padding: 14px 14px 24px;
+  }
+  .ch-cal[aria-busy='true'] > :not(.ch-calm-skel) {
+    display: none;
+  }
+  .ch-calm-skel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ch-calm-skel__week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+  }
+  .ch-calm-skel__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline);
+  }
+  .ch-calm-skel__row > span:last-child {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
   }
   .ch-calm-head {
     display: flex;
@@ -1608,10 +1645,15 @@
     font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
+  /* The week is one card; the chosen day is the raised chip (m.css .m-week). */
   .ch-calm-week {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 4px;
+    padding: 6px;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
     list-style: none;
   }
   .ch-calm-week__d {
@@ -1622,12 +1664,12 @@
     width: 100%;
     padding: 8px 0 7px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     background: none;
     color: inherit;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-calm-week__d em {
     font: 500 11px/1 var(--ch-font-sans);
@@ -1635,71 +1677,66 @@
     color: var(--ch-text-tertiary);
   }
   .ch-calm-week__d b {
-    font: 500 16px/1 var(--ch-font-sans);
+    font: 500 17px/1 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-calm-week__d i {
     display: flex;
     align-items: center;
     gap: 2px;
-    height: 6px;
+    height: 4px;
   }
   .ch-calm-week__d i span {
     width: 4px;
     height: 4px;
     border-radius: 50%;
-    background: rgb(28 25 18 / 0.25);
+    background: var(--ch-ink-300);
   }
   .ch-calm-week__d.is-today b {
-    font-weight: 600;
     color: var(--ch-green-700);
   }
   .ch-calm-week__d.is-on {
-    background: var(--ch-green-600);
+    background: var(--ch-raised-bg);
+    box-shadow: var(--ch-raised-shadow);
   }
-  .ch-calm-week__d.is-on em,
   .ch-calm-week__d.is-on b {
-    color: var(--ch-ivory-25);
+    font-weight: 600;
   }
   .ch-calm-week__d.is-on i span {
-    background: rgb(253 252 248 / 0.7);
+    background: var(--ch-green-500);
   }
   .ch-calm-dayk {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    padding: 4px 2px 0;
+    padding: 6px 2px 0;
   }
   .ch-calm-dayk b {
-    font: 600 16px/1.2 var(--ch-font-sans);
+    font: 600 15px/1 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-calm-dayk span {
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
+  /* The agenda is flat rows on the page; only a class or busy block is a drawn block (a hatch). */
   .ch-calm-agenda {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    gap: 6px;
     list-style: none;
-  }
-  .ch-calm-agenda li + li .ch-calm-ev {
-    border-top: 1px solid var(--ch-border-hairline);
   }
   .ch-calm-ev {
     position: relative;
     display: grid;
     grid-template-columns: 52px minmax(0, 1fr) auto;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
     width: 100%;
-    min-height: 60px;
-    padding: 10px 16px 10px 18px;
+    min-height: 58px;
+    padding: 9px 12px;
     border: 0;
+    border-radius: 12px;
     background: none;
     color: inherit;
     text-align: left;
@@ -1707,41 +1744,18 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  /* The type as a rail on the left edge, in the desktop's type colours. */
-  .ch-calm-ev::before {
-    position: absolute;
-    top: 12px;
-    bottom: 12px;
-    left: 8px;
-    width: 3px;
-    border-radius: 2px;
-    background: var(--ch-ink-400);
-    content: '';
-  }
-  .ch-calm-ev.is-practice::before {
-    background: var(--ch-green-500);
-  }
-  .ch-calm-ev.is-qualifier::before,
-  .ch-calm-ev.is-tournament::before {
-    background: var(--ch-green-800);
-  }
-  .ch-calm-ev.is-travel::before {
-    background: var(--ch-ink-300);
-  }
   .ch-calm-ev.is-class,
   .ch-calm-ev.is-busy {
-    background: var(--ch-well-soft-bg);
-  }
-  .ch-calm-ev.is-class::before,
-  .ch-calm-ev.is-busy::before {
-    background: var(--ch-ivory-400);
+    background: repeating-linear-gradient(135deg, rgb(28 25 18 / 0.03) 0 6px, transparent 6px 12px);
+    box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.1);
+    color: var(--ch-text-secondary);
   }
   .ch-calm-ev:active,
   .ch-calm-ev.is-sel {
     background: var(--ch-bg-hover);
   }
   .ch-calm-ev.is-past {
-    opacity: 0.5;
+    opacity: 0.55;
   }
   .ch-calm-ev.is-cancelled b {
     text-decoration: line-through;
@@ -1750,8 +1764,8 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
-    font: 500 13px/1 var(--ch-font-sans);
-    color: var(--ch-ink-700);
+    font: 600 13px/1 var(--ch-font-sans);
+    color: var(--ch-text-primary);
   }
   .ch-calm-ev__t em {
     font: 400 12px/1 var(--ch-font-sans);
@@ -1761,7 +1775,7 @@
   .ch-calm-ev__b {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
     min-width: 0;
   }
   .ch-calm-ev__b b,
@@ -1787,24 +1801,28 @@
     background: var(--ch-warning-100);
     color: var(--ch-warning-600);
   }
+  /* Now: a pill and a rule across the row (m.css .m-now). */
   .ch-calm-now {
-    position: relative;
-    height: 0;
-    margin: 0 16px;
-    border-top: 2px solid var(--ch-green-600);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0;
+  }
+  .ch-calm-now::after {
+    flex: 1;
+    height: 1.5px;
+    background: var(--ch-green-500);
+    content: '';
   }
   .ch-calm-now span {
-    position: absolute;
-    top: -10px;
-    left: -2px;
-    padding: 3px 6px;
-    border-radius: 999px;
+    padding: 3px 7px;
+    border-radius: 6px;
     background: var(--ch-green-600);
-    font: 600 11px/1 var(--ch-font-sans);
-    color: var(--ch-ivory-0);
+    font: 600 11.5px/1 var(--ch-font-sans);
+    color: var(--ch-text-on-accent);
   }
   section.ch-calm-month {
-    padding: 12px 10px 14px;
+    padding: 10px 8px 12px;
     border-radius: 16px;
     background: var(--ch-bg-surface);
     box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
@@ -1825,8 +1843,8 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    height: 48px;
-    padding-top: 8px;
+    height: 50px;
+    padding: 5px 0 0;
     border: 0;
     border-radius: 12px;
     background: none;
@@ -1835,6 +1853,11 @@
     touch-action: manipulation;
   }
   .ch-calm-month__c b {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
     font: 500 15px/1 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
@@ -1842,30 +1865,34 @@
     /* Tappable, so it keeps 4.5:1 (disabled grey read 2.1:1, axe); lighter than an in-month day. */
     color: var(--ch-text-tertiary);
   }
-  .ch-calm-month__c.is-today b {
+  .ch-calm-month__c.is-on b {
+    background: var(--ch-bg-selected);
     font-weight: 600;
     color: var(--ch-green-700);
   }
-  .ch-calm-month__c.is-on {
-    background: var(--ch-bg-selected);
+  .ch-calm-month__c.is-today b {
+    background: var(--ch-green-600);
+    font-weight: 600;
+    color: var(--ch-text-on-accent);
   }
   .ch-calm-month__c i,
   .ch-calm-month__lg i {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--ch-green-500);
+    background: var(--ch-ink-300);
   }
   .ch-calm-month__c i.is-major,
   .ch-calm-month__lg i.is-major {
-    width: 7px;
-    height: 7px;
-    background: var(--ch-green-800);
+    background: var(--ch-green-700);
   }
   .ch-calm-month__lg {
     display: flex;
+    justify-content: center;
     gap: 16px;
-    padding: 10px 6px 0;
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--ch-border-hairline);
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
@@ -1874,9 +1901,88 @@
     align-items: center;
     gap: 6px;
   }
+  .ch-calm-month__lg i {
+    width: 6px;
+    height: 6px;
+  }
+  /* List: the desktop agenda as one card a day, its heading inside (m.css .qm-panel, .m-ag). */
+  .ch-calm .ch-ag {
+    gap: 12px;
+  }
+  .ch-calm .ch-ag__day {
+    display: block;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+  }
+  .ch-calm .ch-ag__day.is-today {
+    box-shadow: 0 0 0 1px var(--ch-green-ring), var(--ch-shadow-sm);
+  }
+  .ch-calm .ch-ag__when,
+  .ch-calm .ch-ag__when.is-today {
+    position: static;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0;
+    padding: 14px 16px 8px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-calm .ch-ag__when b {
+    font: 600 15.5px/1.2 var(--ch-font-sans);
+  }
+  .ch-calm .ch-ag__when.is-today b {
+    color: var(--ch-green-700);
+  }
+  .ch-calm .ch-ag__when span,
+  .ch-calm .ch-ag__when.is-today span {
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm .ch-ag__list,
+  .ch-calm .ch-ag__day.is-today .ch-ag__list {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-calm .ch-ag__row,
+  .ch-calm .ch-ag__row:first-child {
+    grid-template-columns: 62px 8px minmax(0, 1fr) auto;
+    gap: 10px;
+    min-height: 54px;
+    padding: 6px 16px;
+    border-top: 1px solid var(--ch-border-hairline);
+  }
+  .ch-calm .ch-ag__t {
+    font-weight: 500;
+    color: var(--ch-text-secondary);
+  }
+  .ch-calm .ch-ag__a,
+  .ch-calm .ch-ag__b {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .ch-calm .ch-ag__now {
+    padding: 0 16px;
+  }
+  .ch-calm .ch-ag__now::before {
+    left: 16px;
+    right: 16px;
+  }
   /* The detail panel in a sheet: the sheet's own title and close stand in for the panel's. */
   .ch-calm-sheet[data-kind='event'] .ch-in__back,
   .ch-calm-sheet[data-kind='event'] .ch-in__title {
     display: none;
+  }
+  /* The sheet pads its own body: the panel adds none, so its content lines up with the sheet's title. */
+  .ch-calm-sheet .ch-in {
+    gap: 14px;
+    padding: 0 0 4px;
   }
 }

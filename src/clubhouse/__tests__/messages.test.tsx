@@ -725,6 +725,15 @@ describe('Messages · phone', () => {
     expect(thread.hasAttribute('inert')).toBe(true);
   });
 
+  it('CH-7309 the phone with nothing at all yet is the first-run empty alone: no search or filter chips over nothing', async () => {
+    live.convs.conversations = [];
+    live.msgs.messages = [];
+    showPhone();
+    await expectCode('CH-7309', /No conversations yet/);
+    expect(screen.queryByRole('searchbox', { name: /Search conversations and messages/ })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Filter conversations' })).toBeNull();
+  });
+
   it('CH-7020 copying a message that cannot be copied says so', async () => {
     const user = userEvent.setup();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
