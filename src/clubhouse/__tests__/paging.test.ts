@@ -5,31 +5,23 @@ vi.mock('@/lib/admin/rls-denial', () => ({ maybeCaptureRlsDenial: vi.fn() }));
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { fetchAllRowsTogether } from '../data/paging';
 
-/**
- * A table of `total` rows, answered a page at a time; records each page asked for. `counts`: whether the source answers the row count with
- * the first page (PostgREST does for `count: 'exact'`; a fake may not).
- */
-function table(total: number, opts: { failAt?: number; counts?: boolean } = {}) {
+/** A table of `total` rows, answered a page at a time; records each page asked for, and how many were in flight at once. */
+function table(total: number, opts: { failAt?: number } = {}) {
   const asked: Array<[number, number]> = [];
-  const counted: Array<'exact' | undefined> = [];
   let inFlight = 0;
   let peak = 0;
-  const makeQuery = async (from: number, to: number, count: 'exact' | undefined) => {
+  const makeQuery = async (from: number, to: number) => {
     asked.push([from, to]);
-    counted.push(count);
     inFlight++;
     peak = Math.max(peak, inFlight);
     await new Promise((r) => setTimeout(r, 1));
     inFlight--;
     if (opts.failAt !== undefined && from === opts.failAt) return { data: null, error: { message: 'boom', code: '57014' } };
-    return {
-      data: Array.from({ length: Math.max(0, Math.min(to + 1, total) - from) }, (_, i) => from + i),
-      error: null,
-      ...(opts.counts !== false && count === 'exact' ? { count: total } : {}),
-    };
+    return { data: Array.from({ length: Math.max(0, Math.min(to + 1, total) - from) }, (_, i) => from + i), error: null };
   };
-  return { makeQuery, asked, counted, peak: () => peak };
+  return { makeQuery, asked, peak: () => peak };
 }
+const pagesAsked = (t: ReturnType<typeof table>) => t.asked.map(([from]) => from / 1000);
 
 describe('fetchAllRowsTogether', () => {
   it('a read that fits in one page costs one read, as before', async () => {
@@ -40,49 +32,34 @@ describe('fetchAllRowsTogether', () => {
     expect(t.asked).toEqual([[0, 999]]);
   });
 
-  it('the first page asks for the row count, and no later page does', async () => {
-    const t = table(3500);
-    await fetchAllRowsTogether(t.makeQuery, 1000);
-    expect(t.counted).toEqual(['exact', undefined, undefined, undefined]);
-  });
-
-  it('with the count, a read of several pages is the first page, then exactly the pages that are there, together: two round trips, none wasted', async () => {
-    const t = table(3500);
+  it('a read of two pages is two round trips, as before (the second batch asks for one page past the end, no more)', async () => {
+    const t = table(1500);
     const res = await fetchAllRowsTogether(t.makeQuery, 1000);
-    expect(res.error).toBeNull();
-    expect(res.data).toEqual(Array.from({ length: 3500 }, (_, i) => i));
-    expect(t.asked).toEqual([[0, 999], [1000, 1999], [2000, 2999], [3000, 3999]]);
-    expect(t.peak()).toBe(3);
+    expect(res.data).toHaveLength(1500);
+    expect(pagesAsked(t)).toEqual([0, 1, 2]);
   });
 
-  it('a read of exactly one full page, or of whole pages, asks for no page past the end (the count says so)', async () => {
-    const one = table(1000);
-    expect((await fetchAllRowsTogether(one.makeQuery, 1000)).data).toHaveLength(1000);
-    expect(one.asked).toEqual([[0, 999]]);
-    const five = table(5000);
-    expect((await fetchAllRowsTogether(five.makeQuery, 1000)).data).toHaveLength(5000);
-    expect(five.asked.map(([from]) => from / 1000)).toEqual([0, 1, 2, 3, 4]);
+  it('three pages are two round trips (not three), six are three (not six): the batches are 2, then 4, then 8', async () => {
+    const three = table(2500);
+    expect((await fetchAllRowsTogether(three.makeQuery, 1000)).data).toEqual(Array.from({ length: 2500 }, (_, i) => i));
+    // Page 0, then 1 and 2 together: page 2 is short and ends the read.
+    expect(pagesAsked(three)).toEqual([0, 1, 2]);
+    expect(three.peak()).toBe(2);
+
+    const six = table(5800);
+    expect((await fetchAllRowsTogether(six.makeQuery, 1000)).data).toHaveLength(5800);
+    // 0 | 1,2 | 3,4,5,6 (page 5 is short; page 6 is past the end).
+    expect(pagesAsked(six)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(six.peak()).toBe(4);
   });
 
-  it('a very long read goes in batches of the most that are asked together', async () => {
+  it('a long read goes at most `together` pages at a time, and one that ends exactly on a page boundary ends on the empty page', async () => {
     const t = table(20_000);
-    const res = await fetchAllRowsTogether(t.makeQuery, 1000, undefined, 8);
-    expect(res.data).toHaveLength(20_000);
-    expect(t.asked).toHaveLength(20);
-    // Pages 1 to 8 together, 9 to 16, then 17 to 19.
-    expect(t.peak()).toBe(8);
-  });
-
-  it('without a count (a source that does not answer one), a full page is followed by batches until one comes back short', async () => {
-    const t = table(3500, { counts: false });
     const res = await fetchAllRowsTogether(t.makeQuery, 1000, undefined, 4);
-    expect(res.data).toHaveLength(3500);
-    // Page 0, then pages 1 to 4 together: page 3 is short and page 4 is past the end.
-    expect(t.asked.map(([from]) => from / 1000)).toEqual([0, 1, 2, 3, 4]);
-    const exact = table(5000, { counts: false });
-    await fetchAllRowsTogether(exact.makeQuery, 1000, undefined, 2);
-    // 0 | 1,2 | 3,4 | 5,6 (page 5 is empty: the read ended exactly at 5,000).
-    expect(exact.asked.map(([from]) => from / 1000)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(res.data).toHaveLength(20_000);
+    expect(t.peak()).toBe(4);
+    // 0 | 1,2 | 3,4,5,6 | 7..10 | 11..14 | 15..18 | 19..22 (page 20 is the empty one).
+    expect(pagesAsked(t)).toEqual(Array.from({ length: 23 }, (_, i) => i));
   });
 
   it('the first page failing is the whole read failing: no data, the error, nothing further asked', async () => {
@@ -98,7 +75,6 @@ describe('fetchAllRowsTogether', () => {
     const t = table(3500, { failAt: 2000 });
     const res = await fetchAllRowsTogether(t.makeQuery, 1000);
     expect(res.error).toMatchObject({ message: 'boom' });
-    // The first page and the page before the failed one; the pages after it in the same batch are not kept.
     expect(res.data).toHaveLength(2000);
   });
 });

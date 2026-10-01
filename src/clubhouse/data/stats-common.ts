@@ -289,10 +289,10 @@ export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise
   const results = await Promise.all(
     chunkIds(roundIds).map((ids) =>
       fetchAllRowsTogether<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
-        (from, to, count) =>
+        (from, to) =>
           supabase
             .from('golf_shots')
-            .select('round_id, putt_distance_feet, putt_made', { count })
+            .select('round_id, putt_distance_feet, putt_made')
             .in('round_id', ids)
             .not('putt_distance_feet', 'is', null)
             .not('putt_made', 'is', null)

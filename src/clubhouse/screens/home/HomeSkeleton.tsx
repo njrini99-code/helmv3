@@ -54,10 +54,10 @@ export function HomeSkeleton() {
           </div>
         ))}
       </div>
-      {/* The leaderboard's heading: the title, its line of small print, and the Roster button (a 49px block and a 30px button, 63px in all). */}
+      {/* The leaderboard's heading: the title, its line of small print, and the Roster button (the loaded heading is 63px: a block of two lines and a 30px button). */}
       <div className="ch-h-sec">
         <div>
-          <Line height={29}>
+          <Line height={24}>
             <Skeleton width={130} height={21} />
           </Line>
           <Line height={20}>
