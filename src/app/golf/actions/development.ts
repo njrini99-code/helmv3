@@ -1642,7 +1642,10 @@ async function createFocusAreaFromInsightV2Impl(
     // The coach's name only signs the notice; a failed read sends it as "Your Coach".
     let coachName: string | null = null;
     try {
-      const { data: actingCoach } = await supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle();
+      const { data: actingCoach, error: actingCoachError } = await supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle();
+      if (actingCoachError) {
+        await logServerError(`createFocusAreaFromInsightV2: coach name read failed; the notice is signed "Your Coach": ${describeError(actingCoachError)}`, { action: 'development.createFocusAreaFromInsightV2' }, 'warning');
+      }
       coachName = actingCoach?.full_name ?? null;
     } catch {
       coachName = null;

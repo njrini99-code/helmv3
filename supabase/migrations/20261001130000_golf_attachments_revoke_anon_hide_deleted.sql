@@ -13,7 +13,8 @@
 -- messages and stop being readable. INSERT and DELETE policies unchanged.
 -- No data changes.
 --
--- Forward-only and idempotent. Not applied by the swap-audit branch; the
+-- Forward-only and idempotent; the migration tool runs it in one
+-- transaction. Not applied by the swap-audit branch; the
 -- owner applies it after review (supabase/migrations/HELD.md).
 --
 -- ROLLBACK: GRANT ALL ON public.golf_message_attachments TO anon; then
@@ -28,8 +29,6 @@
 --   SELECT qual FROM pg_policies
 --    WHERE tablename = 'golf_message_attachments'
 --      AND cmd = 'SELECT';            -- contains: is_deleted IS NOT TRUE
-
-BEGIN;
 
 REVOKE ALL ON public.golf_message_attachments FROM anon;
 
@@ -52,5 +51,3 @@ USING (
             AND m.is_deleted IS NOT TRUE
     )
 );
-
-COMMIT;

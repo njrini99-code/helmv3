@@ -193,12 +193,14 @@ describe('Q-114 tie at the cut', () => {
     mockedLoader.mockResolvedValue(tiedWs(false));
     expect(await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p1', user_id: 'u9', give: true })).toEqual({ ok: false, error: 'player is not tied at the cut' });
     expect((await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p3', user_id: 'u9', give: true })).ok).toBe(true);
-    const { data } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    const { data, error } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    expect(error).toBeNull();
     expect(data).toEqual([expect.objectContaining({ player_id: 'p3', selection_type: 'top_score' })]);
     mockedLoader.mockResolvedValue(tiedWs(true));
     expect(await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p2', user_id: 'u9', give: true })).toEqual({ ok: false, error: 'all 1 places at the cut are chosen' });
     expect((await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p3', user_id: 'u9', give: false })).ok).toBe(true);
-    const after = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
-    expect(after.data).toEqual([]);
+    const { data: after, error: afterError } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    expect(afterError).toBeNull();
+    expect(after).toEqual([]);
   });
 });

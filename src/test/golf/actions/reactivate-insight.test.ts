@@ -45,7 +45,8 @@ function seed(acknowledged: boolean) {
 }
 
 async function row() {
-  const { data } = await sb.from('golf_coach_insights').select('*').eq('id', 'i1').maybeSingle();
+  const { data, error } = await sb.from('golf_coach_insights').select('*').eq('id', 'i1').maybeSingle();
+  if (error) throw new Error(`read failed: ${String(error)}`);
   return data as Record<string, unknown>;
 }
 
