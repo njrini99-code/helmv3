@@ -55,6 +55,7 @@ import { validateRoundEntry, validateHolesPlayed, firstBlockingPartialHoleIssue,
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { isUuid } from '@/lib/utils/uuid';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import {
   createHelmFlightRecorder,
   recordRescuedStepOutcome,
@@ -711,6 +712,7 @@ const golfEventSchema = z.object({
   attendeeIds: z.array(z.string().uuid()).optional(),
   // Timezone offset from client (minutes from UTC, e.g. 360 for UTC-6)
   timezoneOffset: z.number().int().optional(),
+  requestId: z.string().uuid().optional(),
 }).superRefine(refineEventEndAfterStart);
 
 // Feature G — one course assignment per qualifier round (coach-set).
@@ -905,6 +907,15 @@ export interface GolfEventInput {
   attendeeIds?: string[];
   // Timezone offset from client (minutes from UTC, e.g. 360 for UTC-6)
   timezoneOffset?: number;
+  /**
+   * Makes the create safe to repeat. The caller makes one id per attempt and
+   * keeps it across a Retry; it becomes the event's primary key, so a repeat
+   * after a lost reply hits the key instead of adding the event twice, and the
+   * existing row is returned as the answer (only once it is read back as this
+   * coach's own event on this team). Without it the create behaves as it
+   * always has.
+   */
+  requestId?: string;
 }
 
 /**
@@ -3317,7 +3328,10 @@ export async function submitGolfRoundComprehensive(
 // EVENT ACTIONS
 // ============================================================================
 
-async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
+/** The create's own words for an invitation failure: the event is real, the invitations are not. */
+const EVENT_INVITATIONS_FAILED = "The event was created, but its invitations didn't all go out.";
+
+async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{ eventId: string; invitationsError?: string }>> {
   try {
     // Validate input
     const validatedData = golfEventSchema.parse(data);
@@ -3392,6 +3406,12 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
       insertData.created_by = createdBy;
     }
 
+    // The request id IS the row id, so a repeat of the same create collides on
+    // the primary key instead of inserting a second event.
+    if (validatedData.requestId) {
+      insertData.id = validatedData.requestId;
+    }
+
     // Legacy UI shape: timed event with an endDate but no endTime resolves to
     // midnight, which can precede a same-day timed start. The DB CHECK
     // golf_events_end_after_start (live) would reject the row — store an open
@@ -3410,6 +3430,36 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
       .select()
       .single();
 
+    if (error && validatedData.requestId && (error as { code?: string }).code === '23505') {
+      // The id is taken. This is a repeat of a create that already landed (the
+      // reply was lost) only if the row is read back as the same event, made by
+      // this coach, on this team. RLS hides another team's row from this read, so
+      // an id that collides with anything else comes back empty and is refused
+      // below, never reported as saved. A failed read falls through to the
+      // insert's own error: the repeat is refused rather than guessed.
+      // Invitations and the fan-out already ran with the first attempt, so a
+      // repeat must not send them again.
+      const { data: existing, error: existingError } = await (supabase as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from('golf_events')
+        .select('id, team_id, created_by, title, start_time')
+        .eq('id', validatedData.requestId)
+        .maybeSingle();
+      if (
+        !existingError &&
+        existing &&
+        existing.team_id === teamId &&
+        existing.created_by === createdBy &&
+        existing.title === insertData.title &&
+        new Date(existing.start_time).getTime() === new Date(insertData.start_time).getTime()
+      ) {
+        revalidatePath('/golf/dashboard');
+        revalidatePath('/golf/dashboard/calendar');
+        updateTag(CACHE_TAGS.DASHBOARD);
+        updateTag(CACHE_TAGS.CALENDAR);
+        return { success: true, data: { eventId: existing.id as string } };
+      }
+    }
+
     if (error) {
       // 23514 = CHECK violation (golf_events_end_after_start backstop).
       if ((error as { code?: string }).code === '23514') {
@@ -3418,13 +3468,26 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
       return { success: false, error: 'Failed to create event. Please try again.' };
     }
 
-    // Send invitations if attendeeIds provided
+    // Send invitations if attendeeIds provided.
+    //
+    // A failure here used to be swallowed ("don't fail the whole operation"), so
+    // the coach saw "players notified" for an event nobody was invited to. The
+    // event is real and stays created; the failure comes back beside the id so
+    // the caller can say the invitations did not go out. `success` stays true:
+    // callers that never look at the field behave as before, and nothing may
+    // replay the create to fix the invitations.
+    let invitationsError: string | undefined;
     if (validatedData.attendeeIds && validatedData.attendeeIds.length > 0) {
       try {
         const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
         await sendEventInvitations(event.id, validatedData.attendeeIds, supabase);
-      } catch {
-        // Don't fail the whole operation if invitations fail
+      } catch (inviteErr) {
+        invitationsError = EVENT_INVITATIONS_FAILED;
+        await logServerError(
+          `[createGolfEvent] invitations failed for event ${event.id}; created without them: ${describeError(inviteErr)}`,
+          { action: 'golf.createGolfEvent.invitations', featureArea: 'calendar', extra: { eventId: event.id } },
+          'error',
+        );
       }
     }
 
@@ -3578,7 +3641,7 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     updateTag(CACHE_TAGS.DASHBOARD);
     updateTag(CACHE_TAGS.CALENDAR);
 
-    return { success: true, data: { eventId: event.id } };
+    return { success: true, data: { eventId: event.id, ...(invitationsError ? { invitationsError } : {}) } };
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -3595,7 +3658,7 @@ const observedCreateGolfEvent = withAdminObserved(
   createGolfEventImpl,
 );
 
-export async function createGolfEvent(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
+export async function createGolfEvent(data: GolfEventInput): Promise<ActionResult<{ eventId: string; invitationsError?: string }>> {
   return observedCreateGolfEvent(data);
 }
 
@@ -3632,7 +3695,7 @@ const golfEventUpdateSchema = z.object({
 async function updateGolfEventImpl(
   eventId: string,
   data: GolfEventUpdateInput
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; data?: { invitationsError?: string } }> {
   try {
     const supabase = await createClient();
 
@@ -3798,6 +3861,10 @@ async function updateGolfEventImpl(
     ]));
     const removeIds = validatedData.removeAttendeeIds ?? [];
 
+    // An invitation failure used to be swallowed, so the coach saw a clean save
+    // for players who were never invited. The edit is real and stays saved; the
+    // failure comes back beside `success` so the caller can say so.
+    let invitationsError: string | undefined;
     if (inviteIds.length > 0) {
       const { data: attendanceRows } = await supabase
         .from('golf_event_attendance')
@@ -3811,8 +3878,13 @@ async function updateGolfEventImpl(
         try {
           const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
           await sendEventInvitations(eventId, toAdd, supabase);
-        } catch {
-          // Don't fail the whole update if invitations fail
+        } catch (inviteErr) {
+          invitationsError = "The changes were saved, but the new invitations didn't go out.";
+          await logServerError(
+            `[updateGolfEvent] invitations failed for event ${eventId}; saved without inviting ${toAdd.length} player(s): ${describeError(inviteErr)}`,
+            { action: 'golf.updateGolfEvent.invitations', featureArea: 'calendar', extra: { eventId } },
+            'error',
+          );
         }
       }
     }
@@ -3857,7 +3929,9 @@ async function updateGolfEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     updateTag(CACHE_TAGS.DASHBOARD);
     updateTag(CACHE_TAGS.CALENDAR);
-    return { success: true };
+    // Same shape as createGolfEvent's (`data.invitationsError`), the one the Clubhouse
+    // action wrapper carries through to the editor.
+    return invitationsError ? { success: true, data: { invitationsError } } : { success: true };
 
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -3882,7 +3956,7 @@ const observedUpdateGolfEvent = withAdminObserved(
 export async function updateGolfEvent(
   eventId: string,
   data: GolfEventUpdateInput
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; data?: { invitationsError?: string } }> {
   return observedUpdateGolfEvent(eventId, data);
 }
 
@@ -4268,6 +4342,36 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
       return { success: false, error: 'Team not found for your organization' };
     }
 
+    // `playerIds` arrive from the browser and shape-validation only proves they
+    // are uuids. Entered into a qualifier, a player gets a row on this team's
+    // leaderboard and a notification, so a uuid that is not on THIS team's active
+    // roster must stop the create (setQualifierEntrants applies the same rule to
+    // edits). Checked before anything is written, so a refusal leaves nothing
+    // behind. Duplicates are dropped: the entries table is unique per player.
+    const playerIds = [...new Set(validatedData.playerIds)];
+    if (playerIds.length > 0) {
+      const onRoster = new Set<string>();
+      for (const ids of chunkIds(playerIds)) {
+        const { data: members, error: rosterError } = await supabase
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', orgTeamId)
+          .eq('status', 'active')
+          .in('player_id', ids);
+        if (rosterError) {
+          await logServerError(`createGolfQualifier roster read failed: ${describeError(rosterError)}`, {
+            action: 'createGolfQualifier.roster',
+            featureArea: 'qualifiers',
+          });
+          return { success: false, error: "Couldn't check your roster just now, so the qualifier wasn't created. Please try again." };
+        }
+        for (const m of members ?? []) onRoster.add(m.player_id);
+      }
+      if (playerIds.some((id) => !onRoster.has(id))) {
+        return { success: false, error: 'Some selected players are not on your team' };
+      }
+    }
+
     // Create qualifier
     const { data: qualifier, error: qualifierError } = await supabase
       .from('golf_qualifiers')
@@ -4339,8 +4443,8 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
     }
 
     // Add player entries
-    if (validatedData.playerIds.length > 0) {
-      const entries = validatedData.playerIds.map(playerId => ({
+    if (playerIds.length > 0) {
+      const entries = playerIds.map(playerId => ({
         qualifier_id: qualifier.id,
         player_id: playerId,
         status: 'entered',
@@ -4351,17 +4455,37 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
         .insert(entries);
 
       if (entriesError) {
-        return { success: false, error: 'Failed to add players to qualifier. Please try again.' };
+        // The qualifier row is already committed, so returning failure here left
+        // a half-made qualifier behind and the coach's Retry made a second one
+        // (a duplicate on the list, each with its own deadline and rounds). Take
+        // the row back out so a failure leaves nothing and Retry starts clean.
+        // The entries insert is one statement, so none of the entries landed.
+        const { data: removed, error: rollbackError } = await supabase
+          .from('golf_qualifiers')
+          .delete()
+          .eq('id', qualifier.id)
+          .select('id');
+        const rolledBack = !rollbackError && (removed?.length ?? 0) === 1;
+        await logServerError(
+          `createGolfQualifier entries insert failed for qualifier ${qualifier.id}; ${rolledBack ? 'the qualifier was removed' : 'ROLLBACK ALSO FAILED, the qualifier is left without players'}: ${describeError(entriesError)}`,
+          { action: 'createGolfQualifier.entries', featureArea: 'qualifiers' },
+        );
+        return {
+          success: false,
+          error: rolledBack
+            ? 'Failed to add players to qualifier. Please try again.'
+            : 'The qualifier was created but its players could not be added. Open it from Qualifiers and add them there; do not create it again.',
+        };
       }
     }
 
     // Notify registered players (fire-and-forget)
-    if (validatedData.playerIds.length > 0) {
+    if (playerIds.length > 0) {
       try {
         const { data: playerRows } = await supabase
           .from('golf_players')
           .select('user_id')
-          .in('id', validatedData.playerIds);
+          .in('id', playerIds);
 
         if (playerRows?.length) {
           // `user_id` is nullable once an account is deleted and the player's history
@@ -8612,8 +8736,20 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
       `)
       .eq('player_id', player.id);
 
-    // If query error or no entries, return empty array (not an error state)
-    if (entriesError || !entries || entries.length === 0) {
+    // A failed read is NOT "you are in no qualifiers". It used to fold into the
+    // empty list below, so a transient error rendered as an empty qualifier
+    // picker with no way to tell it from a real empty state or to retry; callers
+    // (Fairway loadQualifiers, Clubhouse setup-reads) already show their
+    // "didn't load" notice for success:false.
+    if (entriesError) {
+      await logServerError(`getPlayerQualifiers: entries read failed: ${describeError(entriesError)}`, {
+        action: 'golf.getPlayerQualifiers',
+        featureArea: 'qualifiers',
+      });
+      return { success: false, error: 'Failed to load your qualifiers. Please try again.' };
+    }
+    // No entries is a real, empty answer.
+    if (!entries || entries.length === 0) {
       return { success: true, data: [] };
     }
 

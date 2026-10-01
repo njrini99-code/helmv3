@@ -236,11 +236,16 @@ async function detachDocumentFromEventImpl(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { error } = await (supabase as any)
+    // `.select('document_id')` (the table's key is the (event_id, document_id)
+    // pair, there is no `id`): a DELETE that RLS filters to zero rows raises no
+    // error, so a non-coach's detach, or one for a document that was never
+    // attached, used to answer success while the attachment stayed.
+    const { data: removed, error } = await (supabase as any)
       .from('golf_event_documents')
       .delete()
       .eq('event_id', eventId)
-      .eq('document_id', documentId);
+      .eq('document_id', documentId)
+      .select('document_id');
 
     if (error) {
       await logServerError(`detachDocumentFromEvent failed: ${error.message}`, {
@@ -260,6 +265,13 @@ async function detachDocumentFromEventImpl(
         error: error.code === '42501'
           ? 'Only this team\'s coaches can detach documents'
           : 'Failed to detach document',
+      };
+    }
+
+    if (!Array.isArray(removed) || removed.length === 0) {
+      return {
+        success: false,
+        error: "That document isn't attached to this event, or you can't change this event's attachments.",
       };
     }
 

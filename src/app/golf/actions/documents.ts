@@ -640,14 +640,36 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
       return { success: false, error: 'Only a coach on this team can delete documents' };
     }
 
-    // Get all versions for cleanup
-    const { data: versionsData } = await supabase
+    // Get all versions for cleanup. The cascade below removes the version rows
+    // that name the files, so a failed read must stop the delete: carrying on
+    // would orphan every file.
+    const { data: versionsData, error: versionsError } = await supabase
       .from('golf_document_versions' as any)
       .select('storage_path')
       .eq('document_id', documentId);
-    const versions = versionsData as Pick<DocumentVersionRow, 'storage_path'>[] | null;
+    if (versionsError) throw versionsError;
+    const versions = versionsData as unknown as Pick<DocumentVersionRow, 'storage_path'>[] | null;
 
-    // Delete from storage (all versions)
+    // Delete document (cascade will delete versions). Select the deleted row
+    // back: a DELETE that matches no row (row-level security filtering it, or a
+    // concurrent delete) returns error:null, which would read as success.
+    //
+    // The row goes FIRST. Storage used to be purged before this, so a delete
+    // that then matched nothing (or failed) left a document that was still
+    // listed with every one of its files gone, and its preview and download
+    // broken. Now a refusal leaves the document whole.
+    const { data: deleted, error: deleteError } = await supabase
+      .from('golf_documents')
+      .delete()
+      .eq('id', documentId)
+      .select('id');
+
+    if (deleteError) throw deleteError;
+    if (!deleted || deleted.length === 0) {
+      return { success: false, error: 'Document not found or not permitted' };
+    }
+
+    // The document is gone, so remove its storage objects (all versions).
     if (versions && versions.length > 0) {
       const paths = versions.map(v => v.storage_path);
       const { error: removeError } = await supabase.storage.from('documents').remove(paths);
@@ -659,20 +681,14 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
         bucketClass: 'documents/document_version',
         accessDeniedOnOwnPath: true,
       });
-    }
-
-    // Delete document (cascade will delete versions). Select the deleted row
-    // back: a DELETE that matches no row (row-level security filtering it, or a
-    // concurrent delete) returns error:null, which would read as success.
-    const { data: deleted, error: deleteError } = await supabase
-      .from('golf_documents')
-      .delete()
-      .eq('id', documentId)
-      .select('id');
-
-    if (deleteError) throw deleteError;
-    if (!deleted || deleted.length === 0) {
-      return { success: false, error: 'Document not found or not permitted' };
+      if (removeError) {
+        // The delete itself succeeded; the files are unreachable orphans. Record
+        // it rather than fail an action whose row is already gone.
+        await logServerError(
+          `deleteDocument storage purge failed (${paths.length} orphaned object(s)) for document ${documentId}: ${describeError(removeError)}`,
+          { action: 'documents.deleteDocument', featureArea: 'documents' },
+        );
+      }
     }
 
     revalidatePath('/golf/dashboard/documents');

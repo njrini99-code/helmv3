@@ -2181,6 +2181,7 @@ features:
         - src/lib/utils/push-registration.ts
         - src/lib/utils/haptics-pref.ts
         - src/lib/fairway/haptics.ts
+        - src/lib/native-haptics.ts
       native:
         - ios/App/App/**
         - ios/App/CapApp-SPM/**

@@ -15,7 +15,8 @@ import { InlineNotice } from '../../ui/Notices';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { normalise, useAction } from '../../lib/use-action';
+import { friendlyReason, normalise, useAction } from '../../lib/use-action';
+import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
@@ -194,6 +195,7 @@ export function EventEditor({
 }) {
   const base = seed?.event ?? null;
   const open = seed != null;
+  const toast = useToast();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ChCalType>('practice');
   const [date, setDate] = useState(today);
@@ -291,6 +293,20 @@ export function EventEditor({
   const minutes = Math.round((win[1] - win[0]) * 60);
   const whenLabel = `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false)} – ${fmtHour(win[1])}`}`;
 
+  // One request id per opening of the editor and set of contents: the same form with the same contents sends the
+  // same id, whether the toast's Retry replays it or Publish is pressed again, so a reply that was lost after the
+  // server stored the event cannot publish it a second time (and invite and notify everyone twice). Changing the
+  // contents is a different event and gets a new id, and so does opening the editor again.
+  const attempt = useRef<{ seed: EditorSeed | null; sig: string; id: string } | null>(null);
+  const requestIdFor = (payload: unknown) => {
+    const sig = JSON.stringify(payload);
+    const last = attempt.current;
+    if (last && last.seed === seed && last.sig === sig) return last.id;
+    const id = newRequestId();
+    attempt.current = { seed, sig, id };
+    return id;
+  };
+
   /** The write itself: one event, a repeating series, or an edit of either (with the scope a series asks for). */
   const send = async () => {
     const startTime = allDay ? undefined : toHHMM(win[0]);
@@ -299,7 +315,7 @@ export function EventEditor({
     if (!base) {
       if (repeat !== 'none') {
         const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
-        return createRecurringEvent({
+        const series = {
           title: title.trim(),
           eventType: type,
           startDate: date,
@@ -311,9 +327,10 @@ export function EventEditor({
           recurrenceRule: serializeRecurrenceRule({ frequency: 'weekly', weekdays: repeat === 'weekdays' ? [1, 2, 3, 4, 5] : [weekday], until }),
           attendeeIds: invited.length ? invited : undefined,
           timezoneOffset: tz,
-        });
+        };
+        return createRecurringEvent({ ...series, requestId: requestIdFor(series) });
       }
-      return createGolfEvent({
+      const single = {
         title: title.trim(),
         eventType: type as never,
         startDate: date,
@@ -325,7 +342,8 @@ export function EventEditor({
         description: notes.trim() || undefined,
         attendeeIds: invited.length ? invited : undefined,
         timezoneOffset: tz,
-      });
+      };
+      return createGolfEvent({ ...single, requestId: requestIdFor(single) });
     }
     if (series && scope !== 'this') {
       return editRecurringEvent({
@@ -365,11 +383,28 @@ export function EventEditor({
 
   // What follows a landed save (the editor closes, the panel clears, the page re-reads or moves to the event's
   // day) is part of the action, not of the button that started it, so the toast's Retry finishes the job too.
-  const save = useAction(
+  // The event is saved but the server could not write its invitations: "players notified" would be false, so the
+  // toast says what happened instead (the editor closes, the event is on the calendar).
+  const invitationsNote = (res: unknown): string | null => {
+    const note = (res as { data?: { invitationsError?: unknown } | null } | null | undefined)?.data?.invitationsError;
+    return typeof note === 'string' && note ? note : null;
+  };
+  const save = useAction<[], unknown>(
     'calendar.saveEvent',
     async () => {
       const res = await send();
-      if (normalise(res).success) onSaved(date);
+      if (normalise<unknown>(res).success) {
+        onSaved(date);
+        const note = invitationsNote(res);
+        if (note) {
+          haptic('warning');
+          toast({
+            tone: 'error',
+            title: `${!base ? 'Published' : 'Saved'} · ${title.trim()} · invitations didn't go out`,
+            body: `${note} Open the event and invite them again.`,
+          });
+        }
+      }
       return res;
     },
     () => ({
@@ -378,6 +413,10 @@ export function EventEditor({
       hint: 'Your changes are still in the editor. Try again in a moment.',
       code: 'CH-6001',
     }),
+    // A refine function changes which text a failure shows (its hint wins over the server's reason), so a failure
+    // keeps the same order it had without one: the server's reason, then this hint. Only a save that landed without
+    // its invitations is refined: it is quiet here because the action above already said so.
+    (result, c) => (result.success ? (invitationsNote(result) ? { ...c, quiet: true } : c) : { ...c, hint: friendlyReason(result.error) ?? c.hint }),
   );
 
   const submit = async () => {

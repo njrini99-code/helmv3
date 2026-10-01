@@ -616,12 +616,46 @@ export async function createPlayerFocusArea(data: Omit<CreateFocusAreaData, 'coa
   return observedCreatePlayerFocusArea(data);
 }
 
+type OwnPlayerResult = { ok: true; playerId: string } | { ok: false; error: string };
+
+/**
+ * Accept / decline are the PLAYER's answer to a prescription, so the caller must
+ * be the player the focus area belongs to. They used to filter on the row id and
+ * status alone and lean on RLS, but RLS also lets a coach (and, depending on the
+ * policy set, a teammate) UPDATE these rows — so any signed-in user who held a
+ * focus-area id could answer for the player. Resolve the caller's own
+ * golf_players row and require `player_id` to match it.
+ */
+async function resolveOwnPlayerId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  verb: 'accept' | 'decline',
+): Promise<OwnPlayerResult> {
+  const { data: player, error } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    await logServerError(
+      `Failed to resolve player for ${verb} focus area: ${describeError(error)}`,
+      { action: `development.${verb}FocusArea` },
+    );
+    return { ok: false, error: `Failed to ${verb}. Please try again.` };
+  }
+  if (!player) {
+    return { ok: false, error: `Only the player can ${verb} a focus area` };
+  }
+  return { ok: true, playerId: player.id };
+}
+
 /**
  * Player accepts a coach-prescribed focus area: 'proposed' → 'active', and the
  * improvement window starts now (started_at = now). Idempotent-safe: only a row
- * the player owns AND that is currently 'proposed' is flipped; anything else
- * (already active, not yours, missing) is a no-op failure via the select-back
- * guard. Uses the RLS client — the player UPDATE policy gates it to own rows.
+ * the CALLER (as the player) owns AND that is currently 'proposed' is flipped;
+ * anything else (already active, not yours, missing) is a no-op failure via the
+ * select-back guard. Ownership is enforced here (`player_id` = the caller's own
+ * golf_players row), not left to RLS alone.
  */
 async function acceptFocusAreaImpl(
   id: string,
@@ -632,6 +666,9 @@ async function acceptFocusAreaImpl(
   if (userError || !user) {
     return { success: false, error: 'Not authenticated' };
   }
+
+  const own = await resolveOwnPlayerId(supabase, user.id, 'accept');
+  if (!own.ok) return { success: false, error: own.error };
 
   const nowIso = new Date().toISOString();
   // #1240: acceptance is when the improvement window actually opens, so re-anchor
@@ -646,6 +683,7 @@ async function acceptFocusAreaImpl(
   const { data: existing } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .select('current_value')
     .eq('id', id)
+    .eq('player_id', own.playerId)
     .eq('status', 'proposed')
     .maybeSingle();
   const currentAtAccept = (existing as { current_value: number | null } | null)?.current_value ?? null;
@@ -658,6 +696,7 @@ async function acceptFocusAreaImpl(
       baseline_value: currentAtAccept,
     })
     .eq('id', id)
+    .eq('player_id', own.playerId)
     .eq('status', 'proposed')
     .select('id');
 
@@ -709,10 +748,14 @@ async function declineFocusAreaImpl(
     return { success: false, error: 'Not authenticated' };
   }
 
+  const own = await resolveOwnPlayerId(supabase, user.id, 'decline');
+  if (!own.ok) return { success: false, error: own.error };
+
   const nowIso = new Date().toISOString();
   const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .update({ status: 'declined', updated_at: nowIso })
     .eq('id', id)
+    .eq('player_id', own.playerId)
     .eq('status', 'proposed')
     .select('id');
 

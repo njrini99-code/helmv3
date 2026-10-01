@@ -215,6 +215,33 @@ async function getTeamPlayerIds(
   return { ok: true, ids: (data || []).map(m => m.player_id) };
 }
 
+/**
+ * Removes an announcement we just created and could not finish addressing.
+ * Tries the caller's own client first (the coach can delete their team's
+ * posts), then the service role as a backstop so an RLS surprise cannot leave
+ * a private post live for the whole team. Scoped to the one id we created.
+ * Returns whether a row was actually removed.
+ */
+async function discardUnaddressedAnnouncement(
+  supabase: SupabaseClient,
+  announcementId: string,
+): Promise<boolean> {
+  const attempts: Array<() => SupabaseClient> = [() => supabase, () => createAdminClient() as unknown as SupabaseClient];
+  for (const client of attempts) {
+    try {
+      const { data, error } = await client()
+        .from('golf_announcements')
+        .delete()
+        .eq('id', announcementId)
+        .select('id');
+      if (!error && (data?.length ?? 0) > 0) return true;
+    } catch {
+      // fall through to the next client
+    }
+  }
+  return false;
+}
+
 // ============================================================================
 // CREATE ENRICHED ANNOUNCEMENT
 // ============================================================================
@@ -328,15 +355,39 @@ async function createEnrichedAnnouncementImpl(input: {
     const announcementId = announcement.id;
 
     // 2. Insert recipients (only if specific players selected)
+    //
+    // This insert's error was discarded, and an announcement with NO recipient
+    // rows is read everywhere as "all team" (recipients.length === 0 is
+    // isAllTeam; the player-side RLS and the feed filter do the same). So a
+    // failed insert turned a post the coach addressed to two players into one
+    // every player on the team could read, and told the coach it went out as
+    // chosen. The announcement is therefore not allowed to outlive its
+    // recipients: on failure it is deleted and the action fails, so nothing is
+    // visible and Retry re-sends cleanly.
     if (validated.recipientPlayerIds && validated.recipientPlayerIds.length > 0) {
       const recipientRows = validated.recipientPlayerIds.map(pid => ({
         announcement_id: announcementId,
         player_id: pid,
       }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      const { error: recipientsError } = await (supabase as any)
         .from('golf_announcement_recipients')
         .insert(recipientRows);
+
+      if (recipientsError) {
+        const discarded = await discardUnaddressedAnnouncement(supabase, announcementId);
+        await logServerError(
+          `[createEnrichedAnnouncement] recipients insert failed for announcement ${announcementId}; ${discarded ? 'the announcement was deleted' : 'DELETE ALSO FAILED, the announcement is live team-wide'}: ${describeError(recipientsError)}`,
+          { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements', userId: user.id },
+          'error',
+        );
+        return {
+          success: false,
+          error: discarded
+            ? "Couldn't address the announcement to the players you picked, so it wasn't sent. Please try again."
+            : "Couldn't address the announcement to the players you picked, and it may be visible to the whole team. Open Announcements and delete it if you see it.",
+        };
+      }
     }
 
     // 3. Link documents
@@ -1216,17 +1267,24 @@ async function completeAnnouncementTaskImpl(
       .maybeSingle();
     if (!player) return { success: false, error: 'Player not found' };
 
-    // Update the assignment status
-    const { error } = await (supabase
+    // Update the assignment status. `.select('id')` so a write that matched no
+    // row (a task that is not assigned to this player, or one RLS hid) is
+    // visible: an UPDATE of zero rows is not an error, and it used to answer
+    // success while nothing was completed.
+    const { data: updated, error } = await (supabase
       .from('golf_task_assignments' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
       })
       .eq('task_id', taskId)
-      .eq('player_id', player.id)) as unknown as { error: { message?: string } | null };
+      .eq('player_id', player.id)
+      .select('id')) as unknown as { data: Array<{ id: string }> | null; error: { message?: string } | null };
 
     if (error) return { success: false, error: 'Failed to complete task' };
+    if (!updated || updated.length === 0) {
+      return { success: false, error: "That task isn't assigned to you." };
+    }
 
     revalidatePath('/golf/dashboard/announcements');
     updateTag(CACHE_TAGS.DASHBOARD);
@@ -1302,13 +1360,19 @@ async function deleteAnnouncementImpl(
       return { success: false, error: 'Not authorized to delete this announcement' };
     }
 
-    // CASCADE handles junction tables
-    const { error } = await supabase
+    // CASCADE handles junction tables. `.select('id')` because a DELETE that
+    // RLS filters to zero rows is not an error — the post stayed up while the
+    // coach was told it was deleted.
+    const { data: deleted, error } = await supabase
       .from('golf_announcements')
       .delete()
-      .eq('id', announcementId);
+      .eq('id', announcementId)
+      .select('id');
 
     if (error) return { success: false, error: 'Failed to delete announcement' };
+    if (!deleted || deleted.length === 0) {
+      return { success: false, error: "Couldn't delete this announcement. It may already be gone." };
+    }
 
     revalidatePath('/golf/dashboard/announcements');
     updateTag(CACHE_TAGS.DASHBOARD);
@@ -1429,7 +1493,9 @@ async function updateAnnouncementImpl(
       return { success: false, error: 'Not authorized to edit this announcement' };
     }
 
-    const { error } = await supabase
+    // `.select('id')`: an UPDATE that RLS filters to zero rows is not an error,
+    // and the edit used to be reported saved when nothing changed.
+    const { data: updated, error } = await supabase
       .from('golf_announcements')
       .update({
         title: validated.title,
@@ -1438,9 +1504,13 @@ async function updateAnnouncementImpl(
         requires_acknowledgement: validated.requiresAcknowledgement,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', announcementId);
+      .eq('id', announcementId)
+      .select('id');
 
     if (error) return { success: false, error: 'Failed to update announcement' };
+    if (!updated || updated.length === 0) {
+      return { success: false, error: "Couldn't save your changes. The announcement may have been deleted." };
+    }
 
     revalidatePath('/golf/dashboard/announcements');
     updateTag(CACHE_TAGS.DASHBOARD);
