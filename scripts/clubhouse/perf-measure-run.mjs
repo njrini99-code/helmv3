@@ -316,6 +316,36 @@ function summarise(runs) {
   };
 }
 
+/**
+ * Rule 5 of docs/clubhouse/PAGE_PERFORMANCE.md: the skeleton is the page's geometry. The route skeleton and the loaded page share their
+ * class names (ch-st-head, ch-fg, ch-pf-hero, ...), so each landmark is found by one selector in both frames: its top (from the page's
+ * top) and its height. The skeleton-to-page swap replaces nodes, so layout-shift never sees it; this does.
+ */
+const LANDMARKS = {
+  home: { desk: ['.ch-h-head', '.ch-h-sheet', '.ch-h-sec', '.ch-h-lb'], phone: [] },
+  'stats-team': { desk: ['.ch-st-head', '.ch-sf', '.ch-fg', '.ch-sgt'], phone: ['.ch-stm-head', '.ch-stm-controls', '.ch-stm-figs', '.ch-stm-panel'] },
+  'stats-player': { desk: ['.ch-pf-hero', '.ch-pf-tabs', '.ch-sf', '.ch-st-panel, .ch-sgt'], phone: ['.ch-spm-head', '.ch-stm-controls', '.ch-stm-figs', '.ch-stm-panel'] },
+};
+
+async function landmarkRects(page, selectors) {
+  // No animation in flight (the reveal's rise would move a block by a few pixels mid-measure).
+  await page.addStyleTag({ content: '*, *::before, *::after { animation: none !important; transition: none !important; }' });
+  await sleep(120);
+  return page.evaluate((sels) => {
+    const root = document.getElementById('ch-content');
+    const top0 = root ? root.getBoundingClientRect().top : 0;
+    return sels.map((s) => {
+      const el = [...document.querySelectorAll(`#ch-content ${s}`)].find((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return [Math.round(r.top - top0), Math.round(r.height)];
+    });
+  }, selectors);
+}
+
 export async function measure(opts) {
   const base = `http://localhost:${opts.port}`;
   const runsN = Number(opts.runs ?? 3);
@@ -332,6 +362,7 @@ export async function measure(opts) {
   const browser = await chromium.launch({ headless: true });
   const people = { coach: seed.coach, player: seed.players[0] };
   const all = [];
+  const geo = [];
   try {
     for (const role of roles) {
       const stateFile = join(stateDir, `state-${role}.json`);
@@ -377,6 +408,56 @@ export async function measure(opts) {
               } finally {
                 await ctx.close();
               }
+            }
+          }
+        }
+
+        // ── geometry: the skeleton's blocks against the loaded page's (the destination's data is held back 1.5 s so the skeleton frame is stable) ──
+        if (wants('geometry')) {
+          const phone = viewport < 700;
+          const pairs = role === 'coach'
+            ? [['home', 'stats-team', '/golf/dashboard', '/golf/dashboard/stats'], ['stats-team', 'stats-player', '/golf/dashboard/stats', `/golf/dashboard/stats?player=${playerId}`], ['stats-team', 'home', '/golf/dashboard/stats', '/golf/dashboard']]
+            : [['home', 'stats-player', '/golf/dashboard', '/golf/dashboard/stats'], ['stats-player', 'home', '/golf/dashboard/stats', '/golf/dashboard']];
+          for (const [from, to, fromPath, toPath] of pairs) {
+            // `--only geometry,stats-team` narrows to a route; `--only geometry` is every route.
+            const routes = (only ?? []).filter((o) => o !== 'geometry');
+            if (routes.length && !routes.some((o) => to.includes(o))) continue;
+            const sels = LANDMARKS[to]?.[phone ? 'phone' : 'desk'] ?? [];
+            if (!sels.length) continue;
+            const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems, !opts['first-visit']);
+            try {
+              await loadCold(page, base, fromPath, readsFile);
+              await sleep(1500);
+              await ctx.route((u) => u.pathname === toPath.split('?')[0] && u.searchParams.has('_rsc'), async (route) => {
+                await sleep(1500);
+                await route.continue().catch(() => undefined);
+              });
+              // A coach's team -> player tap is a row of the players table, not a nav item.
+              if (toPath.includes('?')) {
+                const row = page.locator(`a[href*="player=${playerId}"]`).locator('visible=true').first();
+                await page.evaluate((p) => window.__perf.arm(p), toPath);
+                await row.click();
+              } else {
+                const click = await navTo(page, toPath);
+                await page.evaluate(() => window.__perf.arm(null));
+                await click();
+              }
+              await page.waitForFunction(() => {
+                const m = document.querySelector('#ch-content > main[aria-busy="true"]');
+                return !!m && /^Loading/.test(m.getAttribute('aria-label') || '');
+              }, null, { timeout: 30_000 });
+              const skeleton = await landmarkRects(page, sels);
+              await page.waitForFunction(() => {
+                const m = document.querySelector('#ch-content > main');
+                return !!m && m.getAttribute('aria-busy') !== 'true';
+              }, null, { timeout: 60_000 });
+              await sleep(800);
+              const loaded = await landmarkRects(page, sels);
+              geo.push({ role, viewport, scenario: `${from} -> ${to}`, landmarks: sels.map((sel, i) => ({ sel, skeleton: skeleton[i], loaded: loaded[i] })) });
+            } catch (e) {
+              problems.push(`geometry ${from} -> ${to}: ${String(e.message).slice(0, 120)}`);
+            } finally {
+              await ctx.close();
             }
           }
         }
@@ -434,13 +515,19 @@ export async function measure(opts) {
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
   const rows = [...groups].map(([k, runs]) => ({ key: k, ...summarise(runs) }));
-  const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: '4x CPU (CDP)', rows, runs: all };
+  const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: '4x CPU (CDP)', rows, runs: all, geometry: geo };
   const file = join(stateDir, 'results', `${label}.json`);
   writeFileSync(file, JSON.stringify(out, null, 2));
   const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | TBT ms | reads | read ms | waves | server ms | doc KB | JS KB | flash |';
   console.log(head);
   console.log(head.replace(/[^|]/g, '-'));
   for (const r of rows) console.log(`| ${r.key} | ${r.skeleton ?? '-'} | ${r.content ?? '-'} | ${r.lcp ?? '-'} | ${r.cls} | ${r.clsRaw} | ${r.longCount} | ${r.tbt} | ${r.reads} | ${r.readMs} | ${r.waves} | ${r.serverMs} | ${r.docKB ?? '-'} | ${r.jsKB ?? '-'} | ${r.flash ? 'YES' : ''} |`);
+  if (geo.length) {
+    console.log('\nSkeleton geometry against the loaded page (top / height in px from the page top; delta = loaded - skeleton)\n');
+    console.log('| case | landmark | skeleton | loaded | top delta | height delta |');
+    console.log('| --- | --- | --- | --- | --- | --- |');
+    for (const g of geo) for (const l of g.landmarks) console.log(`| ${g.role} ${g.viewport} ${g.scenario} | ${l.sel} | ${l.skeleton ? l.skeleton.join(' / ') : '-'} | ${l.loaded ? l.loaded.join(' / ') : '-'} | ${l.skeleton && l.loaded ? l.loaded[0] - l.skeleton[0] : '-'} | ${l.skeleton && l.loaded ? l.loaded[1] - l.skeleton[1] : '-'} |`);
+  }
   for (const p of all.filter((x) => x.kind === 'problems')) console.log(`problems ${p.role} ${p.viewport}: ${p.problems.join(' ; ')}`);
   console.log(`saved ${file}`);
 }
