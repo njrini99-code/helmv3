@@ -64,6 +64,7 @@
     "flags:generate": "node scripts/flags/generate-flags.mjs",
     "clubhouse:check": "node --test scripts/clubhouse/__tests__/*.test.mjs && node scripts/clubhouse/check.mjs",
     "clubhouse:a11y": "node scripts/clubhouse/a11y.mjs",
+    "clubhouse:perf": "node scripts/clubhouse/perf-measure.mjs",
     "flight-recorder:audit": "node scripts/flight-recorder-audit.mjs",
     "guards": "node scripts/repo-guards.mjs",
     "hooks:install": "node scripts/setup-hooks.mjs",

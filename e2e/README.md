@@ -238,6 +238,82 @@ through the local database (`SUPABASE_DB_URL`, default the stack's port
    `PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test
    e2e/clubhouse-round.spec.ts --project=chromium`
 
+## Clubhouse perf harness, local stack only (2026-10-01)
+
+Measures what a coach and a player feel on a Clubhouse route: how soon the
+skeleton paints, how soon the content does, layout shift on load and on every
+switch, long tasks, and how many Supabase reads the server made and how deep
+they chain. It is a production build (`next start`) served against the local
+stack, with a seeded team behind it. Nothing in it can reach production: every
+command reads `supabase status` and refuses a URL that is not 127.0.0.1 or
+localhost, the credentials of outside services (Sentry, KV, mail, queues) are
+blanked in the build and the server, and `build` fails if the bundles carry
+the production project's id.
+
+```bash
+npx supabase start                       # the local stack must be up
+npm run clubhouse:perf -- seed           # a coach, 8 players, 114 rounds, 5.8k shots (below)
+npm run clubhouse:perf -- build          # ~12 minutes; one `next build` at a time on this machine; `--ref <sha>` to pick the commit
+npm run clubhouse:perf -- serve          # next start on :3200, reads traced
+npm run clubhouse:perf -- measure --label before --runs 3
+npm run clubhouse:perf -- stop
+npm run clubhouse:perf -- remove         # deletes the seed and checks nothing refers to it
+```
+
+**Reuse the server.** If `status` shows a `serverPid`, `:3200` is serving the
+last build: measure against it instead of building again. `build` exports a
+committed ref (default HEAD) to `~/.helm-perf/clubhouse-snapshot` and builds
+and serves from there, so other sessions editing the checkout cannot break a
+twelve-minute build (the first one failed on someone's half-written file) and
+a measurement names the commit it measured (`status` prints it). Commit what
+you want measured, then `stop`, `build`, `serve`. The snapshot's webpack
+cache is about 5 GB; delete `~/.helm-perf` when the work is done.
+
+**The seed** (`seedClubhouseTeam` in `helpers/clubhouse-local-seed.ts`, rounds
+from `helpers/clubhouse-team-data.ts`): a head coach, 8 players on one
+men's team, three par-72 courses, 12 completed 18-hole rounds per player (18
+for every third player, so "vs. previous 10" has a previous 10) dated across
+the last 120 days (it crosses the 1 August season start, so Last 10 and Season
+differ), a qualifier with an entry for every player, six events this week and
+next with replies, the team chat, and two focus areas. A nine-hole round, a
+round posted as a total only and rounds without shots are in, so the coverage
+notes and the empty paths render. Two rounds in three carry every hole and
+every shot; each hole's shots number its score, its putts are the putting
+rows, and the cache rows come from the database's own trigger when the round
+is completed. Scores are deterministic for a seed (`seed` option; the same
+numbers before and after a change); strokes gained is synthetic, scaled from
+the score. Rounds, holes and shots go through a direct local connection (a
+completed round cannot be inserted by an app caller). `removeTeamSeed` sweeps
+every public table that carries one of the seed's ids and throws if any is
+left. `seed --players 12 --rounds 30` scales it up.
+
+**What `measure` records** (4x CPU throttle through CDP, at 1280 and 390
+wide; the median of `--runs`, signed in once per role):
+
+- `cold`: a fresh browser context opens the route. Skeleton and content times
+  are from the navigation; FCP, LCP, CLS, long tasks, reads.
+- `nav`: from a settled, prefetched page, tap the nav link to the next route.
+  Times are from the click.
+- `switch`: on a settled Stats page, the window switch (Season, Qualifiers,
+  Last 10) and the profile tabs. `flash` is YES if any frame showed a skeleton
+  or nothing instead of the page (dimmed, aria-busy content is the pattern).
+- `CLS` counts the way the spec does (shifts within 500 ms of a click do not
+  count); `CLS raw` counts every shift, which is the number that matters for a
+  clicked navigation or switch. Keep both at 0.
+- `reads`, `read ms`, `waves`: the Supabase calls the route's own requests
+  made (not prefetches), their summed duration, and how many serial rounds
+  they took (a wave starts when no earlier read is still running). The trace
+  is `scripts/clubhouse/perf-fetch-trace.cjs`, preloaded into the server: no
+  product code is involved.
+
+Results are saved to `.helm/runtime/clubhouse-perf/results/<label>.json`
+(gitignored), with every run and the per-table read counts.
+
+A Clubhouse flag trap: the flag is off for `production` and `next start` runs
+with NODE_ENV=production, so the harness sets `VERCEL_ENV=development`. If a
+route does not render Clubhouse, `measure` stops rather than record a Fairway
+number.
+
 ## CI/CD Integration
 
 ### GitHub Actions
