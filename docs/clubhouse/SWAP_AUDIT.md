@@ -31,17 +31,17 @@ affects no customer until the flag is flipped.
 | Gate | Status | Evidence |
 | --- | --- | --- |
 | Baseline | **Passed** | §1 |
-| Complete shell swap | **Open**: route gaps in §3; the owner decides build, alias or retire (after this audit) | route table §3 |
-| Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). F-02 (recovery unreachable with the flag on) is fixed (`4d5f3f565`; source and unit tests, not run on a phone). **Open**: Q-119 (cross-device discard), Q-120 (held submit version check); device fault-injection on a real phone not run | F-02, R-1..R-12, Q-119, Q-120 |
-| Calendar | **Source-confirmed fixes, runtime not exercised**: 9 bugs fixed (`ac64ba366`, `696b49570`); write journeys on the Demo team pending (they notify the whole roster: check Demo members' email and push first). Open: CAL-05 (series across the clock change), Q-108 (fan-out to the whole roster), create idempotency (in progress) | §4 Calendar |
-| Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). SG and Qualifiers reconciled (§4); stale stored SG on 7 rounds waits on the recompute. Open: Q-112 (comparison cohort) | §4 §10 Stats gate |
-| Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Open: Q-104/Q-114 tie at the cut (name order now decides it everywhere), Q-115..Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
+| Complete shell swap | **Mostly closed** (Q-130): team switcher (`67f40c962`) and the read-only player roster (`0672d5738`) built; the other gaps alias (`6daf50afc`). **Open**: the player CoachHelm views (Profile `28f83d3a8`; Standing and Deep dive in progress) | route table §3 |
+| Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). F-02 (recovery unreachable with the flag on) is fixed (`4d5f3f565`; source and unit tests, not run on a phone). **Open**: Q-120 (held submit version check); device fault-injection on a real phone not run. Q-119: owner, leave it | F-02, R-1..R-12, Q-119, Q-120 |
+| Calendar | **Source-confirmed fixes, runtime not exercised**: 9 bugs fixed (`ac64ba366`, `696b49570`); write journeys on the Demo team pending (they notify the whole roster: check Demo members' email and push first). Fixed 2026-10-01: CAL-05 (`4f3670a41`), Q-108 invitees only (`24b0b9542`). Open: create idempotency | §4 Calendar |
+| Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). SG and Qualifiers reconciled (§4); stale stored SG on 7 rounds waits on the recompute. Q-112 fixed: the comparison pairs the same players (`100f35007`) | §4 §10 Stats gate |
+| Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Fixed 2026-10-01: Q-114 tie at the cut waits for the coach (`2ea18e38c`), Q-115, Q-116 (`f6002eaab`); stored entry totals rewritten (Q-134). Open: Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
 | Messages | **Passed**: two-session journey on the local stack, 7/7; deep link verified. Night audit fixed failed-reaction silence, lost text on a failed send and the coach phone inbox shift (CLS 0.292, not re-measured) | §4 |
-| CoachHelm | **Audited**, no P0; owner: Q-124..Q-126, Q-76 | §4 §13 |
+| CoachHelm | **Audited**, no P0. Demo regenerated (Q-125), tentative cards on (Q-126); CH13-14, CH13-24 and the CH13-22 server half fixed. **Open**: Q-124 cache migrations (owner applies); CH13-8, CH13-21, CH13-22 client half, CH13-23 | §4 §13 §7 |
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
 | Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
 | Build/regression | Local gates on `c7e24b4f9`: typecheck, lint ratchet, Supabase-error and fail-open audits, `clubhouse:check`, `docs:check` all 0; unit suite 2067 files, 22182 tests, all pass; local production build used for the F-56 timings. CI on PR #2111 at `9d65dd3ff`: see §4 | §4 |
-| Cutover/rollback | **Open**: Q-131, Q-132; rollback target (§18) | §18 |
+| Cutover/rollback | Q-131 built: `HELM_CLUBHOUSE_TEAMS` allowlist (`a49a75f6a`); Q-132 held migration written (`9a49d3bf9`). **Open**: setting the allowlist, applying the held files, the flag flip (all owner) | §18 §7 |
 | Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
 
 ## 3. Role × route table (F-01)
@@ -64,8 +64,9 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   sub-pages), and `roster` (built 2026-10-01, Q-130: the coach's screen,
   read-only; see below).
 - **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
-  tabs; `roster/[id]` goes to `stats?player=` (coach) or to `roster` (player); `rounds/[id]/review` goes to
-  `rounds/[id]`; `coachhelm/chat` goes to `coachhelm?view=ask` (coach).
+  tabs; `roster/[id]` goes to `stats?player=` (coach) or to `roster` (player);
+  `rounds/[id]/review` goes to `rounds/[id]`; `coachhelm/chat` goes to
+  `coachhelm?view=ask` (coach).
 - **Player roster (built 2026-10-01, Q-130):** `/roster` for a player is the
   coach's roster, read-only. A teammate shows name, class year and handicap
   (what Fairway's player roster showed) and no scores, so no row is a link or a
@@ -336,18 +337,18 @@ quiet rerun.
   in 60 days". It now uses the Q-123 score rule (shared in
   `src/lib/golf/round-score-countable.ts`).
 - **§14 Adjacent capabilities (run 2026-10-01, source and read-only SQL).**
-  Connected: roster, Team Hub reads and posts, Classes, Settings, round
-  setup's courses, sign-in and onboarding, Recruiting, exports; Practice,
-  lineups and scouting have no golf production data. No Baseball or Lift Lab
-  regression in the branch diff. Defects: D1 (P1) coaching staff invites
-  and approvals had no Clubhouse screen (fixed `322ca7cfd`); D2 (P1) a Team
-  Hub trip could not be edited or deleted (fixed `12f07da99`); D3 (P2) a
-  calendar link could not be replaced or removed (fixed `40419c193`); D4 (P2) 30 unread dev-plan
+  Connected: roster, Team Hub reads and posts, Classes, Settings, round setup's
+  courses, sign-in and onboarding, Recruiting, exports; Practice, lineups and
+  scouting have no golf production data. No Baseball or Lift Lab regression in
+  the branch diff. Defects: D1 (P1) coaching staff invites and approvals had no
+  Clubhouse screen (fixed `322ca7cfd`); D2 (P1) a Team Hub trip could not be
+  edited or deleted (fixed `12f07da99`); D3 (P2) a calendar link could not be
+  replaced or removed (fixed `40419c193`); D4 (P2) 30 unread dev-plan
   notifications opened a placeholder (fixed `5c4a9c33a`); D5 (P2, live in
-  production, both UIs) push taps never deep-linked: the payload URL is
-  absolute and the guard rejects "//" (fixed `a99fa9638`); D6, D8 aliases for
-  `/intelligence` and the old qualifying workspace (fixed `5c4a9c33a`); D7
-  (P3) distance unit not settable (fixed `4e3b87d44`); D9 (P3, dev only) the
+  production, both UIs) push taps never deep-linked: the payload URL is absolute
+  and the guard rejects "//" (fixed `a99fa9638`); D6, D8 aliases for
+  `/intelligence` and the old qualifying workspace (fixed `5c4a9c33a`); D7 (P3)
+  distance unit not settable (fixed `4e3b87d44`); D9 (P3, dev only) the
   strict-mode double effect can clear the sync player. Owner: Q-130.
 - **§16 Held migrations (run 2026-10-01, read-only).** None of the 15 held
   files is applied; every app path that needs one has a fallback. Fixed:
@@ -431,6 +432,36 @@ quiet rerun.
 ## 6. Release package (tonight)
 
 See `docs/clubhouse/RELEASE_2026-09-30.md`.
+
+## 7. Status after "Fix all findings" (2026-10-01)
+
+Branch `agent/swap-audit` (PR #2111), local commits not yet pushed. Nothing
+applied to production schema, deployed, flipped or merged.
+
+Done today (code, tests, docs): owner answers Q-108, Q-112, Q-114, Q-115,
+Q-116, Q-126, Q-130, Q-131, Q-134 built; F-02, F-03, F-08, F-12, CAL-05,
+CH13-14, CH13-24 fixed; data fixes Q-125, Q-127, Q-134 run on production as
+approved; held files written or fixed for F-11 (`20261001130000`), Q-129
+(guard on `20260928160000`) and Q-132 (`20261001120000`).
+
+Still to do on the branch:
+
+- Player CoachHelm views: Standing and Deep dive (worker in progress).
+- Q-128: amend held OD-01 so a total-only 18-hole round counts in score
+  figures, and regenerate the md5 guards downstream (worker in progress).
+- CoachHelm CH13-22 (send the starting value from the Assign button), CH13-23
+  (say when a player declined a focus), CH13-21 (count exposure when drawn),
+  CH13-8 (label each card's round set). They follow the views worker.
+- F-06: a Clubhouse round e2e that runs only against the local stack and
+  cleans up after itself.
+- Final registry sync, full gates, one push, CI green.
+
+Owner actions (not agent work):
+
+- Apply the held migrations in the order in `supabase/migrations/HELD.md`,
+  then recompute strokes gained (Q-89) and regenerate CoachHelm (Q-124).
+- Set `HELM_CLUBHOUSE_TEAMS` before the flag flip; the flip is a deploy.
+- Phone sign-off (Q-133) and the preview pass (F-05).
 
 ## Links
 
