@@ -262,12 +262,41 @@ quiet rerun.
   read; four tests fail on the old code.
 - **F-53 (P3, fixed `440b25d0a`).** Team Hub RSVPs: an all-day event read
   "12:00 AM", and an event no one was invited to drew an empty grey bar.
-- **§10 Stats gate (in progress).** SQL oracle built from production for the
-  Demo team's seven players (countable rounds, Last 10 by date, pooled GIR
-  and FIR, putts, birdies). Coach Team Stats reconciles exactly within the
-  window it used (70.0, 54/54 GIR, 38.0 putts, 3.0 birdies, scrambling "—"
-  with no missed greens), but the window was wrong (F-51): six of seven
-  players had no rounds in Last 10.
+- **F-51 fixed (`da0c90b6e`, Q-122/Q-123).** Last 10 is each player's ten
+  newest countable rounds in any season; totals-only rounds count in scores
+  and in no hole figure, and a card that reads fewer rounds says so.
+- **§10 Stats gate (run 2026-10-01 against production, Demo team).** SQL
+  oracle per player (Last 10 by date across seasons, totals-only in scores,
+  hole-level pooling) against what coach Team Stats (desktop and phone) and
+  the player's own Stats show on dev. Every player's Last 10 average matches
+  exactly (Cole 74.6, Tyler 74.7, Jackson 75.5, Mason 75.7, Owen 76.0, Dylan
+  76.3, Ethan 76.5); the team row matches (75.6 vs 75.61, +1.1 vs the previous
+  10 from 74.47, 56 of 70 rounds with holes, GIR 65% vs 64.7%, putts 33.1 vs
+  33.07, birdies 2.5 vs 2.52). Scrambling reads 31% against an oracle of
+  31.5% computed as "par or better after a missed green"; the app counts the
+  logged up-and-down, a definition difference, not a defect. Not yet
+  reconciled: SG figures (they need the Tour baseline model), Qualifiers
+  window, CoachHelm evidence (§13 audit running).
+- **F-54 (P1 visual, owner screenshots, fixed `6a3d8fe18` and follow-ups).**
+  Phone Stats was "plain black numbers, no spacing": Game detail drew captions
+  at figure size (a phone rule caught every `dd`), grey bars, uncoloured par
+  tiles, an unreadable desktop make-rate curve, four "0%" cup misses with
+  nothing logged, lag bands out of order, raw floats and metric ids in
+  Development, and a zero change coloured amber. Now to the board: one figure
+  strip, green notes, green and amber bars, make-rate rows, readable
+  development, neutral zero changes, and one coverage line on desktop.
+- **F-55 (P1 motion, owner report, fixed `0798bcec5`).** Last 10 to Season
+  flashed twice and jumped: the skeleton fade-in hit live pages that were
+  aria-busy during a transition (blink to transparent), and the first-paint
+  reveal replayed when aria-busy cleared (second flash and a 10px rise). Now
+  one dim while loading; the switch moves on the tap.
+- **F-56 (P2 perf, fixed `9194fe2ed`).** Two serial round trips removed from
+  the player profile read. Measured on a local production build at 4x CPU:
+  cold first paint 0.7-1.1 s and largest paint 1.3-2.3 s; tab switches
+  0.9-1.4 s; window switches 1.25-1.9 s (Season's server render 1.0 s).
+- **CI on PR #2111 (fixed `55bb26a51`).** The layout test lacked the F-36
+  cookie mock, the held migration's HELD.md row lacked its date and its
+  registry owner, and four test reads were unchecked.
 - **Calendar §8 (fixed `ac64ba366`, `696b49570`).** Editing a multi-day
   all-day event shrank it to one day; overnight events could not be edited;
   a series edit could flip All day; week/day grids hid events outside 6 AM to
