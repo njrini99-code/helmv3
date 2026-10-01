@@ -68,7 +68,10 @@ each one stands. Measurements go in `PROGRESS.md`, "Page performance
 - **3 Motion.** Page crossfade done (`RouteFrame`, React `ViewTransition`);
   sheets and insertions keep the existing D-64 motion; audit queued.
 - **4 State model.** Page pass, Stats/Home and CoachHelm/Rounds/Qualifiers
-  first.
+  first. Cross-cutting, done: a failed coach team read (staff, cookie check,
+  org member count) is a route error with retry, never "You aren't on a team
+  yet" and never the default team (`resolveCoachActiveTeam`, three-way);
+  route Try again refreshes the server payload before resetting.
 - **5 Skeleton geometry.** Page pass: measured CLS per route and switch.
 - **6 Independent sections.** Page pass.
 - **7 Prefetch and cache keys.** Page pass; nothing cached across users or
