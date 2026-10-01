@@ -34,7 +34,15 @@ const flag = vi.hoisted(() => ({ coach: true, player: true }));
 const requestCache = vi.hoisted(() => ({ coachTeam: vi.fn(), playerTeam: vi.fn() }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => session.current }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: 'coach' | 'player') => flag[role] }));
-vi.mock('@/lib/golf/dashboard-request-cache', () => ({ resolveCoachActiveTeamIdForRequest: requestCache.coachTeam, getActivePlayerTeamMembership: requestCache.playerTeam }));
+vi.mock('@/lib/golf/dashboard-request-cache', () => ({
+  // Clubhouse reads the three-way resolution (a failed read is not "no team"); the stub's team id stands for 'ok'.
+  resolveCoachActiveTeamForRequest: async (...args: unknown[]) => {
+    const teamId = await (requestCache.coachTeam as (...a: unknown[]) => Promise<string | null>)(...args);
+    return teamId ? { status: 'ok', teamId } : { status: 'none' };
+  },
+  resolveCoachActiveTeamIdForRequest: requestCache.coachTeam,
+  getActivePlayerTeamMembership: requestCache.playerTeam,
+}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
 // The existing dashboards are stubs named for what they stand in for; the test only asks which one the page chose.
