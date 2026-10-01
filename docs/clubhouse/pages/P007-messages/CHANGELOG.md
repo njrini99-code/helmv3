@@ -3,7 +3,7 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
-## 2026-10-01 — Page pass: a thread that fails to refresh says so (CH-7216)
+## 2026-10-01 — Page pass: a thread that fails to refresh says so (CH-7216); a failed text stays in its bubble
 
 PAGE_PERFORMANCE.md rules 4 and 11.
 
@@ -24,10 +24,12 @@ Held items:     none
   to the server (a retry after a commit is not a duplicate), keeps the failed
   bubble with Retry and Discard, and says "couldn't confirm" apart from "not
   sent".
-- **Open question (owner):** on a failed text send, the composer also puts
-  the text back in the box (MSG-26). Sending it again from the box posts a
-  second message under a new id, while the bubble's Retry would not. This is
-  left as is pending the owner's call.
+- **A failed text lives in its bubble only (owner, 2026-10-01: "Bubble
+  only").** The composer no longer puts a failed text back in the box. Doing
+  so made a second Send under a new id easy, where the bubble's Retry reuses
+  the id and is duplicate-safe. A failed attachment send has no bubble, so
+  its text and files still go back in the box (MSG-26). CH-7004 and CH-7005
+  now point to the thread.
 
 ## 2026-10-01 — An unsent draft survives a reload (swap audit F-12)
 

@@ -903,12 +903,15 @@ export function Composer({
     if (ok) haptic("success");
     else {
       haptic("error");
-      // Keep what they wrote: a failed send never eats the draft. The box stays open while a send is pending, so
-      // the failed text goes back in front of anything typed since, never over it (MSG-26). The drafts map mirrors
-      // the box (setDraft) and outlives it when the thread was switched meanwhile.
-      const since = api.drafts.get(conv.id) ?? "";
-      setDraft(since ? (text ? `${text}\n${since}` : since) : text);
-      setFiles((now) => [...pending, ...now]);
+      // A failed text stays in the thread as its own bubble, marked, with Retry (same id, so never a duplicate) and
+      // Discard: putting it back in the box as well made a second send under a new id easy (owner 2026-10-01). A failed
+      // attachment send has no bubble, so its text and files go back in the box, in front of anything typed since,
+      // never over it (MSG-26). The drafts map mirrors the box and outlives it when the thread was switched meanwhile.
+      if (pending.length) {
+        const since = api.drafts.get(conv.id) ?? "";
+        setDraft(since ? (text ? `${text}\n${since}` : since) : text);
+        setFiles((now) => [...pending, ...now]);
+      }
     }
     ta.current?.focus();
   };

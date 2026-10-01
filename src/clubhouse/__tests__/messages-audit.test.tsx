@@ -201,7 +201,7 @@ describe('Messages · swap audit §12', () => {
     }
   });
 
-  it('MSG-26 a failed send puts its text back in front of what was typed while it was pending, never over it', async () => {
+  it('MSG-26 a failed text send leaves what was typed while it was pending alone: the failed text lives in its bubble (owner 2026-10-01)', async () => {
     const user = userEvent.setup();
     let reject: (e: Error) => void = () => {};
     live.msgs.sendMessage.mockImplementation(() => new Promise<never>((_, r) => (reject = r)));
@@ -212,7 +212,7 @@ describe('Messages · swap audit §12', () => {
     await user.type(box, 'Second thought');
     await act(async () => reject(new Error('refused')));
     await expectCode('CH-7004');
-    await waitFor(() => expect(box.value).toBe('First\nSecond thought'));
+    await waitFor(() => expect(box.value).toBe('Second thought'));
   });
 
   it('MSG-26 a failed attachment send keeps its text and files alongside a file added while it uploaded', async () => {
@@ -257,14 +257,14 @@ describe('Messages · swap audit §12', () => {
     await expectCode('CH-7206');
   });
 
-  it('MSG-23 a failed send with nothing typed since still puts the text back', async () => {
+  it('MSG-23 a failed text send does not put the text back in the box, so a second Send cannot duplicate it (owner 2026-10-01)', async () => {
     const user = userEvent.setup();
     live.msgs.sendMessage.mockRejectedValue(new Error('refused'));
     show();
     const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
     await user.type(box, 'First{Enter}');
     await expectCode('CH-7004');
-    await waitFor(() => expect(box.value).toBe('First'));
+    expect(box.value).toBe('');
   });
 
   it('MSG-10 (already handled, coverage) a ?conversation= link to a thread the viewer is not in says so and shows no thread', async () => {

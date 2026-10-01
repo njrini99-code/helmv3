@@ -470,7 +470,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return true;
       } catch (err) {
         const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
-        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'Check the thread before sending again.' : 'Your message is still in the box. Try again.', unknown ? 'CH-7005' : 'CH-7004');
+        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'It is in the thread: check it, then Retry from there if it did not arrive.' : 'It is in the thread, marked Not sent. Retry from there.', unknown ? 'CH-7005' : 'CH-7004');
         return false;
       }
     },

@@ -20,8 +20,8 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7001 | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team | "Couldn't open that conversation" + "That player isn't on your team, or hasn't set up their account yet." ("That person…" for `?user=`) | `Messages` deep link | messages.test › CH-7001 |
 | CH-7002 | Starting a direct thread fails | "Couldn't start the conversation" + "Try again in a moment." | `attempt('startDirect')` | messages.test › CH-7002 |
 | CH-7003 | Creating a group fails | "Couldn't create the group". Done: "Group created · Pinehurst travel" | `attempt('createGroup')` | messages.test › CH-7003 |
-| CH-7004 | Sending a message throws | "Couldn't send the message" + "Your message is still in the box. Try again." | `api.send` | messages.test › CH-7004 |
-| CH-7005 | The network drops mid-send | "Couldn't confirm this message sent" + "Check the thread before sending again." | `api.send` | messages.test › CH-7005 |
+| CH-7004 | Sending a message throws | "Couldn't send the message" + "It is in the thread, marked Not sent. Retry from there." The box stays empty: the bubble (CH-7016) is the one copy (owner 2026-10-01) | `api.send` | messages.test › CH-7004 |
+| CH-7005 | The network drops mid-send | "Couldn't confirm this message sent" + "It is in the thread: check it, then Retry from there if it did not arrive." | `api.send` | messages.test › CH-7005 |
 | CH-7006 | Sending attachments fails | "Couldn't send the attachment" + "Your message and files are still in the box. Try again." | `attempt('sendFiles')` | messages.test › CH-7006 |
 | CH-7007 | Editing a message fails | "Couldn't edit the message" + "Your edit is still in the box." Done: "Message edited" | `attempt('edit')` | messages.test › CH-7007 |
 | CH-7008 | Deleting a message fails | "Couldn't delete the message" + "It's back in the thread." Done: "Message deleted" | `attempt('remove')`, then refetch | messages.test › CH-7008 |
