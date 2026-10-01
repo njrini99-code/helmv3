@@ -33,6 +33,24 @@
 -- VERIFY: for a completed round, SUM(strokes_gained) over its shots equals
 -- expected(first shot of each hole) - strokes, within rounding.
 
+-- SUPERSEDED-ORDER GUARD (swap audit §16, 2026-10-01): 20260930150000
+-- carries this file's rule plus penalty attribution. Applied after it, this
+-- file would silently revert the penalty rule, so it refuses to run once the
+-- live body has 20260930150000's penalty-origin logic (pen_lie).
+DO $guard$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'recalculate_round_strokes_gained'
+      AND p.prosrc LIKE '%pen_lie%'
+  ) THEN
+    RAISE EXCEPTION
+      '20260928160000 is superseded: 20260930150000 is applied. Skip this file.';
+  END IF;
+END
+$guard$;
+
 CREATE OR REPLACE FUNCTION public.recalculate_round_strokes_gained(
     p_round_id uuid
 )
