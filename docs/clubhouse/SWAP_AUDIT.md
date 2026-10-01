@@ -253,6 +253,21 @@ quiet rerun.
   the season start (the legacy app used the ten newest rounds), and rounds
   entered as totals only were dropped everywhere. Owner decisions Q-122 and
   Q-123; fix in progress.
+- **F-52 (P1 data, Reproduced, fixed `681a70582`).** Team Hub Documents
+  showed "Documents didn't load" for the coach. getDocuments embedded
+  `uploader:uploaded_by(...)`, but golf_documents.uploaded_by references
+  auth.users, which PostgREST cannot embed (PGRST200), so every list read
+  failed, for every team, in both UIs. The single read and version compare
+  had the same embed. Uploaders are now resolved from golf_coaches after the
+  read; four tests fail on the old code.
+- **F-53 (P3, fixed `440b25d0a`).** Team Hub RSVPs: an all-day event read
+  "12:00 AM", and an event no one was invited to drew an empty grey bar.
+- **§10 Stats gate (in progress).** SQL oracle built from production for the
+  Demo team's seven players (countable rounds, Last 10 by date, pooled GIR
+  and FIR, putts, birdies). Coach Team Stats reconciles exactly within the
+  window it used (70.0, 54/54 GIR, 38.0 putts, 3.0 birdies, scrambling "—"
+  with no missed greens), but the window was wrong (F-51): six of seven
+  players had no rounds in Last 10.
 - **Calendar §8 (fixed `ac64ba366`, `696b49570`).** Editing a multi-day
   all-day event shrank it to one day; overnight events could not be edited;
   a series edit could flip All day; week/day grids hid events outside 6 AM to
