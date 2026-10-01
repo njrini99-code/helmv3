@@ -23,7 +23,9 @@ Git deployments are disabled for every branch by `vercel.json`. The ignored-buil
 script is defense in depth and skips any build carrying `VERCEL_GIT_COMMIT_REF`.
 Production deploys only when the owner says to deploy `main`; the agent then
 deploys it (Vercel connector or repo-local CLI) from a clean checkout at the
-current `origin/main` SHA, with `NEXT_PUBLIC_SENTRY_RELEASE=<sha>` stamped as
+current `origin/main` SHA that holds no symlinks (a worktree's linked `.env*`,
+`.codex/` and `node_modules` reach the upload and Vercel rejects it), with
+`NEXT_PUBLIC_SENTRY_RELEASE=<sha>` stamped as
 both build and runtime env (AGENTS.md "Production"). After a release,
 `npm run release:status` must show the released SHA before anyone calls it
 live.
