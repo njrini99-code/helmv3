@@ -16,7 +16,11 @@
 -- Forward-only and idempotent. Not applied by the swap-audit branch; the
 -- owner applies it after review (supabase/migrations/HELD.md).
 --
--- VERIFY after apply:
+-- ROLLBACK: GRANT ALL ON public.golf_message_attachments TO anon; then
+--   recreate the SELECT policy without the `m.is_deleted IS NOT TRUE` line
+--   (the live definition is quoted in the held plan).
+--
+-- VERIFY: the two queries below (anon grants 0; the policy has the clause).
 --   SELECT count(*) FROM information_schema.role_table_grants
 --    WHERE table_schema = 'public'
 --      AND table_name = 'golf_message_attachments'

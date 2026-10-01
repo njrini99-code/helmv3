@@ -354,7 +354,8 @@ quiet rerun.
   files is applied; every app path that needs one has a fallback. Fixed:
   `20260928150000` missed the `r2` calls in the trend subqueries and would
   have reported success with test rounds still in last 5/10 (`ec65c44f6`).
-  Owner: Q-128 (OD-01 drops the 14 totals-only rounds Stats counts) and
+  Q-128 (OD-01 dropped the 14 totals-only rounds Stats counts) is fixed in
+  the held file (`dcc54baea`). Owner:
   Q-129 (`20260928160000` is superseded but unguarded). Apply order notes:
   SG recompute before the cache and standing refreshes; local replay runs
   the held schema, so local stats results are not production's.
@@ -441,14 +442,13 @@ applied to production schema, deployed, flipped or merged.
 Done today (code, tests, docs): owner answers Q-108, Q-112, Q-114, Q-115,
 Q-116, Q-126, Q-130, Q-131, Q-134 built; F-02, F-03, F-08, F-12, CAL-05,
 CH13-14, CH13-24 fixed; data fixes Q-125, Q-127, Q-134 run on production as
-approved; held files written or fixed for F-11 (`20261001130000`), Q-129
+approved; held files written or fixed for F-11 (`20261001130000`), Q-128
+(OD-01 counts total-only rounds in score figures only, `dcc54baea`), Q-129
 (guard on `20260928160000`) and Q-132 (`20261001120000`).
 
 Still to do on the branch:
 
 - Player CoachHelm views: Standing and Deep dive (worker in progress).
-- Q-128: amend held OD-01 so a total-only 18-hole round counts in score
-  figures, and regenerate the md5 guards downstream (worker in progress).
 - CoachHelm CH13-22 (send the starting value from the Assign button), CH13-23
   (say when a player declined a focus), CH13-21 (count exposure when drawn),
   CH13-8 (label each card's round set). They follow the views worker.

@@ -23,6 +23,12 @@
 -- 20260823000000_preserve_started_round_identity.sql does; it refuses to run
 -- if the anchor is not found exactly once.
 --
+-- ROLLBACK: apply the inverse anchored replacement (remove the
+--   "Optimistic lock (swap audit C-6)" block); the key is then ignored again.
+--
+-- VERIFY: select position('expected_updated_at' in prosrc) > 0 from pg_proc
+--   where proname = 'submit_round_atomic';  -- true
+--
 -- App follow-up once applied (src/app/golf/actions/golf.ts submit path, both
 -- engines): send `expected_updated_at` from lastServerUpdatedAtRef in
 -- p_round_data, and treat `error = 'conflict'` like the save path does.
