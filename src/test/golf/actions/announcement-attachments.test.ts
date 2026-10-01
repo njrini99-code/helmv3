@@ -132,3 +132,21 @@ describe('createEnrichedAnnouncement: a post whose files did not attach says so 
     expect(without.data).toEqual({ announcementId: 'golf_announcements-id' });
   });
 });
+
+describe('createEnrichedAnnouncement: the server action is the gate (100804)', () => {
+  beforeEach(() => {
+    inserted.length = 0;
+    outcomes.clear();
+    insertErrors.clear();
+    // Signed in, but no coach profile: a player, or anyone else.
+    outcomes.set('golf_coaches', { data: null, error: null });
+    outcomes.set('golf_team_members', { data: ROSTER, error: null });
+    outcomes.set('golf_documents', { data: [], error: null });
+  });
+
+  it('100804 refuses a caller who is not a coach, and writes nothing', async () => {
+    const result = await publish([]);
+    expect(result.success).toBe(false);
+    expect(inserted).toEqual([]);
+  });
+});
