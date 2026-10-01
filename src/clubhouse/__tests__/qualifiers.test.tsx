@@ -797,6 +797,73 @@ describe('Qualifiers · one qualifier', () => {
   });
 });
 
+describe('Qualifiers · a refresh that fails keeps the standings it had (owner rule 2, 2026-10-01)', () => {
+  const tree = (data: ChQDetail) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <QualifierDetail data={data} writes={fakeWrites()} live={false} />
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+  /** What the loader hands back when the rounds read fails on a refresh: no board, and no cards either. */
+  const failedRead = (d: ChQDetail): ChQDetail => ({ ...d, board: null, roundsError: true, holes: {}, holesError: true });
+  const leaderboard = () => screen.queryByRole('table', { name: 'Leaderboard' });
+
+  it('CH-09220 a failed refresh keeps the last good standings and says they may be out of date; a recovered one clears it; a first load that fails is still the error', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    const { rerender } = render(tree(d));
+    expect(leaderboard()).not.toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    rerender(tree(failedRead(d)));
+    expect(leaderboard()).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' })).toBeTruthy();
+    await expectCode('CH-09220', /These standings may be out of date/);
+    expect(code('CH-09204')).toBeNull();
+    // Try again re-reads the page, once.
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09220') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // The read lands: the new standings, no notice.
+    rerender(tree({ ...d, board: { ...d.board!, submitted: 14 } }));
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09803')!.textContent).toBe('Standings updated. 14 rounds submitted.');
+  });
+
+  it('CH-09220 CH-09204 a different qualifier never inherits the old board, and a failed first load stays an error', () => {
+    const live = detail();
+    const { rerender, unmount } = render(tree(live));
+    rerender(tree(failedRead(detail('completed'))));
+    expect(leaderboard()).toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09204')).not.toBeNull();
+    unmount();
+    render(tree(failedRead(live)));
+    expect(leaderboard()).toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09204')).not.toBeNull();
+  });
+
+  it('CH-09220 the same on the phone: the cards of the last good standings stay, with the notice', () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const d = detail();
+      const { rerender } = render(tree(d));
+      const rows = document.querySelectorAll('.ch-qfm-lb__row').length;
+      expect(rows).toBeGreaterThan(3);
+      rerender(tree(failedRead(d)));
+      expect(document.querySelectorAll('.ch-qfm-lb__row')).toHaveLength(rows);
+      expect(code('CH-09220')).not.toBeNull();
+      expect(code('CH-09204')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+});
+
 describe('Qualifiers · create and edit', () => {
   const form = (over: Partial<ChQFormData> = {}) => ({ ...previewCreateForm(), ...over });
 

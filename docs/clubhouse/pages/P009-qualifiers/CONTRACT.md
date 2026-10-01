@@ -143,8 +143,9 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90628 | CH-09219 | `MANAGE_SELECTIONS_CRASHES` | Manage selections crashes |
 | 90629 | CH-09009 | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | The squad is confirmed but telling the players failed |
 | 90630 | CH-09010 | `GIVING_OR_TAKING_BACK_A_PLACE_AT` | Giving or taking back a place at a tied cut fails |
-| 90631 | CH-09221 | `THE_COACHS_PICK_NOTES_DONT_LOAD` | The coach's pick notes don't load (detail, coach, confirmed squad) |
-| 90632 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
+| 90631 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
+| 90632 | CH-09221 | `THE_COACHS_PICK_NOTES_DONT_LOAD` | The coach's pick notes don't load (detail, coach, confirmed squad) |
+| 90633 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
 
 ## 07 — Network / offline
 

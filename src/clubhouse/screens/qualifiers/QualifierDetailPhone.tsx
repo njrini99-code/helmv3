@@ -22,7 +22,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { dayLabel, plural, positionLabel, shortRange, type ChQRow, type ChQStatus } from './model';
 import { StateBadge, StatusPill, ToPar } from './parts';
-import { Courses, Selections } from './QualifierSections';
+import { Courses, Selections, StaleStandings } from './QualifierSections';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -36,12 +36,15 @@ const LIST = '/golf/dashboard/qualifiers';
  */
 export function QualifierDetailPhone({
   data,
+  stale,
   status,
   onAskClose,
   onReopen,
   reopenPending,
 }: {
   data: ChQDetail;
+  /** The standings are the last good ones, because the latest read of them failed. */
+  stale: boolean;
   status: ChQStatus;
   onAskClose: () => void;
   onReopen: () => void;
@@ -116,7 +119,7 @@ export function QualifierDetailPhone({
       )}
 
       <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-        <Board data={data} status={status} onPeek={setPeek} />
+        <Board data={data} status={status} stale={stale} onPeek={setPeek} />
       </SectionBoundary>
 
       <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
@@ -177,7 +180,7 @@ export function QualifierDetailPhone({
 }
 
 /** The leaderboard as cards (board 02): position, avatar, name and state, to par; rounds, average and total under it. */
-function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; onPeek: (id: string) => void }) {
+function Board({ data, status, stale, onPeek }: { data: ChQDetail; status: ChQStatus; stale: boolean; onPeek: (id: string) => void }) {
   const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';
   const b = data.board;
@@ -228,6 +231,7 @@ function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; o
   return (
     <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
       {head}
+      {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>

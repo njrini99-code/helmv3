@@ -12,6 +12,20 @@ import { ToPar } from './parts';
 
 /** The detail's side sections, shared by desktop (QualifierDetail) and the phone (QualifierDetailPhone). */
 
+/** The standings on screen are the last good ones: the read that would have replaced them failed (CH-09220). */
+export function StaleStandings() {
+  const { refresh, refreshing } = useRefresh();
+  return (
+    <InlineNotice
+      code="CH-09220"
+      title="These standings may be out of date."
+      body="The latest scores didn’t load, so this is the last list that did. Try again to bring it up to date."
+      onRetry={refresh}
+      retrying={refreshing}
+    />
+  );
+}
+
 export function Selections({ data, status, topScore }: { data: ChQDetail; status: ChQStatus; topScore: number }) {
   const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';

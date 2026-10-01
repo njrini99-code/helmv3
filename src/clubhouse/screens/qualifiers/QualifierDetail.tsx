@@ -16,13 +16,14 @@ import { ScrollRegion } from '../../ui/ScrollRegion';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
+import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
 import { dayLabel, plural, positionLabel, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { StateBadge, StatusPill, ToPar } from './parts';
 import { useLiveStandings } from './live';
-import { Courses, Selections } from './QualifierSections';
+import { Courses, Selections, StaleStandings } from './QualifierSections';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
 import { useChPhone } from '../../lib/use-phone';
 import { LIVE_WRITES, type ChQWrites } from './writes';
@@ -35,8 +36,11 @@ const LIST = '/golf/dashboard/qualifiers';
  * the round-by-round table. Players read it: their row is marked, only their
  * own scorecards open, and they see the squad once it is confirmed (D-30).
  */
-export function QualifierDetail({ data, writes = LIVE_WRITES, live = true }: { data: ChQDetail; writes?: ChQWrites; live?: boolean }) {
+export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true }: { data: ChQDetail; writes?: ChQWrites; live?: boolean }) {
   const router = useRouter();
+  // A live refresh whose rounds or entries read fails would replace good standings with an error: draw the last good ones of this
+  // qualifier instead and say they may be out of date (owner rule 2). A first load that fails is still the error.
+  const { value: data, stale } = useLastGood(fresh.id, fresh, (d) => d.board !== null);
   const coach = data.role === 'coach';
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -118,6 +122,7 @@ export function QualifierDetail({ data, writes = LIVE_WRITES, live = true }: { d
       <>
         <QualifierDetailPhone
           data={data}
+          stale={stale}
           status={status}
           onAskClose={() => {
             chTrail('qualifiers close ask');
@@ -201,7 +206,7 @@ export function QualifierDetail({ data, writes = LIVE_WRITES, live = true }: { d
       <div className="ch-qf-body">
         <div className="ch-qf-col">
           <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-            <Leaderboard data={data} status={status} />
+            <Leaderboard data={data} status={status} stale={stale} />
           </SectionBoundary>
           {coach && b && b.rows.length > 0 && (
             <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
@@ -262,7 +267,7 @@ function Facts({ data, topScore }: { data: ChQDetail; topScore: number }) {
 
 const LB_COLS = '44px minmax(0, 1fr) 56px 56px 60px 104px 28px';
 
-function Leaderboard({ data, status }: { data: ChQDetail; status: ChQStatus }) {
+function Leaderboard({ data, status, stale }: { data: ChQDetail; status: ChQStatus; stale: boolean }) {
   const { refresh, refreshing } = useRefresh();
   const [open, setOpen] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
@@ -335,6 +340,7 @@ function Leaderboard({ data, status }: { data: ChQDetail; status: ChQStatus }) {
   return (
     <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
       {head}
+      {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
