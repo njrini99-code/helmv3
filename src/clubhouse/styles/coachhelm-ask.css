@@ -555,7 +555,7 @@
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-cmp__box:focus-within {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), 0 0 0 4px var(--ch-focus-halo), 0 12px 32px -14px rgb(28 25 18 / 0.22);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo), 0 12px 32px -14px rgb(28 25 18 / 0.22);
 }
 .ch-ask-cmp__label {
   position: absolute;

@@ -50,10 +50,15 @@ tertiary 5.5:1 (phone).
 - **D05 sculpted switches: fixed.** A solid track with one inner edge, a white
   thumb with one contact and one soft shadow (supersedes Q-139's tactile
   switch, Q-142).
-- **D06 focus varies by control: open.** The composer and phone message field
-  use the green focus pair; search and inputs keep their own.
+- **D06 focus varies by control: fixed.** One focus language: the green edge
+  and a green halo (`--ch-focus-halo` was a dark halo) on inputs, selects,
+  search, the composers and Ask. At rest a field is an edge with a faint inner
+  top shadow, so it reads as a place to type rather than a card.
 - **D07 shell recipes: open.** The green-frame shadows in `shell.css` are
   light-on-green and kept for now.
+
+Calendar (phone day): an event is a card; a class or busy block stays an
+unlifted hatch, so time a player is not free never reads as an event.
 
 ## Messages (the worked example)
 

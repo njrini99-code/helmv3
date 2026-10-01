@@ -96,7 +96,7 @@
   --ch-ink-rule: rgb(28 25 18 / 0.2);
   --ch-champagne-ring: rgb(110 84 36 / 0.14);
   --ch-champagne-rule: rgb(176 149 96 / 0.25);
-  --ch-focus-halo: rgb(28 25 18 / 0.1);
+  --ch-focus-halo: rgb(21 90 57 / 0.13);
 
   /* Type */
   --ch-font-sans: var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
