@@ -54,8 +54,17 @@ export function HomeSkeleton() {
           </div>
         ))}
       </div>
+      {/* The leaderboard's heading: the title, its line of small print, and the Roster button (a 49px block and a 30px button, 63px in all). */}
       <div className="ch-h-sec">
-        <Skeleton width={130} height={21} />
+        <div>
+          <Line height={29}>
+            <Skeleton width={130} height={21} />
+          </Line>
+          <Line height={20}>
+            <Skeleton width={300} height={13} />
+          </Line>
+        </div>
+        <Skeleton width={104} height={30} radius={10} />
       </div>
       <div className="ch-h-lb ch-sheet">
         {[0, 1, 2, 3, 4].map((k) => (

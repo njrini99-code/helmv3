@@ -139,6 +139,12 @@
     --ch-fg-h: 213px;
   }
 }
+/* The narrowest six across (a canvas of 901 to 940px), where two cards' words take a third line. */
+@container (min-width: 901px) and (max-width: 940px) {
+  .ch-fg {
+    --ch-fg-h: 229px;
+  }
+}
 @container (max-width: 900px) {
   .ch-fg {
     --ch-fg-h: 155px;
@@ -317,6 +323,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* From the top: a window with fewer players with rounds shortens the list from its bottom, it does not re-centre the rows that remain. */
+  align-self: start;
 }
 .ch-sgt__team {
   display: flex;
@@ -919,6 +927,10 @@ a.ch-lg__r:focus-visible {
 }
 /* Design system .fw-tab__count: a pressed-in pill, green on the selected tab. */
 .ch-tab-t__n {
+  /* Two digits wide at least (tabular), so the next tab does not slide 7px when a window's round count goes from one digit to two. */
+  min-width: 2ch;
+  text-align: center;
+  box-sizing: content-box;
   padding: 0 7px;
   border-radius: 7px;
   font: 600 11.5px/19px var(--ch-font-sans);

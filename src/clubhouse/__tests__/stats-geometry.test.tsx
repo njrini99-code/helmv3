@@ -79,9 +79,13 @@ describe('Team stats hold their geometry across windows', () => {
     expect(css).toMatch(/\.ch-fg--hold \.ch-fg__n\s*{\s*min-height: calc\(2 \* 1\.3 \* 12\.5px\)/);
     expect(css).toMatch(/\.ch-sgt__plot\s*{[^}]*min-height: calc\(30px \+ var\(--ch-ends, 0\) \* 34px\)/);
     expect(css).toMatch(/\.ch-st-cover\s*{[^}]*min-height: 18px/);
+    // The trend's list keeps its top when it shortens, and a tab's count is two digits wide at least.
+    expect(css).toMatch(/\.ch-sgt__ends\s*{[^}]*align-self: start/);
+    expect(css).toMatch(/\.ch-tab-t__n\s*{[^}]*min-width: 2ch/);
     // 196 six across with one-line labels, 213 where they wrap (a canvas of 901 to 1116px), 155 two across; the skeleton's card and the held card share it.
     expect(css).toMatch(/\.ch-fg\s*{\s*--ch-fg-h: 196px/);
     expect(css).toMatch(/min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 213px/);
+    expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 229px/);
     expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 155px/);
     expect(css).toMatch(/\.ch-fg__c--skel,\s*\.ch-fg--hold \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
   });
@@ -145,10 +149,16 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect((container.querySelector('.ch-sgt__hold') as HTMLElement).style.getPropertyValue('--ch-ends')).toBe('8');
   });
 
-  it('a profile: the strokes gained figure has its change line', () => {
-    const { container } = render(<StatsProfileSkeleton />);
-    expect(container.querySelectorAll('.ch-pf-hero__figs > div')).toHaveLength(4);
-    expect(container.querySelectorAll('.ch-pf-hero__figs .ch-pf-hero__chg')).toHaveLength(1);
+  it('a profile: the strokes gained figure has its change line; a coach\'s also has the way back and the three actions (a player\'s has neither)', () => {
+    const player = render(<StatsProfileSkeleton />);
+    expect(player.container.querySelectorAll('.ch-pf-hero__figs > div')).toHaveLength(4);
+    expect(player.container.querySelectorAll('.ch-pf-hero__figs .ch-pf-hero__chg')).toHaveLength(1);
+    expect(player.container.querySelector('.ch-st-back')).toBeNull();
+    expect(player.container.querySelector('.ch-pf-hero__act')).toBeNull();
+    player.unmount();
+    const coach = render(<StatsProfileSkeleton coach />);
+    expect(coach.container.querySelector('.ch-st-back')).not.toBeNull();
+    expect(coach.container.querySelector('.ch-pf-hero__act')!.children).toHaveLength(3);
   });
 
   it('the phone skeletons keep the loaded order (a profile: head, the window and filter row, then the figures) and give each figure its second line', () => {

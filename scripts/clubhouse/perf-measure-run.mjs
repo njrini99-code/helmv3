@@ -253,7 +253,8 @@ function figures(snap, trace, cold) {
 async function signIn(browser, base, who, stateFile) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
-  await page.goto(`${base}/golf/login`, { waitUntil: 'domcontentloaded' });
+  // Hydrated first: the form's Sign in button follows React's state, which a fill before hydration never reaches.
+  await page.goto(`${base}/golf/login`, { waitUntil: 'networkidle' });
   await page.locator('#golf-signin-email').fill(who.email);
   await page.locator('#golf-signin-password').fill(who.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
@@ -313,12 +314,14 @@ async function step(page, readsFile, { target, click, wait }) {
   return { snap, trace: readTrace(readsFile, off, since) };
 }
 
-async function navTo(page, label) {
+/** `settle`: a wait (ms) after the More sheet opens, so its links are prefetched as they are for a user who looks before tapping. */
+async function navTo(page, label, settle = 0) {
   const link = page.locator(`#ch-sidebar a[href="${label}"], aside.ch-sidebar a[href="${label}"], nav.ch-tabbar a[href="${label}"]`).locator('visible=true').first();
   if (await link.count()) return () => link.click();
   // Phone: not one of the four tabs, so it is in the More sheet.
   return async () => {
     await page.getByRole('button', { name: /^More/ }).click();
+    if (settle) await sleep(settle);
     await page.getByRole('dialog', { name: 'More' }).locator(`a[href="${label}"]`).click();
   };
 }
@@ -364,7 +367,7 @@ const LANDMARKS = {
   // The phone's skeleton and page name their blocks differently (`ch-hm-skel__hero` and `ch-hm-hero`), so a landmark lists both.
   home: { desk: ['.ch-h-head', '.ch-h-sheet', '.ch-h-sec', '.ch-h-lb'], phone: ['.ch-hm-skel__hero, .ch-hm-hero', '.ch-hm-skel__body, .ch-hm-body'] },
   'stats-team': { desk: ['.ch-st-head', '.ch-sf', '.ch-fg', '.ch-sgt'], phone: ['.ch-stm-head', '.ch-stm-controls', '.ch-stm-figs', '.ch-stm-panel'] },
-  'stats-player': { desk: ['.ch-pf-hero', '.ch-pf-tabs', '.ch-sf', '.ch-st-panel, .ch-sgt'], phone: ['.ch-spm-head', '.ch-stm-controls', '.ch-stm-figs', '.ch-stm-panel'] },
+  'stats-player': { desk: ['.ch-st-back', '.ch-pf-hero', '.ch-pf-hero__av', '.ch-pf-hero__id', '.ch-pf-hero__figs', '.ch-pf-tabs', '.ch-sf', '.ch-st-panel, .ch-sgt'], phone: ['.ch-spm-head', '.ch-stm-controls', '.ch-stm-figs', '.ch-stm-panel'] },
 };
 
 async function landmarkRects(page, selectors) {
@@ -466,6 +469,8 @@ export async function measure(opts) {
             if (routes.length && !routes.some((o) => to.includes(o))) continue;
             const sels = LANDMARKS[to]?.[phone ? 'phone' : 'desk'] ?? [];
             if (!sels.length) continue;
+            // The phone's Home has no leaderboard row to tap into a player's page.
+            if (phone && toPath.includes('?')) continue;
             const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems, !opts['first-visit']);
             try {
               await loadCold(page, base, fromPath, readsFile);
@@ -480,7 +485,7 @@ export async function measure(opts) {
                 await page.evaluate((p) => window.__perf.arm(p), toPath);
                 await row.click();
               } else {
-                const click = await navTo(page, toPath);
+                const click = await navTo(page, toPath, 1500);
                 await page.evaluate(() => window.__perf.arm(null));
                 await click();
               }

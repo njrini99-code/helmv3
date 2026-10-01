@@ -11,28 +11,44 @@ function Line({ height, children }: { height: number; children: ReactNode }) {
   );
 }
 
-/** Route loading for a player's stats, their own or a coach's `?player=` (CH-5403): the profile's hero, four figures and tabs, in place. */
-export function StatsProfileSkeleton() {
+/**
+ * Route loading for a player's stats, their own or a coach's `?player=` (CH-5403): the profile's hero, four figures and tabs, in place.
+ * A coach's profile has the way back above the hero and three actions in it (Message, Schedule 1:1, Add focus area), so the skeleton
+ * draws them for a coach (measured 2026-10-01: hero 349 px for a coach, 314 for a player).
+ */
+export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
   return (
     <main className="ch-st" aria-busy="true" aria-label="Loading player stats" data-ch-code="CH-5403">
+      {coach && (
+        <div className="ch-st-back" aria-hidden="true">
+          <Skeleton width={112} height={30} radius={10} />
+        </div>
+      )}
       <section className="ch-pf-hero" aria-hidden="true">
         <span className="ch-pf-hero__av">
           <Skeleton width={112} height={112} radius={56} />
         </span>
         <div className="ch-pf-hero__id">
-          <Line height={41}>
-            <Skeleton width={240} height={36} radius={10} />
+          <Line height={35}>
+            <Skeleton width={240} height={32} radius={10} />
           </Line>
-          <Line height={21}>
+          <Line height={18}>
             <Skeleton width={280} height={14} />
           </Line>
+          {coach && (
+            <div className="ch-pf-hero__act">
+              <Skeleton width={104} height={36} radius={10} />
+              <Skeleton width={128} height={36} radius={10} />
+              <Skeleton width={136} height={36} radius={10} />
+            </div>
+          )}
         </div>
         <div className="ch-pf-hero__figs">
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i}>
-              <Skeleton width={72} height={11} />
+              <Skeleton width={72} height={12} />
               <Skeleton width={56} height={24} radius={7} />
-              <Skeleton width={64} height={11} />
+              <Skeleton width={64} height={17} />
               {/* The strokes gained figure's change line (the loaded hero keeps it in every window). */}
               {i === 2 && <span className="ch-pf-hero__chg" style={{ display: 'block' }} />}
             </div>
