@@ -18,7 +18,8 @@ import { AskEvidencePanel } from './EvidencePanel';
 import { HistoryDrawer, HistoryPanel } from './History';
 import { AskHome } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
-import { COACHHELM_HREF, CoachHelmTabs } from './SubTabs';
+import { useViewSwitch } from '../use-view-switch';
+import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
 import { AskThread } from './Thread';
 
 /** The chat implementation: the production hook, or a stand-in for the preview and the tests (nothing goes over the network). */
@@ -56,11 +57,12 @@ function TeamLabel({ name }: { name: string }) {
 /** The frame the states without a chat share: the sub-tab strip (so the Board is one tap away) over the state. */
 function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
   const phone = useChPhone();
+  const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
   return (
-    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" data-ch-code="CH-13820">
+    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-code="CH-13820">
       {phone && <PhoneTop start title="CoachHelm" />}
       <div className="ch-ask-top">
-        <CoachHelmTabs active="ask" />
+        <CoachHelmTabs active={sw.shown} onGo={sw.go} />
         {!phone && team && <TeamLabel name={team} />}
       </div>
       <div className="ch-ask-plain">{children}</div>
@@ -98,6 +100,8 @@ export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoa
 function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial }) {
   const router = useRouter();
   const phone = useChPhone();
+  // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
+  const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
   const online = useOnline();
   const refuseOffline = useRefuseOffline();
   const [conversations, setConversations] = useState(data.conversations);
@@ -213,7 +217,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const evidenceOpen = evidence !== null && !showHome;
 
   return (
-    <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" data-ch-code="CH-13820">
+    <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-code="CH-13820">
       {phone && (
         <>
           <PhoneTop
@@ -232,7 +236,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
         </>
       )}
       <div className="ch-ask-top">
-        <CoachHelmTabs active="ask" />
+        <CoachHelmTabs active={sw.shown} onGo={sw.go} />
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
       <div className={'ch-ask-body' + (!phone && panelOpen ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>

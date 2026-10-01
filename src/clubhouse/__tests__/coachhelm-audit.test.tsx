@@ -3,6 +3,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolved } from './route-view';
 
 /** The CoachHelm audit's code fixes (swap audit section 13), through the loaders, the route and the screens. */
 
@@ -305,13 +306,17 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
     const el = (await ClubhouseCoachHelmRoute({ view: 'ask' })) as { type: unknown; props: { fallback: unknown } };
     expect(el.type).toBe(Suspense);
     expect(el.props.fallback).not.toBeNull();
+    // The gate is read inside the boundary, after the page has been handed back, and before the chat is.
+    expect(isCoachHelmEnabledForCoach).not.toHaveBeenCalled();
+    await resolved(el);
     expect(isCoachHelmEnabledForCoach).toHaveBeenCalledWith('c1');
+    expect(loadAskCoachHelm).toHaveBeenCalledTimes(1);
   });
 
   it('CH-13305 CoachHelm off for the coach, their team or GolfHelm: the board’s own "CoachHelm is off" page, no chat read, no tab strip', async () => {
     asCoach();
     vi.mocked(isCoachHelmEnabledForCoach).mockResolvedValue({ ...on, effectivelyEnabled: false, teamEnabled: false, disabledBy: 'team', disabledReason: 'Disabled by team' });
-    render(wrap(await ClubhouseCoachHelmRoute({ view: 'ask' })));
+    render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
     expect(code('CH-13305')!.textContent).toMatch(/CoachHelm is off.*Your team has turned CoachHelm off/);
     expect(screen.queryByTestId('ask')).toBeNull();
     expect(loadAskCoachHelm).not.toHaveBeenCalled();
@@ -321,7 +326,7 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
   it('a lookup that failed is Ask’s own "did not load", never an open chat', async () => {
     asCoach();
     vi.mocked(isCoachHelmEnabledForCoach).mockRejectedValue(new Error('down'));
-    render(wrap(await ClubhouseCoachHelmRoute({ view: 'ask' })));
+    render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
     expect(screen.getByTestId('ask').getAttribute('data-status')).toBe('failed');
     expect(loadAskCoachHelm).not.toHaveBeenCalled();
   });
@@ -331,7 +336,7 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...on });
     vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(jonah.id)]);
     tables.current = { golf_team_members: { data: null }, golf_drills: { data: [] }, golf_player_focus_areas: { data: [] } };
-    render(wrap(await ClubhouseCoachHelmRoute({ view: 'ask' })));
+    render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
     expect(screen.getByText('Player')).toBeTruthy();
     expect(isCoachHelmEnabledForCoach).not.toHaveBeenCalled();
   });

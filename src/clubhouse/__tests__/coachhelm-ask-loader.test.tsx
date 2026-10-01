@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
+import { resolved } from './route-view';
 
 /**
  * Ask CoachHelm (P013): the server loader and the route that hands it to a coach and never to a player
@@ -236,7 +237,7 @@ describe('ClubhouseCoachHelmRoute: the Ask sub-tab is the coach\'s alone', () =>
   it('a coach without ?view=ask still gets the board, and a coach with no team gets the no-team page before any chat read', async () => {
     session.current = coach;
     teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
-    await ClubhouseCoachHelmRoute({});
+    await resolved(await ClubhouseCoachHelmRoute({}));
     expect(loadCoachCoachHelm).toHaveBeenCalled();
     expect(askSpy).not.toHaveBeenCalled();
     teamOf.current = null;
@@ -248,7 +249,7 @@ describe('ClubhouseCoachHelmRoute: the Ask sub-tab is the coach\'s alone', () =>
   it('a player on ?view=ask gets their own board: the chat loader is never called, so no other player\'s stats are read', async () => {
     session.current = player;
     teamOf.current = { role: 'player', teamId: 't1', playerId: 'pl1' };
-    const el = (await ClubhouseCoachHelmRoute({ view: 'ask', c: CONV })) as ReactElement<{ data: unknown }>;
+    const el = (await resolved(await ClubhouseCoachHelmRoute({ view: 'ask', c: CONV }))) as ReactElement<{ data: unknown }>;
     expect(loadPlayerCoachHelm).toHaveBeenCalledWith({ playerId: 'pl1' });
     expect(el.props.data).toEqual({ board: 'player' });
     expect(askSpy).not.toHaveBeenCalled();

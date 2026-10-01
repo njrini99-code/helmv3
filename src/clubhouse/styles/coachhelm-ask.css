@@ -962,3 +962,15 @@
     padding: 0 16px;
   }
 }
+
+/* A switch to the Board (use-view-switch.ts): the strip has already moved; the chat dims and stops answering taps until the Board is ready. */
+.ch-ask-body {
+  transition:
+    grid-template-columns var(--ch-dur-base) var(--ch-ease),
+    opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ask[aria-busy='true']:not([aria-label^='Loading']) > .ch-ask-body,
+.ch-ask[aria-busy='true']:not([aria-label^='Loading']) > .ch-ask-plain {
+  opacity: 0.55;
+  pointer-events: none;
+}

@@ -2,9 +2,8 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
 import { rebuiltHref } from '../../../shell/nav';
@@ -22,13 +21,14 @@ const VIEWS: readonly PlayerHelmView[] = ['board', 'profile', 'standing', 'deep-
  *
  * Four labels and a link do not fit a phone's width as one control, so on the phone it is a row of chips that scrolls sideways
  * (the phone board's `qm-switch`), with the current one brought into view.
+ *
+ * It is controlled: `active` is the view the tap has chosen (at once, not when the server answers) and `onGo` changes view. The
+ * page that draws it owns that state (`useViewSwitch`), because it is the page that dims and is marked busy while the next view loads.
  */
-export function PlayerHelmTabs({ active }: { active: PlayerHelmView }) {
-  const router = useRouter();
+export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo: (view: PlayerHelmView) => void }) {
   const phone = useChPhone();
   const row = useRef<HTMLDivElement>(null);
   const development = rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
-  const go = (view: PlayerHelmView) => router.push(PLAYER_HELM_HREF[view]);
 
   // The chip row is wider than the screen: start with the current chip in view, without moving the page.
   useEffect(() => {
@@ -50,7 +50,7 @@ export function PlayerHelmTabs({ active }: { active: PlayerHelmView }) {
               onClick={() => {
                 if (v === active) return;
                 haptic('select');
-                go(v);
+                onGo(v);
               }}
             >
               {PLAYER_HELM_TAB_LABEL[v]}
@@ -68,7 +68,7 @@ export function PlayerHelmTabs({ active }: { active: PlayerHelmView }) {
   }
   return (
     <div className="ch-hv-tabs" data-ch-code="CH-13930">
-      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={VIEWS.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={go} />
+      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={VIEWS.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={onGo} />
       {development && (
         <Button variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
           Development

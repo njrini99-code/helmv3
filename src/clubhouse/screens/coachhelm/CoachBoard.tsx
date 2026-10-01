@@ -17,8 +17,9 @@ import { InlineNotice } from '../../ui/Notices';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { CoachHelmTabs } from './chat/SubTabs';
+import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
 import { FocusCard, Head, PulseList } from './parts';
+import { useViewSwitch } from './use-view-switch';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
@@ -46,6 +47,8 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   const [assigned, setAssigned] = useState<Record<string, ChHelmAssigned>>({});
   const [dismissed, setDismissed] = useState<Record<string, true>>({});
   const refresh = () => router.refresh();
+  // A switch to Ask moves the strip at once and dims the board (aria-busy) until Ask is ready.
+  const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v]);
 
   // The follow-ups (marking assigned, hiding a dismissed card, restoring it) live inside the action, so a toast's Retry completes them too.
   // CH-13702: Assign is a primary Button, so its tap is the light press; the write's success and error haptics come from useAction.
@@ -280,9 +283,9 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   );
 
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
-  const tabs = data.off ? null : <CoachHelmTabs active="board" />;
+  const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title">
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <Head who="Coach">{players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>

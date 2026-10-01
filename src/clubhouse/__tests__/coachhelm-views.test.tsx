@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -44,6 +44,7 @@ vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactiv
 
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
+import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Profile } from '../screens/coachhelm/views/Profile';
@@ -68,7 +69,9 @@ const wrap = (node: React.ReactNode) => (
     </ToastProvider>
   </LazyMotion>
 );
-type Gated = ReactElement<{ fallback: ReactElement; children: ReactElement<{ playerId: string }> }>;
+type Gated = ReactElement<{ fallback: ReactElement; children: ReactElement<{ playerId: string; drill: string | null; insight?: string }> }>;
+/** What the route's one Suspense draws once its async child has read: the screen, with the load it was handed. */
+const settle = async (el: ReactElement<{ children: ReactElement }>) => (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown; initialId?: string | null }>>)(el.props.children.props)) as ReactElement<{ load: unknown; initialId?: string | null }>;
 
 beforeEach(() => {
   phoneState.on = false;
@@ -97,14 +100,17 @@ const VIEWS = [
 const allReads = () => VIEWS.map((v) => v.read);
 
 describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same switch as the board', ({ view, Screen, Skeleton, read, ready }) => {
-  it('reads for the session’s player and nobody else, whatever the address says, inside a keyed Suspense that draws the view’s own skeleton', async () => {
+  it('reads for the session’s player and nobody else, whatever the address says, inside the one Suspense (not keyed by view) that draws the view’s own skeleton', async () => {
     const el = (await ClubhouseCoachHelmRoute({ view, player: 'pl-someone-else' })) as Gated;
-    expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
-    expect(el.key).toBe(view);
+    // The boundary is the same one for every view, so a switch keeps the view on screen (dimmed by the tabs) instead of drawing a skeleton over it;
+    // it is the hard load, with nothing to keep, that draws the view's own skeleton. The gate is read inside it, after the page is handed back.
+    expect(el.key).toBeNull();
     expect(el.props.fallback.type).toBe(Skeleton);
-    expect(el.props.children.props.playerId).toBe('pl-jonah');
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: view });
+    expect(isCoachHelmEnabledForPlayer).not.toHaveBeenCalled();
     read.mockResolvedValue(ready);
-    const out = (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown }>>)(el.props.children.props)) as ReactElement<{ load: unknown }>;
+    const out = await settle(el);
+    expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
     expect(read).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
     expect(read).toHaveBeenCalledTimes(1);
     expect(allReads().filter((r) => r !== read).every((r) => r.mock.calls.length === 0)).toBe(true);
@@ -112,9 +118,9 @@ describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same s
     expect(out.props.load).toEqual(ready);
   });
 
-  it('CH-13304 CoachHelm off: the board’s own page at once, in the coach’s words, and nothing is read', async () => {
+  it('CH-13304 CoachHelm off: the board’s own page, in the coach’s words, and nothing is read', async () => {
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...off });
-    const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ load: unknown }>;
+    const el = await settle((await ClubhouseCoachHelmRoute({ view })) as Gated);
     expect(el.type).toBe(Screen);
     expect(el.props.load).toEqual({ status: 'off', reason: 'Back after the qualifier' });
     for (const r of allReads()) expect(r).not.toHaveBeenCalled();
@@ -122,13 +128,13 @@ describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same s
 
   it('a gate lookup that failed is the view’s own did-not-load, never "off", and never a read against a switch that may be off', async () => {
     vi.mocked(isCoachHelmEnabledForPlayer).mockRejectedValue(new Error('down'));
-    const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ load: unknown }>;
+    const el = await settle((await ClubhouseCoachHelmRoute({ view })) as Gated);
     expect(el.props.load).toEqual({ status: 'failed' });
     for (const r of allReads()) expect(r).not.toHaveBeenCalled();
     expect(logServer).toHaveBeenCalledWith('coachhelm', 'gate', expect.any(Error), 'coachhelm');
 
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...off, disabledBy: null, disabledReason: 'Lookup failed' });
-    const again = (await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ load: unknown }>;
+    const again = await settle((await ClubhouseCoachHelmRoute({ view })) as Gated);
     expect(again.props.load).toEqual({ status: 'failed' });
   });
 
@@ -137,14 +143,15 @@ describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same s
     teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
     vi.mocked(isCoachHelmEnabledForCoach).mockResolvedValue({ ...on });
     board.coach.mockResolvedValue({ off: null, roster: { count: 0, error: false }, pulse: { rows: [], error: false }, players: { list: [], error: false }, withoutSignals: 0 });
-    const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement;
+    const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
+    const out = await settle(el);
     expect(board.coach).toHaveBeenCalled();
     for (const r of allReads()) expect(r).not.toHaveBeenCalled();
     expect(isCoachHelmEnabledForPlayer).not.toHaveBeenCalled();
-    expect(el.type).not.toBe(Screen);
+    expect(out.type).not.toBe(Screen);
 
     session.current = { ...maya, player: { id: 'pl-coach-as-player' } };
-    await ClubhouseCoachHelmRoute({ view });
+    await settle((await ClubhouseCoachHelmRoute({ view })) as Gated);
     for (const r of allReads()) expect(r).not.toHaveBeenCalled();
   });
 });
@@ -158,21 +165,22 @@ describe('the player’s views and the board', () => {
     session.current = jonah;
     board.player.mockResolvedValue(PREVIEW_HELM_PLAYER);
     for (const view of [undefined, 'insights', 'nonsense']) {
-      const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement;
-      expect(el.type).toBe(PlayerBoard);
+      const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
+      expect(el.props.fallback.type).toBe(CoachHelmSkeleton);
+      expect((await settle(el)).type).toBe(PlayerBoard);
     }
     for (const r of allReads()) expect(r).not.toHaveBeenCalled();
   });
 });
 
 describe('CH-13981 ?insight= on the Deep dive', () => {
-  type Open = ReactElement<{ fallback: ReactElement; children: ReactElement<{ playerId: string; insight?: string }> }>;
+  type Open = ReactElement<{ fallback: ReactElement; children: ReactElement<{ playerId: string; drill: string | null; insight?: string }> }>;
   const run = async (el: Open) => (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown; initialId: string | null }>>)(el.props.children.props)) as ReactElement<{ load: unknown; initialId: string | null }>;
 
   it('is carried as a name to open, never as data to read: the loader still gets only the session’s player', async () => {
     diveRead.load.mockResolvedValue(diveLoad(PREVIEW_DIVE));
     const el = (await ClubhouseCoachHelmRoute({ view: 'deep-dive', insight: 'in-pen', player: 'pl-someone-else' })) as Open;
-    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', insight: 'in-pen' });
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: 'deep-dive', insight: 'in-pen' });
     const out = await run(el);
     expect(diveRead.load).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
     expect(out.props.initialId).toBe('in-pen');
@@ -188,7 +196,7 @@ describe('CH-13981 ?insight= on the Deep dive', () => {
   it('is ignored on every other view and on the board', async () => {
     standingRead.load.mockResolvedValue(standingLoad(PREVIEW_STANDING));
     const el = (await ClubhouseCoachHelmRoute({ view: 'standing', insight: 'in-pen' })) as Open;
-    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah' });
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: 'standing' });
   });
 });
 
@@ -214,6 +222,31 @@ describe('CH-13930 the player’s sub-navigation', () => {
     await userEvent.click(screen.getByRole('radio', { name: 'Board' }));
     expect(router.push).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('select');
+  });
+
+  it('a tap moves the strip at once and marks the page busy until the view lands: the page stays, nothing blanks, and a view does the same (phone chips too)', async () => {
+    for (const where of ['board', 'profile'] as const) {
+      router.push.mockImplementationOnce(() => new Promise(() => {}));
+      render(wrap(where === 'board' ? <PlayerBoard data={PREVIEW_HELM_PLAYER} /> : <Profile load={profileLoad(PREVIEW_PROFILE)} />));
+      const main = document.querySelector('main.ch-hl')!;
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+      await userEvent.click(screen.getByRole('radio', { name: 'Standing' }));
+      await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
+      expect(screen.getByRole('radio', { name: 'Standing' })).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('radio', { name: where === 'board' ? 'Board' : 'Game profile' })).toHaveAttribute('aria-checked', 'false');
+      // The page is still drawn, not swapped for a skeleton, and the header (which stays crisp) is on it.
+      expect(main.getAttribute('aria-label')).toBeNull();
+      expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
+      cleanup();
+    }
+    router.push.mockReset();
+    phoneState.on = true;
+    router.push.mockImplementationOnce(() => new Promise(() => {}));
+    render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
+    await userEvent.click(within(screen.getByRole('group', { name: 'CoachHelm view' })).getByRole('button', { name: 'Deep dive' }));
+    await waitFor(() => expect(document.querySelector('main.ch-hl')!.getAttribute('aria-busy')).toBe('true'));
+    expect(screen.getByRole('button', { name: 'Deep dive' }).getAttribute('aria-pressed')).toBe('true');
+    router.push.mockReset();
   });
 
   it('CH-13931 Development is a link out, after the group and not a radio: it is Stats’ Development tab', () => {

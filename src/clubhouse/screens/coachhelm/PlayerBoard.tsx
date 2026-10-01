@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Play, Sparkles } from 'lucide-react';
 import { partitionInsights, type ChPlayerHelm } from '../../data/coachhelm-shape';
+import { PLAYER_HELM_HREF, type PlayerHelmView } from '../../data/coachhelm-views-shape';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
@@ -13,6 +14,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { FocusCard, Head, InsightRow } from './parts';
 import { Proposals } from './Proposals';
+import { useViewSwitch } from './use-view-switch';
 import { PlayerHelmTabs } from './views/PlayerHelmTabs';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from './writes';
 
@@ -40,6 +42,8 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   const [picked, setPicked] = useState<string | null>(null);
   const focusTop = useRef<HTMLDivElement>(null);
   const refresh = () => router.refresh();
+  // A switch of view moves the strip at once and dims the board (aria-busy) until the next view is ready.
+  const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v]);
 
   const list = data.insights.list;
   const { focus, also, working } = useMemo(() => partitionInsights(list, picked), [list, picked]);
@@ -51,9 +55,9 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   };
 
   // With CoachHelm off (CH-13304) nothing is read and the views lead nowhere, so the strip is not drawn, as the coach's is not (CH-13305).
-  const tabs = data.off ? null : <PlayerHelmTabs active="board" />;
+  const tabs = data.off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title">
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <Head who="Player">One thing to work on this week, based on the rounds you’ve posted.</Head>

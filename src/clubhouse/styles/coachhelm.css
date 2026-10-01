@@ -857,3 +857,15 @@
     min-height: 44px;
   }
 }
+
+/* A switch of view (the strip's own pending state, screens/coachhelm/use-view-switch.ts): the strip has already moved, so the
+   header and the strip stay crisp and what is changing dims and stops answering taps until the next view is ready, then is
+   replaced in one swap (no skeleton: the route's Suspense is not keyed by view). Skeletons are aria-busy too; they are excluded.
+   Reduced motion shortens the ease to nothing (base.css). The ease is `:where`, so a child's own transition still wins. */
+:where(.ch-hl) > * {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-hl[aria-busy='true']:not([aria-label^='Loading']) > :not(.ch-hl-h):not(.ch-hv-tabs):not(.ch-ask-tabs) {
+  opacity: 0.55;
+  pointer-events: none;
+}

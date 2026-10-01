@@ -2,11 +2,12 @@
 
 import { Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { PLAYER_HELM_HREF, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { EmptyState } from '../../../ui/States';
 import { Head } from '../parts';
+import { useViewSwitch } from '../use-view-switch';
 import { PlayerHelmTabs } from './PlayerHelmTabs';
 
 /**
@@ -21,10 +22,12 @@ import { PlayerHelmTabs } from './PlayerHelmTabs';
  */
 export function PlayerHelmFrame({ view, line, off = false, covered = false, after, children }: { view: PlayerHelmView; line: ReactNode; off?: boolean; covered?: boolean; after?: ReactNode; children: ReactNode }) {
   const phone = useChPhone();
-  const tabs = off ? null : <PlayerHelmTabs active={view} />;
+  // A switch of view moves the strip at once and dims the page (aria-busy) until the next view is ready.
+  const sw = useViewSwitch(view, (v) => PLAYER_HELM_HREF[v]);
+  const tabs = off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
     <>
-      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} inert={covered || undefined}>
+      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} aria-busy={sw.pending || undefined} inert={covered || undefined}>
         {phone && <PhoneTop start title="CoachHelm" />}
         {phone && tabs}
         <Head who="Player">{line}</Head>
