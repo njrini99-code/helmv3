@@ -36,8 +36,16 @@ export type RoundTrackingProps = ShotTrackingProps & {
 const PORTS: ShotTrackingPorts = { haptic: () => haptic('select') };
 
 // "Round saved" only for a server acknowledgement. A save held on the device (offline, waiting on another save, or
-// refused until a reload) says where the shots are instead (swap audit R-1).
-const SAVE_WORDS = { saving: 'Saving round', saved: 'Round saved', error: 'Not synced yet, retrying', device: 'Saved on this phone' } as const;
+// refused until a reload) says where the shots are instead (swap audit R-1), and so does a shot the server has not
+// acknowledged yet whose device copy landed ("syncing": the send is on its way). Nothing is said about a shot whose
+// device copy failed: there is no true word for it.
+const SAVE_WORDS = {
+  saving: 'Saving round',
+  saved: 'Round saved',
+  error: 'Not synced yet, retrying',
+  device: 'Saved on this phone',
+  syncing: 'Saved on this phone · syncing',
+} as const;
 
 /**
  * The shot screen, Clubhouse's renderer (board `rounds-track.jsx`). All of its
@@ -68,7 +76,7 @@ export function RoundTracking(props: RoundTrackingProps) {
   const backTo = holedOut && !!onNavigateToHole && frontier >= 0 && frontier !== currentHoleIndex ? { index: frontier, number: holes[frontier]!.number } : null;
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
   const far = heroDistance(t.distanceToHole, t.distanceUnit, distancePref);
-  const saveState = t.autoSaveStatus === 'idle' && t.autoSaveHeldOnDevice ? 'device' : t.autoSaveStatus;
+  const saveState = t.autoSaveStatus !== 'idle' ? t.autoSaveStatus : t.autoSaveHeldOnDevice ? 'device' : t.autoSaveSyncing ? 'syncing' : 'idle';
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
 
   return (
@@ -108,7 +116,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             <Icon icon={CloudOff} size={13} />
           ) : saveState === 'saved' ? (
             <Icon icon={Check} size={13} />
-          ) : saveState === 'device' ? (
+          ) : saveState === 'device' || saveState === 'syncing' ? (
             <Icon icon={Smartphone} size={13} />
           ) : (
             <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />

@@ -30,7 +30,8 @@ vi.mock('@/app/golf/actions/golf', () => ({
   touchSavedCourse: vi.fn(async () => ({ success: true })),
 }));
 vi.mock('@/app/golf/actions/course-library', () => ({ contributeCourseFromRound: vi.fn() }));
-vi.mock('@/app/golf/actions/round-drafts', () => ({ checkRoundStaleness: vi.fn() }));
+const staleness = vi.hoisted(() => ({ check: vi.fn() }));
+vi.mock('@/app/golf/actions/round-drafts', () => ({ checkRoundStaleness: (...args: unknown[]) => staleness.check(...args) }));
 vi.mock('@/app/golf/actions/round-type', () => ({ updateRoundType: vi.fn() }));
 vi.mock('@/hooks/golf/use-connection-status', () => ({
   useConnectionStatus: () => ({ isOnline: true, isConnected: mocks.connected, quality: 'excellent' }),
@@ -212,5 +213,23 @@ describe('R-1: an auto-save that did not reach the server says so', () => {
 
     expect(isAutoSaveHeld(thrown) && (thrown as AutoSaveHeldError).reason).toBe('busy');
     expect(ports.showToast).not.toHaveBeenCalled();
+  });
+
+  it('a conflict the server answered is never an acknowledgement: a healed one is held to be sent again, an unhealed one is blocked', async () => {
+    const healedHook = await started();
+    const blockedHook = await started();
+    mocks.savePartialRound.mockResolvedValue({ success: false, error: 'conflict' });
+
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: false, currentUpdatedAt: '2026-09-30T12:00:00.000Z', status: 'in_progress' } });
+    const healed = await autoSave(healedHook, [TEE]);
+    expect(isAutoSaveHeld(healed) && (healed as AutoSaveHeldError).reason).toBe('conflict');
+
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: true, currentUpdatedAt: '2026-09-30T12:05:00.000Z', status: 'in_progress' } });
+    const blocked = await autoSave(blockedHook, [TEE]);
+    expect(isAutoSaveHeld(blocked) && (blocked as AutoSaveHeldError).reason).toBe('blocked');
+    mocks.savePartialRound.mockClear();
+    const after = await autoSave(blockedHook, [TEE]);
+    expect(isAutoSaveHeld(after) && (after as AutoSaveHeldError).reason).toBe('blocked');
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
   });
 });

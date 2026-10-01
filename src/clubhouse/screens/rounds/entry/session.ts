@@ -34,7 +34,7 @@ export interface ChRoundSession {
   activeShotNumber: number;
   onHoleComplete: (holeIndex: number, stats: HoleStats) => Promise<boolean>;
   onHoleStatsUpdate: (holeIndex: number, stats: HoleStats | null) => void;
-  onSaveShot: (shot: ShotRecord) => void;
+  onSaveShot: (shot: ShotRecord) => boolean | void;
   onAutoSave: (shots: ShotRecord[], holeIndex: number) => Promise<void>;
   autoSaveDisabled: boolean;
 

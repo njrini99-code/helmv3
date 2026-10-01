@@ -20,7 +20,8 @@ vi.mock('@/app/golf/actions/golf', () => ({
   submitGolfRoundComprehensive: (...args: unknown[]) => mocks.submitGolfRoundComprehensive(...args),
   deleteInProgressRound: (...args: unknown[]) => mocks.deleteInProgressRound(...args),
 }));
-vi.mock('@/app/golf/actions/round-drafts', () => ({ checkRoundStaleness: vi.fn() }));
+const staleness = vi.hoisted(() => ({ check: vi.fn() }));
+vi.mock('@/app/golf/actions/round-drafts', () => ({ checkRoundStaleness: (...args: unknown[]) => staleness.check(...args) }));
 vi.mock('@/app/golf/actions/round-type', () => ({ updateRoundType: vi.fn() }));
 vi.mock('@/hooks/golf/use-round-status-sync', () => ({ useRoundStatusSync: vi.fn() }));
 vi.mock('@/stores/offline-sync-store', () => {
@@ -196,6 +197,50 @@ describe('R-1: an auto-save that did not reach the server says so', () => {
     const hook = render();
     expect(await autoSave(hook, [shot(1)])).toBeNull();
   });
+
+  it('a conflict the server answered is never an acknowledgement: a healed one is held to be sent again, an unhealed one is blocked', async () => {
+    mocks.savePartialRound.mockResolvedValue({ success: false, error: 'conflict' });
+
+    // The mismatch was this device's own (the server agrees with the token now): the same shots go again under it.
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: false, currentUpdatedAt: '2026-09-30T12:00:00.000Z', status: 'in_progress' } });
+    const healed = await autoSave(render(), [shot(1)]);
+    expect(isAutoSaveHeld(healed)).toBe(true);
+    expect((healed as AutoSaveHeldError).reason).toBe('conflict');
+    expect((healed as AutoSaveHeldError).onDevice).toBe(true);
+
+    // A genuine collision with another device: this device is behind and writes nothing more until a reload.
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: true, currentUpdatedAt: '2026-09-30T12:05:00.000Z', status: 'in_progress' } });
+    const blockedHook = render();
+    const blocked = await autoSave(blockedHook, [shot(1)]);
+    expect(isAutoSaveHeld(blocked)).toBe(true);
+    expect((blocked as AutoSaveHeldError).reason).toBe('blocked');
+    mocks.savePartialRound.mockClear();
+    const after = await autoSave(blockedHook, [shot(1), shot(2)]);
+    expect((after as AutoSaveHeldError).reason).toBe('blocked');
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+  });
+
+  it('handleSaveShot reports whether the device copy landed, which is the only thing the save line may claim before the server answers', async () => {
+    const hook = render();
+    let landed: unknown;
+    act(() => {
+      landed = hook.result.current.handleSaveShot(shot(1));
+    });
+    expect(landed).toBe(true);
+    expect(loadEmergencySave('round-1', 'player-1')?.inProgressShotsByHole[0]).toHaveLength(1);
+
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    try {
+      act(() => {
+        landed = hook.result.current.handleSaveShot(shot(2));
+      });
+      expect(landed).toBe(false);
+    } finally {
+      setItem.mockRestore();
+    }
+  });
 });
 
 describe('R-8 / R-4: after Discard nothing is written and nothing re-creates the round', () => {
@@ -321,3 +366,56 @@ describe('R-9: a restored copy with every hole scored can be submitted', () => {
     expect(hook.result.current.showFinishConfirm).toBe(true);
   });
 });
+
+describe('journey: a shot entered, the connection cut, the screen left and reopened, the connection back', () => {
+  /** The shots a save sent for the first hole, in the order sent. */
+  const sentShots = (call: number) => (mocks.savePartialRound.mock.calls[call]![0] as { inProgressShots: Array<{ holeNumber: number; shots: ShotRecord[] }> }).inProgressShots[0]?.shots ?? [];
+
+  it('the shot exists exactly once, nothing reached the server while offline, and every status along the way was held, then saved', async () => {
+    // The server holds shot 1; shot 2 is entered on this phone, and its device copy lands before any network call.
+    const first = render({ initialShots: [shot(1)], initialShotNumber: 2 });
+    await flush();
+    let landed: unknown;
+    act(() => {
+      landed = first.result.current.handleSaveShot(shot(2));
+    });
+    expect(landed).toBe(true);
+
+    // The connection is cut: the save is HELD (the line says "on this phone"), never resolved as saved, and nothing is sent.
+    Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
+    const held = await autoSave(first, [shot(1), shot(2)]);
+    expect(isAutoSaveHeld(held)).toBe(true);
+    expect((held as AutoSaveHeldError).reason).toBe('offline');
+    expect((held as AutoSaveHeldError).onDevice).toBe(true);
+    expect(mocks.savePartialRound).not.toHaveBeenCalled();
+
+    // The screen is left; the device copy is what remains.
+    first.unmount();
+    expect(loadEmergencySave('round-1', 'player-1')?.inProgressShotsByHole[0]).toHaveLength(2);
+
+    // Reopened, still offline: the server's copy has one shot, the device's has two, so the device copy is offered, and restoring it
+    // gives two shots, not three.
+    const second = render({ initialShots: [shot(1)], initialShotNumber: 2, serverDataTimestamp: '2020-01-01T00:00:00.000Z' });
+    await flush();
+    expect(second.result.current.showRecoveryDialog).toBe(true);
+    act(() => {
+      second.result.current.handleRestoreRecovery();
+    });
+    expect(second.result.current.activeHoleShots.map((s) => s.shotNumber)).toEqual([1, 2]);
+
+    // Reconnected: the tracker sends the restored shots. The server is written once, with each shot once, and only its answer
+    // retires the device copy.
+    Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
+    expect(loadEmergencySave('round-1', 'player-1')).not.toBeNull();
+    expect(await autoSave(second, second.result.current.activeHoleShots)).toBeNull();
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+    expect(sentShots(0).map((s) => s.shotNumber)).toEqual([1, 2]);
+    expect(loadEmergencySave('round-1', 'player-1')).toBeNull();
+
+    // A retry of the same save (a double fire, or a resend after a lost answer) sends the same snapshot again, never a longer one.
+    expect(await autoSave(second, second.result.current.activeHoleShots)).toBeNull();
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(2);
+    expect(sentShots(1).map((s) => s.shotNumber)).toEqual([1, 2]);
+  });
+});
+

@@ -55,6 +55,16 @@ export interface ShotTrackingState {
    * keep compiling: for them a held save reads as `idle`, never `saved`.
    */
   autoSaveHeldOnDevice: boolean;
+  /**
+   * A shot was recorded here and the server has not acknowledged it yet, and
+   * the engine's device copy of it landed: the one claim the save line may
+   * make before the server answers ("Saved on this phone, syncing"). Never
+   * set when the device copy failed, and cleared only by a server
+   * acknowledgement of what is on screen (or by leaving the hole: a hole is
+   * completed only after the server confirmed it). Like the held flag it is
+   * separate from `autoSaveStatus`, which keeps its four values.
+   */
+  autoSaveSyncing: boolean;
   pendingSaveCount: number;
   autoSaveRetryAttempt: number;
   // Penalty modal
@@ -111,6 +121,10 @@ export type ShotAction =
   | { type: 'AUTO_SAVE_RESET' }
   /** The save did not reach the server; `onDevice` says whether a device copy holds it. */
   | { type: 'AUTO_SAVE_HELD'; payload: { onDevice: boolean } }
+  /** A shot was recorded; `onDevice` is the engine's device copy of it (its emergency save's own answer). */
+  | { type: 'SHOT_SAVED_ON_DEVICE'; payload: { onDevice: boolean } }
+  /** What is on screen differs from what the server last acknowledged: an earlier "saved" no longer describes it. */
+  | { type: 'AUTO_SAVE_UNSYNCED' }
   | { type: 'INCREMENT_PENDING_SAVE' }
   // Penalty
   | { type: 'SHOW_PENALTY_MODAL' }
@@ -247,6 +261,8 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         penaltyType: null,
         penaltyOrigin: 'here',
         selectedShotNumber: null,
+        // A hole is left only once the server confirmed it (Complete hole waits), or by the strip, which makes no claim.
+        autoSaveSyncing: false,
       };
     }
 
@@ -306,12 +322,30 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
       return {
         ...state,
         autoSaveStatus: action.payload,
-        // Only a server acknowledgement clears the device-only flag.
+        // Only a server acknowledgement clears the device-only flags.
         autoSaveHeldOnDevice: action.payload === 'saved' ? false : state.autoSaveHeldOnDevice,
+        autoSaveSyncing: action.payload === 'saved' ? false : state.autoSaveSyncing,
       };
 
     case 'AUTO_SAVE_HELD':
-      return { ...state, autoSaveStatus: 'idle', autoSaveHeldOnDevice: action.payload.onDevice };
+      return {
+        ...state,
+        autoSaveStatus: 'idle',
+        autoSaveHeldOnDevice: action.payload.onDevice,
+        // Held with no device copy: nothing may say the shots are on the phone.
+        autoSaveSyncing: action.payload.onDevice ? state.autoSaveSyncing : false,
+      };
+
+    case 'SHOT_SAVED_ON_DEVICE':
+      return {
+        ...state,
+        // A new shot is not covered by the last acknowledgement.
+        autoSaveStatus: state.autoSaveStatus === 'saved' ? 'idle' : state.autoSaveStatus,
+        autoSaveSyncing: action.payload.onDevice,
+      };
+
+    case 'AUTO_SAVE_UNSYNCED':
+      return state.autoSaveStatus === 'saved' ? { ...state, autoSaveStatus: 'idle' } : state;
 
     case 'AUTO_SAVE_RETRY_SCHEDULED':
       return { ...state, autoSaveRetryAttempt: action.payload };
@@ -556,6 +590,7 @@ function computeInitialState(
     distanceAfterUnit: initialLie === 'green' ? 'feet' : 'yards',
     autoSaveStatus: 'idle',
     autoSaveHeldOnDevice: false,
+    autoSaveSyncing: false,
     pendingSaveCount: 0,
     autoSaveRetryAttempt: 0,
     showPenaltyModal: false,
@@ -587,7 +622,7 @@ function computeInitialState(
  *   invalid   — the server refused a hole; resending the same shots can't help.
  *   discarded — the player discarded or left the round; nothing is written.
  */
-export type AutoSaveHoldReason = 'offline' | 'queued' | 'busy' | 'blocked' | 'invalid' | 'discarded';
+export type AutoSaveHoldReason = 'offline' | 'queued' | 'busy' | 'conflict' | 'blocked' | 'invalid' | 'discarded';
 
 const AUTO_SAVE_HELD_KIND = 'golf.autosave_held';
 
@@ -617,7 +652,7 @@ export function isAutoSaveHeld(error: unknown): error is AutoSaveHeldError {
 
 /** Held saves a later resend can clear by itself: the connection or the other save comes back. */
 function isResendable(reason: AutoSaveHoldReason): boolean {
-  return reason === 'offline' || reason === 'queued' || reason === 'busy';
+  return reason === 'offline' || reason === 'queued' || reason === 'busy' || reason === 'conflict';
 }
 
 /** How long a held save waits before it is sent again, when no `online` event comes first. */
@@ -715,6 +750,10 @@ export function useShotStateMachine({
     const currentFingerprint = computeShotFingerprint(state.shotHistory);
     if (currentFingerprint === lastSavedShotsRef.current) return;
 
+    // What is on screen is not what the server last acknowledged, so an earlier "saved" no longer describes it. (This effect's
+    // cleanup also drops the 2 s timer that would have cleared that "saved": without this it stayed up under an unsent shot.)
+    dispatch({ type: 'AUTO_SAVE_UNSYNCED' });
+
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
 
     const handleSaveSuccess = (fingerprint: string) => {
@@ -724,7 +763,10 @@ export function useShotStateMachine({
         clearTimeout(heldResendTimeoutRef.current);
         heldResendTimeoutRef.current = null;
       }
-      dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
+      // The server acknowledged `fingerprint`. A shot recorded while that save was in flight is not in it: the line must not say
+      // "saved" for what is now on screen, and its own save (this effect's next run) is already scheduled.
+      const acknowledgedWhatIsOnScreen = computeShotFingerprint(shotHistoryRef.current) === fingerprint;
+      dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: acknowledgedWhatIsOnScreen ? 'saved' : 'idle' });
       recordHelmBreadcrumb('golf.round', 'autosave', { action: 'autosave', result: 'success' });
       autoSaveRetryAttemptRef.current = 0;
       // Reset circuit breaker on success

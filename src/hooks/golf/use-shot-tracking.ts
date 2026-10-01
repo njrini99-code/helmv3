@@ -40,7 +40,11 @@ export interface ShotTrackingProps {
    * into progress. `null` means the hole is no longer holed out.
    */
   onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats | null) => void | Promise<void>;
-  onSaveShot?: (shot: ShotRecord) => void;
+  /**
+   * Called as each shot is recorded. Returns whether the engine's synchronous device copy of it landed (its emergency save's own
+   * answer); a caller with no device copy to report returns nothing, and the screen then makes no claim about where the shot is.
+   */
+  onSaveShot?: (shot: ShotRecord) => boolean | void;
   onExit?: () => void;
   onNavigateToHole?: (holeIndex: number) => void;
   initialShots?: ShotRecord[];
@@ -186,8 +190,19 @@ export function useShotTracking(
   // Safe to cast currentHole as RoundHole: if currentHole is undefined, the early
   // return below prevents any handler from ever being called.
 
+  // Every recorded shot (a stroke, a penalty, an errant stroke) reaches the engine here, and the engine's device copy answer is kept
+  // for the save line: it may say "Saved on this phone" only for a shot whose device copy landed. A hole-out's own line is the hole
+  // checkpoint ("Saving hole N"), which the server confirms before the hole is left, so it makes no claim here.
+  const saveShot = useCallback(
+    (shot: ShotRecord) => {
+      const onDevice = onSaveShot?.(shot);
+      if (typeof onDevice === 'boolean' && shot.result !== 'hole') dispatch({ type: 'SHOT_SAVED_ON_DEVICE', payload: { onDevice } });
+    },
+    [onSaveShot, dispatch],
+  );
+
   const { handleAddPenalty, confirmPenalty } = usePenaltyHandler({
-    state, dispatch, currentHole: currentHole as RoundHole, onSaveShot,
+    state, dispatch, currentHole: currentHole as RoundHole, onSaveShot: saveShot,
   });
 
   const { handleEditShot, handleCloseEditModal, handleSaveEditedShot, handleDeleteShot } = useEditShotModal({
@@ -421,7 +436,7 @@ export function useShotTracking(
     // Build updated history for callbacks that need it immediately
     const updatedHistory = [...shotHistory, shotRecord];
 
-    onSaveShot?.(shotRecord);
+    saveShot(shotRecord);
 
     // B8: this checkpoint belongs to whichever hole was current at tap time.
     // The hole-nav pills allow navigating away while it's still in flight;
@@ -527,6 +542,8 @@ export function useShotTracking(
     autoSaveStatus,
     /** The last background save is on this device only, not on the server yet. */
     autoSaveHeldOnDevice: state.autoSaveHeldOnDevice,
+    /** A shot recorded here is on this device (its copy landed) and the server has not acknowledged it yet. */
+    autoSaveSyncing: state.autoSaveSyncing,
     showPenaltyModal,
     penaltyType,
     showUndoConfirm,

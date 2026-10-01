@@ -2322,7 +2322,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     // snapshot synchronously at the same moment the player records it, before
     // React renders or the 15s network autosave timer has a chance to run.
     inProgressShotsByHoleRef.current = nextInProgress;
-    emergencySave({
+    const onDevice = emergencySave({
       playerId,
       roundId: savedRoundIdRef.current,
       timestamp: Date.now(),
@@ -2334,6 +2334,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       holesPerRound: holesPerRoundRef.current,
     });
     setInProgressShotsByHole(nextInProgress);
+    // The save line says "Saved on this phone" only when this is true.
+    return onDevice;
   };
 
   /**
@@ -2441,7 +2443,11 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
             }
             clearEmergencySaveThrough(savedRoundIdRef.current, playerId, emergencyTimestamp);
           } else if (result.error === 'conflict') {
-            void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+            // A conflict is not an acknowledgement (see the continue engine):
+            // healed is held and re-sent under the adopted token, otherwise
+            // the round is blocked until a reload.
+            const healed = await handleRoundSyncConflict('This round was updated on another device. Please reload.');
+            throw new AutoSaveHeldError(healed ? 'conflict' : 'blocked', onDevice);
           } else if (result.error === 'busy' || result.error === 'retry') {
             // Single-flight skip: another save for this round already holds the
             // row server-side (FOR UPDATE NOWAIT). Not a failure, so it must not

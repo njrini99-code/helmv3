@@ -1120,7 +1120,7 @@ export function useContinueRoundSession({
     // a shot, its full round snapshot is synchronously recoverable before a
     // phone lock, app switch, crash, or connectivity drop can interrupt it.
     inProgressShotsByHoleRef.current = nextInProgress;
-    emergencySave({
+    const onDevice = emergencySave({
       playerId,
       roundId,
       timestamp: Date.now(),
@@ -1131,6 +1131,8 @@ export function useContinueRoundSession({
       currentHoleIndex,
     });
     setInProgressShotsByHole(nextInProgress);
+    // The save line says "Saved on this phone" only when this is true.
+    return onDevice;
   };
 
   /**
@@ -1244,9 +1246,14 @@ export function useContinueRoundSession({
         if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
         clearEmergencySaveThrough(roundId, playerId, emergencyTimestamp);
       } else if (result.error === 'conflict') {
-        // A self-healed conflict needs no retry here: the next auto-save
-        // tick re-sends the full state under the adopted token.
-        void handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
+        // A conflict is not an acknowledgement: this snapshot never reached
+        // the server, so resolving would read as "saved" and store the
+        // fingerprint, and the shots would not be sent again. Healed (the
+        // mismatch was this device's own unreadable write; the token is now
+        // adopted) is held and re-sent under it; otherwise the round is
+        // blocked until a reload, which only a reload can clear.
+        const healed = await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
+        throw new AutoSaveHeldError(healed ? 'conflict' : 'blocked', onDevice);
       } else if (result.error === 'busy' || result.error === 'retry') {
         // Single-flight skip — another save for this round holds the row
         // server-side. Not a failure; held, so the tracker re-sends it.

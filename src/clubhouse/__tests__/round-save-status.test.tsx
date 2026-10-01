@@ -118,3 +118,49 @@ describe('CH-11901 the round save line', () => {
     expect(screen.queryByText('Saved on this phone')).toBeNull();
   });
 });
+
+describe('CH-11901 before the server answers (owner rule 3, 2026-10-01)', () => {
+  /** A fresh hole: record the tee shot through the screen. `onDevice` is what the engine's device copy answered. */
+  async function recordTeeShot(onDevice: boolean | void, onAutoSave: RoundTrackingProps['onAutoSave']) {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RoundTracking
+          round={{ course: 'Finley GC', teeLabel: 'Blue', teeColor: 'blue', type: 'practice' }}
+          holes={HOLES}
+          currentHoleIndex={0}
+          onHoleComplete={vi.fn(async () => true)}
+          onSaveShot={() => onDevice}
+          onAutoSave={onAutoSave}
+          autoSaveInterval={60_000}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('radio', { name: 'Fairway' }));
+    await user.click(screen.getByRole('radio', { name: 'Driver' }));
+    await user.type(screen.getByLabelText('Distance remaining (yds)'), '150');
+    await user.click(screen.getByRole('button', { name: /Record next shot/ }));
+  }
+
+  it('says "Saved on this phone · syncing" for a shot whose device copy landed, and never "Round saved"', async () => {
+    await recordTeeShot(true, vi.fn(async () => {}));
+
+    expect(await screen.findByText('Saved on this phone · syncing')).toBeInTheDocument();
+    expect(screen.queryByText('Round saved')).toBeNull();
+  });
+
+  it('says nothing about where the shot is when its device copy did not land', async () => {
+    await recordTeeShot(false, vi.fn(async () => {}));
+
+    expect(await screen.findByText(/^Shot 2/)).toBeInTheDocument();
+    expect(document.querySelector('[data-ch-code="CH-11901"]')).toBeNull();
+  });
+
+  it('says nothing when the engine reports no device copy at all (a renderer without one)', async () => {
+    await recordTeeShot(undefined, vi.fn(async () => {}));
+
+    expect(await screen.findByText(/^Shot 2/)).toBeInTheDocument();
+    expect(document.querySelector('[data-ch-code="CH-11901"]')).toBeNull();
+  });
+});
+
