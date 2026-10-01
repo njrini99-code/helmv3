@@ -171,6 +171,8 @@ export function selectionReason(error: string | undefined): string | null {
   if (/slots filled/i.test(error)) return 'Every pick is taken. Remove one first.';
   if (/reasoning required/i.test(error)) return 'Say why you picked this player.';
   if (/not on this team/i.test(error)) return 'That player isn’t on this team.';
+  if (/not entered in this qualifier/i.test(error)) return 'That player isn’t entered in this qualifier.';
+  if (/could not verify the player is entered/i.test(error)) return 'The entrants couldn’t be checked just now. Try again.';
   if (/no entrant has a qualifying score/i.test(error)) return 'Nobody has a score in yet and no pick is made, so there is no squad to confirm.';
   if (/cannot confirm/i.test(error)) return 'Choose every pick, each with a reason, before confirming.';
   if (/could not verify|couldn.t confirm your roster/i.test(error)) return 'The roster couldn’t be checked just now. Try again.';

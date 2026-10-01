@@ -55,7 +55,10 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const picks = cands.filter((c) => c.pick);
   const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick).sort(byRank);
   const unranked = cands.filter((c) => c.rank == null && !c.pick);
-  const picksReady = picks.length === data.picks && picks.every((p) => (p.pick?.reasoning ?? '').trim().length > 0);
+  // A field smaller than the squad has fewer players to pick than pick places; the server needs only those
+  // (canConfirmSelection), so the empty places don't hold up the confirmation.
+  const picksNeeded = Math.min(data.picks, eligible.length + picks.length);
+  const picksReady = picks.length === picksNeeded && picks.every((p) => (p.pick?.reasoning ?? '').trim().length > 0);
   const nobody = onScore.length + picks.length === 0;
   const canConfirm = state === 'closed' && picksReady && !nobody;
 
@@ -162,7 +165,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         ))}
       </ol>
 
-      <StageNote stage={stage} topN={topN} picks={data.picks} picksReady={picksReady} nobody={nobody} />
+      <StageNote stage={stage} topN={topN} picks={picksNeeded} picksReady={picksReady} nobody={nobody} />
 
       <SectionBoundary surface="qualifiers.selection" label="Selections" code="CH-09219">
         <div className="ch-qf-body">

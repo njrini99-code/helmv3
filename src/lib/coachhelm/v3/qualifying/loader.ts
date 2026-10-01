@@ -4,9 +4,10 @@
  * Single read: fetch the qualifier row + entries + selections, then
  * project into the SelectionCandidate shape the workspace UI renders.
  *
- * Leaderboard ranking is computed in-process by score_to_par ascending
- * then total_score ascending (tiebreak), so the rank survives a
- * mid-tournament re-load even before all rounds are posted.
+ * Leaderboard ranking is computed in-process with the shared standings
+ * order (ranking.ts: to par, strokes, more rounds, name), the same order
+ * the Clubhouse leaderboard uses, so the rank survives a mid-tournament
+ * re-load even before all rounds are posted.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -17,7 +18,8 @@ import {
   type QualifyingWorkspace,
   type SelectionCandidate,
 } from './types';
-import { canConfirmSelection } from './state-machine';
+import { canConfirmSelection, pickableCount } from './state-machine';
+import { compareStandings } from './ranking';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 
 type Sb = SupabaseClient<Database>;
@@ -85,15 +87,11 @@ export async function loadQualifyingWorkspace(
       };
     });
 
-  // Rank by (to_par asc, total asc). Unposted (no score) → rank null.
+  // Rank with the shared order. Unposted (no scored round) → rank null.
   const ranked = rankCandidates(rawCandidates);
 
   const top_n = Math.max(0, q.selection_slots_total - q.selection_slots_coach_pick);
-  const candidates: SelectionCandidate[] = ranked.map((r) => ({
-    ...r,
-    selection: selByPlayer.get(r.player_id) ?? null,
-    is_top_score_slot: r.leaderboard_rank !== null && r.leaderboard_rank <= top_n,
-  }));
+  const candidates = assignScoreSlots(ranked, selByPlayer, top_n);
 
   const coachPickSelections = Array.from(selByPlayer.values()).filter(
     (s) => s.selection_type === 'coach_pick',
@@ -105,6 +103,7 @@ export async function loadQualifyingWorkspace(
     coach_pick_selections: coachPickSelections.map((s) => ({
       reasoning: s.coach_reasoning,
     })),
+    available_for_pick: pickableCount(candidates),
   });
 
   return {
@@ -123,6 +122,27 @@ export async function loadQualifyingWorkspace(
   };
 }
 
+/**
+ * The places on score are the first top_n ranked players who are not a
+ * coach's pick: a pick who climbs into the top places keeps the pick
+ * (confirm never overwrites it), and the next ranked player takes the
+ * place on score, so the squad stays slots_total.
+ */
+export function assignScoreSlots(
+  ranked: RankOutput[],
+  selByPlayer: Map<string, QualifierSelection>,
+  top_n: number,
+): SelectionCandidate[] {
+  let onScore = 0;
+  return ranked.map((r) => {
+    const selection = selByPlayer.get(r.player_id) ?? null;
+    const is_top_score_slot =
+      r.leaderboard_rank !== null && selection?.selection_type !== 'coach_pick' && onScore < top_n;
+    if (is_top_score_slot) onScore++;
+    return { ...r, selection, is_top_score_slot };
+  });
+}
+
 interface RankInput {
   player_id: string;
   player_first_name: string;
@@ -136,19 +156,22 @@ interface RankOutput extends RankInput {
   leaderboard_rank: number | null;
 }
 
-/** Exported for tests. */
+/**
+ * Exported for tests. A player is ranked only with a scored round: a
+ * stored aggregate of 0 rounds (written as 0/0/0 by older code) is no
+ * score, not an even-par round.
+ */
 export function rankCandidates(input: RankInput[]): RankOutput[] {
-  const withScore = input.filter((c) => c.total_to_par !== null);
-  const noScore = input.filter((c) => c.total_to_par === null);
-
-  withScore.sort((a, b) => {
-    const ap = a.total_to_par ?? 0;
-    const bp = b.total_to_par ?? 0;
-    if (ap !== bp) return ap - bp;
-    const as = a.total_score ?? 0;
-    const bs = b.total_score ?? 0;
-    return as - bs;
+  const scored = (c: RankInput) => c.rounds_completed > 0 && c.total_to_par !== null && c.total_score !== null;
+  const withScore = input.filter(scored);
+  const noScore = input.filter((c) => !scored(c));
+  const key = (c: RankInput) => ({
+    toPar: c.total_to_par as number,
+    total: c.total_score as number,
+    played: c.rounds_completed,
+    name: `${c.player_first_name ?? ''} ${c.player_last_name ?? ''}`.trim(),
   });
+  withScore.sort((a, b) => compareStandings(key(a), key(b)));
 
   const ranked: RankOutput[] = withScore.map((c, i) => ({
     ...c,

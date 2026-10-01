@@ -159,13 +159,19 @@ export interface ChTeamHub {
    * Coach: the team's upcoming calendar events a trip can be planned for (the trip builder's Event step), with who is
    * invited (its travelers). `invited` is null when attendance didn't load. Empty for a player.
    */
-  tripEvents: { rows: ChHubTripEvent[]; error: boolean };
+  tripEvents: { rows: ChHubTripEvent[]; error: boolean; /** How many there are when more than `rows` (the read is capped). */ total?: number | null };
   announcements: { rows: ChHubAnnouncement[]; error: boolean };
   trips: { rows: ChHubTrip[]; error: boolean };
-  tasks: { rows: ChHubTask[]; error: boolean };
+  tasks: { rows: ChHubTask[]; error: boolean; /** How many there are when more than `rows` (the read is capped). */ total?: number | null };
   documents: { folders: Array<{ name: string; files: ChHubFile[] }>; error: boolean };
   updates: { rows: ChHubUpdate[]; error: boolean };
 }
+
+/** The coach's task list and the trip builder's events are capped reads; each section says how many there are in all. */
+export const HUB_TASK_CAP = 100;
+export const HUB_TRIP_EVENT_CAP = 40;
+/** Event types a team doesn't plan a trip for. */
+const NOT_TRAVELED_FOR = ['practice', 'meeting'];
 
 function log(read: string, error: unknown) {
   chLogServer('hub', read, error);
@@ -287,7 +293,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         rows: summary
           ? summary.trips.map((t) => {
               const eventId = (t as { event_id?: string | null }).event_id ?? null;
-              return trip({ ...(t as unknown as TripRow), event_id: eventId }, f, today, { travelers: null, count: null, mine: eventId ? invited.has(eventId) : null });
+              return trip({ ...(t as unknown as TripRow), event_id: eventId }, f, today, { travelers: null, count: null, mine: eventId && invited ? invited.has(eventId) : null });
             })
           : [],
         error: !summary,
@@ -312,7 +318,15 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const [annRes, tripsRes, tasksRes, eventsRes, tripEventsRes] = await Promise.all([
     getAnnouncementsWithMeta(input.teamId, input.userId, true).catch(() => ({ success: false as const, error: 'failed' })),
     supabase.from('golf_travel_itineraries').select(TRIP_COLUMNS).eq('team_id', input.teamId).gte('departure_date', addDays(today, -60)).order('departure_date', { ascending: true }).limit(50),
-    supabase.from('golf_tasks').select('id, title, description, due_date, category, status').eq('team_id', input.teamId).is('parent_task_id', null).order('due_date', { ascending: true, nullsFirst: false }).limit(100),
+    // Capped (C-20): the latest due and the undated are kept, so the cap drops the oldest, not this week's; the section
+    // says how many there are in all.
+    supabase
+      .from('golf_tasks')
+      .select('id, title, description, due_date, category, status', { count: 'exact' })
+      .eq('team_id', input.teamId)
+      .is('parent_task_id', null)
+      .order('due_date', { ascending: false, nullsFirst: true })
+      .limit(HUB_TASK_CAP),
     supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, location')
@@ -323,17 +337,18 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       .lt('start_time', `${weekEnd}T23:59:59Z`)
       .order('start_time', { ascending: true })
       .limit(50),
-    // The trip builder's Event step: the next four months of events a team travels for (not classes or busy time).
+    // The trip builder's Event step: the next four months of events a team travels for. Classes, practices and
+    // meetings are left out (C-20): a season's practices filled the cap before the tournaments were reached.
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, end_time, all_day, location')
+      .select('id, title, event_type, start_time, end_time, all_day, location', { count: 'exact' })
       .eq('team_id', input.teamId)
-      .neq('event_type', CLASS_EVENT_TYPE)
+      .not('event_type', 'in', `(${[CLASS_EVENT_TYPE, ...NOT_TRAVELED_FOR].join(',')})`)
       .is('cancelled_at', null)
       .gte('start_time', now.toISOString())
       .lt('start_time', `${addDays(today, 120)}T23:59:59Z`)
       .order('start_time', { ascending: true })
-      .limit(40),
+      .limit(HUB_TRIP_EVENT_CAP),
   ]);
   if (tripEventsRes.error) log('tripEvents', tripEventsRes.error);
   if (!annRes.success) log('announcements', 'error' in annRes ? annRes.error : 'failed');
@@ -342,7 +357,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   if (eventsRes.error) log('events', eventsRes.error);
 
   const trips = (tripsRes.data ?? []) as unknown as TripRow[];
-  const tasks = tasksRes.data ?? [];
+  // Shown soonest due first, the undated last.
+  const tasks = (tasksRes.data ?? []).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
   const events = eventsRes.data ?? [];
   const tripEvents = tripEventsRes.data ?? [];
   // One attendance read for this week's events, the trips' events and the builder's events; one for task completion.
@@ -386,6 +402,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         };
       }),
       error: !!tripEventsRes.error,
+      total: tripEventsRes.count ?? null,
     },
     trips: {
       rows: trips.map((t) => {
@@ -409,6 +426,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         };
       }),
       error: !!tasksRes.error,
+      total: tasksRes.count ?? null,
     },
   };
 }
@@ -429,10 +447,14 @@ export async function attendanceFor(supabase: Awaited<ReturnType<typeof createCl
   return { byEvent, error: false };
 }
 
-async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], playerId: string): Promise<Set<string>> {
+/** The trips' events the player is invited to, or null when the read failed: unknown, never "Not traveling" (C-19). */
+async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], playerId: string): Promise<Set<string> | null> {
   if (!eventIds.length) return new Set();
   const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', eventIds).eq('player_id', playerId);
-  if (error) log('tripInvites', error);
+  if (error) {
+    log('tripInvites', error);
+    return null;
+  }
   return new Set((data ?? []).map((r) => r.event_id));
 }
 

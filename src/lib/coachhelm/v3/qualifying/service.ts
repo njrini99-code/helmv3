@@ -14,6 +14,7 @@ import type { Database } from '@/lib/types/database';
 import {
   canTransition,
   canConfirmSelection,
+  pickableCount,
 } from './state-machine';
 import { loadQualifyingWorkspace } from './loader';
 import type { QualifierSelectionState } from './types';
@@ -48,12 +49,23 @@ export async function transitionSelectionState(
   if (!canTransition(cur.selection_state as QualifierSelectionState, target)) {
     return { ok: false, error: `illegal transition ${cur.selection_state} → ${target}` };
   }
+  // 'selected' means a squad was written and the players told: only
+  // confirmSelection reaches it. A bare step left qualifiers 'selected'
+  // with no selection rows.
+  if (target === 'selected') {
+    return { ok: false, error: `illegal transition ${cur.selection_state} → selected: confirm the squad instead` };
+  }
 
-  const { error: writeErr } = await supabase
+  // Compare-and-set on the state read above, so two coaches stepping at
+  // once can't both pass the check.
+  const { data: moved, error: writeErr } = await supabase
     .from('golf_qualifiers')
     .update({ selection_state: target })
-    .eq('id', qualifier_id);
+    .eq('id', qualifier_id)
+    .eq('selection_state', cur.selection_state)
+    .select('id');
   if (writeErr) return { ok: false, error: writeErr.message };
+  if (!moved?.length) return { ok: false, error: `illegal transition: the state moved on from ${cur.selection_state}` };
 
   return { ok: true, data: undefined };
 }
@@ -88,6 +100,20 @@ export async function setCoachPick(
   if (!['closed', 'selected'].includes(q.selection_state)) {
     return { ok: false, error: `coach picks locked in state ${q.selection_state}` };
   }
+
+  // A pick is a place in this qualifier's squad, so it goes to one of its
+  // entrants; the action's roster check alone let a team player who never
+  // entered take a place. Fails closed like the ceiling read below.
+  const { data: entry, error: entryError } = await supabase
+    .from('golf_qualifier_entries')
+    .select('player_id')
+    .eq('qualifier_id', args.qualifier_id)
+    .eq('player_id', args.player_id)
+    .maybeSingle();
+  if (entryError) {
+    return { ok: false, error: 'could not verify the player is entered; please try again' };
+  }
+  if (!entry) return { ok: false, error: 'player is not entered in this qualifier' };
 
   // Enforce the slot ceiling before inserting another coach_pick.
   const { data: existing, error: existingError } = await supabase
@@ -171,6 +197,7 @@ export async function confirmSelection(
       state: workspace.selection_state,
       slots_coach_pick: workspace.selection_slots_coach_pick,
       coach_pick_selections: coachPickSelections.map((s) => ({ reasoning: s.coach_reasoning })),
+      available_for_pick: pickableCount(workspace.candidates),
     })
   ) {
     return {
@@ -179,10 +206,11 @@ export async function confirmSelection(
     };
   }
 
-  const top_n =
-    workspace.selection_slots_total - workspace.selection_slots_coach_pick;
+  // The places on score are the loader's (shared order, picks excluded).
+  // A coach's pick is never rewritten as top_score: the upsert below would
+  // replace the pick and drop its reasoning.
   const topScoreRows = workspace.candidates
-    .filter((c) => c.is_top_score_slot && c.leaderboard_rank !== null && c.leaderboard_rank <= top_n)
+    .filter((c) => c.is_top_score_slot && c.leaderboard_rank !== null && c.selection?.selection_type !== 'coach_pick')
     .map((c) => ({
       qualifier_id: workspace.qualifier_id,
       player_id: c.player_id,
@@ -208,11 +236,18 @@ export async function confirmSelection(
     if (insErr) return { ok: false, error: insErr.message };
   }
 
-  const { error: stateErr } = await supabase
+  // Compare-and-set: only the confirmation that moves 'closed' to
+  // 'selected' goes on to brief the coach and tell the players, so a
+  // repeated or concurrent confirm can't notify twice. The rows above are
+  // an idempotent upsert, so a losing call wrote the same squad.
+  const { data: flipped, error: stateErr } = await supabase
     .from('golf_qualifiers')
     .update({ selection_state: 'selected' })
-    .eq('id', args.qualifier_id);
+    .eq('id', args.qualifier_id)
+    .eq('selection_state', 'closed')
+    .select('id');
   if (stateErr) return { ok: false, error: stateErr.message };
+  if (!flipped?.length) return { ok: false, error: 'illegal transition: the squad was already confirmed' };
 
   // Re-read after the writes: `workspace` is the pre-confirm snapshot and
   // carries no top_score rows yet, so a brief composed from it listed no

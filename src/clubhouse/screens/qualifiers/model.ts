@@ -2,11 +2,15 @@
  * Qualifiers, pure logic shared by the loader, the screens, the preview and
  * the tests. Nothing here reads the database or the clock.
  *
- * Ranking (D-33, the live getQualifierLeaderboard rule): players with a
- * completed round first, then total to par, then total strokes, then more
- * rounds played. Two scored players tie only when to par and total strokes
- * both match; ties share a position shown with a T.
+ * Ranking (D-33): players with a scored round first, then the shared order
+ * in src/lib/coachhelm/v3/qualifying/ranking.ts (to par, strokes, more
+ * rounds, name), the same order the selection workspace and the squad
+ * confirmation use. Two scored players tie only when to par and total
+ * strokes both match; ties share a position shown with a T. The legacy
+ * getQualifierLeaderboard RPC orders differently and is not this rule.
  */
+
+import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -106,16 +110,18 @@ export function buildBoard(input: {
   }
   const all: ChQRow[] = input.entrants.map((e) => {
     const rounds = (byPlayer.get(e.playerId) ?? []).slice().sort((a, b) => a.number - b.number);
+    // A completed round without a total is unknown, not a free zero: it neither counts as played nor adds to the
+    // sums, the same rule as the stored entry aggregate (updateQualifierEntryStats).
     const withScore = rounds.filter((r) => r.total != null);
     const full = withScore.filter(isFullRound);
-    const sum = (k: 'total' | 'toPar') => rounds.reduce((s, r) => s + (r[k] ?? 0), 0);
+    const sum = (k: 'total' | 'toPar') => withScore.reduce((s, r) => s + (r[k] ?? 0), 0);
     return {
       ...e,
       position: null,
       tied: false,
-      played: rounds.length,
-      toPar: rounds.length ? sum('toPar') : null,
-      total: rounds.length ? sum('total') : null,
+      played: withScore.length,
+      toPar: withScore.length ? sum('toPar') : null,
+      total: withScore.length ? sum('total') : null,
       avg: full.length ? full.reduce((s, r) => s + (r.total as number), 0) / full.length : null,
       shortRounds: withScore.length - full.length,
       state: null,
@@ -124,13 +130,11 @@ export function buildBoard(input: {
   });
   const scored = all.filter((r) => r.played > 0);
   const unscored = all.filter((r) => r.played === 0).sort((a, b) => a.name.localeCompare(b.name));
-  scored.sort(
-    (a, b) =>
-      (a.toPar as number) - (b.toPar as number) || (a.total as number) - (b.total as number) || b.played - a.played || a.name.localeCompare(b.name),
-  );
+  const key = (r: ChQRow) => ({ toPar: r.toPar as number, total: r.total as number, played: r.played, name: r.name });
+  scored.sort((a, b) => compareStandings(key(a), key(b)));
   scored.forEach((row, i) => {
     const prev = scored[i - 1];
-    if (prev && prev.toPar === row.toPar && prev.total === row.total) {
+    if (prev && sameStanding(key(prev), key(row))) {
       row.position = prev.position;
       row.tied = true;
       prev.tied = true;

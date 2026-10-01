@@ -366,6 +366,12 @@ export function Tasks({
               </div>
             );
           })}
+          {data.total != null && data.total > data.rows.length && (
+            // C-20: the list is capped; it says so rather than passing for every task.
+            <p className="ch-hb-muted ch-num">
+              Showing the {data.rows.length} latest due of {data.total} tasks.
+            </p>
+          )}
         </div>
       )}
     </section>

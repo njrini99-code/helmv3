@@ -167,6 +167,25 @@ describe('Qualifiers · the standings model', () => {
     const b = buildBoard({ entrants: [e('a')], rounds: [rd('a', 1, 72, 0), rd('a', 2, 38, 2, 9)], squad: 5, picks: 1, status: 'in_progress', selectionState: 'open', selections: null });
     expect(b.rows[0]).toMatchObject({ avg: 72, shortRounds: 1, total: 110, toPar: 2, played: 2 });
   });
+  it('a completed round with no total is unknown, not a free even round (§11.2)', () => {
+    const blank: ChQRound = { ...rd('a', 2, 0, 0), total: null, toPar: null };
+    const b = buildBoard({
+      entrants: ['a', 'b', 'c'].map(e),
+      rounds: [rd('a', 1, 75, 3), blank, rd('b', 1, 74, 2), { ...rd('c', 1, 0, 0), total: null, toPar: null }],
+      squad: 3,
+      picks: 0,
+      status: 'in_progress',
+      selectionState: 'scoring',
+      selections: null,
+    });
+    expect(b.rows.map((r) => [r.playerId, r.played, r.total, r.toPar])).toEqual([
+      ['b', 1, 74, 2],
+      ['a', 1, 75, 3],
+    ]);
+    // A player whose only round has no score is unranked, never ahead of real scores on a zero.
+    expect(b.unscored.map((r) => r.playerId)).toEqual(['c']);
+    expect(b.submitted).toBe(2);
+  });
   it('a confirmed squad replaces the cut-line states', () => {
     const b = buildBoard({
       entrants: ['a', 'b', 'c'].map(e),
@@ -914,6 +933,24 @@ describe('Qualifiers · Manage selections', () => {
     expect(steps().map((s) => s.getAttribute('aria-current'))).toEqual([null, 'step', null]);
     expect(screen.getByText('Choose a player and say why')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm squad' })).toBeTruthy();
+  });
+
+  it('§11.3 a field smaller than the squad confirms once every player who can be picked is picked', () => {
+    const base = previewSelection('picking');
+    const c = (playerId: string, rank: number, onScore: boolean, pick: string | null) => ({
+      playerId,
+      name: playerId,
+      rank,
+      toPar: rank,
+      total: 70 + rank,
+      rounds: 1,
+      onScore,
+      pick: pick ? { reasoning: pick } : null,
+      selected: false,
+    });
+    // Squad 3 with 2 picks, two entrants: one on score, the other already picked. No one is left to pick.
+    wrap(<QualifierSelection data={{ ...base, selectionState: 'closed', squad: 3, picks: 2, candidates: [c('Ann', 1, true, null), c('Ben', 2, false, 'Grit')] }} writes={selWrites()} />);
+    expect((screen.getByRole('button', { name: 'Confirm squad' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('CH-09503 CH-09703 CH-09005 starting asks first with the warning tap, steps to closed one step at a time, and a refusal says so', async () => {

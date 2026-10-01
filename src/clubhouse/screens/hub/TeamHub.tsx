@@ -14,33 +14,15 @@ import { chTrail } from '../../lib/track';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
+import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import '../../styles/hub.css';
 
-export type ChHubTab = 'home' | 'ann' | 'travel' | 'docs' | 'tasks';
-const TABS: Record<ChTeamHub['role'], Array<[ChHubTab, string]>> = {
-  player: [
-    ['home', 'Home'],
-    ['ann', 'Announcements'],
-    ['travel', 'Travel'],
-    ['docs', 'Documents'],
-  ],
-  coach: [
-    ['home', 'Home'],
-    ['ann', 'Announcements'],
-    ['travel', 'Travel'],
-    ['docs', 'Documents'],
-    ['tasks', 'Tasks'],
-  ],
-};
-
-/** `?tab=` for a deep link: a known tab for the role, else Home. */
-export function parseHubTab(v: string | undefined, role: ChTeamHub['role']): ChHubTab {
-  return TABS[role].find(([k]) => k === v)?.[0] ?? 'home';
-}
+// The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
+export { parseHubTab, type ChHubTab } from '../../lib/hub-tabs';
 
 type Pending = { kind: 'ann'; a: ChHubAnnouncement } | { kind: 'task'; t: ChHubTask } | { kind: 'file'; f: ChHubFile } | null;
 
@@ -282,7 +264,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     setTab(t);
   };
   const tabKeys = tabListKeys(
-    TABS[data.role].map(([k]) => k),
+    HUB_TABS[data.role].map(([k]) => k),
     tab,
     pick,
     (k) => `ch-hb-tab-${k}`,
@@ -316,7 +298,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
       {/* CH-10801: real tabs, each controlling its panel. */}
       <div className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
-        {TABS[data.role].map(([k, l]) => (
+        {HUB_TABS[data.role].map(([k, l]) => (
           <button
             key={k}
             type="button"

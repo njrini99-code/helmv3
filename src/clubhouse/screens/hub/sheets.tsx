@@ -587,6 +587,12 @@ export function TripSheet({
                 <span>A trip on its own; the whole team sees it</span>
               </button>
             </div>
+            {!events.error && events.total != null && events.total > events.rows.length && (
+              // C-20: the list is capped at the soonest; later events are still in Calendar.
+              <span className="ch-field__help">
+                Showing the next {events.rows.length} of {events.total} events in the next four months.
+              </span>
+            )}
             {!events.error && events.rows.length === 0 && (
               <span className="ch-field__help" data-ch-code="CH-10312">
                 No upcoming events in the next four months. Add the tournament in Calendar to choose its travelers here.

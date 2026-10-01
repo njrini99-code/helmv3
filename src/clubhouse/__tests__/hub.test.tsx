@@ -586,6 +586,62 @@ describe('Team Hub · the loader', () => {
     expect(logServer).toHaveBeenCalledWith('hub', 'playerSummary', expect.anything());
   });
 
+  it('C-19 a player’s failed invite read leaves a trip unknown (—), never “Not traveling”', async () => {
+    base();
+    const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+    tables.current = { golf_teams: team, golf_team_members: { data: [] }, golf_events: { data: [] }, golf_event_attendance: { error: { message: 'attendance down' } } };
+    actions.summary.mockResolvedValue({
+      events: [],
+      trips: [{ id: 'tr1', event_id: 'e2', event_name: 'Seahawk', destination: 'Wilmington', departure_date: soon.slice(0, 10), return_date: soon.slice(0, 10), transportation_type: 'bus' }],
+      tasks: [],
+      announcements: [],
+      announcementsLoadError: false,
+    });
+    const data = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
+    expect(data.trips.rows[0]!.mine).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('hub', 'tripInvites', expect.anything());
+  });
+
+  it('C-20 capped reads: tasks keep the latest due and show soonest first, trip events leave out practices and meetings, and each says how many there are', async () => {
+    base();
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    const asked: Record<string, Array<[string, unknown[]]>> = {};
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { data: [] },
+      golf_events: (filters) => {
+        asked[filters.some(([k]) => k === 'not') ? 'tripEvents' : 'events'] = filters;
+        return { data: [], count: 0 };
+      },
+      golf_travel_itineraries: { data: [] },
+      golf_event_attendance: { data: [] },
+      golf_tasks: (filters) => {
+        asked.tasks = filters;
+        return {
+          data: [
+            { id: 'k3', title: 'Undated', description: null, due_date: null, category: null, status: 'pending' },
+            { id: 'k2', title: 'Later', description: null, due_date: '2026-10-20', category: null, status: 'pending' },
+            { id: 'k1', title: 'Sooner', description: null, due_date: '2026-10-02', category: null, status: 'pending' },
+          ],
+          count: 140,
+        };
+      },
+      golf_task_assignments: { data: [] },
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.tasks.rows.map((t) => t.id)).toEqual(['k1', 'k2', 'k3']);
+    expect(data.tasks.total).toBe(140);
+    expect(asked.tasks).toContainEqual(['order', ['due_date', { ascending: false, nullsFirst: true }]]);
+    expect(asked.tripEvents).toContainEqual(['not', ['event_type', 'in', '(class,practice,meeting)']]);
+    expect(data.tripEvents.total).toBe(0);
+  });
+
+  it('C-20 a capped task list says so', () => {
+    const rows = PREVIEW_HUB_COACH.tasks.rows;
+    show({ ...PREVIEW_HUB_COACH, tasks: { rows, error: false, total: rows.length + 40 } }, writes(), 'tasks');
+    expect(screen.getByText(`Showing the ${rows.length} latest due of ${rows.length + 40} tasks.`)).toBeTruthy();
+  });
+
   it('102101 a coach: reply counts, travelers from the trip’s event, task completion, each read once for every event and task together', async () => {
     base();
     actions.coachAnns.mockResolvedValue({ success: true, data: [] });

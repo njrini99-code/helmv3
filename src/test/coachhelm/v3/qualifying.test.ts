@@ -13,8 +13,10 @@ import {
   nextState,
   classifySlots,
   canConfirmSelection,
+  requiredCoachPicks,
+  pickableCount,
 } from '@/lib/coachhelm/v3/qualifying/state-machine';
-import { rankCandidates } from '@/lib/coachhelm/v3/qualifying/loader';
+import { assignScoreSlots, rankCandidates } from '@/lib/coachhelm/v3/qualifying/loader';
 import type { SelectionCandidate } from '@/lib/coachhelm/v3/qualifying/types';
 
 function cand(
@@ -171,5 +173,84 @@ describe('rankCandidates', () => {
 
   it('handles empty input', () => {
     expect(rankCandidates([])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Swap audit §11.3: one standings order across the board, workspace and confirm
+// ---------------------------------------------------------------------------
+
+describe('one standings order (§11.3)', () => {
+  const row = (id: string, first: string, rounds: number, total: number | null, toPar: number | null) => ({
+    player_id: id,
+    player_first_name: first,
+    player_last_name: 'X',
+    rounds_completed: rounds,
+    total_score: total,
+    total_to_par: toPar,
+  });
+
+  it('a stored 0/0/0 aggregate (no scored round) is unranked, never even par', () => {
+    const r = rankCandidates([row('a', 'Ann', 1, 75, 3), row('z', 'Zed', 0, 0, 0)]);
+    expect(r.map((x) => [x.player_id, x.leaderboard_rank])).toEqual([
+      ['a', 1],
+      ['z', null],
+    ]);
+  });
+
+  it('level on to par and strokes: more rounds first, then name, whatever the input order', () => {
+    const input = [row('c', 'Cal', 2, 150, 6), row('b', 'Ben', 2, 150, 6), row('a', 'Ann', 3, 150, 6)];
+    for (const order of [input, [...input].reverse()]) {
+      expect(rankCandidates(order).map((x) => x.player_id)).toEqual(['a', 'b', 'c']);
+    }
+  });
+
+  it('the workspace ranks a tie at the cut exactly as the Clubhouse leaderboard does', async () => {
+    const { buildBoard } = await import('@/clubhouse/screens/qualifiers/model');
+    // Squad 2, no picks: Ben and Cal are level at the cut, entered in reverse name order.
+    const entrants = [row('c', 'Cal', 2, 150, 6), row('b', 'Ben', 2, 150, 6), row('a', 'Ann', 2, 145, 1)];
+    const half = (n: number | null) => (n as number) / 2;
+    const board = buildBoard({
+      entrants: entrants.map((e) => ({ playerId: e.player_id, name: `${e.player_first_name} X`, classYear: null })),
+      rounds: entrants.flatMap((e) =>
+        [1, 2].map((n) => ({
+          id: `${e.player_id}${n}`,
+          playerId: e.player_id,
+          number: n,
+          total: half(e.total_score),
+          toPar: half(e.total_to_par),
+          date: '2026-09-01',
+          course: null,
+          holesPlayed: 18,
+        })),
+      ),
+      squad: 2,
+      picks: 0,
+      status: 'completed',
+      selectionState: 'closed',
+      selections: null,
+    });
+    const ws = assignScoreSlots(rankCandidates(entrants), new Map(), 2);
+    expect(ws.map((c) => c.player_id)).toEqual(board.rows.map((r) => r.playerId));
+    expect(ws.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(
+      board.rows.filter((r) => r.state === 'qualified').map((r) => r.playerId),
+    );
+  });
+
+  it('a coach’s pick who climbs into the top places keeps the pick; the next player takes the place on score', () => {
+    const ranked = rankCandidates([row('a', 'Ann', 2, 140, -4), row('b', 'Ben', 2, 145, 1), row('c', 'Cal', 2, 150, 6)]);
+    const pick = { qualifier_id: 'q', player_id: 'a', selection_type: 'coach_pick' as const, coach_reasoning: 'x', selected_at: '', selected_by_user_id: '' };
+    const ws = assignScoreSlots(ranked, new Map([['a', pick]]), 2);
+    expect(ws.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['b', 'c']);
+    expect(pickableCount(ws)).toBe(1);
+  });
+
+  it('a field smaller than the squad confirms with the picks it can make', () => {
+    // Squad 4 with 2 picks, 3 ranked entrants: 2 on score, 1 left to pick.
+    const ws = assignScoreSlots(rankCandidates([row('a', 'Ann', 1, 70, -2), row('b', 'Ben', 1, 72, 0), row('c', 'Cal', 1, 75, 3)]), new Map(), 2);
+    expect(pickableCount(ws)).toBe(1);
+    expect(requiredCoachPicks(2, 1)).toBe(1);
+    expect(canConfirmSelection({ state: 'closed', slots_coach_pick: 2, coach_pick_selections: [{ reasoning: 'grit' }], available_for_pick: 1 })).toBe(true);
+    expect(canConfirmSelection({ state: 'closed', slots_coach_pick: 2, coach_pick_selections: [], available_for_pick: 1 })).toBe(false);
   });
 });
