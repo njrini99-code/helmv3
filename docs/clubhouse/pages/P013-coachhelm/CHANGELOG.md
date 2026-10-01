@@ -26,7 +26,8 @@ Data impact: none written. One new bounded read of the player's completed
 - **CH13-4.** "77 open signals across 7 players" counted every visible
   row. The header counts players with an open signal; a strength, a card
   that states no finding and an out-of-date read are not open signals,
-  and the floor of one is gone.
+  and the floor of one is gone. Ask's findings drop the pulse's own
+  "N open signals" item for the same reason.
 - **CH13-11.** "No clear preference", "no directional bias", "Driver is
   performing" and the collapsed par card are notes: no Assign or
   Dismiss on the coach's board, no number, absent from the player's.
@@ -34,7 +35,8 @@ Data impact: none written. One new bounded read of the player's completed
   (the Tour where the generator carried a college cohort), and
   `deriveTone` no longer reads a missing comparison as zero.
 - **CH13-13.** The coach's board names the player; the player's board
-  drops the coach's "have the player".
+  drops the coach's "have the player". A focus area made from the board
+  is saved in the insight's own words, which the player reads.
 - **CH13-16.** An assigned or acknowledged finding wears Assigned or
   Acknowledged, not a fresh Priority.
 - **CH13-10, CH13-9.** The read says Solid, Early or Thin; the sample
