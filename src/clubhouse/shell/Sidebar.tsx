@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LinkPending } from "./LinkPending";
 import type { GolfUserData } from "@/contexts/golf-user-context";
 import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import { Avatar } from "../ui/Avatar";
@@ -89,6 +90,7 @@ export function Sidebar({
                     {count != null && (
                       <span className="ch-navitem__count ch-num">{count}</span>
                     )}
+                    <LinkPending />
                   </Link>
                 );
               })}

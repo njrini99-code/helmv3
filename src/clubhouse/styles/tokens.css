@@ -176,6 +176,8 @@
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
   --ch-dur-shimmer: 1.9s;
+  /* The pending hairline's sweep (LinkPending, shell.css). */
+  --ch-dur-sweep: 900ms;
   /* Skeletons wait this long before showing, then fade in over base. */
   /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
   --ch-skel-delay: 0ms;
@@ -227,4 +229,15 @@
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
   --ch-skel-delay: 0ms;
+}
+
+/* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off
+   <html>, so they read these from there: the old page leaves fast, the new one arrives a beat later. Scoped to a
+   document showing Clubhouse. */
+html:has([data-ui='clubhouse']) {
+  --ch-dur-vt-out: 120ms;
+  --ch-dur-vt-in: 200ms;
+  --ch-dur-vt-gap: 60ms;
+  --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
+  --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
 }

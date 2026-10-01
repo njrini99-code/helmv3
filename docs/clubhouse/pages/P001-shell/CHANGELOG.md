@@ -3,6 +3,34 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Page changes crossfade; a nav tap shows at once
+
+Owner, 2026-10-01: "Everything page transition and load needs to be extremely
+smooth and accurate" (crossfade chosen over a slide or none).
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (Next.js 16 view-transitions guide, `useLinkStatus`)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- **Crossfade.** `RouteFrame` wraps the page in React's `<ViewTransition>`,
+  keyed by route: the old page fades out in 120ms and the new one fades in
+  over 200ms a beat later, in opacity only. The shell (sidebar, top bar, tab
+  bar) is anchored and never fades; taps pass through while it runs. Reduced
+  motion and Settings › Animations off swap at once. Tokens on `<html>`
+  (`--ch-dur-vt-*`), every rule scoped to a Clubhouse document.
+- **Pending.** `LinkPending` inside each sidebar and tab-bar link: the tapped
+  item takes the selected look on the first frame and the old one lets go, and
+  a hairline sweeps across the top only if the page takes longer than
+  `--ch-dur-press`. "Loading" is announced once.
+- **Checked.** Five sidebar navigations on a local stack: each ran one view
+  transition with only the page named (`ch-page`), layout shift 0. Clubhouse
+  suites 2667/2667; `clubhouse:check` clean.
+
 ## 2026-10-01 — The team switcher: a head coach on two or more teams switches teams (owner, Q-130)
 
 ```text

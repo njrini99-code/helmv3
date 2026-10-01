@@ -315,10 +315,13 @@ quiet rerun.
 - **F-57 (P3, fixed `6e2fe5144`).** The Rounds season ribbon printed the
   same day under every round played that day ("2 Aug 2 Aug 2 Aug"); a day is
   labelled once.
-- **F-59 (P3, logged, not fixed).** Found by the F-06 e2e: a Continue tapped
-  on Rounds while Save for later's own navigation is still settling is pulled
-  back to the library; a second tap works. Waiting for the page to settle
-  avoids it. Folded into the page-transition work.
+- **F-59 (P2, both UIs, fixed).** Found by the F-06 e2e: a Continue tapped on
+  Rounds soon after Save for later was pulled back to the library. The shared
+  new-round engine called `router.refresh()` right after `router.push(library)`;
+  the refresh, bound to the library, landed after the tap. Removed (the push
+  renders the library fresh, as the continue engine already did); Save for
+  later now reaches the library in about 1s instead of 10s on the dev stack.
+  The e2e taps Continue at once and passes 3/3.
 - **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored
   putt, approach and tee bands, and sand saves, match a non-test recompute
   except where the cache counts test rounds (one 15-25 ft band reads 19.2%

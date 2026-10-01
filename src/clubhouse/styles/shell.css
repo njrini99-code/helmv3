@@ -230,7 +230,9 @@
   outline: 2px solid #dccda6;
   outline-offset: 1px;
 }
-.ch-navitem[aria-current='page'] {
+/* A tapped row takes the selected look on the first frame and the old one lets go of it (LinkPending). */
+.ch-navitem[aria-current='page'],
+.ch-navitem:has(.ch-lp) {
   background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
   color: var(--ch-green-800);
   font-weight: 600;
@@ -238,7 +240,9 @@
     inset 0 1px 0 #fff;
 }
 .ch-navitem[aria-current='page'] svg,
-.ch-navitem[aria-current='page'] .ch-navitem__count {
+.ch-navitem[aria-current='page'] .ch-navitem__count,
+.ch-navitem:has(.ch-lp) svg,
+.ch-navitem:has(.ch-lp) .ch-navitem__count {
   color: var(--ch-green-700);
 }
 .ch-navitem__count {
@@ -1045,8 +1049,12 @@ button.ch-more__row[disabled] {
     touch-action: manipulation;
     transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-tab[aria-current='page'] {
+  .ch-tab[aria-current='page'],
+  .ch-tab:has(.ch-lp) {
     color: var(--ch-green-700);
+  }
+  .ch-tabbar:has(.ch-lp) .ch-tab[aria-current='page']:not(:has(.ch-lp)) {
+    color: inherit;
   }
   .ch-tab__icon {
     position: relative;
@@ -1480,5 +1488,106 @@ button.ch-more__row[disabled] {
     outline: none;
     background: rgb(21 90 57 / 0.08);
     border-radius: 12px;
+  }
+}
+
+/* -- Page crossfade (RouteFrame's <ViewTransition>, owner 2026-10-01) ------------------------------------------------
+   The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'], so their timings are tokens set on <html>
+   (tokens.css, --ch-dur-vt-*). The old page leaves fast and the new one arrives a beat later, in opacity
+   only: no slide, no blur, nothing that costs a phone a frame. The shell (root) is anchored: its new snapshot shows at
+   once and the old one is hidden, so the sidebar, top bar and tab bar never fade. Taps pass through to the live page
+   while it runs. Reduced motion and Animations off never start one (RouteFrame renders without it); the media query
+   below is the backstop. Every rule is scoped to a document showing Clubhouse, so Fairway pages are untouched. */
+@keyframes ch-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes ch-vt-in {
+  from {
+    opacity: 0;
+  }
+}
+html:has([data-ui='clubhouse'])::view-transition {
+  pointer-events: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-old(root) {
+  display: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-new(root) {
+  animation: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-group(.ch-page) {
+  animation: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-old(.ch-page) {
+  animation: var(--ch-dur-vt-out) var(--ch-ease-vt-out) both ch-vt-out;
+}
+html:has([data-ui='clubhouse'])::view-transition-new(.ch-page) {
+  animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) var(--ch-dur-vt-gap) both ch-vt-in;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has([data-ui='clubhouse'])::view-transition-group(*),
+  html:has([data-ui='clubhouse'])::view-transition-old(*),
+  html:has([data-ui='clubhouse'])::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* -- A nav tap before its page arrives (LinkPending) -----------------------------------------------------------------
+   The tapped row or tab takes the selected look on the first frame; the hairline at the top of the page only fades in
+   if the wait passes --ch-dur-press, so a prefetched page never flickers it. Reduced motion keeps the bar (the signal matters)
+   without its sweep. */
+.ch-lp {
+  display: contents;
+}
+.ch-nav:has(.ch-lp) .ch-navitem[aria-current='page']:not(:has(.ch-lp)) {
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font-weight: inherit;
+}
+.ch-nav:has(.ch-lp) .ch-navitem[aria-current='page']:not(:has(.ch-lp)) svg {
+  color: inherit;
+}
+@keyframes ch-lp-show {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ch-lp-sweep {
+  from {
+    transform: translateX(-60%) scaleX(0.4);
+  }
+  to {
+    transform: translateX(100%) scaleX(0.4);
+  }
+}
+.ch-lp__bar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  animation: ch-lp-show var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
+}
+.ch-lp__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ch-accent, currentColor);
+  transform-origin: left center;
+  animation: ch-lp-sweep var(--ch-dur-sweep) var(--ch-ease-io) var(--ch-dur-press) infinite;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar,
+[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar::after {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-lp__bar::after {
+    animation: none !important;
+    transform: none;
+    opacity: 0.6;
   }
 }

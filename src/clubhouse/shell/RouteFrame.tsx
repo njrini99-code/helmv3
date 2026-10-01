@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, ViewTransition, type ReactNode } from 'react';
 import { useChPress } from '../lib/press';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
@@ -9,6 +9,12 @@ import { useChReducedMotion } from '../lib/reduced-motion';
  * its sections rise in once on first paint (`.ch-reveal`, D-64) and a refresh
  * with new data never replays it. Resets the canvas scroll so a new page never
  * opens halfway down (CH-1904), and mounts the press for every tappable.
+ *
+ * A navigation crossfades the page (owner 2026-10-01: a quick crossfade, never a slide): React's `<ViewTransition>`
+ * keyed by route makes the old page and the new one an exit/enter pair, and `.ch-page`
+ * (shell.css) fades them; the sidebar, top bar and tab bar are anchored and never move. Navigations are transitions,
+ * so this runs on every in-app route change and on nothing else (a refresh or a Suspense reveal keeps the reveal
+ * below). Reduced motion and Settings › Animations off render without it: the page swaps at once.
  */
 /** The longest reveal: the last of ten steps' delay plus the rise itself, with room to spare (base.css). */
 const REVEAL_MS = 1200;
@@ -53,9 +59,15 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
     };
   }, [routeKey]);
 
-  return (
-    <div key={routeKey} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route ch-reveal">
+  const page = (
+    <div key={reduced ? routeKey : undefined} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route ch-reveal">
       {children}
     </div>
+  );
+  if (reduced) return page;
+  return (
+    <ViewTransition key={routeKey} name="ch-page" enter="ch-page" exit="ch-page" share="ch-page" update="none" default="none">
+      {page}
+    </ViewTransition>
   );
 }

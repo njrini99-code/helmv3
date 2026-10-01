@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LinkPending } from './LinkPending';
 import { AnimatePresence, m } from 'framer-motion';
 import { ChevronRight, LayoutGrid, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -129,6 +130,7 @@ export function TabBar({
               </span>
               <span className="ch-tab__label">{t.label}</span>
               {count != null && <span className="ch-sr-only">, {count} new</span>}
+              <LinkPending />
             </Link>
           );
         })}
