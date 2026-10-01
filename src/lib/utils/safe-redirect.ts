@@ -27,3 +27,26 @@ export function isSafeInternalPath(path: string | null | undefined): path is str
   // RLS), so allowing the path here does not widen who can reach it.
   return isAdminPath(path) || INTERNAL_PREFIXES.some((p) => path.startsWith(p));
 }
+
+/**
+ * A push payload's `url` is absolute (`${NEXT_PUBLIC_APP_URL}/golf/...`), and
+ * `isSafeInternalPath` rejects anything with `//`, so every tap used to be
+ * dropped (swap audit §14 D5). Reduce a same-origin absolute URL to its path,
+ * query and hash (www and the apex count as one origin); pass a relative path
+ * through; anything off-origin or unparseable is null. The result still has to clear `isSafeInternalPath`.
+ */
+export function toSameOriginPath(raw: string | null | undefined, origin: string): string | null {
+  if (!raw) return null;
+  if (raw.startsWith('/')) return raw;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  // The sender's base URL may be the www host while the app runs on the apex
+  // (or the reverse); both serve this app, so they count as one origin.
+  const bare = (o: string) => o.replace('://www.', '://');
+  if (bare(url.origin) !== bare(origin)) return null;
+  return `${url.pathname}${url.search}${url.hash}`;
+}
