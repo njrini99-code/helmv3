@@ -6,7 +6,8 @@
  *
  *   node scripts/clubhouse/perf-measure.mjs seed [--players 8] [--rounds 12]   seed the team (state in .helm/runtime/clubhouse-perf/seed.json)
  *   node scripts/clubhouse/perf-measure.mjs build [--ref HEAD] [--cache]       export a committed ref, `npm run build` it against the local stack (~12 minutes;
- *                                                                               no webpack cache is kept unless --cache: it is 5 to 8 GB)
+ *                                                                               no webpack cache is kept unless --cache: it is 5 to 8 GB).
+ *                                                                               HELM_PERF_SNAPSHOT=<dir> builds (and serves) from another directory, so a server keeps running meanwhile.
  *   node scripts/clubhouse/perf-measure.mjs serve [--port 3200]                 `next start`, detached, with the read tracer preloaded
  *   node scripts/clubhouse/perf-measure.mjs measure [--label before] [--runs 3] [--only home,stats] [--role coach,player] [--viewport 1280,390]
  *   node scripts/clubhouse/perf-measure.mjs report --before before --after after [--only home] [--before-geometry <label> --after-geometry <label>]
@@ -35,7 +36,7 @@ const READS_FILE = join(STATE_DIR, 'reads.ndjson');
  * ten-minute build reads them (a half-written file failed the first build), and a measurement should name the commit it measured.
  * It lives outside the repo, so nothing in it is scanned by typecheck or lint; its `.next` (and webpack cache) stays between builds.
  */
-const SNAPSHOT = join(homedir(), '.helm-perf', 'clubhouse-snapshot');
+const SNAPSHOT = process.env.HELM_PERF_SNAPSHOT ? resolve(process.env.HELM_PERF_SNAPSHOT) : join(homedir(), '.helm-perf', 'clubhouse-snapshot');
 const BUILD_STAMP = join(SNAPSHOT, '.next', 'helm-perf-build.json');
 const PRODUCTION_REF = 'qmnssrrolpinvwjjnufo';
 
@@ -198,7 +199,9 @@ async function snapshotOf(ref) {
 
 async function cmdBuild(a) {
   ensureDir();
-  if (serverPid()) throw new Error('the perf server is running from the current build: `stop` it first');
+  // A build into the default snapshot replaces what the running server serves, so it waits for `stop`. With HELM_PERF_SNAPSHOT=<other dir> the
+  // server keeps serving the old build while the new one is built, and `stop` then `serve` (same variable) swaps them in seconds.
+  if (serverPid() && !process.env.HELM_PERF_SNAPSHOT) throw new Error('the perf server is running from the current build: `stop` it first, or build into another directory (HELM_PERF_SNAPSHOT)');
   const ref = typeof a.ref === 'string' ? a.ref : 'HEAD';
   const sha = await snapshotOf(ref);
   console.log(`snapshot of ${ref} (${sha.slice(0, 9)}) in ${SNAPSHOT}`);
