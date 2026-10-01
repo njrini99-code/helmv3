@@ -31,6 +31,30 @@ const SECTIONS = [
   ['putting', 'Putting'],
 ] as const;
 
+/** What a figure that has nothing behind it says in place of a bare dash (the phone's brief): the reason, in a few words. */
+const NONE_REASON: Record<string, string> = {
+  'scoring:Scoring average': 'No scores yet',
+  'scoring:Birdies / round': 'No holes scored',
+  'scoring:Bogeys / round': 'No holes scored',
+  'scoring:Doubles or worse': 'No holes scored',
+  'tee:Fairways hit': 'No drives logged',
+  'tee:Driver distance': 'No driver shots',
+  'tee:Penalties / round': 'No rounds with shots',
+  'tee:Fairways par 5': 'No par 5 drives',
+  'approach:Greens in regulation': 'No approach shots',
+  'approach:Proximity · all': 'No finish distances',
+  'approach:Missed short': 'No missed greens',
+  'approach:From the rough': 'No rough approaches',
+  'short:Scrambling': 'No chances yet',
+  'short:Sand saves': 'No bunker shots',
+  'short:Inside 10 yds': 'No chances this close',
+  'short:From the rough': 'No rough chances',
+  'putting:Putts / GIR': 'No putts tracked',
+  'putting:3-putts / round': 'No putts tracked',
+  'putting:One-putt rate': 'No putts tracked',
+  'putting:First putt': 'No putts tracked',
+};
+
 function Sec({
   id,
   hide = false,
@@ -40,6 +64,7 @@ function Sec({
   sub,
   figs,
   rule,
+  how,
   more,
   children,
 }: {
@@ -53,6 +78,8 @@ function Sec({
   figs: Array<[string, string, string | null, Tone]>;
   /** The window and the rounds this section counts, under its figures. */
   rule: string;
+  /** The phone's long account of what the rule line counts, behind "How this is measured" (the line above is then the short one). */
+  how?: string;
   /** The figures below the headline: a "More detail" disclosure. */
   more: ReactNode;
   children: ReactNode;
@@ -71,15 +98,18 @@ function Sec({
         <span className="ch-gm__sub">{sub}</span>
       </header>
       <dl className="ch-gm__figs">
-        {figs.map(([l, v, n, t]) => (
-          <div key={l}>
-            <dt>{l}</dt>
-            <dd className={`ch-num${t ? ` ch-${t}` : ''}`}>{v}</dd>
-            {n && <dd className="ch-gm__sub">{n}</dd>}
-          </div>
-        ))}
+        {figs.map(([l, v, n, t]) => {
+          const reason = v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined;
+          return (
+            <div key={l}>
+              <dt>{l}</dt>
+              <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
+              {n && <dd className="ch-gm__sub">{n}</dd>}
+            </div>
+          );
+        })}
       </dl>
-      <Rule>{rule}</Rule>
+      <Rule how={how}>{rule}</Rule>
       <div className="ch-gm__body">{children}</div>
       {more}
     </section>
@@ -251,6 +281,14 @@ export function GameDetail({
       : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
   const coverage = holeCoverage(holeCount, rounds);
   const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
+  // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read.
+  const fewer = win === 'last10' && (basis ?? RULE_WINDOW[win]) === 'Last 10 rounds' && rounds < 10;
+  const kept = /hole/i.test(basis ?? '') ? null : holes === '18' ? '18 holes only' : holes === '9' ? '9 holes only' : '18 and 9 holes';
+  const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${rounds} ${rounds === 1 ? 'round qualifies' : 'rounds qualify'}` : `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`}${kept ? `, ${kept}` : ''}`;
+  /** The rule under a section's figures: the long line on a screen; on the phone the short line, and the rest behind "How this is measured". */
+  const ruleOf = (tail: string) => (phone ? { rule: shortBasis, how: `${basisLine}. ${tail}` } : { rule: `${basisLine}. ${tail}` });
+  /** A panel's note: the whole paragraph on a screen; on the phone one short line, and the paragraph behind "How this is measured". */
+  const noteOf = (long: string, short: string) => (phone ? { note: short, how: long } : { note: long });
   const open = !phone;
 
   return (
@@ -275,7 +313,7 @@ export function GameDetail({
         icon={Flag}
         title="Scoring"
         sub={`${s.roundsPlayed} rounds`}
-        rule={`${basisLine}. Every scored hole of those rounds.`}
+        {...ruleOf('Every scored hole of those rounds.')}
         lead={
           s.roundsPlayed
             ? `${first} ${verb('makes', 'make')} ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
@@ -295,7 +333,7 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="What an average round looks like" wide note="Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.">
+        <Panel title="What an average round looks like" wide {...noteOf('Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
           <ScoreMix d={dist} totals={totals} />
         </Panel>
         <Panel title="Scoring by par" wide>
@@ -309,7 +347,7 @@ export function GameDetail({
         icon={MoveUpRight}
         title="Off the tee"
         sub={`${s.fairwayOpportunities} drives`}
-        rule={`${basisLine}. Par 4 and par 5 tee shots; penalties are logged penalty shots.`}
+        {...ruleOf('Par 4 and par 5 tee shots; penalties are logged penalty shots.')}
         lead={
           fw == null
             ? 'No tee shots are logged in this window, so fairways and distance can’t be read yet.'
@@ -355,7 +393,7 @@ export function GameDetail({
         icon={Crosshair}
         title="Approach"
         sub={`${s.girOpportunities} approach shots`}
-        rule={`${basisLine}. Every approach, whether the green is hit or missed.`}
+        {...ruleOf('Every approach, whether the green is hit or missed.')}
         lead={
           s.girPercentage == null
             ? 'No approach shots are logged in this window.'
@@ -376,15 +414,23 @@ export function GameDetail({
         }
       >
         <Panel title="Greens hit by distance" wide note="Bars are the GIR rate from each band.">
-          <Ladder rows={girBands.map(([band, value]) => ({ band, value, bench: null }))} unit="%" label="Yards to the pin" />
+          <Ladder rows={girBands.map(([band, value]) => ({ band, value, bench: null }))} unit="%" label="Yards to the pin" phone={phone} />
         </Panel>
-        <Panel title="Proximity against the Tour" wide note="Average finish in feet from every approach, hit or missed, lay-ups left out; shorter is better. The dashed tick is the Tour average for that range. A range needs 10 shots.">
+        <Panel
+          title="Proximity against the Tour"
+          wide
+          {...noteOf(
+            'Average finish in feet from every approach, hit or missed, lay-ups left out; shorter is better. The dashed tick is the Tour average for that range. A range needs 10 shots.',
+            'Shorter is better. The tick is the Tour.',
+          )}
+        >
           {x.approachError ? (
             <InlineNotice code="CH-5210" title="Proximity against the Tour didn't load." body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />
           ) : tourProx.length ? (
             <>
-              <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench }))} unit={'′'} label="Yards to the pin" invert />
-              {tourProx.some((b) => b.value == null) && (
+              <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit={'′'} label="Yards to the pin" invert phone={phone} code="CH-5316" />
+              {/* On a phone each band's own row says it ("Needs 10", with its shots); a screen says it in a line under the chart. */}
+              {!phone && tourProx.some((b) => b.value == null) && (
                 <p className="ch-gm-p__empty" data-ch-code="CH-5316">
                   {tourProx
                     .filter((b) => b.value == null)
@@ -397,8 +443,12 @@ export function GameDetail({
             <Empty code="CH-5316">No approach shots with a finish distance are logged in this window.</Empty>
           )}
         </Panel>
-        <Panel title="Finish when the green is hit" wide note="Average finish in feet by the distance hit from; shorter is better. Counts greens found only, so it has no Tour tick.">
-          <Ladder rows={proxBands.map(([band, value]) => ({ band, value, bench: null }))} unit={'′'} label="Yards to the pin" invert />
+        <Panel
+          title="Finish when the green is hit"
+          wide
+          {...noteOf('Average finish in feet by the distance hit from; shorter is better. Counts greens found only, so it has no Tour tick.', 'Shorter is better. Greens found only.')}
+        >
+          <Ladder rows={proxBands.map(([band, value]) => ({ band, value, bench: null }))} unit={'′'} label="Yards to the pin" invert phone={phone} none="No greens hit" />
         </Panel>
         <Panel title="Where missed greens finish" note={hasMiss ? `Most misses finish ${missShort >= missLong ? 'short' : 'long'}. ${missShort >= missLong ? 'Taking one more club is the simplest change.' : 'Clubbing down is worth a look.'}` : undefined}>
           {hasMiss ? (
@@ -437,7 +487,7 @@ export function GameDetail({
         icon={FlagTriangleRight}
         title="Short game"
         sub={`${s.scrambleAttempts} chances`}
-        rule={`${basisLine}. Chances are greens missed; chips and pitches are counted by the lie they were played from.`}
+        {...ruleOf('Chances are greens missed; chips and pitches are counted by the lie they were played from.')}
         lead={
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
@@ -488,7 +538,7 @@ export function GameDetail({
         icon={CircleDot}
         title="Putting"
         sub={`${s.totalPutts} putts`}
-        rule={`${basisLine}. Putts per round are per 18 holes; make rates count the putts logged with a distance.`}
+        {...ruleOf('Putts per round are per 18 holes; make rates count the putts logged with a distance.')}
         lead={
           s.totalPutts === 0
             ? 'No putts are logged in this window.'
@@ -508,7 +558,14 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="Make rate by distance" wide note={`${phone ? 'Bars are the make rate; the tick is the Tour. Amber is below it.' : 'Green line is the player, dashed champagne is the Tour.'} Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`}>
+        <Panel
+          title="Make rate by distance"
+          wide
+          {...noteOf(
+            `${phone ? 'Bars are the make rate; the tick is the Tour. Amber is below it.' : 'Green line is the player, dashed champagne is the Tour.'} Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`,
+            'Bars are the make rate; the tick is the Tour. Amber is below it.',
+          )}
+        >
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn't load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
           {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
         </Panel>

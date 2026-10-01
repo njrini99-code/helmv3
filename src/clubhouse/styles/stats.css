@@ -2745,6 +2745,165 @@ a.ch-lg__r:focus-visible {
   color: var(--ch-text-tertiary);
 }
 
+/* Game detail on the phone (iPhone brief, 2026-10-01): the value is what the eye lands on, 28px and 600; its label and scope are
+   plain secondary text at 13 to 14px, so the figure no longer reads at the size of the words around it. The Tour mark is the same
+   quiet line as the scope, not a second headline. A figure with nothing behind it says why, in a few words, not a bare dash. */
+.ch-gm__figs dd.ch-gm__none {
+  font: 500 14px/20px var(--ch-font-sans);
+  letter-spacing: 0;
+  color: var(--ch-text-secondary);
+}
+@media (max-width: 820px) {
+  .ch-gd.is-phone .ch-gm__figs dt {
+    font: 500 13.5px/19px var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-gd.is-phone .ch-gm__figs dd:not(.ch-gm__sub) {
+    font: 600 28px/32px var(--ch-font-sans);
+    letter-spacing: -0.03em;
+  }
+  .ch-gd.is-phone .ch-gm__figs dd.ch-gm__none {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    font: 500 14px/20px var(--ch-font-sans);
+    letter-spacing: 0;
+    color: var(--ch-text-secondary);
+  }
+  .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
+    font: 400 13px/18px var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  /* A panel's note is one short plain line; the method is behind "How this is measured". */
+  .ch-gd.is-phone .ch-gm-p__n {
+    font: 400 13px/18px var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-gd.is-phone .ch-gx-rule {
+    font: 400 13px/18px var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+}
+/* "How this is measured": a closed disclosure under a section's rule line or a panel's note. */
+.ch-gm-how > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0;
+  font: 600 13px/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  cursor: pointer;
+  list-style: none;
+}
+.ch-gm-how > summary::-webkit-details-marker {
+  display: none;
+}
+.ch-gm-how > summary::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-gm-how[open] > summary::before {
+  transform: rotate(45deg);
+}
+.ch-gm-how > summary:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.ch-gm-how > p {
+  margin: 0 0 6px;
+  font: 400 13px/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-gx-rule + .ch-gm-how {
+  padding: 0 24px;
+}
+@media (max-width: 820px) {
+  .ch-gd.is-phone .ch-gx-rule + .ch-gm-how {
+    padding: 0 16px;
+  }
+}
+
+/* Band rows (BandRows): the phone's distance chart, one row per band (a column chart of seven bands is cramped at 390px and
+   its labels wrap): the band, a bar on a track, the exact value and, where the source keeps it, the shots. */
+.ch-brows__axis {
+  margin: 0 0 10px;
+  font: 500 13px/18px var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-brows ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-brow {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  font: 500 14px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-brow__bar {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--ch-bg-inset);
+}
+.ch-brow__bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--ch-green-600);
+}
+.ch-brow__bar i.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-brow__bar em {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ch-text-primary);
+}
+.ch-brow__v {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+.ch-brow__v b {
+  font: 600 15px/1.1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-brow__v b.ch-gain {
+  color: var(--ch-text-primary);
+}
+.ch-brow__v b.ch-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-brow__v small {
+  font: 400 12px/1.1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-brow__v.is-none {
+  font: 500 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
@@ -2768,9 +2927,7 @@ a.ch-lg__r:focus-visible {
   .ch-stm-figs dd + dd,
   .ch-gx-sec__c em,
   .ch-gx-type,
-  .ch-sf__n,
-  .ch-gd.is-phone .ch-gm__figs dt,
-  .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
+  .ch-sf__n {
     font-size: 12px;
   }
   .ch-stm-chart__t {

@@ -3,6 +3,57 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — iPhone brief: Game detail on the phone, the approach section first
+
+```text
+PR/commit:      agent/swap-audit
+Design package: none (the owner's iPhone brief; the phone board is unchanged where it is silent)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; no calculation changed (the labels, the layout and what a missing figure says)
+Held items:     none
+```
+
+- **Issue.** The phone's Approach section read as a wall of one size: the value
+  (20px) sat beside a label and a scope of 12px, the Tour mark was a second
+  line of the same weight, the seven-band chart was cramped (its labels wrapped
+  in two lines), five italic paragraphs (552 characters over 15 lines)
+  explained method before the player had seen a number, "Last 10 rounds · 3
+  rounds, 18 holes only" did not say that only three rounds existed, and a
+  figure with nothing behind it was a dash.
+- **Fix.** The value is 28px and 600; its label is 13.5px and its scope 13px,
+  in secondary ink (computed in Chromium at 390px: value 20 to 28px, label 12
+  to 13.5px, scope 12 to 13px). The Tour mark is that same quiet scope line.
+  The three distance charts (greens hit by distance, proximity against the
+  Tour, finish when the green is hit) are rows on a phone: the band, a bar, the
+  exact value and, where the source keeps it, the shots ("55 shots"); a band
+  with no shots reads "No shots", not 0%, a 100% bar fills its track, and a
+  band under the Tour's floor reads "Needs 10" with its shots (CH-5316 sits on
+  the rows). Every panel note is one short plain line and its method is behind
+  a closed "How this is measured"; so is the longer account of which rounds a
+  section counts (the line above it is short: 259 characters over 8 lines, none
+  italic, three disclosures). "Last 10 rounds" with three behind it reads "3
+  rounds qualify, 18 holes only". A figure with nothing behind it says why ("No
+  approach shots", "No putts tracked"). A player reading their own stats reads
+  "You hit" on a screen as on the phone (the verb agrees; it already did on the
+  phone, and a coach reads "Jonah hits").
+- **Not done, on purpose.** The GIR and finish bands carry no shot count: the
+  calculator keeps only the percentage per band (`girPct50_75`, ...), so those
+  rows show the value without an n; exposing the counts is a change to the
+  shared calculator, which this pass did not make. The "200+" row reads the
+  200 to 225 band (or 225+ when that is empty), not both together. A band with
+  one shot reads 100%: a window of three 100% bands is small samples (the
+  percentage has no floor), not a fault; a floor like the putting bands' 10 is
+  an owner decision. "More detail" stays closed on the phone and holds tables
+  the section above does not repeat (the by-lie and by-distance tables, the
+  tiles and the per-round lines).
+- **Checked.** `stats-parity.test.tsx` (the phone's approach section: rows,
+  "No shots", the full-scale bar, "Needs 10", the closed disclosure, the honest
+  sample line, "You hit", the reasons for a dash, and the stylesheet's type
+  contract); `stats-player.test.tsx`; a static render of the section in
+  Chromium at 390px before and after (page height 2004 to 2232px, the cost of
+  rows for columns).
+
 ## 2026-10-01 — Page performance: two round trips for a player, three for a coach, a hero that holds its shape
 
 ```text

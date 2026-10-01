@@ -457,18 +457,73 @@ export function Compare({ rows, unit = '', max }: { rows: Array<{ label: string;
   );
 }
 
-/** Bars by distance band with a dashed benchmark tick; bars are the player, ticks are the Tour. */
+export interface LadderRow {
+  band: string;
+  value: number | null;
+  bench: number | null;
+  /** The shots behind the band, when the source keeps a count per band (the calculator's GIR and finish bands keep only the averages). */
+  n?: number | null;
+  /** The sample a band needs before it is graded: a band with shots under it reads "Needs 10", not "No shots". */
+  floor?: number | null;
+}
+
+/**
+ * One row per distance band, for a phone (a seven-band column chart is cramped there and its labels wrap): the band, a bar on a track,
+ * the exact value, and the shots behind it when they are known. A band with no shots says "No shots", which is not 0%. A percentage
+ * bar is on the 0 to 100 scale, so a 100% bar fills its track; a distance in feet is on the largest value and tick, and shorter is better.
+ */
+export function BandRows({ rows, unit, label, invert = false, none = 'No shots', code }: { rows: LadderRow[]; unit: string; label: string; invert?: boolean; none?: string; code?: string }) {
+  const max = unit === '%' ? 100 : Math.max(1, ...rows.flatMap((r) => [r.value ?? 0, r.bench ?? 0])) * 1.1;
+  return (
+    <div className="ch-brows" data-ch-code={code && rows.some((r) => r.value == null) ? code : undefined}>
+      <p className="ch-brows__axis">{label}</p>
+      <ul aria-label={label}>
+        {rows.map((r) => {
+          const tone = r.value == null || r.bench == null ? '' : (invert ? r.value <= r.bench : r.value >= r.bench) ? ' is-gain' : ' is-loss';
+          return (
+            <li key={r.band} className="ch-brow">
+              <span className="ch-brow__b ch-num">{r.band}</span>
+              <span className="ch-brow__bar" aria-hidden="true">
+                {r.value != null && <i className={tone.trim()} style={{ width: `${Math.min(100, (r.value / max) * 100)}%` }} />}
+                {r.bench != null && <em style={{ left: `${Math.min(100, (r.bench / max) * 100)}%` }} />}
+              </span>
+              <span className={'ch-brow__v' + (r.value == null ? ' is-none' : '')}>
+                {r.value == null ? (
+                  r.n && r.floor ? `Needs ${r.floor}` : none
+                ) : (
+                  <b className={'ch-num' + (tone === ' is-loss' ? ' ch-loss' : tone === ' is-gain' ? ' ch-gain' : '')}>{`${Math.round(r.value)}${unit}`}</b>
+                )}
+                {r.n != null && r.n > 0 && <small className="ch-num">{`${r.n} ${r.n === 1 ? 'shot' : 'shots'}`}</small>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Bars by distance band with a dashed benchmark tick; bars are the player, ticks are the Tour. On a phone the bands are rows (BandRows). */
 export function Ladder({
   rows,
   unit,
   label,
   invert = false,
+  phone = false,
+  none,
+  code,
 }: {
-  rows: Array<{ band: string; value: number | null; bench: number | null }>;
+  rows: LadderRow[];
   unit: string;
   label: string;
   invert?: boolean;
+  phone?: boolean;
+  /** What an empty band reads on a phone ("No shots"). */
+  none?: string;
+  /** The catalog code a phone's rows carry when a band has no value (the screen's line under the chart says so on desktop). */
+  code?: string;
 }) {
+  if (phone) return <BandRows rows={rows} unit={unit} label={label} invert={invert} none={none} code={code} />;
   const max = Math.max(1, ...rows.flatMap((r) => [r.value ?? 0, r.bench ?? 0])) * 1.1;
   return (
     <div className="ch-lad" style={{ ['--ch-n' as string]: rows.length }}>

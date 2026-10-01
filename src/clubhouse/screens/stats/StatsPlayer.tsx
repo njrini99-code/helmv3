@@ -313,7 +313,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                   onRetry={() => router.refresh()}
                 />
               ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={first} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
+                <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
               ) : (
                 <div className="ch-st-card">
                   <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
