@@ -203,12 +203,17 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
             <text x={cx} y={base - (d >= 0 ? h : 0) - 6} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
               {x.score}
             </text>
-            <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
-              {dateOf(x.date).getUTCDate()}
-            </text>
-            <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
-              {fmt({ month: 'short' }).format(dateOf(x.date))}
-            </text>
+            {/* A day is labelled once, under the first of its rounds: "2 Aug 2 Aug 2 Aug" said nothing (F-57). */}
+            {(i === 0 || rounds[i - 1]!.date.slice(0, 10) !== x.date.slice(0, 10)) && (
+              <>
+                <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
+                  {dateOf(x.date).getUTCDate()}
+                </text>
+                <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
+                  {fmt({ month: 'short' }).format(dateOf(x.date))}
+                </text>
+              </>
+            )}
           </g>
         );
       })}

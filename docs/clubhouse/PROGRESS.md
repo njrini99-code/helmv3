@@ -434,6 +434,13 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   reads it as before. Kept out: test rounds, rounds in progress, implausible
   totals (the stroke floor) and nine-hole totals (the rule names 18-hole
   totals).
+- Q-127 (open, 2026-10-01; nothing changed) The Demo team carries QA
+  leftovers that look real in Clubhouse: eleven unfinished rounds for the
+  demo player not flagged as tests ("Progress Test Course", "QA Hell Enum
+  20260824-224418", Peek'n Peak drafts of 17-18 Sep reading "-7 through 6"),
+  and a "QA attach" announcement. Rounds shows them as an In progress card and
+  "10 more unfinished rounds". Recommended: mark them `is_test` (reversible;
+  every surface already hides test rounds) rather than delete. Kept: as is.
 - Q-124 (open, 2026-10-01; nothing applied) The §13 CoachHelm audit found
   the lifetime stats cache still counts test rounds, so cache-backed cards
   are wrong (Cole's 15-25 ft putting reads 19.2% and draws as a strength; the
