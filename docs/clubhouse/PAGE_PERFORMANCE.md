@@ -77,13 +77,14 @@ each one stands. Measurements go in `PROGRESS.md`, "Page performance
   yet" and never the default team (`resolveCoachActiveTeam`, three-way);
   route Try again refreshes the server payload before resetting.
 - **5 Skeleton geometry.** Page pass: measured CLS per route and switch.
-  Stats and Home measured: on desktop every skeleton block lands within 1 px of
-  the loaded page (the coach's Home leaderboard landed 362 px lower than it was
-  drawn, the team's strokes gained table 79 px); raw shift on a window switch
-  is 0.000 to 0.012 at 1280. Open: the phone profile and team strips (0.036
-  to 0.093 at 390, owner decisions F-43 and F-54), the phone Home skeleton (22
-  or 36 px, by design) and a player's desktop Home sheet (128 px, one skeleton
-  for both roles).
+  Stats and Home measured: on desktop the top of every skeleton block lands
+  within 1 px of the loaded page's (the coach's Home leaderboard landed 362 px
+  lower than it was drawn, the team's strokes gained table 79 px); heights
+  below the first screen and a long list's differ; raw shift on a window
+  switch is 0.000 to 0.012 at 1280. Open: the phone profile and team strips
+  (0.036 to 0.093 at 390, owner decisions F-43 and F-54), the phone Home
+  skeleton (22 or 36 px, by design) and a player's desktop Home sheet (128 px,
+  one skeleton for both roles).
 - **6 Independent sections.** Page pass. Stats and Home: not streamed in
   parts, on purpose (PROGRESS.md).
 - **7 Prefetch and cache keys.** Page pass; nothing cached across users or

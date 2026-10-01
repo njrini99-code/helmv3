@@ -51,9 +51,12 @@ Held items:     none
   teammates read), `stats-player.test.tsx`, `stats-parity.test.tsx`,
   `stats-geometry.test.tsx`; measured with `npm run clubhouse:perf`
   (PROGRESS.md, "Page performance (2026-10-01)"). Reads on a cold load, coach
-  44 to 38 over 5 to 4 round trips, player 33 to 28 over 5; server time at
-  1280, coach 272 to 188 ms cold and 186 to 123 on the Season window, player
-  221 to 132 ms cold and 178 to 125 on Season. The hero, tabs, filter row and
+  44 to 38 over 5 to 4 round trips, player 33 to 28 over 5 (build `169f17833`);
+  server time at 1280 (build `082214d1d`, whose long-read paging asked for a
+  row count first: a profile's reads stay under 1000 rows on the seed, so the
+  later paging rule changes none of these reads), coach 272 to 188 ms cold and
+  186 to 123 on the Season window, player 221 to 132 ms cold and 178 to 125 on
+  Season. The hero, tabs, filter row and
   panel land within 0 px of the skeleton (the coach's hero was 34 to 103 px
   off). Raw layout shift on a switch at 1280 is 0.000 to 0.012 (was 0.006 to
   0.013); at 390 it is unchanged (0.036 to 0.093: the figure strip and the

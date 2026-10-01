@@ -357,7 +357,8 @@ which draws the app without the page crossfade: the difference from a normal
 run is the crossfade's share of a navigation. Navigations that show a route
 skeleton have a floor of about 350 ms before the page can replace it even when
 its data is back at 120 ms (React holds a Suspense reveal until 300 ms after
-the fallback committed, `FALLBACK_THROTTLE_MS` in react-dom 19), plus the
+the fallback committed: `globalMostRecentFallbackTime + 300` in the react-dom
+Next bundles, `FALLBACK_THROTTLE_MS` in react-dom 19), plus the
 crossfade, so compare a navigation's content time with that floor, not with
 its server time.
 

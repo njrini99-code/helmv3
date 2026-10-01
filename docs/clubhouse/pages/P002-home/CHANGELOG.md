@@ -45,7 +45,8 @@ Held items:     none
   `player-home-phone.test.tsx`, `stats-geometry.test.tsx` (the skeleton's head);
   measured with `npm run clubhouse:perf` (PROGRESS.md, "Page performance
   (2026-10-01)": cold server time 172 to 148 ms coach, 129 to 116 player at
-  1280; 6 to 4 and 6 to 5 round trips on a cold load).
+  1280 on build `082214d1d`, inside the player's spread; 6 to 4 and 6 to 5
+  round trips on a cold load on `169f17833`).
 
 ## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
 

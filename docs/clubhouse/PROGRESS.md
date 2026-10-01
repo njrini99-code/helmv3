@@ -85,9 +85,11 @@ Calendar.
   that made the Season switch 154 to 219 ms, so it was replaced (`169f17833`).
   The team page reads the window's putts only; the season's longest putt is
   one row per chunk of rounds.
-- Every route skeleton is the loaded page's geometry (table below), a window
-  or tab switch keeps the page on screen, dimmed, at its own height, and a
-  tap on a row shows the page's hairline while it loads.
+- Every route skeleton's blocks land where the loaded page's do (the tops
+  within 1 px on desktop; the table below, with the exceptions under it, says
+  which heights still differ), a window or tab switch keeps the page on
+  screen, dimmed, at its own height, and a tap on a row shows the page's
+  hairline while it loads.
 
 **Reads and round trips, exact** (the waves count overlapping requests and can
 differ by one between passes; the reads do not). At 390 the cold and tap
@@ -160,8 +162,11 @@ Faster by more than the spread on 31 of 36 (the median is lower on 34).
 Inside the spread: the player's cold Home at both widths and the coach's
 team to Home at 390 (a request that was already 100 to 140 ms). Team
 Season did not get faster: 1280 is inside the spread and 390 is about 25 ms
-slower. It reads the season's putts either way; the cause is not isolated,
-and the extra longest-putt read and wider batches are the suspects.
+slower (content 228 to 253 ms). It reads the season's putts either way; the
+cause is not isolated. A suspect, and a follow-up not built (it needs a
+rebuild to measure): on the Season window the window's putts already are the
+season's, so the separate longest-putt read is redundant there, and the longest
+could come from the putts already loaded.
 
 **Tap to the new content, ms: median (min-max of 3).**
 
@@ -202,9 +207,11 @@ crossfade not before 430 to 470. The evidence: with the crossfade off
 (reduced motion, `rm-final2`, three runs of every tap) content came at 346
 to 364 ms in 7 of 8 taps while the server took 118 to 221 ms, a constant
 that no server time moves. React holds a Suspense reveal until 300 ms after
-the fallback committed (`FALLBACK_THROTTLE_MS` in react-dom 19.3), and the
-skeleton commits at about 60 ms.
-The crossfade adds another 70 to 120 ms. The 8th tap, the player's phone
+the fallback committed (`globalMostRecentFallbackTime + 300` in the react-dom
+19.3.0-canary that Next 16.3.6 bundles, in its `react-dom-client.production.js`
+under `next/dist/compiled`; `react-dom` 19.3.0 has the same
+`FALLBACK_THROTTLE_MS`), and the skeleton commits at about 60 ms. The
+crossfade adds another 70 to 120 ms. The 8th tap, the player's phone
 profile, paints its skeleton at 225 ms rather than 60 and reads 403 ms (756
 with the crossfade); not explained.
 
@@ -298,9 +305,16 @@ so it is the shell's weight more than these pages'.
    its page earlier than about 350 ms (440 to 470 with the crossfade), with
    its data back at 120 ms. Skipping `loading.tsx` on Home and Stats and
    keeping the old page with the hairline (as a window switch does) would
-   bring a tap to about server time plus render, an estimate of 250 to 350
-   ms that was not measured (it needs a rebuild). The cost: a slow
-   connection shows the old page with a hairline, not a skeleton, for longer.
+   bring a tap to about its server time plus 100 ms of render and crossfade
+   (an assumption; none of it measured, it needs a rebuild): about 220 ms
+   for the coach's Home (server 121 ms, 476 today), 200 for the player's
+   (95, 472), 230 for the player's profile (128, 431) and 390 for team
+   Stats (292, 485), where it gains little. The costs: a slow connection
+   shows the old page with a hairline, not a skeleton, for longer; and a
+   direct open or a refresh no longer streams a skeleton first, so the
+   document waits for the page's data before it paints (Home 113 to 148 ms,
+   coach profile 162 to 188, team Stats 294 to 305, against the 160 ms at
+   which the 390 skeleton paints today).
 2. Two serial sign-in lookups per request, the proxy's then the render's: 47
    and 52 ms of a 230 ms request on the local stack, before any page read.
    Verifying the token locally (`getClaims`, asymmetric keys) or passing the
