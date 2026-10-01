@@ -1228,6 +1228,12 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-140 (open, 2026-10-01; nothing changed natively) The native launch and
+  WebView colour is #F2E6D2 (capacitor.config.ts, splash, LaunchScreen),
+  Fairway's canvas; Clubhouse's phone page is #E2DCCD. A Clubhouse user sees
+  a colour step at launch. Changing it needs a native build and should
+  follow which UI is the default. Kept: native colours as they are; the web
+  document under Clubhouse now takes Clubhouse's colour.
 - Q-139 (answered 2026-10-01, owner, on the high-fidelity audit) Four calls,
   each the recommended one. Reveals: crossfade only; the staggered page
   reveal (D-64) is retired. Press: per component; buttons up to 240px

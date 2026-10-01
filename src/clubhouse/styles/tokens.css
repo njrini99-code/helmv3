@@ -245,6 +245,20 @@ html:has([data-ui='clubhouse']) {
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show
+   <html> and <body>, which carry Fairway's canvas. Where Clubhouse is on screen they take its own colour: the frame on
+   desktop, the page on a phone. The native launch colour (#F2E6D2, capacitor.config.ts) is Q-140. */
+html:has([data-ui='clubhouse']),
+html:has([data-ui='clubhouse']) body {
+  background: #0a331f;
+}
+@media (max-width: 820px) {
+  html:has([data-ui='clubhouse']),
+  html:has([data-ui='clubhouse']) body {
+    background: #e2dccd;
+  }
+}
+
 /* Phone reading sizes (owner 2026-10-01, high-fidelity audit F09: "Phone 16 / 14"). Per role, never a page scale:
    reading text 16px, important secondary text 14px, labels 13-14px; captions only to 13px, because chart axes and chips
    use them. Desktop keeps the compact board sizes for dense tables. */
