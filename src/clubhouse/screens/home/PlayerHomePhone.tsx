@@ -50,7 +50,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
               <RefreshNotice code="CH-2201" title="This week's schedule didn't load." body="Your events are safe. This is a display problem, and trying again usually clears it." />
             </div>
           ) : data.next ? (
-            <UpNext e={data.next} now={now}>
+            <UpNext e={data.next} now={now} kicker="Up next">
               <Countdown to={data.next.startIso} frozen={frozen} />
             </UpNext>
           ) : (
@@ -88,14 +88,20 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
       </header>
 
       <div className="ch-hm-body">
-        {!data.week.error && !nothingAhead && (
+        {!data.week.error && !nothingAhead ? (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <WeekStrip days={data.week.days} note={data.weekNote} />
+            {/* The board's Today is a small label inside This week, not a section of its own. */}
+            <WeekStrip days={data.week.days} note={data.weekNote} majorIcon={Flag}>
+              <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+                <Today inline list={data.today} now={now} failed={false} quiet={false} canPlan={false} />
+              </SectionBoundary>
+            </WeekStrip>
+          </SectionBoundary>
+        ) : (
+          <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+            <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
           </SectionBoundary>
         )}
-        <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-          <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
-        </SectionBoundary>
         <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
           <Latest data={data.latest} />
         </SectionBoundary>
@@ -118,7 +124,7 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
   const [course, ...rest] = (r?.meta ?? '').split(' · ');
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-ph-latest">
-      <div className="ch-hm-sec__h">
+      <div className="ch-hm-sec__h ch-ph-sec__h">
         <h2 id="ch-ph-latest">My latest round</h2>
         {data.rounds.length > 1 && (
           <span className="ch-ph-pg">

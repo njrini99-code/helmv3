@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -118,8 +118,8 @@ function dayDiff(date: string, now: Date): number {
 const WD = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
 const weekday = (date: string) => WD.format(new Date(`${date}T12:00:00Z`));
 
-/** `children`: what closes the card (the player's countdown). */
-export function UpNext({ e, now, children }: { e: ChHomeEvent; now: Date | null; children?: ReactNode }) {
+/** `children`: what closes the card (the player's countdown). `kicker`: the player's "Up next · Qualifier" (the coach's card names the type alone). */
+export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date | null; children?: ReactNode; kicker?: string }) {
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
@@ -127,7 +127,7 @@ export function UpNext({ e, now, children }: { e: ChHomeEvent; now: Date | null;
       <span className="ch-hm-next__k">
         <span className="ch-hm-next__type">
           <Icon icon={TYPE_ICON[e.type]} size={13} />
-          {TYPE_LABEL[e.type]}
+          {kicker ? `${kicker} · ${TYPE_LABEL[e.type]}` : TYPE_LABEL[e.type]}
         </span>
         <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
       </span>
@@ -188,9 +188,73 @@ function NoEvents() {
   );
 }
 
-/** `canPlan`: a coach gets Plan on an empty day; a player can't add team events. */
-export function Today({ list, now, failed, quiet, canPlan = true }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean }) {
+/**
+ * `canPlan`: a coach gets Plan on an empty day; a player can't add team events.
+ * `inline`: the player's phone (Player - Home - Mobile.html `mp-lab`): a small "Today" label and the timeline inside
+ * This week's section, with no section of its own and no Calendar link (the week's days open it). The row under way
+ * reads "Now"; with none under way, the next one reads "Next". A row that has passed keeps its ink: only its time
+ * steps back, so it never looks disabled.
+ */
+export function Today({ list, now, failed, quiet, canPlan = true, inline = false }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
   if (failed) return null;
+  const t = now?.getTime();
+  const rows = list.map((e) => {
+    const end = e.endIso ? Date.parse(e.endIso) : Date.parse(e.startIso);
+    return { e, past: !e.allDay && t != null && end <= t, live: !e.allDay && t != null && Date.parse(e.startIso) <= t && end > t };
+  });
+  const next = inline && t != null && !rows.some((r) => r.live) ? rows.find((r) => !r.past && !r.e.allDay)?.e.id : undefined;
+  const body = !list.length ? (
+    <div className="ch-hm-empty" data-ch-code="CH-2301">
+      <Icon icon={Sun} size={18} />
+      <span>
+        <b>Nothing scheduled</b>
+        <span>{canPlan ? 'Players can still post rounds from the course.' : 'A good day to play a round.'}</span>
+      </span>
+      {canPlan && !quiet && (
+        <Button size="sm" leftIcon={Plus} href={newEventHref()}>
+          Plan
+        </Button>
+      )}
+    </div>
+  ) : (
+    <ol className={'ch-hm-tl' + (inline ? ' is-player' : '')} aria-labelledby={inline ? 'ch-hm-today' : undefined}>
+      {rows.map(({ e, past, live }) => {
+        const mark = live || e.id === next;
+        return (
+          <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (mark ? ' is-now' : '')}>
+            <Link href={eventHref(e)} className="ch-hm-tl__a">
+              <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
+              <span className="ch-hm-tl__rail" aria-hidden="true">
+                <i className={`is-${e.type}`} />
+              </span>
+              <span className="ch-hm-tl__b">
+                <b>{e.title}</b>
+                {e.location && <span>{e.location}</span>}
+              </span>
+              {e.conflict ? (
+                <span className="ch-hm-tl__w" title="Overlaps another event">
+                  <Icon icon={TriangleAlert} size={13} />
+                  <span className="ch-sr-only">Overlaps another event</span>
+                </span>
+              ) : mark ? (
+                <span className="ch-hm-now">{live ? 'Now' : 'Next'}</span>
+              ) : null}
+            </Link>
+          </li>
+        );
+      })}
+    </ol>
+  );
+  if (inline) {
+    return (
+      <>
+        <h2 id="ch-hm-today" className="ch-hm-lab">
+          Today
+        </h2>
+        {body}
+      </>
+    );
+  }
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-today">
       <div className="ch-hm-sec__h">
@@ -201,51 +265,7 @@ export function Today({ list, now, failed, quiet, canPlan = true }: { list: ChHo
           </Link>
         )}
       </div>
-      {!list.length ? (
-        <div className="ch-hm-empty" data-ch-code="CH-2301">
-          <Icon icon={Sun} size={18} />
-          <span>
-            <b>Nothing scheduled</b>
-            <span>{canPlan ? 'Players can still post rounds from the course.' : 'A good day to play a round.'}</span>
-          </span>
-          {canPlan && !quiet && (
-            <Button size="sm" leftIcon={Plus} href={newEventHref()}>
-              Plan
-            </Button>
-          )}
-        </div>
-      ) : (
-        <ol className="ch-hm-tl">
-          {list.map((e) => {
-            const t = now?.getTime();
-            const end = e.endIso ? Date.parse(e.endIso) : Date.parse(e.startIso);
-            const past = !e.allDay && t != null && end <= t;
-            const live = !e.allDay && t != null && Date.parse(e.startIso) <= t && end > t;
-            return (
-              <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (live ? ' is-now' : '')}>
-                <Link href={eventHref(e)} className="ch-hm-tl__a">
-                  <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
-                  <span className="ch-hm-tl__rail" aria-hidden="true">
-                    <i className={`is-${e.type}`} />
-                  </span>
-                  <span className="ch-hm-tl__b">
-                    <b>{e.title}</b>
-                    {e.location && <span>{e.location}</span>}
-                  </span>
-                  {e.conflict ? (
-                    <span className="ch-hm-tl__w" title="Overlaps another event">
-                      <Icon icon={TriangleAlert} size={13} />
-                      <span className="ch-sr-only">Overlaps another event</span>
-                    </span>
-                  ) : live ? (
-                    <span className="ch-hm-now">Now</span>
-                  ) : null}
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+      {body}
     </section>
   );
 }
@@ -320,7 +340,8 @@ function Form({ form }: { form: ChTeamForm }) {
   );
 }
 
-export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote'] }) {
+/** `children`: what follows the week inside its section (the player's Today). `majorIcon`: the mark on a competition day (the coach's is the trophy; the player's board draws a flag). */
+export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tournament }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode; majorIcon?: LucideIcon }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
@@ -334,7 +355,7 @@ export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; n
               <b className="ch-num" aria-hidden="true">
                 {d.dayOfMonth}
               </b>
-              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={TYPE_ICON.tournament} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
+              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={majorIcon} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
               <span className="ch-sr-only">
                 {d.weekday} {d.dayOfMonth}
                 {d.isToday ? ', today' : ''}
@@ -349,6 +370,7 @@ export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; n
           <b>{note.weekday}</b> {note.title}
         </p>
       )}
+      {children}
     </section>
   );
 }

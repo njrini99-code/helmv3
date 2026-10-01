@@ -2,6 +2,37 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — The player's phone to the board: spacing, the scoring card, Today
+
+```text
+PR/commit:      agent/swap-audit
+Data impact:    none
+```
+
+- **Issue.** The owner: the phone looked the same, with plain numbers and no
+  spacing. The hero's brief sat hard against Up next and the greeting against
+  the date: base.css zeroes every heading's and paragraph's margin, a
+  one-class rule loses that, and a two-selector rule only ties it, so the
+  order the stylesheets loaded in decided. Scoring and the parts of the game
+  carried the desktop's in-card 20px title and caption, the window picker was
+  a small desktop chip whose own labels were greyed by the caption rule, Today
+  was a full section with a Calendar link and dimmed rows, the chart repeated
+  one date under rounds posted on the same day, crammed ten ticks into the
+  axis, and marked no round under par when the window mixed pars.
+- **Fix.** Margins now carry enough specificity to win in any order. Scoring
+  and By part of the game have their 17px title and one-line meta above the
+  card; the card opens on the full-width Last 5 / 10 / 20 picker (all three,
+  as the board does), then the line, the four 26px figures (11.5px captions,
+  italic green note). Today is a label inside This week with Now / Next on
+  the row and past rows in full ink. The chart labels each date once,
+  keeps about six whole-stroke ticks, and marks a round against its own par.
+  Up next reads "Up next · Qualifier" and a competition day draws a flag.
+  The latest round's figures take the board's ruled strip.
+- **Checked.** player-home-phone.test (18 cases: the axis and tick helpers, the
+  change tones, the picker, Today's marks, the margin rules), player-home.test
+  and the clubhouse suite; the preview route and the demo player compared
+  with the board at 390px, section by section.
+
 ## 2026-09-30 — The Tour is the only benchmark (Q-88): no D1 anywhere
 
 ```text

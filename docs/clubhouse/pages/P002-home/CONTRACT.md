@@ -38,7 +38,7 @@ One route skeleton (20201) in Coach Home's shape: the header, two panes and five
 
 Status: DEFINED
 
-Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. Read from the code, not tested: the phone's Today marks (Now, past) follow the same clock. The desktop agenda's Next badge is set on the server when the page loads and does not move. A page left open past midnight in the team's timezone keeps the day it loaded until the next visit or Try again.
+Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. The phone's Today marks (Now, past, and for a player Next) follow the same clock; the player's are tested (`player-home-phone.test`), the coach's are read from the code. The desktop agenda's Next badge is set on the server when the page loads and does not move. A page left open past midnight in the team's timezone keeps the day it loaded until the next visit or Try again.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
