@@ -10230,6 +10230,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110211,
+    "page": "P011",
+    "category": 2,
+    "item": 11,
+    "name": "THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE",
+    "chCode": "CH-11410",
+    "meaning": "The Rounds library is refreshing (a Try again is running) with the page on screen",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -10919,6 +10930,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110637,
+    "page": "P011",
+    "category": 6,
+    "item": 37,
+    "name": "A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS",
+    "chCode": "CH-11213",
+    "meaning": "A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -11046,6 +11068,17 @@
     "name": "OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH",
     "chCode": "CH-11911",
     "meaning": "Opened from a submit that couldn't reach the server (`?from=submit`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110713,
+    "page": "P011",
+    "category": 7,
+    "item": 13,
+    "name": "BACK_FROM_A_ROUND_TO_THE_LIBRARY",
+    "chCode": "CH-11912",
+    "meaning": "Back from a round to the library",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

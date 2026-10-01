@@ -108,7 +108,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 5 | 4 | 13 | 14 | 30 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 125 |
 | P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
-| P011 | 14 | 10 |  | 16 | 10 | 36 | 12 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 165 |
+| P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 168 |
 | P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
 | P013 | 7 | 11 |  | 29 | 1 | 31 | 17 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 145 |
 | P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
@@ -1053,6 +1053,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110208 | CH-11407 | 02 Initial loading / skeleton | `ROUND_ENTRY_IS_ON_ITS_WAY_THE` | implemented | Round entry is on its way: the address's own loading, and, on /rounds/new, the beat before the device's day and the player's qualifiers are read |
 | 110209 | CH-11408 | 02 Initial loading / skeleton | `ROUND_RECOVERY_ROUTE_LOADING` | implemented | Round recovery route loading |
 | 110210 | CH-11409 | 02 Initial loading / skeleton | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | implemented | Reading the device for saved rounds |
+| 110211 | CH-11410 | 02 Initial loading / skeleton | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | implemented | The Rounds library is refreshing (a Try again is running) with the page on screen |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -1115,6 +1116,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110634 | CH-11215 | 06 Server / system error | `A_FINISHED_IN_PROGRESS_ROUND_WHILE_THE` | implemented | A finished in-progress round (every hole scored) while the posted rounds didn't load, so "already posted" can't be ruled out |
 | 110635 | CH-11216 | 06 Server / system error | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | implemented | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | 06 Server / system error | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | implemented | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
+| 110637 | CH-11213 | 06 Server / system error | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | implemented | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
@@ -1127,6 +1129,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110710 | CH-11909 | 07 Network / offline | `THE_SUBMIT_HAS_TAKEN_OVER_15_SECONDS` | implemented | The submit has taken over 15 seconds |
 | 110711 | CH-11910 | 07 Network / offline | `EVERY_HOLE_IS_IN_BUT_THE_FINISH` | implemented | Every hole is in but the finish sheet was closed |
 | 110712 | CH-11911 | 07 Network / offline | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | implemented | Opened from a submit that couldn't reach the server (`?from=submit`) |
+| 110713 | CH-11912 | 07 Network / offline | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | implemented | Back from a round to the library |
 | 110801 |  | 08 Permission / authorization | `LIBRARY_IS_FOR_PLAYERS` | implemented | /golf/dashboard/rounds is Clubhouse only for a player: a coach session renders nothing from the Clubhouse route and the Fairway page keeps the coach (v2 has no coach Rounds library), and the shell does not list the library as rebuilt for a coach. A player's rounds are theirs with or without a team (the team only sets the time zone that decides today). |
 | 110802 |  | 08 Permission / authorization | `REVIEW_IS_FOR_THE_PLAYER_AND_THEIR_COACHES` | implemented | A round's review opens for the player who played it and for a coach of a team the player is an active member of. Anyone else, a missing round and a test round get the same "This round isn't here" page, so it never confirms that someone else's round exists (CH-11307). A failed access check is not a permission answer: a round or a coach's membership read that fails gives "This round didn't load" with Try again (CH-11206), never "not found". |
 | 110803 |  | 08 Permission / authorization | `LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS` | reserved | The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Read in this pass, not run: no test asserts the player filter. |
