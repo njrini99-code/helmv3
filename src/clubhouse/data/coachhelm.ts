@@ -377,10 +377,16 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   if (gate.status === 'failed') return { ...none, roster: { count: 0, error: true }, pulse: await pulseOf() };
   if (gate.status === 'off') return emptyCoachHelm(gate.off);
 
+  // The gate is open, so the reads that need nothing from the roster start now and run beside it: the pulse (the longest chain on
+  // this page) and the team's Tour. Nothing that records an insight as shown (`topInsights`) starts before the gate is known, and an
+  // early return below may never await these two, so each is marked handled up front.
+  const pulseRead = handled(pulseOf());
+  const tourRead = handled(coachTour(supabase, input.teamId));
+
   const members = await supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active');
   if (members.error) {
     log('roster', members.error);
-    return { ...none, roster: { count: 0, error: true }, pulse: await pulseOf() };
+    return { ...none, roster: { count: 0, error: true }, pulse: await pulseRead };
   }
   const memberIds = (members.data ?? []).map((m) => m.player_id);
   const people = memberIds.length
@@ -388,24 +394,23 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null }>, error: null };
   if (people.error) {
     log('players', people.error);
-    return { ...none, roster: { count: 0, error: true }, pulse: await pulseOf() };
+    return { ...none, roster: { count: 0, error: true }, pulse: await pulseRead };
   }
   const roster = (people.data ?? []).map((p) => ({ id: p.id, name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || NO_NAME }));
   const ids = roster.map((p) => p.id);
 
-  const [pulse, visible, heads, tour] = await Promise.all([
-    pulseOf(),
+  const [visible, heads] = await Promise.all([
     ids.length ? loadVisible(supabase, ids) : Promise.resolve({ rows: [], error: false }),
     ids.length ? topInsights(ids) : Promise.resolve(new Map<string, EvidenceInsight[]>()),
-    coachTour(supabase, input.teamId),
   ]);
 
   const top = [...heads.values()].map((l) => l[0]).filter((i): i is EvidenceInsight => !!i);
   // The heads came back empty though the visible read found insights: the delivery action swallowed a failure.
   const playersFailed = visible.error || (visible.rows.length > 0 && top.length === 0);
-  if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: [], error: true }, withoutSignals: 0 };
+  if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse: await pulseRead, players: { list: [], error: true }, withoutSignals: 0 };
 
-  const [drills, assigned, declined, newest] = await Promise.all([
+  // The pulse and the Tour are not waited for until here: nothing the next reads need comes from either, so they finish beside them.
+  const [drills, assigned, declined, newest, tour, pulse] = await Promise.all([
     drillTextByInsight(supabase, top),
     assignedByInsight(
       supabase,
@@ -416,6 +421,8 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
       top.map((i) => i.id),
     ),
     newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...top])),
+    tourRead,
+    pulseRead,
   ]);
   // Open signals: a player's current findings. A strength, a card that states no finding and a read older than the player's
   // newest round are not signals, and a player whose top card is one of those has none (the old floor of one counted them).
@@ -450,6 +457,15 @@ async function topInsights(ids: string[]): Promise<Map<string, EvidenceInsight[]
     log('heads', err);
     return new Map();
   }
+}
+
+/**
+ * A read started before it is known to be needed, which a later early return may never await: marked handled now (so an early
+ * return cannot leave an unhandled rejection) while still throwing to whoever does await it, exactly as it would have.
+ */
+export function handled<T>(read: Promise<T>): Promise<T> {
+  read.catch(() => {});
+  return read;
 }
 
 /** The program pulse, `null` (its own "couldn't read") shown as its own notice. */

@@ -6,7 +6,7 @@ import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { AssembledThemes } from '@/lib/coachhelm/v3/themes/types';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
-import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
+import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, handled, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
 import { isNote, kindOf } from './coachhelm-classify';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
 import { toChInsight } from './coachhelm-map';
@@ -89,6 +89,13 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
   const { playerId } = input;
   try {
     const supabase = await createClient();
+    // Everything that does not need the feed reads beside it (perf, 2026-10-01): the team (its tour), the plans the insights link to and
+    // the category reads are each by the player, none of them records an insight as shown, and the two that can fail answer null
+    // rather than throw, so a feed that comes back empty or fails leaves nothing hanging. The feed stays the one read that must not
+    // be repeated or run ahead of the route's CoachHelm gate.
+    const teamRead = handled(playerTeam(supabase, playerId));
+    const plansRead = handled(readPlans(supabase, playerId));
+    const themesRead = handled(readThemes(playerId));
     let feed: EvidenceInsight[];
     try {
       // CH13-21: only the cards this page draws count as shown.
@@ -97,7 +104,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
       log('dive.feed', err);
       return { status: 'failed' };
     }
-    const team = await playerTeam(supabase, playerId);
+    const team = await teamRead;
     const tourName: ChDeepDive['tour'] = team.tour?.tour === 'lpga' ? 'LPGA Tour' : 'Tour';
     if (feed.length === 0) {
       const [visible, dismissed] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId)]);
@@ -116,8 +123,8 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
       ),
       newestRounds(supabase, [playerId], earliestStaleFloor(drawn)),
       readRounds(supabase, playerId, drawn.flatMap((i) => roundIdsToRead(i.evidence))),
-      readPlans(supabase, playerId),
-      readThemes(playerId),
+      plansRead,
+      themesRead,
     ]);
     const newestRound = newest.get(playerId) ?? null;
     const say = (t: string) => speak(t, { role: 'player' });
