@@ -181,6 +181,11 @@
     --ch-av-fg: var(--ch-avatar-neutral-fg);
     --ch-av-ring: var(--ch-avatar-neutral-ring);
   }
+  /* The phone's 12px text floor (Q-141): a thread's 30px coin drew its initials at 10.2px (34% of the size). A coin too
+     small to hold 12px takes 42% of its size instead. Aesthetic audit M-T1. */
+  .ch-avatar {
+    font-size: max(calc(var(--ch-av-size, 32px) * 0.34), min(12px, calc(var(--ch-av-size, 32px) * 0.42)));
+  }
 }
 .ch-avatar--ring {
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 0 0 2px var(--ch-bg-surface), inset 0 0 0 3px var(--ch-green-600);
