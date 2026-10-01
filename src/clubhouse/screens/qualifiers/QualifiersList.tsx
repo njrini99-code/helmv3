@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Flag, Medal, Plus, Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
@@ -40,17 +40,40 @@ export function QualifiersList({ data }: { data: ChQList }) {
   const [start] = useState(() => parseListQuery((name) => params?.get(name) ?? null));
   const [filter, setFilter] = useState<Filter>(start.filter);
   const [q, setQ] = useState(start.q);
+  // Remembered at once; written to the address after a pause in typing (history calls are rate-limited on some browsers, and the router
+  // echoes each one), and before a link is followed so the entry that is left carries what the list showed.
+  const unwritten = useRef<string | null>(null);
+  const writeAddress = () => {
+    const address = unwritten.current;
+    unwritten.current = null;
+    if (address == null) return;
+    try {
+      window.history.replaceState(null, '', address);
+    } catch {
+      // The address keeps what it had; the list still works.
+    }
+  };
   useEffect(() => {
     const address = listAddress(window.location.pathname, window.location.search, { filter, q });
     rememberList(address);
-    if (address !== window.location.pathname + window.location.search) window.history.replaceState(null, '', address);
+    if (address === window.location.pathname + window.location.search) {
+      unwritten.current = null;
+      return;
+    }
+    unwritten.current = address;
+    const pause = window.setTimeout(writeAddress, 300);
+    return () => window.clearTimeout(pause);
   }, [filter, q]);
   // Returning from a qualifier restores where the list was scrolled. The frame scrolls the canvas to the top once the new page is
   // in (CH-1904), after this effect, so the restore waits for a frame that comes after it.
   useEffect(() => {
     const address = window.location.pathname + window.location.search;
     const top = returnScroll(address);
-    if (top == null) return;
+    if (top == null) {
+      // Not a return (or nothing was left here): a stale mark must not send a later visit to an old place.
+      clearReturn();
+      return;
+    }
     let first = 0;
     let second = 0;
     first = requestAnimationFrame(() => {
@@ -97,7 +120,9 @@ export function QualifiersList({ data }: { data: ChQList }) {
       className="ch-qf ch-qf--list"
       // Leaving for a qualifier (or anywhere a link goes): where the list was scrolled is kept for the way back.
       onClickCapture={(e) => {
-        if ((e.target as Element).closest('a')) rememberScroll(window.location.pathname + window.location.search, canvasScrollTop());
+        if (!(e.target as Element).closest('a')) return;
+        writeAddress();
+        rememberScroll(window.location.pathname + window.location.search, canvasScrollTop());
       }}
     >
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}

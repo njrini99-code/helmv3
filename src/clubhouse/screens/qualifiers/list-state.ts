@@ -20,6 +20,8 @@ export const LIST_HREF = '/golf/dashboard/qualifiers';
 const LIST_KEY = 'ch.qf.list';
 const SCROLL_KEY = 'ch.qf.scroll';
 const RETURN_KEY = 'ch.qf.return';
+/** A return mark older than this is not a return: it was set by a Back that did not end at the list (cmd-click, a Back to somewhere else). */
+const RETURN_FRESH_MS = 15000;
 /** A list address this page wrote: the team's list or a player's own, with or without a query, and nothing else. */
 const LIST_ADDRESS = /^\/golf\/dashboard\/(qualifiers|my-qualifiers)(\?[^#]*)?$/;
 
@@ -79,7 +81,7 @@ export function rememberScroll(address: string, top: number): void {
 /** The list is about to be opened as a return (Back from a qualifier), so it restores its scroll rather than opening at the top. */
 export function markReturn(): void {
   try {
-    store()?.setItem(RETURN_KEY, '1');
+    store()?.setItem(RETURN_KEY, String(Date.now()));
   } catch {
     // Not kept: the list opens at the top.
   }
@@ -88,7 +90,8 @@ export function markReturn(): void {
 /** The scroll to restore for this address, if the list is being opened as a return and was left there; otherwise null. Reads only. */
 export function returnScroll(address: string): number | null {
   try {
-    if (store()?.getItem(RETURN_KEY) !== '1') return null;
+    const marked = Number(store()?.getItem(RETURN_KEY));
+    if (!marked || Date.now() - marked > RETURN_FRESH_MS) return null;
     const kept = JSON.parse(store()?.getItem(SCROLL_KEY) ?? 'null') as { address?: unknown; top?: unknown } | null;
     return kept && kept.address === address && typeof kept.top === 'number' && kept.top > 0 ? kept.top : null;
   } catch {
@@ -105,14 +108,16 @@ export function clearReturn(): void {
   }
 }
 
-/** The page's scroll container: the Clubhouse canvas, or the window outside the frame. */
-export function scrollCanvasTo(top: number): void {
-  const canvas = document.getElementById('ch-canvas');
-  if (canvas) canvas.scrollTo({ top });
-  else window.scrollTo({ top });
-}
+/**
+ * Where the page is scrolled. The Clubhouse canvas scrolls on a desktop; on a phone it does not (its overflow is visible) and the window
+ * does, so the page is wherever either one is, and a restore sends both: the one that does not scroll stays where it is.
+ */
 export function canvasScrollTop(): number {
-  return document.getElementById('ch-canvas')?.scrollTop ?? window.scrollY;
+  return Math.max(document.getElementById('ch-canvas')?.scrollTop ?? 0, window.scrollY);
+}
+export function scrollCanvasTo(top: number): void {
+  document.getElementById('ch-canvas')?.scrollTo({ top });
+  window.scrollTo({ top });
 }
 
 /**

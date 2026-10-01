@@ -56,6 +56,8 @@ export function CoursePicker({
       setCourse(null);
       setTees(null);
       setCourses(null);
+      setCoursesFailed(false);
+      setTeesFailed(false);
     }
   }, [open]);
 

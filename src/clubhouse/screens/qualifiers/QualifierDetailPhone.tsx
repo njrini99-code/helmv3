@@ -401,7 +401,8 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetailCore; row: ChQRow
               >
                 {(s) => <PlayerRoundCard round={rd} n={n} s={s} />}
               </Streamed>
-              {row.avg != null && (                <p className="ch-qfm-muted ch-num">
+              {row.avg != null && (
+                <p className="ch-qfm-muted ch-num">
                   Average {formatFixed(row.avg)} over {plural(row.played - row.shortRounds, '18-hole round')}
                 </p>
               )}

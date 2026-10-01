@@ -54,7 +54,7 @@ import { ClubhouseQualifiersRoute } from '../routes/qualifiers';
 import { resolveClubhouseTeam } from '../routes/team';
 import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
-import { fulfilled } from '../screens/qualifiers/streamed';
+import { FAILED_SECONDARY, fulfilled, settled } from '../screens/qualifiers/streamed';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
@@ -1067,12 +1067,12 @@ describe('Qualifiers · the list keeps its filter, search and scroll for the way
     // Nothing changed yet, so the address was not touched.
     expect(replace).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: /^Concluded/ }));
-    expect(here()).toBe(`${LIST_URL}?filter=concluded&q=pine&state=empty`);
+    await waitFor(() => expect(here()).toBe(`${LIST_URL}?filter=concluded&q=pine&state=empty`));
     await user.clear(screen.getByLabelText('Search qualifiers'));
-    expect(here()).toBe(`${LIST_URL}?filter=concluded&state=empty`);
+    await waitFor(() => expect(here()).toBe(`${LIST_URL}?filter=concluded&state=empty`));
     await user.click(screen.getByRole('button', { name: /^All/ }));
     // The defaults leave the address as it came, and what else it carried (the preview’s state) is never dropped.
-    expect(here()).toBe(`${LIST_URL}?state=empty`);
+    await waitFor(() => expect(here()).toBe(`${LIST_URL}?state=empty`));
     expect(push).not.toHaveBeenCalled();
     replace.mockRestore();
     push.mockRestore();
@@ -1084,6 +1084,7 @@ describe('Qualifiers · the list keeps its filter, search and scroll for the way
     const first = wrap(<QualifiersList data={list()} />);
     await user.click(screen.getByRole('button', { name: /^Concluded/ }));
     await user.type(screen.getByLabelText('Search qualifiers'), 'spring');
+    await waitFor(() => expect(here()).toBe(`${LIST_URL}?filter=concluded&q=spring`));
     first.unmount();
     const second = wrap(<QualifiersList data={list()} />);
     expect(pill(/^Concluded/)).toBe('true');
@@ -1152,7 +1153,7 @@ describe('Qualifiers · the list keeps its filter, search and scroll for the way
       );
       await user.click(within(screen.getByTestId('phone-top-back')).getByRole('button', { name: 'Back to Qualifiers' }));
       expect(router.push).toHaveBeenCalledWith(`${LIST_URL}?filter=concluded`);
-      expect(window.sessionStorage.getItem('ch.qf.return')).toBe('1');
+      expect(Number(window.sessionStorage.getItem('ch.qf.return'))).toBeGreaterThan(0);
     } finally {
       window.matchMedia = real;
     }
@@ -1174,7 +1175,7 @@ describe('Qualifiers · the list keeps its filter, search and scroll for the way
     expect(JSON.parse(window.sessionStorage.getItem('ch.qf.scroll')!)).toEqual({ address: `${LIST_URL}?filter=active`, top: 480 });
     first.unmount();
     // Coming back through a Back control: the mark is set, and the list scrolls itself once a frame has gone by.
-    window.sessionStorage.setItem('ch.qf.return', '1');
+    window.sessionStorage.setItem('ch.qf.return', String(Date.now()));
     wrap(<QualifiersList data={list()} />);
     expect(el.scrollTo).not.toHaveBeenCalled();
     await waitFor(() => expect(el.scrollTo).toHaveBeenCalledWith({ top: 480 }));
@@ -1199,13 +1200,21 @@ describe('Qualifiers · the list keeps its filter, search and scroll for the way
       expect(el.scrollTo).not.toHaveBeenCalled();
       fresh.unmount();
       // A return to a different address than the one that was left.
-      window.sessionStorage.setItem('ch.qf.return', '1');
+      window.sessionStorage.setItem('ch.qf.return', String(Date.now()));
       at(`${LIST_URL}?filter=concluded`);
       const other = wrap(<QualifiersList data={list()} />);
       expect(el.scrollTo).not.toHaveBeenCalled();
+      // A visit that had nothing to restore also lets go of the mark, so it cannot send a later visit to an old place.
+      expect(window.sessionStorage.getItem('ch.qf.return')).toBeNull();
       other.unmount();
-      // And the same list, returned to, does restore: the stubbed frames make this the control of the two above.
-      window.sessionStorage.setItem('ch.qf.return', '1');
+      // A mark that has gone stale (a Back that did not end here) is not a return either.
+      window.sessionStorage.setItem('ch.qf.return', String(Date.now() - 60_000));
+      at(`${LIST_URL}?filter=active`);
+      const stale = wrap(<QualifiersList data={list()} />);
+      expect(el.scrollTo).not.toHaveBeenCalled();
+      stale.unmount();
+      // And the same list, returned to, does restore: the stubbed frames make this the control of the three above.
+      window.sessionStorage.setItem('ch.qf.return', String(Date.now()));
       at(`${LIST_URL}?filter=active`);
       wrap(<QualifiersList data={list()} />);
       expect(el.scrollTo).toHaveBeenCalledWith({ top: 480 });
@@ -1219,12 +1228,12 @@ describe('Qualifiers · the list keeps its filter, search and scroll for the way
     wrap(<QualifierDetail data={detail()} writes={fakeWrites()} live={false} />);
     expect(window.sessionStorage.getItem('ch.qf.return')).toBeNull();
     window.dispatchEvent(new PopStateEvent('popstate'));
-    expect(window.sessionStorage.getItem('ch.qf.return')).toBe('1');
+    expect(Number(window.sessionStorage.getItem('ch.qf.return'))).toBeGreaterThan(0);
     window.sessionStorage.removeItem('ch.qf.return');
     const back = screen.getByRole('link', { name: 'Qualifiers' });
     back.addEventListener('click', (e) => e.preventDefault());
     await user.click(back);
-    expect(window.sessionStorage.getItem('ch.qf.return')).toBe('1');
+    expect(Number(window.sessionStorage.getItem('ch.qf.return'))).toBeGreaterThan(0);
   });
 
   it('CH-09904 a session that cannot keep anything leaves the list working: the address still carries the filter, Back is the plain list', async () => {
@@ -1236,10 +1245,112 @@ describe('Qualifiers · the list keeps its filter, search and scroll for the way
       at(LIST_URL);
       wrap(<QualifiersList data={list()} />);
       await user.click(screen.getByRole('button', { name: /^Active/ }));
-      expect(here()).toBe(`${LIST_URL}?filter=active`);
+      await waitFor(() => expect(here()).toBe(`${LIST_URL}?filter=active`));
     } finally {
       broken.mockRestore();
     }
+  });
+});
+
+describe('Qualifiers · the list’s address and scroll on a phone, under a busy keyboard and a failing history (review, 2026-10-01)', () => {
+  const LIST_URL = '/golf/dashboard/qualifiers';
+  const here = () => window.location.pathname + window.location.search;
+  afterEach(() => {
+    document.getElementById('ch-canvas')?.remove();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('CH-09905 on a phone the window scrolls, not the canvas: that position is the one kept and the one restored', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', LIST_URL);
+    // The canvas does not scroll on a phone (its overflow is visible); the window does.
+    const canvas = document.createElement('div');
+    canvas.id = 'ch-canvas';
+    canvas.scrollTo = vi.fn() as never;
+    document.body.appendChild(canvas);
+    Object.defineProperty(window, 'scrollY', { value: 700, configurable: true });
+    const scrolled = vi.fn();
+    vi.stubGlobal('scrollTo', scrolled);
+    vi.stubGlobal('requestAnimationFrame', (run: FrameRequestCallback) => {
+      run(0);
+      return 1;
+    });
+    const first = wrap(<QualifiersList data={list()} />);
+    const link = document.querySelector('a.ch-qf-hero, a.ch-qf-card') as HTMLAnchorElement;
+    link.addEventListener('click', (e) => e.preventDefault());
+    await user.click(link);
+    expect(JSON.parse(window.sessionStorage.getItem('ch.qf.scroll')!)).toEqual({ address: LIST_URL, top: 700 });
+    first.unmount();
+    window.sessionStorage.setItem('ch.qf.return', String(Date.now()));
+    wrap(<QualifiersList data={list()} />);
+    expect(scrolled).toHaveBeenCalledWith({ top: 700 });
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+  });
+
+  it('CH-09904 typing rewrites the address once the typing pauses, not on every key, and a link followed right after typing still carries it', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', LIST_URL);
+    const replace = vi.spyOn(window.history, 'replaceState');
+    wrap(<QualifiersList data={list()} />);
+    await user.type(screen.getByLabelText('Search qualifiers'), 'pine');
+    expect(replace.mock.calls.length).toBeLessThanOrEqual(1);
+    await waitFor(() => expect(here()).toBe(`${LIST_URL}?q=pine`));
+    expect(replace).toHaveBeenCalledTimes(1);
+    // Typed and followed within the pause: the entry that is left carries what the list showed.
+    await user.type(screen.getByLabelText('Search qualifiers'), 'h');
+    const link = document.querySelector('a.ch-qf-hero, a.ch-qf-card') as HTMLAnchorElement;
+    link.addEventListener('click', (e) => e.preventDefault());
+    await user.click(link);
+    expect(here()).toBe(`${LIST_URL}?q=pineh`);
+  });
+
+  it('CH-09904 a history that refuses the write leaves the list working', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', LIST_URL);
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new DOMException('Attempt to use history.replaceState() more than 100 times per 30 seconds', 'SecurityError');
+    });
+    wrap(<QualifiersList data={list()} />);
+    await user.click(screen.getByRole('button', { name: /^Active/ }));
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    expect(screen.getByRole('button', { name: /^Active/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(window.sessionStorage.getItem('ch.qf.list')).toBe(`${LIST_URL}?filter=active`);
+  });
+
+  it('CH-09408 a re-read that already shows a landed write leaves no edit behind to mask the next real change', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const cand = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({ playerId, name: playerId, rank, toPar: rank, total: 70 + rank, rounds: 2, onScore, pick: null, selected: false, tiedAtCut });
+    const at = (...candidates: ReturnType<typeof cand>[]): ChQSelectionData => ({ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates });
+    let settle: (v: { success: boolean }) => void = () => {};
+    const writes = selWrites({ chooseTie: vi.fn(() => new Promise<{ success: boolean }>((resolve) => (settle = resolve))) });
+    const tree = (data: ChQSelectionData) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <QualifierSelection data={data} writes={writes} />
+          </div>
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const badge = (name: string) => within(within(code('CH-09318') as HTMLElement).getByText(name, { selector: 'b' }).closest('li') as HTMLElement).getByText(/Tie at cut|Given the place/).textContent;
+    const { rerender } = render(tree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true))));
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    // The page is re-read and already carries the place before the write's own answer comes back.
+    rerender(tree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, true, true))));
+    await act(async () => settle({ success: true }));
+    await screen.findByText('Cal takes the place at the cut');
+    // The next read the server changes: it is shown at once, not held back by an edit that was never needed.
+    rerender(tree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true))));
+    expect(badge('Cal')).toBe('Tie at cut');
+  });
+
+  it('CH-09206 a rejected chunk of the stream is the failed part at once', async () => {
+    const rejected = Object.assign(Promise.reject(new Error('cut')), { status: 'rejected' as const });
+    rejected.catch(() => {});
+    expect(await settled(rejected)).toEqual(FAILED_SECONDARY);
+    expect((settled(rejected) as { status?: string }).status).toBe('fulfilled');
   });
 });
 

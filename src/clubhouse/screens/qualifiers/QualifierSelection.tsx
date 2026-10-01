@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, ChevronLeft, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQCandidate, ChQSelectionData } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
@@ -47,7 +47,16 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   // since (the first may be that late one; the write's own re-read is the second), the edit is dropped and the page follows the server
   // again. Nothing is drawn for a write before it lands (91301).
   const [edits, setEdits] = useState<Record<string, { patch: CandEdit; reads: number }>>({});
-  const edit = (playerId: string, patch: CandEdit) => setEdits((cur) => ({ ...cur, [playerId]: { patch: { ...cur[playerId]?.patch, ...patch }, reads: 0 } }));
+  const served = useRef(data.candidates);
+  useEffect(() => {
+    served.current = data.candidates;
+  }, [data.candidates]);
+  const edit = (playerId: string, patch: CandEdit) => {
+    // A re-read that already carries the write (it can land before the write's own answer does) leaves nothing to lay over it.
+    const server = served.current.find((c) => c.playerId === playerId);
+    if (server && agrees(server, patch)) return;
+    setEdits((cur) => ({ ...cur, [playerId]: { patch: { ...cur[playerId]?.patch, ...patch }, reads: 0 } }));
+  };
   useEffect(() => {
     setEdits((cur) => {
       const ids = Object.keys(cur);

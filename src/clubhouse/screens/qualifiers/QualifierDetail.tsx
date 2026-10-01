@@ -157,108 +157,108 @@ export function QualifierDetail({
 
   return (
     <SecondaryProvider value={shown.source}>
-    <main className="ch-qf ch-qf--detail">
-      <div className="ch-qf-back" onClickCapture={back.markReturn}>
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={back.href}>
-          Qualifiers
-        </Button>
-      </div>
-      <header className="ch-qf-head">
-        <div>
-          <span className="ch-qf-eyebrow">
-            <StatusPill status={status} />
-            <span>Qualifier</span>
-          </span>
-          <h1>{data.name}</h1>
-          {data.description && <p>{data.description}</p>}
+      <main className="ch-qf ch-qf--detail">
+        <div className="ch-qf-back" onClickCapture={back.markReturn}>
+          <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={back.href}>
+            Qualifiers
+          </Button>
         </div>
-        {coach && (
-          <div className="ch-qf-head__act">
-            {data.selectionState !== 'selected' && (
-              <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
-                Manage selections
+        <header className="ch-qf-head">
+          <div>
+            <span className="ch-qf-eyebrow">
+              <StatusPill status={status} />
+              <span>Qualifier</span>
+            </span>
+            <h1>{data.name}</h1>
+            {data.description && <p>{data.description}</p>}
+          </div>
+          {coach && (
+            <div className="ch-qf-head__act">
+              {data.selectionState !== 'selected' && (
+                <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
+                  Manage selections
+                </Button>
+              )}
+              <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
+                Edit qualifier
               </Button>
-            )}
-            <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
-              Edit qualifier
-            </Button>
-            {status === 'in_progress' && (
-              <Button
-                variant="ghost"
-                leftIcon={Lock}
-                feel="warning"
-                onClick={() => {
-                  chTrail('qualifiers close ask');
-                  setConfirmClose(true);
-                }}
-              >
-                Close qualifier
-              </Button>
-            )}
-            {status === 'completed' && (
-              <Button
-                variant="ghost"
-                leftIcon={LockOpen}
-                disabled={reopen.pending}
-                onClick={() => void reopenNow()}
-              >
-                {reopen.pending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
-              </Button>
-            )}
+              {status === 'in_progress' && (
+                <Button
+                  variant="ghost"
+                  leftIcon={Lock}
+                  feel="warning"
+                  onClick={() => {
+                    chTrail('qualifiers close ask');
+                    setConfirmClose(true);
+                  }}
+                >
+                  Close qualifier
+                </Button>
+              )}
+              {status === 'completed' && (
+                <Button
+                  variant="ghost"
+                  leftIcon={LockOpen}
+                  disabled={reopen.pending}
+                  onClick={() => void reopenNow()}
+                >
+                  {reopen.pending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
+                </Button>
+              )}
+            </div>
+          )}
+        </header>
+
+        {status === 'completed' && (
+          <div className="ch-qf-note" data-ch-code="CH-09901">
+            <Icon icon={Lock} size={16} />
+            <p>
+              <b>{coach ? 'Closed to new rounds.' : 'This qualifier is closed.'}</b>
+              {coach
+                ? 'Players can’t enter or submit rounds in it, including rounds already started, until you reopen it.'
+                : 'Rounds can’t be entered or submitted in it. These are the final standings.'}
+            </p>
           </div>
         )}
-      </header>
 
-      {status === 'completed' && (
-        <div className="ch-qf-note" data-ch-code="CH-09901">
-          <Icon icon={Lock} size={16} />
-          <p>
-            <b>{coach ? 'Closed to new rounds.' : 'This qualifier is closed.'}</b>
-            {coach
-              ? 'Players can’t enter or submit rounds in it, including rounds already started, until you reopen it.'
-              : 'Rounds can’t be entered or submitted in it. These are the final standings.'}
-          </p>
-        </div>
-      )}
+        <Facts data={data} topScore={topScore} />
 
-      <Facts data={data} topScore={topScore} />
-
-      <div className="ch-qf-body">
-        <div className="ch-qf-col">
-          <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-            <Leaderboard data={data} status={status} stale={stale} />
-          </SectionBoundary>
-          {coach && b && b.rows.length > 0 && (
-            <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
-              <RoundByRound board={b} numRounds={data.numRounds} />
+        <div className="ch-qf-body">
+          <div className="ch-qf-col">
+            <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
+              <Leaderboard data={data} status={status} stale={stale} />
             </SectionBoundary>
-          )}
-        </div>
-        <div className="ch-qf-col">
-          <SectionBoundary surface="qualifiers.selections" label="Selections" code="CH-09214">
-            <Selections data={data} status={status} topScore={topScore} />
-          </SectionBoundary>
-          <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
-            <Courses data={data} />
-          </SectionBoundary>
-          {data.rules && (
-            <section className="ch-qf-side" aria-labelledby="ch-qf-rules">
-              <div className="ch-qf-panel__head">
-                <div>
-                  <h2 id="ch-qf-rules">Scoring rules</h2>
-                  {coach && <p>Shown to players</p>}
+            {coach && b && b.rows.length > 0 && (
+              <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
+                <RoundByRound board={b} numRounds={data.numRounds} />
+              </SectionBoundary>
+            )}
+          </div>
+          <div className="ch-qf-col">
+            <SectionBoundary surface="qualifiers.selections" label="Selections" code="CH-09214">
+              <Selections data={data} status={status} topScore={topScore} />
+            </SectionBoundary>
+            <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
+              <Courses data={data} />
+            </SectionBoundary>
+            {data.rules && (
+              <section className="ch-qf-side" aria-labelledby="ch-qf-rules">
+                <div className="ch-qf-panel__head">
+                  <div>
+                    <h2 id="ch-qf-rules">Scoring rules</h2>
+                    {coach && <p>Shown to players</p>}
+                  </div>
                 </div>
-              </div>
-              <p className="ch-qf-why" style={{ marginTop: 0 }}>
-                {data.rules}
-              </p>
-            </section>
-          )}
+                <p className="ch-qf-why" style={{ marginTop: 0 }}>
+                  {data.rules}
+                </p>
+              </section>
+            )}
+          </div>
         </div>
-      </div>
 
-      {closeConfirm}
-    </main>
+        {closeConfirm}
+      </main>
     </SecondaryProvider>
   );
 }

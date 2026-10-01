@@ -43,7 +43,9 @@ export function secondaryOf(d: Partial<ChQDetailSecondary>): ChQDetailSecondary 
  * so the sections draw their notices and not the page's error. A source already kept is returned as it is.
  */
 export function settled(source: Source): Source {
-  if ((source as { status?: string }).status === 'fulfilled') return source;
+  const status = (source as { status?: string }).status;
+  if (status === 'fulfilled') return source;
+  if (status === 'rejected') return fulfilled(FAILED_SECONDARY);
   return Promise.resolve(source).then((v) => v, () => FAILED_SECONDARY);
 }
 
