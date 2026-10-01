@@ -256,18 +256,24 @@ clubhouse:a11y` itself (its page list does not include these previews and is not
 this change's to edit). `npm run build` was not run: no `'use server'` file
 changed.
 
-## Update 2026-10-01: owner rules (false empties, pending scope, streaming, return state)
+## Update 2026-10-01: owner rules
 
 Observed after the four phases (CHANGELOG.md has what changed). Run from
 `/Users/ricknini/worktrees/helmv3/swap-audit` on `agent/swap-audit`. The phases
 are `50e67be9b` (failed reads), `cc966fdbc` (pending scope and races),
 `fd7267f04` (the pulse streams) and the return-state commit after them.
 
-- Tests: `npm run test:file --` over every CoachHelm file under
-  `src/clubhouse/__tests__`, the shell, roster, alias, logic, native,
-  session-state and refresh-states tests, `src/app/api/coachhelm`,
-  `src/lib/coachhelm` and `src/test/coachhelm`: exit 0. 315 files passed and
-  1 skipped; 3760 tests passed (1 expected fail, 3 skipped, 10 todo).
+- Tests, last run on the final tree: `npm run test:file --` over
+  `src/clubhouse/__tests__/coachhelm*`, `view-switch-boundary.test.tsx`,
+  `src/lib/coachhelm/v3/chat` and `src/test/coachhelm/v3`: exit 0, 154 files
+  and 2122 tests passed. Earlier, on the same CoachHelm code, a broader run
+  that also took the shell, roster, alias, logic, native, session-state and
+  refresh-states tests, `src/app/api/coachhelm` and `src/lib/coachhelm`: exit 0,
+  315 files passed and 1 skipped; 3760 tests passed (1 expected fail, 3 skipped,
+  10 todo). Other sessions have since changed `use-action.ts`, `Toast.tsx`,
+  `shell/TabBar.tsx` and `shell/phone-chrome.tsx` in the shared tree; the shell
+  tests were not rerun after that, the CoachHelm tests (which use `useAction`)
+  were.
 - New tests, by owner rule: failed reads (`coachhelm-failed-reads.test.tsx`
   and the three lib tests), selection and pending scope
   (`coachhelm-selection.test.tsx`, `coachhelm-retry.test.tsx`), Ask races
@@ -281,15 +287,23 @@ are `50e67be9b` (failed reads), `cc966fdbc` (pending scope and races),
 - Lint: `npx eslint` on `src/clubhouse/screens/coachhelm`, the route, the
   CoachHelm loaders and shape files and the changed tests: exit 0, no output.
 - Clubhouse check: `npm run clubhouse:check` exit 0: 35 unit tests, 429 files,
-  15 pages, 1380 Bridge IDs (after the registry sync that minted CH-13405,
-  CH-13910, CH-13911 and CH-13924 and the others in this branch).
+  15 pages, 1380 Bridge IDs. Observed with another session's uncommitted
+  `registry.mjs sync` in the working tree: it minted the Bridge IDs for
+  CH-13405, CH-13910, CH-13911 and CH-13924 and rewrote P013's CONTRACT.md
+  (neither the sync's output nor those files are in these commits). Without
+  that sync committed, the check would be expected to fail on those four
+  codes, as it did before the sync (inferred, not re-run without it).
 - Supabase error audit: `npm run audit:supabase-errors` exit 1, 1003 unchecked
   reads against a baseline of 1005 (down; the exit is the "lock in the paydown
   with `--update`" slack message, which this change did not run).
 - Markdown ratchet: `npm run markdown:ratchet` exit 1 for the branch as a
-  whole (MD013 +39, and MD060, MD012 and MD056 +2, +1 and +1, in files other
-  than P013's). The P013 prose docs add no line-length violation; MD013 comes
-  from the catalog's one-line table rows, as in the other pages.
+  whole (MD013 +40, MD060 +2, MD012 +1 and MD056 +1 against the baseline).
+  `markdownlint-cli2` on P013's CHANGELOG, WIRING, DESIGN and this file shows
+  no issue in the lines this pass wrote (this section's lines are all within
+  80 columns); the MD060 hits in this file are in its older tables, and the
+  MD013 count in P013's files comes from the catalog's and CONTRACT's one-line
+  table rows, as on the other pages. The rest of the branch's delta is in other
+  sessions' files and was not attributed row by row.
 - Build: not run; no `'use server'` file changed (the loaders are `server-only`
   modules, the screens are client modules, the lib changes are additive).
 
