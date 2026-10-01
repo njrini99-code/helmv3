@@ -8,6 +8,7 @@
  * instead; any other entry still drains (sibling test: sync-engine-v1-round-missing).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setSyncSessionPlayer } from '../session-player';
 
 const submitCalls: Array<string | undefined> = [];
 const legacy = vi.hoisted(() => ({
@@ -64,6 +65,7 @@ function entry(id: string) {
 }
 
 beforeEach(() => {
+  setSyncSessionPlayer('player-1');
   window.localStorage.clear();
   submitCalls.length = 0;
   legacy.deleted.length = 0;

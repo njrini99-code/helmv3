@@ -86,14 +86,14 @@ function parThree(n: number): HoleStats {
   };
 }
 
-function submit() {
+function submit(roundId: string = ROUND_ID) {
   return submitGolfRoundComprehensive({
     courseName: 'Winchester CC',
     courseId: COURSE,
     roundType: 'practice',
     roundDate: '2026-09-17',
     holes: Array.from({ length: 9 }, (_, i) => parThree(i + 1)),
-  }, ROUND_ID);
+  }, roundId);
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -115,5 +115,14 @@ describe('submit preflight against a round whose row is gone (R-5)', () => {
       // Not a recoverable submit: the recovery flow must not try to re-create it.
       expect(isRecoverableRoundSubmitError(result.error)).toBe(false);
     }
+  });
+
+  it('refuses a malformed round id before any read, and never reaches the service-role probe', async () => {
+    seed([]);
+    const from = vi.spyOn(adminFake, 'from');
+    const result = await submit('not-a-uuid');
+    expect(result).toEqual({ success: false, error: 'Invalid round ID' });
+    // The user and service-role clients share this fake: no golf_rounds read ran on either.
+    expect(from.mock.calls.some(([table]) => table === 'golf_rounds')).toBe(false);
   });
 });

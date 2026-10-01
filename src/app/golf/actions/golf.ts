@@ -1904,6 +1904,10 @@ async function submitGolfRoundComprehensiveImpl(
 
     // If updating an existing round, verify ownership and that it's not already completed
     if (existingRoundId) {
+      // A malformed id never reaches the reads below (and never the id-only service-role probe).
+      if (!CommonSchemas.uuid.safeParse(existingRoundId).success) {
+        return { success: false, error: 'Invalid round ID' };
+      }
       // SECURITY: Verify the round belongs to this player and is not already completed
       const { data: existingRound, error: verifyError } = await supabase
         .from('golf_rounds')
@@ -8482,9 +8486,8 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
         .eq('player_id', player.id)
         .maybeSingle();
       if (!probeError && !remaining) {
+        // Nothing changed here, so nothing to revalidate.
         recordDiscardRoundOutcome('already_removed');
-        revalidatePath('/golf/dashboard/rounds');
-        updateTag(CACHE_TAGS.ROUNDS);
         return { success: true, data: undefined };
       }
 
