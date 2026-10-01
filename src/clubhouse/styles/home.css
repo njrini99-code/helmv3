@@ -286,12 +286,15 @@
   font: 600 14px/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
+/* The stats follow the scorecard they summarize. Pinned to the card's bottom (margin-top: auto) they sat 171px (coach)
+   and 234px (player) below it at 1440x1000, 38% and 46% of the column, because the week beside it runs longer; the
+   leftover space now closes the sheet instead of splitting the round. Aesthetic audit H-2. */
 .ch-h-round__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: auto;
+  margin-top: 4px;
   padding-top: 14px;
   border-top: 1px solid var(--ch-border-hairline);
 }
@@ -638,8 +641,11 @@
   .ch-hm-stack .ch-avatar {
     box-shadow: 0 0 0 2px #164a31;
   }
+  /* Each 24px coin covered the right 7px of the one before; initials of 10px run to 20px into the coin, so the last
+     stroke went under the next ring (measured 1.6 to 3.3px; "TM" read "TN"). 4px keeps the stack and clears them.
+     Aesthetic audit H-1. */
   .ch-hm-stack .ch-avatar + .ch-avatar {
-    margin-left: -7px;
+    margin-left: -4px;
   }
   .ch-hm-next__rsvp {
     font: 400 13px/1 var(--ch-font-sans);
