@@ -90,14 +90,15 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
       holes,
       holesError: !!holesRes.error,
       shotsError: !!shotsRes.error,
-      // A failed read is not a name: the page says so (`playerError`) rather than call the player "Player".
-      playerName: playerRes.data ? fullName(playerRes.data) : viewer.role === 'coach' && !playerRes.error ? 'Player' : null,
+      // No name is a gap the page says (`playerError`), never an invented "Player": a read that failed, and a coach's read that
+      // found no player row, are both that.
+      playerName: playerRes.data ? fullName(playerRes.data) : null,
       coachView: viewer.role === 'coach',
       teeYards: teeRes.data?.total_yards ?? null,
       // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210); a read that failed says so.
       tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
       teeError: !!teeRes.error,
-      playerError: !!playerRes.error,
+      playerError: !!playerRes.error || (viewer.role === 'coach' && !playerRes.data),
       tourError: !!teamRes.error,
     }),
   };

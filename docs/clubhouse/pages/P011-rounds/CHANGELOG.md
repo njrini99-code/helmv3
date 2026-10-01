@@ -136,7 +136,8 @@ Held items:     none
   coach's read of the player's name and the team read each carry a flag: a
   missing yardage or name is said (CH-11216), a missing baseline is said in
   the strokes gained card (CH-11217), each with Try again. A coach no longer
-  sees an invented "Player"; Back to Stats and "The player's notes" follow a
+  sees an invented "Player", whether the name read failed or found no player
+  row (both are CH-11216); Back to Stats and "The player's notes" follow a
   coach flag, not the name. A player with no team gets no baseline notice
   (that claims none). The review's hole re-picks the first hole over par
   when a card arrives after a retry.
@@ -175,12 +176,14 @@ Held items:     none
   second mechanism. Its search and grouping are session state per route and
   team; its place in the list is RouteFrame's. The review's Back was a push,
   which RouteFrame treats as a new page (top of the list). A review opened
-  from the library now notes it (`screens/rounds/return-state.ts`, this tab)
-  and its Back, on a plain click or the phone bar, steps back in history
-  (CH-11912). Opened any other way, or by a coach, it goes to the address as
-  before. The note is not checked against history: after leaving a review
-  another way and reopening that round, Back steps to the real previous
-  page, which is what Back means.
+  from the library now notes it on a plain left click only
+  (`screens/rounds/return-state.ts`, this tab) and its Back, on a plain click
+  or the phone bar, steps back in history when the tab has an entry behind
+  it (`history.length` above 1; CH-11912). Opened any other way, in a tab
+  with no history (a copied note), or by a coach, it goes to the address as
+  before. The note is not checked against which page is behind: after
+  leaving a review another way and reopening that round, Back steps to the
+  real previous page, which is what Back means.
 - **Left, and why.**
   - The review's route throws the whole page when the team-membership read
     fails (`routes/team.ts`, the lead's), while the library catches it. The

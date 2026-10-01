@@ -54,13 +54,21 @@ const review = (r = PREVIEW_REVIEW) => (
 );
 const rowLabels = () => screen.getAllByRole('link').map((l) => l.getAttribute('aria-label')).filter((l): l is string => !!l && /, \d+( \(|$)/.test(l));
 
+/** How many entries the tab's history holds (jsdom starts with one). Back steps back only when there is an entry behind this one. */
+const historyEntries = { n: 3 };
+
 beforeEach(() => {
   markAppRunning();
   sessionStorage.clear();
   phoneState.on = false;
+  historyEntries.n = 3;
+  Object.defineProperty(window.history, 'length', { configurable: true, get: () => historyEntries.n });
   Object.values(router).forEach((f) => f.mockClear());
 });
-afterEach(() => sessionStorage.clear());
+afterEach(() => {
+  sessionStorage.clear();
+  delete (window.history as { length?: number }).length;
+});
 
 describe('CH-11912 Rounds library: the search and the grouping come back', () => {
   const HOME = '/golf/dashboard/rounds\u0000t1';
@@ -109,6 +117,35 @@ describe('CH-11912 Rounds library and review: Back is a real Back when the revie
     await user.click(screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' }));
     expect(openedFromLibrary(ROUND)).toBe(true);
     expect(openedFromLibrary('a0000000-0000-4000-8000-000000000002')).toBe(false);
+  });
+
+  it('a new-tab open (a modifier or a non-left button) writes no note: a copied note could not be stepped back from', () => {
+    render(library());
+    const row = screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' });
+    fireEvent.click(row, { ctrlKey: true });
+    fireEvent.click(row, { metaKey: true });
+    fireEvent.click(row, { shiftKey: true });
+    fireEvent.click(row, { altKey: true });
+    fireEvent.click(row, { button: 1 });
+    expect(openedFromLibrary(ROUND)).toBe(false);
+    fireEvent.click(row);
+    expect(openedFromLibrary(ROUND)).toBe(true);
+  });
+
+  it('a tab with no history behind the review (a copied note in a new tab) goes to the library’s address, not a Back that does nothing', async () => {
+    const user = userEvent.setup();
+    historyEntries.n = 1;
+    noteOpenedFromLibrary(PREVIEW_REVIEW.id);
+    const first = render(review());
+    await user.click(screen.getByRole('link', { name: /Rounds/ }));
+    expect(router.back).not.toHaveBeenCalled();
+    first.unmount();
+
+    phoneState.on = true;
+    render(review());
+    await user.click(screen.getByRole('button', { name: 'phone back to Rounds' }));
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/rounds');
   });
 
   it('the review’s Back steps back in history (the library returns with its search and its place), and pushes nothing', async () => {

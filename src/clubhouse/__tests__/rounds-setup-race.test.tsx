@@ -50,14 +50,11 @@ async function openFinley(user: User, button: 'Browse courses' | 'Change course'
 const playTee = async (user: User, tee: 'Blue' | 'White') => user.click(await screen.findByRole('button', { name: new RegExp(`Play the ${tee} tees`) }));
 
 describe('Round setup: the last tee choice wins (rule 4)', () => {
-  const blue = previewTeeHoles('finley-blue')[0]!.yards;
   const white = previewTeeHoles('finley-white')[0]!.yards;
 
-  it('the two tees differ on hole 1, so the cases below can tell them apart', () => {
-    expect(blue).not.toBe(white);
-  });
-
   it('a late answer for the first tee never replaces the holes of the second tee chosen after it', async () => {
+    // The cases here tell the tees apart by hole 1's yardage, so the fixtures must differ (a guard on the test, not the screen).
+    expect(previewTeeHoles('finley-blue')[0]!.yards).not.toBe(white);
     const { teeHoles, answer } = deferred();
     const user = setup(teeHoles);
     await openFinley(user, 'Browse courses');

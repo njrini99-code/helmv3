@@ -391,6 +391,22 @@ describe('Round review: never a wrong figure or a silent difference', () => {
     expect(screen.getByRole('heading', { name: 'The player’s notes' })).toBeTruthy();
   });
 
+  it('CH-11216 a coach whose player read worked but found no player row gets the same notice, never an invented "Player"; a player’s own round never does', async () => {
+    tables.current = { ...base(), golf_players: { data: null } };
+    const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'coach', teamId: 'team1' });
+    expect(r.kind === 'ok' && [r.review.playerName, r.review.coachView, r.review.playerError]).toEqual([null, true, true]);
+    if (r.kind !== 'ok') return;
+    const { unmount } = show(r.review);
+    await expectCode('CH-11216', /The player’s name is missing/);
+    expect(screen.queryByText(/Player ·/)).toBeNull();
+    expect(screen.getByRole('link', { name: /Stats/ }).getAttribute('href')).toBe('/golf/dashboard/stats?player=p1&tab=rounds');
+    unmount();
+
+    tables.current = { ...base(), golf_players: { data: null } };
+    const own = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
+    expect(own.kind === 'ok' && [own.review.playerName, own.review.coachView, own.review.playerError]).toEqual([null, false, undefined]);
+  });
+
   it('CH-11216 both missing at once are said in one notice', () => {
     show({ ...PREVIEW_REVIEW_COACH, playerName: null, coachView: true, teeError: true, playerError: true });
     expect(code('CH-11216')!.textContent).toMatch(/The tee’s yardage and the player’s name are missing/);

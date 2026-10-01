@@ -46,7 +46,7 @@ describe('Rounds library: a failed refresh keeps the old library (rule 2)', () =
     const { rerender } = render(lib(PREVIEW_ROUNDS));
     const before = rows().length;
     expect(before).toBeGreaterThan(0);
-    rerender(lib({ ...PREVIEW_ROUNDS_FAILED, season: PREVIEW_ROUNDS_FAILED.season }));
+    rerender(lib(PREVIEW_ROUNDS_FAILED));
     expect(code('CH-11213')!.textContent).toMatch(/Your rounds may be out of date.*last time/);
     expect(rows()).toHaveLength(before);
     expect(screen.getByText('In progress')).toBeTruthy();

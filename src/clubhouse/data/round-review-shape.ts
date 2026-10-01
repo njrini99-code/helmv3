@@ -93,7 +93,7 @@ export interface ChRoundReview {
   shotsError: boolean;
   /** The tee's read failed: the tee's yardage is missing from the hero, which says so. */
   teeError?: boolean;
-  /** A coach's read of the player's name failed: the name is missing, and the page says so. */
+  /** A coach's read of the player's name failed, or found no player row: the name is missing, and the page says so (never an invented "Player"). */
   playerError?: boolean;
   /** The team's read failed: which Tour the strokes gained is measured against is unknown, and the card says so (no team at all is not this). */
   tourError?: boolean;

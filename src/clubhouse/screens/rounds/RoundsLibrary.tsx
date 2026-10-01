@@ -209,7 +209,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           {!data.rounds.error && list.length > 0 && (
             <SectionBoundary surface="rounds.book" label="Your rounds" code="CH-11203">
               <div className="ch-rd-tools">
-                <SearchField value={q} onChange={setQ}placeholder="Search course…" label="Search rounds by course" />
+                <SearchField value={q} onChange={setQ} placeholder="Search course…" label="Search rounds by course" />
                 <Segmented
                   label="Group rounds"
                   size="sm"

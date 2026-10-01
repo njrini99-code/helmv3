@@ -40,7 +40,7 @@ Date:       2026-09-30
 | Test | Contract | Result |
 | --- | --- | --- |
 | `src/clubhouse/__tests__/rounds.test.tsx` (54 cases) | the library's catalog rows it names (CH-11001, CH-11201 to CH-11203, CH-11214, CH-11215, CH-11301 to CH-11304, CH-11315, CH-11401, CH-11501, CH-11701 to CH-11703, CH-11801 to CH-11803), and by phrase hand contracts 110101, 110105 to 110108, 110413, 110619, 110801, 110901, 111301, 111401, 111402, 111501, 111811, 111902, 112301; since 2026-10-01 also the false empties (a failed list or holes read, a finished round with an unread posted list, rounds with no score, a Try again that lands) | pass |
-| `src/clubhouse/__tests__/round-review.test.tsx` (42 cases) | CH-11204 to CH-11206, CH-11216, CH-11217, CH-11305 to CH-11307, CH-11704, CH-11804, and by phrase 110102, 110105, 110109, 110619, 110801, 110802, 111402, 111501, 111502, 111811, 112301; since 2026-10-01 the missing total (never 0 strokes), the tee, player-name and team reads that failed, and the hole re-picked after a retry | pass |
+| `src/clubhouse/__tests__/round-review.test.tsx` (43 cases) | CH-11204 to CH-11206, CH-11216, CH-11217, CH-11305 to CH-11307, CH-11704, CH-11804, and by phrase 110102, 110105, 110109, 110619, 110801, 110802, 111402, 111501, 111502, 111811, 112301; since 2026-10-01 the missing total (never 0 strokes), the tee, player-name and team reads that failed, and the hole re-picked after a retry | pass |
 | `src/clubhouse/__tests__/round-setup.test.tsx` (19 cases) | CH-11007, CH-11107 to CH-11109, CH-11208 to CH-11211, CH-11309 to CH-11312, CH-11403, CH-11510, CH-11511, and by phrase 110103, 110110, 110111, 110113, 110510, 110805, 111401, 111402, 111503 | pass |
 | `src/clubhouse/__tests__/round-tracking.test.tsx` (21 cases) | CH-11002, CH-11003, CH-11005, CH-11101 to CH-11104, CH-11106, CH-11308, CH-11402, CH-11502 to CH-11509, CH-11603, CH-11705, CH-11805, and by phrase 110104, 110112, 110902, 111403 | pass |
 | `src/lib/golf/__tests__/shot-entry-rules.test.ts` (11 cases) | the shared rules behind CH-11101 to CH-11106 and the edit sheet's rules | pass |
@@ -202,12 +202,12 @@ changed are in `rounds.test`, `round-review.test` and the rows above):
 - `rounds-library-states.test.tsx` (7 cases): CH-11213, a failed refresh
   keeps the last good library, for the same player only; CH-11410, a refresh
   in flight keeps the page and says it is updating.
-- `rounds-return-state.test.tsx` (12 cases): CH-11912. The search and
+- `rounds-return-state.test.tsx` (14 cases): CH-11912. The search and
   grouping come back per route and team; the review's Back steps back when
   it was opened from the library (desktop, phone, a modifier click, a coach,
-  a blocked store); with the real RouteFrame one visit back restores the
-  scroll and the search.
-- `rounds-setup-race.test.tsx` (5 cases): rule 4 on the new-round screen,
+  a blocked store, a tab with no history); a new-tab open writes no note;
+  with the real RouteFrame one visit back restores the scroll and the search.
+- `rounds-setup-race.test.tsx` (4 cases): rule 4 on the new-round screen,
   with the reads held open and answered out of order; the last tee choice
   wins, also over a course typed in by hand.
 - `rounds-continue-loader.test.tsx` (9 cases): the continue page's loader
@@ -224,13 +224,11 @@ Checks on the final tree:
 - `npx eslint` on every file changed: exit 0.
 - `npm run clubhouse:check` after `node scripts/clubhouse/registry.mjs
   sync`: nothing of P011's; it names other pages' rows still in flight.
-- `npm run audit:supabase-errors`: no regression. It exits 1 on SLACK (1003
-  against a baseline of 1005), which this work did not cause: none of the
-  files changed has an unchecked read.
+- `npm run audit:supabase-errors`: no regression (1003, the baseline). None
+  of the files changed has an unchecked read.
 
-Mutation: the tee-race guard in `RoundSetup.loadHoles` was removed and 4 of
-the 5 race cases failed (the fifth only checks that the fixtures differ); it
-was put back. Not run on the other changes.
+Mutation: the tee-race guard in `RoundSetup.loadHoles` was removed and all 4
+race cases failed; it was put back. Not run on the other changes.
 
 Observed in unit tests only, not in a browser: the Back step and the scroll
 restore (the real RouteFrame is in the test; the history behaviour of

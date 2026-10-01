@@ -283,8 +283,9 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   const back = reviewBack(r);
   // Rule 8: a player's review opened from the library goes back in history, so the library returns with its search and its place
   // (screens/rounds/return-state.ts); anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
+  // A tab with no history behind it (a copied note in a new tab) has nothing to step back to: it goes to the address.
   const stepBack = () => {
-    if (coach || !openedFromLibrary(r.id)) return false;
+    if (coach || window.history.length <= 1 || !openedFromLibrary(r.id)) return false;
     router.back();
     return true;
   };

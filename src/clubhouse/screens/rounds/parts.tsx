@@ -392,9 +392,10 @@ export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string 
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       aria-label={label}
-      onClick={() => {
+      onClick={(e) => {
         haptic('select');
-        onOpen?.();
+        // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.
+        if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) onOpen?.();
       }}
     >
       {body}
