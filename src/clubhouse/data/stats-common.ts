@@ -3,7 +3,7 @@ import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chLogServer } from '../lib/track-server';
-import { seasonStartDate, type ChRound } from './season';
+import { lastTenFloor, seasonStartDate, type ChRound } from './season';
 import { hasScore } from './stats-weight';
 import {
   earlierCount,
@@ -35,13 +35,14 @@ export function roundRow(r: ChRound): ChFilterRow {
 
 /**
  * One player's rounds under the filter, newest first: matched on type, round length (18 holes unless the filter says 9 or both),
- * course and time, then the picks, then the newest-ten cut (see stats-filter).
+ * course and time, then the picks, then the newest-ten cut (see stats-filter). Rounds posted as a total only are in (they are scores);
+ * the hole-level figures take `holeRounds` of the result (round-scope).
  */
 export function roundsInFilter(rounds: ChRound[], f: ChFilter): ChRound[] {
   return selectRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
 
-/** The matching rounds before the newest ten, for "vs. previous 10"; null when the filter has no previous window or there are fewer than three. */
+/** The matching rounds before the newest ten, for "vs. previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */
 export function previousInFilter(rounds: ChRound[], f: ChFilter): ChRound[] | null {
   return previousRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
@@ -51,20 +52,23 @@ export function earlierInFilter(rounds: ChRound[], f: ChFilter): number {
   return earlierCount(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
 
-/** Rounds from this season only (a custom range can load earlier ones; the season's own figures must not count them). */
+/** Rounds from this season only (Last 10 and a custom range can load earlier ones; the season's own figures must not count them). */
 export function seasonOnly(rounds: ChRound[]): ChRound[] {
   const start = seasonStartDate();
   return rounds.filter((r) => r.round_date.slice(0, 10) >= start);
 }
 
 /**
- * Where the rounds read starts: the season, unless a custom range reaches before it (then its start, or no bound when
+ * Where the rounds read starts. Last 10 reads a rolling year back (`lastTenFloor`: the newest ten and the ten before them, across seasons,
+ * Q-122); Season and Qualifiers read this season; a custom range reads from its own start when that is before the season (no bound when
  * the range has no start). Undefined is `loadSeasonRounds`' own default, the season.
  */
 export function loadSince(f: ChFilter): string | null | undefined {
-  if (!hasRange(f)) return undefined;
-  if (!f.from) return null;
-  return f.from < seasonStartDate() ? f.from : undefined;
+  if (hasRange(f)) {
+    if (!f.from) return null;
+    return f.from < seasonStartDate() ? f.from : undefined;
+  }
+  return f.window === 'last10' ? lastTenFloor() : undefined;
 }
 
 /** What the sheet can list: the loaded rounds of both lengths (newest first, cut at the list size), and the courses with how many rounds each. */

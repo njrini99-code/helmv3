@@ -7,8 +7,9 @@ import { getValidTimezone } from '@/lib/calendar/timezone';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, mean, summarizePlayer, type ChForm, type ChRound } from './season';
-import { previousInFilter, roundsInFilter } from './stats-common';
+import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChForm, type ChRound } from './season';
+import { hasHoleScores } from './round-scope';
+import { previousInFilter, roundsInFilter, seasonOnly } from './stats-common';
 import { filterFor } from './stats-filter';
 import { weightedMean } from './stats-weight';
 import { rsvpOf } from './calendar';
@@ -206,23 +207,26 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   let roundsError = !!rosterRes.error;
   let rounds: Awaited<ReturnType<typeof loadSeasonRounds>>['rounds'] = [];
   if (!rosterRes.error && roster.length > 0) {
-    const res = await loadSeasonRounds(supabase, roster.map((p) => p.id), { surface: 'home' });
+    // The team's form is Stats' Last 10, which reaches back across seasons (Q-122): read as far as it does; the rest of Home is this season.
+    const res = await loadSeasonRounds(supabase, roster.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
     rounds = res.rounds;
     roundsError = res.error;
   }
   const full = rounds.filter(isFull18);
+  const seasonRounds = seasonOnly(rounds);
+  const seasonFull = seasonOnly(full);
 
   // ── Latest rounds with hole-by-hole ──
-  const { rounds: latestRounds, holesError } = await latestWithHoles(supabase, full, (id) => {
+  const { rounds: latestRounds, holesError } = await latestWithHoles(supabase, seasonFull, (id) => {
     const p = playerById.get(id);
     return p ? nameOf(p) : 'Former player';
   });
 
   // ── Leaderboard ──
-  const byPlayer = groupByPlayer(full);
+  const byPlayer = groupByPlayer(seasonFull);
   // Recency counts any countable round, nine holes included.
   const lastPlayed = new Map<string, string>();
-  for (const r of rounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
+  for (const r of seasonRounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
   const rows: ChLeaderRow[] = [];
   for (const p of roster) {
     const list = byPlayer.get(p.id);
@@ -255,7 +259,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     todayLabel,
     week: wk.week,
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
-    leaderboard: { rows, scorecards: full.length, rosterSize: roster.length, error: roundsError },
+    leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
     phone: { next: wk.next, today: wk.todayEvents, form, weekNote: wk.weekNote },
   };
 }
@@ -487,11 +491,12 @@ const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 't
 
 /**
  * The team's form on the Stats page's own basis, so Home and Stats (Last 10, Team) read the same: each
- * player's newest ten 18-hole rounds this season, pooled, against each player's ten before them
- * (`roundsInFilter` / `previousInFilter`, as `loadTeamStats` reads them). Scoring and putts are per-round
- * means over the rounds that have them; greens pool the holes, never a mean of percentages. The line is a
- * five-round moving average over the same rounds, oldest to newest. `basis` says how many rounds and which
- * dates the figures rest on, so a strip built on three August rounds says so. Exported for the tests.
+ * player's newest ten 18-hole rounds (in any season, Q-122), pooled, against each player's ten before them
+ * (`roundsInFilter` / `previousInFilter`, as `loadTeamStats` reads them). Scoring is a per-round mean over every
+ * round, a total-only one included; putts are a per-round mean and greens pool the holes (never a mean of percentages),
+ * both over the rounds with their holes (Q-123). The line is a five-round moving average over the same rounds, oldest
+ * to newest. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
+ * rounds says so. Exported for the tests.
  */
 export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | null {
   const f = filterFor('last10');
@@ -502,14 +507,15 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     prev.push(...(previousInFilter(list, f) ?? []));
   }
   if (!last.length) return null;
-  const hasGir = (r: ChRound) => r.total_gir != null && !!r.total_gir_possible;
+  // Greens and putts are hole-level: a round posted as a total only has none (Q-123), whatever its row holds.
+  const hasGir = (r: ChRound) => hasHoleScores(r) && r.total_gir != null && !!r.total_gir_possible;
   const girOf = (list: ChRound[]) => {
     const withGir = list.filter(hasGir);
     const possible = withGir.reduce((a, r) => a + (r.total_gir_possible as number), 0);
     return possible ? (withGir.reduce((a, r) => a + (r.total_gir as number), 0) / possible) * 100 : null;
   };
   const scoreOf = (r: ChRound) => r.total_score;
-  const puttsOf = (r: ChRound) => r.total_putts;
+  const puttsOf = (r: ChRound) => (hasHoleScores(r) ? r.total_putts : null);
   const comparable = prev.length > 0;
   const avg = weightedMean(last, scoreOf) as number;
   const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
@@ -526,7 +532,7 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     delta: prevAvg != null ? avg - prevAvg : null,
     line,
     roundsThisWeek,
-    basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => r.total_putts != null).length },
+    basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
     gir: { pct: gir, delta: gir != null && prevGir != null ? gir - prevGir : null },
     putts: { avg: putts, delta: putts != null && prevPutts != null ? putts - prevPutts : null },
   };

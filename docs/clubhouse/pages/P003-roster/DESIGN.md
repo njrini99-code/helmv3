@@ -73,6 +73,10 @@ Cards and rows are buttons that name the player, the table has real roles, the s
 
 Only data the app has. Not shown because no source exists: captain, major, birthday, home course, an about line and availability (injured or away; the migration is written and held). Invite by email has no action, so it is not offered (D-54). The duplicate-player warning Fairway shows has not been rebuilt (open, VERIFY.md).
 
+Which rounds the roster counts (owner, 2026-09-30, Q-123). A round posted as a
+total only (18 holes, no nines, no holes) counts in a player's rounds, average,
+trend and form, and so in "Needs a look"; it has no strokes gained to count.
+
 ## Existing backend capabilities used
 
 `getTeamJoinRequests`, `acceptJoinRequest` and `rejectJoinRequest` in `src/app/golf/actions/teams.ts`, `removePlayerFromTeam` in `roster.ts`, `setIntent` in `v3/intent.ts`, and the server loader `loadRoster` (the team, members, this coach's notes, the season's rounds, focus areas and goals). WIRING.md maps each.

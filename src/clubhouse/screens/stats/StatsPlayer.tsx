@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChWindow } from '../../data/stats-common';
+import { holeCoverage } from '../../data/round-scope';
 import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -329,6 +330,8 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const first = data.firstName;
   const baseline = sgBaseline(data.tour);
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
+  // These four are hole-level: they read the window's rounds with their holes scored, not a round posted as a total only (Q-123), and say so when that is fewer.
+  const holeCount = data.extra.holeRounds ?? w.rounds;
   const fig = (label: string, short: string) => {
     const c = cmp(label);
     const ref = coach ? c?.team : c?.bench;
@@ -339,7 +342,8 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       delta: c?.you != null && ref != null ? c.you - ref : null,
       deltaDigits: c?.digits ?? 0,
       lowerIsBetter: c?.lowerIsBetter,
-      context: ref == null ? `${w.rounds} rounds` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
+      context: ref == null ? `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'}` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
+      note: holeCoverage(holeCount, w.rounds) ?? undefined,
     };
   };
   // Best round: one length at a time (a 9-hole score and an 18-hole score are not the same best): the 9-hole rounds when that is all

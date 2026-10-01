@@ -23,6 +23,7 @@ import {
   type ChSgChange,
   type ChWindow,
 } from './stats-common';
+import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, type ChFilter, type ChFilterOptions } from './stats-filter';
 import { effectiveCount, effectiveRounds, summarizeWindow, weightedMean } from './stats-weight';
 
@@ -61,6 +62,11 @@ export interface ChTeamStats {
   filterOptions: ChFilterOptions;
   activeCount: number;
   roundCount: number;
+  /**
+   * Of the window's rounds, how many have their holes scored: greens, putts, scrambling, birdies and strokes gained read these, not the
+   * rounds posted as a total only (Q-123). Fewer than `roundCount` and each of those cards says "Hole stats from 8 of 10 rounds". Absent: every round has its holes.
+   */
+  holeRoundCount?: number;
   /** The window's rounds in whole rounds (a nine-hole round is half), which the early-read note counts. */
   roundsEffective: number;
   figures: ChFigure[];
@@ -128,18 +134,25 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   }
   if (!prevRounds.length) hasPrev = false;
 
-  // One cache read serves the window, the previous window and the season bests: every round read (either length, and earlier
-  // ones when a range reaches before the season). The season's bests are 18-hole rounds (`seasonFull`).
+  // Q-123: a round posted as a total only is a score and nothing else; every hole-level figure reads the rounds with their holes.
+  const holeWindow = holeRounds(windowRounds);
+  const holePrev = holeRounds(prevRounds);
+
+  // One cache read serves the window, the previous window and the season bests (either length, and earlier ones when Last 10 or a range
+  // reaches before the season): only the rounds with their holes, and only the ones a figure reads, so Last 10's wider read does not
+  // pull a year of putts. The season's bests are 18-hole rounds (`seasonFull`).
   const seasonFull = season.rounds.filter((r) => (r.holes_played ?? 18) === 18);
+  const seasonRounds = seasonOnly(season.rounds);
+  const figureIds = [...new Set([...holeWindow, ...holePrev, ...holeRounds(seasonRounds)].map((r) => r.id))];
   const [cache, putts, bench] = await Promise.all([
-    loadRoundCache(supabase, season.rounds.map((r) => r.id), 'stats'),
-    // The whole season's putts: the window's bands, and the season's longest made putt.
-    loadPutts(supabase, season.rounds.map((r) => r.id)),
+    loadRoundCache(supabase, figureIds, 'stats'),
+    // The window's putts for its bands, and the season's for its longest made putt.
+    loadPutts(supabase, figureIds),
     benchPromise,
   ]);
   const rowsFor = (rs: ChRound[]) => rs.map((r) => cache.byRound.get(r.id)).filter((x): x is ChRoundCache => !!x);
-  const cur = rowsFor(windowRounds);
-  const prev = rowsFor(prevRounds);
+  const cur = rowsFor(holeWindow);
+  const prev = rowsFor(holePrev);
 
   // Per-round figures are per 18 holes (a nine-hole round counts as half a round); the rates pool the holes and shots.
   const cacheNum = (r: ChRound, key: keyof ChRoundCache): number | null => {
@@ -150,21 +163,26 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     const c = cache.byRound.get(r.id);
     return c && c.birdies != null ? c.birdies + (c.eagles ?? 0) : null;
   };
+  // Scoring counts every round (a total-only one included); greens, putts, scrambling, birdies and strokes gained the rounds with their holes.
   const scoring = weightedMean(windowRounds, (r) => r.total_score);
   const prevScoring = hasPrev ? weightedMean(prevRounds, (r) => r.total_score) : null;
   const gir = rate(cur, 'greens_hit', 'greens_total');
-  const puttsPer = weightedMean(windowRounds, (r) => cacheNum(r, 'total_putts'));
+  const puttsPer = weightedMean(holeWindow, (r) => cacheNum(r, 'total_putts'));
   const scramble = rate(cur, 'scrambles_converted', 'scramble_attempts');
-  const birdies = weightedMean(windowRounds, birdiesOf);
+  const birdies = weightedMean(holeWindow, birdiesOf);
   const d = (a: number | null, b: number | null) => (hasPrev && a != null && b != null ? a - b : null);
   const benchGir = bench.get('gir_pct');
-  const sample = `${windowRounds.length} ${windowRounds.length === 1 ? 'round' : 'rounds'}`;
+  const count = (n: number) => `${n} ${n === 1 ? 'round' : 'rounds'}`;
+  const sample = count(windowRounds.length);
+  // The hole-level cards rest on the rounds with their holes: their own count, and when it is fewer than the window's, a line saying so.
+  const holeSample = count(holeWindow.length);
+  const coverage = holeCoverage(holeWindow.length, windowRounds.length) ?? undefined;
   // Strokes gained per round: the window's mean over its rounds with strokes gained, against the previous 10 when there is one.
-  const sgNow = windowRounds.map((r) => r.strokes_gained_total).filter((v): v is number => v != null);
-  const sgTotal = weightedMean(windowRounds, (r) => r.strokes_gained_total);
+  const sgNow = holeWindow.map((r) => r.strokes_gained_total).filter((v): v is number => v != null);
+  const sgTotal = weightedMean(holeWindow, (r) => r.strokes_gained_total);
   const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f), 0);
   // The previous stretch needs three whole rounds with shots, as the window's own figures do.
-  const sgDelta = sgChange(sgTotal, effectiveCount(prevRounds, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(prevRounds, (r) => r.strokes_gained_total) : null, effectiveWindow(f), earlier);
+  const sgDelta = sgChange(sgTotal, effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null, effectiveWindow(f), earlier);
   const baseline = sgBaseline(tour);
   const figures: ChFigure[] = [
     {
@@ -182,17 +200,18 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     },
     { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(scoring, prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
-    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(gir, rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : sample },
-    { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(puttsPer, weightedMean(prevRounds, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
-    { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(scramble, rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : sample },
+    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(gir, rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage },
+    { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(puttsPer, weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
+    { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(scramble, rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
     {
       label: 'Birdies per round',
       value: birdies,
       unit: '',
       digits: 1,
-      delta: d(birdies, weightedMean(prevRounds, birdiesOf)),
+      delta: d(birdies, weightedMean(holePrev, birdiesOf)),
       lowerIsBetter: false,
       context: 'Birdies and eagles',
+      note: coverage,
     },
   ];
 
@@ -203,30 +222,32 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const playerSeries = players
     .map((p) => {
       const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f);
+      const mineHoles = holeRounds(mine);
       return {
         id: p.id,
         name: fullName(p),
         first: p.first_name || fullName(p),
-        sg: weekKeys.map((wk) => avgOf(inWeek(mine, wk), (r) => r.strokes_gained_total)),
+        sg: weekKeys.map((wk) => avgOf(inWeek(mineHoles, wk), (r) => r.strokes_gained_total)),
         score: weekKeys.map((wk) => avgOf(inWeek(mine, wk), (r) => r.total_score)),
         // The window's own mean (what the list is sorted by), not the last week's: strokes gained needs three rounds, as in the grid.
-        sgMean: effectiveCount(mine, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(mine, (r) => r.strokes_gained_total) : null,
+        sgMean: effectiveCount(mineHoles, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => r.strokes_gained_total) : null,
         scoreMean: weightedMean(mine, (r) => r.total_score),
       };
     })
     .filter((s) => s.score.some((v) => v != null));
   const legWeeks = Object.fromEntries(
-    LEGS.map((leg, i) => [leg, weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => sgLegs(r)[i] ?? null))]),
+    LEGS.map((leg, i) => [leg, weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => sgLegs(r)[i] ?? null))]),
   ) as Record<ChLeg, Array<number | null>>;
 
   // Player x leg grid.
   const grid = players
     .map((p) => {
       const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f);
+      const mineHoles = holeRounds(mine);
       const s = summarizeWindow(mine);
-      const legs = LEGS.map((_, i) => (effectiveCount(mine, (r) => sgLegs(r)[i]) >= MIN_SG_ROUNDS ? weightedMean(mine, (r) => sgLegs(r)[i]) : null));
+      const legs = LEGS.map((_, i) => (effectiveCount(mineHoles, (r) => sgLegs(r)[i]) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => sgLegs(r)[i]) : null));
       // Late half against early half, both per 18 holes, and needing four whole rounds with shots (a nine-hole round is half).
-      const sgMine = mine.filter((r) => r.strokes_gained_total != null).reverse();
+      const sgMine = mineHoles.filter((r) => r.strokes_gained_total != null).reverse();
       const half = Math.floor(sgMine.length / 2);
       const sgOf = (r: ChRound) => r.strokes_gained_total;
       const change = effectiveCount(sgMine, sgOf) >= 4 ? (weightedMean(sgMine.slice(sgMine.length - half), sgOf) ?? 0) - (weightedMean(sgMine.slice(0, half), sgOf) ?? 0) : null;
@@ -236,14 +257,14 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;
-  const windowIds = new Set(windowRounds.map((r) => r.id));
+  const windowIds = new Set(holeWindow.map((r) => r.id));
   const windowPutts = putts.rows.filter((r) => windowIds.has(r.roundId));
   if (!putts.error && windowPutts.length) {
     putting = { bands: bandPutts(windowPutts, bench), putts: windowPutts.length };
   }
 
   // Season bests stay season-wide whatever the filter (and a custom range that reads earlier rounds): the section says so.
-  const bests = seasonBests(seasonOnly(seasonFull), players, cache.byRound, putts.error ? null : { rows: putts.rows, rounds: seasonOnly(season.rounds) });
+  const bests = seasonBests(seasonOnly(seasonFull), players, cache.byRound, putts.error ? null : { rows: putts.rows, rounds: seasonRounds });
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',
@@ -252,6 +273,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     filterOptions: filterOptions(season.rounds, new Map(players.map((p) => [p.id, fullName(p)]))),
     activeCount: players.length,
     roundCount: windowRounds.length,
+    holeRoundCount: holeWindow.length,
     roundsEffective: effectiveRounds(windowRounds),
     figures,
     weeks: weekKeys.map(weekLabel),
@@ -260,7 +282,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       .slice(-10)
       .map((d) => ({ label: shortDate(d), score: avgOf(windowRounds.filter((r) => r.round_date === d), (r) => r.total_score) })),
     team: {
-      sg: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.strokes_gained_total)),
+      sg: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => r.strokes_gained_total)),
       score: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)),
       sgMean: sgTotal,
       scoreMean: scoring,
@@ -268,7 +290,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     players: playerSeries,
     legWeeks,
     grid,
-    legTotals: LEGS.map((_, i) => avgOf(windowRounds, (r) => sgLegs(r)[i] ?? null)),
+    legTotals: LEGS.map((_, i) => avgOf(holeWindow, (r) => sgLegs(r)[i] ?? null)),
     putting,
     bests,
     tour,

@@ -3,6 +3,7 @@
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { holeCoverage } from '../../data/round-scope';
 import type { ChPuttBand, ChWindow } from '../../data/stats-common';
 import type { ChHoles } from '../../data/stats-filter';
 import type { ChProfileExtra } from '../../data/stats-player';
@@ -10,7 +11,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { haptic } from '../../lib/haptics';
 import { NO_DATA } from '../../lib/format';
-import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, ParTiles, ScoreMix } from './charts';
+import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 
@@ -224,20 +225,26 @@ export function GameDetail({
     .filter((b) => b.value != null && b.bench != null && b.n >= 10)
     .sort((a, b) => (a.value! - a.bench!) - (b.value! - b.bench!))[0];
   const onePuttRate = s.holesPlayed ? (s.onePuttsTotal / s.holesPlayed) * 100 : null;
-  const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {}).filter(([, v]) => v != null);
+  // Nearest band first ("0_3", "3_5", ... "35_plus"), whatever order the cache keeps them in (F-54).
+  const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {})
+    .filter(([, v]) => v != null)
+    .sort(([a], [b]) => parseFloat(a) - parseFloat(b));
   const brk = (['straight', 'left_to_right', 'right_to_left'] as const).map((k) => ({
     label: k === 'straight' ? 'Straight' : k === 'left_to_right' ? 'Left to right' : 'Right to left',
     value: avgMake(s.puttingByBreak[k]),
     sub: `${s.puttingByBreak[k].count0_3 + s.puttingByBreak[k].count3_5 + s.puttingByBreak[k].count5_10} putts inside 10 ft`,
   }));
 
-  const sample = `${rounds} ${rounds === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
+  // Every figure below but the scoring average reads the rounds with their holes scored; a round posted as a total only is a score and nothing else (Q-123).
+  const holeCount = x.holeRounds ?? rounds;
+  const sample = `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
   // What every section counts: the window's own rounds, of the lengths the filter chose, the same ones the Rounds table lists.
   const lengths =
     holes === '18'
       ? '18 holes only (9-hole rounds are left out)'
       : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
-  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}`;
+  const coverage = holeCoverage(holeCount, rounds);
+  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
   const open = !phone;
 
   return (
@@ -497,16 +504,21 @@ export function GameDetail({
       >
         <Panel title="Make rate by distance" wide note={`Green line is the player, dashed champagne is the Tour. Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`}>
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn't load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
-          <MakeCurve bands={curve} />
+          {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
         </Panel>
         <Panel title="How putts miss" wide>
-          <CupMiss
-            m={{ left: s.puttMissLeftPct, right: s.puttMissRightPct, short: s.puttMissShortPct, long: s.puttMissLongPct, low: s.puttMissLowPct, high: s.puttMissHighPct }}
-          />
+          {/* Four zeros and "100% low side" claimed a pattern that was never logged (F-54). */}
+          {[s.puttMissLeftPct, s.puttMissRightPct, s.puttMissShortPct, s.puttMissLongPct].some((v) => v != null && v > 0) ? (
+            <CupMiss
+              m={{ left: s.puttMissLeftPct, right: s.puttMissRightPct, short: s.puttMissShortPct, long: s.puttMissLongPct, low: s.puttMissLowPct, high: s.puttMissHighPct }}
+            />
+          ) : (
+            <p className="ch-gm-p__empty">No missed-putt directions logged.</p>
+          )}
         </Panel>
         <Panel title="Lag leave">
           {lag.length ? (
-            <Compare unit=" ft" max={8} rows={lag.map(([b, v]) => ({ label: `From ${b.replace('_', '–')} ft`, value: v, sub: 'Left for the next putt' }))} />
+            <Compare unit=" ft" max={8} rows={lag.map(([b, v]) => ({ label: `From ${b.replace('_plus', '+').replace('_', '–')} ft`, value: v, sub: 'Left for the next putt' }))} />
           ) : (
             <p className="ch-gm-p__empty">No long first putts logged.</p>
           )}

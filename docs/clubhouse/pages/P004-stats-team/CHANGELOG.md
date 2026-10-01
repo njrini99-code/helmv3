@@ -2,6 +2,30 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Last 10 across seasons; total-only rounds count (Q-122, Q-123)
+
+```text
+PR/commit:      agent/swap-audit
+Contract IDs:   none new (the contract's intro states the rule)
+Data impact:    none (reads only; no migration)
+```
+
+- **Issue.** Last 10 stopped at the season start (1 August), so Demo's Cole,
+  with 3 rounds this season and 13 tournaments before it, read as 3 rounds. And
+  his two qualifiers posted as totals (25 and 26 September) were in no figure at
+  all.
+- **Fix.** Last 10 is each player's ten newest countable rounds in any season,
+  with "vs. previous 10" the ten before them, read from a rolling 12 months back
+  (`lastTenFloor`); Season and Qualifiers stay this season. A round posted as a
+  total only counts in the scoring and in no hole-level figure; each hole-level
+  card says "Hole stats from 8 of 10 rounds" when that is fewer than the
+  window's (a note under the card; under the figures on the phone), and its own
+  count replaces the window's.
+- **Checked.** Cole's real rounds: Last 10 is 10 rounds (was 3), Season 5 (was
+  3), Qualifiers 2 (was 0), hole stats from 8, 3 and 0 of them. A zeroed cache
+  row of a total-only round cannot dilute putts, penalties or birdies (its id is
+  never read).
+
 ## 2026-09-30 — A team with only 9-hole rounds this season is not a first run (D-71)
 
 ```text

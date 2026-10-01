@@ -385,7 +385,7 @@ const JONAH_KINDS = ['practice', 'qualifier', 'practice', 'tournament', 'practic
 const JONAH_PICK_ROUNDS: ChPickRound[] = JONAH_ROUNDS.map(([course, date, score], i) => ({ id: `j${i}`, date: isoDay(date), kind: JONAH_KINDS[i] ?? null, course, holes: 18, score, player: null }));
 
 /** A season summary as the profile's window summary: every round is 18 holes, so the whole-round counts are the round counts. */
-const windowSeason = (s: ChPlayerSeason): ChWindowSeason => ({ ...s, effRounds: s.rounds, effSgRounds: s.sgRounds });
+const windowSeason = (s: ChPlayerSeason): ChWindowSeason => ({ ...s, effRounds: s.rounds, effSgRounds: s.sgRounds, holeRounds: s.rounds });
 
 export const PREVIEW_PLAYER: ChPlayerProfile = {
   viewer: 'coach',
@@ -431,6 +431,8 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
     compare: {
       lastRounds: 10,
       previousRounds: 10,
+      lastHoleRounds: 10,
+      previousHoleRounds: 10,
       rows: [
         { label: 'Scoring avg', last: 73.6, previous: 72.9, unit: '', digits: 1, lowerIsBetter: true },
         { label: 'Greens in regulation', last: 47.2, previous: 52.8, unit: '%', digits: 1, lowerIsBetter: false },

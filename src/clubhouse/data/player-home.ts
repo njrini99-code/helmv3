@@ -4,6 +4,7 @@ import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
 import { isFull18, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
+import { holeRounds } from './round-scope';
 import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } from './stats-common';
 
 /**
@@ -17,7 +18,7 @@ import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } 
  * approximated.
  */
 
-/** Rounds in the leg figures and the brief's form. */
+/** Rounds in the leg figures (the newest with their holes scored) and the brief's form. */
 export const LEG_WINDOW = 10;
 /** Points in a leg's spark line. */
 const LEG_TREND = 7;
@@ -107,7 +108,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   if (teamRes.error) log('team', teamRes.error);
 
   const full = roundsRes.error ? [] : roundsRes.rounds.filter(isFull18);
-  const window = full.slice(0, LEG_WINDOW);
+  // The leg figures are hole-level: the newest rounds with their holes (a round posted as a total only has none, Q-123). The brief and the scoring chart are scores and count every round.
+  const window = holeRounds(full).slice(0, LEG_WINDOW);
 
   const [latest, cache, bench, coachUserId] = await Promise.all([
     latestWithHoles(supabase, full, () => input.firstName),

@@ -670,7 +670,7 @@ describe('Stats player · the Rounds tab says why there is no earlier window', (
     cleanup();
     expect(await why(filt({ types: ['tournament'] }))).toBe('Needs 3 earlier 18-hole rounds: fewer than 13 match these filters.');
     cleanup();
-    expect(await why(filt())).toMatch(/^Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the season/);
+    expect(await why(filt())).toMatch(/^Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the last 12 months/);
     cleanup();
     expect(await why(filterFor('season'))).toBe('The season has no earlier window to compare with.');
     cleanup();
@@ -897,9 +897,13 @@ describe('Stats · holes', () => {
     expect(code('CH-4319')).toBeNull();
     expect(code('CH-4302')).not.toBeNull();
     practiceOnly.unmount();
-    const lastYear = showTeam(team({ ...noTeamRounds, filterOptions: opts(2, { rounds: [pr(0, { holes: 9, date: `${y - 1}-09-01` }), pr(1)] }) }));
+    // Season is this season: a 9-hole round from before it would show nothing under Both. Last 10 reaches back across seasons (Q-122), so it would.
+    const lastYear = showTeam(team({ ...noTeamRounds, window: 'season', filterOptions: opts(2, { rounds: [pr(0, { holes: 9, date: `${y - 1}-09-01` }), pr(1)] }) }));
     expect(code('CH-4319')).toBeNull();
     lastYear.unmount();
+    const lastYearLast10 = showTeam(team({ ...noTeamRounds, filterOptions: opts(2, { rounds: [pr(0, { holes: 9, date: `${y - 1}-09-01` }), pr(1)] }) }));
+    expect(code('CH-4319')).not.toBeNull();
+    lastYearLast10.unmount();
     // ...and a qualifying 9-hole round does show it there.
     showTeam(team({ ...noTeamRounds, window: 'qualifiers', filterOptions: opts(2, { rounds: [pr(0, { holes: 9, kind: 'qualifier' })] }) }));
     expect(code('CH-4319')).not.toBeNull();

@@ -12,7 +12,8 @@ export type * from './rounds-shape';
  * Rounds library (Clubhouse P011; design/handoff/Player - Rounds.html,
  * rounds-flow.jsx `Library`). One server read for the player's own rounds.
  *
- * Every completed round is listed. Only countable rounds (isCountableRound)
+ * Every completed round is listed. Only countable rounds (isScoreCountable:
+ * every hole scored, or an 18-hole total posted without its holes, Q-123)
  * that are full 18-hole rounds set the season figures and the ribbon, the
  * same rule Home and Stats use, so the numbers agree across screens. A round
  * that doesn't count still shows, marked as not counted.

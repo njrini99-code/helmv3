@@ -6,6 +6,8 @@ Every Clubhouse change with the issue it fixed, newest first. Each page's own ch
 
 | Page | Issue | Fix |
 | --- | --- | --- |
+| Stats | **Last 10 ended at 1 Aug (Q-122).** | Reads across seasons. |
+| Stats, Home | **Total-only rounds counted nowhere (Q-123).** | Scores only. |
 | Team Hub | **Large teams' RSVP and task counts were cut at 1000 rows (swap audit F-21).** The attendance and task-assignment reads asked PostgREST for 2000 and 5000 rows; it returns at most 1000, silently. | Both reads page through every row (`fetchAllRowsResult`, ordered by id). Test `hub-paged-reads.test.ts`. |
 | Held migrations | **Lint and migration safety (F-22).** The availability constraint was added without `NOT VALID`; the document policy migration opened its own transaction inside the migration tool's; four files raised SQL lint by 182. | `NOT VALID` on the new column's constraint, no nested `begin`/`commit`, layout reformatted (squawk 0 issues, SQL lint back to baseline). Still held. |
 | Rounds | **Queued rounds waited for a round screen (swap audit F-14).** Only the Fairway shell started the offline sync engine, so with Clubhouse on a round, hole or shot saved offline synced only while a round screen was open. | `shell/OfflineSync.tsx` starts the engine for the whole session (interval, reconnect, service-worker requests) and feeds the offline store; no UI. Test `offline-sync.test.tsx`. |

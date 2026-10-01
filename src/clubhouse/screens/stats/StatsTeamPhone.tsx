@@ -17,6 +17,7 @@ import { SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
 import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow } from './StatsTeamIslands';
+import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { hasRange, isFiltered } from '../../data/stats-filter';
@@ -75,6 +76,11 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
                 <RetryNotice code="CH-4202" title="Some team figures didn't load." body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." />
               )}
               <Figures figures={data.figures} />
+              {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
+              {(() => {
+                const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
+                return coverage ? <p style={{ margin: '8px 2px 0', font: 'var(--ch-type-caption)', color: 'var(--ch-text-tertiary)' }}>{coverage}</p> : null;
+              })()}
             </SectionBoundary>
             <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
               <Trend data={data} />

@@ -74,6 +74,17 @@ Named regions and headings, every day of the week read as words, the leaderboard
 
 Only data the app has. Not shown because no source exists: the prototype's weather and "Week 7 of 12" (golf teams have no season dates), the coach phone's "Needs you" rail (defined in `m-home.jsx` and never drawn by it), a team switcher (one team per coach), a Workout event type (the fourth quick type is Meeting), and a single-round recap (the round's card links to the player's stats instead). For the player: shot-level notes (driver carry, proximity) need shot data Home does not read, Tour marks exist for Approach only (`golf_pga_standards` has greens in regulation among the four), and "the best on the team" would compare the player with teammates, so it is left out.
 
+Which rounds Home counts (owner, 2026-09-30, Q-122 and Q-123). A round
+posted as a total only (18 holes, no nines, no holes) counts in the scores:
+the leaderboard's rounds, average, to par and trend, the player's brief ("Your
+last three rounds average...") and scoring chart, and the team form's average.
+It counts in no hole-level figure: strokes gained, the team form's greens and
+putts, and the player's four leg figures, which read the newest rounds with
+their holes and say how many ("in the last 3 rounds"). The coach's team form is
+Stats' Last 10, so it reads each player's ten newest rounds in any season
+(`lastTenFloor`); the leaderboard and the latest rounds stay this season.
+Player Home's legs and scoring chart still read this season only (Q-122).
+
 ## Existing backend capabilities used
 
 None of the server actions: both loaders read through the signed-in user's own Supabase client (`createClient` from `@/lib/supabase/server`). WIRING.md lists the tables.

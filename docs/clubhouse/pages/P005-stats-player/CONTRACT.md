@@ -8,6 +8,18 @@ Status: DEFINED
 
 A profile opens on Overview, or the tab the address names, for the window the address names, with who and the four hero figures already in the server's first render (50101). The address is read for its tab and window (50102): ?tab=overview, game, rounds or dev, and ?window=season or qualifiers, anything else opening Overview and Last 10 (D-53; Roster's All N is `window=season&tab=rounds`). A coach pages through the team with Previous player and Next player (50103) and Message opens the player's direct thread (50104). A player's own address is /golf/dashboard/stats with no ?player=.
 
+Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
+
+- Last 10 is the player's ten newest countable rounds in any season, read
+  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  Season and Qualifiers are this season only.
+- A round posted as a total only (18 holes, no nines, no holes) counts in the
+  scores (average, to par, trend, form, the Rounds table, the personal best
+  score) and in no hole-level figure (strokes gained, GIR, fairways, putts,
+  scrambling, scoring by par, putting). A card or section whose round count is
+  fewer than the window's says "Hole stats from X of Y rounds". A window of
+  totals only has no shot-by-shot rounds (CH-5301), never a failed read.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 50101 | — | `PROFILE_READY` | A profile opens on Overview for the window in the address: who (name, status, class, hometown), four hero figures, the four sections (Overview, Game detail, Rounds, Development) and the comparison table; a coach also gets Message, Add focus area, a way back to Team stats and the previous/next pager; on the phone, the phone profile. |

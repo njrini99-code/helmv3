@@ -9690,7 +9690,7 @@
     "category": 1,
     "item": 7,
     "name": "NOT_COUNTED_ROUNDS_STILL_LIST",
-    "meaning": "A posted round that does not count (isCountableRound) is still listed, with a \"Not counted\" pill, and sets no season figure. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats).",
+    "meaning": "A posted round that does not count (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123) is still listed, with a \"Not counted\" pill, and sets no season figure. A round posted as a total only counts toward the season average, to par and best score, and has no greens or putts to add. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats).",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/parts.tsx#RoundRow; src/clubhouse/data/rounds-shape.ts#toLibraryRound; src/clubhouse/data/rounds-shape.ts#seasonFrom",
     "tests": [

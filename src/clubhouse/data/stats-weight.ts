@@ -1,5 +1,6 @@
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formStatus, MIN_SG_ROUNDS, TREND_LENGTH, type ChPlayerSeason, type ChRound } from './season';
+import { hasHoleScores, holeRounds } from './round-scope';
 import { per18, roundKind, type ChRoundKind } from './stats-filter';
 
 export { per18, roundsWord } from './stats-filter';
@@ -67,6 +68,8 @@ export interface ChWindowSeason extends ChPlayerSeason {
   effRounds: number;
   /** The rounds with strokes gained, in whole rounds. */
   effSgRounds: number;
+  /** How many of the window's rounds have their holes scored (the hole-level figures read these); `rounds` less the ones posted as a total only (Q-123). */
+  holeRounds: number;
 }
 
 /**
@@ -75,21 +78,24 @@ export interface ChWindowSeason extends ChPlayerSeason {
  */
 export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
   const list = rounds.filter((r) => r.total_score != null);
+  // Scores count every round (a total-only one included); strokes gained is hole-level, so it reads the rounds with their holes (Q-123).
+  const holes = holeRounds(list);
   const score18 = (r: ChRound) => per18(r.total_score as number, r.holes_played);
   const trend = list.slice(0, TREND_LENGTH).map(score18).reverse();
   const half = Math.floor(trend.length / 2);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const leg = (pick: (r: ChRound) => number | null) => (effectiveCount(list, pick) >= MIN_SG_ROUNDS ? weightedMean(list, pick) : null);
-  const sgRows = list.filter((r) => r.strokes_gained_total != null);
-  const effSg = effectiveCount(list, (r) => r.strokes_gained_total);
+  const leg = (pick: (r: ChRound) => number | null) => (effectiveCount(holes, pick) >= MIN_SG_ROUNDS ? weightedMean(holes, pick) : null);
+  const sgRows = holes.filter((r) => r.strokes_gained_total != null);
+  const effSg = effectiveCount(holes, (r) => r.strokes_gained_total);
   return {
     rounds: list.length,
     effRounds: effectiveRounds(list),
+    holeRounds: holes.length,
     avg: weightedMean(list, (r) => r.total_score),
     toPar: weightedMean(list, (r) => r.score_to_par),
     trend,
     formChange: trend.length >= 3 ? m(trend.slice(trend.length - half)) - m(trend.slice(0, half)) : null,
-    sgPerRound: effSg >= MIN_SG_ROUNDS ? weightedMean(list, (r) => r.strokes_gained_total) : null,
+    sgPerRound: effSg >= MIN_SG_ROUNDS ? weightedMean(holes, (r) => r.strokes_gained_total) : null,
     sgRounds: sgRows.length,
     effSgRounds: effSg,
     sgLegs: {
@@ -110,14 +116,31 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
  * nine-hole round in the window they are restated per 18 (the counts from the same totals over the holes played, the scores from
  * the rounds' own weights); with none they are the calculator's own, untouched. Its per-round putts, greens, three-putts and
  * penalties are already per 18 holes, and its best and worst rounds are kept per length (`bestRound18`, `bestRound9`).
+ *
+ * `rounds` is every score round in the window; the calculator was given only the ones with their holes (Q-123), so a round posted
+ * as a total only is not in its scoring average, its average to par or its scoring by round type. With one in the window the scores
+ * are restated over all the window's rounds, so the Game detail's scoring average is the headline's (the hole counts stay the calculator's).
  */
 export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
-  if (!rounds.some((r) => (r.holes_played ?? 18) !== 18) || !(s.holesPlayed > 0)) return s;
+  // A nine-hole round always has its holes (only an 18-hole total can be posted without them), so the calculator read it.
+  const nine = rounds.some((r) => (r.holes_played ?? 18) !== 18) && s.holesPlayed > 0;
+  const totalOnly = rounds.some((r) => !hasHoleScores(r));
+  if (!nine && !totalOnly) return s;
   const per = (total: number) => (total * 18) / s.holesPlayed;
   const avg = weightedMean(rounds, (r) => r.total_score);
   const ofKind = (k: ChRoundKind) => rounds.filter((r) => r.total_score != null && roundKind(r.round_type) === k);
   const typed = (k: ChRoundKind) => ({ avg: weightedMean(ofKind(k), (r) => r.total_score), n: ofKind(k).length });
   const [practice, qualifying, tournament] = [typed('practice'), typed('qualifier'), typed('tournament')];
+  const counts = nine
+    ? {
+        eaglesPerRound: per(s.totalEagles),
+        birdiesPerRound: per(s.totalBirdies),
+        fairwaysHitPerRound: per(s.fairwaysHit),
+        parsPerRound: per(s.totalPars),
+        bogeysPerRound: per(s.totalBogeys),
+        doublePlusPerRound: per(s.totalDoublePlus),
+      }
+    : {};
   return {
     ...s,
     scoringAverage: avg,
@@ -129,11 +152,6 @@ export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
     qualifyingRounds: qualifying.n,
     tournamentScoringAvg: tournament.avg,
     tournamentRounds: tournament.n,
-    eaglesPerRound: per(s.totalEagles),
-    birdiesPerRound: per(s.totalBirdies),
-    fairwaysHitPerRound: per(s.fairwaysHit),
-    parsPerRound: per(s.totalPars),
-    bogeysPerRound: per(s.totalBogeys),
-    doublePlusPerRound: per(s.totalDoublePlus),
+    ...counts,
   };
 }

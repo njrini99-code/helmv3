@@ -367,11 +367,12 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Q-110 (open, 2026-09-30) A failed message send offers two recovery paths
   (restored draft and the bubble's Retry); with an unknown outcome a resend can
   duplicate. Recommended: the bubble's Retry only. Kept both for now.
-- Q-111 (open, 2026-09-30) Rounds posted as a total only (no nines) never
-  count anywhere (`isCountableRound`, Clubhouse and legacy): Demo's 14
-  qualifier rounds of Sep 25-26 are missing from Home, the leaderboard and
-  Stats. Recommended: count them for scoring average and round counts, not for
-  GIR, putts or scrambling (shared engine change).
+- Q-111 (answered 2026-09-30 by the owner: Q-123) Rounds posted as a total
+  only (no nines) never count anywhere (`isCountableRound`, Clubhouse and
+  legacy): Demo's 14 qualifier rounds of Sep 25-26 are missing from Home, the
+  leaderboard and Stats. Recommended: count them for scoring average and round
+  counts, not for GIR, putts or scrambling (shared engine change). Built in
+  Clubhouse only (Q-123); the shared rule and the legacy app are unchanged.
 - Q-112 (open, 2026-09-30) Team "vs previous 10" compares different sets of
   players (Home and Stats). Recommended: compare only players present in both
   windows, or average each player's own change.
@@ -406,6 +407,32 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   (blank sender on the dev server); APNs pushes cannot. Taken: deferred until
   the owner is awake. Recommended: run them in the morning with senders
   blanked, or allow the overnight pushes to the owner's own test phone.
+- Q-122 (owner, 2026-09-30; built) "Last 10" is the player's ten newest
+  countable rounds in any season, the legacy app's rule (`applyPresetLimit`
+  in `stats-data.ts`). Clubhouse capped it at the season start (1 Aug), so
+  Demo's Cole, with 3 hole-by-hole rounds since 1 Aug and 13 tournament
+  rounds before it, read "Last 10" as 3. "vs. previous 10" reaches back the
+  same way. Season and Qualifiers stay this season. Built: the Last 10 read
+  goes back a rolling 12 months (`lastTenFloor`, so the team page never loads
+  whole histories), `matchesFilter` has no season bound for Last 10, and
+  Home's team form, which is Stats' Last 10, reads the same rounds (its
+  leaderboard and latest rounds stay this season). Cole after: Last 10 is 10
+  rounds (was 3), Season 5 (was 3), Qualifiers 2 (was 0). Not changed: Player
+  Home's leg figures and scoring chart, which still read this season only.
+- Q-123 (owner, 2026-09-30; built; answers Q-111) A round posted as a total
+  only (18 holes, no nines, no holes, completed, not a test round) counts in
+  the score figures: scoring average, to par, the trend and by-day series,
+  form, the Rounds list, the personal best score, the Home brief and the
+  team's scoring. Hole-level figures (birdies, pars, doubles, greens,
+  fairways, putts, scrambling, strokes gained, scoring by par, what an average
+  round looks like, putting) read only rounds with their holes, and a card
+  whose round count is fewer than the window's says how many it covers
+  ("Hole stats from 3 of 5 rounds"). Built as a Clubhouse notion on top of
+  the shared rule (`round-scope.ts`: `isScoreCountable`, `total_only` on the
+  loaded round); `round-countable.ts` is unchanged, so every other surface
+  reads it as before. Kept out: test rounds, rounds in progress, implausible
+  totals (the stroke floor) and nine-hole totals (the rule names 18-hole
+  totals).
 - Q-98 (open, 2026-09-30; built the reversible choice) Auth (P015) choices: (1) the new screens sit behind their own flag, golf_clubhouse_auth, off in production and on in preview and development; with it off, today's sign-in and welcome render untouched; (2) the welcome's "since" line reads users.last_seen (the previous visit, written by the dashboard heartbeat) because the sign-in that just happened overwrites the auth last-sign-in time, so the header says "Since your last visit" and a user with no last_seen gets "Your first time in"; (3) a wrong password shows the design's "Incorrect email or password. Please check your credentials and try again." with both fields marked, keeping the server's "N attempts remaining" line; today production shows the raw server text and marks no field. Recommended: keep all three.
 - Q-97 (open, 2026-09-30; built the reversible choice) Stats round filter (0f18e76c9) details past the owner's brief: (1) when the chosen length has no rounds but nine-hole rounds exist, a hint says to choose 9 holes or Both (CH-4319, CH-5324); (2) season bests and "Rounds this season" stay 18-hole whatever the filter; (3) "Last 10" under Both is the ten newest rounds of either length; (4) the opening-hole floor counts raw holes; (5) a team with only nine-hole rounds no longer gets the first-run "No stats yet" page (D-71 counts nine-hole rounds). A nine-hole round weighs half a round in every per-round figure. Recommended: keep all five.
 - Q-96 (owner, 2026-09-30; for the sign up and onboarding redesign) Head coaches are always created manually by the owner and never onboard. Self-serve is: sign up → enter the team code → choose Player or Assistant coach → onboarding that differs by role. There is no email verification code step. An assistant coach joins at once, never pending ("auto sync"). Risk raised to the owner: whoever has the team's code can then become a coach and see every player's data; suggested guard that keeps it instant: a separate staff code that only the head coach shares, plus a notice to the head coach with one-tap Remove. Answered the same day, against the design handoff in design/handoff/auth/ (built on lib/golf/signup-gate.ts): the head coach sign-up path and the program code are dropped (the owner creates head coaches); assistant coaches join with the separate staff code, instantly, with no pending screen and no role picker; the roster code is players only; Request access stays (it reaches the owner); handedness and GPA are not collected. The design's other screens, states, motion and haptics stand.

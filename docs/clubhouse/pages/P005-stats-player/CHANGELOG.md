@@ -2,6 +2,30 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-09-30 — Last 10 across seasons; total-only rounds count (Q-122, Q-123)
+
+```text
+PR/commit:      agent/swap-audit
+Contract IDs:   none new (the contract's intro states the rule)
+Data impact:    none (reads only; no migration)
+```
+
+- **Issue.** Last 10 stopped at the season start, so a player's earlier rounds
+  never showed in it or in "vs. previous 10"; a round posted as a total only was
+  in no figure.
+- **Fix.** Last 10 and its previous ten read across seasons (rolling 12 months).
+  A total-only round counts in the scoring average, to par, trend, form, score
+  line, personal best score, the pressure gap and the Rounds table, and in no
+  hole-level figure. The shot read, the round cache and the putts are given only
+  the rounds with their holes, so a window of totals only is "No shot-by-shot
+  rounds" (CH-5301), never "didn't load" (CH-5202). The Overview figure cards,
+  every Game detail section and the Rounds tab's comparison say how many rounds
+  the hole stats cover. Game detail's scoring average is restated over all the
+  window's rounds, so it is the headline's.
+- **Checked.** Tests for the cross-season Last 10 and previous 10, the loader
+  keeping and refusing the right rounds, the shot read's round list, the
+  captions on desktop and phone.
+
 ## 2026-09-30 — Round filter with a Holes control: any stretch of rounds, 9 or 18 holes, every figure per 18 (owner: "make it 9 or 18")
 
 ```text

@@ -1,4 +1,4 @@
-import { isCountableRound } from '@/lib/golf/round-countable';
+import { isScoreCountable } from './round-scope';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
 /**
@@ -29,7 +29,7 @@ export interface ChLibraryRound {
   fairways: { hit: number; of: number } | null;
   greens: { hit: number; of: number } | null;
   putts: number | null;
-  /** Counts toward averages (isCountableRound). */
+  /** Counts toward the score figures (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123). */
   countable: boolean;
 }
 
@@ -146,11 +146,11 @@ export function toLibraryRound(raw: ChRoundListRow): ChLibraryRound | null {
     fairways: r.total_fairways ? { hit: r.total_fairways_hit ?? 0, of: r.total_fairways } : null,
     greens: r.total_gir_possible ? { hit: r.total_gir ?? 0, of: r.total_gir_possible } : null,
     putts: r.total_putts,
-    countable: isCountableRound(r),
+    countable: isScoreCountable(r),
   };
 }
 
-/** The season figures from the listed rounds: countable, 18 holes, since `since`. */
+/** The season figures from the listed rounds: countable (a total-only round included, Q-123: a score), 18 holes, since `since`. */
 export function seasonFrom(list: ChLibraryRound[], since: string): ChRoundsSeason {
   const s = list.filter((r) => r.countable && r.holes === 18 && r.date >= since);
   const nums = (pick: (r: ChLibraryRound) => number | null) => s.map(pick).filter((v): v is number => v != null);

@@ -2,6 +2,7 @@ import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { DEFAULT_MIN_PLAYS, rankHoleAnalyses } from '@/lib/golf/worst-hole-ranking';
 import type { HoleAnalysis } from '@/app/golf/actions/stats-data-types';
 import { shortDate, type ChRound } from './season';
+import { hasHoleScores, holeRounds } from './round-scope';
 import { effectiveCount, hasScore, per18, weightedMean } from './stats-weight';
 
 /**
@@ -13,6 +14,9 @@ import { effectiveCount, hasScore, per18, weightedMean } from './stats-weight';
  * (getTrendAnalysis, getWorstHoleAnalysis, the standing refresh). Averages are per 18
  * holes, a nine-hole round counting as half a round (stats-weight); personal bests are
  * taken over the rounds they are given, so the caller lists each length on its own.
+ *
+ * Scores (the best score and to par, the score series, the scoring average) count a round posted as a total only; greens,
+ * fairways and putts never do (Q-123): a round marked `total_only` has no value for them, whatever its row holds.
  */
 
 const COURSE_FALLBACK = 'Course not recorded';
@@ -35,10 +39,17 @@ function oldestFirst(rounds: ChRound[]): ChRound[] {
 }
 
 export function girPct(r: ChRound): number | null {
+  if (!hasHoleScores(r)) return null;
   return r.total_gir != null && r.total_gir_possible != null && r.total_gir_possible > 0 ? Math.round((r.total_gir / r.total_gir_possible) * 1000) / 10 : null;
 }
 export function fairwayPct(r: ChRound): number | null {
+  if (!hasHoleScores(r)) return null;
   return r.total_fairways_hit != null && r.total_fairways != null && r.total_fairways > 0 ? Math.round((r.total_fairways_hit / r.total_fairways) * 1000) / 10 : null;
+}
+
+/** A round's putts: a hole-level count, so none for a round posted as a total only. */
+function puttsOf(r: ChRound): number | null {
+  return hasHoleScores(r) && r.total_putts != null && r.total_putts > 0 ? r.total_putts : null;
 }
 
 /** Best score, best to par, best GIR and fewest putts over the rounds; a round with no value for a figure is not in it. */
@@ -57,7 +68,7 @@ export function personalBests(rounds: ChRound[]): ChBests {
     score: best((r) => r.total_score, true),
     toPar: best((r) => r.score_to_par, true),
     gir: best(girPct, false),
-    putts: best((r) => (r.total_putts != null && r.total_putts > 0 ? r.total_putts : null), true),
+    putts: best(puttsOf, true),
   };
 }
 
@@ -84,7 +95,10 @@ export function perRoundSeries(rounds: ChRound[]): ChSeries {
     score: points((r) => (r.total_score == null ? null : per18(r.total_score, r.holes_played))),
     gir: points(girPct),
     fairway: points(fairwayPct),
-    putts: points((r) => (r.total_putts != null && r.total_putts > 0 ? per18(r.total_putts, r.holes_played) : null)),
+    putts: points((r) => {
+      const p = puttsOf(r);
+      return p == null ? null : per18(p, r.holes_played);
+    }),
   };
 }
 
@@ -99,6 +113,9 @@ export interface ChCompareRow {
 export interface ChCompare {
   lastRounds: number;
   previousRounds: number;
+  /** Of those, the rounds with their holes scored: greens, fairways and putts read these (a total-only round has none, Q-123). Equal to the counts above when every round has. */
+  lastHoleRounds: number;
+  previousHoleRounds: number;
   rows: ChCompareRow[];
 }
 
@@ -109,7 +126,7 @@ function periodFigures(rounds: ChRound[]): { avg: number | null; gir: number | n
   let girOpp = 0;
   let fw = 0;
   let fwOpp = 0;
-  for (const r of list) {
+  for (const r of holeRounds(list)) {
     if (r.total_gir != null && r.total_gir_possible != null) {
       gir += r.total_gir;
       girOpp += r.total_gir_possible;
@@ -124,7 +141,7 @@ function periodFigures(rounds: ChRound[]): { avg: number | null; gir: number | n
     avg: round1(weightedMean(list, (r) => r.total_score)),
     gir: girOpp > 0 ? round1((gir / girOpp) * 100) : null,
     fairways: fwOpp > 0 ? round1((fw / fwOpp) * 100) : null,
-    putts: round1(weightedMean(list, (r) => (r.total_putts != null && r.total_putts > 0 ? r.total_putts : null))),
+    putts: round1(weightedMean(list, puttsOf)),
   };
 }
 
@@ -136,6 +153,8 @@ export function windowCompare(last: ChRound[], previous: ChRound[] | null): ChCo
   return {
     lastRounds: last.filter(hasScore).length,
     previousRounds: previous.filter(hasScore).length,
+    lastHoleRounds: holeRounds(last.filter(hasScore)).length,
+    previousHoleRounds: holeRounds(previous.filter(hasScore)).length,
     rows: [
       { label: 'Scoring avg', last: a.avg, previous: b.avg, unit: '', digits: 1, lowerIsBetter: true },
       { label: 'Greens in regulation', last: a.gir, previous: b.gir, unit: '%', digits: 1, lowerIsBetter: false },

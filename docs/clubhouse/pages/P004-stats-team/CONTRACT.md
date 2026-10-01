@@ -8,6 +8,16 @@ Status: DEFINED
 
 Team stats opens for the coach's own team on the last 10 rounds per player, with the figures, the trend, the legs and grid, putting and season bests already in the server's first render (40101). The address picks the window: ?window=season or ?window=qualifiers, anything else is Last 10 (40102). The old address /golf/dashboard/stats/team renders the same page in place with the default window, so it ignores ?window= and ?player= (read from the page, not tested).
 
+Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
+
+- Last 10 is each player's ten newest countable rounds in any season, read
+  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  Season and Qualifiers are this season only.
+- A round posted as a total only (18 holes, no nines, no holes) counts in the
+  scoring figures, and in no hole-level one (greens, putts, scrambling,
+  birdies, strokes gained, the legs, putting). A hole-level card whose round
+  count is fewer than the window's says "Hole stats from X of Y rounds".
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
