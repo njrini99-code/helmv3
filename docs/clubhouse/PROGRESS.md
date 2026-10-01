@@ -471,8 +471,11 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   live: 2 rounds stored, 3 played). Selection now ranks from the rounds
   (`802bcfbad`), but other readers of the aggregate (the legacy leaderboard)
   still see it. Recommended: recompute every entry's aggregate from its rounds
-  once (a production write) and find the write path that skipped
-  `updateQualifierEntryStats`. Kept: data as is.
+  once (a production write). Cause (inferred): the stale round was submitted
+  on 24 Aug with no error logged, while submit's qualifier identity was being
+  reworked (22 to 31 Aug, `2296c9466` and later); today's submit takes the
+  qualifier from the persisted round and always rewrites the aggregate
+  (`golf.ts:2060`, `:2855`). Kept: data as is.
 - Q-127 (open, 2026-10-01; nothing changed) The Demo team carries QA
   leftovers that look real in Clubhouse: eleven unfinished rounds for the
   demo player not flagged as tests ("Progress Test Course", "QA Hell Enum
