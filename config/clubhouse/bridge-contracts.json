@@ -13742,6 +13742,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130717,
+    "page": "P013",
+    "category": 7,
+    "item": 17,
+    "name": "COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE",
+    "chCode": "CH-13907",
+    "meaning": "Coach: the player declined a focus made from the top card, and none stands now",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,

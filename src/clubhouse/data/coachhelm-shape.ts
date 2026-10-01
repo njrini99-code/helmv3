@@ -134,6 +134,8 @@ export interface ChInsight {
   /** The focus-area type the category maps to. */
   areaType: string;
   assigned: ChHelmAssigned | null;
+  /** The player declined a focus made from it and none stands now (CH13-23): Assign proposes it again, and says so. */
+  declined: boolean;
 }
 
 /** A focus area a coach proposed, waiting for this player to accept or decline it (`golf_player_focus_areas.status = 'proposed'`; Q-77). */

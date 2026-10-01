@@ -255,7 +255,7 @@ const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'reso
  */
 export function toChInsight(
   ins: EvidenceInsight,
-  extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer } = {},
+  extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; declined?: boolean; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer } = {},
 ): ChInsight {
   const ev = ins.evidence;
   const unit = buildInsightUnit(ins);
@@ -290,5 +290,6 @@ export function toChInsight(
     current: kind === 'note' ? null : you,
     areaType: areaTypeFor(ins.category),
     assigned: extra.assigned ?? null,
+    declined: !extra.assigned && (extra.declined ?? false),
   };
 }

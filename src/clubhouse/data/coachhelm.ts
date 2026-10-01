@@ -181,6 +181,22 @@ export async function assignedByInsight(supabase: Supabase, insightIds: string[]
 }
 
 /**
+ * Insights whose focus area the player declined (CH13-23). The board says so instead of offering Assign as if it were new.
+ * Failing reads as none declined: Assign stays available, as before.
+ */
+export async function declinedByInsight(supabase: Supabase, insightIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (insightIds.length === 0) return out;
+  const res = await supabase.from('golf_player_focus_areas').select('from_insight_id').in('from_insight_id', insightIds).eq('status', 'declined');
+  if (res.error) {
+    log('declined', res.error);
+    return out;
+  }
+  for (const r of res.data ?? []) if (r.from_insight_id) out.add(r.from_insight_id);
+  return out;
+}
+
+/**
  * The Tour's values for the team's own tour (Q-88: the Tour is the only benchmark): the LPGA's for a women's team, never the men's.
  * Without the team's row its tour is unknown, so no benchmark is claimed and a college comparison is left undrawn.
  */
@@ -388,9 +404,13 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   const playersFailed = visible.error || (visible.rows.length > 0 && top.length === 0);
   if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: [], error: true }, withoutSignals: 0 };
 
-  const [drills, assigned, newest] = await Promise.all([
+  const [drills, assigned, declined, newest] = await Promise.all([
     drillTextByInsight(supabase, top),
     assignedByInsight(
+      supabase,
+      top.map((i) => i.id),
+    ),
+    declinedByInsight(
       supabase,
       top.map((i) => i.id),
     ),
@@ -409,6 +429,7 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     const card = toChInsight(head, {
       drillText: drills.get(head.id) ?? null,
       assigned: assigned.get(head.id) ?? null,
+      declined: declined.has(head.id),
       tour,
       newestRound,
       // The text is written to the player: by their first name on the coach's board (a player with no name keeps it as written).

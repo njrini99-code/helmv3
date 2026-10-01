@@ -110,7 +110,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
 | P011 | 14 | 10 |  | 15 | 10 | 32 | 12 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 160 |
 | P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
-| P013 | 7 | 11 |  | 29 | 1 | 31 | 16 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 144 |
+| P013 | 7 | 11 |  | 29 | 1 | 31 | 17 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 145 |
 | P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
 | P015 |  | 1 | 1 | 3 | 2 | 12 | 1 | 2 | 1 |  |  | 1 |  | 1 |  | 6 | 5 | 5 | 2 | 1 | 1 |  | 1 |  |  | 46 |
 
@@ -1372,6 +1372,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130714 | CH-13980 | 07 Network / offline | `DEEP_DIVE_A_READ_IS_OPENED_ON` | implemented | Deep dive: a read is opened on the phone |
 | 130715 | CH-13981 | 07 Network / offline | `DEEP_DIVE_AN_ADDRESS_NAMES_A_READ` | implemented | Deep dive: an address names a read (`?view=deep-dive&insight=<id>`) |
 | 130716 | CH-13982 | 07 Network / offline | `DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS` | implemented | Deep dive: a cause is a hypothesis |
+| 130717 | CH-13907 | 07 Network / offline | `COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE` | implemented | Coach: the player declined a focus made from the top card, and none stands now |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |

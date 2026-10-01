@@ -236,7 +236,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                           </span>
                         ) : stale ? null : (
                           <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
-                            {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : 'Assign as focus'}
+                            {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
                           </Button>
                         )}
                         <Button
@@ -252,6 +252,11 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                           {dismiss.pending ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
                         </Button>
                         {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
+                        {!mine && !stale && cur.top.declined && (
+                          <p className="ch-hl-cact__m" data-ch-code="CH-13907">
+                            {firstName(cur.name)} declined this as a focus. Propose again sends it back as a new proposal.
+                          </p>
+                        )}
                         {!mine && stale && (
                           <p className="ch-hl-cact__m" data-ch-code="CH-13906">
                             This read is older than {firstName(cur.name)}’s newest round, so it can’t be assigned as a focus yet.

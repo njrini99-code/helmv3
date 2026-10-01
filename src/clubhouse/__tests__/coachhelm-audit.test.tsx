@@ -440,6 +440,18 @@ describe('the cards, on screen', () => {
     expect(code('CH-13906')!.textContent).toMatch(/older than Jonah’s newest round/);
   });
 
+  it('CH-13907 CH13-23 a focus the player declined says so, and Assign reads Propose again', () => {
+    render(wrap(<CoachBoard data={coachData(chTop(slope(jonah.id), { declined: true }))} />));
+    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Propose again' })).toBeTruthy();
+    expect(code('CH-13907')!.textContent).toMatch(/Jonah declined this as a focus/);
+    cleanup();
+    // A focus that stands now wins over an old decline: the card reads Assigned, with no decline note.
+    render(wrap(<CoachBoard data={coachData(chTop(slope(jonah.id), { declined: true, assigned: 'active' }))} />));
+    expect(code('CH-13907')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Propose again' })).toBeNull();
+  });
+
   it('CH13-3 the player’s board puts a current finding first and the out-of-date one after it, marked', () => {
     const stale = chTop(refreshedOn(slope(jonah.id), '2026-09-28T02:30:43Z'), { newestRound: '2026-09-30' });
     render(wrap(<PlayerBoard data={playerData(stale, chTop(penalties(jonah.id)))} />));

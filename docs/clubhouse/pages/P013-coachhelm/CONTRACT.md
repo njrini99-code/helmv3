@@ -166,6 +166,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130714 | CH-13980 | `DEEP_DIVE_A_READ_IS_OPENED_ON` | Deep dive: a read is opened on the phone |
 | 130715 | CH-13981 | `DEEP_DIVE_AN_ADDRESS_NAMES_A_READ` | Deep dive: an address names a read (`?view=deep-dive&insight=<id>`) |
 | 130716 | CH-13982 | `DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS` | Deep dive: a cause is a hypothesis |
+| 130717 | CH-13907 | `COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE` | Coach: the player declined a focus made from the top card, and none stands now |
 
 ## 08 — Permission / authorization
 
