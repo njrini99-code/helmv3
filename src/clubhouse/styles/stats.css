@@ -131,18 +131,24 @@
 }
 /* The loaded team card's height in each layout (`.ch-fg--hold` below; measured, perf 2026-10-01): six across, one line label; six across on a
    canvas up to 1116px, where "Greens in regulation" and the like take a second line; two across. */
-.ch-fg__c--skel {
-  min-height: 196px;
+.ch-fg {
+  --ch-fg-h: 196px;
 }
 @container (min-width: 901px) and (max-width: 1116px) {
-  .ch-fg__c--skel {
-    min-height: 213px;
+  .ch-fg {
+    --ch-fg-h: 213px;
   }
 }
 @container (max-width: 900px) {
-  .ch-fg__c--skel {
-    min-height: 155px;
+  .ch-fg {
+    --ch-fg-h: 155px;
   }
+}
+/* The skeleton's card and the held team card are the same height, so nothing moves when the figures land or the window changes, even in a
+   window whose strokes gained card has no note. */
+.ch-fg__c--skel,
+.ch-fg--hold .ch-fg__c {
+  min-height: var(--ch-fg-h);
 }
 .ch-fg__v {
   display: flex;
