@@ -1,7 +1,7 @@
 /**
  * v3 Qualifying-workspace loader (W29).
  *
- * Single read: fetch the qualifier row + entries + selections, then
+ * Fetch the qualifier row + entries + selections + its completed rounds, then
  * project into the SelectionCandidate shape the workspace UI renders.
  *
  * Leaderboard ranking is computed in-process with the shared standings
@@ -21,6 +21,7 @@ import {
 import { canConfirmSelection, pickableCount } from './state-machine';
 import { compareStandings } from './ranking';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 type Sb = SupabaseClient<Database>;
 
@@ -47,9 +48,6 @@ export async function loadQualifyingWorkspace(
       target_tournament_id,
       entries:golf_qualifier_entries(
         player_id,
-        total_score,
-        total_to_par,
-        rounds_completed,
         player:golf_players(id, first_name, last_name)
       )
     `)
@@ -59,13 +57,37 @@ export async function loadQualifyingWorkspace(
   if (qErr || !q) return null;
 
   // The pick reasoning comes through the coach-gated reader (D-35), not the column.
-  const [{ data: sels }, { reasons }] = await Promise.all([
+  const [{ data: sels }, { reasons }, roundsRes] = await Promise.all([
     supabase
       .from('golf_qualifier_selections')
       .select('qualifier_id, player_id, selection_type, selected_at, selected_by_user_id')
       .eq('qualifier_id', qualifier_id),
     readQualifierSelectionReasons(supabase, qualifier_id),
+    // Ranked from the rounds, as the leaderboard is, not from the entry's stored aggregate: that aggregate is only
+    // rewritten by some write paths and was found stale on a live qualifier (3 rounds played, 2 stored; swap audit
+    // §11). Same round set as the Clubhouse board: completed, not a test, with a total.
+    fetchAllRowsResult<{ player_id: string; total_score: number | null; score_to_par: number | null }>((from, to) =>
+      supabase
+        .from('golf_rounds')
+        .select('player_id, total_score, score_to_par')
+        .eq('qualifier_id', qualifier_id)
+        .eq('status', 'completed')
+        .eq('is_test', false)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
   ]);
+  // A failed rounds read is a failed load, never a board of unscored players.
+  if (roundsRes.error) return null;
+  const byPlayer = new Map<string, { n: number; total: number; toPar: number }>();
+  for (const r of roundsRes.data ?? []) {
+    if (r.total_score == null) continue;
+    const agg = byPlayer.get(r.player_id) ?? { n: 0, total: 0, toPar: 0 };
+    agg.n += 1;
+    agg.total += r.total_score;
+    agg.toPar += r.score_to_par ?? 0;
+    byPlayer.set(r.player_id, agg);
+  }
 
   const selByPlayer = new Map<string, QualifierSelection>();
   for (const s of (sels ?? []) as Array<Omit<QualifierSelection, 'coach_reasoning'>>) {
@@ -77,13 +99,14 @@ export async function loadQualifyingWorkspace(
     .filter((e) => e && e.player && typeof e.player === 'object' && 'first_name' in e.player)
     .map((e) => {
       const player = e.player as { id: string; first_name: string; last_name: string };
+      const agg = byPlayer.get(e.player_id as string);
       return {
         player_id: e.player_id as string,
         player_first_name: player.first_name,
         player_last_name: player.last_name,
-        rounds_completed: (e.rounds_completed as number | null) ?? 0,
-        total_score: (e.total_score as number | null) ?? null,
-        total_to_par: (e.total_to_par as number | null) ?? null,
+        rounds_completed: agg?.n ?? 0,
+        total_score: agg ? agg.total : null,
+        total_to_par: agg ? agg.toPar : null,
       };
     });
 
