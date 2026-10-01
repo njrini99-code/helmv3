@@ -448,13 +448,23 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   reads it as before. Kept out: test rounds, rounds in progress, implausible
   totals (the stroke floor) and nine-hole totals (the rule names 18-hole
   totals).
-- Q-128 (answered 2026-10-01, owner: fix the files, owner applies) Held OD-01
-  (`20260924120000`) would drop the 14 rounds posted as totals only (7
-  Demo players, all since 24 Sep) from the stats cache and standings, which
-  Ask CoachHelm reads, while Stats counts them in scores (Q-123). Recommended:
-  amend OD-01 to count a total-only 18-hole round in score figures before it
-  is applied (the md5 guards in `20260924140000`, `20260925120000` and
-  `20260928150000` then need regenerating). Kept: held as written.
+- Q-128 (answered 2026-10-01, owner: fix the files, owner applies. Done:
+  OD-01 amended in place, guards regenerated, chain replayed on a scratch
+  Postgres) Held OD-01 (`20260924120000`) would drop the 14 rounds posted as
+  totals only (7 Demo players, all since 24 Sep) from the stats cache and
+  standings, which Ask CoachHelm reads, while Stats counts them in scores
+  (Q-123). It now counts a completed, plausible 18-hole total in the score
+  figures (scoring average, to par, best and worst round, last 5/10, the
+  Standing pressure gap) and in no hole figure, through a new
+  `golf_round_is_score_countable`; `golf_round_is_countable` is unchanged.
+  The md5 guards in `20260924140000` and `20260925120000` are regenerated
+  (OD-01 round-metrics `a82c0849...`, NUM-24 `e4472b58...`, floor-5
+  `a08c5d79...`), and `20260928150000` now guards both helpers: as written
+  it would have left the score calls unguarded and still said it applied.
+  Kept: all five files still HOLD; the owner applies. Open: `rounds_played`,
+  the season count and the first and last round dates still count only rounds
+  with holes (Standing ranks hole and SG metrics at `rounds_played >= 5`);
+  say if totals should count there too.
 - Q-129 (answered 2026-10-01, owner: fix the files. Done: guard (97b49e304)) Held `20260928160000` (SG shot end)
   is superseded by `20260930150000` and has no guard: applied after it, it
   silently reverts the penalty rule. Recommended: mark it SUPERSEDED in

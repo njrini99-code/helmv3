@@ -12,7 +12,9 @@
 --     20260609170000_v3_gender_scoped_level_cohort.sql. The two differ only in
 --     comments and whitespace (both normalize to 4bace7f87e7ee205b290632b2de0b001,
 --     checked 2026-09-27), so a database built from the migration history passes.
---   refresh_player_standing_round_metrics md5 e014336d66939113f5dfcb07954bca28 (NUM-24's body)
+--   refresh_player_standing_round_metrics md5 e4472b58a075b5e4c04345257ab54f10
+--     (NUM-24's body, built on OD-01 as amended for Q-128; it was
+--     e014336d66939113f5dfcb07954bca28 before Q-128)
 --   refresh_player_standing_shot_metrics  md5 549c46300dc9156d103142ecb4cc6ff5 (live 2026-09-25)
 -- Without the check, applying this before NUM-24 would replace the live
 -- round-metrics body with NUM-24's (and OD-01's) changes as a side effect.
@@ -58,7 +60,7 @@
 -- ROLLBACK: refresh_player_standing_shot_metrics from 20260922120000; then run the refreshes above.
 --
 -- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'refresh_player_standing' and md5(p.prosrc) = '40887c39948601e5ac744e793013cc85'
--- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'refresh_player_standing_round_metrics' and md5(p.prosrc) = 'fa4f30acb694a44697f830ac44c2ddb3'
+-- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'refresh_player_standing_round_metrics' and md5(p.prosrc) = 'a08c5d7952f026138c51cbaf7b8b2a25'
 -- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'refresh_player_standing_shot_metrics' and md5(p.prosrc) = '4eee486c0c4c4946c4d25deac9af8100'
 
 DO $guard$
@@ -67,7 +69,7 @@ DECLARE
     -- Production body | migration-history body (same logic; see header).
     ['refresh_player_standing',
      '69ee2ec456e3847986ba314e7eeb094c|c01b5eb05424e4e29f7613e43f88c2d5'],
-    ['refresh_player_standing_round_metrics', 'e014336d66939113f5dfcb07954bca28'],
+    ['refresh_player_standing_round_metrics', 'e4472b58a075b5e4c04345257ab54f10'],
     ['refresh_player_standing_shot_metrics',  '549c46300dc9156d103142ecb4cc6ff5']
   ];
   v_src text;
@@ -208,6 +210,8 @@ BEGIN
   END IF;
   -- NUM-24: pressure gap per src/lib/golf/metrics/pressure-gap.ts: 18-hole
   -- to-par basis and the legacy 'qualifying' spelling. Floors stay 3/3/5.
+  -- Q-128: the pressure gap is a score figure (round to par), so a round
+  -- posted as a total only counts in it: golf_round_is_score_countable.
   WITH team_values AS (
     SELECT
       p.id AS player_id,
@@ -224,7 +228,7 @@ BEGIN
       ON t.id = tm.team_id
     JOIN public.golf_rounds r
       ON r.player_id = p.id
-     AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
+     AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
      AND r.round_date > (CURRENT_DATE - (v_window_days || ' days')::interval)
     WHERE tm.team_id = ANY(p_team_ids)
     GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
@@ -269,7 +273,7 @@ BEGIN
         ON t.id = tm.team_id
       JOIN public.golf_rounds r
         ON r.player_id = p.id
-       AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
+       AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
        AND r.round_date > (CURRENT_DATE - (v_window_days || ' days')::interval)
       GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
       HAVING
@@ -336,6 +340,8 @@ BEGIN
   out_metric_id := 'practice_tournament_delta';
   out_rows_upserted := v_rows;
   RETURN NEXT;
+  -- Q-128: the opening-hole gap reads holes, so it keeps the hole rule
+  -- (golf_round_is_countable); a total-only round has no holes to read.
   WITH team_values AS (
     SELECT
       p.id AS player_id,
