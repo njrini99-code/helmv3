@@ -1,10 +1,10 @@
 'use client';
 
-import { CalendarPlus, Check, Copy, Pencil, Rss, TriangleAlert, CircleX } from 'lucide-react';
+import { CalendarPlus, Check, Copy, Pencil, RefreshCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { createGolfEvent, deleteGolfEvent, updateGolfEvent } from '@/app/golf/actions/golf';
 import { createRecurringEvent, deleteRecurringEvent, editRecurringEvent } from '@/app/golf/actions/recurring-events';
-import { createCalendarFeed, getCalendarFeeds } from '@/app/golf/actions/calendar-feeds';
+import { createCalendarFeed, deleteCalendarFeed, getCalendarFeeds, regenerateCalendarFeed } from '@/app/golf/actions/calendar-feeds';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { Avatar } from '../../ui/Avatar';
@@ -749,12 +749,41 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
 }
 
 type Feed = { id: string; name: string; type: 'team' | 'personal'; url: string };
+type FeedKind = Feed['type'];
+
+const FEED_NAME: Record<FeedKind, string> = { team: 'Team schedule', personal: 'My schedule' };
+
+/** What the person is asked before a link is replaced or removed: either one ends the link they may have already shared. */
+const FEED_ASK = {
+  new: {
+    title: (name: string) => `Make a new ${name} link?`,
+    body: 'The current link stops working right away. Anyone who added it to a calendar app stops getting updates until they add the new link.',
+    go: 'Make a new link',
+  },
+  remove: {
+    title: (name: string) => `Remove the ${name} link?`,
+    body: 'The link stops working right away, so calendar apps that use it stop getting updates. You can create a new link any time.',
+    go: 'Remove link',
+  },
+} as const;
 
 export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose: () => void; role: 'coach' | 'player' }) {
   const toast = useToast();
   const [feeds, setFeeds] = useState<Feed[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // The link being asked about, and what would happen to it (New link, Remove): nothing is sent until it is confirmed.
+  const [asking, setAsking] = useState<{ type: FeedKind; kind: keyof typeof FEED_ASK } | null>(null);
+  const askRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) setAsking(null);
+  }, [open]);
+  useEffect(() => {
+    if (!asking) return;
+    haptic('warning');
+    // Focus starts on Keep link, so Enter never confirms by accident.
+    askRef.current?.querySelector('button')?.focus();
+  }, [asking]);
   useEffect(() => {
     if (!open) return;
     let live = true;
@@ -782,7 +811,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
   // Reading the links again (so the new one shows in place of Create link) is part of the action, so the toast's Retry does it too.
   const create = useAction(
     'calendar.createFeed',
-    async (type: 'team' | 'personal') => {
+    async (type: FeedKind) => {
       const res = await createCalendarFeed(type);
       if (normalise(res).success) setAttempt((a) => a + 1);
       return res;
@@ -793,6 +822,46 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
       code: 'CH-6003',
     }),
   );
+
+  // The server deletes the old link before it makes the new one, so a failure can leave either state: the links are
+  // read again, and there is no Retry (it would ask to replace a link that may be gone); the row shows what exists.
+  const regenerate = useAction(
+    'calendar.regenerateFeed',
+    async (type: FeedKind) => {
+      let res: Awaited<ReturnType<typeof regenerateCalendarFeed>>;
+      try {
+        res = await regenerateCalendarFeed(type);
+      } catch (err) {
+        setAttempt((a) => a + 1);
+        throw err;
+      }
+      const landed = normalise(res);
+      if (landed.success && landed.data) {
+        const next = landed.data as Feed;
+        setFeeds((cur) => cur && cur.map((f) => (f.type === type ? next : f)));
+      } else {
+        setAttempt((a) => a + 1);
+      }
+      return res;
+    },
+    (type) => ({ done: `New ${FEED_NAME[type]} link ready`, failed: `Couldn't make a new ${FEED_NAME[type]} link`, hint: 'The links below show which one works now.', retry: false }),
+  );
+
+  const remove = useAction(
+    'calendar.removeFeed',
+    async (type: FeedKind) => {
+      const res = await deleteCalendarFeed(type);
+      if (normalise(res).success) setFeeds((cur) => cur && cur.filter((f) => f.type !== type));
+      return res;
+    },
+    (type) => ({ done: `${FEED_NAME[type]} link removed`, failed: `Couldn't remove the ${FEED_NAME[type]} link`, hint: 'The link is unchanged. Try again.' }),
+  );
+  const busy = create.pending || regenerate.pending || remove.pending;
+
+  const confirm = (type: FeedKind, kind: keyof typeof FEED_ASK) => {
+    setAsking(null);
+    void (kind === 'new' ? regenerate : remove).run(type);
+  };
 
   const copy = async (f: Feed) => {
     try {
@@ -824,9 +893,10 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
         <div>
           {rows.map((r) => {
             const f = feeds.find((x) => x.type === r.type);
+            const ask = f && asking?.type === r.type ? FEED_ASK[asking.kind] : null;
             return (
               <div key={r.type} className="ch-feed">
-                <div style={{ minWidth: 0 }}>
+                <div className="ch-feed__t" style={{ minWidth: 0 }}>
                   <b>{r.name}</b>
                   <span>{r.desc}</span>
                   {f && <code>{f.url.replace(/^https?:/, 'webcal:')}</code>}
@@ -838,11 +908,36 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                 ) : (
                   <Button
                     size="sm"
-                    disabled={create.pending}
+                    disabled={busy}
                     onClick={() => void create.run(r.type)}
                   >
                     Create link
                   </Button>
+                )}
+                {f && asking && ask ? (
+                  <div ref={askRef} className="ch-feed__ask" role="group" aria-label={ask.title(r.name)}>
+                    <b>{ask.title(r.name)}</b>
+                    <p>{ask.body}</p>
+                    <div className="ch-feed__acts">
+                      <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>
+                        Keep link
+                      </Button>
+                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} disabled={busy} onClick={() => confirm(r.type, asking.kind)}>
+                        {ask.go}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  f && (
+                    <div className="ch-feed__acts">
+                      <Button size="sm" variant="ghost" leftIcon={RefreshCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
+                        New link
+                      </Button>
+                      <Button size="sm" variant="ghost" leftIcon={Trash2} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'remove' })}>
+                        Remove
+                      </Button>
+                    </div>
+                  )
                 )}
               </div>
             );

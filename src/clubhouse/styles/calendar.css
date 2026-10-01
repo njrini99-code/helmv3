@@ -1417,7 +1417,7 @@
   font: 600 14px/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
-.ch-feed span {
+.ch-feed__t span {
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
@@ -1429,6 +1429,30 @@
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* New link and Remove sit under the link; asking about one replaces them with the question, on the row's full width. */
+.ch-feed__acts {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ch-feed__ask {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+}
+.ch-feed__ask p {
+  margin: 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-feed__ask .ch-feed__acts {
+  justify-content: flex-end;
 }
 
 /* Narrow canvas */
