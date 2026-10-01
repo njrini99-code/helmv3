@@ -378,6 +378,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/golf/dashboard/calendar?event=${e.id}&date=${e.date}`);
+      // CH-6703: a copied link lands with the success pattern.
       haptic('success');
       toast({ title: 'Link copied' });
     } catch (err) {

@@ -106,7 +106,7 @@ beforeEach(() => hapticSpy.mockClear());
 describe('Shell · bell', () => {
   it('CH-1705 CH-1805 opening the bell ticks, and it opens as a dialog', async () => {
     const user = userEvent.setup();
-    bell();
+    bell({});
     await user.click(screen.getByRole('button', { name: /Notifications/ }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(await screen.findByRole('dialog')).toBeTruthy();

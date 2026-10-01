@@ -269,6 +269,7 @@ export function Calendar({
 
   const step = useCallback(
     (dir: 1 | -1) => {
+      // CH-6701: a tick on changing view, week or players, opening an event, a day or a panel item.
       haptic('select');
       const from = target.current ?? anchor;
       if (view === 'day') go(view, addDays(from, dir));
@@ -472,7 +473,7 @@ export function Calendar({
   }
 
   return (
-    <main className="ch-cal" aria-busy={pending}>
+    <main className="ch-cal" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
       <header className="ch-cal-mast">
         <div className="ch-cal-mast__l">
           <button type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
@@ -604,7 +605,7 @@ export function Calendar({
                 ))}
             </SectionBoundary>
           </div>
-          <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite">
+          <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>
             <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
               {!insp && <Summary ctx={ctx} />}
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
@@ -617,6 +618,7 @@ export function Calendar({
 
       {sel.length > 0 && (
         <span className="ch-sr-only" role="status">
+          {/* CH-6803 */}
           Showing {sel.length} {sel.length === 1 ? 'player' : 'players'}
         </span>
       )}

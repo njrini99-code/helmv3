@@ -4070,7 +4070,7 @@
     "name": "CHANGING_VIEW_OR_WEEK_OR_A_SAVE",
     "chCode": "CH-6406",
     "meaning": "Changing view or week, or a save in flight",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4846,7 +4846,7 @@
     "name": "HOVERING_OR_SELECTING_AN_EVENT",
     "chCode": "CH-6601",
     "meaning": "Hovering or selecting an event",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4857,7 +4857,7 @@
     "name": "DRAGGING_THE_TIME_BAND_IN_FIND_A",
     "chCode": "CH-6602",
     "meaning": "Dragging the time band in Find a time",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4868,7 +4868,7 @@
     "name": "THE_CURRENT_TIME",
     "chCode": "CH-6603",
     "meaning": "The current time",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4879,7 +4879,7 @@
     "name": "OPENING_AN_EVENT_A_DAY_OR_A",
     "chCode": "CH-6701",
     "meaning": "Opening an event, a day or a panel item; changing view, week or players; each Find a time step",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4890,7 +4890,7 @@
     "name": "A_FORM_WITH_A_PROBLEM_OR_CLOSING",
     "chCode": "CH-6702",
     "meaning": "A form with a problem, or closing the editor with changes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4901,7 +4901,7 @@
     "name": "A_LINK_IS_COPIED",
     "chCode": "CH-6703",
     "meaning": "A link is copied",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4912,7 +4912,7 @@
     "name": "EACH_EVENT_IS_A_BUTTON_NAMED_WITH",
     "chCode": "CH-6801",
     "meaning": "Each event is a button named with its title and time, and \"schedule overlap\" when it has one; each day header opens the day",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4923,7 +4923,7 @@
     "name": "THE_DETAIL_PANEL_IS_A_POLITE_LIVE",
     "chCode": "CH-6802",
     "meaning": "The detail panel is a polite live region; form errors are tied to their field",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4934,7 +4934,7 @@
     "name": "CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED",
     "chCode": "CH-6803",
     "meaning": "Changing the player filter is announced (\"Showing 2 players\")",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {

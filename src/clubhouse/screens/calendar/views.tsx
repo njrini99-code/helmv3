@@ -86,6 +86,7 @@ function EventBlock({
     <button
       type="button"
       data-print-visible
+      // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
       className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${sel ? ' is-sel' : ''}`}
       style={{ top, height: h, left: `calc(${w * lane}% + 3px)`, width: `calc(${w}% - ${lanes > 1 ? 4 : 6}px)` }}
       aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}`}
@@ -201,7 +202,7 @@ export function TimeGrid({
                 <EventBlock key={l.e.id} e={l.e} lane={l.lane} lanes={l.lanes} sel={selId === l.e.id} flagged={flagged.has(l.e.id)} people={people} onSelect={onSelect} from={from} to={to} />
               ))}
               {d === now.date && nowVisible && (
-                <div className="ch-wk__now" style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
+                <div className="ch-wk__now" /* CH-6603: the current time, a line across today */ style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
                   <span className="ch-wk__nowlbl">{nowLabel}</span>
                 </div>
               )}

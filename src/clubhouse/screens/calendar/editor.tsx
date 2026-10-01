@@ -148,6 +148,7 @@ function FindTime({
                   aria-valuenow={win[0]}
                   aria-valuetext={`${fmtHour(win[0])} to ${fmtHour(win[1])}`}
                   onPointerDown={onDown}
+                  // CH-6602: the band follows the finger or pointer as it is dragged.
                   onPointerMove={onMove}
                   onPointerUp={() => (grab.current = null)}
                   onPointerCancel={() => (grab.current = null)}
@@ -425,6 +426,7 @@ export function EventEditor({
   const submit = async () => {
     setTouched(true);
     if (invalidTitle || invalidTime) {
+      // CH-6702: the warning pattern for a form with a problem (and when closing with changes, below).
       haptic('warning');
       if (invalidTitle) document.getElementById('ch-ed-title')?.focus();
       return;
