@@ -31,6 +31,8 @@ vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: st
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: standingRead.cohort }));
 
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
+import { getProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
+import { createClient } from '@/lib/supabase/server';
 import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
 import { pulseLanded } from './coachhelm-pulse';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
@@ -115,6 +117,7 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       ]),
     );
     pulseRead.pulse.mockResolvedValue(pulseOf([]));
+    pulseRead.context.mockResolvedValue({ roster: [{ id: jonah.id }, { id: eli.id }] });
     tables.current = base();
   });
 
@@ -247,6 +250,28 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       show(d);
       expect(screen.getByText(/have not responded for Hilltop/)).not.toBeNull();
       expect(code('CH-13206')?.textContent).toMatch(/may be incomplete/);
+    });
+
+    it('CH-13203 a roster read that failed under the pulse: it is the pulse not loading, never "Nothing is flagged" over a roster nobody read', async () => {
+      // The pulse resolves its own chat context. With the roster unread that context's roster is empty, and the real `getProgramPulse`
+      // answers an empty program with no `failed` at all: that gap is what is under test, so it runs here, over the fake client.
+      const unread = { roster: [], roster_failed: true };
+      pulseRead.context.mockResolvedValue(unread);
+      pulseRead.pulse.mockImplementation(async () => getProgramPulse(await createClient(), unread as never));
+      expect(await pulseRead.pulse()).toMatchObject({ items: [], active_roster: 0 });
+      expect((await pulseRead.pulse()).failed).toBeUndefined();
+      const d = await load();
+      expect(d.pulse).toEqual({ rows: [], error: true });
+      show(d);
+      expect(code('CH-13309')).toBeNull();
+      expect(code('CH-13203')).not.toBeNull();
+      expect(logServer).toHaveBeenCalledWith('coachhelm', 'pulse', expect.any(Error), 'coachhelm');
+    });
+
+    it('CH-13309 a roster that read and is empty (a team of nobody) is not a failed pulse (not weakened)', async () => {
+      pulseRead.context.mockResolvedValue({ roster: [] });
+      pulseRead.pulse.mockImplementation(async () => getProgramPulse(await createClient(), { roster: [] } as never));
+      expect((await load()).pulse).toEqual({ rows: [], error: false });
     });
 
     it('CH-13309 every read landing and nothing flagged is still "Nothing is flagged" (not weakened)', async () => {

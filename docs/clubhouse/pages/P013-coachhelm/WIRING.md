@@ -260,12 +260,21 @@ What the loaders say when a read fails, and what the screens may rely on.
   `failed`, never `noRoster`. `PlayerCohort.failed` (the cohort loader) is set
   only on a failed lookup, for the page that would state the cohort as fact;
   the generators and the cron read `gender` as before.
-- The coach's and the player's picks are in the address (`?player=`,
-  `?insight=`), written with `history.replaceState` and never through the
-  router, and read from the address when the screen mounts
-  (`screens/coachhelm/url-state.ts`). The Ask composer's draft is in
-  sessionStorage under the route and team, the coach and the chat; the History
-  search and the chats panel use `useChSessionState`.
+- The coach's pick (the player), the player's pick (the read) and the Deep
+  dive's pick are kept in `useChSessionState` (names `coachhelm.board.player`,
+  `coachhelm.player.insight`, `coachhelm.dive.insight`), masked with
+  `useHydrated` while the screen hydrates. The screens never write the address
+  or the history: `?player=` and `?insight=` are read-only props
+  (`initialPlayer`, `initialId`; the route hands `?insight=` to the Deep dive
+  only), and one named on arrival wins over a kept pick. The Ask composer's
+  draft is in sessionStorage under the route and team, the coach and the chat;
+  the History search and the chats panel are kept the same way
+  (`chat/drafts.ts`), restored after mount. Ask's own `?c=` write
+  (`replaceState`, CH-13922) is the one address write left on the page, and
+  has the router blind spot the CHANGELOG names.
+- The board's pulse card reads `getCoachChatContext()` beside the pulse
+  (`pulseOf`): a context whose roster did not read (`roster_failed`) is the
+  pulse not loading, not an empty program.
 
 ### DATA-COACHHELM-VIEWS
 

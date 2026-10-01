@@ -3,10 +3,11 @@
 import { AnimatePresence } from 'framer-motion';
 import { ChevronRight, Compass, Flag, Play, Target } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
+import { useChSessionState } from '../../../lib/session-state';
 import { useChPhone } from '../../../lib/use-phone';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { rebuiltHref } from '../../../shell/nav';
@@ -19,8 +20,8 @@ import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { BoardPartial, Evidence } from '../parts';
-import { paramNow, writeParam } from '../url-state';
 import { coachHelmLinks } from '../PlayerBoard';
+import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 
 const LINE = 'Every read CoachHelm has made on your game: what it measured, the rounds behind it, how it has moved, and where it goes in your plan.';
@@ -402,17 +403,28 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   const startHref = coachHelmLinks.startRound();
   const dossier = useRef<HTMLDivElement>(null);
   const list = load.status === 'ready' ? load.data.list : [];
-  // The read the player opened lives in the address (`?insight=`, written without a server round trip) so Back and a reload return to
-  // it (owner rule 8); the address is read when the page mounts, because Back restores the render with the props it first had.
-  const opening = (...ids: Array<string | null | undefined>) => ids.find((id): id is string => !!id && list.some((i) => i.base.id === id)) ?? null;
-  const [picked, setPicked] = useState<string | null>(() => opening(paramNow('insight'), initialId));
+  // The read the player opened is kept for this tab with the shell's session state, so a way back to the page (Back, another view and
+  // back) returns to it (owner rule 8). `?insight=` is only ever read, from the props the route made from it: nothing here writes the
+  // address. A read it names wins over a kept one, as a link must, and is looked up every render, so a first load that failed or came
+  // back empty, then answered by Try again, still opens on it.
+  const hydrated = useHydrated();
+  const [stored, setKept] = useChSessionState<string | null>('coachhelm.dive.insight', null);
+  const kept = hydrated ? stored : null;
+  const [byHand, setByHand] = useState(false);
   const [seenInitial, setSeenInitial] = useState(initialId);
   if (initialId !== seenInitial) {
     setSeenInitial(initialId);
-    const next = opening(initialId);
-    if (next) setPicked(next);
+    setByHand(false);
   }
-  const choose = setPicked;
+  const named = !byHand && initialId && list.some((i) => i.base.id === initialId) ? initialId : null;
+  const picked = named ?? kept;
+  const choose = useCallback(
+    (id: string | null) => {
+      setKept(id);
+      setByHand(true);
+    },
+    [setKept],
+  );
   const open = picked ? list.find((i) => i.base.id === picked) : undefined;
   // The read the player had open is no longer on the page (a refresh took it away): what shows is another read, and it says so.
   const gone = picked !== null && !open;
@@ -422,13 +434,6 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   // The open read is a history entry, so the iOS edge swipe and the browser's back close it instead of leaving the page.
   const popTo = useCallback((level: number) => level < 1 && choose(null), [choose]);
   usePhoneStackHistory(phone && open ? 1 : 0, popTo);
-  // The address names the read that is open. It is written after the phone's stack entry is pushed (the hook above), so the entry the
-  // pushed screen is on carries it and the list's own entry stays clean: Back, the swipe and the screen's own back all land on a list
-  // whose address names nothing. A name that is not one of the player's reads is taken out.
-  const openId = open?.base.id ?? null;
-  useEffect(() => {
-    writeParam('insight', openId);
-  }, [openId]);
 
   const pick = (id: string) => {
     choose(id);

@@ -4,7 +4,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getInsightsForPlayer, getTopInsightsForPlayers, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { collapseParScoring, dedupeBySubject, mapRowToRankable, type RankableEvidenceInsight, type RawInsightRowForRanking } from '@/app/golf/actions/insight-delivery-ranking';
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
-import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
+import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
@@ -516,7 +516,14 @@ export function handled<T>(read: Promise<T>): Promise<T> {
  * and `missing` names what is not in them, so an empty pulse is never "nothing is flagged" over a read that did not land.
  */
 async function pulseOf(): Promise<ChPulse> {
-  const pulse = await getCoachProgramPulse();
+  // The pulse resolves its own chat context, and a roster read that failed leaves that context's roster empty: `getProgramPulse` answers
+  // an empty program with no `failed`, which would be drawn as "Nothing is flagged" over a roster nobody read. Both getters are request
+  // cached, so this is the context read the pulse already makes, not another one; it does not change what Fairway's callers get.
+  const [ctx, pulse] = await Promise.all([getCoachChatContext(), getCoachProgramPulse()]);
+  if (ctx.roster_failed) {
+    log('pulse', new Error('the active roster did not read'));
+    return { rows: [], error: true };
+  }
   if (!pulse) return { rows: [], error: true };
   const missing = pulseMissing(pulse.failed);
   return { rows: pulseRows(pulseItemsThatStand(pulse.items, pulse.failed)), error: false, ...(missing.length > 0 ? { missing } : {}) };

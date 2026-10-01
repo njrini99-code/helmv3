@@ -25,7 +25,7 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: de
 const gates = vi.hoisted(() => ({ coach: vi.fn(), player: vi.fn() }));
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForCoach: gates.coach, isCoachHelmEnabledForPlayer: gates.player }));
 const pulseRead = vi.hoisted(() => ({ read: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: pulseRead.read }));
+vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: pulseRead.read, getCoachChatContext: async () => ({ roster: [] }) }));
 const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
 const teamOf = vi.hoisted(() => ({ current: null as unknown }));
@@ -172,18 +172,25 @@ describe('the delivery actions, once per render, after the gate', () => {
     return resolved(await ClubhouseCoachHelmRoute({}));
   };
 
-  it('a render reads the top insights once, after the gate answered, and streaming the pulse adds no read', async () => {
-    const screenEl = await route();
+  // The loader is what is counted (one call of the route is one render's reads); what the board does with the handed-over element
+  // afterwards reads nothing, so a count taken after drawing an element that is already resolved would be true by construction.
+  it('a render reads the top insights once, after the gate answered, and starts the pulse once, also after it', async () => {
+    await route();
     expect(gates.coach).toHaveBeenCalledTimes(1);
     expect(delivery.heads).toHaveBeenCalledTimes(1);
-    expect(gates.coach.mock.invocationCallOrder[0]).toBeLessThan(delivery.heads.mock.invocationCallOrder[0]!);
+    expect(pulseRead.read).toHaveBeenCalledTimes(1);
+    const gateAt = gates.coach.mock.invocationCallOrder[0]!;
+    expect(gateAt).toBeLessThan(delivery.heads.mock.invocationCallOrder[0]!);
+    expect(gateAt).toBeLessThan(pulseRead.read.mock.invocationCallOrder[0]!);
+  });
+
+  it('the board that render handed over draws the pulse when it lands, from that render’s own read', async () => {
+    const screenEl = await route();
     await act(async () => {
       render(wrap(screenEl as React.ReactElement));
     });
-    // The pulse landed and the board drew it: nothing was read again.
     expect(code('CH-13405')).toBeNull();
-    expect(delivery.heads).toHaveBeenCalledTimes(1);
-    expect(pulseRead.read).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('.ch-hl-pulse__slot li')).not.toBeNull();
   });
 
   it('every render is its own: two renders read the top insights twice, not once and not four times', async () => {

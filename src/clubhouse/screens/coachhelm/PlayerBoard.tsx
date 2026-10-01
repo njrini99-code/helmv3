@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Play, Sparkles } from 'lucide-react';
 import { partitionInsights, type ChInsight, type ChPlayerHelm } from '../../data/coachhelm-shape';
 import { PLAYER_HELM_HREF, type PlayerHelmView } from '../../data/coachhelm-views-shape';
+import { useChSessionState } from '../../lib/session-state';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
@@ -13,7 +14,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { BoardPartial, FocusCard, Head, InsightRow } from './parts';
 import { Proposals } from './Proposals';
-import { paramNow, writeParam } from './url-state';
+import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { PlayerHelmTabs } from './views/PlayerHelmTabs';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from './writes';
@@ -36,22 +37,14 @@ export const coachHelmLinks = {
  * only their own insights and has no coach controls. The one thing they write
  * is their answer to a focus area a coach proposed: Accept or Decline (Q-77).
  */
-export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES, initialPicked }: { data: ChPlayerHelm; writes?: ChPlayerWrites; initialPicked?: string }) {
+export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPlayerHelm; writes?: ChPlayerWrites }) {
   const phone = useChPhone();
-  // The read the player chose, by id and title: a refresh that takes it off the board falls back to the current focus, and says so. It
-  // lives in the address (`?insight=`, the one the Deep dive opens on; written without a server round trip) so Back and a reload
-  // return to it (owner rule 8), and is read from the address when the board mounts, as Back restores the render with its first props.
-  const opening = (...ids: Array<string | null | undefined>) => {
-    const ins = ids.map((id) => (id ? data.insights.list.find((i) => i.id === id && i.kind !== 'note') : undefined)).find((i) => i);
-    return ins ? { id: ins.id, title: ins.title } : null;
-  };
-  const [picked, setPicked] = useState<{ id: string; title: string } | null>(() => opening(paramNow('insight'), initialPicked));
-  const [seenInitial, setSeenInitial] = useState(initialPicked);
-  if (initialPicked !== seenInitial) {
-    setSeenInitial(initialPicked);
-    const next = opening(initialPicked);
-    if (next) setPicked(next);
-  }
+  // The read the player chose, by id and title: a refresh that takes it off the board falls back to the current focus, and says so. It is
+  // kept for this tab with the shell's session state, so a way back to the board (Back, another view and back) returns to it (owner rule
+  // 8). Nothing writes the address and the board reads no `?insight=`: that names a read on the Deep dive only.
+  const hydrated = useHydrated();
+  const [kept, setPicked] = useChSessionState<{ id: string; title: string } | null>('coachhelm.player.insight', null);
+  const picked = hydrated ? kept : null;
   const focusTop = useRef<HTMLDivElement>(null);
   // A switch of view moves the strip at once and dims the board (aria-busy) until the next view is ready.
   const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v]);
@@ -62,7 +55,6 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES, initialPicked }
   const startHref = coachHelmLinks.startRound();
   const pick = (ins: ChInsight) => {
     setPicked({ id: ins.id, title: ins.title });
-    writeParam('insight', ins.id);
     // On the phone the focus sits above the lists, so bring it into view.
     if (phone) focusTop.current?.scrollIntoView?.({ block: 'start' });
   };

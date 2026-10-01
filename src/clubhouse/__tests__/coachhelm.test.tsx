@@ -30,7 +30,7 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2:
 vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
 vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: vi.fn(), getTopInsightsForPlayers: vi.fn() }));
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: vi.fn(), isCoachHelmEnabledForCoach: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn() }));
+vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn(), getCoachChatContext: async () => ({ roster: [] }) }));
 const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
 const teamOf = vi.hoisted(() => ({ current: null as unknown }));
@@ -128,8 +128,6 @@ afterEach(() => {
   tables.current = {};
   session.current = null;
   teamOf.current = null;
-  // A pick on a board is written to the address (owner rule 8): each test starts on a clean one, as a new page does.
-  window.history.replaceState(null, '', '/');
 });
 
 // ── The pure steps ─────────────────────────────────────────────────────────
@@ -583,8 +581,6 @@ describe('CoachHelm for the player, on screen', () => {
       await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
       expect(scroll).not.toHaveBeenCalled();
       cleanup();
-      // The pick was written to the address (owner rule 8), so a remount would be a return to it: this is a new page.
-      window.history.replaceState(null, '', '/');
       window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
       showPlayer(PREVIEW_HELM_PLAYER);
       await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));

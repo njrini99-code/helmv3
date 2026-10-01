@@ -144,6 +144,11 @@ the page's `ch-hl-note` line and `Skeleton`.
 - A pick that the data took away (a refresh) is said in one status line above
   the card, in the card's own register: "Priya is no longer on the board, so
   this is Jonah's card." (CH-13908, CH-13909, CH-13910).
+- A pick comes back with the page (CH-13911, CH-13924): the player on the
+  coach's board, the read on the player's board and on the Deep dive (the
+  phone's pushed screen opens again), the Ask panel, the chats search and the
+  unsent message. It is kept for the tab, not put in the address, so the
+  address stays the page's own; a player or read a link names opens first.
 
 ## The player's views (Game profile, Standing, Deep dive)
 

@@ -6,7 +6,6 @@ import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmC
 import { describeChatError } from '../../../data/coachhelm-chat-error';
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
 import { pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
-import { useChSessionState } from '../../../lib/session-state';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
@@ -14,6 +13,7 @@ import { Modal } from '../../../ui/Modal';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
+import { askDraftKey, useAskKept } from './drafts';
 import { AskEvidencePanel } from './EvidencePanel';
 import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHome } from './Home';
@@ -119,7 +119,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const chatSw = useViewSwitch<string>(openId ?? NEW_CHAT, (id) => (id === NEW_CHAT ? COACHHELM_HREF.ask : conversationHref(id)));
   const [gone, setGone] = useState(data.notFound);
   // The chats panel stays as the coach left it when they return to this page (owner rule 8): a layout choice, not a chat's own state.
-  const [panelOpen, setPanelOpen] = useChSessionState('askPanel', initial?.panelOpen ?? true);
+  const [panelOpen, setPanelOpen] = useAskKept('askPanel', initial?.panelOpen ?? true);
   const [drawer, setDrawer] = useState(initial?.drawer ?? false);
   const [evidence, setEvidence] = useState<EvidenceFocus | null>(initial?.evidence ?? null);
   const lastSent = useRef('');
@@ -161,20 +161,17 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   // A thread covers the page, so the phone tab bar steps aside; the new-chat home keeps it.
   usePhoneTabsHidden(phone && !showHome);
 
-  const ask = (text: string) => {
-    if (chat.busy || pending || refuseOffline()) return;
-    lastSent.current = text;
-    expecting.current = openId === null ? epoch.current : null;
-    setGone(false);
-    chat.send(text);
-  };
-  // The composer's own gate already refused offline and blocked sends.
   const send = (text: string) => {
     lastSent.current = text;
     expecting.current = openId === null ? epoch.current : null;
     setGone(false);
     chat.send(text);
   };
+  const ask = (text: string) => {
+    if (chat.busy || pending || refuseOffline()) return;
+    send(text);
+  };
+  // `send`, for the composer, is the same without the gate: it already refused offline and blocked sends.
 
   const newChat = () => {
     // A reply still on its way belongs to the chat being left: stop it (silent, as Stop is), and an id that arrives for it later is not adopted.
@@ -221,7 +218,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
         autoFocus={variant === 'hero'}
         fresh={showHome}
         // The unsent text is this coach's, in this chat (the new chat is its own): it comes back when they return to the page.
-        draftKey={data.coachId ? `${data.coachId}:${openId ?? NEW_CHAT}` : null}
+        draftKey={askDraftKey(data.coachId, openId)}
       />
     </SectionBoundary>
   );

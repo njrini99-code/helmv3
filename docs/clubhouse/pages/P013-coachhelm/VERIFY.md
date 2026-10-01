@@ -309,19 +309,64 @@ are `50e67be9b` (failed reads), `cc966fdbc` (pending scope and races),
 
 Assertions changed by design: the board loader's read depth is 7, not 10 (the
 pulse's reads leave the board's critical path and are counted apart); three
-`coachhelm.test.tsx` pulse assertions wait for the pulse (`pulseLanded`); the
-suites that mount a screen twice, or run several tests on one address, reset
-the address with `history.replaceState(null, '', '/')` because a pick now lives
-in the address (CH-13911, and CH-13701 and CH-13981 between their two loads);
-CH-13403's catalog wording.
+`coachhelm.test.tsx` pulse assertions wait for the pulse (`pulseLanded`);
+CH-13403's catalog wording. (The return-state commit first also reset the
+address in three existing suites because a pick was written to it; the review
+fixes below took that out again.)
 
-Not observed: any of it in a browser or against a real database. The address
-writes (`history.replaceState` with the entry's own state) and Back were read
-from Next 16.3.6's `app-router.js` and `restore-reducer.js` and exercised
-against jsdom's history only; the loaders ran against the table fake, so no
-read ran against Postgres. The Fairway chat hook can still take a late
-conversation id after "New chat" (its internal id), the phone Deep dive's
-Back can leave a second entry (the shell's phone-stack hook), the Ask thread's
-and the phone Deep dive's own scrollers are not restored on Back (the shell's
-`RouteFrame` restores the canvas and the window), and no time-to-first-byte
-was measured for the streamed pulse.
+Not observed: any of it in a browser or against a real database. The loaders
+ran against the table fake, so no read ran against Postgres. The Fairway chat
+hook can still take a late conversation id after "New chat" (its internal id),
+the phone Deep dive's Back can leave a second entry (the shell's phone-stack
+hook), the Ask thread's and the phone Deep dive's own scrollers are not
+restored on Back (the shell's `RouteFrame` restores the canvas and the
+window), and no time-to-first-byte was measured for the streamed pulse.
+
+## Update 2026-10-01: owner rules, review fixes
+
+Observed after the review of the four commits (CHANGELOG.md, Phase 4 and
+Phase 1, has what changed). Same checkout and branch. Claims checked against
+the code before changing it: the address write left Next's router blind (read in
+`app-router.js`: the patched `replaceState` returns early for an entry's own
+`__NA` state); the pulse over an unread roster was drawn as "Nothing is
+flagged" (reproduced with the real `getProgramPulse` over the fake); and a kept
+pick drawn during hydration is a mismatch for all three views, not only Ask's
+two (reproduced: with the mask taken out, the three hydration tests fail on a
+server/client mismatch, restored, they pass).
+
+- Tests: `npm run test:file --` over `src/clubhouse/__tests__/coachhelm*`,
+  `view-switch-boundary.test.tsx`, `session-state*`, `refresh-states*`,
+  `src/lib/coachhelm`, `src/test/coachhelm` and `src/app/api/coachhelm`: exit
+  0, 310 files passed and 1 skipped; 3604 tests passed (1 expected fail, 3
+  skipped, 10 todo).
+- New or rewritten: `coachhelm-return-state.test.tsx` (20: the session-state
+  picks, no address or history write, no router call, a named player or read
+  winning, a first load that failed then Try again, a refresh keeping the pick,
+  a view switch carrying no read, the route handing `?insight=` to the Deep
+  dive only, and hydration of the three views against server markup made with
+  nothing kept); `coachhelm-ask-races.test.tsx` (New chat leaving a draft
+  alone, and a hard reload hydrating Ask with a hidden panel, a search and a
+  draft kept); `coachhelm-failed-reads.test.tsx` (a roster that did not read
+  is the pulse not loading, over the real `getProgramPulse` and the fake, and a
+  roster that read empty is not); `coachhelm-streaming.test.tsx` (the delivery
+  heads and the pulse are counted on the loader, after the gate).
+- Mocks: five suites that mock `request-cache` gain a `getCoachChatContext`
+  (`pulseOf` reads it); no assertion changed.
+- Typecheck: `npm run typecheck:fast` exit 0.
+- Lint: `npx eslint` on `screens/coachhelm`, the route, `data/coachhelm.ts` and
+  the changed tests: exit 0, no output.
+- Supabase error audit: `npm run audit:supabase-errors` exit 0: 1003 unchecked
+  reads, baseline 1003, no regression.
+- Markdown: `markdownlint-cli2` on this page's CHANGELOG, WIRING and DESIGN: 57
+  issues, all MD013 and the same 57 as before this pass (none added).
+- Clubhouse check: `npm run clubhouse:check` exit 0: 35 unit tests, 430 files,
+  15 pages, 1380 Bridge IDs. No code or catalog title was added or renamed (a
+  reworded CH-13911 title made it stale, so the title stays as it was; its row
+  says what is true), so no registry sync is owed for this change.
+- Build: not run; no `'use server'` file changed.
+
+Not observed: any of it in a browser. Back, a hard reload with a kept pick and
+the phone's pushed read were exercised in jsdom only (hydration with
+`renderToString` and `hydrateRoot`). Known and left: Ask's own `?c=` write
+(`replaceState`, CH-13922) has the same router blind spot; History is not team
+scoped (a product question).

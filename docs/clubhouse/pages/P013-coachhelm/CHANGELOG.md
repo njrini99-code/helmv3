@@ -43,6 +43,13 @@ Held items:     none
   coverage line and the counts behind the openers unused ("Brief me" still
   shows). The phone Ask Home, which draws no findings, now says when the pulse
   did not load (CH-13223).
+- **Pulse over a roster that did not read.** The pulse resolves its own chat
+  context, and when the membership read fails that context's roster is empty:
+  `getProgramPulse` answers an empty program with no `failed`, which the board
+  drew as "Nothing is flagged" (CH-13309). `pulseOf` now reads the
+  request-cached context beside the pulse and answers the pulse not loading
+  (CH-13203, logged as `pulse`) when `roster_failed` is set. A roster that read
+  and is empty is unchanged, and so is what Fairway's callers get.
 - **Dead retry.** Ask copied the chats list into state once; History's Try
   again re-ran the server render, but the key did not change and the copy was
   never replaced, so "your chats didn't load" stayed up. The list is now the
@@ -170,53 +177,77 @@ Held items:     none
 
 ### Phase 4: Back returns to what the coach or player had picked
 
-- **In the address, written in place.** The coach's board writes `?player=`
-  (Roster's View insights already opens on it), the player's board `?insight=`
-  and the Deep dive `?insight=` (it already opened on it, read once). The write
-  is `history.replaceState` with the entry's own state and never
-  `router.replace` or `router.push`: a router navigation re-runs the server
-  render, and the delivery actions behind it record every insight they return
-  as shown, so a pick would count insights nobody saw again. Next's patched
-  `replaceState` does not sync the router when it is handed an entry's own
-  state (the same call Ask already makes), so no request is made; the tests
-  assert no router call and a changed `location.search`.
-- **Read on mount.** Back restores the page's cached render with the props it
-  was first drawn with, from before the address was rewritten, so the screens
-  read the address when they mount (`paramNow`) and take the server's value
-  only where the address says nothing; a player or read in the address that is
-  not on the page is ignored. A new `?player=` or `?insight=` from the server
-  on a live page is a new opening (derived, not a prop copied once). The
-  Board now takes `?insight=` too (`initialPicked`); the other views still
-  ignore it.
-- **The phone's pushed read.** The address names the open read from an effect
-  that runs after the phone's history entry is pushed, so the list's own entry
-  stays clean and Back, the swipe and the screen's own back land on a list that
-  names nothing. A return opens the same read again from the address.
-  Known: a return after leaving from inside the open read pushes a second
-  entry (`usePhoneStackHistory` starts at zero and the entry it restored
-  already stands for the screen), so closing it by the screen's own back
-  lands on that older entry, whose address still names the read, and one more
-  Back is needed; that is the shell hook's, not changed here.
+- **Kept for the tab, never written to the address.** The coach's board keeps
+  the player picked, the player's board the read picked and the Deep dive the
+  read open, each in the shell's `useChSessionState` (tab scoped, keyed by
+  route and team, so Back, or another view and back, returns to it). The
+  screens do not touch the address or the history at all. The first version of
+  this phase (`4bf4c16f9`) wrote the pick to `?player=` and `?insight=` with
+  `history.replaceState(window.history.state, ...)`; a review found it wrong
+  and this follow-up replaces it. Next's patched `replaceState` skips its
+  router sync when it is handed an entry's own `__NA` state (`app-router.js`),
+  so the router's canonical URL never learned the parameter: the next
+  `router.refresh()` (every Try again) or revalidating action (Assign,
+  Dismiss, Undo, Accept, Decline) navigates to the old canonical URL, which
+  resets the address and can push a second history entry. `url-state.ts` is
+  deleted.
+- **`?player=` and `?insight=` are read-only inputs.** They arrive as the
+  props the route makes from them (`initialPlayer`, `initialId`). One named on
+  arrival wins over a kept pick, as a link from Roster must, and it is looked
+  up every render, not once: a first load that failed or came back empty,
+  then answered by Try again, still opens on the player or read named. With
+  none named the kept pick returns. A pick by hand stands until the server
+  hands down a different value (a new link is a new opening). A value that is
+  not on the page is ignored. The route hands `?insight=` to the Deep dive
+  only (the player's Board no longer takes it), so a view switch, whose tab
+  links carry none, cannot open the next view on the last view's read.
+  Known: Back to an entry that was opened with `?player=Eli` reopens Eli, not
+  a later pick by hand, because a link and a Back cannot be told apart.
+- **Hydration.** Every view sits in the route's one Suspense, so a hard reload
+  can hydrate one after `RouteFrame` has marked the app running, which is
+  when `useChSessionState` reads storage: a kept pick would be drawn over
+  server markup made from the default (a hydration error, reproduced in
+  `coachhelm-return-state.test`). The three views mask the kept value with
+  `useHydrated` (`useSyncExternalStore`: the default during the hydration
+  pass, the kept value in the render React does straight after, and from the
+  first render on a client navigation, so nothing flashes). The hook itself
+  is the shell's and has the same hole for every other page that uses it.
+- **The phone's pushed read.** A kept read that was open comes back open (the
+  pushed screen); the screen's own back closes it and forgets it. Known: a
+  return after leaving from inside the open read pushes a second history entry
+  (`usePhoneStackHistory` starts at zero and the entry it restored already
+  stands for the screen), so one more Back is needed; that is the shell
+  hook's, not changed here.
 - **Ask.** The unsent message is kept in this tab per team, coach and chat
-  (the new chat is its own), restored after mount and never during hydration,
-  cleared by a send or an emptied box, and moved to the chat's own id when the
-  new chat gets one (`chat/drafts.ts`, precedent `messages/drafts.ts`). The
-  History search and the chats panel use the shell's `useChSessionState`. The
-  phone's chats drawer is a modal and is not kept.
+  (the new chat is its own), cleared by a send or an emptied box, and moved to
+  the chat's own id when the new chat gets one (`chat/drafts.ts`, precedent
+  `messages/drafts.ts`). New chat leaves the chat it was typed in with its own
+  draft and the box shows the new chat's: the text is not carried across (the
+  box used to keep it). The History search and the chats panel are kept the
+  same way (`useAskKept`). All three are restored in an effect after mount,
+  never during the render, for the hydration reason above. The phone's chats
+  drawer is a modal and is not kept.
+- **Known limit, Ask's `?c=`.** Ask names a new chat in the address with the
+  same `replaceState` call (`chat/Ask.tsx`, CH-13922, which predates these
+  rules), so it has the same router blind spot: a `router.refresh()` (the Try
+  again of History or Home) or a revalidating action after a chat was started
+  can reset the address to the one Next knows and may push a second entry. Not
+  changed here.
 - **Scroll is the shell's.** `RouteFrame` records `#ch-canvas` and the window
   per route and team and restores them on Back or Forward (the lead's, commit
   e9b833761), so this page adds no scroll code: a second restore would race
   the shell's. Not covered by it: the Ask thread's own scroller and the
   Deep dive's phone screen scroller.
-- **Assertions changed by design.** Three existing tests mount a board twice
-  in one page load (`cleanup()` then `show()`); the second mount is now a
-  return to the first's pick, so each resets the address between the two
-  ("a new page"): `coachhelm.test` (the phone focus scroll), `coachhelm-dive.test`
-  (`CH-13981`, two tests). The files that click a pick now reset the address
-  after each test.
-- **Not verified in a browser.** Next's `replaceState` and Back behaviour was
-  read in `node_modules/next/dist/client/components/app-router.js` and
-  `restore-reducer.js` (Next 16.3.6), not exercised in a running app.
+- **Assertions changed by design.** None remain from this phase: the address
+  resets it first added to `coachhelm.test`, `coachhelm-dive.test` and
+  `coachhelm-selection.test` are taken out again, as nothing writes the
+  address now. `coachhelm-return-state.test` is rewritten for the session
+  state (it passed for the wrong reason before: it read back the address the
+  screen had just written, and a remount at the same address stood for Back).
+- **Not verified in a browser.** Next's `replaceState` behaviour was read in
+  `node_modules/next/dist/client/components/app-router.js` (Next 16.3.6), and
+  the screens no longer rely on it; Back, a hard reload with a kept pick and
+  the phone's pushed read were exercised in jsdom only.
 
 ## 2026-10-01 — Page performance: reads in parallel, a view switch that keeps the view
 

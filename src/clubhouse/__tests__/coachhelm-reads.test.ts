@@ -18,7 +18,7 @@ vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: goals.activ
 const gates = vi.hoisted(() => ({ coach: vi.fn(), player: vi.fn() }));
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForCoach: gates.coach, isCoachHelmEnabledForPlayer: gates.player }));
 const pulseRead = vi.hoisted(() => ({ read: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: pulseRead.read }));
+vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: pulseRead.read, getCoachChatContext: async () => ({ roster: [] }) }));
 
 import { loadCoachCoachHelm } from '../data/coachhelm';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';

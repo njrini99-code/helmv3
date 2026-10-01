@@ -2,6 +2,8 @@ import { LazyMotion, domAnimation } from 'framer-motion';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { UIMessage } from 'ai';
+import { hydrateRoot } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import './dialog-polyfill';
 
@@ -304,6 +306,24 @@ describe('CH-13924 the Ask page returns to what the coach left', () => {
     spy.mockRestore();
   });
 
+  it('New chat leaves the chat it was typed in with its own draft, and the box shows the new chat’s (it does not carry the text across)', async () => {
+    const thread = { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER };
+    // The fake conversation hook keeps the thread's messages, so the composer stays the same one while the chat changes under it: the phone's case.
+    const first = show(ready({ coachId: 'c1', thread }));
+    await userEvent.type(box(), 'A draft for the putting chat');
+    expect(draftKeys()).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'stub new chat' }));
+    expect(box().value).toBe('');
+    expect(draftKeys().map((k) => sessionStorage.getItem(k))).toEqual(['A draft for the putting chat']);
+    await userEvent.type(box(), 'A fresh question');
+    expect(draftKeys().map((k) => k.split(':').pop()).sort()).toEqual(['c-putting', 'new']);
+    // Going back to the putting chat finds its draft, and the new chat's is not in it.
+    first.unmount();
+    show(ready({ coachId: 'c1', thread }));
+    await settle();
+    expect(box().value).toBe('A draft for the putting chat');
+  });
+
   it('the History search and the chats panel come back, for this team; another team starts clean', async () => {
     const first = show();
     await userEvent.type(screen.getByRole('searchbox', { name: 'Search chats' }), 'putt');
@@ -316,5 +336,38 @@ describe('CH-13924 the Ask page returns to what the coach left', () => {
     show(ready(), fakeChat(), '/golf/dashboard/coachhelm\u0000team-2');
     expect(screen.getByRole('searchbox', { name: 'Search chats' }) as HTMLInputElement).toHaveValue('');
     expect(screen.getByRole('button', { name: 'Hide chats' })).toBeInTheDocument();
+  });
+
+  it('a hard reload hydrates the server’s markup first and only then shows the hidden panel, the search and the draft the tab kept (no hydration mismatch)', async () => {
+    // Ask sits in the route's Suspense, so it can hydrate after the shell has marked the app running. The server's markup is made with
+    // nothing kept (the default panel, an empty search and box); the tab then has all three.
+    const first = show(mine());
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search chats' }), 'putt');
+    await userEvent.click(screen.getByRole('button', { name: 'Hide chats' }));
+    await userEvent.type(box(), 'Who is trending up');
+    first.unmount();
+    const kept = Object.fromEntries(Object.keys(sessionStorage).map((k) => [k, sessionStorage.getItem(k) as string]));
+    expect(Object.keys(kept)).toHaveLength(3);
+    sessionStorage.clear();
+    const html = renderToString(tree(mine(), fakeChat()));
+    for (const [k, v] of Object.entries(kept)) sessionStorage.setItem(k, v);
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const errors: string[] = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errors.push(a.map(String).join(' '));
+    });
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(host, tree(mine(), fakeChat()), { onRecoverableError: (e) => errors.push(String((e as Error)?.message ?? e)) });
+    });
+    spy.mockRestore();
+    expect(errors.filter((e) => /hydrat|did not match|didn't match/i.test(e))).toEqual([]);
+    expect(within(host).getByRole('searchbox', { name: 'Search chats' })).toHaveValue('putt');
+    expect(within(host).getByRole('button', { name: 'Show chats' })).toBeInTheDocument();
+    expect((within(host).getByRole('textbox') as HTMLTextAreaElement).value).toBe('Who is trending up');
+    act(() => root?.unmount());
+    host.remove();
   });
 });
