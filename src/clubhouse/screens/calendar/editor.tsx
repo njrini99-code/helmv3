@@ -327,6 +327,8 @@ export function EventEditor({
           recurrenceRule: serializeRecurrenceRule({ frequency: 'weekly', weekdays: repeat === 'weekdays' ? [1, 2, 3, 4, 5] : [weekday], until }),
           attendeeIds: invited.length ? invited : undefined,
           timezoneOffset: tz,
+          // Each occurrence takes the zone's offset on its own date, so a series across a clock change keeps its time (CAL-05).
+          timeZone: timezone,
         };
         return createRecurringEvent({ ...series, requestId: requestIdFor(series) });
       }
@@ -351,6 +353,7 @@ export function EventEditor({
         originalStartDate: base.startIso,
         scope,
         timezoneOffset: tz,
+        timeZone: timezone,
         // Notes and place are sent even when emptied, so clearing them clears the series (undefined is "leave as is").
         // Notes and place apply literally to every event in scope, so they go only when the coach changed them (an
         // emptied field goes as '', which clears it); untouched, each event keeps its own.

@@ -37,8 +37,22 @@ function formatTimezoneOffset(offsetMinutes: number): string {
   const minutes = absMinutes % 60;
   return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
+
+/**
+ * The UTC offset suffix for one occurrence. With the series' IANA zone it is that zone's offset on the occurrence's own
+ * date, so a series across a daylight-saving change keeps its wall time (CAL-05: one offset taken at save time put every
+ * occurrence after 1 Nov an hour off). Without a zone, or for one Intl does not know, the single offset as before.
+ */
+function occurrenceTz(date: string, time: string, timeZone: string | undefined, fallbackOffset: number | undefined): string {
+  if (timeZone) {
+    const minutes = offsetMinutesFor(date, time.length === 5 ? `${time}:00` : time, timeZone);
+    if (minutes != null) return formatTimezoneOffset(minutes);
+  }
+  return fallbackOffset !== undefined ? formatTimezoneOffset(fallbackOffset) : '';
+}
 import { type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { format, parseISO } from 'date-fns';
+import { offsetMinutesFor } from '@/lib/golf/timezone';
 import {
   generateOccurrences,
   parseRecurrenceRule,
@@ -142,6 +156,8 @@ interface CreateRecurringEventInput {
   maxAttendees?: number;
   teamId?: string;
   timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
+  /** The series' IANA zone; when present each occurrence takes that zone's offset on its own date (CAL-05). */
+  timeZone?: string;
   // golf_player ids invited onto every occurrence's attendance (roll-call).
   // Mirrors GolfEventInput.attendeeIds on the one-off create path.
   attendeeIds?: string[];
@@ -167,6 +183,8 @@ interface EditRecurringEventInput {
   originalStartDate: string; // ISO date - identifies which instance
   scope: RecurringEditScope;
   timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
+  /** The series' IANA zone, for occurrences a rule change appends (CAL-05). */
+  timeZone?: string;
   updates: {
     title?: string;
     description?: string;
@@ -546,6 +564,7 @@ async function applySeriesRuleUpdate(
     teamId: string | null;
     newRuleString: string;
     timezoneOffset?: number;
+    timeZone?: string;
   },
 ): Promise<ActionResult> {
   const failure = { success: false, error: 'Failed to update the recurrence rule. Please try again.' };
@@ -603,8 +622,8 @@ async function applySeriesRuleUpdate(
         title: rootRow.title,
         description: rootRow.description ?? null,
         event_type: rootRow.event_type,
-        start_time: `${date}T${startTime}${tz}`,
-        end_time: endTime ? `${date}T${endTime}${tz}` : null,
+        start_time: `${date}T${startTime}${occurrenceTz(date, startTime, opts.timeZone, opts.timezoneOffset) || tz}`,
+        end_time: endTime ? `${date}T${endTime}${occurrenceTz(date, endTime, opts.timeZone, opts.timezoneOffset) || tz}` : null,
         location: rootRow.location ?? null,
         created_by: rootRow.created_by,
         team_id: rootRow.team_id,
@@ -792,8 +811,8 @@ async function createRecurringEventImpl(
         title: input.title,
         description: input.description || null,
         event_type: input.eventType,
-        start_time: input.startTime ? `${date}T${input.startTime}${tz}` : `${date}T00:00:00${tz}`,
-        end_time: input.endTime ? `${date}T${input.endTime}${tz}` : null,
+        start_time: `${date}T${input.startTime ?? '00:00:00'}${occurrenceTz(date, input.startTime ?? '00:00:00', input.timeZone, input.timezoneOffset)}`,
+        end_time: input.endTime ? `${date}T${input.endTime}${occurrenceTz(date, input.endTime, input.timeZone, input.timezoneOffset)}` : null,
         location: input.location || null,
         created_by: coach.id,
         team_id: teamId,
@@ -1472,6 +1491,7 @@ async function editRecurringEventImpl(
           teamId: targetEvent.team_id,
           newRuleString: input.updates.recurrenceRule,
           timezoneOffset: input.timezoneOffset,
+          timeZone: input.timeZone,
         });
         if (!ruleResult.success) return ruleResult;
       } else {

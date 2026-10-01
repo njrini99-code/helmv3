@@ -2,6 +2,25 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — A repeating event keeps its time across a clock change (CAL-05)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   none new
+Actions:        calendar create and series edit (unchanged calls; the editor now also sends the IANA zone)
+Data impact:    none to existing rows; new series rows store each occurrence's own offset
+Held items:     none
+```
+
+- **Issue.** A series took one UTC offset at save time, so every occurrence
+  after the 1 Nov change landed an hour off (3 PM became 2 PM).
+- **Fix.** With the series' zone, each occurrence (and each one a rule change
+  appends) takes that zone's offset on its own date. Without one, the single
+  offset applies as before. Existing series are not rewritten.
+- **Checked.** `recurring-events.test.ts` CAL-05 (Chicago, 22 Oct to 5 Nov);
+  calendar suites 158 tests.
+
 ## 2026-10-01 — Only invited players are notified about a new event (Q-108)
 
 ```text
