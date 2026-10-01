@@ -109,7 +109,10 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  */
 
 function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures']; cacheError: boolean }) {
-  const notes = new Set(figures.map((x) => x.note).filter((n): n is string => !!n));
+  // A note repeated under two or more cards is said once under the row; a card's own note stays on the card.
+  const counts = new Map<string, number>();
+  for (const x of figures) if (x.note) counts.set(x.note, (counts.get(x.note) ?? 0) + 1);
+  const shared = [...counts].filter(([, n]) => n > 1).map(([note]) => note);
   return (
     <>
       {cacheError && (
@@ -128,13 +131,16 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
           deltaDigits: x.digits,
           lowerIsBetter: x.lowerIsBetter,
           context: x.context,
-          // One coverage line under the row, not the same sentence under four cards (F-54).
-          note: notes.size > 1 ? x.note : undefined,
+          note: x.note && shared.includes(x.note) ? undefined : x.note,
           tone: x.signed && x.value != null ? (x.value >= 0 ? ('gain' as const) : ('loss' as const)) : undefined,
           code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
         }))}
       />
-      {notes.size === 1 && <p className="ch-st-cover">{[...notes][0]}</p>}
+      {shared.map((note) => (
+        <p key={note} className="ch-st-cover">
+          {note}
+        </p>
+      ))}
     </>
   );
 }
