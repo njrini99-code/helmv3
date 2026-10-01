@@ -28,7 +28,7 @@ import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
-import { isCountableRound } from '@/lib/golf/round-countable';
+import { isScoreCountable } from '@/lib/golf/round-score-countable';
 import { RECENT_PLAYER_WINDOW_DAYS, recentWindowStart, recentlyActivePlayerIds } from '@/lib/coachhelm/recent-players';
 
 type Sb = SupabaseClient<Database>;
@@ -274,11 +274,13 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   ]);
 
   // ── Data freshness + coverage ───────────────────────────────────────────
-  // "Latest round" and the performance movement read COUNTABLE rounds only
-  // (src/lib/golf/round-countable.ts, canonical hole-sum totals), so a
-  // 37-stroke 18-hole round is not "the most recent round on the team".
+  // "Latest round" and the performance movement read rounds that count in a
+  // SCORE (Q-123: a fully scored round, or an 18-hole round posted as a total
+  // only), so a 37-stroke 18-hole round is still not "the most recent round on
+  // the team", and a qualifier posted as a total is (the pulse said "no rounds
+  // in 60 days" over a week of qualifiers, swap audit F-58).
   // Coverage ("has no recorded rounds") still counts every completed round.
-  const rounds = completedRounds.map((r) => withCanonicalRoundTotal(r)).filter(isCountableRound);
+  const rounds = completedRounds.map((r) => withCanonicalRoundTotal(r)).filter(isScoreCountable);
   const latestRoundAt = rounds[0]?.round_date ?? null;
   const withRounds = new Set(completedRounds.map((r) => r.player_id));
   const withoutRounds = ctx.roster.filter((p) => !withRounds.has(p.id));
