@@ -494,7 +494,9 @@ describe('Home · the team’s form (teamForm)', () => {
     // busy's five before their newest ten are the previous window (quiet has none), as Stats' "vs. previous 10" reads it.
     const statsPrev = [...groupByPlayer(full).values()].flatMap((list) => previousInFilter(list, filterFor('last10')) ?? []);
     expect(statsPrev).toHaveLength(5);
-    expect(f.delta).toBe(f.avg - weightedMean(statsPrev, (x) => x.total_score)!);
+    // Q-112 (owner, 2026-10-01): the change compares the same players. busy shot 70 in both windows, so the team is
+    // unchanged; quiet's 80s have no previous ten and no longer fake a +3.3 trend.
+    expect(f.delta).toBe(0);
   });
 
   // Swap audit §10-1, reproduced on production (Demo University Golf, 2026-09-30): three 18-hole rounds on Aug 2 (69, 70, 71,

@@ -125,18 +125,25 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
 
   const windowRounds: ChRound[] = [];
   const prevRounds: ChRound[] = [];
+  // Q-112: a change compares the same players: the window's rounds of those who also have a previous ten, against that ten.
+  const windowPaired: ChRound[] = [];
   let hasPrev = hasPrevious(f);
   for (const p of players) {
     const list = byPlayer.get(p.id) ?? [];
-    windowRounds.push(...roundsInFilter(list, f));
+    const cur = roundsInFilter(list, f);
+    windowRounds.push(...cur);
     const prev = previousInFilter(list, f);
-    if (prev) prevRounds.push(...prev);
+    if (prev && prev.length) {
+      prevRounds.push(...prev);
+      windowPaired.push(...cur);
+    }
   }
   if (!prevRounds.length) hasPrev = false;
 
   // Q-123: a round posted as a total only is a score and nothing else; every hole-level figure reads the rounds with their holes.
   const holeWindow = holeRounds(windowRounds);
   const holePrev = holeRounds(prevRounds);
+  const holePaired = holeRounds(windowPaired);
 
   // One cache read serves the window, the previous window and the season bests (either length, and earlier ones when Last 10 or a range
   // reaches before the season): only the rounds with their holes, and only the ones a figure reads, so Last 10's wider read does not
@@ -153,6 +160,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const rowsFor = (rs: ChRound[]) => rs.map((r) => cache.byRound.get(r.id)).filter((x): x is ChRoundCache => !!x);
   const cur = rowsFor(holeWindow);
   const prev = rowsFor(holePrev);
+  const curPaired = rowsFor(holePaired);
 
   // Per-round figures are per 18 holes (a nine-hole round counts as half a round); the rates pool the holes and shots.
   const cacheNum = (r: ChRound, key: keyof ChRoundCache): number | null => {
@@ -182,7 +190,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const sgTotal = weightedMean(holeWindow, (r) => r.strokes_gained_total);
   const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f), 0);
   // The previous stretch needs three whole rounds with shots, as the window's own figures do.
-  const sgDelta = sgChange(sgTotal, effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null, effectiveWindow(f), earlier);
+  const sgDelta = sgChange(weightedMean(holePaired, (r) => r.strokes_gained_total), effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null, effectiveWindow(f), earlier);
   const baseline = sgBaseline(tour);
   const figures: ChFigure[] = [
     {
@@ -198,17 +206,17 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       // Always drawn, so the card is as tall as its loading skeleton (CH-4401).
       note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
     },
-    { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(scoring, prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
+    { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
-    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(gir, rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage },
-    { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(puttsPer, weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
-    { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(scramble, rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
+    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage },
+    { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, (r) => cacheNum(r, 'total_putts')), weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
+    { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
     {
       label: 'Birdies per round',
       value: birdies,
       unit: '',
       digits: 1,
-      delta: d(birdies, weightedMean(holePrev, birdiesOf)),
+      delta: d(weightedMean(holePaired, birdiesOf), weightedMean(holePrev, birdiesOf)),
       lowerIsBetter: false,
       context: 'Birdies and eagles',
       note: coverage,

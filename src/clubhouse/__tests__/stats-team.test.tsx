@@ -770,6 +770,22 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(fig('Putts per round')).toBe(30.5);
   });
 
+  // Q-112 (owner, 2026-10-01): "vs. previous 10" compares the same players. Theo shot 72 in both windows; Jonah's three 80s
+  // have no previous ten, so they raise the window's average but not the change.
+  it('Q-112 the change compares only players with a previous ten', async () => {
+    const theo = Array.from({ length: 13 }, (_, i) => round(`t${i}`, 'p1', i + 1, 72, 0));
+    const jonah = [round('j1', 'p2', 1, 80, 0), round('j2', 'p2', 2, 80, 0), round('j3', 'p2', 3, 80, 0)];
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: { data: [...theo, ...jonah] },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const scoring = data.figures.find((f) => f.label === 'Scoring average')!;
+    expect(scoring.value).toBeCloseTo((10 * 72 + 3 * 80) / 13, 10);
+    expect(scoring.delta).toBe(0);
+  });
+
   // Swap audit C-15: total_score is written once at submission and can drift from the holes (round-total.ts); the season read
   // takes the total and to-par from the nines, once, for every screen after it.
   it('C-15 a round whose stored total drifted from its holes counts at the holes’ total', async () => {

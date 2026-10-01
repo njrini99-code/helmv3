@@ -502,9 +502,16 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   const f = filterFor('last10');
   const last: ChRound[] = [];
   const prev: ChRound[] = [];
+  // Q-112: a change compares the same players: the newest ten of those who also have a previous ten, against that ten.
+  const lastPaired: ChRound[] = [];
   for (const list of groupByPlayer(full).values()) {
-    last.push(...roundsInFilter(list, f));
-    prev.push(...(previousInFilter(list, f) ?? []));
+    const cur = roundsInFilter(list, f);
+    const before = previousInFilter(list, f) ?? [];
+    last.push(...cur);
+    if (before.length) {
+      prev.push(...before);
+      lastPaired.push(...cur);
+    }
   }
   if (!last.length) return null;
   // Greens and putts are hole-level: a round posted as a total only has none (Q-123), whatever its row holds.
@@ -519,10 +526,13 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   const comparable = prev.length > 0;
   const avg = weightedMean(last, scoreOf) as number;
   const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
+  const pairedAvg = comparable ? weightedMean(lastPaired, scoreOf) : null;
   const gir = girOf(last);
   const prevGir = comparable ? girOf(prev) : null;
+  const pairedGir = comparable ? girOf(lastPaired) : null;
   const putts = weightedMean(last, puttsOf);
   const prevPutts = comparable ? weightedMean(prev, puttsOf) : null;
+  const pairedPutts = comparable ? weightedMean(lastPaired, puttsOf) : null;
   const byDate = (a: ChRound, b: ChRound) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id));
   const byDay = new Map<string, number[]>();
   for (const r of [...last].sort(byDate)) {
@@ -533,11 +543,11 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   const dates = last.map((r) => r.round_date.slice(0, 10)).sort();
   return {
     avg,
-    delta: prevAvg != null ? avg - prevAvg : null,
+    delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
     line,
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
-    gir: { pct: gir, delta: gir != null && prevGir != null ? gir - prevGir : null },
-    putts: { avg: putts, delta: putts != null && prevPutts != null ? putts - prevPutts : null },
+    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null },
+    putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null },
   };
 }

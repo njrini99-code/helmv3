@@ -2,6 +2,25 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (no visual change)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; `teamForm` (scoring, greens, putts)
+Held items:     none
+```
+
+- **Issue.** The team's change pooled every player's newest ten against the
+  previous ten of only the players who had one, so a player with no earlier
+  rounds moved the trend by joining.
+- **Fix.** Each change compares the window's rounds of the players who also
+  have a previous ten against that ten; the figure itself still reads the
+  whole window (owner, 2026-10-01).
+- **Checked.** `home.test.tsx` (the §10-1 case now reads 0, not +3.3).
+
 ## 2026-10-01 — The coach's team line is a day a point; a change of "0.0" is plain on both Homes
 
 ```text
