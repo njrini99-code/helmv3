@@ -114,6 +114,33 @@ describe('Team stats reads', () => {
     expect(res).toEqual({ longest: { roundId: 'r-2', feet: 75, made: true }, error: false });
   });
 
+  it('a tie in the longest putt goes to the lowest round id, whichever chunk answers first (the rule is stated on loadLongestPutt)', async () => {
+    const { loadLongestPutt } = await import('../data/stats-common');
+    const rounds = Array.from({ length: 450 }, (_, i) => `round-${i}`);
+    // Three chunks (450 rounds) each answer 75 ft, from rounds r-3, r-1 and r-2.
+    const run = async (answers: Array<{ id: string; feet: number }>) => {
+      let n = 0;
+      const chain = () => {
+        const a = answers[n++]!;
+        const q: Record<string, unknown> = {};
+        for (const m of ['select', 'in', 'eq', 'gte', 'lte', 'order', 'limit']) q[m] = () => q;
+        q.then = (ok: (v: unknown) => unknown) => Promise.resolve({ data: [{ round_id: a.id, putt_distance_feet: a.feet, putt_made: true }], error: null }).then(ok);
+        return q;
+      };
+      const supabase = { from: () => ({ select: () => ({ in: chain }) }) };
+      return (await loadLongestPutt(supabase as never, rounds)).longest;
+    };
+    const tied = [
+      { id: 'r-3', feet: 75 },
+      { id: 'r-1', feet: 75 },
+      { id: 'r-2', feet: 75 },
+    ];
+    expect(await run(tied)).toEqual({ roundId: 'r-1', feet: 75, made: true });
+    expect(await run([...tied].reverse())).toEqual({ roundId: 'r-1', feet: 75, made: true });
+    // A longer putt beats the lower id.
+    expect(await run([...tied.slice(0, 2), { id: 'r-9', feet: 80 }])).toEqual({ roundId: 'r-9', feet: 80, made: true });
+  });
+
   it('a longest-putt read that fails leaves the best out and is logged; the putting card and the rest of the page are unaffected', async () => {
     tables.current = base({ golf_shots: (f) => (isLongest(f) ? { error: { message: 'boom' } } : { data: [{ round_id: 'p1-r0', putt_distance_feet: 8, putt_made: true }] }) });
     const stats = await loadTeamStats({ teamId: 't1', window: 'last10', filter: filterFor('last10') });

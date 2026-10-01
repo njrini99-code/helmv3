@@ -318,8 +318,10 @@ export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise
 
 /**
  * The longest putt made on these rounds (the season's best on Team stats): one row from the database (made, a distance of 0 to 120 feet,
- * the longest, the first by id on a tie) instead of every putt of the season to find it. Null when none was made; `error` when the read failed
- * (the best is then left out and logged, never shown as zero). The rows are compared here too, so a source that returns more than one still answers right.
+ * the longest) instead of every putt of the season to find it. A tie goes to the lowest round id, then the lowest shot id, in the database and
+ * across chunks alike, so the answer does not depend on how the rounds were chunked or which chunk answered first. Null when none was made;
+ * `error` when the read failed (the best is then left out and logged, never shown as zero). The rows are compared here too, so a source that
+ * returns more than one still answers right.
  */
 export async function loadLongestPutt(supabase: Supabase, roundIds: string[]): Promise<{ longest: ChPuttRow | null; error: boolean }> {
   const results = await Promise.all(
@@ -332,6 +334,7 @@ export async function loadLongestPutt(supabase: Supabase, roundIds: string[]): P
         .gte('putt_distance_feet', 0)
         .lte('putt_distance_feet', 120)
         .order('putt_distance_feet', { ascending: false })
+        .order('round_id', { ascending: true })
         .order('id', { ascending: true })
         .limit(1),
     ),
@@ -344,7 +347,9 @@ export async function loadLongestPutt(supabase: Supabase, roundIds: string[]): P
     }
     for (const r of res.data ?? []) {
       const feet = Number(r.putt_distance_feet);
-      if (r.putt_made && Number.isFinite(feet) && feet >= 0 && feet <= 120 && (!longest || feet > longest.feet)) longest = { roundId: r.round_id, feet, made: true };
+      if (r.putt_made && Number.isFinite(feet) && feet >= 0 && feet <= 120 && (!longest || feet > longest.feet || (feet === longest.feet && r.round_id < longest.roundId))) {
+        longest = { roundId: r.round_id, feet, made: true };
+      }
     }
   }
   return { longest, error: false };
