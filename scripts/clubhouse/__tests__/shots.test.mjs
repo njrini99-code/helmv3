@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildName, checkScreenshotLog, checkStore, parseName, validateFields } from '../shots.mjs';
+import { mkdtempSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { buildName, checkScreenshotLog, checkStore, looseCaptures, looksClubhouse, parseName, validateFields } from '../shots.mjs';
 
 const fields = { page: 'P007', surface: 'list', role: 'coach', viewport: '390', state: 'unread-mixed', phase: 'before', sha7: 'a1b2c3d' };
 const NAME = 'P007__list__coach__390__unread-mixed__before__a1b2c3d.png';
@@ -55,4 +59,32 @@ test('VERIFY log: needs the section; an empty table is valid; rows must be conve
   assert.ok(bad.some((x) => /not a convention file name/.test(x)));
   assert.ok(bad.some((x) => /says phase "after" but the file name says before/.test(x)));
   assert.ok(bad.some((x) => /is for P003, not P007/.test(x)));
+});
+
+test('scratch dirs: a Clubhouse-looking image is a loose capture; other images and non-images are not', () => {
+  const imgs = ['test-results/clubhouse-messages-chromium/shot.png', '.helm/runtime/ui-audit/probe.png', '.dev-screenshots/P007-before.png', 'e2e-screenshots/messages-thread.webp', '.playwright-mcp/golf-login.png', 'test-results/x/video.webm', '.helm/runtime/ui-audit/notes.md'];
+  assert.deepEqual(looseCaptures(imgs, pages), imgs.slice(0, 4));
+  assert.equal(looksClubhouse('test-results/roster-page/a.png', pages), true);
+  assert.equal(looksClubhouse('test-results/rosterfoo/a.png', pages), false);
+});
+
+test('import moves a loose capture into the store under its label, records it, and the store then checks clean', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'ch-shots-'));
+  const store = join(tmp, 'store');
+  const loose = join(tmp, 'loose.png');
+  writeFileSync(loose, 'png');
+  const run = (...args) => spawnSync(process.execPath, [new URL('../shots.mjs', import.meta.url).pathname, ...args], { env: { ...process.env, CLUBHOUSE_SHOTS_DIR: store }, encoding: 'utf8' });
+  const opts = ['--page', 'P007', '--surface', 'thread', '--role', 'coach', '--viewport', '390', '--state', 'keyboard-open', '--phase', 'after', '--sha', 'abc1234', '--date', '2026-10-01'];
+  const bad = run('import', join(tmp, 'loose.jpg'), ...opts);
+  assert.equal(bad.status, 1);
+  const res = run('import', loose, ...opts);
+  assert.equal(res.status, 0, res.stderr);
+  const dest = join(store, 'P007-messages/2026-10-01/P007__thread__coach__390__keyboard-open__after__abc1234.png');
+  assert.ok(existsSync(dest) && !existsSync(loose), 'moved, not copied');
+  const entries = JSON.parse(readFileSync(join(store, 'P007-messages/2026-10-01/manifest.json'), 'utf8'));
+  assert.equal(entries[0].route, '/golf/dashboard/messages');
+  assert.equal(entries[0].phase, 'after');
+  assert.equal(run('check').status, 0);
+  writeFileSync(join(store, 'P007-messages/2026-10-01/stray.png'), 'x');
+  assert.equal(run('check').status, 1);
 });

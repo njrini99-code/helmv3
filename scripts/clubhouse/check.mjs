@@ -14,8 +14,9 @@
  * It also validates docs/clubhouse/PROGRESS.md so the tracker can't drift
  * into a state its own gates forbid, and holds the docs to the code: a page
  * whose implementation changed on this branch must change its CHANGELOG.md
- * (changelog-gate.mjs), and every page's VERIFY.md keeps a `## Screenshots`
- * evidence log whose rows follow the screenshot naming (shots.mjs).
+ * (changelog-gate.mjs), every page's VERIFY.md keeps a `## Screenshots`
+ * evidence log whose rows follow the screenshot naming (shots.mjs), and every
+ * relative markdown link under docs/clubhouse resolves (links.mjs).
  *
  * Usage: node scripts/clubhouse/check.mjs [--root <dir>] [--base <ref>]
  * Exit 0 clean, 1 on any violation.
@@ -27,6 +28,7 @@ import { runRegistryCheck } from './registry.mjs';
 import { checkClassOwners } from './css-owners.mjs';
 import { loadManifests, runChangelogGate } from './changelog-gate.mjs';
 import { checkScreenshotLog } from './shots.mjs';
+import { checkLinks } from './links.mjs';
 
 const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
@@ -371,6 +373,17 @@ function main() {
     const at = `docs/clubhouse/pages/${m.id}-${m.slug}/VERIFY.md`;
     if (existsSync(join(root, at))) violations.push(...checkScreenshotLog(readFileSync(join(root, at), 'utf8'), at, m.id));
   }
+
+  const mdFiles = {};
+  const walkMd = (rel) => {
+    for (const n of readdirSync(join(root, rel))) {
+      const p = `${rel}/${n}`;
+      if (statSync(join(root, p)).isDirectory()) walkMd(p);
+      else if (n.endsWith('.md')) mdFiles[p] = readFileSync(join(root, p), 'utf8');
+    }
+  };
+  if (existsSync(join(root, 'docs/clubhouse'))) walkMd('docs/clubhouse');
+  violations.push(...checkLinks({ files: mdFiles, exists: (p) => existsSync(join(root, p)), read: (p) => readFileSync(join(root, p), 'utf8') }));
 
   if (violations.length) {
     console.error(gate.note);

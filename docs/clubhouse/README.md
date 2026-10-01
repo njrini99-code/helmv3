@@ -19,6 +19,7 @@ Where things live:
 | The per-gate checklist | `screens/<slug>.md` |
 | The phone spec | `phone/<slug>.md` |
 | Held features and data | `held/features/`, `held/data/` |
+| Every audit, plan and inventory: date, scope, status, pages touched | [`AUDITS.md`](AUDITS.md) (generated from `config/clubhouse/audits.json`; register a new audit doc there) |
 | Read-only views of all of the above | `generated/` (never edit; `node scripts/clubhouse/registry.mjs sync` writes them) |
 | Templates | `templates/`, `CHECKLIST_TEMPLATE.md`, `CATALOG_TEMPLATE.md` |
 
@@ -161,4 +162,4 @@ needs a dated entry in its `CHANGELOG.md` (`clubhouse:check` fails without one),
 and a visible change gets before and after screenshots, named and filed by
 `npm run clubhouse:shots`, listed in the page's VERIFY.md `## Screenshots` table
 and attached to the PR description, never committed. The steps and the naming
-are in `.claude/rules/clubhouse.md`.
+are in `.claude/rules/clubhouse.md`. Each page's PAGE.md links its manifest, docs, code and audits in a generated "Related" block, and [`AUDITS.md`](AUDITS.md) indexes every audit and plan.

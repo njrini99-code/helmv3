@@ -18,15 +18,19 @@
  *       prints the full path (creates the directory); save the screenshot there
  *   clubhouse:shots -- record <file> --route /golf/dashboard/messages [--fixture ..] [--browser ..] [--note ..]
  *       appends the file's manifest entry
+ *   clubhouse:shots -- import <file> --page P007 --surface list --role coach --viewport 390 --state unread-mixed --phase before [--route ..]
+ *       moves a loose capture into the store under its label and records it
  *   clubhouse:shots -- check     every file name and directory against the convention and the page manifests
- *                                (a no-op success when there is no store, as in CI)
+ *                                (a no-op success when there is no store, as in CI); warns, never fails, about
+ *                                Clubhouse captures left in the scratch dirs (SCRATCH_DIRS) instead of the store
  *   clubhouse:shots -- index     writes INDEX.md in the store, grouped by page
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { loadManifests } from './changelog-gate.mjs';
 
 export const STORE = '.helm/screenshots/clubhouse';
 export const ROLES = ['coach', 'player', 'none'];
@@ -151,6 +155,19 @@ export function checkScreenshotLog(md, at, pageId) {
   return v;
 }
 
+/** Scratch directories where captures pile up; a Clubhouse capture left there is unlabeled and unlogged. */
+export const SCRATCH_DIRS = ['.dev-screenshots', 'e2e-screenshots', 'test-results', '.playwright-mcp', '.helm/runtime'];
+const IMAGE = /\.(png|jpe?g|webp)$/i;
+
+/** Whether a scratch image's path says it is a Clubhouse capture (clubhouse, ui-audit, ch-, a page id or a page slug). */
+export function looksClubhouse(path, pages) {
+  if (/clubhouse|ui-audit|(^|[/_.-])ch[-_]|(^|[^A-Za-z0-9])P\d{3}([^0-9]|$)/i.test(path)) return true;
+  return [...pages.values()].filter((slug) => slug.length > 3).some((slug) => new RegExp(`(^|[^a-z0-9])${slug}([^a-z0-9]|$)`, 'i').test(path));
+}
+
+/** The scratch images (repo-relative) that look like Clubhouse captures and so belong in the store. */
+export const looseCaptures = (images, pages) => images.filter((f) => IMAGE.test(f) && looksClubhouse(f, pages));
+
 // ── CLI ──
 
 const rootDir = () => resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -187,7 +204,8 @@ function scanStore(dir) {
   return { files, manifests };
 }
 
-function cmdName(opts, root) {
+/** The store path for a screenshot with these options (creates its directory). `date` is the default capture date. */
+function planTarget(opts, root, date) {
   const pages = loadPages(root);
   if (!pages.has(opts.page)) fail(`page "${opts.page}" is not in config/clubhouse/pages (${[...pages.keys()].join(', ')})`);
   let sha7 = opts.sha;
@@ -198,17 +216,40 @@ function cmdName(opts, root) {
       fail('cannot read the git HEAD; pass --sha <7 hex>');
     }
   }
-  const date = opts.date ?? today();
-  if (!validDate(date)) fail(`--date "${date}" is not YYYY-MM-DD`);
+  const day = opts.date ?? date;
+  if (!validDate(day)) fail(`--date "${day}" is not YYYY-MM-DD`);
   let name;
   try {
     name = buildName({ page: opts.page, surface: opts.surface, role: opts.role, viewport: opts.viewport, state: opts.state, phase: opts.phase, sha7 });
   } catch (e) {
     fail(e.message);
   }
-  const dir = join(storeDir(root), pageDir(pages, opts.page), date);
+  const dir = join(storeDir(root), pageDir(pages, opts.page), day);
   mkdirSync(dir, { recursive: true });
-  console.log(join(dir, name));
+  return join(dir, name);
+}
+
+const cmdName = (opts, root) => console.log(planTarget(opts, root, today()));
+
+function cmdImport(file, opts, root) {
+  if (!file) fail('import needs the loose capture file');
+  const src = resolve(file);
+  if (!existsSync(src)) fail(`${file} does not exist`);
+  if (!/\.png$/i.test(src)) fail(`${basename(src)} is not a PNG; the convention is .png, so capture it again as PNG`);
+  const routes = loadManifests(root).find((m) => m.id === opts.page)?.routes ?? [];
+  const route = opts.route ?? (routes.length === 1 ? routes[0] : undefined);
+  if (!route) fail(`${opts.page} has ${routes.length} routes; pass --route`);
+  const mtime = statSync(src).mtime;
+  const dest = planTarget(opts, root, `${mtime.getFullYear()}-${String(mtime.getMonth() + 1).padStart(2, '0')}-${String(mtime.getDate()).padStart(2, '0')}`);
+  if (existsSync(dest)) fail(`${dest} already exists; not overwriting`);
+  try {
+    renameSync(src, dest);
+  } catch {
+    copyFileSync(src, dest);
+    unlinkSync(src);
+  }
+  cmdRecord(dest, { ...opts, route }, root);
+  console.log(`imported ${basename(src)} -> ${dest}`);
 }
 
 function cmdRecord(file, opts, root) {
@@ -256,21 +297,39 @@ function cmdRecord(file, opts, root) {
   console.log(`recorded ${entry.file}`);
 }
 
+function scanScratch(root, pages) {
+  const images = [];
+  const walk = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      if (e.name === 'node_modules') continue;
+      if (e.isDirectory()) walk(join(d, e.name));
+      else images.push(relative(root, join(d, e.name)).split(sep).join('/'));
+    }
+  };
+  for (const d of SCRATCH_DIRS.filter((x) => existsSync(join(root, x)))) walk(join(root, d));
+  return looseCaptures(images, pages);
+}
+
 function cmdCheck(root) {
+  const pages = loadPages(root);
+  const loose = scanScratch(root, pages);
+  if (loose.length) {
+    console.warn(`  warning: ${loose.length} Clubhouse capture(s) sit in scratch dirs, not the store (first: ${loose.slice(0, 5).join(', ')}${loose.length > 5 ? ', ...' : ''}); label each with clubhouse:shots -- import <file> --page P### ...`);
+  }
   const dir = storeDir(root);
   if (!existsSync(dir)) {
     console.log(`clubhouse:shots check: no screenshot store at ${dir.startsWith(root) ? relative(root, dir) : dir}; nothing to check.`);
     return;
   }
   const { files, manifests } = scanStore(dir);
-  const { violations, warnings } = checkStore({ files, pages: loadPages(root), manifests });
+  const { violations, warnings } = checkStore({ files, pages, manifests });
   for (const w of warnings) console.warn(`  warning: ${w}`);
   if (violations.length) {
     console.error(`clubhouse:shots check found ${violations.length} problem(s):`);
     for (const x of violations) console.error('  ' + x);
     process.exit(1);
   }
-  console.log(`clubhouse:shots check clean: ${files.filter((f) => f.endsWith('.png')).length} screenshot(s), ${warnings.length} warning(s).`);
+  console.log(`clubhouse:shots check clean: ${files.filter((f) => f.endsWith('.png')).length} screenshot(s), ${warnings.length + (loose.length ? 1 : 0)} warning(s).`);
 }
 
 function cmdIndex(root) {
@@ -305,9 +364,10 @@ function main() {
   const root = rootDir();
   if (cmd === 'name') cmdName(values, root);
   else if (cmd === 'record') cmdRecord(positionals[0], values, root);
+  else if (cmd === 'import') cmdImport(positionals[0], values, root);
   else if (cmd === 'check') cmdCheck(root);
   else if (cmd === 'index') cmdIndex(root);
-  else fail('usage: clubhouse:shots -- <name|record|check|index> (see the header of scripts/clubhouse/shots.mjs)');
+  else fail('usage: clubhouse:shots -- <name|record|import|check|index> (see the header of scripts/clubhouse/shots.mjs)');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

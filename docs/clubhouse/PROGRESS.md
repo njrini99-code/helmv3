@@ -4,6 +4,7 @@ The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
 (desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off). Rules:
 `.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement:
 `npm run clubhouse:check`, which also validates this file.
+Audits and plans, with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
