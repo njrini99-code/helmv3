@@ -39,7 +39,18 @@ const inSeason = (n: number) => add(START, 1 + n);
 /** n days before the season began. */
 const before = (n: number) => add(START, -n);
 
+// The nines follow the total unless a test sets them: the season read takes the total from the nines (C-15).
+const nines = (over: Record<string, unknown>) =>
+  typeof over.total_score === 'number' && !('front_nine' in over) && !('back_nine' in over)
+    ? { front_nine: Math.floor(over.total_score / 2), back_nine: over.total_score - Math.floor(over.total_score / 2) }
+    : {};
+/** An 18-hole row's total with nines that add up to it. */
+const rescore = (total: number) => ({ total_score: total, ...nines({ total_score: total }) });
 const rr = (id: string, player: string, date: string, over: Record<string, unknown> = {}): Row => ({
+  ...rrBase(id, player, date, over),
+  ...nines(over),
+});
+const rrBase = (id: string, player: string, date: string, over: Record<string, unknown>): Row => ({
   id,
   player_id: player,
   round_date: date,
@@ -291,7 +302,7 @@ describe('the profile under a filter', () => {
   });
 
   it('a coach sees the team figure under the same filter, from the teammates\' matching rounds', async () => {
-    tables.current = profileTables([...mixed(OWN), ...mixed('p2').map((r) => ({ ...r, total_score: r.round_type === 'tournament' ? 76 : 90 }))]);
+    tables.current = profileTables([...mixed(OWN), ...mixed('p2').map((r) => ({ ...r, ...rescore(r.round_type === 'tournament' ? 76 : 90) }))]);
     const p = (await profileLoad(withTypes(filterFor('last10'), ['tournament'])))!;
     // Jonah's ten tournaments at 70 and Sofia's ten at 76 (and nobody's practice rounds).
     expect(p.teamAvg).toBe(73);
@@ -542,7 +553,7 @@ describe('nine- and eighteen-hole rounds', () => {
   });
 
   it('a coach\'s team figure under Both weighs the teammates\' nine-hole rounds the same way', async () => {
-    profileOf([...mixedLengths(OWN), ...mixedLengths('p2').map((r) => ({ ...r, total_score: r.holes_played === 9 ? 40 : 76 }))]);
+    profileOf([...mixedLengths(OWN), ...mixedLengths('p2').map((r) => ({ ...r, ...(r.holes_played === 9 ? { total_score: 40, front_nine: 40 } : rescore(76)) }))]);
     const p = (await profileLoad(holes('all')))!;
     expect(p.teamAvg).toBeCloseTo((4 * 72 + 3 * 38 + 4 * 76 + 3 * 40) / 11, 10);
     const nines = (await profileLoad(holes('9')))!;

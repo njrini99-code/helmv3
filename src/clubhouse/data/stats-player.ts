@@ -152,6 +152,8 @@ export interface ChPlayerProfile {
   comparisons: ChComparison[];
   stats: GolfStats | null;
   statsError: boolean;
+  /** The round cache didn't load: fairways, greens, putts, scrambling and the standing's cache rows are missing, not empty (C-24f, CH-5213). */
+  cacheError: boolean;
   /** The Tour's averages by metric id (the team's own tour). */
   bench: Record<string, number>;
   focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null }>;
@@ -159,6 +161,17 @@ export interface ChPlayerProfile {
   devError: boolean;
   nav: { index: number; total: number; prev: string; next: string } | null;
   roundsError: boolean;
+}
+
+/**
+ * getDetailedStats' round-level fallback (stats-data `buildFallbackDetailedStats`, after a failed or timed-out shot read):
+ * it counts the rounds but scores no hole, so every hole-level figure (birdies, pars, scrambling, putting by distance,
+ * proximity) reads zero. The window's rounds are countable, so each has its holes scored, and a real answer always counts
+ * some. Exported for the tests.
+ */
+export function isRoundLevelFallback(stats: GolfStats | null | undefined, windowRounds: number): boolean {
+  if (!stats || windowRounds === 0 || !(stats.roundsPlayed > 0)) return false;
+  return stats.totalEagles + stats.totalBirdies + stats.totalPars + stats.totalBogeys + stats.totalDoublePlus === 0;
 }
 
 export async function loadPlayerProfile(input: {
@@ -283,9 +296,12 @@ export async function loadPlayerProfile(input: {
   });
 
   // getDetailedStats answers a failed read with zeroed stats. Rounds in the
-  // window with no rounds in the detail means the detail read failed.
-  const detailFailed = detail.error || (winRounds.length > 0 && (detail.stats?.roundsPlayed ?? 0) === 0);
-  if (detailFailed && !detail.error) chLogServer('stats', 'detailedStatsEmpty', `no detail for ${winRounds.length} rounds`, 'stats_analytics');
+  // window with no rounds in the detail means the detail read failed; so does its
+  // round-level fallback (C-14: a timed-out shot read), which counts the rounds but
+  // scores no hole, though every countable round in the window has its holes.
+  const detailFallback = isRoundLevelFallback(detail.stats, winRounds.length);
+  const detailFailed = detail.error || (winRounds.length > 0 && (detail.stats?.roundsPlayed ?? 0) === 0) || detailFallback;
+  if (detailFailed && !detail.error) chLogServer('stats', detailFallback ? 'detailedStatsFallback' : 'detailedStatsEmpty', `no detail for ${winRounds.length} rounds`, 'stats_analytics');
   // The calculator's per-round counts and scoring average are not per 18 when a nine-hole round is in the window: restated (stats-weight).
   const s = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
 
@@ -450,6 +466,7 @@ export async function loadPlayerProfile(input: {
     comparisons,
     stats: s,
     statsError: detailFailed,
+    cacheError: cache.error,
     bench: Object.fromEntries(bench),
     focusAreas: (focusRes.data ?? []).map((f) => ({
       id: f.id,

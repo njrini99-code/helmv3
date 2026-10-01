@@ -389,7 +389,16 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
   );
 }
 
-export function FairwayStrip({ left, fw, right }: { left: number; fw: number; right: number }) {
+/**
+ * Where drives finish, every zone a share of the same tee shots (the fairway opportunities, par 4s and 5s with a known result):
+ * left, fairway and right from their counts, and the misses with no side logged as "Other", so the zones add up to the whole.
+ */
+export function FairwayStrip({ opportunities, hit, left: leftN, right: rightN }: { opportunities: number; hit: number; left: number; right: number }) {
+  const share = (n: number) => (n / opportunities) * 100;
+  const fw = share(hit);
+  const left = share(leftN);
+  const right = share(rightN);
+  const other = share(Math.max(0, opportunities - hit - leftN - rightN));
   const bias = left - right;
   return (
     <div className="ch-fws">
@@ -406,6 +415,12 @@ export function FairwayStrip({ left, fw, right }: { left: number; fw: number; ri
           <b className="ch-num">{Math.round(right)}%</b>
           <em>Right</em>
         </span>
+        {other > 0 && (
+          <span className="ch-fws__z is-rough" style={{ flex: Math.max(other, 1) }}>
+            <b className="ch-num">{Math.round(other)}%</b>
+            <em>Other</em>
+          </span>
+        )}
       </div>
       <div className="ch-fws__cap">
         <span>Miss bias</span>

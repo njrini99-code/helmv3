@@ -250,7 +250,24 @@ export function Today({ list, now, failed, quiet, canPlan = true }: { list: ChHo
   );
 }
 
-/** The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42). */
+const SHORT_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`));
+
+/** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
+export function formBasis(b: ChTeamForm['basis']): string {
+  const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
+  return `${b.rounds} ${b.rounds === 1 ? 'round' : 'rounds'} · ${span}`;
+}
+
+/** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
+function partOf(n: number, of: number): string {
+  return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
+}
+
+/**
+ * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
+ * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
+ */
 function Form({ form }: { form: ChTeamForm }) {
   const W = 320;
   const H = 64;
@@ -269,12 +286,11 @@ function Form({ form }: { form: ChTeamForm }) {
           <em id="ch-hm-form">Team scoring average</em>
           <b className="ch-num">{formatFixed(form.avg)}</b>
         </span>
-        {form.delta != null && (
-          <span className={'ch-hm-delta ch-num ' + tone(form.delta, true)}>
-            {formatSigned(form.delta)}
-            <em>vs previous 10</em>
-          </span>
-        )}
+        <span className={'ch-hm-delta ch-num ' + tone(form.delta, true)}>
+          {form.delta != null && formatSigned(form.delta)}
+          {form.delta != null && <em>vs previous 10</em>}
+          <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
+        </span>
       </div>
       {pts.length > 1 && (
         <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, a five-round average, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
@@ -292,12 +308,12 @@ function Form({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.gir.delta, false)}>{form.gir.delta != null ? formatSigned(form.gir.delta, 0) : ' '}</dd>
+          <dd className={'ch-num ' + tone(form.gir.delta, false)}>{form.gir.delta != null ? formatSigned(form.gir.delta, 0) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.putts.delta, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : ' '}</dd>
+          <dd className={'ch-num ' + tone(form.putts.delta, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>

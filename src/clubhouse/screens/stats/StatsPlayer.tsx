@@ -39,7 +39,7 @@ import { RoundsExtra } from './RoundsExtra';
 import { ProposalAnswer } from './ProposalAnswer';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { changeWords, WindowSwitch } from './WindowSwitch';
-import { countWords, shotsWords } from './notes';
+import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
@@ -272,6 +272,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 
         {tab === 'overview' && !emptyFilter && (
           <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
+            {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
             <Overview data={data} coach={coach} />
           </SectionBoundary>
         )}

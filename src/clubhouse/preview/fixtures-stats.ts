@@ -561,6 +561,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
   ],
   stats: jonahStats(),
   statsError: false,
+  cacheError: false,
   // The Tour's averages (golf_pga_standards, tour = pga).
   bench: {
     gir_pct: 66,

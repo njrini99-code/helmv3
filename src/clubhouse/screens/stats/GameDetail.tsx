@@ -313,7 +313,11 @@ export function GameDetail({
         }
       >
         <Panel title="Where drives finish" note="Share of tee shots on par 4s and 5s.">
-          {fw != null && left != null && right != null ? <FairwayStrip left={left} fw={fw} right={right} /> : <p className="ch-gm-p__empty">No drive results logged.</p>}
+          {s.fairwayOpportunities > 0 ? (
+            <FairwayStrip opportunities={s.fairwayOpportunities} hit={s.fairwaysHit} left={s.missLeftCount} right={s.missRightCount} />
+          ) : (
+            <p className="ch-gm-p__empty">No drive results logged.</p>
+          )}
         </Panel>
         <Panel title="Distance by club">
           <Compare

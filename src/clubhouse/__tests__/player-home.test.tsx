@@ -59,7 +59,8 @@ function round(i: number, over: Partial<ChRound> = {}): ChRound {
     round_type: 'practice',
     total_score: 72 - (i % 3),
     score_to_par: -(i % 3),
-    front_nine: 36,
+    // The nines add up to the total: the season read takes the total from them (C-15).
+    front_nine: 36 - (i % 3),
     back_nine: 36,
     holes_played: 18,
     total_putts: 30,

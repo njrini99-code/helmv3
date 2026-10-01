@@ -3390,6 +3390,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50618,
+    "page": "P005",
+    "category": 6,
+    "item": 18,
+    "name": "THE_ROUND_CACHE_DOESNT_LOAD",
+    "chCode": "CH-5213",
+    "meaning": "The round cache doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50701,
     "page": "P005",
     "category": 7,
@@ -4317,6 +4328,17 @@
     "name": "THE_TEAMS_TIMEZONE_DOESNT_LOAD",
     "chCode": "CH-6212",
     "meaning": "The team's timezone doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60625,
+    "page": "P006",
+    "category": 6,
+    "item": 25,
+    "name": "THE_ROSTER_DOESNT_LOAD",
+    "chCode": "CH-6213",
+    "meaning": "The roster doesn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },

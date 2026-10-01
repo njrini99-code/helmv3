@@ -166,3 +166,13 @@ describe('the calculator\'s per-round counts', () => {
     expect(perEighteen(none, [r('a', 9, 38)])).toBe(none);
   });
 });
+
+// Swap audit C-24(e): Roster's "No rounds in N days" read the newest 18-hole round, so a player who played nine holes yesterday read quiet.
+describe('the season summary’s last round (C-24)', () => {
+  it('C-24 is the newest countable round of either length, whatever the order given', () => {
+    const s = summarizePlayer([r('a', 18, 72, { round_date: '2026-09-01' }), r('b', 9, 37, { round_date: '2026-09-20' }), r('c', 18, 73, { round_date: '2026-09-10' })]);
+    expect(s.lastRoundDate).toBe('2026-09-20');
+    expect(s.rounds).toBe(2);
+    expect(summarizePlayer([]).lastRoundDate).toBeNull();
+  });
+});

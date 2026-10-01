@@ -24,7 +24,7 @@ import { SgBars, SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
-import { countWords, shotsWords } from './notes';
+import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
@@ -152,6 +152,7 @@ export function StatsPlayerPhone({
       {!emptyFilter && (
         <>
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
+        {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={onRetry} />}
         <Figures data={data} />
       </SectionBoundary>
 

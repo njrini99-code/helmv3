@@ -37,6 +37,7 @@ const emptySpray = () => ({ driving: emptyGroup('driving'), approach: emptyGroup
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { ChPlayerProfile } from '../data/stats-player';
 import { loadPlayerProfile } from '../data/stats-player';
+import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
 import { loadTeamStats } from '../data/stats-team';
 import { resolveClubhouseTeam } from '../routes/team';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
@@ -472,6 +473,11 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(code('CH-5301')).toBeNull();
   });
 
+  it('C-24 CH-5213 the round cache does not load: the phone says so above the figures', () => {
+    phone(player({ cacheError: true }));
+    expect(code('CH-5213')!.textContent).toMatch(/fairways, greens, putts and scrambling are missing/);
+  });
+
   it('CH-5302 no rounds in the window', () => {
     phone(player({ rounds: [] }));
     expect(code('CH-5302')).not.toBeNull();
@@ -695,6 +701,34 @@ describe('Stats player · the loader', () => {
     expect(detailed).not.toHaveBeenCalled();
     expect(none!.stats).toBeNull();
     expect(none!.statsError).toBe(false);
+  });
+
+  // Swap audit C-24(f): a round-cache read that failed left fairways, greens, putts and scrambling as dashes, read as no data.
+  it('C-24 CH-5213 the round cache does not load: the profile says so above the figures', async () => {
+    tables.current = profileTables({ golf_round_stats_cache: { error: { message: 'boom' } } });
+    const profile = (await loadAs())!;
+    expect(profile.cacheError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('stats', 'roundCache', expect.anything());
+    show(player({ cacheError: true }));
+    await expectCode('CH-5213', /Some round figures didn't load/);
+    cleanup();
+    tables.current = profileTables();
+    expect((await loadAs())!.cacheError).toBe(false);
+  });
+
+  // Swap audit C-14: a timed-out shot read comes back as getDetailedStats' round-level fallback, which counts the rounds but
+  // scores no hole. Game detail showed its zero birdies, pars and scrambling as the player's figures.
+  it('C-14 the detail’s round-level fallback (rounds counted, no hole scored) shows as "didn\'t load", never as zeros', async () => {
+    const fallback = calculateStatsFromShots([], [], []);
+    detailed.mockResolvedValue({ ...fallback, roundsPlayed: 1, holesPlayed: 18, scoringAverage: 72 });
+    const profile = await loadAs();
+    expect(profile!.statsError).toBe(true);
+    expect(profile!.stats).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('stats', 'detailedStatsFallback', expect.any(String), 'stats_analytics');
+    // A real answer scores its holes, and stands.
+    const { isRoundLevelFallback } = await vi.importActual<typeof import('../data/stats-player')>('../data/stats-player');
+    expect(isRoundLevelFallback({ ...fallback, roundsPlayed: 1, totalPars: 14, totalBogeys: 4 }, 1)).toBe(false);
+    expect(isRoundLevelFallback({ ...fallback, roundsPlayed: 1 }, 0)).toBe(false);
   });
 
   it('every shot-level figure counts the window’s own 18-hole rounds: the same ids go to the detail, the putts, the holes, the approaches and where shots finish; nine-hole rounds and other windows stay out', async () => {

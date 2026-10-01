@@ -31,6 +31,7 @@ import type { ChRound } from '../data/season';
 import { loadPlayerProfile, type ChPlayerProfile } from '../data/stats-player';
 import { openingDelta, perRoundSeries, personalBests, pressureGap, toughestHoles, windowCompare, type ChHoleRow } from '../data/stats-figures';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
+import { FairwayStrip } from '../screens/stats/charts';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
@@ -197,6 +198,21 @@ describe('this window against the one before', () => {
   });
 });
 
+// Swap audit C-16: the strip set the fairway share of all tee shots beside left and right as shares of the misses only
+// (63% fairway with 20% left and 17% right of something else). Every zone is now a share of the same tee shots.
+describe('where drives finish (C-16)', () => {
+  it('C-16 left, fairway, right and the misses with no side, each of the same tee shots, adding up to the whole', () => {
+    // 20 tee shots: 10 fairways, 6 left, 2 right, 2 missed with no side logged.
+    render(<FairwayStrip opportunities={20} hit={10} left={6} right={2} />);
+    const zones = [...document.querySelectorAll('.ch-fws__z')].map((z) => z.textContent);
+    expect(zones).toEqual(['30%Left', '50%Fairway', '10%Right', '10%Other']);
+    expect(document.querySelector('.ch-fws__cap')!.textContent).toBe('Miss biasLeft by 20 pts');
+    cleanup();
+    render(<FairwayStrip opportunities={4} hit={2} left={1} right={1} />);
+    expect([...document.querySelectorAll('.ch-fws__z')].map((z) => z.textContent)).toEqual(['25%Left', '50%Fairway', '25%Right']);
+  });
+});
+
 describe('the pressure gap', () => {
   const mk = (type: string, n: number, toPar: number, from: number) => Array.from({ length: n }, (_, i) => round(`${type}${from + i}`, `2026-09-${String(10 + from + i).padStart(2, '0')}`, { round_type: type, score_to_par: toPar }));
   it('tournament and qualifier rounds against practice, in strokes to par; a legacy "qualifying" counts as a qualifier, an unknown type as practice', () => {
@@ -334,7 +350,8 @@ describe('the profile’s extra figures', () => {
   });
 
   it('the bests, the series and the comparison come from the window’s own rounds: this window against the 10 before it, and none for the season', async () => {
-    const older = Array.from({ length: 4 }, (_, i) => rRow(`o${i}`, 10 + i, { total_score: 80 }));
+    // An 80 on its holes too: the season read takes the total from the nines (C-15).
+    const older = Array.from({ length: 4 }, (_, i) => rRow(`o${i}`, 10 + i, { total_score: 80, front_nine: 40, back_nine: 40 }));
     tables.current = loaderTables([...ten, ...older]);
     const p = (await load())!;
     expect(p.extra.bests.score!.value).toBe(74);

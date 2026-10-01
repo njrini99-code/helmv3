@@ -3,6 +3,7 @@ import type { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { chLogServer } from '../lib/track-server';
 
 /**
@@ -80,7 +81,8 @@ export async function loadSeasonRounds(
     }
     rounds.push(...(res.data ?? []));
   }
-  const countable = rounds.filter((r) => isCountableRound(r));
+  // C-15: the total and to-par from the holes (front + back nine), never a stale total_score column (round-total.ts).
+  const countable = rounds.filter((r) => r.total_score != null && isCountableRound(r)).map(withCanonicalRoundTotal);
   countable.sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id.localeCompare(b.id)));
   return { rounds: countable, error: false };
 }
@@ -152,7 +154,8 @@ export function summarizePlayer(all: ChRound[]): ChPlayerSeason {
     },
     status: formStatus(trend),
     recent: list.slice(0, 10),
-    lastRoundDate: list[0]?.round_date ?? all[0]?.round_date ?? null,
+    // C-24(e): the newest countable round of either length (a nine-hole round yesterday is a round yesterday), whatever the order given.
+    lastRoundDate: all.reduce<string | null>((a, r) => (a == null || r.round_date > a ? r.round_date : a), null),
   };
 }
 

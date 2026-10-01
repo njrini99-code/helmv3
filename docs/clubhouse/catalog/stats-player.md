@@ -40,6 +40,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5210 | The approach-shot read fails | Approach › Proximity against the Tour reads "Proximity against the Tour didn't load." + Try again; the table's three proximity rows are dashes. The rest of Game detail stays | `loadApproachShots`; logged `clubhouse.stats.approachShots` | stats-parity.test › CH-5210 |
 | CH-5211 | The putt read fails | Putting › Make rate by distance: "Putts past 20 feet didn't load." + Try again; the curve stops at 20 feet, where the shot stats end | `loadPutts`; logged `clubhouse.stats.putts` | strokes-gained.test › CH-5211 |
 | CH-5212 | The spray read throws | Off the tee and Approach › Where shots finish: "Where shots finish didn't load." + Try again. (Production's own action answers a failed read with an empty response, so that failure reads as CH-5315, not this) | `loadSpray`; logged `clubhouse.stats.spray` | stats-parity.test › CH-5212 |
+| CH-5213 | The round cache doesn't load | "Some round figures didn't load." + Try again above the overview figures | `loadRoundCache`; logged `clubhouse.stats.roundCache` | stats-player.test › CH-5213 |
 
 ## 53xx Empty
 

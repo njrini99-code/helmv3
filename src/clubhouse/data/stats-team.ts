@@ -146,7 +146,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   };
   const birdiesOf = (r: ChRound): number | null => {
     const c = cache.byRound.get(r.id);
-    return c ? (c.birdies ?? 0) + (c.eagles ?? 0) : null;
+    return c && c.birdies != null ? c.birdies + (c.eagles ?? 0) : null;
   };
   const scoring = weightedMean(windowRounds, (r) => r.total_score);
   const prevScoring = hasPrev ? weightedMean(prevRounds, (r) => r.total_score) : null;

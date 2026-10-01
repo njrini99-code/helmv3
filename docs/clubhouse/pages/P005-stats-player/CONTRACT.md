@@ -108,6 +108,7 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50615 | CH-5210 | `THE_APPROACH_SHOT_READ_FAILS` | The approach-shot read fails |
 | 50616 | CH-5211 | `THE_PUTT_READ_FAILS` | The putt read fails |
 | 50617 | CH-5212 | `THE_SPRAY_READ_THROWS` | The spray read throws |
+| 50618 | CH-5213 | `THE_ROUND_CACHE_DOESNT_LOAD` | The round cache doesn't load |
 
 ## 07 — Network / offline
 

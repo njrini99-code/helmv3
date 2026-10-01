@@ -706,3 +706,75 @@ describe('Stats team · tests', () => {
     expect(ids.filter((id) => !titles.includes(id))).toEqual([]);
   });
 });
+
+// Swap audit §10: the team figures worked by hand from two players' rounds.
+describe('Stats team · the figures by hand (swap audit §10)', () => {
+  const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+  const round = (id: string, player: string, n: number, score: number, sg: number) => ({
+    id,
+    player_id: player,
+    round_date: day(n),
+    total_score: score,
+    score_to_par: score - 72,
+    front_nine: Math.floor(score / 2),
+    back_nine: Math.ceil(score / 2),
+    holes_played: 18,
+    status: 'completed',
+    round_type: 'practice',
+    course_name: 'Home',
+    strokes_gained_total: sg,
+  });
+  it('scoring, greens, putts, scrambling, birdies and strokes gained over both players’ rounds', async () => {
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: { data: [round('r1', 'p1', 1, 72, 1.0), round('r2', 'p1', 2, 76, -2.0), round('r3', 'p2', 3, 70, 2.5)] },
+      golf_round_stats_cache: {
+        data: [
+          { round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 },
+          { round_id: 'r2', greens_hit: 9, greens_total: 18, total_putts: 34, scramble_attempts: 4, scrambles_converted: 1, birdies: 0, eagles: 0 },
+          { round_id: 'r3', greens_hit: 15, greens_total: 18, total_putts: 28, scramble_attempts: 2, scrambles_converted: 2, birdies: 3, eagles: 1 },
+        ],
+      },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const fig = (label: string) => data.figures.find((f) => f.label === label)!.value;
+    expect(fig('Scoring average')).toBeCloseTo((72 + 76 + 70) / 3, 10);
+    // Greens and scrambling pool the holes and chances (36 of 54, 6 of 12), never a mean of percentages (66.7 and 63.9).
+    expect(fig('Greens in regulation')).toBeCloseTo((36 / 54) * 100, 10);
+    expect(fig('Scrambling')).toBe(50);
+    expect(fig('Putts per round')).toBeCloseTo((30 + 34 + 28) / 3, 10);
+    // Birdies and eagles together.
+    expect(fig('Birdies per round')).toBeCloseTo((2 + 0 + 4) / 3, 10);
+    expect(fig('Team SG per round')).toBeCloseTo((1.0 - 2.0 + 2.5) / 3, 10);
+  });
+
+  // Swap audit C-24(a): a cache row with no hole scored holds zero birdies; it is no figure, not a round without a birdie.
+  it('C-24 a round whose cache scored no hole is left out of birdies and scrambling, not counted as zero', async () => {
+    const zero = { greens_hit: 10, greens_total: 18, total_putts: 31, scramble_attempts: 0, scrambles_converted: 0, birdies: 0, eagles: 0, pars: 0, bogeys: 0, double_bogeys: 0, triple_plus: 0 };
+    tables.current = {
+      ...seasonTables(),
+      golf_rounds: { data: [round('r1', 'p1', 1, 72, 0), round('r2', 'p1', 2, 74, 0)] },
+      golf_round_stats_cache: {
+        data: [
+          { round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0, pars: 12, bogeys: 4, double_bogeys: 0, triple_plus: 0 },
+          { round_id: 'r2', ...zero },
+        ],
+      },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const fig = (label: string) => data.figures.find((f) => f.label === label)!.value;
+    expect(fig('Birdies per round')).toBe(2);
+    // Its round-level totals still count: greens 22 of 36, putts (30 + 31) / 2.
+    expect(fig('Greens in regulation')).toBeCloseTo((22 / 36) * 100, 10);
+    expect(fig('Putts per round')).toBe(30.5);
+  });
+
+  // Swap audit C-15: total_score is written once at submission and can drift from the holes (round-total.ts); the season read
+  // takes the total and to-par from the nines, once, for every screen after it.
+  it('C-15 a round whose stored total drifted from its holes counts at the holes’ total', async () => {
+    tables.current = { ...seasonTables(), golf_rounds: { data: [{ ...round('r1', 'p1', 1, 72, 0), total_score: 73, score_to_par: 1 }] } };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    expect(data.figures.find((f) => f.label === 'Scoring average')!.value).toBe(72);
+  });
+});

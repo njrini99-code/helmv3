@@ -119,6 +119,7 @@ Every change has its own toast naming what failed and what to do (60601 to 60612
 | 60622 | CH-6210 | `THE_CALENDAR_VIEW_CRASHES` | The calendar view crashes |
 | 60623 | CH-6211 | `THE_DETAIL_PANEL_CRASHES` | The detail panel crashes |
 | 60624 | CH-6212 | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | The team's timezone doesn't load |
+| 60625 | CH-6213 | `THE_ROSTER_DOESNT_LOAD` | The roster doesn't load |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002.
 

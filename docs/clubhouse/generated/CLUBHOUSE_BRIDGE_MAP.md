@@ -98,8 +98,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
-| P005 | 4 | 2 | 2 | 22 | 2 | 17 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 24 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
+| P005 | 4 | 2 | 2 | 22 | 2 | 18 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
+| P006 | 4 | 5 | 3 | 9 | 4 | 25 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 123 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
@@ -429,6 +429,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50615 | CH-5210 | 06 Server / system error | `THE_APPROACH_SHOT_READ_FAILS` | implemented | The approach-shot read fails |
 | 50616 | CH-5211 | 06 Server / system error | `THE_PUTT_READ_FAILS` | implemented | The putt read fails |
 | 50617 | CH-5212 | 06 Server / system error | `THE_SPRAY_READ_THROWS` | implemented | The spray read throws |
+| 50618 | CH-5213 | 06 Server / system error | `THE_ROUND_CACHE_DOESNT_LOAD` | implemented | The round cache doesn't load |
 | 50701 | CH-5901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
 | 50702 | CH-5902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 50801 | CH-5306 | 08 Permission / authorization | `A_COACH_OPENS_A_PLAYER_WHO_ISNT` | implemented | A coach opens a player who isn't on their team |
@@ -515,6 +516,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60622 | CH-6210 | 06 Server / system error | `THE_CALENDAR_VIEW_CRASHES` | implemented | The calendar view crashes |
 | 60623 | CH-6211 | 06 Server / system error | `THE_DETAIL_PANEL_CRASHES` | implemented | The detail panel crashes |
 | 60624 | CH-6212 | 06 Server / system error | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | implemented | The team's timezone doesn't load |
+| 60625 | CH-6213 | 06 Server / system error | `THE_ROSTER_DOESNT_LOAD` | implemented | The roster doesn't load |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |

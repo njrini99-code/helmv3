@@ -115,6 +115,24 @@ export interface ChRoundCache {
   penalty_strokes: number | null;
   double_bogeys: number | null;
   triple_plus: number | null;
+  pars?: number | null;
+  bogeys?: number | null;
+}
+
+const HOLE_COUNTS = ['eagles', 'birdies', 'pars', 'bogeys', 'double_bogeys', 'triple_plus'] as const;
+const HOLE_LEVEL = ['birdies', 'eagles', 'scramble_attempts', 'scrambles_converted', 'sand_attempts', 'sand_saves', 'three_putts', 'double_bogeys', 'triple_plus'] as const;
+
+/**
+ * C-24(a): a cache row for a round with no hole scored (its totals only) holds zeros for every hole-level count, which an
+ * average would read as "no birdies, no three-putts". When every score count is known and they add up to no hole, the
+ * hole-level counts are unknown (null), not zero. Round-level totals (greens, fairways, putts) stay. Exported for the tests.
+ */
+export function withoutEmptyHoleCounts(row: ChRoundCache): ChRoundCache {
+  const counts = HOLE_COUNTS.map((k) => row[k]);
+  if (!counts.every((v) => typeof v === 'number') || counts.reduce<number>((a, v) => a + (v as number), 0) > 0) return row;
+  const out = { ...row };
+  for (const k of HOLE_LEVEL) out[k] = null;
+  return out;
 }
 
 /** Per-round cached aggregates (GIR, fairways, scrambling, birdies...) keyed by round id. */
@@ -130,7 +148,7 @@ export async function loadRoundCache(
       supabase
         .from('golf_round_stats_cache')
         .select(
-          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, penalty_strokes, double_bogeys, triple_plus',
+          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, penalty_strokes, double_bogeys, triple_plus, pars, bogeys',
         )
         .in('round_id', ids),
     ),
@@ -140,7 +158,7 @@ export async function loadRoundCache(
       chLogServer(surface, 'roundCache', error);
       return { byRound, error: true };
     }
-    for (const row of data ?? []) byRound.set(row.round_id, row);
+    for (const row of data ?? []) byRound.set(row.round_id, withoutEmptyHoleCounts(row));
   }
   return { byRound, error: false };
 }
