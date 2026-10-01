@@ -43,6 +43,8 @@ export default async function RoundsPage() {
   // Clubhouse Rounds (golf_clubhouse_ui): the player's library. Coaches keep
   // this page; v2 has no coach Rounds library.
   if (userRole === 'player' && player && (await isClubhouseFor('player'))) return <ClubhouseRoundsRoute />;
+  // A coach's rounds are read through Team stats in Clubhouse (v2 has no coach library; owner, 2026-10-01: alias).
+  if (userRole === 'coach' && coach && (await isClubhouseFor('coach'))) redirect('/golf/dashboard/stats/team');
 
   const supabase = await createClient();
 
