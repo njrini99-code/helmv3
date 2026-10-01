@@ -1,7 +1,7 @@
 'use client';
 
 import { UserPlus } from 'lucide-react';
-import type { ChQDetail } from '../../data/qualifiers';
+import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
@@ -9,6 +9,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { useRefresh } from '../../lib/use-refresh';
 import { plural, type ChQStatus } from './model';
 import { ToPar } from './parts';
+import { CoursesSkeleton, Streamed } from './streamed';
 
 /** The detail's side sections, shared by desktop (QualifierDetail) and the phone (QualifierDetailPhone). */
 
@@ -26,7 +27,7 @@ export function StaleStandings() {
   );
 }
 
-export function Selections({ data, status, topScore }: { data: ChQDetail; status: ChQStatus; topScore: number }) {
+export function Selections({ data, status, topScore }: { data: ChQDetailCore; status: ChQStatus; topScore: number }) {
   const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';
   const confirmed = data.selectionState === 'selected';
@@ -125,8 +126,11 @@ export function Selections({ data, status, topScore }: { data: ChQDetail; status
   );
 }
 
-export function Courses({ data }: { data: ChQDetail }) {
-  const { refresh, refreshing } = useRefresh();
+/**
+ * Course per round. It streams in behind the standings (the tees are read after them): the head and the rows' place are drawn at once,
+ * and the rows fill in when the courses land.
+ */
+export function Courses({ data }: { data: ChQDetailCore }) {
   return (
     <section className="ch-qf-side" aria-labelledby="ch-qf-courses">
       <div className="ch-qf-panel__head">
@@ -134,23 +138,29 @@ export function Courses({ data }: { data: ChQDetail }) {
           <h2 id="ch-qf-courses">Course per round</h2>
           <p className="ch-num">
             {plural(data.numRounds, 'round')}
-            {data.par != null ? ` · par ${data.par}` : ''}
+            <Streamed fallback={null}>{(s) => (s.par != null ? ` · par ${s.par}` : '')}</Streamed>
           </p>
         </div>
       </div>
-      {data.coursesError ? (
-        <InlineNotice code="CH-09206" title="The round courses didn’t load." body="The standings are right; which course each round is on is missing until it loads." onRetry={refresh} retrying={refreshing} />
-      ) : (
-        <ol className="ch-qf-list">
-          {data.roundCourses.map((c) => (
-            <li key={c.number}>
-              <span className="ch-qf-rn">{c.number}</span>
-              <b>{c.course ?? 'Course not set'}</b>
-              <span className="ch-qf-list__m">{[c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ')}</span>
-            </li>
-          ))}
-        </ol>
-      )}
+      <Streamed fallback={<CoursesSkeleton rounds={data.numRounds} />}>{(s) => <CourseRows s={s} />}</Streamed>
     </section>
+  );
+}
+
+function CourseRows({ s }: { s: ChQDetailSecondary }) {
+  const { refresh, refreshing } = useRefresh();
+  if (s.coursesError) {
+    return <InlineNotice code="CH-09206" title="The round courses didn’t load." body="The standings are right; which course each round is on is missing until it loads." onRetry={refresh} retrying={refreshing} />;
+  }
+  return (
+    <ol className="ch-qf-list">
+      {s.roundCourses.map((c) => (
+        <li key={c.number}>
+          <span className="ch-qf-rn">{c.number}</span>
+          <b>{c.course ?? 'Course not set'}</b>
+          <span className="ch-qf-list__m">{[c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ')}</span>
+        </li>
+      ))}
+    </ol>
   );
 }

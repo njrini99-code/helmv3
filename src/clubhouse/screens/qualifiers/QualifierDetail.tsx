@@ -1,9 +1,9 @@
 'use client';
 
 import { ChevronDown, ChevronLeft, ChevronUp, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ChQDetail } from '../../data/qualifiers';
+import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -25,6 +25,7 @@ import { StateBadge, StatusPill, ToPar } from './parts';
 import { useLiveStandings } from './live';
 import { Courses, Selections, StaleStandings } from './QualifierSections';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
+import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
 import { useChPhone } from '../../lib/use-phone';
 import { LIVE_WRITES, type ChQWrites } from './writes';
 import '../../styles/qualifiers.css';
@@ -36,11 +37,25 @@ const LIST = '/golf/dashboard/qualifiers';
  * the round-by-round table. Players read it: their row is marked, only their
  * own scorecards open, and they see the squad once it is confirmed (D-30).
  */
-export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true }: { data: ChQDetail; writes?: ChQWrites; live?: boolean }) {
+export function QualifierDetail({
+  data: fresh,
+  secondary,
+  writes = LIVE_WRITES,
+  live = true,
+}: {
+  data: ChQDetailView;
+  /** The courses and the scorecards, streaming in behind the standings. A fixture or a test may give them inside `data` instead. */
+  secondary?: PromiseLike<ChQDetailSecondary>;
+  writes?: ChQWrites;
+  live?: boolean;
+}) {
   const router = useRouter();
   // A live refresh whose rounds or entries read fails would replace good standings with an error: draw the last good ones of this
-  // qualifier instead and say they may be out of date (owner rule 2). A first load that fails is still the error.
-  const { value: data, stale } = useLastGood(fresh.id, fresh, (d) => d.board !== null);
+  // qualifier instead, with the courses and cards that came with them, and say they may be out of date (owner rule 2). A first load
+  // that fails is still the error.
+  const whole = useMemo(() => ({ data: fresh, source: settled(secondary ?? fulfilled(secondaryOf(fresh))) }), [fresh, secondary]);
+  const { value: shown, stale } = useLastGood(fresh.id, whole, (w) => w.data.board !== null);
+  const data = shown.data;
   const coach = data.role === 'coach';
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -119,7 +134,7 @@ export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true
 
   if (phone) {
     return (
-      <>
+      <SecondaryProvider value={shown.source}>
         <QualifierDetailPhone
           data={data}
           stale={stale}
@@ -132,11 +147,12 @@ export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true
           reopenPending={reopen.pending}
         />
         {closeConfirm}
-      </>
+      </SecondaryProvider>
     );
   }
 
   return (
+    <SecondaryProvider value={shown.source}>
     <main className="ch-qf ch-qf--detail">
       <div className="ch-qf-back">
         <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={LIST}>
@@ -210,7 +226,7 @@ export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true
           </SectionBoundary>
           {coach && b && b.rows.length > 0 && (
             <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
-              <RoundByRound board={b} numRounds={data.numRounds} roundCourses={data.roundCourses} />
+              <RoundByRound board={b} numRounds={data.numRounds} />
             </SectionBoundary>
           )}
         </div>
@@ -239,17 +255,24 @@ export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true
 
       {closeConfirm}
     </main>
+    </SecondaryProvider>
   );
 }
 
-function Facts({ data, topScore }: { data: ChQDetail; topScore: number }) {
-  const facts: Array<[string, string, string]> = [
+/** The Par line of the Course fact: the tee's par, or "Par by round" when the rounds differ; empty until it is known to be neither. */
+function parLine(s: ChQDetailSecondary): string {
+  return s.par != null ? `Par ${s.par}` : s.roundCourses.some((c) => c.par != null) ? 'Par by round' : '';
+}
+
+function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
+  const facts: Array<[string, string, ReactNode]> = [
     // A date never splits from its day; the range wraps at the dash (D-33: the fact wraps, never truncates).
     ['Dates', shortRange(data.startDate, data.endDate).replace(/ (?=\d)/g, '\u00a0'), `${yearOf(data.startDate)} · ${plural(data.numRounds, 'round')}`],
     ['Entry deadline', data.deadline ? dayLabel(data.deadline) : '—', data.deadline ? yearOf(data.deadline) : 'Not set'],
     ['Entrants', data.entriesError ? '—' : String(data.entrants), 'players'],
     ['Rounds submitted', data.board ? String(data.board.submitted) : '—', data.entriesError ? '' : `of ${data.entrants * data.numRounds}`],
-    ['Course', data.course ?? '—', data.par != null ? `Par ${data.par}` : data.roundCourses.some((c) => c.par != null) ? 'Par by round' : ''],
+    // The par comes from the tees, which stream in behind the page: the line holds its place until they do.
+    ['Course', data.course ?? '—', <Streamed key="par" fallback={<ParLineSkeleton />}>{(s) => parLine(s) || ' '}</Streamed>],
     ['Spots', String(data.squad), `${topScore} on score · ${plural(data.picks, 'pick')}`],
   ];
   return (
@@ -258,7 +281,7 @@ function Facts({ data, topScore }: { data: ChQDetail; topScore: number }) {
         <div key={k}>
           <dt>{k}</dt>
           <dd>{v}</dd>
-          <dd className="ch-qf-facts__sub">{s || ' '}</dd>
+          <dd className="ch-qf-facts__sub">{typeof s === 'string' ? s || ' ' : s}</dd>
         </div>
       ))}
     </dl>
@@ -267,7 +290,7 @@ function Facts({ data, topScore }: { data: ChQDetail; topScore: number }) {
 
 const LB_COLS = '44px minmax(0, 1fr) 56px 56px 60px 104px 28px';
 
-function Leaderboard({ data, status, stale }: { data: ChQDetail; status: ChQStatus; stale: boolean }) {
+function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQStatus; stale: boolean }) {
   const { refresh, refreshing } = useRefresh();
   const [open, setOpen] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
@@ -429,7 +452,7 @@ function Leaderboard({ data, status, stale }: { data: ChQDetail; status: ChQStat
                 {isOpen && (
                   <div role="row" id={`ch-qf-tray-${r.playerId}`}>
                     <div role="cell" className="ch-qf-tray">
-                      <Tray row={r} data={data} />
+                      <Tray row={r} />
                     </div>
                   </div>
                 )}
@@ -484,21 +507,55 @@ function CutLine({ text, muted = false }: { text: string; muted?: boolean }) {
   );
 }
 
-function Tray({ row, data }: { row: ChQRow; data: ChQDetail }) {
-  const { refresh, refreshing } = useRefresh();
+function Tray({ row }: { row: ChQRow }) {
   return (
     <>
       <p className="ch-qf-tray__avg">
         {row.avg != null ? `Average ${formatFixed(row.avg)} over ${plural(row.played - row.shortRounds, '18-hole round')}` : 'No 18-hole round to average yet'}
         {row.shortRounds > 0 && ` · ${plural(row.shortRounds, 'shorter round')} left out of the average`}
       </p>
-      {data.holesError && (
+      {/* The cards stream in behind the standings: until they do each round shows its own head over a card-sized placeholder. */}
+      <Streamed
+        fallback={row.rounds.map((rd, i) => (
+          <ScorecardShell key={rd.id} round={rd} code={i === 0 ? 'CH-09410' : undefined}>
+            <CardBodySkeleton />
+          </ScorecardShell>
+        ))}
+      >
+        {(s) => <TrayCards row={row} s={s} />}
+      </Streamed>
+    </>
+  );
+}
+
+function TrayCards({ row, s }: { row: ChQRow; s: ChQDetailSecondary }) {
+  const { refresh, refreshing } = useRefresh();
+  return (
+    <>
+      {s.holesError && (
         <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
       )}
       {row.rounds.map((rd) => (
-        <Scorecard key={rd.id} round={rd} holes={data.holesError ? undefined : (data.holes[rd.id] ?? [])} />
+        <Scorecard key={rd.id} round={rd} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />
       ))}
     </>
+  );
+}
+
+/** One round's card frame: its head (the round, the course and day, the total: all in the standings) over `children`. */
+function ScorecardShell({ round, code, children }: { round: ChQRound; code?: string; children: ReactNode }) {
+  const meta = [round.course, dayLabel(round.date)].filter(Boolean).join(' · ');
+  return (
+    <div className="ch-qf-sc" data-ch-code={code}>
+      <div className="ch-qf-sc__h">
+        <b>Round {round.number}</b>
+        <span className="ch-num">
+          {meta}
+          {round.total != null && ` · ${round.total}`}
+        </span>
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -510,14 +567,7 @@ function Scorecard({ round, holes }: { round: ChQRound; holes: ChQHole[] | undef
   const back = holes.filter((h) => h.n > 9);
   const sum = (list: ChQHole[], k: 'par' | 'score') => (list.every((h) => h[k] != null) ? list.reduce((s, h) => s + (h[k] as number), 0) : null);
   return (
-    <div className="ch-qf-sc">
-      <div className="ch-qf-sc__h">
-        <b>Round {round.number}</b>
-        <span className="ch-num">
-          {meta}
-          {round.total != null && ` · ${round.total}`}
-        </span>
-      </div>
+    <ScorecardShell round={round}>
       {holes.length === 0 ? (
         <p className="ch-qf-sc__none" data-ch-code="CH-09308">
           No hole-by-hole card for this round. Only the total was recorded.
@@ -589,12 +639,16 @@ function Scorecard({ round, holes }: { round: ChQRound; holes: ChQHole[] | undef
           </table>
         </ScrollRegion>
       )}
-    </div>
+    </ScorecardShell>
   );
 }
 
-function RoundByRound({ board, numRounds, roundCourses }: { board: ChQBoard; numRounds: number; roundCourses: ChQDetail['roundCourses'] }) {
-  const courses = new Map(roundCourses.map((c) => [c.number, c.course]));
+/** A round's column title; the course it is on is its tooltip, which streams in with the rest of the courses. */
+function RoundHead({ n }: { n: number }) {
+  return <Streamed fallback={`R${n}`}>{(s) => <span title={s.roundCourses.find((c) => c.number === n)?.course ?? undefined}>R{n}</span>}</Streamed>;
+}
+
+function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number }) {
   const cols = `36px minmax(120px, 1fr) ${Array.from({ length: numRounds }, () => '52px').join(' ')} 56px 60px`;
   const minWidth = 36 + 120 + numRounds * 52 + 56 + 60 + (numRounds + 4) * 12 + 24;
   return (
@@ -612,8 +666,8 @@ function RoundByRound({ board, numRounds, roundCourses }: { board: ChQBoard; num
               <span role="columnheader">#</span>
               <span role="columnheader">Player</span>
               {Array.from({ length: numRounds }, (_, i) => (
-                <span key={i} role="columnheader" className="r" title={courses.get(i + 1) ?? undefined}>
-                  R{i + 1}
+                <span key={i} role="columnheader" className="r">
+                  <RoundHead n={i + 1} />
                 </span>
               ))}
               <span role="columnheader" className="r">

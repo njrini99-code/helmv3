@@ -45,6 +45,7 @@ Three route skeletons in the page's own shapes: the list (90201: head, tools, he
 | 90204 | CH-09407 | `COURSES_OR_TEES_ARE_LOADING_IN_THE` | Courses or tees are loading in the picker |
 | 90205 | CH-09408 | `A_SELECTION_WRITE_IS_IN_FLIGHT` | A selection write is in flight |
 | 90206 | CH-09409 | `MANAGE_SELECTIONS_IS_LOADING` | Manage selections is loading |
+| 90207 | CH-09410 | `A_QUALIFIERS_COURSES_AND_SCORECARDS_ARE_STILL` | A qualifier's courses and scorecards are still streaming in behind its standings |
 
 From the shell (P001): 10201 CH-1401.
 
@@ -122,8 +123,8 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90606 | CH-09202 | `ENTRIES_OR_ROUNDS_DONT_LOAD_ON_THE` | Entries or rounds don't load on the list |
 | 90607 | CH-09203 | `A_QUALIFIERS_ENTRANTS_DONT_LOAD` | A qualifier's entrants don't load |
 | 90608 | CH-09204 | `A_QUALIFIERS_ROUNDS_DONT_LOAD` | A qualifier's rounds don't load |
-| 90609 | CH-09205 | `THE_SCORECARDS_DONT_LOAD` | The scorecards don't load |
-| 90610 | CH-09206 | `THE_ROUND_COURSES_DONT_LOAD` | The round courses don't load (detail) |
+| 90609 | CH-09205 | `THE_SCORECARDS_DONT_LOAD` | The scorecards don't load (or the stream that carries them is cut off) |
+| 90610 | CH-09206 | `THE_ROUND_COURSES_DONT_LOAD` | The round courses don't load (detail), or the stream that carries them is cut off |
 | 90611 | CH-09207 | `THE_CONFIRMED_SQUAD_DOESNT_LOAD` | The confirmed squad doesn't load, or the entries it takes its names from don't |
 | 90612 | CH-09208 | `THE_ROSTER_DOESNT_LOAD_IN_THE_FORM` | The roster (or, editing, the entrants or their rounds) doesn't load in the form |
 | 90613 | CH-09209 | `THE_COURSE_LIST_DOESNT_LOAD_IN_THE` | The course list doesn't load in the picker |

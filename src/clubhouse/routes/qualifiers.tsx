@@ -55,7 +55,10 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
     return form ? <QualifierForm data={form} /> : <NotFound />;
   }
   const detail = await loadQualifierDetail({ role: team.role, teamId: team.teamId, playerId, qualifierId: id });
-  return detail ? <QualifierDetail data={detail} /> : <NotFound />;
+  if (!detail) return <NotFound />;
+  // The standings, facts and squad are sent now; the courses and the scorecards follow as a promise the sections read in place (owner rule 6).
+  const { secondary, ...core } = detail;
+  return <QualifierDetail data={core} secondary={secondary} />;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {

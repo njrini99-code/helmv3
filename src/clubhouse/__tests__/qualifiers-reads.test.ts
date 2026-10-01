@@ -3,7 +3,8 @@ import { readWaves } from './read-waves';
 
 /** Qualifiers (P009): how many round trips deep the detail and the edit form read (perf, 2026-10-01). Correctness is in qualifiers.test.tsx. */
 
-vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
+const logServer = vi.hoisted(() => vi.fn());
+vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables, gate: undefined as ((t: string) => Promise<void>) | undefined }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 
@@ -33,29 +34,86 @@ const round = { id: 'r1', qualifier_id: Q, player_id: 'p1', qualifier_round_numb
 afterEach(() => {
   tables.current = {};
   tables.gate = undefined;
+  logServer.mockClear();
 });
 
 describe('Qualifier detail reads', () => {
-  it('the tees and the scorecards are read together: three waves (the qualifier, its parts, the tees with the cards), not four', async () => {
+  const answers = () => ({
+    golf_qualifiers: { data: qualifier },
+    golf_qualifier_entries: { data: [entry] },
+    golf_rounds: { data: [round] },
+    golf_qualifier_round_courses: { data: [{ round_number: 1, course_name: 'Hope Valley CC', tee_id: 'tee1' }] },
+    golf_qualifier_selections: { data: [{ player_id: 'p1', selection_type: 'top_score' }] },
+    golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
+    golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
+    'rpc:get_qualifier_selection_reasons': { data: [] },
+  });
+  const read = () => loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p1', qualifierId: Q });
+
+  it('the standings, facts and squad come back after two waves (the qualifier, then its parts); the tees and the scorecards are read after and stream behind them', async () => {
     const waves = readWaves();
-    tables.gate = waves.gate;
-    tables.current = {
-      golf_qualifiers: { data: qualifier },
-      golf_qualifier_entries: { data: [entry] },
-      golf_rounds: { data: [round] },
-      golf_qualifier_round_courses: { data: [{ round_number: 1, course_name: 'Hope Valley CC', tee_id: 'tee1' }] },
-      golf_qualifier_selections: { data: [{ player_id: 'p1', selection_type: 'top_score' }] },
-      golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
-      golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
-      'rpc:get_qualifier_selection_reasons': { data: [] },
-    };
-    const { result, waves: depth } = await waves.run(loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p1', qualifierId: Q }));
+    // The tees and the scorecards are held until the page has its core: the core must not wait for them.
+    let release: () => void = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    const streamed = new Set(['golf_course_tees', 'golf_holes']);
+    tables.gate = (table) => (streamed.has(table) ? held : waves.gate(table));
+    tables.current = answers();
+    const { result, waves: depth } = await waves.run(read());
     expect(depth[0]).toEqual(['golf_qualifiers']);
-    expect(depth[1]).toEqual(expect.arrayContaining(['golf_qualifier_entries', 'golf_rounds', 'golf_qualifier_round_courses', 'golf_qualifier_selections']));
-    expect(depth[2]).toEqual(['golf_course_tees', 'golf_holes']);
-    expect(depth).toHaveLength(3);
-    expect(result?.holes).toEqual({ r1: [{ n: 1, par: 4, score: 4 }] });
-    expect(result?.roundCourses[0]).toMatchObject({ teeName: 'Blue', par: 72 });
+    expect(depth[1]).toEqual(['golf_qualifier_entries', 'golf_qualifier_round_courses', 'golf_qualifier_selections', 'golf_rounds']);
+    expect(depth).toHaveLength(2);
+    // The core is whole without them.
+    expect(result?.board?.rows.map((r) => r.playerId)).toEqual(['p1']);
+    expect(result?.selections).toEqual([{ playerId: 'p1', type: 'top_score', reasoning: null, name: 'Eli Brandt' }]);
+    expect(result).not.toHaveProperty('holes');
+    release();
+    const secondary = await result!.secondary;
+    expect(secondary.holes).toEqual({ r1: [{ n: 1, par: 4, score: 4 }] });
+    expect(secondary.roundCourses[0]).toMatchObject({ teeName: 'Blue', par: 72 });
+    expect(secondary).toMatchObject({ holesError: false, coursesError: false, par: null });
+  });
+
+  it('the scorecards start the moment the rounds are in and the tees the moment the round courses are, not after the squad or anything else of the core', async () => {
+    const started: string[] = [];
+    let release: () => void = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    tables.gate = async (table) => {
+      started.push(table);
+      // The squad is the slowest read of the core.
+      if (table === 'golf_qualifier_selections') await held;
+    };
+    tables.current = answers();
+    const loading = read();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(started).toEqual(expect.arrayContaining(['golf_qualifier_selections', 'golf_course_tees', 'golf_holes']));
+    release();
+    expect((await loading)?.name).toBe('Fall qualifier');
+  });
+
+  it('the streamed part never rejects: a read that fails is that section’s flag, and a read that throws is every section’s, logged', async () => {
+    tables.current = { ...answers(), golf_course_tees: { error: { message: 'tees' } }, golf_holes: { error: { message: 'holes' } } };
+    const failed = await (await read())!.secondary;
+    expect(failed).toMatchObject({ coursesError: true, holesError: true, par: null });
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'tees', expect.anything(), 'qualifiers');
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'holes', expect.anything(), 'qualifiers');
+    tables.current = {
+      ...answers(),
+      golf_course_tees: () => {
+        throw new Error('tees blew up');
+      },
+    };
+    const thrown = await (await read())!.secondary;
+    expect(thrown).toEqual({ holes: {}, holesError: true, roundCourses: [], par: null, coursesError: true });
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'secondary', expect.any(Error), 'qualifiers');
+  });
+
+  it('with the rounds unread there are no cards, said as a flag, and the round courses still stream', async () => {
+    tables.current = { ...answers(), golf_rounds: { error: { message: 'rounds' } } };
+    const core = (await read())!;
+    expect(core).toMatchObject({ board: null, roundsError: true });
+    const secondary = await core.secondary;
+    expect(secondary).toMatchObject({ holes: {}, holesError: true, coursesError: false });
+    expect(secondary.roundCourses[0]).toMatchObject({ teeName: 'Blue', par: 72 });
   });
 });
 

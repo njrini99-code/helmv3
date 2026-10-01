@@ -1,9 +1,9 @@
 'use client';
 
 import { BarChart3, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ChQDetail } from '../../data/qualifiers';
+import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -20,9 +20,10 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { dayLabel, plural, positionLabel, shortRange, type ChQRow, type ChQStatus } from './model';
+import { dayLabel, plural, positionLabel, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { StateBadge, StatusPill, ToPar } from './parts';
 import { Courses, Selections, StaleStandings } from './QualifierSections';
+import { NinesSkeleton, Streamed } from './streamed';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -42,7 +43,7 @@ export function QualifierDetailPhone({
   onReopen,
   reopenPending,
 }: {
-  data: ChQDetail;
+  data: ChQDetailCore;
   /** The standings are the last good ones, because the latest read of them failed. */
   stale: boolean;
   status: ChQStatus;
@@ -184,7 +185,7 @@ export function QualifierDetailPhone({
 }
 
 /** The leaderboard as cards (board 02): position, avatar, name and state, to par; rounds, average and total under it. */
-function Board({ data, status, stale, onPeek }: { data: ChQDetail; status: ChQStatus; stale: boolean; onPeek: (id: string) => void }) {
+function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: ChQStatus; stale: boolean; onPeek: (id: string) => void }) {
   const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';
   const b = data.board;
@@ -321,16 +322,13 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetail; status: ChQSt
 }
 
 /** A player's rounds (board 03): a chip per round, then that round's card, Out and In. */
-function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | null; onClose: () => void }) {
-  const { refresh, refreshing } = useRefresh();
+function PlayerRounds({ data, row, onClose }: { data: ChQDetailCore; row: ChQRow | null; onClose: () => void }) {
   const coach = data.role === 'coach';
   const played = row?.rounds ?? [];
   const latest = played.length ? played[played.length - 1]!.number : 1;
   const [n, setN] = useState(latest);
   useEffect(() => setN(latest), [row?.playerId, latest]);
   const rd = played.find((x) => x.number === n) ?? null;
-  const holes = rd && !data.holesError ? (data.holes[rd.id] ?? []) : null;
-  const course = data.roundCourses.find((c) => c.number === n)?.course ?? rd?.course ?? null;
   const messageHref = row && coach ? rebuiltHref(`/golf/dashboard/messages?player=${row.playerId}`, 'coach') : null;
   const statsHref = row ? rebuiltHref(coach ? `/golf/dashboard/stats?player=${row.playerId}` : '/golf/dashboard/stats', data.role) : null;
 
@@ -384,24 +382,17 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | n
             <p className="ch-qfm-muted">Round {n} not submitted yet.</p>
           ) : (
             <>
-              <div className="ch-qfm-rdh ch-num">
-                <span>{[course, dayLabel(rd.date)].filter(Boolean).join(' · ')}</span>
-                <b>{rd.total ?? '—'}</b>
-              </div>
-              {data.holesError ? (
-                <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
-              ) : holes && holes.length ? (
-                <>
-                  <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />
-                  <Nine holes={holes.filter((h) => h.n > 9)} label="In" caption={`Round ${n}, back nine`} />
-                </>
-              ) : (
-                <p className="ch-qfm-muted" data-ch-code="CH-09308">
-                  No hole-by-hole card for this round. Only the total was recorded.
-                </p>
-              )}
-              {row.avg != null && (
-                <p className="ch-qfm-muted ch-num">
+              {/* The card and the course name stream in behind the standings: the round's head and total are the standings', so they stay. */}
+              <Streamed
+                fallback={
+                  <PlayerRoundHead round={rd} course={rd.course}>
+                    <NinesSkeleton />
+                  </PlayerRoundHead>
+                }
+              >
+                {(s) => <PlayerRoundCard round={rd} n={n} s={s} />}
+              </Streamed>
+              {row.avg != null && (                <p className="ch-qfm-muted ch-num">
                   Average {formatFixed(row.avg)} over {plural(row.played - row.shortRounds, '18-hole round')}
                 </p>
               )}
@@ -410,5 +401,41 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | n
         </div>
       )}
     </Modal>
+  );
+}
+
+/** A round in the sheet: its head (course and day, total) over `children`. */
+function PlayerRoundHead({ round, course, children }: { round: ChQRound; course: string | null; children: ReactNode }) {
+  return (
+    <>
+      <div className="ch-qfm-rdh ch-num">
+        <span>{[course, dayLabel(round.date)].filter(Boolean).join(' · ')}</span>
+        <b>{round.total ?? '—'}</b>
+      </div>
+      {children}
+    </>
+  );
+}
+
+/** The streamed part of a round in the sheet: the course assigned to the round, and its card. */
+function PlayerRoundCard({ round, n, s }: { round: ChQRound; n: number; s: ChQDetailSecondary }) {
+  const { refresh, refreshing } = useRefresh();
+  const course = s.roundCourses.find((c) => c.number === n)?.course ?? round.course ?? null;
+  const holes = s.holesError ? null : (s.holes[round.id] ?? []);
+  return (
+    <PlayerRoundHead round={round} course={course}>
+      {s.holesError ? (
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
+      ) : holes && holes.length ? (
+        <>
+          <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />
+          <Nine holes={holes.filter((h) => h.n > 9)} label="In" caption={`Round ${n}, back nine`} />
+        </>
+      ) : (
+        <p className="ch-qfm-muted" data-ch-code="CH-09308">
+          No hole-by-hole card for this round. Only the total was recorded.
+        </p>
+      )}
+    </PlayerRoundHead>
   );
 }

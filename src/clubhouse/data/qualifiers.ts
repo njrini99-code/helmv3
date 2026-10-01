@@ -109,7 +109,11 @@ export interface ChQRoundCourse {
   par: number | null;
 }
 
-export interface ChQDetail {
+/**
+ * What a qualifier's page needs to draw its context, its standings, its facts and its squad. This is read and sent first; the courses
+ * and the scorecards (`ChQDetailSecondary`) follow it down the stream (owner rule 6).
+ */
+export interface ChQDetailCore {
   role: Role;
   viewerPlayerId: string | null;
   id: string;
@@ -130,18 +134,31 @@ export interface ChQDetail {
   board: ChQBoard | null;
   entriesError: boolean;
   roundsError: boolean;
-  /** Scorecards by round id, for the rounds this viewer may open. */
-  holes: Record<string, ChQHole[]>;
-  holesError: boolean;
-  roundCourses: ChQRoundCourse[];
-  par: number | null;
-  coursesError: boolean;
   /** The confirmed squad, or null when not confirmed or not readable (its names come from the entries, so a failed entries read is "not readable" too). */
   selections: Array<ChQSelection & { name: string }> | null;
   selectionsError: boolean;
   /** Coach only: the pick notes didn't load. The squad still shows; the notes are missing, never "no notes". Left out of a fixture, it is false. */
   reasonsError?: boolean;
 }
+
+/**
+ * The part of the page that streams in after the standings: the course of each round with its tee and par, and the hole-by-hole cards of
+ * the rounds this viewer may open. Each has its own failure flag, so one that did not load is that section's notice, never an empty.
+ */
+export interface ChQDetailSecondary {
+  /** Scorecards by round id, for the rounds this viewer may open. */
+  holes: Record<string, ChQHole[]>;
+  holesError: boolean;
+  roundCourses: ChQRoundCourse[];
+  par: number | null;
+  coursesError: boolean;
+}
+
+/** The whole page's data once both parts are in (a fixture, a test, the preview). */
+export type ChQDetail = ChQDetailCore & ChQDetailSecondary;
+
+/** What the loader returns: the core now, and the rest as a promise that never rejects (a read that fails is a flag in it). */
+export type ChQDetailLoad = ChQDetailCore & { secondary: Promise<ChQDetailSecondary> };
 
 export interface ChQFormPlayer {
   id: string;
@@ -351,8 +368,14 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
  * the viewer's team (RLS returns nothing either way). A failed read of the
  * qualifier itself throws, so the route error view offers a retry instead of
  * a false "not found".
+ *
+ * What the standings, the facts and the squad need (the qualifier, its entries, its rounds, the squad and the
+ * pick notes) is read together and returned; the courses with their tees, and the scorecards, are read beside
+ * them and come back as `secondary`, a promise that never rejects, so the page paints without them (owner rule 6).
+ * The scorecards start as soon as the rounds are in and the tees as soon as the round courses are, not after the
+ * whole core.
  */
-export async function loadQualifierDetail(input: { role: Role; teamId: string; playerId: string | null; qualifierId: string }): Promise<ChQDetail | null> {
+export async function loadQualifierDetail(input: { role: Role; teamId: string; playerId: string | null; qualifierId: string }): Promise<ChQDetailLoad | null> {
   const supabase = await createClient();
   const now = new Date();
   const qRes = await supabase.from('golf_qualifiers').select(`${Q_COLUMNS}, team_id`).eq('id', input.qualifierId).maybeSingle();
@@ -366,10 +389,17 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
 
   const status = parseStatus(q.status);
   const selectionState = parseSelectionState(q.selection_state);
-  const [entries, rounds, coursesRes, selRes, reasonsRes] = await Promise.all([
-    readEntries(supabase, [q.id], 'qualifiers'),
-    readRounds(supabase, [q.id], 'qualifiers'),
+  // Every read of the page starts here, together. Each is started once, as a promise, because the core and the secondary both wait on
+  // some of them (a query builder would read again for every `then`).
+  const entriesRead = readEntries(supabase, [q.id], 'qualifiers');
+  const roundsRead = readRounds(supabase, [q.id], 'qualifiers');
+  const coursesRead = Promise.resolve(
     supabase.from('golf_qualifier_round_courses').select('round_number, course_name, tee_id').eq('qualifier_id', q.id).order('round_number', { ascending: true }),
+  );
+  const secondary = readDetailSecondary({ supabase, input, q, roundsRead, coursesRead });
+  const [entries, rounds, selRes, reasonsRes] = await Promise.all([
+    entriesRead,
+    roundsRead,
     selectionState === 'selected'
       ? supabase.from('golf_qualifier_selections').select('player_id, selection_type').eq('qualifier_id', q.id)
       : Promise.resolve({ data: [], error: null }),
@@ -378,19 +408,11 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
       ? readQualifierSelectionReasons(supabase, q.id)
       : Promise.resolve({ reasons: new Map<string, string | null>(), error: null }),
   ]);
-  if (coursesRes.error) chLogServer('qualifiers', 'roundCourses', coursesRes.error, 'qualifiers');
   if (selRes.error) chLogServer('qualifiers', 'selections', selRes.error, 'qualifiers');
   // Without the reasons the squad still shows; only the coach's notes are missing.
   if (reasonsRes.error) chLogServer('qualifiers', 'reasons', reasonsRes.error, 'qualifiers');
 
-  const courseRows = (coursesRes.data ?? []) as Array<{ round_number: number; course_name: string | null; tee_id: string | null }>;
   const qRounds = rounds.rows.map(roundOf);
-  // Scorecards: a coach opens every round; a player only their own (D-33).
-  const openable = qRounds.filter((r) => input.role === 'coach' || r.playerId === input.playerId).map((r) => r.id);
-  // The tees (par per round from the tee, else from the rounds: D-33) hang off the courses and the scorecards off the rounds, which
-  // are already in, so the two are read together, not one after the other.
-  const [{ tees, teesError }, { holes, holesError }] = await Promise.all([readTees(supabase, courseRows), readScorecards(supabase, openable)]);
-
   const entrants = entries.rows.filter((e) => e.player).map((e) => entrantOf(e.player as PlayerCols, now));
   const nameOf = new Map(entrants.map((e) => [e.playerId, e.name]));
   // The names come from the entries: with those unread the squad is "not readable", never a row of "A player".
@@ -409,22 +431,6 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     entries.error || rounds.error
       ? null
       : buildBoard({ entrants, rounds: qRounds, squad: q.selection_slots_total, picks: q.selection_slots_coach_pick, status, selectionState, selections });
-
-  const byNumber = new Map(courseRows.map((c) => [c.round_number, c]));
-  const pars = roundPars({
-    numRounds: q.num_rounds,
-    teePars: new Map(courseRows.map((c) => [c.round_number, c.tee_id ? (tees.get(c.tee_id)?.total_par ?? null) : null])),
-    rounds: qRounds,
-  });
-  const roundCourses: ChQRoundCourse[] = Array.from({ length: q.num_rounds }, (_, i) => {
-    const c = byNumber.get(i + 1);
-    return {
-      number: i + 1,
-      course: c?.course_name ?? q.course_name,
-      teeName: c?.tee_id ? (tees.get(c.tee_id)?.tee_name ?? null) : null,
-      par: pars.byRound[i] ?? null,
-    };
-  });
 
   return {
     role: input.role,
@@ -446,15 +452,69 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     board,
     entriesError: entries.error,
     roundsError: rounds.error,
-    holes,
-    holesError,
-    roundCourses,
-    par: coursesRes.error || teesError ? null : pars.single,
-    coursesError: !!coursesRes.error || teesError,
     selections,
     selectionsError: !!selRes.error,
     reasonsError: !!reasonsRes.error,
+    secondary,
   };
+}
+
+/**
+ * The rest of the detail: the round courses with their tees and pars, and the scorecards. Never rejects: whatever goes wrong is logged and
+ * becomes the section's own failure flag, so a stream that carries it can't end in an unhandled rejection or a blank page.
+ */
+async function readDetailSecondary(a: {
+  supabase: Supabase;
+  input: { role: Role; playerId: string | null };
+  q: QRow;
+  roundsRead: Promise<{ rows: RoundRow[]; error: boolean }>;
+  coursesRead: Promise<{ data: unknown; error: unknown }>;
+}): Promise<ChQDetailSecondary> {
+  try {
+    // The tees hang off the round courses and the scorecards off the rounds; each starts the moment its own input is in.
+    const [courses, cards] = await Promise.all([
+      (async () => {
+        const res = await a.coursesRead;
+        if (res.error) chLogServer('qualifiers', 'roundCourses', res.error, 'qualifiers');
+        const rows = (res.data ?? []) as Array<{ round_number: number; course_name: string | null; tee_id: string | null }>;
+        return { rows, error: !!res.error, ...(await readTees(a.supabase, rows)) };
+      })(),
+      (async () => {
+        const rounds = await a.roundsRead;
+        // With the rounds unread there are no cards to draw, and the tray they would sit in is not offered either.
+        if (rounds.error) return { rounds: [] as ChQRound[], holes: {} as Record<string, ChQHole[]>, holesError: true };
+        const all = rounds.rows.map(roundOf);
+        // Scorecards: a coach opens every round; a player only their own (D-33).
+        const openable = all.filter((r) => a.input.role === 'coach' || r.playerId === a.input.playerId).map((r) => r.id);
+        return { rounds: all, ...(await readScorecards(a.supabase, openable)) };
+      })(),
+    ]);
+    const byNumber = new Map(courses.rows.map((c) => [c.round_number, c]));
+    // Par per round from the tee, else from the rounds: D-33.
+    const pars = roundPars({
+      numRounds: a.q.num_rounds,
+      teePars: new Map(courses.rows.map((c) => [c.round_number, c.tee_id ? (courses.tees.get(c.tee_id)?.total_par ?? null) : null])),
+      rounds: cards.rounds,
+    });
+    return {
+      holes: cards.holes,
+      holesError: cards.holesError,
+      roundCourses: Array.from({ length: a.q.num_rounds }, (_, i) => {
+        const c = byNumber.get(i + 1);
+        return {
+          number: i + 1,
+          course: c?.course_name ?? a.q.course_name,
+          teeName: c?.tee_id ? (courses.tees.get(c.tee_id)?.tee_name ?? null) : null,
+          par: pars.byRound[i] ?? null,
+        };
+      }),
+      par: courses.error || courses.teesError ? null : pars.single,
+      coursesError: courses.error || courses.teesError,
+    };
+  } catch (err) {
+    chLogServer('qualifiers', 'secondary', err, 'qualifiers');
+    return { holes: {}, holesError: true, roundCourses: [], par: null, coursesError: true };
+  }
 }
 
 const EMPTY_FORM: ChQFormValues = {

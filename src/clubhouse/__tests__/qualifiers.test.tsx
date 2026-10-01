@@ -23,7 +23,7 @@ vi.mock('next/navigation', () => ({
 }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
-const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
+const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables, gate: undefined as ((t: string) => Promise<void> | void) | undefined }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 // The browser client the live standings use: the test hands out the channel and reads back what was asked of it.
 const realtime = vi.hoisted(() => ({ channel: vi.fn(), removeChannel: vi.fn() }));
@@ -46,12 +46,13 @@ vi.mock('@/app/golf/actions/course-library', () => ({ getCourseDetail: vi.fn(), 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import QualifierSelectionPage from '@/app/golf/(dashboard)/dashboard/qualifiers/[id]/selection/page';
 import { advanceSelectionState, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
-import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection, type ChQDetail, type ChQFormData, type ChQList, type ChQSelectionData } from '../data/qualifiers';
+import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection, type ChQDetail, type ChQDetailCore, type ChQDetailLoad, type ChQDetailSecondary, type ChQFormData, type ChQList, type ChQSelectionData } from '../data/qualifiers';
 import { chReport, chTrail } from '../lib/track';
 import { ClubhouseQualifiersRoute } from '../routes/qualifiers';
 import { resolveClubhouseTeam } from '../routes/team';
 import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
+import { fulfilled } from '../screens/qualifiers/streamed';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
@@ -95,6 +96,14 @@ const fail = async () => ({ success: false, error: 'nope' });
 const never = () => new Promise<never>(() => {});
 const detail = (name: keyof typeof DETAIL_INDEX = 'live', role: 'coach' | 'player' = 'coach', over: Partial<ChQDetail> = {}): ChQDetail => ({ ...previewDetail(DETAIL_INDEX[name]!, role), ...over });
 const list = (role: 'coach' | 'player' = 'coach', mode: 'all' | 'mine' = 'all', over: Partial<ChQList> = {}): ChQList => ({ ...previewList(role, mode), ...over });
+/**
+ * What the route does with the loader's result: the standings as `data`, the courses and cards beside them. They are awaited and handed
+ * over already kept (a page whose courses are still coming suspends, and the streaming tests below are the ones that render that).
+ */
+const streamedPage = async (d: ChQDetailLoad) => {
+  const { secondary, ...core } = d;
+  return <QualifierDetail data={core} secondary={fulfilled(await secondary)} writes={fakeWrites()} live={false} />;
+};
 
 /** The selection writes, all succeeding unless a test says otherwise. */
 type SelWrites = { [K in keyof ChQSelectionWrites]: Mock<ChQSelectionWrites[K]> };
@@ -130,6 +139,7 @@ beforeEach(() => {
   vi.mocked(resolveClubhouseTeam).mockReset();
   gate.on = true;
   tables.current = {};
+  tables.gate = undefined;
 });
 
 describe('Qualifiers · the standings model', () => {
@@ -309,10 +319,10 @@ describe('Qualifiers · the loader', () => {
       golf_holes: holesFor,
     };
     const asPlayer = (await loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p2', qualifierId: 'q1' }))!;
-    expect(Object.keys(asPlayer.holes)).toEqual(['r2']);
+    expect(Object.keys((await asPlayer.secondary).holes)).toEqual(['r2']);
     expect(asPlayer.selections).toEqual([{ playerId: 'p2', type: 'coach_pick', reasoning: null, name: 'Bea X' }]);
     const asCoach = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
-    expect(Object.keys(asCoach.holes).sort()).toEqual(['r1', 'r2']);
+    expect(Object.keys((await asCoach.secondary).holes).sort()).toEqual(['r1', 'r2']);
     expect(asCoach.selections![0]!.reasoning).toBe('Course history');
     // Once D-35's migration is applied the column is refused and the coach-gated reader answers.
     tables.current = {
@@ -341,7 +351,7 @@ describe('Qualifiers · the loader', () => {
     tables.current = { golf_qualifiers: { data: Q }, golf_qualifier_entries: { data: entries }, golf_rounds: { error: { message: 'boom' } }, golf_qualifier_round_courses: { data: [] } };
     const scores = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
     expect(scores.board).toBeNull();
-    const { unmount } = wrap(<QualifierDetail data={scores} writes={fakeWrites()} live={false} />);
+    const { unmount } = wrap(await streamedPage(scores));
     await expectCode('CH-09204', /Scores didn’t load/);
     unmount();
     wrap(<QualifierDetail data={detail('live', 'coach', { entriesError: true, board: null })} writes={fakeWrites()} live={false} />);
@@ -380,7 +390,9 @@ describe('Qualifiers · the loader', () => {
           },
         ]),
       ) as never;
-      await load();
+      const loaded = (await load()) as { secondary?: Promise<unknown> } | null;
+      // The courses and the cards stream behind the standings: the reads are counted once they have all been made.
+      await loaded?.secondary;
       return { ...counts };
     };
     const open = { ...Q, selection_state: 'open' };
@@ -496,7 +508,7 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
     const data = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
     expect(data.reasonsError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('qualifiers', 'reasons', expect.anything(), 'qualifiers');
-    wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+    wrap(await streamedPage(data));
     await expectCode('CH-09221', /Pick notes didn’t load/);
     expect(within(code('CH-09221')!.closest('section') as HTMLElement).getByText('Bea X')).toBeTruthy();
     router.refresh.mockClear();
@@ -520,7 +532,7 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
     };
     const data = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
     expect(data).toMatchObject({ entriesError: true, selections: null, selectionsError: false });
-    wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+    wrap(await streamedPage(data));
     await expectCode('CH-09207', /names come with the field/);
     expect(screen.queryByText('A player')).toBeNull();
     expect(code('CH-09203')).not.toBeNull();
@@ -862,6 +874,164 @@ describe('Qualifiers · a refresh that fails keeps the standings it had (owner r
     } finally {
       window.matchMedia = real;
     }
+  });
+});
+
+describe('Qualifiers · the courses and the cards stream behind the standings (owner rule 6, 2026-10-01)', () => {
+  const deferred = <T,>() => {
+    let resolve: (v: T) => void = () => {};
+    let reject: (e: unknown) => void = () => {};
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+  /** A whole detail, split the way the loader splits it: the standings and facts, and the part that streams. */
+  const split = (d: ChQDetail) => {
+    const { holes, holesError, roundCourses, par, coursesError, ...core } = d;
+    return { core, secondary: { holes, holesError, roundCourses, par, coursesError } satisfies ChQDetailSecondary };
+  };
+  const page = (core: ChQDetailCore, secondary: PromiseLike<ChQDetailSecondary>) => <QualifierDetail data={core} secondary={secondary} writes={fakeWrites()} live={false} />;
+  /** A page whose courses are still on their way suspends while it renders, so it is rendered where React may wait: in an awaited act. */
+  const pending = async (node: ReactElement) => {
+    let view: ReturnType<typeof wrap> | undefined;
+    await act(async () => {
+      view = wrap(node);
+    });
+    return view!;
+  };
+  const tree = (node: ReactNode) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          {node}
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+  const fact = (k: string) => [...document.querySelectorAll('.ch-qf-facts > div')].find((f) => f.querySelector('dt')!.textContent === k)!.textContent;
+  const streaming = () => document.querySelectorAll('[data-ch-code="CH-09410"]');
+
+  it('CH-09410 the standings, facts and squad are on screen while the courses and cards are still coming, each streamed place held at its final size; no empty copy stands in for them', async () => {
+    const user = userEvent.setup();
+    const { core, secondary } = split(detail());
+    const later = deferred<ChQDetailSecondary>();
+    await pending(page(core, later.promise));
+    // The page's own: leaderboard rows, the facts that need no tees, the head of every section.
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' })).toBeTruthy();
+    expect(fact('Entrants')).toBe('Entrants8players');
+    expect(fact('Course')).toBe('CourseFinley GC');
+    expect(document.querySelector('.ch-qf-facts__sub .ch-skel')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Course per round' })).toBeTruthy();
+    // The courses are rows on the list's own classes, one per round; the tray's cards are heads over a card-sized block.
+    const rows = document.querySelectorAll('ol[data-ch-code="CH-09410"] > li');
+    expect(rows).toHaveLength(core.numRounds);
+    await user.click(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' }));
+    const heads = [...document.querySelectorAll('.ch-qf-tray .ch-qf-sc__h b')].map((b) => b.textContent);
+    expect(heads).toEqual(['Round 1', 'Round 2']);
+    expect(screen.queryByRole('table', { name: /Round \d scorecard/ })).toBeNull();
+    for (const empty of ['CH-09308', 'CH-09205', 'CH-09206', 'CH-09304']) expect([empty, code(empty)]).toEqual([empty, null]);
+    expect(streaming().length).toBeGreaterThan(1);
+    // It lands: the cards, the courses and the par take their places, and the placeholders are gone.
+    await act(async () => later.resolve(secondary));
+    expect(await screen.findAllByRole('table', { name: /Round \d scorecard/ })).toHaveLength(2);
+    expect(fact('Course')).toBe('CourseFinley GCPar by round');
+    expect(streaming()).toHaveLength(0);
+    expect(document.querySelector('.ch-qf-facts__sub .ch-skel')).toBeNull();
+  });
+
+  it('CH-09206 CH-09205 a streamed part that did not load is the section’s notice, not an empty list and not "no card"', async () => {
+    const user = userEvent.setup();
+    const { core, secondary } = split(detail());
+    wrap(page(core, fulfilled({ ...secondary, holes: {}, holesError: true, roundCourses: [], par: null, coursesError: true })));
+    await expectCode('CH-09206', /The round courses didn’t load/);
+    await user.click(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' }));
+    await expectCode('CH-09205', /Scorecards didn’t load/);
+    expect(code('CH-09308')).toBeNull();
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+  });
+
+  it('CH-09206 a stream that is cut off before the courses arrive is the same notice, and the leaderboard is not replaced by a crash', async () => {
+    const { core } = split(detail());
+    const cut = deferred<ChQDetailSecondary>();
+    await pending(page(core, cut.promise));
+    await act(async () => cut.reject(new Error('stream aborted')));
+    await expectCode('CH-09206', /The round courses didn’t load/);
+    expect(code('CH-09212')).toBeNull();
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+  });
+
+  it('CH-09410 a live refresh keeps the standings on screen and updates them while the courses and cards stream again; only their places show a placeholder', async () => {
+    const { core, secondary } = split(detail());
+    const { rerender } = render(tree(page(core, fulfilled(secondary))));
+    expect(screen.getAllByText('Finley GC', { selector: 'b' })).not.toHaveLength(0);
+    expect(streaming()).toHaveLength(0);
+    const again = deferred<ChQDetailSecondary>();
+    await act(async () => rerender(tree(page({ ...core, board: { ...core.board!, submitted: 14 } }, again.promise))));
+    // The standings are the new ones at once and never blank; the streamed places wait.
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    expect(code('CH-09803')!.textContent).toBe('Standings updated. 14 rounds submitted.');
+    expect(code('CH-09204')).toBeNull();
+    expect(streaming().length).toBeGreaterThan(0);
+    await act(async () => again.resolve(secondary));
+    await waitFor(() => expect(streaming()).toHaveLength(0));
+    expect(fact('Course')).toBe('CourseFinley GCPar by round');
+  });
+
+  it('CH-09410 on the phone the sheet of a round has its head and total at once and the nines when they land', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const user = userEvent.setup();
+      const { core, secondary } = split(detail());
+      const later = deferred<ChQDetailSecondary>();
+      await pending(page(core, later.promise));
+      await user.click(screen.getByRole('button', { name: /^Sofia Alvarez, 1/ }));
+      const dialog = await screen.findByRole('dialog', { name: 'Sofia Alvarez' });
+      expect(within(dialog).getByText('Finley GC', { exact: false })).toBeTruthy();
+      expect(within(dialog).queryByRole('table')).toBeNull();
+      expect(code('CH-09308')).toBeNull();
+      await act(async () => later.resolve(secondary));
+      expect(await within(dialog).findByRole('table', { name: /Round 2, front nine/ })).toBeTruthy();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('92101 the route sends the standings without waiting for the courses and cards: the page renders while their reads are still open, then fills in', async () => {
+    const user = userEvent.setup();
+    asCoachSession();
+    realtime.channel.mockReturnValue({ on() { return this; }, subscribe() { return this; } });
+    const release = deferred<void>();
+    const reads: string[] = [];
+    tables.gate = async (table) => {
+      reads.push(table);
+      if (table === 'golf_holes' || table === 'golf_course_tees') await release.promise;
+    };
+    const Q1 = '10000000-0000-4000-8000-000000000001';
+    tables.current = {
+      golf_qualifiers: { data: { id: Q1, team_id: 't1', name: 'Pinehurst qualifier', description: null, status: 'in_progress', start_date: '2026-09-22', end_date: null, entry_deadline: null, course_name: 'Finley GC', rules: null, num_rounds: 1, selection_slots_total: 3, selection_slots_coach_pick: 1, selection_state: 'closed', is_test: false } },
+      golf_qualifier_entries: { data: [{ qualifier_id: Q1, player_id: 'p1', player: { id: 'p1', first_name: 'Ann', last_name: 'X', graduation_year: null } }] },
+      golf_rounds: { data: [{ id: 'r1', qualifier_id: Q1, player_id: 'p1', qualifier_round_number: 1, total_score: 70, score_to_par: -2, round_date: '2026-09-22', course_name: 'Finley GC', holes_played: 18 }] },
+      golf_qualifier_round_courses: { data: [{ round_number: 1, course_name: 'Finley GC', tee_id: 'tee1' }] },
+      golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
+      golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
+    };
+    const el = (await ClubhouseQualifiersRoute({ view: 'detail', id: Q1 })) as ReactElement<{ data: Record<string, unknown>; secondary: Promise<unknown> }>;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // The route came back with the cards' read still open.
+    expect(reads).toEqual(expect.arrayContaining(['golf_course_tees', 'golf_holes']));
+    expect(el.props.data).not.toHaveProperty('holes');
+    expect(el.props.secondary).toBeInstanceOf(Promise);
+    await pending(el);
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Show Ann X’s scorecards' }));
+    expect(screen.queryByRole('table', { name: /Round 1 scorecard/ })).toBeNull();
+    release.resolve();
+    expect(await screen.findByRole('table', { name: /Round 1 scorecard/ })).toBeTruthy();
+    expect(fact('Course')).toBe('CourseFinley GCPar 72');
   });
 });
 
@@ -2378,7 +2548,7 @@ describe('Qualifiers · what is reported', () => {
     const Q = { id: 'q1', team_id: 't1', name: 'Pinehurst qualifier', description: null, status: 'in_progress', start_date: '2026-09-22', end_date: null, entry_deadline: null, course_name: null, rules: null, num_rounds: 1, selection_slots_total: 3, selection_slots_coach_pick: 1, selection_state: 'open', is_test: false };
     tables.current = { golf_qualifiers: { data: Q }, golf_qualifier_entries: { error: { message: 'e' } }, golf_rounds: { error: { message: 'r' } }, golf_qualifier_round_courses: { error: { message: 'c' } } };
     const data = await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' });
-    expect([data!.entriesError, data!.roundsError, data!.coursesError]).toEqual([true, true, true]);
+    expect([data!.entriesError, data!.roundsError, (await data!.secondary).coursesError]).toEqual([true, true, true]);
     for (const read of ['entries', 'rounds', 'roundCourses']) expect(logServer).toHaveBeenCalledWith('qualifiers', read, expect.anything(), 'qualifiers');
     tables.current = { golf_team_members: { error: { message: 'm' }, data: [{ player: player('p1') }] } };
     expect((await loadQualifierForm({ teamId: 't1', qualifierId: null }))!.playersError).toBe(true);
