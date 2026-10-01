@@ -3,6 +3,25 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — An unsent draft survives a reload (swap audit F-12)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (no visual change)
+Contract IDs:   71202 widened: a draft survives a thread switch and a reload
+Actions:        none
+Data impact:    none; drafts are kept in sessionStorage per signed-in user (cleared when the tab closes)
+Held items:     none
+```
+
+- **Issue.** Drafts lived in a component Map: kept across thread switches,
+  lost on a reload.
+- **Fix.** `DraftStore` writes through to sessionStorage keyed by the user, so
+  a reload keeps the draft while another account on the device, or a closed
+  tab, does not. Refused or malformed storage falls back to memory.
+- **Checked.** `messages-drafts.test.ts` 3/3; `messages.test.tsx` and
+  `messages-mobile.test.tsx` green.
+
 ## 2026-09-30 — Mute is observed like every other messaging action (swap audit F-17)
 
 ```text

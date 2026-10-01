@@ -29,6 +29,7 @@ import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-act
 import { haptic } from '../../lib/haptics';
 import type { ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
+import { DraftStore } from './drafts';
 import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
@@ -53,8 +54,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
   const handledParams = useRef(false);
-  /** Unsent drafts by conversation, so switching threads never loses what was written (71202). */
-  const drafts = useRef(new Map<string, string>());
+  /** Unsent drafts by conversation, so switching threads (71202) or reloading (F-12) never loses what was written. */
+  const [drafts] = useState<Map<string, string>>(() => new DraftStore(data.viewerUserId));
   const [paramsDone, setParamsDone] = useState(false);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
@@ -451,7 +452,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     convsLoading: loading,
     convsError: !!error && !conversations.length,
     refetchConvs: () => void refetch(),
-    drafts: drafts.current,
+    drafts,
     selectedId,
     select,
     msgs: chMsgs,
