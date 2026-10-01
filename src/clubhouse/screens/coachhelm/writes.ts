@@ -31,7 +31,7 @@ export const LIVE_COACHHELM_WRITES: ChCoachHelmWrites = {
   assign: (a) => createFocusAreaFromInsightV2(a),
   dismiss: (insightId) => dismissInsight(insightId),
   // Back to the state it had, so it returns to the feed where it was.
-  undo: (insightId, lifecycle) => reactivateInsight(insightId, lifecycle),
+  undo: (insightId, lifecycle) => reactivateInsight(insightId, lifecycle, 'dismiss'),
 };
 
 /**

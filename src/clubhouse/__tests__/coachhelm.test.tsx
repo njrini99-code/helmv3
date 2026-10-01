@@ -1133,7 +1133,7 @@ describe('CoachHelm for the coach, on screen', () => {
     await LIVE_COACHHELM_WRITES.undo('i1', 'matured');
     expect(createFocusAreaFromInsightV2).toHaveBeenCalledWith(args);
     expect(dismissInsight).toHaveBeenCalledWith('i1');
-    expect(reactivateInsight).toHaveBeenCalledWith('i1', 'matured');
+    expect(reactivateInsight).toHaveBeenCalledWith('i1', 'matured', 'dismiss'); // CH13-14: an undone dismissal keeps an acknowledgement
   });
 
   it('the live answers are the actions Stats Development’s Accept and Decline call (Q-77), unchanged', async () => {
