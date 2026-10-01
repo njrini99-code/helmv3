@@ -184,6 +184,19 @@
   --ch-z-toast: 100;
 }
 
+/* Phone: a deeper ivory page and ivory (not near-white) cards. The owner's call
+   on the phone build (2026-09-30): the board's #fdfcf8 cards on #f4f2ea read as
+   white at arm's length. Desktop keeps the board values. */
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] {
+    --ch-bg-page: var(--ch-ivory-200);
+    --ch-bg-surface: var(--ch-ivory-50);
+    --ch-bg-subtle: var(--ch-ivory-100);
+    --ch-bg-hover: var(--ch-ivory-100);
+    --ch-bg-inset: var(--ch-ivory-200);
+  }
+}
+
 /* Settings > Preferences > Animations off: every Clubhouse transition becomes
    instant (portaled menus and dialogs carry their own data-ui, so both forms). */
 [data-ui='clubhouse'][data-motion='off'],

@@ -45,7 +45,7 @@
 }
 /* Text fields draw their own focus (green ring, underline, or the wrapper's
    focus-within), so the ring above would double it. */
-.ch-root :is(.ch-input, .ch-textarea, .ch-ed__title, .ch-search input, .ch-select select, .ch-ms-comp__field textarea):focus-visible {
+.ch-root :is(.ch-input, .ch-textarea, .ch-ed__title, .ch-search input, .ch-select select, .ch-ms-comp__field textarea, .ch-au-input input):focus-visible {
   outline: none;
 }
 .ch-root h1,

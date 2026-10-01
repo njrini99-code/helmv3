@@ -221,7 +221,6 @@ describe('the sign-in screen', () => {
     const { container } = render(<SignIn signIn={login} />);
     await fill(user);
     await user.click(submit());
-    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
     await waitFor(() => expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('opening'));
     expect(hapticSpy).toHaveBeenCalledWith('success');
     // The form is out of reach (and of the screen reader) while the course takes the frame.
@@ -230,6 +229,8 @@ describe('the sign-in screen', () => {
     expect(panel.hasAttribute('inert')).toBe(true);
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/golf/welcome?next=%2Fgolf%2Fdashboard'), { timeout: OPENING_MS + 2000 });
     expect(router.push).toHaveBeenCalledTimes(1);
+    // F-29: refreshing /golf/login with the new session redirected to /golf/dashboard before the welcome.
+    expect(router.refresh).not.toHaveBeenCalled();
   });
 
   it('CH-15902 goes straight to onboarding, with the invite code, when the person has no profile yet', async () => {

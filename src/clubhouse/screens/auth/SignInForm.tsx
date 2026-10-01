@@ -140,9 +140,9 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
       }
 
       haptic('success');
-      // After login, refresh first so the session cookies are recognised by the router cache before navigating, and
-      // give them a beat to propagate.
-      if (!navigate) router.refresh();
+      // No router.refresh() here: refreshing /golf/login with the new session makes the proxy redirect the signed-in
+      // user to /golf/dashboard, which painted the dashboard skeleton and a blank Home before the welcome (swap audit
+      // F-29). The push below is a fresh dynamic request, so it carries the new cookies; give them a beat to settle.
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const storedReturnTo = sessionStorage.getItem('golf_login_returnTo');
