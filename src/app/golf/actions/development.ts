@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
-import { isClubhouseFor } from '@/clubhouse/gate';
+import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -456,57 +456,7 @@ async function createFocusAreaImpl(
   }
 
   // Notify the player (fire-and-forget)
-  try {
-    // Both reads gate the "your coach assigned you a development plan" email.
-    // A failure in either skips the notification and the block returns
-    // normally, so the coach is told the plan was created and the player is
-    // never told anything — the plan sits there unread, and the coach reads
-    // that as the player ignoring it.
-    const { data: playerRow, error: playerRowError } = await supabase
-      .from('golf_players')
-      .select('user_id')
-      .eq('id', data.player_id)
-      .single();
-
-    if (playerRowError) {
-      await logServerError(
-        `development: player read failed for ${data.player_id}; the assignment email will not be sent: ${describeError(playerRowError)}`,
-        { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
-        'warning',
-      );
-    }
-
-    if (playerRow?.user_id) {
-      const { data: userRow, error: userRowError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('id', playerRow.user_id)
-        .single();
-
-      if (userRowError) {
-        await logServerError(
-          `development: email read failed for user ${playerRow.user_id}; the assignment email will not be sent: ${describeError(userRowError)}`,
-          { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
-          'warning',
-        );
-      }
-
-      if (userRow?.email) {
-        await notifyDevPlanAssigned(
-          playerRow.user_id,
-          userRow.email,
-          data.title,
-          data.area_type,
-          coach.full_name?.trim() || 'Your Coach',
-          // Fairway's link redirects to a Development drill Clubhouse does not draw: send a Clubhouse player to the
-          // screen that is rebuilt, where the focus area and its Accept and Decline are.
-          (await isClubhouseFor('player')) ? CLUBHOUSE_DEV_PLAN_PATH : undefined
-        );
-      }
-    }
-  } catch (notifErr) {
-    await logServerError(`[createFocusArea] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'development.createFocusArea' });
-  }
+  await notifyPlayerOfProposedFocus(supabase, data.player_id, data.title, data.area_type, coach.full_name, 'development.createFocusArea');
 
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
@@ -1364,6 +1314,74 @@ async function resolvePlayerTeamId(supabase: Awaited<ReturnType<typeof createCli
   }
 }
 
+/**
+ * Tells a player their coach proposed a focus area: the in-app notice and the
+ * "your coach assigned you a development plan" email. Fire-and-forget: a
+ * failure is logged and never fails the create. Shared by every coach create
+ * path (swap audit CH13-24: the CoachHelm Assign paths told nobody).
+ */
+async function notifyPlayerOfProposedFocus(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+  title: string,
+  areaType: string,
+  coachName: string | null | undefined,
+  action: string,
+): Promise<void> {
+  try {
+    // Both reads gate the "your coach assigned you a development plan" email.
+    // A failure in either skips the notification and the block returns
+    // normally, so the coach is told the plan was created and the player is
+    // never told anything — the plan sits there unread, and the coach reads
+    // that as the player ignoring it.
+    const { data: playerRow, error: playerRowError } = await supabase
+      .from('golf_players')
+      .select('user_id')
+      .eq('id', playerId)
+      .single();
+
+    if (playerRowError) {
+      await logServerError(
+        `development: player read failed for ${playerId}; the assignment email will not be sent: ${describeError(playerRowError)}`,
+        { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
+
+    if (playerRow?.user_id) {
+      const { data: userRow, error: userRowError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', playerRow.user_id)
+        .single();
+
+      if (userRowError) {
+        await logServerError(
+          `development: email read failed for user ${playerRow.user_id}; the assignment email will not be sent: ${describeError(userRowError)}`,
+          { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
+          'warning',
+        );
+      }
+
+      if (userRow?.email) {
+        await notifyDevPlanAssigned(
+          playerRow.user_id,
+          userRow.email,
+          title,
+          areaType,
+          coachName?.trim() || 'Your Coach',
+          // Fairway's link redirects to a Development drill Clubhouse does not draw: send a Clubhouse player to the
+          // screen that is rebuilt, where the focus area and its Accept and Decline are. Decided by the PLAYER's team:
+          // the session here is the coach's, so isClubhouseFor would answer for the wrong user under an allowlist.
+          isClubhouseForTeam(await resolvePlayerTeamId(supabase, playerId)) ? CLUBHOUSE_DEV_PLAN_PATH : undefined
+        );
+      }
+    }
+  } catch (notifErr) {
+    await logServerError(`[${action}] Notification error (non-fatal): ${describeError(notifErr)}`, { action });
+  }
+}
+
 async function resolvePlayerTeamAndCoach(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
@@ -1614,6 +1632,19 @@ async function createFocusAreaFromInsightV2Impl(
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
+  // CH13-24: a coach's prescription tells the player, as createFocusArea does.
+  if (isCoachPromoting) {
+    // The coach's name only signs the notice; a failed read sends it as "Your Coach".
+    let coachName: string | null = null;
+    try {
+      const { data: actingCoach } = await supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle();
+      coachName = actingCoach?.full_name ?? null;
+    } catch {
+      coachName = null;
+    }
+    await notifyPlayerOfProposedFocus(supabase, args.playerId, args.title, args.areaType, coachName, 'development.createFocusAreaFromInsightV2');
+  }
+
   // P1-12: creating a focus area FROM an insight is a real coach action on that
   // insight — record it (failure-silent) so the effectiveness rollup counts it.
   await recordInsightAction({
@@ -1764,7 +1795,7 @@ async function createFocusAreaFromInsightImpl(
   // Verify user is a coach
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id')
+    .select('id, full_name')
     .eq('user_id', user.id)
     .single();
 
@@ -1884,6 +1915,9 @@ async function createFocusAreaFromInsightImpl(
     })
     .eq('id', data.insight_id);
   await (insight?.team_id ? ackQuery.eq('team_id', insight.team_id) : ackQuery);
+
+  // CH13-24: the player hears about the proposal, as from createFocusArea.
+  await notifyPlayerOfProposedFocus(supabase, data.player_id, data.title, areaType, coach.full_name, 'development.createFocusAreaFromInsight');
 
   // P1-12: record the focus-area creation as a real action on the source
   // insight (failure-silent). Only a confirmed insert of an authorized row

@@ -19,7 +19,7 @@ vi.mock('../routes/team', () => ({
   },
 }));
 
-const { isClubhouseFor, clubhouseTeamAllowlist } = await import('../gate');
+const { isClubhouseFor, isClubhouseForTeam, clubhouseTeamAllowlist } = await import('../gate');
 
 beforeEach(() => {
   flag.on = true;
@@ -65,5 +65,21 @@ describe('isClubhouseFor with a team allowlist (Q-131)', () => {
     session.current = null;
     expect(await isClubhouseFor('player')).toBe(false);
     expect(await isClubhouseFor(null)).toBe(false);
+  });
+});
+
+describe('isClubhouseForTeam: a link sent to someone else follows their team, not the sender’s (CH13-24)', () => {
+  it('no allowlist: the flag decides', () => {
+    expect(isClubhouseForTeam('team-z')).toBe(true);
+    expect(isClubhouseForTeam(null)).toBe(true);
+    flag.on = false;
+    expect(isClubhouseForTeam('team-a')).toBe(false);
+  });
+
+  it('with an allowlist: the recipient’s team decides, and no team is Fairway', () => {
+    process.env.HELM_CLUBHOUSE_TEAMS = 'team-a';
+    expect(isClubhouseForTeam('team-a')).toBe(true);
+    expect(isClubhouseForTeam('team-z')).toBe(false);
+    expect(isClubhouseForTeam(null)).toBe(false);
   });
 });

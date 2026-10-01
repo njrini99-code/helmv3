@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 const notifyDevPlanAssigned = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('@/lib/notifications', () => ({ notifyDevPlanAssigned }));
 const clubhouse = vi.hoisted(() => ({ on: false }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: string | null) => clubhouse.on && (role === 'coach' || role === 'player') }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseForTeam: () => clubhouse.on }));
 vi.mock('@/lib/coachhelm/v3/effectiveness/event-ledger', () => ({ recordInsightAction: vi.fn().mockResolvedValue(undefined) }));
 
 const verifyPlayerAccessMock = vi.fn();
@@ -211,5 +211,23 @@ describe('CH13-7 the "New focus area" notification goes where the player can see
     world({ coachTeam: 'team-coach', onCoachTeam: true });
     await createFocusArea({ ...base, status: 'proposed' });
     expect(notifyDevPlanAssigned).toHaveBeenCalledWith('user-1', 'jonah@example.com', 'Lag putting', 'putting', 'Coach Reyes', undefined);
+  });
+});
+
+describe('CH13-24 Assign as focus tells the player, as every coach proposal does', () => {
+  it('Clubhouse’s Assign (V2) sends the "New focus area" notice', async () => {
+    clubhouse.on = true;
+    world({ playerTeam: 'team-player' });
+    expect(await createFocusAreaFromInsightV2({ playerId: 'player-1', insightId: 'insight-1', title: 'Lag putting', description: 'x', areaType: 'putting' })).toMatchObject({ success: true });
+    expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);
+    expect(notifyDevPlanAssigned).toHaveBeenCalledWith('user-1', 'jonah@example.com', 'Lag putting', 'putting', 'Coach Reyes', '/golf/dashboard/stats?tab=dev');
+  });
+
+  it('the legacy insight path sends it too', async () => {
+    clubhouse.on = false;
+    world({ playerTeam: 'team-player', insightTeam: 'team-player' });
+    const args = { insight_id: 'insight-1', player_id: 'player-1', coach_id: 'coach-1', title: 'Work on putts', description: null, insight_type: 'stat_regression' };
+    expect(await createFocusAreaFromInsight(args)).toMatchObject({ success: true });
+    expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);
   });
 });

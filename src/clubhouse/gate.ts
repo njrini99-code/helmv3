@@ -40,6 +40,18 @@ export async function isClubhouseFor(role: 'coach' | 'player' | null | undefined
 }
 
 /**
+ * Whether a team, rather than the signed-in user, is on Clubhouse: for a link
+ * one user's action sends another (a coach's proposal emailed to a player).
+ * The flag, then the allowlist by the recipient's team; no team reads as
+ * Fairway only while an allowlist is set.
+ */
+export function isClubhouseForTeam(teamId: string | null | undefined): boolean {
+  if (!isFlagEnabled('golf_clubhouse_ui')) return false;
+  const allow = clubhouseTeamAllowlist();
+  return !allow || (teamId != null && allow.has(teamId));
+}
+
+/**
  * The switch between the current entrance pages (sign in and the welcome) and
  * Clubhouse's. Those pages are drawn for a visitor with no role, so the
  * per-role check above cannot apply; this flag is its own (off in production
