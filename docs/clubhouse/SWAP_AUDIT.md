@@ -456,6 +456,12 @@ Still to do on the branch:
   cleans up after itself.
 - Final registry sync, full gates, one push, CI green.
 
+Tooling, not fixed here: `scripts/db/check-declarative-schema-drift.sh`
+reports about 3,500 statements on a fresh local reset, including objects
+this branch never touched, and no CI workflow runs it. The branch's own
+held changes are mirrored in `supabase/schemas` (`65f5e0af2`); the gate
+itself needs its own fix.
+
 Owner actions (not agent work):
 
 - Apply the held migrations in the order in `supabase/migrations/HELD.md`,
