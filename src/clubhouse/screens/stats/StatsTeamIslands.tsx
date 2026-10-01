@@ -26,6 +26,7 @@ import { sgBaseline, sgScale, sgTint } from '../../lib/sg';
 import { changeWords, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { teamPlayerHref } from './links';
+import { LinkPending } from '../../shell/LinkPending';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -300,9 +301,12 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
         </div>
       </div>
       {n === 0 || !all.length ? (
-        <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
+        // The empty window keeps the plot's height (the team's players set it), so the page below stays where it was.
+        <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: data.players.length }}>
+          <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
+        </div>
       ) : (
-        <div className="ch-sgt__plot">
+        <div className="ch-sgt__plot" style={{ ['--ch-ends' as string]: data.players.length }}>
           <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
             {ticks.map((t) => (
               <g key={t}>
@@ -497,6 +501,7 @@ function LegGrid({
                   </>
                 )}
               </span>
+              <LinkPending />
             </Link>
           ))}
         </div>

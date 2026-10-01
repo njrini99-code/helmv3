@@ -12,6 +12,7 @@ import { formatSigned, NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
+import { LinkPending } from '../../shell/LinkPending';
 import { StatsTeamPhone } from './StatsTeamPhone';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
 
@@ -123,6 +124,7 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
         />
       )}
       <FigureCards
+        hold
         items={figures.map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
@@ -136,6 +138,8 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
           code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
         }))}
       />
+      {/* The line is there in every window (empty when no note is shared), so a window with a note and one without leave the page below where it was. */}
+      {shared.length === 0 && <p className="ch-st-cover" aria-hidden="true" />}
       {shared.map((note) => (
         <p key={note} className="ch-st-cover">
           {note}
@@ -185,6 +189,7 @@ function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: C
                 <b>{b.name}</b>
                 <span className="ch-who__m">{b.meta}</span>
               </span>
+              <LinkPending />
             </Link>
             <span className={'ch-num ch-best__v' + (b.under ? ' is-under' : '')}>{b.value}</span>
           </div>

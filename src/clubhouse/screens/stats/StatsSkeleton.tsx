@@ -33,6 +33,8 @@ export function StatsProfileSkeleton() {
               <Skeleton width={72} height={11} />
               <Skeleton width={56} height={24} radius={7} />
               <Skeleton width={64} height={11} />
+              {/* The strokes gained figure's change line (the loaded hero keeps it in every window). */}
+              {i === 2 && <span className="ch-pf-hero__chg" style={{ display: 'block' }} />}
             </div>
           ))}
         </div>
@@ -97,11 +99,29 @@ export function StatsSkeleton() {
           </div>
         ))}
       </div>
-      <div className="ch-sgt" style={{ padding: 20 }}>
-        <Skeleton width={200} height={17} />
-        <div style={{ height: 16 }} />
+      {/* The caption line under the cards (the loaded page keeps it in every window). */}
+      <p className="ch-st-cover" aria-hidden="true" />
+      <TrendSkeleton />
+    </main>
+  );
+}
+
+/** The trend card: its own head and plot frame (the plot is as tall as a team of eight, the usual one), and the note's line, so the cards below it land where they will be. */
+function TrendSkeleton() {
+  return (
+    <div className="ch-sgt" aria-hidden="true">
+      <div className="ch-sgt__head" style={{ minHeight: 70 }}>
+        <div>
+          <Skeleton width={200} height={17} />
+          <div style={{ height: 8 }} />
+          <Skeleton width={320} height={12} />
+        </div>
+        <Skeleton width={236} height={32} radius={11} />
+      </div>
+      <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: 8, padding: '0 10px' }}>
         <Skeleton width="100%" height={240} radius={12} />
       </div>
-    </main>
+      <div style={{ height: 26 }} />
+    </div>
   );
 }

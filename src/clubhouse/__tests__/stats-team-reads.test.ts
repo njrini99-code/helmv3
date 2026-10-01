@@ -95,6 +95,25 @@ describe('Team stats reads', () => {
     expect(stats.putting?.putts).toBe(1);
   });
 
+  it('a season of more than 200 rounds is asked for in chunks of 200 (the URL stays short), and the longest is the longest across the chunks', async () => {
+    const asked: number[] = [];
+    // One chunk answers 40 ft, another 75 ft, another 61 ft: the 75 is the season's.
+    const feetByChunk = [40, 75, 61];
+    const chain = (ids: string[]) => {
+      const n = asked.push(ids.length);
+      const feet = feetByChunk[n - 1] ?? 0;
+      const q: Record<string, unknown> = {};
+      for (const m of ['select', 'in', 'eq', 'gte', 'lte', 'order', 'limit']) q[m] = () => q;
+      q.then = (ok: (v: unknown) => unknown) => Promise.resolve({ data: [{ round_id: `r-${n}`, putt_distance_feet: feet, putt_made: true }], error: null }).then(ok);
+      return q;
+    };
+    const supabase = { from: () => ({ select: () => ({ in: (_c: string, ids: string[]) => chain(ids) }) }) };
+    const { loadLongestPutt } = await import('../data/stats-common');
+    const res = await loadLongestPutt(supabase as never, Array.from({ length: 450 }, (_, i) => `round-${i}`));
+    expect(asked.sort((a, b) => b - a)).toEqual([200, 200, 50]);
+    expect(res).toEqual({ longest: { roundId: 'r-2', feet: 75, made: true }, error: false });
+  });
+
   it('a longest-putt read that fails leaves the best out and is logged; the putting card and the rest of the page are unaffected', async () => {
     tables.current = base({ golf_shots: (f) => (isLongest(f) ? { error: { message: 'boom' } } : { data: [{ round_id: 'p1-r0', putt_distance_feet: 8, putt_made: true }] }) });
     const stats = await loadTeamStats({ teamId: 't1', window: 'last10', filter: filterFor('last10') });

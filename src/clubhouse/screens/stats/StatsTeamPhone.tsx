@@ -15,6 +15,7 @@ import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { SgBars } from './charts';
 import { teamPlayerHref } from './links';
+import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
 import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow, useShownWindow } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
@@ -146,7 +147,13 @@ function Trend({ data }: { data: ChTeamStats }) {
     return (
       <section className="ch-stm-panel" aria-labelledby="ch-stm-trend">
         {head}
-        <p className="ch-stm-note">The trend draws once the team has rounds on a second day.</p>
+        {/* The chart's frame and the reading's line stay, so a window without a trend is as tall as one with it. */}
+        <div className="ch-stm-chart-hold">
+          <p className="ch-stm-note">The trend draws once the team has rounds on a second day.</p>
+        </div>
+        <p className="ch-stm-note" aria-hidden="true">
+          &nbsp;
+        </p>
       </section>
     );
   const change = known[known.length - 1]!.score - known[0]!.score;
@@ -277,6 +284,7 @@ function Players({ data }: { data: ChTeamStats }) {
                   <span className={p.total == null ? '' : p.total >= 0 ? 'ch-gain' : 'ch-loss'}>{p.total == null ? 'Early read' : `${formatSigned(p.total)} SG`}</span>
                 </span>
                 <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
+                <LinkPending />
               </Link>
             </li>
           ))}

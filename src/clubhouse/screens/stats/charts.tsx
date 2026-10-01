@@ -29,7 +29,10 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
 /** Figure cards with a change chip; the chip colour follows direction and whether lower is better. */
 export function FigureCards({
   items,
+  hold = false,
 }: {
+  /** Team stats: the cards keep the height of their fullest layout in every window (`.ch-fg--hold`), so a window change does not move the page below. */
+  hold?: boolean;
   items: Array<{
     label: string;
     value: string;
@@ -47,7 +50,7 @@ export function FigureCards({
   }>;
 }) {
   return (
-    <div className="ch-fg" style={{ ['--ch-fg-n' as string]: items.length }}>
+    <div className={'ch-fg' + (hold ? ' ch-fg--hold' : '')} style={{ ['--ch-fg-n' as string]: items.length }}>
       {items.map((it) => {
         const d = it.delta;
         const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);

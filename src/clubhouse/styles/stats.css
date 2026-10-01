@@ -129,13 +129,19 @@
   display: flex;
   align-items: center;
 }
+/* The loaded team card's height in each layout (`.ch-fg--hold` below; measured, perf 2026-10-01): six across, one line label; six across on a
+   canvas up to 1116px, where "Greens in regulation" and the like take a second line; two across. */
 .ch-fg__c--skel {
-  /* Six cards, the strokes gained one with a second line (its baseline). */
-  min-height: 155px;
+  min-height: 196px;
 }
 @container (min-width: 901px) and (max-width: 1116px) {
   .ch-fg__c--skel {
-    min-height: 179px;
+    min-height: 213px;
+  }
+}
+@container (max-width: 900px) {
+  .ch-fg__c--skel {
+    min-height: 155px;
   }
 }
 .ch-fg__v {
@@ -168,6 +174,23 @@
   font: 400 12.5px/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* Team figures hold the height of their fullest layout in every window (Last 10: the change chip with its words wrapped under it, and the
+   strokes gained note on two lines), so choosing Season or Qualifiers does not pull the page up. Two across (a narrow canvas) the words
+   sit beside the chip and the note takes one line. */
+.ch-fg--hold .ch-fg__d {
+  min-height: calc(22px + 8px + 1.3 * 12.5px);
+}
+.ch-fg--hold .ch-fg__n {
+  min-height: calc(2 * 1.3 * 12.5px);
+}
+@container (max-width: 900px) {
+  .ch-fg--hold .ch-fg__d {
+    min-height: 22px;
+  }
+  .ch-fg--hold .ch-fg__n {
+    min-height: calc(1.3 * 12.5px);
+  }
+}
 /* A strokes gained change against the previous 10: the chip, then the words. */
 .ch-sgchg {
   display: inline-flex;
@@ -178,6 +201,8 @@
   color: var(--ch-text-tertiary);
 }
 .ch-pf-hero__figs .ch-pf-hero__chg {
+  /* The chip's own height, so a window without a change keeps its line (the SG figure always renders it). */
+  min-height: 22px;
   margin: 0;
   font: var(--ch-type-caption);
   letter-spacing: normal;
@@ -264,6 +289,14 @@
   gap: 8px;
   align-items: center;
   padding: 0 10px;
+  /* The list beside the chart is as tall as the team's players (the Team row, then one 32px row and a 2px gap each), whichever of them have
+     rounds in this window, so a window with fewer players does not shorten the card and pull the page up. */
+  min-height: calc(30px + var(--ch-ends, 0) * 34px);
+}
+.ch-sgt__hold {
+  display: grid;
+  align-items: center;
+  min-height: calc(30px + var(--ch-ends, 0) * 34px);
 }
 .ch-sgt__svg {
   display: block;
@@ -1557,6 +1590,11 @@ a.ch-lg__r:focus-visible {
   .ch-sgt__plot {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* The players wrap in rows under the chart here, so their count no longer sets a height. */
+  .ch-sgt__plot,
+  .ch-sgt__hold {
+    min-height: 0;
+  }
   .ch-sgt__ends {
     flex-flow: row wrap;
   }
@@ -1704,6 +1742,17 @@ a.ch-lg__r:focus-visible {
     width: 100%;
     height: auto;
     overflow: visible;
+  }
+  /* A panel with no chart to draw keeps the chart's frame (the same 340:120 box as ScoreLine's viewBox), so the panels below stay put. */
+  .ch-stm-chart-hold {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 340 / 120;
+    text-align: center;
+  }
+  /* The putting reading is one line or two; its panel holds two. */
+  .ch-stm-putt + .ch-stm-note {
+    min-height: calc(2 * 1.45 * 13px);
   }
   .ch-stm-chart__mean {
     stroke: var(--ch-border-strong);
@@ -2628,6 +2677,8 @@ a.ch-lg__r:focus-visible {
 
 /* The hole-coverage line under the team figures, once for the row (F-54). */
 .ch-st-cover {
+  /* One caption line, whether or not there is a note: the page below does not move when a window has none. */
+  min-height: 18px;
   margin: -6px 2px 0;
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
