@@ -1,14 +1,16 @@
 # P013 — CoachHelm: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/coachhelm.md`. Results marked "as reported by the lead" are the lead's entry in
-`PROGRESS.md` (2026-09-30), not something re-run when this file was written.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/coachhelm.md`. Results marked "as reported
+by the lead" are the lead's entry in `PROGRESS.md` (2026-09-30), not something
+re-run when this file was written.
 
 ## Current verification status
 
 ```text
 Status:     partial
-Commit/PR:  agent/clubhouse, 8476314a7 (the build); these docs were written afterwards and not yet committed
+Commit/PR:  agent/clubhouse, 8476314a7 (the build); these docs were written
+            afterwards and not yet committed
 Date:       2026-09-30
 ```
 
@@ -29,8 +31,9 @@ Date:       2026-09-30
 | --- | --- | --- |
 | `src/clubhouse/__tests__/coachhelm.test.tsx` (112 cases) | every catalog row of kinds 0 to 5 that is not preview (CH-13001 to CH-13901) named in a test title, and the hand contracts listed below | pass: `npx vitest run src/clubhouse/__tests__/coachhelm.test.tsx` exit 0, 112/112, run when this file was written. Mutation checks (about 160, all caught after a second pass; the `?view=` guard 3 of 3) as reported by the lead |
 
-The hand contracts are all `reserved` in the registry: none of the test titles carries a Bridge ID yet, and the
-registry marks a hand contract `implemented` only when its test file names the ID. What the file covers today:
+The hand contracts are all `reserved` in the registry: none of the test titles
+carries a Bridge ID yet, and the registry marks a hand contract `implemented`
+only when its test file names the ID. What the file covers today:
 
 | Contract | Covered | Test (a leading phrase of its title) | What the tests do not show |
 | --- | --- | --- | --- |
@@ -63,35 +66,42 @@ registry marks a hand contract `implemented` only when its test file names the I
 | 132101 loader reads in rounds | partly | “the team’s players only, each with their top insight and how many signals they have”; “their feed, ranked as the feed ranks it, each insight with its drill’s description”; “a failed drill read keeps the drill’s name and length, and is logged”; “a failed focus-area read leaves Assign available and is logged” | The calls and their arguments (ids, limit 1, limit 30) are asserted; that the reads run together, not one after another, is read in the code. |
 | 132301 failures reported | partly | “a failed drill read keeps the drill’s name and length, and is logged”; “CH-13201 a feed that throws is an error, logged”; “CH-13202 a failed visible read is an error, logged”; “CH-13202 a failed roster read is an error (never an empty team), and the pulse still loads”; “a failed focus-area read leaves Assign available and is logged” | chReport and chTrail are mocked in this file and never asserted; the gate, dismissed, rounds, players and heads logs are not asserted either. |
 
-Eighteen are covered, eight partly and two not at all. A phrase in quotes is the start of a test's title in
-`coachhelm.test.tsx` (each was checked against the file); the lead adds the Bridge ID to those titles when flipping a
-contract to `implemented`.
+Eighteen are covered, eight partly and two not at all. A phrase in quotes is the
+start of a test's title in `coachhelm.test.tsx` (each was checked against the
+file); the lead adds the Bridge ID to those titles when flipping a contract to
+`implemented`.
 
-What the suite forces, beyond the catalog: it loads a player's and a coach's data through the loaders with a fake
-database and checks which ids every read is given, that a coach with no resolved team reads no player, that
-the delivery actions' empty answers are told apart from a first run, that the gate's off reasons are kept or
-dropped, and that the page and its loading file take the Clubhouse or Fairway branch. It presses Assign, Dismiss
-and Undo once and lands, then with a refusal and Retry, and forces Assign offline.
+What the suite forces, beyond the catalog: it loads a player's and a coach's
+data through the loaders with a fake database and checks which ids every read is
+given, that a coach with no resolved team reads no player, that the delivery
+actions' empty answers are told apart from a first run, that the gate's off
+reasons are kept or dropped, and that the page and its loading file take the
+Clubhouse or Fairway branch. It presses Assign, Dismiss and Undo once and lands,
+then with a refusal and Retry, and forces Assign offline.
 
 ## Visual verification
 
 ### Desktop
 
 ```text
-Viewport:  1280px (preview, /clubhouse-preview/coachhelm and coachhelm-player), looked at by eye by the lead
-           on 2026-09-30, as reported in PROGRESS.md
+Viewport:  1280px (preview, /clubhouse-preview/coachhelm and coachhelm-player),
+           looked at by eye by the lead on 2026-09-30, as reported in
+           PROGRESS.md
 Reference: design/handoff/Coach - CoachHelm.html and Player - CoachHelm.html
-Result:    looked at by the lead, as reported; no side-by-side pixel comparison and no measured spacing, type or
-           radius pass is recorded (the checklist's desktop gate is unticked)
+Result:    looked at by the lead, as reported; no side-by-side pixel comparison
+           and no measured spacing, type or radius pass is recorded (the
+           checklist's desktop gate is unticked)
 ```
 
 ### Phone
 
 ```text
-Viewport:     390px (preview), looked at by eye by the lead on 2026-09-30, as reported in PROGRESS.md
+Viewport:     390px (preview), looked at by eye by the lead on 2026-09-30, as
+              reported in PROGRESS.md
 Device/shell: not on a real iPhone (npm run ios:dev, owner)
 Reference:    design/handoff/Coach and Player - CoachHelm - Mobile.html
-Result:       built to the approved spec and seen at 390; no iPhone pass, no measured touch-target pass
+Result:       built to the approved spec and seen at 390; no iPhone pass, no
+              measured touch-target pass
 ```
 
 ## Forced states
@@ -109,21 +119,26 @@ Result:       built to the approved spec and seen at 390; no iPhone pass, no mea
 | Dismiss and Undo | CH-13901, 131403 | tests | the notice keeps Undo; Undo restores the state it had |
 | The player's views | 130104, CH-13260, 13270, 13271, 13280 to 13283, 13304, 13360, 13361, 13370 to 13384, 13460, 13470, 13480 | tests (each view: ready, off, failed, empty or first run, early or partial, each part failed), `?view=profile\|standing\|deep-dive` and `?state=` | profile, standing and deep-dive are the player's own views; development goes to Stats' Development; insights draws the board; a failed read is its own notice, never an empty page |
 
-The `?state=` entries name the preview state that draws each state. Only the ones the axe run walks (listed under
-Accessibility) are recorded as visited in a browser, and none was forced against a live session.
+The `?state=` entries name the preview state that draws each state. Only the
+ones the axe run walks (listed under Accessibility) are recorded as visited in a
+browser, and none was forced against a live session.
 
 ## Accessibility
 
 ```text
-Axe:            `npm run clubhouse:a11y` clean at 1280px and 390px over ten preview states, 20 runs (as reported by the lead).
-                Walked: the coach's default, assigned, empty, failed, off and loading; the player's default, empty,
-                norounds and failed. Not walked: the coach's noroster, pulsefailed, quiet, failwrites, failundo and
+Axe:            `npm run clubhouse:a11y` clean at 1280px and 390px over ten
+                preview states, 20 runs (as reported by the lead). Walked: the
+                coach's default, assigned, empty, failed, off and loading; the
+                player's default, empty, norounds and failed. Not walked: the
+                coach's noroster, pulsefailed, quiet, failwrites, failundo and
                 duplicate, and the player's working, off and loading.
-Keyboard:       no keyboard walk of the page was done; every control is a native button or link (no test presses one with
-                the keyboard).
+Keyboard:       no keyboard walk of the page was done; every control is a native
+                button or link (no test presses one with the keyboard).
 VoiceOver:      not tried on a device.
-Focus:          no dialog and no form on the page; focus was not otherwise checked.
-Reduced motion: CH-13601's rule for Animations off is in the stylesheet; not exercised in a browser.
+Focus:          no dialog and no form on the page; focus was not otherwise
+                checked.
+Reduced motion: CH-13601's rule for Animations off is in the stylesheet; not
+                exercised in a browser.
 Contrast:       covered only by the axe runs above.
 Text scaling:   not checked.
 ```
@@ -132,9 +147,11 @@ Text scaling:   not checked.
 
 ```text
 Layout shift:      not measured
-Request waterfall: none on the client; the server loaders read in rounds (132101)
-Large list:        not measured (the visible-insights and rounds reads paginate; a coach's board loads one top insight per
-                   player, a player's feed at most 30)
+Request waterfall: none on the client; the server loaders read in rounds
+                   (132101)
+Large list:        not measured (the visible-insights and rounds reads paginate;
+                   a coach's board loads one top insight per player, a player's
+                   feed at most 30)
 Animation:         the shell's tokens, plus the chip's rise (base)
 Notes:             first-load JS and LCP (CH-1954) are open
 ```
@@ -199,21 +216,28 @@ Observed after the two changes (CHANGELOG.md has what changed):
 | Lint | `npx eslint` on the changed CoachHelm files | exit 0 |
 | Clubhouse check | `npm run -s clubhouse:check` | exit 1 on the registry only for this page: the seven new catalog codes have no Bridge ID and CONTRACT.md is stale, both for `registry.mjs sync` (the lead's) |
 
-Not observed: the new preview states in a browser and in axe (the preview route and `a11y.mjs` are not this change's to edit: `?state=proposed|failproposal|proposalsfailed` on `/clubhouse-preview/coachhelm-player`), a real player with a proposed focus area, and the Tour values against a real women's team. Hand contracts 130106, 130801 and 130902 were reworded for the changes; no new hand contract is written.
+Not observed: the new preview states in a browser and in axe (the preview route
+and `a11y.mjs` are not this change's to edit:
+`?state=proposed|failproposal|proposalsfailed` on
+`/clubhouse-preview/coachhelm-player`), a real player with a proposed focus
+area, and the Tour values against a real women's team. Hand contracts 130106,
+130801 and 130902 were reworded for the changes; no new hand contract is
+written.
 
 ## Update 2026-10-01: the player's Game profile, Standing and Deep dive
 
 Observed after building the three views (CHANGELOG.md has what changed). Run
-from `/Users/ricknini/worktrees/helmv3/swap-audit` at the Deep dive commit
-(`438781162`) plus the uncommitted CSS fix and docs of the commit after it.
+from `/Users/ricknini/worktrees/helmv3/swap-audit` at `adc9c8320` (the last code
+commit; the docs commit after it changes no code).
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Tests | `npm run test:file -- src/clubhouse/__tests__/coachhelm*.test.tsx src/clubhouse/__tests__/coachhelm*.test.ts` | exit 0: 13 files, 548 tests passed. `coachhelm-dive.test.tsx` alone: 61 |
+| Tests | `npm run test:file -- src/clubhouse/__tests__/coachhelm*.test.tsx src/clubhouse/__tests__/coachhelm*.test.ts` | exit 0: 13 files, 552 tests passed. `coachhelm-dive.test.tsx` alone: 65 |
 | Typecheck | `npm run typecheck:fast` | exit 0 |
 | Lint | `npx eslint` on the changed `src/clubhouse` and `src/app/clubhouse-preview` files | exit 0 |
 | Clubhouse check | `npm run clubhouse:check` | exit 0: 35 unit tests, 417 files, 15 pages, 1351 Bridge IDs |
-| Axe and tap targets | a one-off scan (`@axe-core/playwright`, WCAG 2.0 to 2.2 AA with contrast, plus a 44px hit-area probe like `native.mjs`) of `/clubhouse-preview/coachhelm-views` at 1280px and 390px: `view=deep-dive` (default, `q=in-pen`, `q=in-brk`, `partsfailed`, `young`, `empty`, `norounds`, `failed`, `off`, `loading`), `view=profile` (default, `partial`, `edge`, `empty`) and `view=standing` (default, `early`, `empty`, `womens`, `nobaseline`), and the Deep dive's open read on the phone | no axe violation and no page that scrolls sideways. One finding left, not ours: the shell's Home tab reads 76 x 46 under the Next.js dev indicator that sits over it in the preview. Fixed on the way: amber text at 4.47:1 on the phone's darker ivory, and the chip row clipping its tap area to 42px |
+| Docs | `npm run docs:check`; `node scripts/markdown-lint-ratchet.mjs` | both exit 0; the ratchet counts 31316 violations against a baseline of 31397 for the whole branch (it first failed at +139 on MD013, from catalog and generated table rows; the P013 docs were rewrapped to 80 columns to pay for them) |
+| Axe and tap targets | a one-off scan (`@axe-core/playwright`, WCAG 2.0 to 2.2 AA with contrast, plus a 44px hit-area probe like `native.mjs`) of `/clubhouse-preview/coachhelm-views` at 1280px and 390px: `view=deep-dive` (default, `q=in-pen`, `q=in-brk`, `partsfailed`, `young`, `empty`, `norounds`, `failed`, `off`, `loading`), `view=profile` (default, `partial`, `edge`, `empty`) and `view=standing` (default, `early`, `empty`, `womens`, `nobaseline`), and the Deep dive's open read on the phone | no axe violation and no page that scrolls sideways (run again at `adc9c8320`). One finding left, not ours: the shell's Home tab reads 76 x 46 under the Next.js dev indicator that sits over it in the preview. Fixed on the way: amber text at 4.47:1 on the phone's darker ivory, and the chip row clipping its tap area to 42px |
 | Visual | the preview in a browser at 1440, 1280, 1024 and 390px (Deep dive: the list and the read, a read with no rounds, no trend and no plan, parts failed, the phone list and the pushed read) | read against the design intent; no screenshot is kept |
 
 Mutation checks were not run for these views. The loader tests use the table

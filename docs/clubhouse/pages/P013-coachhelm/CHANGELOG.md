@@ -1,6 +1,7 @@
 # P013 — CoachHelm: changelog
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
 
 ## 2026-10-01 — The player's Game profile, Standing and Deep dive (F-04, Q-76)
 
@@ -8,7 +9,9 @@ Owner, 2026-10-01: "coachhelm for player you can build but be detailed."
 
 ```text
 PR/commit:      agent/swap-audit (#2111): 28f83d3a8 (Game profile and the
-                sub-navigation), a657a7d15 (Standing), 438781162 (Deep dive)
+                sub-navigation), a657a7d15 (Standing), 438781162 (Deep dive),
+                c34d3046c (contrast and tap-area fixes, docs), adc9c8320 (what a
+                gap is closed to; movement units)
 Design package: none (no owner board for these views; the phone layouts are a
                 draft built on the phone grammar, DESIGN.md)
 Contract IDs:   30 new Bridge IDs, all CH-13xxx: CH-13260, 13270, 13271,
@@ -52,14 +55,14 @@ Held items:     none
 - **Honest failures.** A failed read is never an empty page. The Deep dive's
   rounds, plans and category trends each fail on their own, in place, with Try
   again, and "In your plan" is a dash while plans did not load.
-- **Checked.** `coachhelm-dive.test.tsx` 61/61; every `coachhelm*.test.ts(x)`
-  13 files, 548/548 (exit 0); `npm run typecheck:fast` exit 0; `npx eslint` on
-  the changed files exit 0; `npm run clubhouse:check` exit 0 (15 pages, 1351
-  Bridge IDs). An axe scan (WCAG 2.2 AA, with contrast) of the previews at
-  1280px and 390px over 11 Deep dive, 4 Game profile and 5 Standing states, and
-  the Deep dive's open phone read: no violations. It found and fixed amber text
-  at 4.47:1 on the phone's darker ivory (now `--ch-chart-loss-on-tint`) and the
-  chip row clipping its own tap area to 42px.
+- **Checked** at `adc9c8320`. `coachhelm-dive.test.tsx` 65/65; every
+  `coachhelm*.test.ts(x)` 13 files, 552/552 (exit 0); `npm run typecheck:fast`
+  exit 0; `npx eslint` on the changed files exit 0; `npm run clubhouse:check`
+  exit 0 (15 pages, 1351 Bridge IDs). An axe scan (WCAG 2.2 AA, with contrast)
+  of the previews at 1280px and 390px over 11 Deep dive, 4 Game profile and 5
+  Standing states, and the Deep dive's open phone read: no violations. It found
+  and fixed amber text at 4.47:1 on the phone's darker ivory (now
+  `--ch-chart-loss-on-tint`) and the chip row clipping its own tap area to 42px.
 - **Not done.** The pages were not read against a live player session (the
   previews and the loader tests with fakes); no device pass or VoiceOver;
   `npm run build` not run (no `'use server'` file changed); the Fairway Deep
@@ -96,8 +99,10 @@ PR/commit:      agent/swap-audit (#2111): 5c4a9c33a, ffc5861cf, c7e24b4f9
 Design package: none
 Contract IDs:   none new (CH-1301 narrowed to profile, standing, deep dive)
 Actions:        none
-Data impact:    none; 114 Demo insight rows regenerated 2026-10-01 (owner-approved, Q-125)
-Held items:     the cache migrations (Q-124) still count test rounds; regenerate again after they are applied
+Data impact:    none; 114 Demo insight rows regenerated 2026-10-01
+                (owner-approved, Q-125)
+Held items:     the cache migrations (Q-124) still count test rounds; regenerate
+                again after they are applied
 ```
 
 - **Development.** `?view=development` (30 unread dev-plan notifications and
@@ -161,23 +166,62 @@ Data impact: none written. One new bounded read of the player's completed
 
 ```text
 PR/commit:      agent/clubhouse
-Catalog:        CH-13004, CH-13005, CH-13205, CH-13404, CH-13704, CH-13807, CH-13902 (new); CH-13204, CH-13601, CH-13802 (reworded)
-Data impact:    none written. New reads: the player's own proposed golf_player_focus_areas, the team's gender
-                (golf_teams), and golf_pga_standards (reference data, readable by any signed-in user). No migration
+Catalog:        CH-13004, CH-13005, CH-13205, CH-13404, CH-13704, CH-13807,
+                CH-13902 (new); CH-13204, CH-13601, CH-13802 (reworded)
+Data impact:    none written. New reads: the player's own proposed
+                golf_player_focus_areas, the team's gender (golf_teams), and
+                golf_pga_standards (reference data, readable by any signed-in
+                user). No migration
 ```
 
 ### Accept and Decline on the player's board (Q-77)
 
-- **Issue.** A coach's Assign as focus makes a proposal the player accepts, but the only Clubhouse screen with Accept and Decline was Stats Development; a player on CoachHelm, where the coach's assignment is most likely to be talked about, had no way to answer it.
-- **Fix.** The player's board has a "Proposed for you" card above the focus: each focus area the coach proposed (the player's own `proposed` rows on their active team, newest first, with the insight it came from when that insight is on the page) with Accept and Decline, over the same `acceptFocusArea` and `declineFocusArea`. The answer confirms itself in place ("Started · title", "Declined · title"), a failure says what failed with Retry and keeps both buttons (CH-13004, CH-13005), a read that failed is its own notice rather than "nothing proposed" (CH-13205), and the coach's board never has either button. Stats' `ProposalAnswer` is not reused (its toast numbers and style are Stats'); the row is this page's own over the same actions.
-- **Checked.** coachhelm.test 142/142; typecheck:fast clean for these files; eslint 0; 17 mutations of Accept, Decline, the proposals read, the notice and the preview's writes each fail a test.
+- **Issue.** A coach's Assign as focus makes a proposal the player accepts, but
+  the only Clubhouse screen with Accept and Decline was Stats Development; a
+  player on CoachHelm, where the coach's assignment is most likely to be talked
+  about, had no way to answer it.
+- **Fix.** The player's board has a "Proposed for you" card above the focus:
+  each focus area the coach proposed (the player's own `proposed` rows on their
+  active team, newest first, with the insight it came from when that insight is
+  on the page) with Accept and Decline, over the same `acceptFocusArea` and
+  `declineFocusArea`. The answer confirms itself in place ("Started · title",
+  "Declined · title"), a failure says what failed with Retry and keeps both
+  buttons (CH-13004, CH-13005), a read that failed is its own notice rather than
+  "nothing proposed" (CH-13205), and the coach's board never has either button.
+  Stats' `ProposalAnswer` is not reused (its toast numbers and style are
+  Stats'); the row is this page's own over the same actions.
+- **Checked.** coachhelm.test 142/142; typecheck:fast clean for these files;
+  eslint 0; 17 mutations of Accept, Decline, the proposals read, the notice and
+  the preview's writes each fail a test.
 
 ### The Tour in place of "College cohort avg" (Q-88)
 
-- **Issue.** Two generators (course-mgmt.ts and pressure-gap.ts) write a college comparison ("College cohort avg 0.6", value from `golf_player_standing.level_avg`), drawn as the gauge's comparison with the Tour beside it, and the reasoning quoted it ("College players in our data average ~0.6"). The owner's rule is the Tour, never a college benchmark.
-- **Fix.** A college comparison (`cohort_avg`, or a division average) is drawn as the Tour's value for the metric from `golf_pga_standards.pga_tour_value` ("Tour 0.3"), for the team's own tour (the LPGA's for a women's team, "LPGA Tour 0.4"); the generator's own Tour tick beside it is the same number, so it is drawn once. Where the tour has no value for the metric, or the team's tour is not known, there is no comparison and no gauge (the sample and window still show), and the "College players in our data average" sentence is left out of the reasoning. Whether an insight is working is still the generator's call (its priority is anchored to its own comparison); only what is drawn moved.
-- **Checked.** coachhelm.test 142/142 (the men's and women's tour, a missing value, an unknown team, a failed team read and a failed standards read, in both loaders); 9 mutations (the college source, the fallback to the college number, the LPGA label, the doubled Tour tick, the prose sentence and its specificity, the coach's and the player's tour) each fail a test; two more that changed nothing showed a redundant guard, which was removed.
-- **Left, for the shared generators.** The generators' other college wording (a cold-start "top college teams stay under 0.5", "college typical is 2-5", and the women's-college "estimated target" comparisons on approach, putting and sand saves) and a women's team's cold-start "PGA Tour avg" (the men's value) are not this page's to reword; a women's cold-start Tour tick is the men's until the generators are moved (Q-93).
+- **Issue.** Two generators (course-mgmt.ts and pressure-gap.ts) write a college
+  comparison ("College cohort avg 0.6", value from
+  `golf_player_standing.level_avg`), drawn as the gauge's comparison with the
+  Tour beside it, and the reasoning quoted it ("College players in our data
+  average ~0.6"). The owner's rule is the Tour, never a college benchmark.
+- **Fix.** A college comparison (`cohort_avg`, or a division average) is drawn
+  as the Tour's value for the metric from `golf_pga_standards.pga_tour_value`
+  ("Tour 0.3"), for the team's own tour (the LPGA's for a women's team, "LPGA
+  Tour 0.4"); the generator's own Tour tick beside it is the same number, so it
+  is drawn once. Where the tour has no value for the metric, or the team's tour
+  is not known, there is no comparison and no gauge (the sample and window still
+  show), and the "College players in our data average" sentence is left out of
+  the reasoning. Whether an insight is working is still the generator's call
+  (its priority is anchored to its own comparison); only what is drawn moved.
+- **Checked.** coachhelm.test 142/142 (the men's and women's tour, a missing
+  value, an unknown team, a failed team read and a failed standards read, in
+  both loaders); 9 mutations (the college source, the fallback to the college
+  number, the LPGA label, the doubled Tour tick, the prose sentence and its
+  specificity, the coach's and the player's tour) each fail a test; two more
+  that changed nothing showed a redundant guard, which was removed.
+- **Left, for the shared generators.** The generators' other college wording (a
+  cold-start "top college teams stay under 0.5", "college typical is 2-5", and
+  the women's-college "estimated target" comparisons on approach, putting and
+  sand saves) and a women's team's cold-start "PGA Tour avg" (the men's value)
+  are not this page's to reword; a women's cold-start Tour tick is the men's
+  until the generators are moved (Q-93).
 
 ## 2026-09-30 — Phone tap targets
 
@@ -199,58 +243,72 @@ Data impact:    none
 
 ### Assign as focus on a strength (Clickables gap 12)
 
-- **Issue.** Assign was hidden on a strength, though the board draws it on Theo's card; contract 130806 had been written from the code, not the board.
-- **Fix.** CoachHelm offers Assign as focus on a strength (a keep-doing focus); 130806 is reworded (Q-80, kept by the owner).
+- **Issue.** Assign was hidden on a strength, though the board draws it on
+  Theo's card; contract 130806 had been written from the code, not the board.
+- **Fix.** CoachHelm offers Assign as focus on a strength (a keep-doing focus);
+  130806 is reworded (Q-80, kept by the owner).
 - **Checked.** coachhelm 112/112; the old hide fails the reworded test.
 
 ## 2026-09-30 — CoachHelm for coach and player, and the V2 page docs
 
 ```text
-Design package: design/handoff/ v2 (Coach - CoachHelm.html, Player - CoachHelm.html, the Mobile board)
-PR/commit:      agent/clubhouse, 8476314a7 (the build); the docs were written afterwards and not yet committed
-Contract IDs:   130101 to 132301 (28 hand contracts, all reserved; 18 covered by a test, 8 partly, 2 not), plus the
-                catalog's 32 (CH-13xxx, Bridge IDs 130201 to 131806)
+Design package: design/handoff/ v2 (Coach - CoachHelm.html, Player -
+                CoachHelm.html, the Mobile board)
+PR/commit:      agent/clubhouse, 8476314a7 (the build); the docs were written
+                afterwards and not yet committed
+Contract IDs:   130101 to 132301 (28 hand contracts, all reserved; 18 covered by
+                a test, 8 partly, 2 not), plus the catalog's 32 (CH-13xxx,
+                Bridge IDs 130201 to 131806)
 Actions:        4 (ACT-P013-*)
-Data impact:    none (reads through the delivery actions and existing tables; the three writes are the Fairway
-                Brief's)
+Data impact:    none (reads through the delivery actions and existing tables;
+                the three writes are the Fairway Brief's)
 Held items:     none
 ```
 
 ### Changed
 
-- The page: one route, `/golf/dashboard/coachhelm`, is the coach's board (program pulse, By player, the chosen
-  player's focus with Assign as focus, Dismiss and Undo) and the player's board (one focus, Also worth knowing,
-  Working, no write), desktop and phone, behind `golf_clubhouse_ui`. The loaders, the catalog (13xxx) and the
-  phone spec came with it.
-- The six page docs, the manifest's actions (`status.docs` current, `status.contract` complete) and the hand
-  contracts: core view, the focus and the player order, the generator-only rule, the route skeleton, failed
-  reads never drawn as empty, a failed gate lookup, offline, the role's controls, each side's own reads, the
-  server actions as the gate (reserved: read, not run), the flag, when Assign is offered, success, the proposal,
-  the existing-focus outcome, state kept, Retry, Try again, Undo, freshness, axe (reserved: not a unit test),
-  the phone layout, the loader's rounds and observability.
-- **The Fairway drills.** `?view=development`, `profile` and `standing` (where /my-development,
-  /my-game-profile, /my-standing and the focus-area cards send people) show the shell's "not rebuilt yet"
-  page (CH-1301) instead of the one-focus board, which they used to land on as if it were the view they asked
-  for. `?view=insights` stays the board. The guard is `VIEWS_NOT_REBUILT` in `routes/coachhelm.tsx`, and the page
-  passes `?view=` to the route (Q-76).
+- The page: one route, `/golf/dashboard/coachhelm`, is the coach's board
+  (program pulse, By player, the chosen player's focus with Assign as focus,
+  Dismiss and Undo) and the player's board (one focus, Also worth knowing,
+  Working, no write), desktop and phone, behind `golf_clubhouse_ui`. The
+  loaders, the catalog (13xxx) and the phone spec came with it.
+- The six page docs, the manifest's actions (`status.docs` current,
+  `status.contract` complete) and the hand contracts: core view, the focus and
+  the player order, the generator-only rule, the route skeleton, failed reads
+  never drawn as empty, a failed gate lookup, offline, the role's controls, each
+  side's own reads, the server actions as the gate (reserved: read, not run),
+  the flag, when Assign is offered, success, the proposal, the existing-focus
+  outcome, state kept, Retry, Try again, Undo, freshness, axe (reserved: not a
+  unit test), the phone layout, the loader's rounds and observability.
+- **The Fairway drills.** `?view=development`, `profile` and `standing` (where
+  /my-development, /my-game-profile, /my-standing and the focus-area cards send
+  people) show the shell's "not rebuilt yet" page (CH-1301) instead of the
+  one-focus board, which they used to land on as if it were the view they asked
+  for. `?view=insights` stays the board. The guard is `VIEWS_NOT_REBUILT` in
+  `routes/coachhelm.tsx`, and the page passes `?view=` to the route (Q-76).
 
 ### Why
 
-- The contract pass (D-62, D-69): every category answered, every behaviour named, and every bug class the
-  earlier passes found looked for here: a failed read shown as empty, a Retry that skips its follow-ups, a control
-  drawn for the wrong role.
-- Q-76 (open): falling through to the Fairway page for those views was rejected because it would draw Fairway
-  inside the Clubhouse frame; rebuilding Development first, then Profile and Standing, is recommended.
-- Q-77 (open): a coach's Assign as focus makes a proposal the player accepts. Accept and Decline are built on
-  the player's side in Stats Development (CH-5003, CH-5004, CH-5404); this board still has none.
+- The contract pass (D-62, D-69): every category answered, every behaviour
+  named, and every bug class the earlier passes found looked for here: a failed
+  read shown as empty, a Retry that skips its follow-ups, a control drawn for
+  the wrong role.
+- Q-76 (open): falling through to the Fairway page for those views was rejected
+  because it would draw Fairway inside the Clubhouse frame; rebuilding
+  Development first, then Profile and Standing, is recommended.
+- Q-77 (open): a coach's Assign as focus makes a proposal the player accepts.
+  Accept and Decline are built on the player's side in Stats Development
+  (CH-5003, CH-5004, CH-5404); this board still has none.
 
 ### Found, not fixed
 
-- A coach's gate lookup failure draws "Nothing is flagged in the pulse right now." beside the roster notice: the
-  loader returns an empty pulse with no error (130608).
-- `?view=deep-dive`, a Fairway view, draws the board and not the not-rebuilt page (130104).
-- `docs/clubhouse/phone/coachhelm.md`, "Open questions for the owner", predates the `?view=` guard and the Stats
-  Accept and Decline.
+- A coach's gate lookup failure draws "Nothing is flagged in the pulse right
+  now." beside the roster notice: the loader returns an empty pulse with no
+  error (130608).
+- `?view=deep-dive`, a Fairway view, draws the board and not the not-rebuilt
+  page (130104).
+- `docs/clubhouse/phone/coachhelm.md`, "Open questions for the owner", predates
+  the `?view=` guard and the Stats Accept and Decline.
 
 ### Verification
 

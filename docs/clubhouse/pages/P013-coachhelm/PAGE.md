@@ -46,37 +46,44 @@ Decline it (Q-77). Coach: Assign as focus.
 
 ### Secondary actions
 
-Player: open another insight into the focus card, open Why we think this, try a failed proposals read again, and move between
-the Board, Game profile, Standing and Deep dive (their own data, read only) or on to Stats' Development. Coach: choose another
-player, Dismiss an insight and Undo it, open Roster, and open CoachHelm settings. Both: try a failed section again.
+Player: open another insight into the focus card, open Why we think this, try a
+failed proposals read again, and move between the Board, Game profile, Standing
+and Deep dive (their own data, read only) or on to Stats' Development. Coach:
+choose another player, Dismiss an insight and Undo it, open Roster, and open
+CoachHelm settings. Both: try a failed section again.
 
 ### Information hierarchy
 
-1. Player: the focus, an insight with its claim, evidence, this week's drill and its reasoning. Coach: the
-   program pulse, then the players most pressing first with the chosen player's focus beside them.
-2. Player: Also worth knowing (the other findings), then Working (the strengths). Coach: the count of players
-   with no insight yet.
-3. The header: the role, "CoachHelm", and for a coach how many players have an open signal (the board draws
-   one card per player, so it counts players, never the rows behind them).
-4. The player's views, each on a green card then white ones: the Game profile (the shape of their game, then each
-   measure), Standing (where they stand against the Tour and the team, then each stat) and the Deep dive (the list of
+1. Player: the focus, an insight with its claim, evidence, this week's drill and
+   its reasoning. Coach: the program pulse, then the players most pressing first
+   with the chosen player's focus beside them.
+2. Player: Also worth knowing (the other findings), then Working (the
+   strengths). Coach: the count of players with no insight yet.
+3. The header: the role, "CoachHelm", and for a coach how many players have an
+   open signal (the board draws one card per player, so it counts players, never
+   the rows behind them).
+4. The player's views, each on a green card then white ones: the Game profile
+   (the shape of their game, then each measure), Standing (where they stand
+   against the Tour and the team, then each stat) and the Deep dive (the list of
    reads, then one read in full with its evidence, trend and rounds).
 
 ### User should notice first
 
-For a player, the claim in the focus card and its priority word. For a coach, who is first in By player
-and what the pulse flags.
+For a player, the claim in the focus card and its priority word. For a coach,
+who is first in By player and what the pulse flags.
 
 ### User should never have to think about
 
-Whether a number was made up (every one is the generator's own), whether an empty page means "nothing" or
-"it did not load" (a failed read says so), whether a control is theirs to press (a player is never drawn a
-coach's), or whether Retry does the whole job (it does).
+Whether a number was made up (every one is the generator's own), whether an
+empty page means "nothing" or "it did not load" (a failed read says so), whether
+a control is theirs to press (a player is never drawn a coach's), or whether
+Retry does the whole job (it does).
 
 ### Success looks like
 
-A player opens the page, reads one focus and knows what to practise; a coach assigns the top signal to
-the player it belongs to and dismisses the ones that do not matter, without leaving the page.
+A player opens the page, reads one focus and knows what to practise; a coach
+assigns the top signal to the player it belongs to and dismisses the ones that
+do not matter, without leaving the page.
 
 ## Semantic features
 
@@ -103,25 +110,31 @@ Status:           approved
 
 ### Enters from
 
-The sidebar (coach and player) and the phone tab bar (CoachHelm is one of each role's four tabs, D-66).
+The sidebar (coach and player) and the phone tab bar (CoachHelm is one of each
+role's four tabs, D-66).
 
 ### Exits to
 
-Roster, from Open roster and View roster (a coach), and CoachHelm settings, from Open CoachHelm settings
-(`/golf/dashboard/settings/coaching-intelligence`); Rounds, from Open Rounds or Start a round (a player). A
-control whose target is not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats' Development tab,
-from the player's sub-navigation and from `?view=development` (where every stored dev-plan notification points); a
-round's review, from a round under a read in the Deep dive, once that screen is rebuilt.
+Roster, from Open roster and View roster (a coach), and CoachHelm settings, from
+Open CoachHelm settings (`/golf/dashboard/settings/coaching-intelligence`);
+Rounds, from Open Rounds or Start a round (a player). A control whose target is
+not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats'
+Development tab, from the player's sub-navigation and from `?view=development`
+(where every stored dev-plan notification points); a round's review, from a
+round under a read in the Deep dive, once that screen is rebuilt.
 
 ## Ownership
 
 ```text
 Design:          the owner (Claude Design)
-Implementation:  src/clubhouse/screens/coachhelm, on the delivery actions and the server actions the
-                 Fairway Brief already uses (one write path per behaviour)
-Data:            coachhelm_ai, player_coachhelm_development, coach_intelligence_triage:
-                 golf_coach_insights (and the player's feedback on them), golf_drills, golf_player_focus_areas,
-                 golf_team_members and golf_players, golf_rounds (a count, only for a first-run player), the
+Implementation:  src/clubhouse/screens/coachhelm, on the delivery actions and
+                 the server actions the Fairway Brief already uses (one write
+                 path per behaviour)
+Data:            coachhelm_ai, player_coachhelm_development,
+                 coach_intelligence_triage: golf_coach_insights (and the
+                 player's feedback on them), golf_drills,
+                 golf_player_focus_areas, golf_team_members and golf_players,
+                 golf_rounds (a count, only for a first-run player), the
                  CoachHelm gate, and the coach's program pulse
 ```
 
@@ -131,8 +144,10 @@ Data:            coachhelm_ai, player_coachhelm_development, coach_intelligence_
 Design:         approved
 Implementation: in_progress (desktop and phone built; gates in PROGRESS.md)
 Contract:       complete (CONTRACT.md: all 25 categories answered)
-Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
-Data:           existing (no held plan; nothing is written that the Fairway Brief does not already write)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is
+                wired, D-68)
+Data:           existing (no held plan; nothing is written that the Fairway
+                Brief does not already write)
 Verification:   partial (VERIFY.md)
 Docs:           current
 ```
