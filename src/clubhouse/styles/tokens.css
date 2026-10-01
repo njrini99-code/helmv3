@@ -189,11 +189,21 @@
    white at arm's length. Desktop keeps the board values. */
 @media (max-width: 820px) {
   [data-ui='clubhouse'] {
-    --ch-bg-page: var(--ch-ivory-200);
-    --ch-bg-surface: var(--ch-ivory-50);
-    --ch-bg-subtle: var(--ch-ivory-100);
-    --ch-bg-hover: var(--ch-ivory-100);
-    --ch-bg-inset: var(--ch-ivory-200);
+    /* The ramp's light end moves down a step, so surfaces that name it directly (cards, sheets, wells) follow. */
+    --ch-ivory-0: #f9f7f1;
+    --ch-ivory-25: #f5f2ea;
+    --ch-ivory-50: #f0ede4;
+    --ch-bg-page: #e7e3d8;
+    --ch-bg-surface: var(--ch-ivory-25);
+    --ch-bg-subtle: var(--ch-ivory-50);
+    --ch-bg-hover: var(--ch-ivory-50);
+    --ch-bg-inset: #e2ddd1;
+    --ch-phone-bar-bg: rgb(231 227 216 / 0.92);
+    --ch-phone-tabbar-bg: rgb(240 237 228 / 0.94);
+    --ch-glass-bg: rgb(240 237 228 / 0.75);
+    --ch-sheet-bg: linear-gradient(180deg, #f7f5ee 0%, #f3f0e7 40%, #efebe1 100%);
+    /* Tertiary text holds 4.5:1 on the darker page. */
+    --ch-ink-500: #5f5c55;
   }
 }
 

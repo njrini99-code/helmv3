@@ -153,6 +153,55 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
   server, Chromium and Docker together). The stack was stopped; the seeded data
   is kept for a rerun.
 
+### Full sweep (2026-09-30, night): both roles, phone and desktop
+
+Dev server (flag on, production data, Demo University Golf) for visuals; the
+flag-on preview `helmv3-3hkylvpkq` (a production build) for timing. 46 pages
+were swept (13 coach and 10 player routes, each at 390 px phone and 1440 px
+desktop). The dev server's load times are webpack compile times and are not
+cited. Preview timing ran beside other work, so it is provisional until a
+quiet rerun.
+
+- **F-28 (P1, Reproduced on the preview, fixed `4b91fdd75`).** On the phone,
+  the "Forgot password?" link's 44 px hit area sized itself to the sign-in
+  sheet and took taps meant for Sign in. Test:
+  `auth-forgot-hit-area.test.ts`.
+- **F-29 (P1, Reproduced on the preview, fixed `ce7832dc7`).** After a
+  successful sign-in, `router.refresh()` re-rendered `/golf/login` with the
+  new session, and the proxy redirected it to `/golf/dashboard`. Frames
+  recorded on the preview: login → Fairway dashboard skeleton → blank Home →
+  welcome. On dev after the fix, sign-in lands on `/golf/welcome` directly.
+  `auth.test.tsx` now asserts that no refresh happens.
+- **F-30 (P1, Source-confirmed and Reproduced, fix in progress).**
+  `/golf/loading.tsx` and `(dashboard)/loading.tsx` render Fairway's shell
+  and dashboard skeleton even with the flag on, so every cold entry painted
+  Fairway chrome before Clubhouse (§7.1: Clubhouse layered on Fairway). With
+  the flag on they now render `ClubhouseShellSkeleton` and `HomeSkeleton`.
+- **F-31 (P0, Reproduced on the preview and on dev).** Team Hub renders the
+  error boundary for both roles at both widths. The server calls
+  `parseHubTab()`, which is exported from a `'use client'` module. Fix in
+  progress (hub worker).
+- **F-32 (P2, Reproduced on dev).** Qualifiers logs a hydration mismatch on
+  load. Fix in progress (hub worker).
+- **F-33 (P2, Reproduced on the preview).** Coach Messages on the phone has a
+  CLS of 0.292 (desktop 0.019, player phone 0). Fix in progress (Calendar and
+  Messages worker).
+- **F-34 (P2, Reproduced on dev).** The coach Home figure strip reads "Rounds
+  0 this week · GIR 100% · Putts 38.0". The figures do not share a data
+  basis. Fix in progress (stats worker).
+- **F-35 (owner request, done).** On the phone the ivory ramp moves one step
+  darker: page `#e7e3d8`, cards `#f5f2ea`, and the top bar, tab bar and
+  sheets follow. Tertiary text darkens to `#5f5c55` to hold 4.5:1. The
+  sign-in fields lose the black keyboard outline and get a green hairline.
+- **Round preservation (§9), source audit:** R-1 to R-5 are P1 (false "Round
+  saved"; Restore not rehydrating the current hole; a failed Discard
+  suppressing saves; a non-idempotent Discard that a round can be resurrected
+  from; a vanished-parent submit dead-ending). Source-confirmed; fixes in
+  progress (rounds worker).
+- **Preview timing (provisional).** Most pages are ready in 2–3 s on the
+  phone. The first Home after sign-in took 7.1 s. CLS is 0 everywhere except
+  F-33.
+
 ## 5. Schema compatibility (flag-off deploy with no migration applied)
 
 - No source file outside tests reads a column added only by a held migration
