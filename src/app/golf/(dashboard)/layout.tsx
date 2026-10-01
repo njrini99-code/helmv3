@@ -13,6 +13,7 @@ import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
+import { phoneHint } from '@/clubhouse/lib/phone-hint';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -296,9 +297,9 @@ export default async function GolfDashboardLayout({
   // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
   // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
   if (isClubhouseFor(userData.role)) {
-    const shell = await loadClubhouseShell(userData.teamId);
+    const [shell, phone] = await Promise.all([loadClubhouseShell(userData.teamId), phoneHint()]);
     return (
-      <ClubhouseShell userData={userData} shell={shell}>
+      <ClubhouseShell userData={userData} shell={shell} phone={phone}>
         {children}
       </ClubhouseShell>
     );

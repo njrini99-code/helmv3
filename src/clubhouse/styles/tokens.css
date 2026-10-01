@@ -176,7 +176,8 @@
   --ch-reveal-rise: 10px;
   --ch-dur-shimmer: 1.9s;
   /* Skeletons wait this long before showing, then fade in over base. */
-  --ch-skel-delay: 150ms;
+  /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
+  --ch-skel-delay: 0ms;
 
   /* Z */
   --ch-z-sticky: 40;

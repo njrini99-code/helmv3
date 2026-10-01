@@ -1,10 +1,26 @@
 import { Skeleton } from '../../ui/States';
+import { SkeletonHeroBar } from './SkeletonHeroBar';
 import '../../styles/home.css';
 
 /** Route loading for Home: the same frame as the page, so nothing shifts when data lands. */
 export function HomeSkeleton() {
   return (
     <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401">
+      <SkeletonHeroBar />
+      {/* Phone: the page's own shape (green hero, then the Today and form cards), so the hand-off changes nothing but the words (F-37). */}
+      <div className="ch-hm-skel" aria-hidden="true">
+        <div className="ch-hm-skel__hero">
+          <span className="ch-hm-skel__bar" style={{ width: 150, height: 13 }} />
+          <span className="ch-hm-skel__bar" style={{ width: 240, height: 32 }} />
+          <span className="ch-hm-skel__bar" style={{ width: '85%', height: 14 }} />
+          <span className="ch-hm-skel__card" />
+        </div>
+        <div className="ch-hm-skel__body">
+          <Skeleton width={80} height={17} />
+          <Skeleton width="100%" height={118} radius={16} />
+          <Skeleton width="100%" height={150} radius={16} />
+        </div>
+      </div>
       <header className="ch-h-head">
         <Skeleton width={140} height={13} />
         <Skeleton width={360} height={44} radius={10} />
