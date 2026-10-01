@@ -205,7 +205,7 @@
   border: 0;
   border-radius: 14px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle), 0 1px 2px rgb(28 25 18 / 0.05);
+  box-shadow: var(--ch-elevation-control);
   cursor: pointer;
   transition:
     box-shadow var(--ch-dur-quick) var(--ch-ease),
@@ -323,7 +323,7 @@
 .ch-cal-surface {
   border-radius: 16px;
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-reading);
 }
 
 /* Print (More › Print week): the view as it is, without the tools; shell.css drops the shell's chrome. */
@@ -1640,7 +1640,7 @@
     padding: 6px;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-calm-skel__row {
     display: flex;
@@ -1649,7 +1649,7 @@
     padding: 12px;
     border-radius: 14px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-calm-skel__row > span:last-child {
     display: flex;
@@ -1678,7 +1678,7 @@
     padding: 6px;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-reading);
     list-style: none;
   }
   .ch-calm-week__d {
@@ -1850,7 +1850,7 @@
     padding: 10px 8px 12px;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-calm-month__h,
   .ch-calm-month__g {
@@ -1939,7 +1939,7 @@
     overflow: hidden;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-calm .ch-ag__day.is-today {
     box-shadow: 0 0 0 1px var(--ch-green-ring), var(--ch-shadow-sm);

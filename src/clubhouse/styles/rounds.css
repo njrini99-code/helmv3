@@ -518,9 +518,7 @@
   background: var(--ch-bg-surface);
   color: inherit;
   text-decoration: none;
-  box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.08),
-    0 1px 2px rgb(28 25 18 / 0.05);
+  box-shadow: var(--ch-elevation-reading);
   transition:
     box-shadow var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);

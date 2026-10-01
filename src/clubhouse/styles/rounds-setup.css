@@ -393,7 +393,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rsu-opt:disabled {
   cursor: default;
@@ -715,7 +715,7 @@
   overflow: hidden;
   border-radius: 14px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-rsu-crs {
   all: unset;
@@ -835,9 +835,7 @@
   padding: 14px 16px;
   border-radius: 14px;
   background: var(--ch-ivory-0);
-  box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.08),
-    0 1px 2px rgb(28 25 18 / 0.05);
+  box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rsu-tee:hover:not(:disabled) {

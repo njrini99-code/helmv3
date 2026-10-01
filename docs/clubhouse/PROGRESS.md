@@ -1523,6 +1523,14 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-142 (answered 2026-10-01, owner, component depth) "Everything is flat
+  and looks basic": a full depth audit with fixes across the app, Messages as
+  the example (`DEPTH_AUDIT.md`). Surfaces: the ivory ladder, never white (a
+  lighter phone canvas #EDE8DC under #FBF9F4 cards). Messages keep the
+  Clubhouse sans, message text 17px on a phone, no composer avatar (there was
+  none: the reference's was the dev badge). Supersedes Q-139's "flatten
+  content" (cards lift again, by role) and its tactile switch (now solid);
+  glass stays on the bars with saturation 110%.
 - Q-141 (open, 2026-10-01; built, reversible) The 390px phone audit found
   page text down to 9.8px (chart labels, figure labels, weekday letters,
   badges); Q-139 set phone captions at 13px but most page rules use literal

@@ -373,7 +373,7 @@
   padding: 32px 34px 30px;
   border-radius: 22px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hg-sk__stand {
   display: grid;
@@ -394,7 +394,7 @@
   padding: 22px 24px 18px;
   border-radius: 18px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
+  box-shadow: var(--ch-elevation-reading);
 }
 
 /* Narrow canvases: one column */

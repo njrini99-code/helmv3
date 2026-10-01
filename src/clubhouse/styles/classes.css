@@ -496,7 +496,7 @@
 .ch-cl-card2 {
   border-radius: 18px;
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-cl-note {
   display: flex;

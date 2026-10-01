@@ -327,7 +327,7 @@
   padding: 32px 34px;
   border-radius: 22px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hs-sk__col {
   display: flex;
@@ -341,7 +341,7 @@
   padding: 24px 28px 8px;
   border-radius: 20px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hs-sk__r {
   display: grid;

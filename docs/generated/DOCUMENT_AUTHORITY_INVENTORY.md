@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 48 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 24 | 1 | 8 | 5 |
-| `UNKNOWN` | 330 | 12 | 64 | 81 |
+| `UNKNOWN` | 330 | 12 | 65 | 81 |
 
 ## Files
 
@@ -796,7 +796,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P012-classes/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/PAGE.md` | current | - | - | yes | - |

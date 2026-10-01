@@ -74,7 +74,7 @@
 .ch-hb-card {
   border-radius: 18px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hb-card__h {
   display: flex;
@@ -259,7 +259,7 @@
   padding: 26px 28px;
   border-radius: 18px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hb-ann.is-featured {
   box-shadow: 0 0 0 1px var(--ch-champagne-ring), 0 20px 44px -34px rgb(28 25 18 / 0.5);
@@ -349,7 +349,7 @@
   border: 0;
   border-radius: 16px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
   font: 400 14.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-align: left;
@@ -379,7 +379,7 @@
   overflow: hidden;
   border-radius: 18px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hb-pass.is-big {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -759,7 +759,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
+  box-shadow: var(--ch-elevation-control);
   font: 500 13px/34px var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -792,7 +792,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
+  box-shadow: var(--ch-elevation-control);
   font: 500 13px/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -1085,7 +1085,7 @@
   border: 0;
   border-radius: 12px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
+  box-shadow: var(--ch-elevation-control);
   text-align: left;
   cursor: pointer;
 }

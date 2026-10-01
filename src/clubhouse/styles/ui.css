@@ -152,7 +152,7 @@
   color: var(--ch-av-fg);
   font: 600 calc(var(--ch-av-size, 32px) * 0.34) / 1 var(--ch-font-sans);
   letter-spacing: 0.04em;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 0 0 2px var(--ch-bg-surface), inset 0 0 0 2.75px var(--ch-av-ring);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), 0 0 0 1px var(--ch-av-ring), 0 1px 2px rgb(28 25 18 / 0.14);
 }
 .ch-avatar[data-tone='stone'] {
   --ch-av-bg: #e5e2db;
@@ -448,7 +448,7 @@
   padding: 5px;
   border-radius: 14px;
   background: #faf8f2;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 8px 16px -6px rgb(28 25 18 / 0.12), 0 24px 48px -16px rgb(28 25 18 / 0.28);
+  box-shadow: var(--ch-elevation-overlay);
 }
 .ch-popover__label {
   padding: 8px 10px 6px;

@@ -72,7 +72,7 @@
   padding: 6px;
   border-radius: 16px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-st-card__head {
   display: flex;
@@ -116,7 +116,7 @@
   padding: 18px 18px 16px;
   border-radius: 14px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-fg__l {
   font: 500 13.5px/1.25 var(--ch-font-sans);
@@ -249,7 +249,7 @@
   padding: 6px 6px 14px;
   border-radius: 16px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-sgt__head {
   display: flex;
@@ -404,7 +404,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sgm:hover {
@@ -753,7 +753,7 @@ a.ch-lg__r:focus-visible {
   overflow: hidden;
   border-radius: 20px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-pf-hero::before {
   position: absolute;
@@ -1103,7 +1103,7 @@ a.ch-lg__r:focus-visible {
   overflow: hidden;
   border-radius: 18px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
   scroll-margin-top: 130px;
 }
 .ch-gm__head {
@@ -1702,7 +1702,7 @@ a.ch-lg__r:focus-visible {
     padding: 12px 0;
     border-radius: 14px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-stm-figs > div {
     display: flex;
@@ -1739,7 +1739,7 @@ a.ch-lg__r:focus-visible {
     padding: 14px;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-stm-panel__h {
     display: flex;
@@ -2609,7 +2609,7 @@ a.ch-lg__r:focus-visible {
     justify-content: center;
     border-radius: 12px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline);
+    box-shadow: var(--ch-elevation-control);
   }
   .ch-stm-controls .ch-sf.is-phone .ch-sf__open > span:not(.ch-sf__n) {
     position: absolute;

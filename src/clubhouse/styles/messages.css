@@ -318,7 +318,7 @@
   padding: 10px 14px;
   border-radius: 18px;
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-bubble);
   font: 400 14.5px/1.45 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: pre-wrap;
@@ -337,7 +337,7 @@
 .ch-ms-msg.is-mine .ch-ms-bub {
   border-bottom-right-radius: 6px;
   background: var(--ch-green-600);
-  box-shadow: 0 1px 2px rgb(11 58 37 / 0.18), 0 6px 14px -8px rgb(11 58 37 / 0.35);
+  box-shadow: var(--ch-elevation-bubble-mine);
   color: #f7fbf8;
 }
 .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub {
@@ -521,7 +521,7 @@
   border-radius: 18px;
   border-bottom-left-radius: 6px;
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-bubble);
 }
 .ch-ms-typing i {
   width: 6px;
@@ -571,11 +571,11 @@
   padding: 6px 6px 6px 8px;
   border-radius: 16px;
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm), 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-floating);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ms-comp__field:focus-within {
-  box-shadow: var(--ch-shadow-sm), 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
+  box-shadow: var(--ch-elevation-floating-focus);
 }
 .ch-ms-comp__field textarea {
   flex: 1;
@@ -1180,7 +1180,7 @@
     padding: 0 12px;
   }
   .ch-msp-thread .ch-ms-day {
-    padding: 12px 0 8px;
+    padding: 18px 0 10px;
   }
   .ch-msp-thread .ch-ms-day span {
     padding: 0;
@@ -1200,14 +1200,14 @@
     user-select: none;
   }
   .ch-msp-thread .ch-ms-bub {
-    padding: 9px 13px;
-    box-shadow: 0 0 0 1px var(--ch-border-hairline);
-    font: 400 15px/1.38 var(--ch-font-sans);
+    padding: 10px 14px;
+    box-shadow: var(--ch-elevation-bubble);
+    font: 400 17px/1.4 var(--ch-font-sans);
   }
   .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub {
     background: var(--ch-green-700);
-    box-shadow: none;
-    color: var(--ch-ivory-100);
+    box-shadow: var(--ch-elevation-bubble-mine);
+    color: #fff;
   }
   .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub,
   .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub,
@@ -1217,7 +1217,11 @@
     border-radius: 18px;
   }
   .ch-msp-thread .ch-ms-msg__t {
-    font: 400 11px/1 var(--ch-font-sans);
+    font: 500 12px/1 var(--ch-font-sans);
+  }
+  .ch-msp-thread .ch-ms-msg__who {
+    font: 600 13px/1 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
   }
 
   /* Composer: the design's "+", a white pill, and a round send, above the home indicator and the keyboard */
@@ -1259,12 +1263,12 @@
     border-radius: 22px;
     background: var(--ch-ivory-0);
     background-clip: padding-box;
-    box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+    box-shadow: var(--ch-field-pill-edge);
     font: 400 16px/1.25 var(--ch-font-sans);
   }
   .ch-msp-thread .ch-ms-comp__field textarea:focus,
   .ch-msp-new .ch-ms-comp__field textarea:focus {
-    box-shadow: inset 0 0 0 1px var(--ch-border-focus);
+    box-shadow: var(--ch-field-pill-edge-focus);
   }
   .ch-msp-new .ch-ms-comp__field textarea {
     margin-left: 4px;

@@ -41,9 +41,7 @@
   border-radius: 999px;
   font: 500 13.5px/1 var(--ch-font-sans);
   background: var(--ch-ivory-0);
-  box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.12),
-    0 1px 2px rgb(28 25 18 / 0.06);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-pill--card {
   padding: 0 14px 0 12px;
@@ -716,7 +714,7 @@ button.ch-rt-strip__h.is-done:hover {
   border-radius: 999px;
   font: 500 13px/40px var(--ch-font-sans);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-tags button[aria-pressed='true'] {
   background: var(--ch-green-800);
@@ -775,7 +773,7 @@ button.ch-rt-strip__h.is-done:hover {
   font: 500 12.5px/36px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-quick button[aria-pressed='true'] {
   background: var(--ch-green-800);
@@ -909,7 +907,7 @@ button.ch-rt-strip__h.is-done:hover {
   font: 500 11px/1 var(--ch-font-sans);
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-bar__i:disabled {
   cursor: default;
@@ -1053,7 +1051,7 @@ button.ch-rt-strip__h.is-done:hover {
   padding: 12px 14px;
   border-radius: 12px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-opt > span:last-child {
   display: flex;
@@ -1178,7 +1176,7 @@ button.ch-rt-strip__h.is-done:hover {
   border-radius: 12px;
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-xopt > span {
   display: flex;
@@ -1216,7 +1214,7 @@ button.ch-rt-strip__h.is-done:hover {
   border-collapse: collapse;
   border-radius: 12px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
   font: 500 13px/1 var(--ch-font-sans);
 }
 .ch-rt-mc th,
