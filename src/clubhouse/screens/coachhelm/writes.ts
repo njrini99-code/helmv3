@@ -13,6 +13,8 @@ export interface ChAssignArgs {
   areaType: string;
   /** The insight's own metric, so the duplicate-active-focus guard can see it. */
   targetMetric: string;
+  /** The player's value now: the focus's starting point (CH13-22, owner: starting value only). */
+  currentValue?: number | null;
 }
 
 /**

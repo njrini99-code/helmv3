@@ -54,7 +54,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
     async (p: ChCoachPlayer) => {
       const t = p.top;
       // The focus area is the player's to read: it is saved with the insight's own wording, not the board's rewrite of it for the coach.
-      const res = await writes.assign({ playerId: p.id, insightId: t.id, title: t.assignAs.title, description: t.assignAs.description, areaType: t.areaType, targetMetric: t.metric });
+      const res = await writes.assign({ playerId: p.id, insightId: t.id, title: t.assignAs.title, description: t.assignAs.description, areaType: t.areaType, targetMetric: t.metric, currentValue: t.current });
       if (normalise(res).success) {
         setAssigned((m) => ({ ...m, [t.id]: 'proposed' }));
         return res;

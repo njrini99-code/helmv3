@@ -822,7 +822,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(screen.getAllByRole('button').some((b) => /Share|Send/.test(b.textContent ?? ''))).toBe(false);
   });
 
-  it('130902 130901 CH-13702 CH-13403 Assign as focus: sends the insight’s own title, first sentence, area and metric; while it works the button says so; then it is assigned, as a proposal the player accepts', async () => {
+  it('130902 130901 CH-13702 CH-13403 Assign as focus: sends the insight’s own title, first sentence, area, metric and the player’s value now (CH13-22); while it works the button says so; then it is assigned, as a proposal the player accepts', async () => {
     const u = user();
     let done!: (v: { success: boolean }) => void;
     const w = okWrites();
@@ -838,6 +838,8 @@ describe('CoachHelm for the coach, on screen', () => {
       description: "Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level).",
       areaType: 'putting',
       targetMetric: 'putt_slope_downhill_penalty_pct',
+      // CH13-22: the player's value now is the focus's starting point.
+      currentValue: 23,
     });
     await expectCode('CH-13403', /Assigning/);
     expect((code('CH-13403')!.closest('button') as HTMLButtonElement).disabled).toBe(true);

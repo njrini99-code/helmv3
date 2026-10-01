@@ -287,6 +287,7 @@ export function toChInsight(
     week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,
     metric: ev.metric,
+    current: kind === 'note' ? null : you,
     areaType: areaTypeFor(ins.category),
     assigned: extra.assigned ?? null,
   };

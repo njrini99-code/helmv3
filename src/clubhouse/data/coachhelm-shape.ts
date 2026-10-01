@@ -129,6 +129,8 @@ export interface ChInsight {
   lifecycle: ChHelmLifecycle;
   /** The evidence's metric id, the focus area's target metric when assigned. */
   metric: string;
+  /** The player's value for that metric now (`evidence.your_value`): a focus made from it starts here (CH13-22). */
+  current: number | null;
   /** The focus-area type the category maps to. */
   areaType: string;
   assigned: ChHelmAssigned | null;
