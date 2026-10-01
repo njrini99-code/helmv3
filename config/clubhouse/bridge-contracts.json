@@ -24,6 +24,19 @@
     ]
   },
   {
+    "id": 10103,
+    "page": "P001",
+    "category": 1,
+    "item": 3,
+    "name": "TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN",
+    "meaning": "Switching teams sets the active team on the server (the same action Fairway uses), then refreshes the page so the layout, the sidebar's next event and Roster badge, and the page itself read for the new team; the route remounts for the new team, so a search, an open panel or a live feed the old team's screen held does not carry over, while a refresh for the same team keeps its state.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/team-switch.ts#useTeamSwitch; src/clubhouse/shell/ClubhouseFrame.tsx#ClubhouseFrame",
+    "tests": [
+      "src/clubhouse/__tests__/team-switch.test.tsx"
+    ]
+  },
+  {
     "id": 10201,
     "page": "P001",
     "category": 2,
@@ -291,6 +304,19 @@
     "where": "src/clubhouse/shell/nav.ts#navFor, isRebuilt; ClubhouseFrame",
     "tests": [
       "src/clubhouse/__tests__/shell.test.tsx"
+    ]
+  },
+  {
+    "id": 10803,
+    "page": "P001",
+    "category": 8,
+    "item": 3,
+    "name": "TEAM_SWITCH_IS_A_HEAD_COACHS",
+    "meaning": "Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/team-switch.ts#teamSwitchFor; src/app/golf/actions/team-switcher.ts#setActiveTeam",
+    "tests": [
+      "src/clubhouse/__tests__/team-switch.test.tsx"
     ]
   },
   {

@@ -52,7 +52,9 @@ sheet on the phone), `PillGroup`, `Segmented`, `SearchField`, `EmptyState`
 `useJoinRequests` (the join requests, shared with the phone), `InviteModal`,
 `RosterPhone`, `RosterPhoneRow`, `RequestsBanner`, `RequestsSheet` and
 `PlayerActions` (the phone list, banner and sheets), `RosterProfile` (the
-phone's pushed profile), `RosterSkeleton`, `RosterNoTeam`, `useCopyText`.
+phone's pushed profile), `RosterSkeleton`, `RosterNoTeam` (a coach's or a player's),
+`useCopyText`. For a player: `TeamRoster` and `TeamRosterPhone` (the read-only
+screen) with `team.ts` (its sort and its "You" line).
 
 ### Modified Clubhouse components
 
@@ -100,9 +102,30 @@ recent rounds, About and the coach's note. Its ⋯ opens View stats and Remove
 from team. The phone is a different structure, never the desktop shrunk
 (RosterPhone below 820px).
 
+## The player's view
+
+Owner, 2026-10-01: "the same thing as coach except they can't click". The same
+header, search, layout toggle, sort control, face cards, table and phone rows,
+drawn from the same stylesheet, with nothing to press. What differs, and why:
+
+- A teammate shows name, class year and handicap: what Fairway's player roster
+  showed, and no scores, because a player is set against the Tour and never
+  against teammates (the Home contract, 20803). The coach's figures, form line,
+  "Needs a look", hometown, high school and notes are not drawn or loaded.
+- The header reads "Your team." and the count; there is no Invite, Export, join
+  requests card or player panel, and the phone top bar has the back link and no
+  action. Only active members are listed, so the Active and Inactive pills are
+  gone; the sort is Name, Class or Handicap.
+- A card is a list item and a row is a table row or a plain row, never a button
+  or a link (they take no focus and no press, and `ch-rs-face--static` and
+  `ch-rsm-row--static` drop the hover lift and the pointer). The player's own
+  row reads "You".
+- States: a failed read is "The roster didn't load." with Try again (CH-3210),
+  never an empty team; an empty team and no team are CH-3307 and CH-3308.
+
 ## Accessibility
 
-Cards and rows are buttons that name the player, the table has real roles, the
+Cards and rows are buttons that name the player (a player's teammates are plain text, CH-3807), the table has real roles, the
 status is a word as well as a dot, Esc closes the panel, the note counter is
 polite, and the phone row reads name, class, note, average and handicap as one
 button. Axe runs at 1280 and 390 (`clubhouse:a11y`).
@@ -124,7 +147,9 @@ trend and form, and so in "Needs a look"; it has no strokes gained to count.
 `getTeamJoinRequests`, `acceptJoinRequest` and `rejectJoinRequest` in
 `src/app/golf/actions/teams.ts`, `removePlayerFromTeam` in `roster.ts`,
 `setIntent` in `v3/intent.ts`, and the server loader `loadRoster` (the team,
-members, this coach's notes, the season's rounds, focus areas and goals).
+members, this coach's notes, the season's rounds, focus areas and goals). A
+player's view has its own loader, `loadPlayerRoster` (the team's name and
+season and the active members' name, graduation year and handicap).
 WIRING.md maps each.
 
 ## HELD requirements
@@ -142,7 +167,7 @@ means the member has lost team access.
 
 ### Owner decisions
 
-Q-1 (a separate availability field), D-50 to D-59 (the phone), D-56 (what stays
+Q-130 (2026-10-01: the player's roster, read-only), Q-1 (a separate availability field), D-50 to D-59 (the phone), D-56 (what stays
 desktop only), D-58 (Inactive), D-66 (navigation), D-70 (haptics), D-71 (page
 empty state).
 

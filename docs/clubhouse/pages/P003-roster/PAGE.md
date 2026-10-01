@@ -8,9 +8,9 @@ and who is waiting to join.
 ```text
 Page ID:            P003
 Page Name:          Roster
-Route:              /golf/dashboard/roster (coach only)
+Route:              /golf/dashboard/roster (a coach; a player gets a read-only view)
 Bridge Namespace:   3 (Bridge IDs 3ccii, D-68; catalog codes CH-3xxx)
-Roles:              coach
+Roles:              coach, player (read-only, 30804)
 Implementation Root: src/clubhouse/screens/roster
 Manifest:           config/clubhouse/pages/P003-roster.json
 ```
@@ -40,6 +40,17 @@ player. Search, filter by status, sort and switch between cards and a list
 (desktop). Export the roster as a CSV (desktop). Message a player, view their
 stats, plan a one-to-one (phone). Remove a player from the team. Copy the team
 code or share the join link.
+
+### The player's view
+
+A player (owner, 2026-10-01: "the same thing as coach except they can't click")
+opens Roster to see who is on their team. It is the coach's layout as plain
+text: each teammate's name, class year and handicap, searchable and sortable,
+as cards, a list or (phone) rows. Nothing opens or does anything: no player
+panel, notes, join requests, invite, export, scores or "needs a look", and no
+card or row is a link or a button (30804). What a player may read is set by
+their own team's access rules, and the loader asks for no more than it shows
+(30805).
 
 ### Information hierarchy
 
@@ -88,8 +99,8 @@ Status:           approved
 
 ### Enters from
 
-The sidebar (Team › Roster, with the join requests count) and the More sheet on
-the phone (D-50, D-66), Home's Full roster link, and the bell's join-request
+The sidebar (Team › Roster, with a coach's join requests count; a player's
+Team › Roster has no count) and the More sheet on the phone (D-50, D-66), Home's Full roster link, and the bell's join-request
 notification (its address carries `?tab=requests`, which Roster ignores: the
 requests are the first thing under the header).
 
@@ -103,16 +114,19 @@ editor with the player invited (phone Plan 1:1 and the desktop panel's Schedule
 join code.
 
 `/golf/dashboard/roster/[id]` (the Fairway player page) is not part of this
-page: inside the Clubhouse frame it shows the not-rebuilt notice.
+page: with Clubhouse on, a coach goes to that player's Stats and a player to the
+roster (30806).
 
 ## Ownership
 
 ```text
 Design:          the owner (Claude Design)
-Implementation:  src/clubhouse/screens/roster, src/clubhouse/routes/roster.tsx, src/clubhouse/data/roster.ts
+Implementation:  src/clubhouse/screens/roster, src/clubhouse/routes/roster.tsx, src/clubhouse/data/roster.ts,
+                 src/clubhouse/data/roster-player.ts (the player's view)
 Data:            roster_team: golf_team_members, golf_players, golf_teams, golf_team_join_requests,
                  golf_rounds (season), golf_player_focus_areas, golf_goals, golf_coach_player_intent
-                 (the coach's notes)
+                 (the coach's notes). A player's view: golf_teams (name, season) and the
+                 team's active golf_team_members with golf_players (name, class year, handicap).
 ```
 
 ## Current status

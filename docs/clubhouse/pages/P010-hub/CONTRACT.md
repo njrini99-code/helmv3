@@ -142,7 +142,7 @@ Who may open the page: a coach or a player with `golf_clubhouse_ui` on for that 
 | 100803 | — | `REPLY_ONLY_WHERE_IT_IS_OPEN` | A player is offered Going, Maybe and Can't only on an event they are invited to that still takes a reply: an event they have no place on the invite list of (the aggregate gives it no reply status, and a reply would add them to the list), one that has started (an all-day event, a day after its stored start), one that was cancelled and one past its RSVP deadline are left off the list, by the rules respondToEvent enforces; a rules read that fails leaves the rows in place for the server to decide. |
 | 100804 | — | `SERVER_ACTIONS_ARE_THE_GATE` | Every write is checked again by its server action, whatever the screen shows: createEnrichedAnnouncement, createGolfTravelItinerary, createTask, createGolfDocument, deleteAnnouncement and deleteTask refuse a caller who is not a coach of the team, and respondToEvent, acknowledgeAnnouncement and completeTask refuse a caller with no player profile or team membership; deleteGolfDocument (any active member of the team passes) and uploadGolfDocument (any signed-in user passes) do not check for a coach, so for those the screen and row-level security are the gate. Read in this pass, not run: no test here forces a refusal. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

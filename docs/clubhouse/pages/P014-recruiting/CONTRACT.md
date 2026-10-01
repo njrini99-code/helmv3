@@ -24,7 +24,7 @@ Recruiting opens final on first paint, read on the server in one pass: the heade
 | --- | --- | --- | --- |
 | 140101 | CH-14904 | `RECRUITING_OPENS` | Recruiting opens |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -138,7 +138,7 @@ Recruiting is for coaches. A player who opens it is sent Home before the page dr
 | 140801 | CH-14902 | `A_PLAYER_OPENS_RECRUITING` | A player opens Recruiting |
 | 140802 | CH-14903 | `THE_SERVER_REFUSES_A_WRITE_BECAUSE_THE` | The server refuses a write because the caller is not the team's coach |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

@@ -26,7 +26,7 @@ Calendar opens on the week that holds today, with the team's events on a grid an
 | 60103 | — | `SEEDS_FROM_OTHER_PAGES` | ?new=1 opens New event once for a coach and drops itself from the address; &with=<player> makes it a meeting with only that player invited (a player the Calendar does not list invites nobody, never the team); &type= picks the new event's type from those a coach can create and ignores anything else. |
 | 60104 | — | `TIMES_ARE_THE_TEAMS_ZONE` | Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour, one that runs past midnight ends at 24, and an all-day event keeps its stored dates, one entry for each day of a span. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -164,7 +164,7 @@ Open, not this page's to fix. The baseline migration's `golf_event_attendance_se
 | 60807 | — | `REPLY_IS_FOR_INVITED_PLAYERS` | A player is offered the reply (Going, Maybe, Can't make it) only on an event whose invite list they are on that has not started and is not cancelled; once it starts the panel says replies are closed. |
 | 60808 | — | `BUSY_TIME_IS_THE_COACHS_OWN` | Busy time is read only for a coach and only their own rows (coach_id is the signed-in coach), and is never read for a player. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

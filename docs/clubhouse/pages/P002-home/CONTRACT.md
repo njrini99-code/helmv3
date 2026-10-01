@@ -22,7 +22,7 @@ Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag 
 | 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -132,7 +132,7 @@ Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the c
 | 20805 | — | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
 | 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

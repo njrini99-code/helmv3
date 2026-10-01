@@ -19,7 +19,7 @@ The page opens on Account, or on the section the address names, with a header (r
 | 80101 | — | `SETTINGS_READY` | Settings is open: a header naming the role, team and email, the rail of the sections this role has, and the opened section (Account by default) with its cards; the page needs no team. |
 | 80102 | — | `DEEP_LINK_OPENS_SECTION` | ?section=<id> opens that section, /golf/dashboard/settings/notifications opens Notifications and /golf/dashboard/settings/coaching-intelligence opens CoachHelm for a coach or Account for a player; choosing a section in the rail writes ?section= into the address. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -161,7 +161,7 @@ Who may open it: a signed-in coach or player with the Clubhouse flag on (the she
 | 80807 | — | `PASSWORD_NEEDS_THE_CURRENT_ONE` | A new password is set only after the current password signs in; a wrong current password changes nothing and says 'Your current password is incorrect.' |
 | 80808 | — | `REFUSED_UPDATE_IS_A_FAILURE` | An update the database refuses by hiding the row (no error, no row changed) is a failure the person sees, not a save: profile, team details (the school, then the team), golf details and the coaching settings count the rows they change and fail with 'Nothing was saved. <what> was not found, or you are not allowed to change it.', which the toast shows as 'Your account doesn’t have access to do this.'; the card stays unsaved with its edits. Leaving a team already did this. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

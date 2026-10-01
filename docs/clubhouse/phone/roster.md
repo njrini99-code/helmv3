@@ -1,6 +1,7 @@
 # Phone design: Roster (coach)
 
-Status: approved (owner design, design/handoff/mobile/Roster Mobile.html, m-roster.jsx)
+Status: approved (owner design, design/handoff/mobile/Roster Mobile.html,
+m-roster.jsx)
 
 The owner's iPhone design replaces the earlier draft (D-22). It has three
 boards: the roster list, the player profile and the join requests sheet. This
@@ -14,12 +15,12 @@ owner questions Q-30 to Q-39 were answered on 2026-09-29 and are recorded as
 D-50 to D-59 in `PROGRESS.md`. The answers are listed at the end.
 
 The page sits inside the phone foundation (`docs/clubhouse/phone/foundation.md`,
-owned by the Messages phone work). Where Roster depends on the shell, this
-file lists what it needs and does not specify the shell itself.
+owned by the Messages phone work). Where Roster depends on the shell, this file
+lists what it needs and does not specify the shell itself.
 
-The owner decided the foundation on 2026-09-29. The Messages phone work
-records it as D-40 onward on `agent/clubhouse-messages-mobile`. Roster
-references these answers and does not ask them again:
+The owner decided the foundation on 2026-09-29. The Messages phone work records
+it as D-40 onward on `agent/clubhouse-messages-mobile`. Roster references these
+answers and does not ask them again:
 
 - **Tab bar:** coaches get the v2 tabs (Home, CoachHelm, Calendar, Stats,
   More; D-66, which replaced D-40's Home, Helm, Rounds, Stats) in ivory glass.
@@ -62,8 +63,8 @@ references these answers and does not ask them again:
 
 ## Structure on the phone
 
-The phone and desktop versions differ in structure, not just layout. The
-build therefore adds phone components next to the desktop ones in
+The phone and desktop versions differ in structure, not just layout. The build
+therefore adds phone components next to the desktop ones in
 `src/clubhouse/screens/roster/` and chooses between them with `useChPhone()`
 (MOBILE.md step 2):
 
@@ -209,9 +210,8 @@ Haptics go only through `haptic()`. Outcome haptics come from `useAction`.
 | Message, Plan 1:1 | Navigate | `press` (secondary buttons pass `feel="press"`) |
 | Pull to refresh | Not built: it waits for a design (owner, foundation) | none |
 
-There is no long press. The row menu that desktop hides behind ⋯ is reached
-from the profile's ⋯ on the phone, so every desktop affordance still has a
-tap path.
+There is no long press. The row menu that desktop hides behind ⋯ is reached from
+the profile's ⋯ on the phone, so every desktop affordance still has a tap path.
 
 ## Motion
 
@@ -272,8 +272,8 @@ used yet:
 
 ## Tokens
 
-Raw colours in the design map to Clubhouse tokens. The design system's names
-map one to one: `--green-700` becomes `--ch-green-700`, `--chart-gain` becomes
+Raw colours in the design map to Clubhouse tokens. The design system's names map
+one to one: `--green-700` becomes `--ch-green-700`, `--chart-gain` becomes
 `--ch-chart-gain`, `--dp-sheet-bg` becomes `--ch-sheet-bg`, `.dp-well-soft`
 becomes `.ch-well-soft`, `--shadow-sm` becomes `--ch-shadow-sm`, and so on.
 
@@ -294,10 +294,10 @@ becomes `.ch-well-soft`, `--shadow-sm` becomes `--ch-shadow-sm`, and so on.
 
 ## Needs from the foundation
 
-The foundation is decided (D-40 to D-43) and merged into this branch. Status
-of each need, as of 2026-09-29: 1 to 3 and 5 to 8 are in use. 4 is in use on
-`ui/Modal`, and its drag to dismiss arrives with b4b1b6a6b. From the
-foundation, Roster needs:
+The foundation is decided (D-40 to D-43) and merged into this branch. Status of
+each need, as of 2026-09-29: 1 to 3 and 5 to 8 are in use. 4 is in use on
+`ui/Modal`, and its drag to dismiss arrives with b4b1b6a6b. From the foundation,
+Roster needs:
 
 1. **The coach tab bar** (Home, Helm, Rounds, Stats, More, ivory glass),
    with Roster under More, and the More tab active on Roster and its profile.

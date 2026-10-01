@@ -23,7 +23,7 @@ Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
 | 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
 | 40102 | — | `WINDOW_FROM_THE_ADDRESS` | ?window=season or ?window=qualifiers opens that window and anything else opens Last 10; changing the switch writes the window back to /golf/dashboard/stats (Last 10 is the bare address) without moving the scroll. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -130,7 +130,7 @@ Team stats is a coach's page (40801). On /golf/dashboard/stats a player is never
 | 40801 | — | `COACH_ONLY_TEAM_STATS` | Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team is a coach's route in the Clubhouse frame (the Fairway page sends a player back to /stats). |
 | 40802 | — | `TEAM_IS_THE_COACHS_OWN` | The team is always the one resolveClubhouseTeam gives the signed-in coach, never one named in the address: the loader reads that team's row, its active roster (golf_team_members by team_id, status active) and only those players' rounds; a coach with no team gets the no-team state and nothing is read. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

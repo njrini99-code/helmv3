@@ -13,58 +13,69 @@ Status:   approved (the phone design is the approval, D-22)
 
 ## Design objective
 
-A player read like a head pro reads one: who they are and four numbers, then the game in five sections,
-each leading with one sentence built from the numbers under it. Nothing is graded on a sample too small
-to mean anything, and a figure the app cannot produce is a dash.
+A player read like a head pro reads one: who they are and four numbers, then the
+game in five sections, each leading with one sentence built from the numbers
+under it. Nothing is graded on a sample too small to mean anything, and a figure
+the app cannot produce is a dash.
 
 ## Problems being solved
 
-A coach who wants to know why a player's scores moved has to open rounds one by one; a player has no
-single place that compares their game with a benchmark and shows what the coach asked them to work on.
+A coach who wants to know why a player's scores moved has to open rounds one by
+one; a player has no single place that compares their game with a benchmark and
+shows what the coach asked them to work on.
 
 ## User goal
 
-Read the player's weakest leg and act on it (a focus area), or, as a player, see where the game stands.
+Read the player's weakest leg and act on it (a focus area), or, as a player, see
+where the game stands.
 
 ## Visual hierarchy
 
-Hero (avatar, name, status, class and hometown, Message and Add focus area for a coach, four figures),
-the tab strip with the window switch, then the open tab. Overview: five figure cards, the scoring chart
-beside strokes gained by leg, and the comparison table. On the phone: who, three figures, Game detail as
-chips (one section at a time), the scoring line, then Rounds and Development stacked, because a phone
-has no tabs for them.
+Hero (avatar, name, status, class and hometown, Message and Add focus area for a
+coach, four figures), the tab strip with the window switch, then the open tab.
+Overview: five figure cards, the scoring chart beside strokes gained by leg, and
+the comparison table. On the phone: who, three figures, Game detail as chips
+(one section at a time), the scoring line, then Rounds and Development stacked,
+because a phone has no tabs for them.
 
 ## Components
 
 ### Reused Clubhouse primitives
 
-`Avatar`, `Button`, `Icon`, `EmptyState` (section and page, D-71), `InlineNotice`, `Modal` (a bottom
-sheet on the phone), `Segmented`, `SectionBoundary`, `ScrollRegion`, `Toast`, `PhoneTop`,
-`PhoneIconAction`, `useAction`, `useChPhone`, `useChReducedMotion`, `usePageCrumbs`.
+`Avatar`, `Button`, `Icon`, `EmptyState` (section and page, D-71),
+`InlineNotice`, `Modal` (a bottom sheet on the phone), `Segmented`,
+`SectionBoundary`, `ScrollRegion`, `Toast`, `PhoneTop`, `PhoneIconAction`,
+`useAction`, `useChPhone`, `useChReducedMotion`, `usePageCrumbs`.
 
 ### New Clubhouse components
 
-`StatsPlayer` (the container: hero, tabs, Overview, the rounds table, Development), `FocusAreaSheet`,
-`GameDetail` (the five sections), `StatsPlayerPhone` (with `ScoreLine`, shared with Team stats' phone
-view), and the charts in `charts.tsx` (`FigureCards`, `FieldTable`, `LegRoute`, `ScoreBoardTrend`,
-`YardagePage`, and the ladders and compares Game detail draws), which Team stats shares.
+`StatsPlayer` (the container: hero, tabs, Overview, the rounds table,
+Development), `FocusAreaSheet`, `GameDetail` (the five sections),
+`StatsPlayerPhone` (with `ScoreLine`, shared with Team stats' phone view), and
+the charts in `charts.tsx` (`FigureCards`, `FieldTable`, `LegRoute`,
+`ScoreBoardTrend`, `YardagePage`, and the ladders and compares Game detail
+draws), which Team stats shares.
 
 ### Modified Clubhouse components
 
-`charts.tsx` gains `SgBars` (the phone's legs and total), `SgChangeChip` (the change against the previous 10),
-the `FieldTable`'s strokes gained rows and `FigureCards`' note and tone; `StatsPlayerPhone` a Strokes gained
-panel; `GameDetail` takes the window's putt bands. Otherwise the foundation's v2 changes only (motion,
-haptics, page empty state).
+`charts.tsx` gains `SgBars` (the phone's legs and total), `SgChangeChip` (the
+change against the previous 10), the `FieldTable`'s strokes gained rows and
+`FigureCards`' note and tone; `StatsPlayerPhone` a Strokes gained panel;
+`GameDetail` takes the window's putt bands. Otherwise the foundation's v2
+changes only (motion, haptics, page empty state).
 
-Parity pass (2026-09-30): `GameMore` (the five sections' More detail), `detail.tsx` (`Panel`, `Empty`, `Rule`,
-`More`, `Tiles`, `DataTable`, `RoundLine`, `SectorGrid`) and `RoundsExtra` (the Rounds tab's line, bests and
-comparison) are new; `FieldTable` gains group headings, a signed format and the floor note; `ScoreMix` the holes
-behind each result. On the phone the Rounds panel gains the same three cards above the list, and each Game
-detail section's More detail is a closed disclosure.
+Parity pass (2026-09-30): `GameMore` (the five sections' More detail),
+`detail.tsx` (`Panel`, `Empty`, `Rule`, `More`, `Tiles`, `DataTable`,
+`RoundLine`, `SectorGrid`) and `RoundsExtra` (the Rounds tab's line, bests and
+comparison) are new; `FieldTable` gains group headings, a signed format and the
+floor note; `ScoreMix` the holes behind each result. On the phone the Rounds
+panel gains the same three cards above the list, and each Game detail section's
+More detail is a closed disclosure.
 
 ## Actions affected
 
-The list is `config/clubhouse/pages/P005-stats-player.json` `actions`, and the graph is WIRING.md.
+The list is `config/clubhouse/pages/P005-stats-player.json` `actions`, and the
+graph is WIRING.md.
 
 ## Contract categories affected
 
@@ -72,41 +83,47 @@ All 25 (CONTRACT.md).
 
 ## Motion intent
 
-The tab underline slides to the new tab in the base step, 260ms (CH-5601) and the focus-area sheet
-rises and fades in (CH-5602); a window change or paging to another player dims the page and marks it
-busy (CH-5402). Nothing counts up and nothing staggers except the shell's first-paint reveal. All from
-the v2 tokens (D-64).
+The tab underline slides to the new tab in the base step, 260ms (CH-5601) and
+the focus-area sheet rises and fades in (CH-5602); a window change or paging to
+another player dims the page and marks it busy (CH-5402). Nothing counts up and
+nothing staggers except the shell's first-paint reveal. All from the v2 tokens
+(D-64).
 
 ## Haptic intent
 
-v2 grammar (D-70): a selection tick for a tab, a window, paging players, a Game detail section
-(CH-5701); the warning pattern when a focus area is proposed with no name (CH-5702); success when a
-proposal lands or a link is copied; error when a save fails, a link cannot be shared, or a window change
-is refused offline. Every other tap is silent.
+v2 grammar (D-70): a selection tick for a tab, a window, paging players, a Game
+detail section (CH-5701); the warning pattern when a focus area is proposed with
+no name (CH-5702); success when a proposal lands or a link is copied; error when
+a save fails, a link cannot be shared, or a window change is refused offline.
+Every other tap is silent.
 
 ## Desktop
 
-The hero and four figures, then the tabs, with the window switch beside them. The layout follows the
-container, not the viewport (`stats.css`): two-column rows stack below 1080px, several grids drop to two
-columns below 900px, and the hero stacks with tighter padding below 720px. Game detail has a section nav
-that scrolls to each section and follows the reader.
+The hero and four figures, then the tabs, with the window switch beside them.
+The layout follows the container, not the viewport (`stats.css`): two-column
+rows stack below 1080px, several grids drop to two columns below 900px, and the
+hero stacks with tighter padding below 720px. Game detail has a section nav that
+scrolls to each section and follows the reader.
 
 ## Phone
 
-Approved spec `docs/clubhouse/phone/stats-player.md`, built as `StatsPlayerPhone` below 820px: a coach's
-top bar is Player stats with Team and Share, a player's is My stats with More; the header, three
-figures (scoring average, strokes gained, form), Game detail's chips with the desktop's panels stacked
-for the chosen section, the scoring line, five rounds then All N, and Development with Add focus area.
-The coach comparison table and previous or next player are desktop only (Q-68). The phone is a
-different structure, never the desktop shrunk.
+Approved spec `docs/clubhouse/phone/stats-player.md`, built as
+`StatsPlayerPhone` below 820px: a coach's top bar is Player stats with Team and
+Share, a player's is My stats with More; the header, three figures (scoring
+average, strokes gained, form), Game detail's chips with the desktop's panels
+stacked for the chosen section, the scoring line, five rounds then All N, and
+Development with Add focus area. The coach comparison table and previous or next
+player are desktop only (Q-68). The phone is a different structure, never the
+desktop shrunk.
 
 ## Accessibility
 
-The sections are real tabs with selected state and their panels, a coach reads "Stats › name" in the top
-bar, the strokes gained route is an image with every leg in words, the hero figures are a definition
-list, the focus-area field is named "What to work on" with its help or error as its description, and the
-rounds table is a named region that takes focus so the arrow keys scroll it. Axe runs at 1280 and 390
-(`clubhouse:a11y`).
+The sections are real tabs with selected state and their panels, a coach reads
+"Stats › name" in the top bar, the strokes gained route is an image with every
+leg in words, the hero figures are a definition list, the focus-area field is
+named "What to work on" with its help or error as its description, and the
+rounds table is a named region that takes focus so the arrow keys scroll it. Axe
+runs at 1280 and 390 (`clubhouse:a11y`).
 
 ## Data assumptions
 
@@ -134,9 +151,10 @@ Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 
 ### Parity with the production page (2026-09-30)
 
-The owner asked that the page show everything the production (Fairway) player stats page shows: "scrambling,
-GIR, putting, all of it." PARITY.md is the row-by-row record (every production figure with its file and line,
-and where Clubhouse shows it, or why it does not). The shape:
+The owner asked that the page show everything the production (Fairway) player
+stats page shows: "scrambling, GIR, putting, all of it." PARITY.md is the
+row-by-row record (every production figure with its file and line, and where
+Clubhouse shows it, or why it does not). The shape:
 
 - **Every Game detail section keeps its lead sentence and four figures, and gains a line under them saying which
   rounds it counts** ("Last 10 rounds · 10 rounds, 18 holes only (9-hole rounds are left out)"; with Holes on 9 or Both it names the lengths and says the figures are per 18 holes), the matched
@@ -174,12 +192,14 @@ and where Clubhouse shows it, or why it does not). The shape:
 
 ## Existing backend capabilities used
 
-`createFocusArea` (`src/app/golf/actions/development.ts`) to propose a focus area, and
-`getDetailedStats` and `getSprayChartData` (`src/app/golf/actions/stats-data.ts`) for the shot-level detail,
-which answer empty to anyone who is neither the player nor their coach. The pure production libraries
-`aggregateApproachBuckets` (`lib/golf/leak-map-buckets.ts`), `rankHoleAnalyses` (`lib/golf/worst-hole-ranking.ts`)
-and `roundTypeFromDb` are reused as they are. Everything else is read by `loadPlayerProfile` on the caller's own
-database session. WIRING.md lists the tables.
+`createFocusArea` (`src/app/golf/actions/development.ts`) to propose a focus
+area, and `getDetailedStats` and `getSprayChartData`
+(`src/app/golf/actions/stats-data.ts`) for the shot-level detail, which answer
+empty to anyone who is neither the player nor their coach. The pure production
+libraries `aggregateApproachBuckets` (`lib/golf/leak-map-buckets.ts`),
+`rankHoleAnalyses` (`lib/golf/worst-hole-ranking.ts`) and `roundTypeFromDb` are
+reused as they are. Everything else is read by `loadPlayerProfile` on the
+caller's own database session. WIRING.md lists the tables.
 
 ## HELD requirements
 
@@ -193,15 +213,17 @@ None.
 
 ### Owner decisions
 
-D-53 (`?tab=` opens a tab; Roster's All N), D-42 (gains green, losses amber), D-66 (My stats in the
-player's More sheet), D-70 (haptics), D-71 (page empty states), Q-68 (phone gaps, built on the
-recommendation).
+D-53 (`?tab=` opens a tab; Roster's All N), D-42 (gains green, losses amber),
+D-66 (My stats in the player's More sheet), D-70 (haptics), D-71 (page empty
+states), Q-68 (phone gaps, built on the recommendation).
 
 ## Round filter (2026-09-30, phase 3)
 
-One filter for every figure, shared with Team stats (P004) and kept in the address, so a link, a refresh and the pager all keep it
-(`?window=`, `type=`, `holes=`, `from=` and `to=`, `course=` repeated, `only=` or `skip=`; defaults are left out). PARITY.md (P005),
-"The round filter", has the order rounds are selected in, the dimensions and what was left out with the counts.
+One filter for every figure, shared with Team stats (P004) and kept in the
+address, so a link, a refresh and the pager all keep it (`?window=`, `type=`,
+`holes=`, `from=` and `to=`, `course=` repeated, `only=` or `skip=`; defaults
+are left out). PARITY.md (P005), "The round filter", has the order rounds are
+selected in, the dimensions and what was left out with the counts.
 
 - **Holes (owner, 2026-09-30: "make it 9 or 18"; Q-94 superseded).** 18 holes (the default), 9 holes or Both, in the sheet
   between Round type and Time, as three toggle buttons; choosing one changes nothing until Done. Every figure follows it by
@@ -259,9 +281,10 @@ One filter for every figure, shared with Team stats (P004) and kept in the addre
 
 ## Explicit non-goals
 
-The prediction card, "vs tour" figures, Tour marks with no source, a Season best marker on the scoring
-chart, previous or next player and the comparison table on the phone. From the parity pass: a plotted
-spray scatter, D1 or college benchmarks anywhere, a priorities list built on college benchmarks, and a team
+The prediction card, "vs tour" figures, Tour marks with no source, a Season best
+marker on the scoring chart, previous or next player and the comparison table on
+the phone. From the parity pass: a plotted spray scatter, D1 or college
+benchmarks anywhere, a priorities list built on college benchmarks, and a team
 percentile or rank (see PARITY.md for each reason).
 
 ## Fresh-build confirmation

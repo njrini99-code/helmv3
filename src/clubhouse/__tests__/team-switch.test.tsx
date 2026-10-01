@@ -74,7 +74,7 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('Team switcher · who gets one', () => {
-  it('CH-1305 a coach with one team, a coach who cannot switch, and a player see the team as a plain label', () => {
+  it('CH-1305 10803 a coach with one team, a coach who cannot switch, and a player see the team as a plain label', () => {
     const cases: GolfUserData[] = [
       head({ coachTeams: [MEN], canSwitchTeams: false }),
       // An assistant staffed on two teams: setActiveTeam refuses them, so no switch is offered.
@@ -93,7 +93,7 @@ describe('Team switcher · who gets one', () => {
     }
   });
 
-  it('a coach with no resolved team is not offered a switch either', () => {
+  it('10803 a coach with no resolved team is not offered a switch either', () => {
     expect(teamSwitchFor(head({ teamId: undefined }))).toBeNull();
   });
 
@@ -102,7 +102,7 @@ describe('Team switcher · who gets one', () => {
     expect(model.choices.map((c) => c.label)).toEqual(["Men's · Varsity", "Women's · Varsity", 'JV']);
   });
 
-  it('the phone More sheet lists no teams for a coach who cannot switch', async () => {
+  it('10803 the phone More sheet lists no teams for a coach who cannot switch', async () => {
     const user = userEvent.setup();
     wrap(phoneBar(head({ canSwitchTeams: false })));
     const sheet = await openMore(user);
@@ -282,7 +282,7 @@ describe('Team switcher · every screen reads for the new team', () => {
     </ClubhouseFrame>
   );
 
-  it('a new team remounts the page, so nothing the old team\'s screen held carries over', async () => {
+  it('10103 a new team remounts the page, so nothing the old team\'s screen held carries over', async () => {
     const user = userEvent.setup();
     const { rerender } = render(frame(head()));
     await user.click(screen.getByRole('button', { name: 'count 0' }));

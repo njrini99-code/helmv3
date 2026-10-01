@@ -29,7 +29,7 @@ Every screen opens final on first paint, read on the server in one pass. The lis
 | 90106 | — | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | /my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there). |
 | 90107 | — | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -184,7 +184,7 @@ Not covered by a test here (read in this pass, not run): `createGolfQualifier` s
 | 90811 | — | `SETUP_ACTIONS_RECHECK_THE_COACH` | The squad-size and entrants actions behind Edit check that the caller coaches the qualifier's team before any write, and refuse a signed-out caller and a malformed id. |
 | 90812 | — | `STATUS_ACTION_RECHECKS_THE_COACH` | Close and Reopen check on the server that the caller's organisation owns the qualifier's team, so a player or another organisation's coach is refused as Unauthorized before anything is updated. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

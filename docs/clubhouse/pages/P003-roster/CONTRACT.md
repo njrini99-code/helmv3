@@ -19,7 +19,7 @@ Roster opens on the active players as cards, best scoring average first, with th
 | 30101 | — | `ROSTER_READY` | Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows. |
 | 30102 | — | `DEEP_LINK_OPENS_PROFILE` | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -129,7 +129,7 @@ The coach's roster is a coach's page. The page takes the Clubhouse branch for a 
 | 30805 | — | `PLAYER_ROSTER_READS_NO_COACH_DATA` | The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection. |
 | 30806 | — | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

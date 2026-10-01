@@ -12,12 +12,13 @@ names them where they carry a category. `clubhouse:check` holds this file to the
 
 Status: DEFINED
 
-The frame around every page (10102), and a page change that opens the new page at the top (10101).
+The frame around every page (10102), a page change that opens the new page at the top (10101), and a team switch that reads every screen again for the new team (10103).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 10101 | CH-1904 | `MOVING_TO_ANOTHER_PAGE_2` | Moving to another page |
 | 10102 | — | `SHELL_READY` | Every Clubhouse page opens in the frame: on wide screens the sidebar, the top bar with the bell and the page; on a phone the page with the role's tab bar and More sheet. |
+| 10103 | — | `TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN` | Switching teams sets the active team on the server (the same action Fairway uses), then refreshes the page so the layout, the sidebar's next event and Roster badge, and the page itself read for the new team; the route remounts for the new team, so a search, an open panel or a live feed the old team's screen held does not carry over, while a refresh for the same team keeps its state. |
 
 ## 02 — Initial loading / skeleton
 
@@ -43,7 +44,7 @@ The bell reads its list again on every open, and a list already shown stays whil
 
 Status: DEFINED
 
-A page not rebuilt yet (10401), an empty bell (10402), a bell filter with nothing (10403), and no next event (10404, the card is left out). Each page's own first-run and filtered empties are in its contract.
+A page not rebuilt yet (10401), an empty bell (10402), a bell filter with nothing (10403), no next event (10404, the card is left out), and a team that is a plain label because there is nothing to switch to (10405). Each page's own first-run and filtered empties are in its contract.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -61,7 +62,7 @@ Status: N/A — the shell takes no typed input. Fields and their validation belo
 
 Status: DEFINED
 
-Mark all read fails (10601); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery; and the two sidebar reads that hide rather than show something wrong (10608, 10609).
+Mark all read fails (10601); a team switch fails (10611); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery; and the two sidebar reads that hide rather than show something wrong (10608, 10609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -94,12 +95,13 @@ The banner under the top bar (10701), a save over five seconds says so once (107
 
 Status: DEFINED
 
-Clubhouse renders only for a coach or a player with the flag on (10801); the same check guards the held server actions. Each role sees only its own navigation, and an address not rebuilt for that role shows the not-rebuilt notice, never another role's page (10802). Who may read or change what is decided by the server actions and RLS, never by the frame; the pages name their own gates.
+Clubhouse renders only for a coach or a player with the flag on (10801); the same check guards the held server actions. Each role sees only its own navigation, and an address not rebuilt for that role shows the not-rebuilt notice, never another role's page (10802). Only a head coach staffed on more than one team is offered the team switch, and the server refuses anyone else (10803). Who may read or change what is decided by the server actions and RLS, never by the frame; the pages name their own gates.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 10801 | — | `CLUBHOUSE_GATE` | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 | — | `ROLE_SCOPED_NAV` | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
+| 10803 | — | `TEAM_SWITCH_IS_A_HEAD_COACHS` | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
 
 ## 09 — Success
 
@@ -173,7 +175,7 @@ v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
 
 Status: DEFINED
 
-v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, the More sheet, the bell and menus, and the connection dropping (11701 to 11706).
+v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, the More sheet, the bell and menus, the connection dropping, and picking another team (11701 to 11707).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -189,7 +191,7 @@ v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, th
 
 Status: DEFINED
 
-Skip to content, the modal More sheet, the current page and named landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab bar, pushed screens named and focused, the phone top bar, and the phone bell as a modal sheet (11801 to 11811).
+Skip to content, the modal More sheet, the current page and named landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab bar, pushed screens named and focused, the phone top bar, the phone bell as a modal sheet, and the team switcher on desktop and on the phone (11801 to 11814).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

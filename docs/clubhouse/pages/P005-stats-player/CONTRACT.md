@@ -27,7 +27,7 @@ Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
 | 50103 | — | `COACH_PAGES_THROUGH_THE_TEAM` | A coach pages through the active team ordered by scoring average with Previous player and Next player (N of M), wrapping from the last player to the first, and each link keeps the window. |
 | 50104 | — | `MESSAGE_OPENS_THE_PLAYERS_THREAD` | A coach's Message on a profile (the desktop button, the phone header icon) opens Messages on the direct thread with that player (?player=<golf_players.id>); a player's own profile has no Message. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -157,7 +157,7 @@ A player may open only their own stats, and a coach the team and any player on i
 | 50805 | — | `SERVER_REFUSAL_IS_NOT_ZEROS` | Shot-level detail is read through getDetailedStats for the profile's own player id, which answers empty to a caller who is neither the player nor their coach; empty detail for a window that has rounds shows as Shot-level detail didn't load, never as zeros. |
 | 50806 | — | `ONLY_A_COACH_PROPOSES_FOCUS_AREAS` | The Add focus area buttons and sheet exist only for a coach viewing a profile (the route hands a coach id only to a coach); a player's profile never offers them. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

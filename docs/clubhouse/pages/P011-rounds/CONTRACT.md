@@ -221,7 +221,7 @@ keeps the legacy message. `/rounds/recover` is not rebuilt, so nothing links to 
 | 110804 | — | `DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION` | Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Read in this pass, not run: no test here forces a refusal; the action is the legacy library's, unchanged. |
 | 110805 | — | `A_CLOSED_QUALIFIER_CANT_BE_CHOSEN` | A qualifier with no round the player can still enter is listed but cannot be chosen, and its row says why; only one with a round open is offered above Round details (closed means closed, D-31). Choosing the Qualifier type with none open says "No qualifier is open for you right now" (CH-11312), and a qualifiers read that failed says so (CH-11211). |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

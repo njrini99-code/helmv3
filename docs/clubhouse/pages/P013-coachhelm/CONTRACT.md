@@ -156,7 +156,7 @@ Who may open the page: a coach or a player with `golf_clubhouse_ui` on; anyone e
 | 130805 | — | `THE_PAGE_GIVES_CLUBHOUSE_ONLY_BEHIND_THE_FLAG` | With golf_clubhouse_ui on, a signed-in coach or player gets the Clubhouse route, drawn in place with no redirect, and ?view= is handed to it. With it off, everyone keeps the Fairway page (a coach gets its pointer to the Brief), and no session goes to sign in. |
 | 130806 | — | `ASSIGN_IS_OFFERED_ONLY_FOR_AN_INSIGHT_NOT_YET_MADE` | Assign as focus is offered when no focus has been made from the chosen player's top insight. One that is working (a strength) is offered too, as a keep-doing focus, as the board draws it on Theo's card (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds). |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

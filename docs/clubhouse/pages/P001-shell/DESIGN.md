@@ -86,6 +86,13 @@ connection drops; medium only when a sheet settles. Every other tap is silent.
 Sidebar and canvas. The top bar is sticky glass over the canvas. The bell is a
 popover under its button.
 
+The team switcher (owner, 2026-10-01, Q-130): the board's team chip (the team
+under GolfHelm, with up-down chevrons) is the whole brand block as a button for
+a head coach on two or more teams. It opens an ivory popover under the block
+with a "Switch team" label and a listbox: each team a row with a coin and the
+current one bold, ticked and `aria-selected`. For everyone else the team stays
+a plain label.
+
 ## Phone
 
 Approved spec `docs/clubhouse/phone/foundation.md`: the tab bar (coach Home,
@@ -93,11 +100,18 @@ CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub; then
 More), the More sheet, the top bar's root and pushed variants, the bell as a
 modal sheet, and pushed screens with the edge swipe.
 
+For a head coach on two or more teams the More sheet lists the teams under who
+they are, as a captioned "Team" list in the sheet's own rows: the current team
+is ticked, and a switch closes the sheet on the new team. The sheet scrolls on
+a short screen, for every role. The Home hero bar's team stays a label.
+
 ## Accessibility
 
 Skip to content on the first Tab, named landmarks, the current page marked,
 announced toasts (errors at once), dialogs that take and return focus, focus
-rings, and axe clean at 1280 and 390.
+rings, and axe clean at 1280 and 390. The switcher is a menu button with a
+listbox (arrows, Home, End, Enter, Esc, focus back on the button, 11813); on the
+phone its rows are buttons marked `aria-current` (11814).
 
 ## Data assumptions
 
@@ -107,7 +121,8 @@ search source exists (PROGRESS data gaps). There is no dead control.
 ## Existing backend capabilities used
 
 `getUnifiedNotifications`, `markNotificationRead`, `markAllNotificationsRead`
-(`src/app/golf/actions/unified-notifications.ts`); the badge context
+(`src/app/golf/actions/unified-notifications.ts`); `setActiveTeam`
+(`src/app/golf/actions/team-switcher.ts`, shared with Fairway); the badge context
 (`useNotificationBadges`); the shell loader's three reads. WIRING.md maps each.
 
 ## HELD requirements
@@ -122,7 +137,7 @@ None.
 
 ### Owner decisions
 
-D-25 (the animation chunk after first paint), D-40 and D-41 (the phone shell),
+Q-130 (2026-10-01: the team switcher), D-25 (the animation chunk after first paint), D-40 and D-41 (the phone shell),
 D-42 (red means destructive), D-64 (motion), D-66 (navigation), D-70 (haptics),
 D-71 (page empty state).
 

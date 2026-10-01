@@ -3,6 +3,40 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — The team switcher: a head coach on two or more teams switches teams (owner, Q-130)
+
+```text
+PR/commit:      agent/swap-audit: 67f40c962, a928a9416
+Design package: design/handoff/ (v2): sidebar.css and the boards' team chip (the team under GolfHelm with
+                chevrons-up-down), m-ch.jsx MoreM (the me card's chevrons-up-down); the popover is the design
+                system's PopoverPanel
+Contract IDs:   10103, 10405, 10611, 10803, 11707, 11813, 11814 (catalog CH-1003, CH-1305, CH-1707, CH-1813, CH-1814)
+Actions:        ACT-P001-SWITCH-TEAM
+Data impact:    none new. Reads the staff rows and teams the layout already reads (`userData.coachTeams`,
+                `canSwitchTeams`); `setActiveTeam` (existing, shared with Fairway) writes the `golf_active_team` cookie.
+Held items:     none
+```
+
+- **Issue.** A head coach staffed on two teams (men's and women's) could not
+  switch teams in Clubhouse, as Fairway lets them. The boards draw a team chip
+  with chevrons that did nothing, and the switcher had been a recorded non-goal.
+- **Fix.** For a head coach on two or more teams (`canSwitchTeams`, the gate
+  `setActiveTeam` enforces, so an assistant is never offered a switch the server
+  refuses) the sidebar's brand block is a menu button that opens a listbox of the
+  teams (arrows, Home, End, Enter, Esc, focus back), and the phone More sheet
+  lists the teams under who they are. A pick calls `setActiveTeam`, shows the new
+  team at once, refreshes every screen, and the route remounts for the new team
+  (`RouteFrame` is keyed by pathname and team). A refusal or a network failure is
+  a toast (CH-1003) with the reason, no Retry when trying again cannot help, and
+  the team goes back. A coach on one team, an assistant and a player keep the plain
+  label (CH-1305). The More sheet scrolls on a short screen, for every role.
+- **Checked.** `team-switch.test.tsx` 16/16 (removing the `canSwitchTeams` gate
+  fails 2); the Clubhouse suite 2515/2515; `clubhouse:check` clean; a browser pass
+  at 1280 and 390 (the popover, the sheet, a refused switch). Not exercised: a
+  switch that lands (the preview has no session), and a device pass of the sheet.
+- **Open.** With `HELM_CLUBHOUSE_TEAMS` set, a head coach who switches to a team
+  that is not listed gets Fairway for it.
+
 ## 2026-10-01 — Team allowlist for the first activation; the remaining old addresses open Clubhouse screens; a failed sync reports; server events carry the UI tag (swap audit §14, §18, Q-131)
 
 ```text

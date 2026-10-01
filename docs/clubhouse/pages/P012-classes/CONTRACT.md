@@ -135,7 +135,7 @@ Who may open the page: a player with `golf_clubhouse_ui` on for the player role 
 | 120802 | — | `A_PLAYER_CHANGES_ONLY_THEIR_OWN_CLASSES` | Every read and write the page makes is limited to the player's own rows: the classes are read with the session's player id, an edit updates and a remove deletes by the class's id and that player id, and a new class carries the player's id and team id. Row-level security is the gate that counts: the baseline policies let only the owning player insert, update or delete a class and let its player and an active coach of the team read it, and teammates cannot (read in the baseline migration; the policies were not run for this page). |
 | 120803 | — | `SERVER_ACTIONS_ARE_THE_GATE` | The calendar actions check the caller again, whatever the screen shows. syncClassToCalendar refuses a caller who is not signed in, whose player profile is not the player named, who is not a member of the team, or whose class row is not theirs. removeClassFromCalendar refuses a caller with no player profile, a team they are not on and a class that another player owns (looked up with the admin client on purpose, so a row the policies hide is not mistaken for an absent one), and cleans up an orphaned class's events only on the caller's own teams. Read in this pass, not run: the tests replace both actions, so no test here forces a refusal. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 

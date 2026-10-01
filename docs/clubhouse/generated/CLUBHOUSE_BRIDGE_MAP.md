@@ -98,7 +98,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 2 | 1 | 1 | 5 |  | 11 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 71 |
+| P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 12 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 73 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 68 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
@@ -120,6 +120,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- |
 | 10101 | CH-1904 | 01 Default / core UI | `MOVING_TO_ANOTHER_PAGE_2` | implemented | Moving to another page |
 | 10102 |  | 01 Default / core UI | `SHELL_READY` | implemented | Every Clubhouse page opens in the frame: on wide screens the sidebar, the top bar with the bell and the page; on a phone the page with the role's tab bar and More sheet. |
+| 10103 |  | 01 Default / core UI | `TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN` | implemented | Switching teams sets the active team on the server (the same action Fairway uses), then refreshes the page so the layout, the sidebar's next event and Roster badge, and the page itself read for the new team; the route remounts for the new team, so a search, an open panel or a live feed the old team's screen held does not carry over, while a refresh for the same team keeps its state. |
 | 10201 | CH-1401 | 02 Initial loading / skeleton | `THE_BELL_IS_LOADING_ITS_LIST` | implemented | The bell is loading its list |
 | 10301 |  | 03 Background loading / refresh | `BELL_REFRESHES_ON_OPEN` | implemented | The bell reads its list again every time it opens; a list already shown stays on screen while the new one loads. |
 | 10401 | CH-1301 | 04 Empty | `A_PAGE_THAT_HASNT_BEEN_REBUILT_IN` | implemented | A page that hasn't been rebuilt in Clubhouse |
@@ -144,6 +145,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice while offline |
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
+| 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
 | 10901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change made through useAction that lands fires the success haptic and names itself in a toast; an action with no done line (an instant switch) shows no toast, its new position being the confirmation. |
 | 11301 |  | 13 Optimistic UI | `BELL_MARK_ALL_OPTIMISTIC` | implemented | Mark all read clears the unread rows at once and puts them back when the write fails (with CH-1001); opening an unread notification marks it read at once. |
 | 11401 |  | 14 Retry / recovery | `ROUTE_TRY_AGAIN` | implemented | A page that crashes shows its error view with Try again (Reload after an update), locked while it retries, the number of tries, and Back to Home. |
