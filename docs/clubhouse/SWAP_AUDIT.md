@@ -127,7 +127,7 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 | F-03 | P1 | Source-confirmed | Leaderboard `buildBoard` (`screens/qualifiers/model.ts`) shares positions on equal to-par and total, orders ties by rounds played then name, and sets the automatic slots by that order. Selection `rankCandidates` (`lib/coachhelm/v3/qualifying/loader.ts`) assigns unique ranks in input order after to-par and total, and `classifySlots` uses them. A tie across the last automatic slot can put a different player in by each view. | **Fixed** `2ea18e38c` (Q-114): players level at the last place on score are "Tie at cut" on the board, in selection and at confirm; the coach gives the places left (Clubhouse and Fairway) and confirm waits. Name order decides nothing. Tests `qualifying.test`, `selection-guards.test`, `qualifiers.test` |
 | F-04 | P1 | Source-confirmed, fixed | `routes/coachhelm.tsx` `VIEWS_NOT_REBUILT`: development, profile, standing, deep-dive. | **Fixed.** Owner (2026-10-01): "coachhelm for player you can build but be detailed." The player's Game profile (`28f83d3a8`), Standing (`a657a7d15`) and Deep dive (`438781162`) are built in P013, each for the signed-in player alone behind the board's own switch, with a sub-navigation (Board, Game profile, Standing, Deep dive, and a link to Development); `?view=development` goes to Stats' Development (§14 D4). `VIEWS_NOT_REBUILT` is gone. Tests `coachhelm-profile.test`, `coachhelm-standing.test`, `coachhelm-dive.test`, `coachhelm-views.test`. The phone layouts are a draft (no owner board for these views). The team switcher and the read-only player roster (`67f40c962`, `0672d5738`) and the aliases (`6daf50afc`) closed the rest |
 | F-05 | P0 gate | Documented, not reverified | Authenticated writes on the candidate, fault injection and the iPhone pass have not run. | Preview pass by the owner (§6); local-Supabase journeys still to do |
-| F-06 | P0 gate | Source-confirmed | `e2e/golf-round.spec.ts` drives Fairway controls against the configured DB. | Not certifying Clubhouse; a Clubhouse e2e is still needed |
+| F-06 | P0 gate | Source-confirmed | `e2e/golf-round.spec.ts` drives Fairway controls against the configured DB. | **Fixed** (see the commit for F-06): `e2e/clubhouse-round.spec.ts` plays a Clubhouse round as a player, from setup through Save for later, Continue and all 18 holes to Submit, and checks the database (completed, 18 scored holes, total 54). Local stack only: it skips unless Supabase is local, seeds its own player and deletes everything after. 3/3 runs passed |
 | F-07 | P1 | Source-confirmed | Held numeric migrations (countable cache, test-round exclusion, putting, SG) change derived figures. | Stay held. The train does not depend on them (§5) |
 | F-08 | P1 | Risk to test | The coach CoachHelm loader shows one top insight a player; counts can exceed the reachable items. | **Fixed** `2e95b68ff` (CH13-4): the header counts players with an open signal, never the rows behind them; tests `coachhelm.test` › CH13-4, `coachhelm-audit.test` › CH13-4 |
 | F-09 | P2 | Documented | P013 WIRING described bugs already fixed in code. | Code is the evidence; WIRING to be reconciled |
@@ -315,6 +315,10 @@ quiet rerun.
 - **F-57 (P3, fixed `6e2fe5144`).** The Rounds season ribbon printed the
   same day under every round played that day ("2 Aug 2 Aug 2 Aug"); a day is
   labelled once.
+- **F-59 (P3, logged, not fixed).** Found by the F-06 e2e: a Continue tapped
+  on Rounds while Save for later's own navigation is still settling is pulled
+  back to the library; a second tap works. Waiting for the page to settle
+  avoids it. Folded into the page-transition work.
 - **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored
   putt, approach and tee bands, and sand saves, match a non-test recompute
   except where the cache counts test rounds (one 15-25 ft band reads 19.2%
@@ -454,8 +458,6 @@ approved; held files written or fixed for F-11 (`20261001130000`), Q-128
 
 Still to do on the branch:
 
-- F-06: a Clubhouse round e2e that runs only against the local stack and
-  cleans up after itself.
 - Final registry sync, full gates, one push, CI green.
 
 Tooling, not fixed here: `scripts/db/check-declarative-schema-drift.sh`

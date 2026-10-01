@@ -215,6 +215,29 @@ cleanup that same night. The Camps spec's create/delete round-trip was
 already fully self-cleaning via its working UI delete action and is
 unaffected by this change.
 
+## Clubhouse round, local stack only (swap audit F-06)
+
+`e2e/clubhouse-round.spec.ts` plays a whole Clubhouse round as a player:
+set up, hole 1, Save for later, Continue from Rounds, holes 2 to 18, Submit.
+It then checks the database: one completed round, 18 scored holes, total 54.
+
+It runs only when `NEXT_PUBLIC_SUPABASE_URL` is 127.0.0.1 or localhost, and
+skips everywhere else, CI included. There is no staging project, and this
+suite has written rounds to production before. It seeds its own user, team,
+membership and course through the local service role
+(`e2e/helpers/clubhouse-local-seed.ts`), and deletes all of it afterwards
+through the local database (`SUPABASE_DB_URL`, default the stack's port
+54322).
+
+1. `npx supabase start` (or `db reset`).
+2. Start `next dev` with `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SECRET_KEY` and `SUPABASE_SERVICE_ROLE_KEY` set from
+   `npx supabase status -o env`, for example on port 3100.
+3. With the same variables:
+   `PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test
+   e2e/clubhouse-round.spec.ts --project=chromium`
+
 ## CI/CD Integration
 
 ### GitHub Actions
