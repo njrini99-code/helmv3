@@ -1,10 +1,17 @@
 'use client';
 
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
+import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Profile } from '../screens/coachhelm/views/Profile';
-import { ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import {
+  diveLoad,
+  PREVIEW_DIVE,
+  PREVIEW_DIVE_EMPTY,
+  PREVIEW_DIVE_NO_ROUNDS,
+  PREVIEW_DIVE_PARTS_FAILED,
+  PREVIEW_DIVE_YOUNG,
   PREVIEW_PROFILE,
   PREVIEW_PROFILE_EDGE,
   PREVIEW_PROFILE_EMPTY,
@@ -22,9 +29,9 @@ const OFF = { status: 'off', reason: 'We are pausing AI insights until after the
 
 /**
  * The player's CoachHelm drills for the dev preview: `?view=profile|standing|deep-dive`, and `?state=` for the read's answer
- * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`; every view's `failed`, `off`, `loading`).
+ * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`; the Deep dive's `young`, `partsfailed`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
  */
-export function PreviewCoachHelmViews({ view, state }: { view?: string; state?: string }) {
+export function PreviewCoachHelmViews({ view, state, insight }: { view?: string; state?: string; insight?: string }) {
   const failed: ChViewLoad<never> = { status: 'failed' };
   if (view === 'profile' || view == null) {
     if (state === 'loading') return <ProfileSkeleton />;
@@ -39,6 +46,13 @@ export function PreviewCoachHelmViews({ view, state }: { view?: string; state?: 
     if (state === 'off') return <Standing load={OFF} />;
     const data = { early: PREVIEW_STANDING_EARLY, empty: PREVIEW_STANDING_EMPTY, womens: PREVIEW_STANDING_WOMENS, nobaseline: PREVIEW_STANDING_NOBASELINE }[state ?? ''] ?? PREVIEW_STANDING;
     return <Standing load={standingLoad(data)} />;
+  }
+  if (view === 'deep-dive') {
+    if (state === 'loading') return <DiveSkeleton />;
+    if (state === 'failed') return <DeepDive load={failed} />;
+    if (state === 'off') return <DeepDive load={OFF} />;
+    const data = { young: PREVIEW_DIVE_YOUNG, partsfailed: PREVIEW_DIVE_PARTS_FAILED, empty: PREVIEW_DIVE_EMPTY, norounds: PREVIEW_DIVE_NO_ROUNDS }[state ?? ''] ?? PREVIEW_DIVE;
+    return <DeepDive load={diveLoad(data)} initialId={insight ?? null} />;
   }
   return null;
 }

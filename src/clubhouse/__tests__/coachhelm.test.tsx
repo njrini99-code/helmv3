@@ -1774,15 +1774,10 @@ describe('CoachHelm route', () => {
     expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30 });
   });
 
-  it('CH-1301 a link to a Fairway drill that is not rebuilt (?view=deep-dive) says so; ?view=insights is the board', async () => {
+  it('CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-    for (const [view, label] of [
-      ['deep-dive', 'Deep dive'],
-    ]) {
-      document.body.innerHTML = '';
-      render(wrap(await ClubhouseCoachHelmRoute({ view })));
-      expect(code('CH-1301')!.textContent).toContain(`${label} hasn’t been rebuilt yet.`);
-    }
+    const dive = (await ClubhouseCoachHelmRoute({ view: 'deep-dive' })) as { key?: string } | null;
+    expect(dive?.key).toBe('deep-dive');
     document.body.innerHTML = '';
     render(wrap(await ClubhouseCoachHelmRoute({ view: 'insights' })));
     expect(code('CH-1301')).toBeNull();

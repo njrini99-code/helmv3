@@ -12877,6 +12877,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130211,
+    "page": "P013",
+    "category": 2,
+    "item": 11,
+    "name": "DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR",
+    "chCode": "CH-13480",
+    "meaning": "Deep dive: the insights are on their way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -13139,6 +13150,61 @@
     "name": "STANDING_A_STAT_WHOSE_TOUR_VALUE_IS",
     "chCode": "CH-13373",
     "meaning": "Standing: a stat whose Tour value is not comparable",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130425,
+    "page": "P013",
+    "category": 4,
+    "item": 25,
+    "name": "DEEP_DIVE_NO_ROUND_POSTED_YET",
+    "chCode": "CH-13380",
+    "meaning": "Deep dive: no round posted yet (nothing to read, and the countable-round count is 0)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130426,
+    "page": "P013",
+    "category": 4,
+    "item": 26,
+    "name": "DEEP_DIVE_ROUNDS_POSTED_NO_INSIGHT_YET",
+    "chCode": "CH-13381",
+    "meaning": "Deep dive: rounds posted, no insight yet (or the round count is unknown)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130427,
+    "page": "P013",
+    "category": 4,
+    "item": 27,
+    "name": "DEEP_DIVE_A_READ_NAMES_NO_ROUNDS",
+    "chCode": "CH-13382",
+    "meaning": "Deep dive: a read names no rounds, or none of them can be listed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130428,
+    "page": "P013",
+    "category": 4,
+    "item": 28,
+    "name": "DEEP_DIVE_A_READ_HAS_NO_TREND",
+    "chCode": "CH-13383",
+    "meaning": "Deep dive: a read has no trend",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130429,
+    "page": "P013",
+    "category": 4,
+    "item": 29,
+    "name": "DEEP_DIVE_A_READ_IS_NOT_PART",
+    "chCode": "CH-13384",
+    "meaning": "Deep dive: a read is not part of a plan",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13453,6 +13519,50 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130628,
+    "page": "P013",
+    "category": 6,
+    "item": 28,
+    "name": "DEEP_DIVE_THE_INSIGHTS_DONT_LOAD",
+    "chCode": "CH-13280",
+    "meaning": "Deep dive: the insights don't load (the delivery read throws, or comes back empty while undismissed insights are on file, or a read after it throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130629,
+    "page": "P013",
+    "category": 6,
+    "item": 29,
+    "name": "DEEP_DIVE_THE_ROUNDS_BEHIND_A_READ",
+    "chCode": "CH-13281",
+    "meaning": "Deep dive: the rounds behind a read don't load (that one read of `golf_rounds` fails)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130630,
+    "page": "P013",
+    "category": 6,
+    "item": 30,
+    "name": "DEEP_DIVE_THEIR_FOCUS_AREAS_AND_GOALS",
+    "chCode": "CH-13282",
+    "meaning": "Deep dive: their focus areas and goals don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130631,
+    "page": "P013",
+    "category": 6,
+    "item": 31,
+    "name": "DEEP_DIVE_THE_CATEGORY_TRENDS_DONT_LOAD",
+    "chCode": "CH-13283",
+    "meaning": "Deep dive: the category trends don't load (`getThemesForPlayer` answers `success: false` or throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -13595,6 +13705,39 @@
     "chCode": "CH-13931",
     "meaning": "Player: Development",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130714,
+    "page": "P013",
+    "category": 7,
+    "item": 14,
+    "name": "DEEP_DIVE_A_READ_IS_OPENED_ON",
+    "chCode": "CH-13980",
+    "meaning": "Deep dive: a read is opened on the phone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130715,
+    "page": "P013",
+    "category": 7,
+    "item": 15,
+    "name": "DEEP_DIVE_AN_ADDRESS_NAMES_A_READ",
+    "chCode": "CH-13981",
+    "meaning": "Deep dive: an address names a read (`?view=deep-dive&insight=<id>`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130716,
+    "page": "P013",
+    "category": 7,
+    "item": 16,
+    "name": "DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS",
+    "chCode": "CH-13982",
+    "meaning": "Deep dive: a cause is a hypothesis",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -13920,6 +14063,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 131707,
+    "page": "P013",
+    "category": 17,
+    "item": 7,
+    "name": "DEEP_DIVE_A_READ_IN_THE_LIST",
+    "chCode": "CH-13780",
+    "meaning": "Deep dive: a read in the list, or a round or a plan under it, is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131801,
     "page": "P013",
     "category": 18,
@@ -14103,6 +14257,17 @@
     "chCode": "CH-13880",
     "meaning": "Standing: a screen reader moves through the page",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131818,
+    "page": "P013",
+    "category": 18,
+    "item": 18,
+    "name": "DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH",
+    "chCode": "CH-13890",
+    "meaning": "Deep dive: a screen reader moves through the page",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

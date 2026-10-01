@@ -104,6 +104,7 @@ import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
 import '@/clubhouse/styles/coachhelm-profile.css';
 import '@/clubhouse/styles/coachhelm-standing.css';
+import '@/clubhouse/styles/coachhelm-dive.css';
 
 /**
  * Dev-only Clubhouse preview: every screen and state rendered from the
@@ -135,6 +136,7 @@ import '@/clubhouse/styles/coachhelm-standing.css';
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
  *   /clubhouse-preview/coachhelm-views ?view=profile ?state=partial | empty | edge | failed | off | loading   (the player's Game profile; Jonah)
  *   /clubhouse-preview/coachhelm-views ?view=standing ?state=early | empty | womens | nobaseline | failed | off | loading   (the player's Standing)
+ *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=young | partsfailed | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  *   any coach screen &teams=2   (a head coach on two teams: the team switcher; picking one fails here, there is no session)
@@ -439,7 +441,7 @@ export default async function ClubhousePreview({
     },
     'coachhelm-views': {
       path: '/golf/dashboard/coachhelm',
-      node: <PreviewCoachHelmViews view={view} state={state} />,
+      node: <PreviewCoachHelmViews view={view} state={state} insight={q} />,
     },
   };
   const entry = screens[screen];

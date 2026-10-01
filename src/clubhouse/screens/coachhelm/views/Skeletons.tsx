@@ -4,7 +4,7 @@ import { useChPhone } from '../../../lib/use-phone';
 import { Skeleton } from '../../../ui/States';
 
 /**
- * Route loading for the player's views, each in its own final shape and height (the Game profile's is CH-13460, Standing's CH-13470), so nothing jumps
+ * Route loading for the player's views, each in its own final shape and height (the Game profile's is CH-13460, Standing's CH-13470, the Deep dive's CH-13480), so nothing jumps
  * when the read lands. `coachhelm/loading.tsx` cannot see `?view=`, so the route wraps each view in its own Suspense
  * (routes/coachhelm.tsx) and these are the fallbacks.
  */
@@ -106,6 +106,52 @@ export function StandingSkeleton() {
       <StandingGroupSkeleton rows={5} />
       <StandingGroupSkeleton rows={4} />
       <StandingGroupSkeleton rows={4} />
+    </Chrome>
+  );
+}
+
+/** Deep dive: the green summary, the list of reads and, on desktop, the read beside it (CH-13480). */
+export function DiveSkeleton() {
+  const phone = useChPhone();
+  return (
+    <Chrome label="Loading your deep dive" code="CH-13480">
+      <div className="ch-hd-sk__hero">
+        <div className="ch-hd-sk__col">
+          <Skeleton width={150} height={11} />
+          <Skeleton width="70%" height={32} radius={8} />
+          <Skeleton width="86%" height={13} />
+        </div>
+        <Skeleton width="100%" height={72} radius={14} />
+      </div>
+      <div className="ch-hd">
+        <div className="ch-hd-rail">
+          {[4, 2].map((rows, g) => (
+            <div key={g} className="ch-hd-sk__grp">
+              <Skeleton width={110} height={16} radius={6} />
+              {Array.from({ length: rows }, (_, i) => (
+                <div key={i} className="ch-hd-sk__it">
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
+                    <Skeleton width="38%" height={10} />
+                    <Skeleton width="86%" height={14} />
+                  </span>
+                  <Skeleton width={34} height={16} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        {!phone && (
+          <div className="ch-hd-sk__dos">
+            <Skeleton width={90} height={11} />
+            <Skeleton width="78%" height={32} radius={8} />
+            <Skeleton width="92%" height={15} />
+            <Skeleton width="100%" height={150} radius={14} />
+            <Skeleton width="100%" height={112} radius={14} />
+            <Skeleton width="100%" height={168} radius={14} />
+            <Skeleton width="100%" height={196} radius={14} />
+          </div>
+        )}
+      </div>
     </Chrome>
   );
 }

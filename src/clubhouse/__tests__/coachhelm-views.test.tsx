@@ -36,6 +36,8 @@ const profileRead = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('../data/coachhelm-profile', () => ({ loadPlayerProfile: profileRead.load }));
 const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('../data/coachhelm-standing', () => ({ loadPlayerStanding: standingRead.load }));
+const diveRead = vi.hoisted(() => ({ load: vi.fn() }));
+vi.mock('../data/coachhelm-dive', () => ({ loadPlayerDeepDive: diveRead.load }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
@@ -43,11 +45,12 @@ vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactiv
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
+import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Profile } from '../screens/coachhelm/views/Profile';
-import { ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_OFF } from '../preview/fixtures-coachhelm';
-import { PREVIEW_PROFILE, PREVIEW_STANDING, profileLoad, standingLoad } from '../preview/fixtures-coachhelm-views';
+import { diveLoad, PREVIEW_DIVE, PREVIEW_PROFILE, PREVIEW_STANDING, profileLoad, standingLoad } from '../preview/fixtures-coachhelm-views';
 import { ToastProvider } from '../ui/Toast';
 
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
@@ -74,6 +77,7 @@ beforeEach(() => {
   logServer.mockClear();
   profileRead.load.mockReset();
   standingRead.load.mockReset();
+  diveRead.load.mockReset();
   board.player.mockReset();
   board.coach.mockReset();
   vi.mocked(isCoachHelmEnabledForPlayer).mockReset();
@@ -88,6 +92,7 @@ afterEach(cleanup);
 const VIEWS = [
   { view: 'profile', name: 'Game profile', Screen: Profile, Skeleton: ProfileSkeleton, read: profileRead.load, ready: profileLoad(PREVIEW_PROFILE) },
   { view: 'standing', name: 'Standing', Screen: Standing, Skeleton: StandingSkeleton, read: standingRead.load, ready: standingLoad(PREVIEW_STANDING) },
+  { view: 'deep-dive', name: 'Deep dive', Screen: DeepDive, Skeleton: DiveSkeleton, read: diveRead.load, ready: diveLoad(PREVIEW_DIVE) },
 ] as const;
 const allReads = () => VIEWS.map((v) => v.read);
 
@@ -149,6 +154,7 @@ describe('the player’s views and the board', () => {
     session.current = null;
     expect(await ClubhouseCoachHelmRoute({ view: 'profile' })).toBeNull();
     expect(await ClubhouseCoachHelmRoute({ view: 'standing' })).toBeNull();
+    expect(await ClubhouseCoachHelmRoute({ view: 'deep-dive' })).toBeNull();
     session.current = jonah;
     board.player.mockResolvedValue(PREVIEW_HELM_PLAYER);
     for (const view of [undefined, 'insights', 'nonsense']) {
@@ -156,6 +162,33 @@ describe('the player’s views and the board', () => {
       expect(el.type).toBe(PlayerBoard);
     }
     for (const r of allReads()) expect(r).not.toHaveBeenCalled();
+  });
+});
+
+describe('CH-13981 ?insight= on the Deep dive', () => {
+  type Open = ReactElement<{ fallback: ReactElement; children: ReactElement<{ playerId: string; insight?: string }> }>;
+  const run = async (el: Open) => (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown; initialId: string | null }>>)(el.props.children.props)) as ReactElement<{ load: unknown; initialId: string | null }>;
+
+  it('is carried as a name to open, never as data to read: the loader still gets only the session’s player', async () => {
+    diveRead.load.mockResolvedValue(diveLoad(PREVIEW_DIVE));
+    const el = (await ClubhouseCoachHelmRoute({ view: 'deep-dive', insight: 'in-pen', player: 'pl-someone-else' })) as Open;
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', insight: 'in-pen' });
+    const out = await run(el);
+    expect(diveRead.load).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
+    expect(out.props.initialId).toBe('in-pen');
+  });
+
+  it('is nothing when absent, and an address that repeats it (an array) names no read', async () => {
+    diveRead.load.mockResolvedValue(diveLoad(PREVIEW_DIVE));
+    expect((await run((await ClubhouseCoachHelmRoute({ view: 'deep-dive' })) as Open)).props.initialId).toBeNull();
+    const twice = (await ClubhouseCoachHelmRoute({ view: 'deep-dive', insight: ['a', 'b'] as unknown as string })) as Open;
+    expect((await run(twice)).props.initialId).toBeNull();
+  });
+
+  it('is ignored on every other view and on the board', async () => {
+    standingRead.load.mockResolvedValue(standingLoad(PREVIEW_STANDING));
+    const el = (await ClubhouseCoachHelmRoute({ view: 'standing', insight: 'in-pen' })) as Open;
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah' });
   });
 });
 

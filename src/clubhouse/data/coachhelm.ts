@@ -36,7 +36,7 @@ const log = (what: string, err: unknown) => chLogServer('coachhelm', what, err, 
 const NO_NAME = 'Player';
 
 /** The most insights one player's page loads: the feed's own ceiling for a player (`getInsightsForPlayer`). */
-const PLAYER_FEED_LIMIT = 30;
+export const PLAYER_FEED_LIMIT = 30;
 
 const VISIBLE_COLUMNS = 'id, player_id, category, insight_type, title, content, signature, evidence, metadata, lifecycle_state, status, priority, acknowledged_at, resolved_at, created_at, updated_at';
 
@@ -45,7 +45,7 @@ const VISIBLE_COLUMNS = 'id, player_id, category, insight_type, title, content, 
  * (par scoring collapsed, one per player, category and subject). A row the feed
  * could not draw (no numeric impact, confidence or metric) is not counted.
  */
-async function loadVisible(supabase: Supabase, playerIds: string[]): Promise<{ rows: RankableEvidenceInsight[]; error: boolean }> {
+export async function loadVisible(supabase: Supabase, playerIds: string[]): Promise<{ rows: RankableEvidenceInsight[]; error: boolean }> {
   const res = await fetchAllRowsResult<RawInsightRowForRanking>(
     (from, to) =>
       applyInsightVisibility(supabase.from('golf_coach_insights').select(VISIBLE_COLUMNS).in('player_id', playerIds).not('evidence', 'is', null))
@@ -63,7 +63,7 @@ async function loadVisible(supabase: Supabase, playerIds: string[]): Promise<{ r
 }
 
 /** Insights this player dismissed themselves: the newest feedback row per insight decides (`getInsightsForPlayer` hides them). */
-async function loadPlayerDismissed(supabase: Supabase, playerId: string): Promise<{ ids: Set<string>; error: boolean }> {
+export async function loadPlayerDismissed(supabase: Supabase, playerId: string): Promise<{ ids: Set<string>; error: boolean }> {
   const res = await supabase.from('golf_insight_player_feedback').select('insight_id, rating, created_at').eq('player_id', playerId).order('created_at', { ascending: false });
   if (res.error) {
     log('dismissed', res.error);
@@ -80,7 +80,7 @@ async function loadPlayerDismissed(supabase: Supabase, playerId: string): Promis
 }
 
 /** Countable rounds the player has posted, or null when the read fails (the empty state then names no number). */
-async function countCountableRounds(supabase: Supabase, playerId: string): Promise<number | null> {
+export async function countCountableRounds(supabase: Supabase, playerId: string): Promise<number | null> {
   const res = await fetchAllRowsResult<{ id: string; total_score: number | null; front_nine: number | null; back_nine: number | null; holes_played: number | null; total_putts: number | null }>(
     (from, to) =>
       supabase
@@ -107,7 +107,7 @@ async function countCountableRounds(supabase: Supabase, playerId: string): Promi
  * A failed read is logged and answers an empty map: a read that cannot be compared is drawn as it is, never as an error on the
  * page. Never a write.
  */
-async function newestRounds(supabase: Supabase, playerIds: string[], since: string | null): Promise<Map<string, string>> {
+export async function newestRounds(supabase: Supabase, playerIds: string[], since: string | null): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (!since || playerIds.length === 0) return out;
   const res = await fetchAllRowsResult<{ id: string; player_id: string; round_date: string | null; total_score: number | null; front_nine: number | null; back_nine: number | null; holes_played: number | null; total_putts: number | null }>(
@@ -137,12 +137,12 @@ async function newestRounds(supabase: Supabase, playerIds: string[], since: stri
 }
 
 /** The earliest day a round could make any of these reads out of date, or null when none can be told. */
-function earliestStaleFloor(rows: ReadonlyArray<Parameters<typeof staleFloor>[0]>): string | null {
+export function earliestStaleFloor(rows: ReadonlyArray<Parameters<typeof staleFloor>[0]>): string | null {
   return rows.map(staleFloor).filter((d): d is string => !!d).sort()[0] ?? null;
 }
 
 /** The attached drill's description by insight (the delivery shape carries the drill's name and length, not its text). Failing leaves the drill's name and length. */
-async function drillTextByInsight(supabase: Supabase, insights: EvidenceInsight[]): Promise<Map<string, string>> {
+export async function drillTextByInsight(supabase: Supabase, insights: EvidenceInsight[]): Promise<Map<string, string>> {
   const firstDrill = new Map<string, string>();
   for (const i of insights) if (i.drills?.[0]) firstDrill.set(i.id, i.drills[0].id);
   const out = new Map<string, string>();
@@ -164,7 +164,7 @@ async function drillTextByInsight(supabase: Supabase, insights: EvidenceInsight[
 }
 
 /** Focus areas already made from these insights that still stand (a declined or completed one no longer does). Failing leaves Assign available; the server's duplicate guard still holds. */
-async function assignedByInsight(supabase: Supabase, insightIds: string[]): Promise<Map<string, ChHelmAssigned>> {
+export async function assignedByInsight(supabase: Supabase, insightIds: string[]): Promise<Map<string, ChHelmAssigned>> {
   const out = new Map<string, ChHelmAssigned>();
   if (insightIds.length === 0) return out;
   const res = await supabase.from('golf_player_focus_areas').select('from_insight_id, status').in('from_insight_id', insightIds).in('status', ['proposed', 'active', 'in_progress', 'paused']);
@@ -201,7 +201,7 @@ async function coachTour(supabase: Supabase, teamId: string): Promise<ChTourBase
 }
 
 /** The player's active team and its tour. `error`: the read failed, so neither the tour nor the proposals are known. */
-async function playerTeam(supabase: Supabase, playerId: string): Promise<{ teamId: string | null; tour: ChTourBaseline | null; error: boolean }> {
+export async function playerTeam(supabase: Supabase, playerId: string): Promise<{ teamId: string | null; tour: ChTourBaseline | null; error: boolean }> {
   const res = await supabase.from('golf_team_members').select('team_id, golf_teams(gender)').eq('player_id', playerId).eq('status', 'active').maybeSingle();
   if (res.error) {
     log('playerTeam', res.error);

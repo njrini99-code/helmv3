@@ -48,6 +48,7 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
 | 130209 | CH-13460 | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | Profile: the Game profile is on its way |
 | 130210 | CH-13470 | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | Standing: the standing is on its way |
+| 130211 | CH-13480 | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | Deep dive: the insights are on their way |
 
 ## 03 — Background loading / refresh
 
@@ -85,6 +86,11 @@ First run is a whole-page empty state for each role and each way of having nothi
 | 130422 | CH-13371 | `STANDING_AN_EARLY_READ` | Standing: an early read (rows, but under five rounds on file, or the count unknown) |
 | 130423 | CH-13372 | `STANDING_A_STAT_THE_TEAM_IS_TOO` | Standing: a stat the team is too small to compare on (under five teammates have it) |
 | 130424 | CH-13373 | `STANDING_A_STAT_WHOSE_TOUR_VALUE_IS` | Standing: a stat whose Tour value is not comparable |
+| 130425 | CH-13380 | `DEEP_DIVE_NO_ROUND_POSTED_YET` | Deep dive: no round posted yet (nothing to read, and the countable-round count is 0) |
+| 130426 | CH-13381 | `DEEP_DIVE_ROUNDS_POSTED_NO_INSIGHT_YET` | Deep dive: rounds posted, no insight yet (or the round count is unknown) |
+| 130427 | CH-13382 | `DEEP_DIVE_A_READ_NAMES_NO_ROUNDS` | Deep dive: a read names no rounds, or none of them can be listed |
+| 130428 | CH-13383 | `DEEP_DIVE_A_READ_HAS_NO_TREND` | Deep dive: a read has no trend |
+| 130429 | CH-13384 | `DEEP_DIVE_A_READ_IS_NOT_PART` | Deep dive: a read is not part of a plan |
 
 ## 05 — Validation
 
@@ -131,6 +137,10 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130625 | CH-13260 | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | Profile: the Game profile doesn't load (the genome read fails or throws) |
 | 130626 | CH-13270 | `STANDING_THE_STANDING_DOESNT_LOAD` | Standing: the standing doesn't load (the standing read fails or throws) |
 | 130627 | CH-13271 | `STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD` | Standing: their scoring average doesn't load (the read every projection starts from fails) |
+| 130628 | CH-13280 | `DEEP_DIVE_THE_INSIGHTS_DONT_LOAD` | Deep dive: the insights don't load (the delivery read throws, or comes back empty while undismissed insights are on file, or a read after it throws) |
+| 130629 | CH-13281 | `DEEP_DIVE_THE_ROUNDS_BEHIND_A_READ` | Deep dive: the rounds behind a read don't load (that one read of `golf_rounds` fails) |
+| 130630 | CH-13282 | `DEEP_DIVE_THEIR_FOCUS_AREAS_AND_GOALS` | Deep dive: their focus areas and goals don't load |
+| 130631 | CH-13283 | `DEEP_DIVE_THE_CATEGORY_TRENDS_DONT_LOAD` | Deep dive: the category trends don't load (`getThemesForPlayer` answers `success: false` or throws) |
 
 ## 07 — Network / offline
 
@@ -153,6 +163,9 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130711 | CH-13953 | `ASK_A_CONFIRMED_ACTION_LANDS` | Ask: A confirmed action lands |
 | 130712 | CH-13930 | `PLAYER_THE_SUB_NAVIGATION` | Player: the sub-navigation |
 | 130713 | CH-13931 | `PLAYER_DEVELOPMENT` | Player: Development |
+| 130714 | CH-13980 | `DEEP_DIVE_A_READ_IS_OPENED_ON` | Deep dive: a read is opened on the phone |
+| 130715 | CH-13981 | `DEEP_DIVE_AN_ADDRESS_NAMES_A_READ` | Deep dive: an address names a read (`?view=deep-dive&insight=<id>`) |
+| 130716 | CH-13982 | `DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS` | Deep dive: a cause is a hypothesis |
 
 ## 08 — Permission / authorization
 
@@ -263,6 +276,7 @@ On the v2 grammar (D-70): selection for choosing a player or an insight (CH-1370
 | 131704 | CH-13704 | `ACCEPT_OR_DECLINE_IS_TAPPED` | Accept or Decline is tapped |
 | 131705 | CH-13721 | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | Ask: An opener pill or shortcut card is tapped |
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
+| 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
@@ -291,6 +305,7 @@ The page is labelled by its title and each section is a labelled region (CH-1380
 | 131815 | CH-13852 | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | Ask: Evidence drawn as a chart |
 | 131816 | CH-13860 | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | Profile: a screen reader moves through the page |
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
+| 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 

@@ -110,7 +110,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
 | P011 | 14 | 10 |  | 15 | 10 | 32 | 12 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 160 |
 | P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
-| P013 | 7 | 10 |  | 24 | 1 | 27 | 13 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 6 | 17 | 1 |  | 1 |  | 1 |  |  | 129 |
+| P013 | 7 | 11 |  | 29 | 1 | 31 | 16 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 144 |
 | P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
 | P015 |  | 1 | 1 | 3 | 2 | 12 | 1 | 2 | 1 |  |  | 1 |  | 1 |  | 6 | 5 | 5 | 2 | 1 | 1 |  | 1 |  |  | 46 |
 
@@ -1294,6 +1294,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130208 | CH-13450 | 02 Initial loading / skeleton | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | implemented | Ask: An action was confirmed and is being carried out |
 | 130209 | CH-13460 | 02 Initial loading / skeleton | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | implemented | Profile: the Game profile is on its way |
 | 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
+| 130211 | CH-13480 | 02 Initial loading / skeleton | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | implemented | Deep dive: the insights are on their way |
 | 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
@@ -1318,6 +1319,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130422 | CH-13371 | 04 Empty | `STANDING_AN_EARLY_READ` | implemented | Standing: an early read (rows, but under five rounds on file, or the count unknown) |
 | 130423 | CH-13372 | 04 Empty | `STANDING_A_STAT_THE_TEAM_IS_TOO` | implemented | Standing: a stat the team is too small to compare on (under five teammates have it) |
 | 130424 | CH-13373 | 04 Empty | `STANDING_A_STAT_WHOSE_TOUR_VALUE_IS` | implemented | Standing: a stat whose Tour value is not comparable |
+| 130425 | CH-13380 | 04 Empty | `DEEP_DIVE_NO_ROUND_POSTED_YET` | implemented | Deep dive: no round posted yet (nothing to read, and the countable-round count is 0) |
+| 130426 | CH-13381 | 04 Empty | `DEEP_DIVE_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Deep dive: rounds posted, no insight yet (or the round count is unknown) |
+| 130427 | CH-13382 | 04 Empty | `DEEP_DIVE_A_READ_NAMES_NO_ROUNDS` | implemented | Deep dive: a read names no rounds, or none of them can be listed |
+| 130428 | CH-13383 | 04 Empty | `DEEP_DIVE_A_READ_HAS_NO_TREND` | implemented | Deep dive: a read has no trend |
+| 130429 | CH-13384 | 04 Empty | `DEEP_DIVE_A_READ_IS_NOT_PART` | implemented | Deep dive: a read is not part of a plan |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
@@ -1346,6 +1352,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130625 | CH-13260 | 06 Server / system error | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | implemented | Profile: the Game profile doesn't load (the genome read fails or throws) |
 | 130626 | CH-13270 | 06 Server / system error | `STANDING_THE_STANDING_DOESNT_LOAD` | implemented | Standing: the standing doesn't load (the standing read fails or throws) |
 | 130627 | CH-13271 | 06 Server / system error | `STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD` | implemented | Standing: their scoring average doesn't load (the read every projection starts from fails) |
+| 130628 | CH-13280 | 06 Server / system error | `DEEP_DIVE_THE_INSIGHTS_DONT_LOAD` | implemented | Deep dive: the insights don't load (the delivery read throws, or comes back empty while undismissed insights are on file, or a read after it throws) |
+| 130629 | CH-13281 | 06 Server / system error | `DEEP_DIVE_THE_ROUNDS_BEHIND_A_READ` | implemented | Deep dive: the rounds behind a read don't load (that one read of `golf_rounds` fails) |
+| 130630 | CH-13282 | 06 Server / system error | `DEEP_DIVE_THEIR_FOCUS_AREAS_AND_GOALS` | implemented | Deep dive: their focus areas and goals don't load |
+| 130631 | CH-13283 | 06 Server / system error | `DEEP_DIVE_THE_CATEGORY_TRENDS_DONT_LOAD` | implemented | Deep dive: the category trends don't load (`getThemesForPlayer` answers `success: false` or throws) |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
@@ -1359,6 +1369,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130711 | CH-13953 | 07 Network / offline | `ASK_A_CONFIRMED_ACTION_LANDS` | implemented | Ask: A confirmed action lands |
 | 130712 | CH-13930 | 07 Network / offline | `PLAYER_THE_SUB_NAVIGATION` | implemented | Player: the sub-navigation |
 | 130713 | CH-13931 | 07 Network / offline | `PLAYER_DEVELOPMENT` | reserved | Player: Development |
+| 130714 | CH-13980 | 07 Network / offline | `DEEP_DIVE_A_READ_IS_OPENED_ON` | implemented | Deep dive: a read is opened on the phone |
+| 130715 | CH-13981 | 07 Network / offline | `DEEP_DIVE_AN_ADDRESS_NAMES_A_READ` | implemented | Deep dive: an address names a read (`?view=deep-dive&insight=<id>`) |
+| 130716 | CH-13982 | 07 Network / offline | `DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS` | implemented | Deep dive: a cause is a hypothesis |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |
@@ -1386,6 +1399,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131704 | CH-13704 | 17 Haptic | `ACCEPT_OR_DECLINE_IS_TAPPED` | reserved | Accept or Decline is tapped |
 | 131705 | CH-13721 | 17 Haptic | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | implemented | Ask: An opener pill or shortcut card is tapped |
 | 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | implemented | Ask: A follow-up is tapped |
+| 131707 | CH-13780 | 17 Haptic | `DEEP_DIVE_A_READ_IN_THE_LIST` | implemented | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 | 131801 | CH-13801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | implemented | A screen reader moves through the page |
 | 131802 | CH-13802 | 18 Accessibility | `A_GAUGE` | implemented | A gauge |
 | 131803 | CH-13803 | 18 Accessibility | `AN_INSIGHT_OR_PLAYER_ROW` | implemented | An insight or player row |
@@ -1403,6 +1417,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | implemented | Ask: Evidence drawn as a chart |
 | 131816 | CH-13860 | 18 Accessibility | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Profile: a screen reader moves through the page |
 | 131817 | CH-13880 | 18 Accessibility | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through the page |
+| 131818 | CH-13890 | 18 Accessibility | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | implemented | Deep dive: a screen reader moves through the page |
 | 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | reserved | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | reserved | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | reserved | A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |

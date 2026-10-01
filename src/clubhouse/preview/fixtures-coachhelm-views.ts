@@ -1,10 +1,18 @@
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { LoadedGenome } from '@/lib/coachhelm/v3/genome/loader';
 import type { GenomeVector } from '@/lib/coachhelm/v3/genome/types';
+import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import type { AssembledThemes, CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
+import { SLOPE_METRIC, toChInsight } from '../data/coachhelm-map';
+import { diveCounts, orderDive, themesByCategory, toChDeepInsight, type ChDeepDive, type ChDeepInsight, type ChDiveInputs, type DiveFocusRow, type DiveRoundRow } from '../data/coachhelm-dive-shape';
+import { speak } from '../data/coachhelm-voice';
 import { toChProfile, type ChProfile } from '../data/coachhelm-profile-shape';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from '../data/coachhelm-standing-shape';
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
+import { bigNumber, breakBias, PREVIEW_TOUR, penalties, slope } from './fixtures-coachhelm';
 
 /**
  * Sample data for the player's CoachHelm views (Game profile, Standing, Deep dive). Each fixture is the stored shape the loader reads
@@ -105,3 +113,170 @@ export const PREVIEW_STANDING_WOMENS: ChStanding = toChStanding(
 export const PREVIEW_STANDING_NOBASELINE: ChStanding = toChStanding(STANDING_ROWS, { status: 'failed' });
 
 export const standingLoad = (data: ChStanding): ChViewLoad<ChStanding> => ({ status: 'ready', data });
+
+// ── Deep dive ──────────────────────────────────────────────────────────────
+
+const JONAH = 'pl-jonah';
+const named = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}${String(i + 1).padStart(2, '0')}`);
+const round = (n: number, date: string, course: string, total: number, toPar: number, holes = 18): DiveRoundRow => ({
+  id: `rd-${String(n).padStart(2, '0')}`,
+  round_date: date,
+  course_name: course,
+  total_score: total,
+  score_to_par: toPar,
+  holes_played: holes,
+});
+/** The rounds the loader reads for the first insights' ids: the newest twelve Jonah has (one a nine, one under par). */
+export const DIVE_ROUND_ROWS: DiveRoundRow[] = [
+  round(1, '2026-09-28', 'Oak Hollow', 74, 2),
+  round(2, '2026-09-21', 'Oak Hollow', 77, 5),
+  round(3, '2026-09-14', 'Pine Ridge', 72, 0),
+  round(4, '2026-09-07', 'Pine Ridge', 75, 3),
+  round(5, '2026-08-31', 'Lakeshore', 71, -1),
+  round(6, '2026-08-24', 'Oak Hollow', 79, 7),
+  round(7, '2026-08-17', 'Lakeshore', 38, 2, 9),
+  round(8, '2026-08-10', 'Pine Ridge', 78, 6),
+  round(9, '2026-08-03', 'Oak Hollow', 80, 8),
+  round(10, '2026-07-27', 'Lakeshore', 76, 4),
+  round(11, '2026-07-20', 'Pine Ridge', 79, 7),
+  round(12, '2026-07-13', 'Oak Hollow', 81, 9),
+];
+
+const evidenceOf = (ins: EvidenceInsight, extra: Partial<InsightEvidence>): EvidenceInsight => ({ ...ins, evidence: { ...ins.evidence, ...extra } });
+
+/** The insights Jonah's Board draws, with what the generators also write: the rounds they were made from, a window, a diagnosis, a movement, an outcome. */
+export const DIVE_SLOPE: EvidenceInsight = {
+  ...evidenceOf(slope(JONAH), {
+    source_round_ids: [...DIVE_ROUND_ROWS.map((r) => r.id), 'rd-13', 'rd-14'],
+    window_start: '2026-07-05',
+    window_end: '2026-10-01',
+    diagnosis: {
+      symptom: 'Downhill putts inside 4-6 ft go in far less often than level ones',
+      root_cause: 'It looks like a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed',
+      causality_level: 'inferred_hypothesis',
+      drivers: [
+        { metric: 'putts_made_4_6ft_downhill_pct', label: 'Downhill make rate, 4-6 ft', value: 58, unit: 'percent', sample_n: 31, source: 'golf_putts' },
+        { metric: 'putts_made_4_6ft_level_pct', label: 'Level make rate, 4-6 ft', value: 81, unit: 'percent', sample_n: 44, source: 'golf_putts' },
+      ],
+      recommended_action: 'Rehearse a downhill-only ladder',
+      confidence_reason: 'Both groups have enough putts to compare, and a gap this size is not likely to be chance',
+    },
+  }),
+  metadata: { movement: { from: 31, to: 23, direction: 'down', percent_change: -0.26 } },
+};
+export const DIVE_PENALTIES: EvidenceInsight = evidenceOf(penalties(JONAH), {
+  source_round_ids: [...DIVE_ROUND_ROWS.map((r) => r.id), ...named('rd-y', 9)],
+  diagnosis: {
+    symptom: 'You average 1.1 penalty strokes a round',
+    root_cause: 'Most of them come off the tee with the driver, on holes where the trouble is on the right',
+    causality_level: 'observed_sequence',
+    drivers: [
+      { metric: 'penalty_rate_per_round', label: 'Penalties off the tee, per round', value: 0.8, unit: 'count', sample_n: 17, source: 'golf_holes' },
+      { metric: 'penalty_rate_per_round', label: 'Penalties from the approach, per round', value: 0.3, unit: 'count', sample_n: 6, source: 'golf_holes' },
+    ],
+    recommended_action: 'Play to the wide side off the tee',
+    confidence_reason: 'Twenty-one rounds is enough to trust an average this size',
+  },
+});
+export const DIVE_BIG: EvidenceInsight = {
+  ...evidenceOf(bigNumber(JONAH), { source_round_ids: [...DIVE_ROUND_ROWS.map((r) => r.id), ...named('rd-y', 9)] }),
+  metadata: { movement: { from: 3.1, to: 1.6, direction: 'down', percent_change: -0.48 } },
+  outcome_status: 'improved',
+  outcome_measured_at: '2026-09-28T12:00:00Z',
+};
+/** A read that names no rounds (it uses lifetime stats), belongs to no plan and has no trend. */
+export const DIVE_BREAK: EvidenceInsight = breakBias(JONAH);
+
+export const DIVE_FOCUS: DiveFocusRow[] = [{ id: 'fa-1', title: 'Downhill putts inside 6 ft', status: 'active', from_insight_id: 'in-slope', target_metric: SLOPE_METRIC }];
+export const DIVE_GOALS: Goal[] = [
+  {
+    id: 'gl-1',
+    player_id: JONAH,
+    team_id: null,
+    created_by_user_id: 'u-jonah',
+    creator_role: 'player',
+    coach_id_if_assigned: null,
+    metric_id: 'penalty_rate_per_round',
+    title: 'Cut penalties to 0.8 a round',
+    category: 'course_management',
+    started_at: '2026-09-15T00:00:00Z',
+    ends_at: '2026-11-15T00:00:00Z',
+    window_days: 60,
+    baseline_value: 1.1,
+    current_value: 1.1,
+    target_value: 0.8,
+    target_source: 'manual',
+    state: 'active',
+    outcome_evaluated_at: null,
+    shared_with_coach: false,
+    shared_at: null,
+    coach_assignment_mode: null,
+    player_accepted_at: null,
+    player_declined_at: null,
+    origin: 'from_insight',
+    origin_insight_id: 'in-pen',
+    snapshots: [],
+    created_at: '2026-09-15T00:00:00Z',
+    updated_at: '2026-09-15T00:00:00Z',
+  },
+];
+
+const themeNode = (n: Pick<ThemeNode, 'category' | 'displayLabel' | 'state'> & Partial<ThemeNode>): ThemeNode => ({
+  sgMetricId: null,
+  isOutcomeTheme: false,
+  themeStrokesPerRound: 0,
+  tourGapPerRound: 0,
+  sgPerRound: null,
+  causes: [],
+  ...n,
+});
+/** The category reads the cascade assembles: putting is improving, course management has no trend, and the penalty cause carries what closing the gap is worth. */
+export const DIVE_THEMES: AssembledThemes = {
+  playerId: JONAH,
+  totalStrokesPerRound: 1.3,
+  themes: [
+    themeNode({
+      category: 'putting',
+      displayLabel: 'Putting',
+      state: 'leak',
+      sgPerRound: -0.42,
+      trend: { direction: 'improving', recentAvg: -0.31, priorAvg: -0.62, delta: 0.31, recentN: 5, priorN: 5 },
+    }),
+    themeNode({
+      category: 'course_management',
+      displayLabel: 'Course management',
+      state: 'leak',
+      themeStrokesPerRound: 0.9,
+      causes: [{ insight_id: 'in-pen', strokesSavedPerRound: 0.9, counterfactualSuppressed: false } as CauseNode],
+    }),
+  ],
+};
+
+const DRILL = 'Rehearse a downhill-only ladder: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.';
+const diveSay = (t: string) => speak(t, { role: 'player' });
+const diveBase = (raw: EvidenceInsight, drillText: string | null = null) => toChInsight(raw, { drillText, tour: PREVIEW_TOUR, viewer: { role: 'player' } });
+export type Inputs = Pick<ChDiveInputs, 'rounds' | 'focusAreas' | 'goals' | 'themes'>;
+export const FULL_INPUTS: Inputs = { rounds: new Map(DIVE_ROUND_ROWS.map((r) => [r.id, r])), focusAreas: DIVE_FOCUS, goals: DIVE_GOALS, themes: DIVE_THEMES };
+export const BARE_INPUTS: Inputs = { rounds: FULL_INPUTS.rounds, focusAreas: [], goals: [], themes: null };
+const FAILED_INPUTS: Inputs = { rounds: new Map(), focusAreas: [], goals: [], themes: null };
+
+export const deep = (raw: EvidenceInsight, inputs: Inputs, drillText: string | null = null) => toChDeepInsight(raw, diveBase(raw, drillText), inputs, diveSay);
+export const diveOf = (list: ChDeepInsight[], over: Partial<ChDeepDive> = {}): ChDeepDive => {
+  const ordered = orderDive(list);
+  return { list: ordered, rounds: null, themes: themesByCategory(DIVE_THEMES), roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(ordered), ...over };
+};
+
+export const PREVIEW_DIVE: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);
+/** The rounds, the plans and the category reads each failed to load: the insights still draw, and each part says so in place. */
+export const PREVIEW_DIVE_PARTS_FAILED: ChDeepDive = diveOf([deep(DIVE_SLOPE, FAILED_INPUTS, DRILL), deep(DIVE_PENALTIES, FAILED_INPUTS), deep(DIVE_BIG, FAILED_INPUTS)], {
+  themes: {},
+  roundsFailed: true,
+  plansFailed: true,
+  themesFailed: true,
+});
+/** Two reads, no plan and no category read: what a player with a young account sees. */
+export const PREVIEW_DIVE_YOUNG: ChDeepDive = diveOf([deep(DIVE_BREAK, BARE_INPUTS), deep(DIVE_BIG, BARE_INPUTS)], { themes: {} });
+export const PREVIEW_DIVE_EMPTY: ChDeepDive = diveOf([], { rounds: 14, themes: {} });
+export const PREVIEW_DIVE_NO_ROUNDS: ChDeepDive = diveOf([], { rounds: 0, themes: {} });
+
+export const diveLoad = (data: ChDeepDive): ChViewLoad<ChDeepDive> => ({ status: 'ready', data });
