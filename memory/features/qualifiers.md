@@ -208,8 +208,10 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
   (`loadQualifierDetail` returns the core and a `secondary` promise that never
   rejects; the privacy filter on scorecards is unchanged). A refresh that
   fails keeps the last good standings with "may be out of date". The list's
-  filter and search live in its address (`?filter=&q=`), and Back from a
-  qualifier returns to the list with them and its scroll. Detail:
+  filter and search come back through the shell's `useChSessionState` (this tab,
+  per team), its scroll through RouteFrame, and a qualifier opened from the list
+  steps back to it on Back (`screens/qualifiers/return-state.ts`, the Rounds
+  library's pattern); Manage selections does the same toward the qualifier. Detail:
   `docs/clubhouse/pages/P009-qualifiers/WIRING.md`.
 
 ## Known Risk Areas

@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Flag, Medal, Plus, Search } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useMemo, type MouseEvent } from 'react';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -12,19 +11,25 @@ import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
+import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
-import { canvasScrollTop, clearReturn, listAddress, parseListQuery, rememberList, rememberScroll, returnScroll, scrollCanvasTo, type ListFilter } from './list-state';
 import { ctaLabel } from './model';
 import { Meta, StatusPill, ToPar } from './parts';
+import { isPlainClick, noteOpenedFromList } from './return-state';
 import '../../styles/qualifiers.css';
 
-type Filter = ListFilter;
+type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
 const LIST = '/golf/dashboard/qualifiers';
 const detailHref = (id: string) => `${LIST}/${id}`;
+/** Opening a qualifier leaves a note, so its Back steps back to the list as it is (return-state.ts); a new-tab click leaves none. */
+const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
+  chTrail('qualifiers open', { from });
+  if (isPlainClick(e)) noteOpenedFromList(id);
+};
 
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
 export function QualifiersList({ data }: { data: ChQList }) {
@@ -34,59 +39,10 @@ export function QualifiersList({ data }: { data: ChQList }) {
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
   const unread = data.listError || mineUnknown;
-  // The filter and the search are the address's (?filter=&q=): read when the list mounts, so they survive its own remount and a
-  // Back from a qualifier, and written back as they change (replace, never push).
-  const params = useSearchParams();
-  const [start] = useState(() => parseListQuery((name) => params?.get(name) ?? null));
-  const [filter, setFilter] = useState<Filter>(start.filter);
-  const [q, setQ] = useState(start.q);
-  // Remembered at once; written to the address after a pause in typing (history calls are rate-limited on some browsers, and the router
-  // echoes each one), and before a link is followed so the entry that is left carries what the list showed.
-  const unwritten = useRef<string | null>(null);
-  const writeAddress = () => {
-    const address = unwritten.current;
-    unwritten.current = null;
-    if (address == null) return;
-    try {
-      window.history.replaceState(null, '', address);
-    } catch {
-      // The address keeps what it had; the list still works.
-    }
-  };
-  useEffect(() => {
-    const address = listAddress(window.location.pathname, window.location.search, { filter, q });
-    rememberList(address);
-    if (address === window.location.pathname + window.location.search) {
-      unwritten.current = null;
-      return;
-    }
-    unwritten.current = address;
-    const pause = window.setTimeout(writeAddress, 300);
-    return () => window.clearTimeout(pause);
-  }, [filter, q]);
-  // Returning from a qualifier restores where the list was scrolled. The frame scrolls the canvas to the top once the new page is
-  // in (CH-1904), after this effect, so the restore waits for a frame that comes after it.
-  useEffect(() => {
-    const address = window.location.pathname + window.location.search;
-    const top = returnScroll(address);
-    if (top == null) {
-      // Not a return (or nothing was left here): a stale mark must not send a later visit to an old place.
-      clearReturn();
-      return;
-    }
-    let first = 0;
-    let second = 0;
-    first = requestAnimationFrame(() => {
-      second = requestAnimationFrame(() => {
-        clearReturn();
-        scrollCanvasTo(top);
-      });
-    });
-    return () => {
-      cancelAnimationFrame(first);
-      cancelAnimationFrame(second);
-    };
-  }, []);
+  // The filter and the search come back when the coach returns to the list (Back from a qualifier, the sidebar, a tab): the shell keeps
+  // them for this tab under the page and the team (`useChSessionState`), and the list's place comes back through RouteFrame (owner rule 8).
+  const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
+  const [q, setQ] = useChSessionState('q', '');
 
   const act = data.items.filter(isActive);
   const con = data.items.filter((i) => !isActive(i));
@@ -116,15 +72,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
       : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
 
   return (
-    <main
-      className="ch-qf ch-qf--list"
-      // Leaving for a qualifier (or anywhere a link goes): where the list was scrolled is kept for the way back.
-      onClickCapture={(e) => {
-        if (!(e.target as Element).closest('a')) return;
-        writeAddress();
-        rememberScroll(window.location.pathname + window.location.search, canvasScrollTop());
-      }}
-    >
+    <main className="ch-qf ch-qf--list">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
       <PhoneTop title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
       <header className="ch-qf-head">
@@ -296,7 +244,7 @@ function Mine({ item }: { item: ChQListItem }) {
 function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={() => chTrail('qualifiers open', { from: 'hero' })}>
+    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')}>
       <div className="ch-qf-hero__main">
         <StatusPill status={item.status} />
         <h2>{item.name}</h2>
@@ -341,7 +289,7 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
 
 function Card({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={() => chTrail('qualifiers open', { from: 'card' })}>
+    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')}>
       <div className="ch-qf-card__h">
         <div>
           <h3>{item.name}</h3>

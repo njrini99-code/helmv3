@@ -83,7 +83,7 @@ eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
 
 | Path | Purpose | States |
 | --- | --- | --- |
-| `screens/qualifiers/QualifiersList.tsx` | The list: pills, search, hero, Active and Concluded cards, the player's own first, `/my-qualifiers` | 90101, 90401 to 90403, 90406, 90605, 90606, 90615, 91904 |
+| `screens/qualifiers/QualifiersList.tsx` | The list: pills, search (filter and search kept by the shell's `useChSessionState`), hero, Active and Concluded cards, the player's own first, `/my-qualifiers` | 90101, 90401 to 90403, 90406, 90605, 90606, 90615, 91904 |
 | `screens/qualifiers/QualifierDetail.tsx` | One qualifier: head, facts, `Leaderboard` (scorecard tray), round-by-round, Close and Reopen, the live listener | 90102, 90302, 90303, 90404, 90407, 90603, 90604, 90607, 90608, 90609, 90616 to 90619, 91001, 91101, 91803 |
 | `screens/qualifiers/QualifierSections.tsx` | Selections, Course per round (streamed) and the stale-standings notice | 90610, 90611 |
 | `screens/qualifiers/streamed.tsx` | `Streamed` (`use()` of the loader's `secondary` inside its own `Suspense`), `SecondaryProvider`, the placeholders `CoursesSkeleton`, `CardBodySkeleton`, `NinesSkeleton`, `ParLineSkeleton` | CH-09410 |
@@ -91,6 +91,7 @@ eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
 | `screens/qualifiers/QualifierForm.tsx` | Create and edit, validation, dirty-leave guard, phone top bar | 90103, 90301, 90405, 90501 to 90514, 90601, 90602, 90612, 90620, 90621, 90622, 91201, 91202, 91902, 92001, 92002 |
 | `screens/qualifiers/CoursePicker.tsx` | Course and tee lookup for a round | 90204, 90409, 90410, 90613, 90614, 92102 |
 | `screens/qualifiers/QualifierSelection.tsx` | Manage selections: steps, lists, picks, `PickDialog`, the foot | 90104, 90205, 90411, 90412, 90511, 90512, 90623 to 90626, 90628, 90701, 91102 to 91104, 91203, 91903 |
+| `screens/qualifiers/return-state.ts`, `BackToList.tsx` | The Back notes (`sessionStorage`, this tab, read once and spent as the screen mounts) and `useStepBack`: a qualifier opened from the list, and Manage selections opened from the qualifier, step back in history on Back; with no note Back goes to the address. `BackToList` is the not-found page's Back | CH-09904, CH-09905, CH-09310 |
 | `screens/qualifiers/QualifiersSkeleton.tsx` | The three route skeletons | 90201, 90202, 90203 |
 | `screens/qualifiers/model.ts` | Pure: ranking, ties, cut lines, form rules | (unit-level, through the screens' tests) |
 | `screens/qualifiers/writes.ts` | Every write and lookup behind `ChQWrites` and `ChQSelectionWrites`; `selectionReason` | 90809, 92303, 92304 |
@@ -106,6 +107,8 @@ eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
 | `src/clubhouse/lib/use-action.ts` (`useAction`, `normalise`) | Clubhouse | QualifierDetail, QualifierForm, QualifierSelection (`TieRow` has its own) |
 | `src/clubhouse/lib/use-refresh.ts` (`useRefresh`) | Clubhouse | every Try again on these pages |
 | `src/clubhouse/lib/use-last-good.ts` (`useLastGood`) | Clubhouse | QualifierDetail: the last good standings of a qualifier while a refresh of them fails (CH-09220) |
+| `src/clubhouse/lib/session-state.ts` (`useChSessionState`) | Clubhouse shell | QualifiersList: the filter and the search, per page and team (CH-09904) |
+| `src/clubhouse/shell/RouteFrame.tsx` (scroll per page and team, restored on Back or Forward) | Clubhouse shell | every page, so the list's place (CH-09905); these screens keep no scroll of their own |
 | `src/clubhouse/lib/use-phone.ts` (`useChPhone`, 820px) | Clubhouse | the screens |
 | `src/clubhouse/shell/phone-chrome.tsx` (`PhoneTop`, `usePhoneTabsHidden`, `useBackFromMore`) | Clubhouse | the phone screens |
 | `src/clubhouse/lib/haptics.ts`, `track.ts` (`chReport`, `chTrail`), `press.ts` | Clubhouse | throughout |

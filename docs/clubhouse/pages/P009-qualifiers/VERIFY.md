@@ -83,7 +83,7 @@ Result:       built to the approved spec 2026-09-30; the browser pass at 390 and
 | Stale | CH-09220 | test (good data, a failed refresh, a recovered one, another qualifier, desktop and phone) | the last good standings stay with the notice; another qualifier never inherits them |
 | Streaming | CH-09410, CH-09205, CH-09206 | tests (an unresolved promise, a failed part, a cut stream, a refresh, the phone sheet, the route with the reads held) | the standings are on screen while the courses and cards are placeholders; a failure is that section's notice |
 | Race | 92102, 91301 | tests (two deferred tee answers, a stale re-read, a pending give beside a second one) | the last choice wins; a landed write is not undone by an older read; only the row that is saving waits |
-| Address and scroll | CH-09904, CH-09905 | tests (an address with a filter, a remount, the Back controls, a return mark, a stale mark, a phone, a refused history) | the list opens as it was left |
+| Filter, search and Back | CH-09904, CH-09905 | tests (the filter and search coming back for the same team and not another, no address write, the Back notes on the desktop link, the phone top bar, the not-found page and Manage selections, a note read once, a double tap, strict mode, a new-tab click, a blocked store, and the list inside RouteFrame) | the list opens as it was left, and Back is a step back when the list opened the qualifier |
 
 Not forced against a live session: any of the above with a real coach account, Manage selections against a real
 qualifier, the realtime feed against a real channel (the test drives the hook with a fake channel), and the
@@ -123,9 +123,9 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 ## Open verification gaps
 
 - The owner-rules pass (2026-10-01) had no browser: the streamed placeholders' sizes (layout shift not measured), the
-  scroll restore under the real view transition on a desktop and a phone, the address writes inside the App Router,
-  and a refresh as a transition (the page staying whole until the new render lands) are proven by unit tests and by
-  reading the code, not seen. A rejected stream chunk is simulated, not observed.
+  frame's scroll restore under the real view transition on a desktop and a phone, `router.back()` landing on the list
+  inside the App Router, and a refresh as a transition (the page staying whole until the new render lands) are proven
+  by unit tests and by reading the code, not seen. A rejected stream chunk is simulated, not observed.
 
 - A browser pass at 390 and 430, the iPhone pass through `npm run ios:dev` (owner), and a `clubhouse:a11y` rerun on
   the phone build and Manage selections.
@@ -151,8 +151,9 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
   place; giving one tied player a place froze the other rows; the phone's Reopen showed its wait on a closed sheet.
 - Manage selections drew the qualifier's skeleton; a saved form stayed in the history.
 - The detail waited for the tees and the scorecards before its first paint.
-- Review of the six commits: the scroll restore did nothing on a phone, the return mark never expired, and the address
-  was rewritten on every key without a guard. Fixed.
+- Review of the first six commits: the list's own scroll restore did nothing on a phone, its return mark never expired,
+  and its address was rewritten on every key without a guard. All three went away when rule 8 moved onto the shell's
+  session state and RouteFrame's scroll restore (the list now keeps no address, scroll or return mark of its own).
 
 ## Found and fixed in the 2026-09-30 pass
 

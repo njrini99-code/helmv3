@@ -1,8 +1,7 @@
 'use client';
 
 import { BarChart3, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
@@ -38,7 +37,8 @@ const LIST = '/golf/dashboard/qualifiers';
 export function QualifierDetailPhone({
   data,
   stale,
-  back,
+  onBack,
+  onSelectionClick,
   status,
   onAskClose,
   onReopen,
@@ -47,15 +47,16 @@ export function QualifierDetailPhone({
   data: ChQDetailCore;
   /** The standings are the last good ones, because the latest read of them failed. */
   stale: boolean;
-  /** Where Back goes: the list as it was left, and the mark that tells it to restore its scroll. */
-  back: { href: string; markReturn: () => void };
+  /** The top bar's Back: a step back to the list when the list is the entry before this one, the list's address otherwise. */
+  onBack: () => void;
+  /** A click inside the actions: Manage selections leaves the note its Back steps back by (return-state.ts). */
+  onSelectionClick: (e: MouseEvent<HTMLElement>) => void;
   status: ChQStatus;
   onAskClose: () => void;
   /** Runs the reopen and answers once the server has: the sheet that asked stays up until then. */
   onReopen: () => Promise<{ success: boolean }>;
   reopenPending: boolean;
 }) {
-  const router = useRouter();
   const coach = data.role === 'coach';
   const [actions, setActions] = useState(false);
   const [peek, setPeek] = useState<string | null>(null);
@@ -75,10 +76,7 @@ export function QualifierDetailPhone({
         title="Qualifier"
         back={{
           label: 'Qualifiers',
-          onBack: () => {
-            back.markReturn();
-            router.push(back.href);
-          },
+          onBack,
         }}
         action={coach ? <PhoneIconAction icon={Ellipsis} label="Qualifier actions" onClick={() => setActions(true)} /> : undefined}
       />
@@ -92,7 +90,7 @@ export function QualifierDetailPhone({
       </header>
 
       {coach && (
-        <div className="ch-qfm-acts">
+        <div className="ch-qfm-acts" onClickCapture={onSelectionClick}>
           {data.selectionState !== 'selected' && (
             <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
               Manage selections

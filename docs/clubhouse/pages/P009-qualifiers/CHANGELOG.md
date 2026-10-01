@@ -9,11 +9,14 @@ Owner, 2026-10-01: never an empty or a zero for a failed or unfinished read;
 loading, refreshing, empty, failed, stale and pending are different states;
 the last choice wins; qualifier context and standings first, the breakdowns
 stream; Back restores the list's filters and scroll. Standard:
-`docs/clubhouse/PAGE_PERFORMANCE.md`.
+`docs/clubhouse/PAGE_PERFORMANCE.md`. Rule 8 was first built here with its own
+address and scroll code, then moved onto the shell's mechanism (the lead's
+direction, same day): see "Filter, search and Back" below.
 
 ```text
 PR/commit:      agent/swap-audit: cb1739fe9, 6dcbae1ff, dadc1f8e2, 112afa945,
-                75df19425, 8d9d48f86, 43d50e341
+                75df19425, 8d9d48f86, 43d50e341, and the rule 8 rework (the
+                commit that adds screens/qualifiers/return-state.ts)
 Design package: none (no new visual; placeholders reuse the page's classes)
 Contract IDs:   CH-09220, CH-09221, CH-09222, CH-09409, CH-09410, CH-09904,
                 CH-09905 (new); CH-09202, CH-09205, CH-09206, CH-09207,
@@ -66,43 +69,68 @@ Held items:     none
   final size (CH-09410). A failed read, or a stream cut off in the browser, is
   that section's own notice (CH-09205, CH-09206), never an empty. This
   supersedes the earlier "left" note about the scorecards.
-- **Address and scroll (rule 8).** The list's filter and search are its
-  address (`?filter=`, `&q=`; defaults left out, any other query kept): read
-  when it mounts, so they survive its remount, and rewritten with
-  `history.replaceState` after a pause in typing and before a link is
-  followed. Back from a qualifier (desktop link, phone top bar, the not-found
-  page) returns to the list as it was left, the team's or a player's own
-  (CH-09904). The list keeps its scroll when a link is followed and restores it
-  once on a return, two frames after mount so it lands after the frame's own
-  scroll to the top, on a desktop (canvas) and a phone (window) (CH-09905).
+- **Filter, search and Back (rule 8).** The list's filter and search use the
+  shell's `useChSessionState` (this tab, per page and team, never restored
+  while the page hydrates), so they come back when the list is opened again,
+  and not for another team or for /my-qualifiers (CH-09904). Nothing is
+  written to the address, and the list keeps no scroll of its own: RouteFrame
+  records each page's scroll per page and team and restores it on Back or
+  Forward (CH-09905). What these screens add is a real Back. A qualifier
+  opened from the list leaves a note in `sessionStorage`
+  (`screens/qualifiers/return-state.ts`, the pattern of the Rounds library).
+  The qualifier reads the note once, as it mounts, and spends it; its Back
+  (desktop link, phone top bar, the not-found page) then steps back in
+  history, otherwise it goes to the list's address. Manage selections does the
+  same toward the qualifier (its link leaves the note) and hands the list's
+  note back to the qualifier as it steps back, so the qualifier's Back is
+  still a step to the list. A note is written by a plain click only, and a
+  second tap on Back within a second is the first one's, so it cannot step
+  back twice past the list.
 - **Review.** An independent read of the first six commits found the phone
   scroll, a return mark that never expired, the unguarded per-key history
-  writes and an edit that could linger over a server change; all fixed in
-  `43d50e341` with tests.
+  writes and an edit that could linger over a server change. The first three
+  went away with the rework above, which removed the list's own address
+  writes, scroll keep and restore, and return mark; the edit fix stays
+  (`43d50e341`).
 - **Checked.** `qualifiers.test.tsx`, `qualifiers-reads.test.ts` and
-  `qualifiers-hydration.test.tsx`, 172 cases. The tests for the tees race,
-  the selection overlay, the tie row, the phone sheet, the address and the
-  return mark were each seen to fail with their fix taken out.
+  `qualifiers-hydration.test.tsx`, 176 cases. The tests for the tees race, the
+  selection overlay, the tie row, the phone sheet and the Back notes were each
+  seen to fail with their fix taken out (the filter and the search as plain
+  state, the note and its plain-click guard, the step back, a note matching
+  any qualifier, a note that is not spent, the double tap, the hand back to the
+  list, strict mode's second run, the list scrolling or writing the address
+  itself).
 - **Test assertions changed by design.** The detail loader's holes, courses
   and logs are read from `await result.secondary` (90806, 92101, 92301); the
   detail depth test in `qualifiers-reads.test` now asserts two waves for the
   core and that the tees and scorecards do not delay it; the create, save,
   retry and offline write scenarios assert `router.replace` for create and save
-  (and that `push` is not called), `push` stays for confirm.
+  (and that `push` is not called), `push` stays for confirm. The rework removed
+  the tests of the list's own mechanism (the address, the scroll keep and
+  restore, the return mark, the remembered list address) and added tests for
+  the shell's: the filter and search coming back for the same team and not
+  another, the Back notes, and the list inside RouteFrame.
 - **Left.** (1) Rule 2's "updating mark" on a live refresh is not drawn: a
   refresh is a transition, so the page stays whole until the new render lands
-  and then changes in one commit; a unit test cannot see a transition's pending
-  state, so a badge for it would be untested. (2) A refresh therefore commits
-  when its courses and cards have streamed in too (as before the split, but
-  now only the refresh waits, not the first paint). (3) The sidebar's link to
-  the list while it is filtered keeps the filter on screen and drops the query
-  from the address (the filter is seeded from the address once); a reload then
-  opens unfiltered. (4) Saving an edit replaces the form with the qualifier it
-  was opened from, so Back from there reads the same qualifier once. (5)
-  Confirming a squad still pushes the qualifier, so Back lands on the confirmed
-  Manage selections page. (6) Not seen in a browser: the scroll restore under
-  the real view transition, the streamed placeholders' final sizes (no layout
-  shift measured), and the phone sheet. No `next build` was run (no
+  and then changes in one commit; a unit test cannot see a transition's
+  pending state, so a badge for it would be untested. (2) A refresh therefore
+  commits when its courses and cards have streamed in too (as before the
+  split, but now only the refresh waits, not the first paint). (3) The Back
+  note is spent at the qualifier's first mount, so any later page for the same
+  qualifier that the list did not open (the edit form's save, Confirm squad, a
+  Forward, a reopen from Home) goes to the list's address, a new visit: the
+  filter and search come back, the place does not. The note is a hint, not a
+  look at the history: it cannot see that the entry before the qualifier is
+  the list, only that the list's click was followed by this qualifier opening.
+  The sidebar's link to the list keeps the filter through session state. (4)
+  Saving an edit replaces the form with the qualifier it was opened from, so
+  the browser's own Back from there reads the same qualifier once (the Back
+  control goes to the list's address). (5) Confirming a squad still pushes the
+  qualifier, so the browser's own Back lands on the confirmed Manage
+  selections page (the Back control goes to the list's address). (6) Not seen
+  in a browser: the frame's scroll restore under the real view transition, the
+  step back in the App Router, the streamed placeholders' final sizes (no
+  layout shift measured), and the phone sheet. No `next build` was run (no
   `'use server'` file changed); a Flight promise prop into `use()` is
   exercised only through unit tests.
 

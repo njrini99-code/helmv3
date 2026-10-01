@@ -19,6 +19,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { plural } from './model';
 import { ToPar } from './parts';
+import { useStepBack } from './return-state';
 import { LIVE_SELECTION_WRITES, startSelecting, type ChQSelectionWrites } from './writes';
 import '../../styles/qualifiers.css';
 
@@ -40,6 +41,9 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const toast = useToast();
   const phone = useChPhone();
   const detailHref = `${LIST}/${data.id}`;
+  // Back is a step back in history when the qualifier's Manage selections link opened this page (the qualifier returns where it was
+  // left), and the qualifier's address otherwise (return-state.ts).
+  const back = useStepBack('detail', data.id, detailHref);
   const [state, setState] = useState(data.selectionState);
   useEffect(() => setState(data.selectionState), [data.selectionState]);
   // What the coach changed here lands on top of the server's read until that read shows it, so a refresh that was started before the
@@ -197,8 +201,8 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
 
   return (
     <main className="ch-qf ch-qfs">
-      {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: () => router.push(detailHref) }} />}
-      <div className="ch-qf-back">
+      {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
+      <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
         <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={detailHref}>
           Qualifier
         </Button>

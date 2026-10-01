@@ -56,7 +56,7 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
     return form ? <QualifierForm data={form} /> : <NotFound />;
   }
   const detail = await loadQualifierDetail({ role: team.role, teamId: team.teamId, playerId, qualifierId: id });
-  if (!detail) return <NotFound />;
+  if (!detail) return <NotFound id={id} />;
   // The standings, facts and squad are sent now; the courses and the scorecards follow as a promise the sections read in place (owner rule 6).
   const { secondary, ...core } = detail;
   return <QualifierDetail data={core} secondary={secondary} />;
@@ -82,7 +82,8 @@ export function QualifiersNoTeam({ coach }: { coach: boolean }) {
   );
 }
 
-function NotFound() {
+/** `id` is a qualifier the list opened (the detail's address): its Back steps back to the list when the list is the entry before it. */
+function NotFound({ id }: { id?: string }) {
   return (
     <Frame>
       <EmptyState
@@ -91,7 +92,7 @@ function NotFound() {
         icon={SearchX}
         title="That qualifier isn’t on your team"
         body="It may have been deleted, or the link is from another team."
-        action={<BackToList>Back to qualifiers</BackToList>}
+        action={<BackToList id={id}>Back to qualifiers</BackToList>}
       />
     </Frame>
   );
