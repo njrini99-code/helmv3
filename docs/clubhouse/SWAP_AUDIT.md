@@ -61,10 +61,20 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   `messages`, `rounds`, `rounds/new`, `rounds/recover` (F-02), `rounds/[uuid]`,
   `rounds/continue/[uuid]`,
   `classes`, `stats`, `qualifiers`, `my-qualifiers`, `settings` (plus both
-  sub-pages).
+  sub-pages), and `roster` (built 2026-10-01, Q-130: the coach's screen,
+  read-only; see below).
 - **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
-  tabs; `roster/[id]` goes to `stats?player=`; `rounds/[id]/review` goes to
+  tabs; `roster/[id]` goes to `stats?player=` (coach) or to `roster` (player); `rounds/[id]/review` goes to
   `rounds/[id]`; `coachhelm/chat` goes to `coachhelm?view=ask` (coach).
+- **Player roster (built 2026-10-01, Q-130):** `/roster` for a player is the
+  coach's roster, read-only. A teammate shows name, class year and handicap
+  (what Fairway's player roster showed) and no scores, so no row is a link or a
+  button, and there is no invite, export, join request, player panel or note.
+  The loader (`data/roster-player.ts`) reads the team's name and season and the
+  active members only, by the player's own team. It is a sidebar entry under
+  Team and a row in the phone More sheet (the boards' player nav has none).
+  Catalog CH-3210, CH-3211, CH-3307, CH-3308, CH-3807; contracts 30804 to
+  30806; `roster-player.test.tsx`.
 - **Not a route, the team switcher (built 2026-10-01, Q-130):** a head coach on
   two or more teams (`canSwitchTeams`, the gate `setActiveTeam` enforces)
   switches from the sidebar's team line (desktop) or the More sheet's Team list

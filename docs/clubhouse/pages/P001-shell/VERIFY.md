@@ -1,7 +1,7 @@
 # P001 — Shell: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row "Foundation"); the per-gate
-checklist is `docs/clubhouse/screens/foundation.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row
+"Foundation"); the per-gate checklist is `docs/clubhouse/screens/foundation.md`.
 
 ## Current verification status
 
@@ -30,8 +30,9 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/motion.test.tsx`, `native.test.tsx` | 11606, 11608 and the native bridge | pass |
 | `scripts/clubhouse/__tests__/check.test.mjs` | 12401 | pass |
 
-Mutation checks (2026-09-30): with Mark all read's rollback removed, 11301 fails; with the frame
-ignoring the viewer's role, 10102/10802 fails. Both were restored.
+Mutation checks (2026-09-30): with Mark all read's rollback removed, 11301
+fails; with the frame ignoring the viewer's role, 10102/10802 fails. Both were
+restored.
 
 ## Visual verification
 
@@ -64,7 +65,8 @@ Result:       tab bars per role and the More sheet checked 2026-09-29; the iPhon
 | Not rebuilt / role | 10401, 10802 | tests | the notice, never the page |
 | Sidebar reads fail | 10608, 10609 | tests (loader against a fake client) | card and badge hide; logged |
 
-Not forced against a live session: a real chunk-load after a deploy, and a real 5xx.
+Not forced against a live session: a real chunk-load after a deploy, and a real
+5xx.
 
 ## Accessibility
 

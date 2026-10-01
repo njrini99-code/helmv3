@@ -100,13 +100,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 2 | 1 | 1 | 5 |  | 11 | 4 | 2 | 1 |  |  |  | 1 | 2 |  | 12 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 71 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
-| P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
+| P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 68 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
-| P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
+| P009 | 7 | 5 | 4 | 12 | 14 | 29 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 123 |
 | P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
 | P011 | 14 | 10 |  | 15 | 10 | 32 | 12 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 160 |
 | P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
@@ -271,6 +271,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30404 | CH-3304 | 04 Empty | `THE_TEAM_HAS_NO_JOIN_CODE` | implemented | The team has no join code |
 | 30405 | CH-3305 | 04 Empty | `A_PLAYER_HAS_NO_18_HOLE_ROUNDS` | implemented | A player has no 18-hole rounds |
 | 30406 | CH-3306 | 04 Empty | `A_COACH_SIGNED_IN_WITH_NO_ACTIVE` | implemented | A coach signed in with no active team |
+| 30407 | CH-3307 | 04 Empty | `A_PLAYERS_TEAM_HAS_NOBODY_ON_IT` | implemented | A player's team has nobody on it |
+| 30408 | CH-3308 | 04 Empty | `A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE` | implemented | A player signed in with no active team |
 | 30501 | CH-3101 | 05 Validation | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | implemented | A coach's note is within 200 characters of its 2,000 limit |
 | 30502 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
 | 30601 | CH-3001 | 06 Server / system error | `REMOVING_A_PLAYER_FAILS` | implemented | Removing a player fails |
@@ -289,10 +291,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30614 | CH-3207 | 06 Server / system error | `THE_TEAM_ROW_DOESNT_LOAD` | implemented | The team row doesn't load |
 | 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | implemented | Focus areas or goals don't load |
 | 30616 | CH-3209 | 06 Server / system error | `THIS_COACHS_NOTES_DONT_LOAD` | implemented | This coach's notes don't load |
+| 30617 | CH-3210 | 06 Server / system error | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | implemented | The player's roster doesn't load (a player's own team's members) |
+| 30618 | CH-3211 | 06 Server / system error | `THE_PLAYERS_ROSTER_LIST_CRASHES` | implemented | The player's roster list crashes |
 | 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
-| 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | Only a coach gets the Clubhouse roster: the page hands it over for a coach with the flag on, the route checks the coach again before any read, and a player on this address gets the shell's not-rebuilt notice, never the list, the notes or the join requests. |
+| 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
 | 30803 |  | 08 Permission / authorization | `REFUSED_CHANGE_SHOWN_AND_UNDONE` | implemented | When the server refuses a removal, an approval, a decline or a note (not on your team, already processed, a saved round in progress, not authorized), its sentence is shown in the error toast and the screen goes back: the player stays and the dialog stays open, the request returns to its place, and the text stays in the field. |
+| 30804 |  | 08 Permission / authorization | `PLAYER_ROSTER_IS_READ_ONLY` | implemented | A player on this address gets their own team's roster as plain text: name, class year and handicap of the active members. No card or row is a link or a button (none takes focus), and nothing on the screen leads to a teammate's profile, stats or notes, or invites, exports, approves, removes or messages anyone. |
+| 30805 |  | 08 Permission / authorization | `PLAYER_ROSTER_READS_NO_COACH_DATA` | implemented | The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection. |
+| 30806 |  | 08 Permission / authorization | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | implemented | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
 | 30901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile. |
 | 31101 | CH-3501 | 11 Destructive | `REMOVE_FROM_TEAM` | implemented | Remove from team (row menu; on the phone, the profile's ⋯ sheet) |
 | 31201 |  | 12 State preservation | `NOTE_KEPT_ON_FAILURE` | implemented | A note that fails to save stays in the field, and the toast says so; leaving the field again or the toast's Retry saves it. |
@@ -314,6 +321,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 31804 | CH-3804 | 18 Accessibility | `THE_NOTE_COUNTER_IS_ANNOUNCED_POLITELY_A` | reserved | The note counter is announced politely; a locked note says why it's locked |
 | 31805 | CH-3805 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, both layouts, 1280px and 390px |
 | 31806 | CH-3806 | 18 Accessibility | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | implemented | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
+| 31807 | CH-3807 | 18 Accessibility | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | implemented | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 | 31901 |  | 19 Responsive layout | `PHONE_LIST_AND_PROFILE` | implemented | At 820px and below Roster is the phone screen: a top bar with the back link to More and Invite players, the join requests banner, the sorted list, and each player as a pushed profile that is a history entry, so the edge swipe and Back return to the list. |
 | 32001 |  | 20 Keyboard / input | `NOTE_SAVES_ON_LEAVING_THE_FIELD` | implemented | The coach's note saves when the field loses focus, only if its trimmed text changed, and an emptied note saves as no note. |
 | 32101 |  | 21 Performance | `LOADER_NEVER_THROWS` | implemented | loadRoster reads the team, the members and the join requests in one parallel round, then rounds, focus areas, goals and this coach's notes in a second (it needs the member ids); every failed read is logged through chLogServer and flagged, never thrown, and a failed read is never shown as empty. |
@@ -869,6 +877,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90626 | CH-09008 | 06 Server / system error | `CONFIRMING_THE_SQUAD_FAILS` | implemented | Confirming the squad fails |
 | 90627 | CH-09218 | 06 Server / system error | `MANAGE_SELECTIONS_DOESNT_LOAD` | implemented | Manage selections doesn't load |
 | 90628 | CH-09219 | 06 Server / system error | `MANAGE_SELECTIONS_CRASHES` | implemented | Manage selections crashes |
+| 90629 | CH-09009 | 06 Server / system error | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | implemented | The squad is confirmed but telling the players failed |
 | 90701 | CH-09903 | 07 Network / offline | `THE_SQUAD_IS_CONFIRMED` | implemented | The squad is confirmed (Manage selections) |
 | 90702 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
 | 90801 | CH-09310 | 08 Permission / authorization | `THE_QUALIFIER_ISNT_ON_THE_VIEWERS_TEAM` | implemented | The qualifier isn't on the viewer's team, or doesn't exist |

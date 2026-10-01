@@ -59,6 +59,8 @@ First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, 
 | 30404 | CH-3304 | `THE_TEAM_HAS_NO_JOIN_CODE` | The team has no join code |
 | 30405 | CH-3305 | `A_PLAYER_HAS_NO_18_HOLE_ROUNDS` | A player has no 18-hole rounds |
 | 30406 | CH-3306 | `A_COACH_SIGNED_IN_WITH_NO_ACTIVE` | A coach signed in with no active team |
+| 30407 | CH-3307 | `A_PLAYERS_TEAM_HAS_NOBODY_ON_IT` | A player's team has nobody on it |
+| 30408 | CH-3308 | `A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE` | A player signed in with no active team |
 
 ## 05 — Validation
 
@@ -95,6 +97,8 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30614 | CH-3207 | `THE_TEAM_ROW_DOESNT_LOAD` | The team row doesn't load |
 | 30615 | CH-3208 | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | Focus areas or goals don't load |
 | 30616 | CH-3209 | `THIS_COACHS_NOTES_DONT_LOAD` | This coach's notes don't load |
+| 30617 | CH-3210 | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | The player's roster doesn't load (a player's own team's members) |
+| 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003.
 
@@ -114,13 +118,16 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-190
 
 Status: DEFINED
 
-Roster is a coach's page. The page takes the Clubhouse branch only for a coach with golf_clubhouse_ui on (the shell's 10801), and the route checks the coach again before any read (30801). A player who opens this address in Clubhouse gets the shell's not-rebuilt notice (10401; role-scoped by 10802), never the list, the notes or the join requests. A coach with no active team gets the page empty state (CH-3306, category 04). The loader reads only the coach's active team, and only the notes this coach wrote (30802). The server decides every change and Roster shows its answer (30803). removePlayerFromTeam refuses a caller who is not a coach, has no team, or whose team the player is not on, and it refuses while the player has a saved round in progress. acceptJoinRequest and rejectJoinRequest refuse a request that is not for the coach's own team or is already processed, and approval refuses a player who is already on a team. setIntent refuses a player the coach does not coach. RLS is the second gate. A ?player= link for someone who is not on this roster opens nothing (30102).
+The coach's roster is a coach's page. The page takes the Clubhouse branch for a coach with golf_clubhouse_ui on (the shell's 10801), and the route checks the session again before any read (30801). A player on this address is handed their own read-only roster instead (owner, 2026-10-01): the same layout with name, class year and handicap of the active members and nothing to open or do (30804), over a loader that never asks for the coach's reads, the join code, a note, an email, a phone or a round (30805); an old /roster/[id] link goes to that list (30806). The player never gets the coach's list, the notes or the join requests. A coach with no active team gets the page empty state (CH-3306, category 04); a player with none gets CH-3308. The loader reads only the coach's active team, and only the notes this coach wrote (30802). The server decides every change and Roster shows its answer (30803). removePlayerFromTeam refuses a caller who is not a coach, has no team, or whose team the player is not on, and it refuses while the player has a saved round in progress. acceptJoinRequest and rejectJoinRequest refuse a request that is not for the coach's own team or is already processed, and approval refuses a player who is already on a team. setIntent refuses a player the coach does not coach. RLS is the second gate. A ?player= link for someone who is not on this roster opens nothing (30102).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 30801 | — | `COACH_ONLY_ROSTER` | Only a coach gets the Clubhouse roster: the page hands it over for a coach with the flag on, the route checks the coach again before any read, and a player on this address gets the shell's not-rebuilt notice, never the list, the notes or the join requests. |
+| 30801 | — | `COACH_ONLY_ROSTER` | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 | — | `NOTES_PRIVATE_TO_THE_COACH` | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
 | 30803 | — | `REFUSED_CHANGE_SHOWN_AND_UNDONE` | When the server refuses a removal, an approval, a decline or a note (not on your team, already processed, a saved round in progress, not authorized), its sentence is shown in the error toast and the screen goes back: the player stays and the dialog stays open, the request returns to its place, and the text stays in the field. |
+| 30804 | — | `PLAYER_ROSTER_IS_READ_ONLY` | A player on this address gets their own team's roster as plain text: name, class year and handicap of the active members. No card or row is a link or a button (none takes focus), and nothing on the screen leads to a teammate's profile, stats or notes, or invites, exports, approves, removes or messages anyone. |
+| 30805 | — | `PLAYER_ROSTER_READS_NO_COACH_DATA` | The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection. |
+| 30806 | — | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
 
@@ -236,6 +243,7 @@ Roster's own (31801 to 31806): the table roles, a status as a word, Esc, the pol
 | 31804 | CH-3804 | `THE_NOTE_COUNTER_IS_ANNOUNCED_POLITELY_A` | The note counter is announced politely; a locked note says why it's locked |
 | 31805 | CH-3805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, both layouts, 1280px and 390px |
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
+| 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 

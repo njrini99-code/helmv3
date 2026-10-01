@@ -7,7 +7,8 @@
     "/golf/dashboard/roster"
   ],
   "roles": [
-    "coach"
+    "coach",
+    "player"
   ],
   "semanticFeatures": [
     "roster_team"
@@ -41,7 +42,8 @@
     "route": "src/clubhouse/routes/roster.tsx",
     "styles": "src/clubhouse/styles/roster.css",
     "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
+      "src/clubhouse/__tests__/roster.test.tsx",
+      "src/clubhouse/__tests__/roster-player.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/roster.md",

@@ -1,6 +1,26 @@
 # P003 — Roster: changelog
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
+
+## 2026-10-01 — The player's Roster, read-only (owner, Q-130)
+
+```text
+PR/commit:      agent/swap-audit
+Data impact:    none (two RLS-scoped reads on tables the player already reads)
+```
+
+- **Issue.** With Clubhouse on, a player on `/roster` got the not-rebuilt notice.
+- **Fix.** A player gets the coach's layout as plain text (`TeamRoster`,
+  `TeamRosterPhone`): name, class year and handicap of the active members, no
+  scores, notes, requests, invite, export or player panel, and no card or row is a link
+  or a button (CH-3807). A separate loader (`data/roster-player.ts`) reads only
+  the team's name and season and the active members. `/roster/[id]` goes to the list
+  for a player. Roster is a sidebar entry under Team for a player and a row in the
+  phone More sheet. Catalog CH-3210, CH-3211, CH-3307, CH-3308, CH-3807; contracts
+  30804 to 30806; 30801's meaning now says the coach's roster is a coach's.
+- **Checked.** roster-player.test 19, with the loader's selects, tables and
+  filters asserted and 2 of 2 mutations caught (an extra column, a button around a name).
 
 ## 2026-09-30 — Schedule 1:1 on desktop (Clickables gap 4); View insights in the row menu (Clickables gap 16)
 

@@ -62,7 +62,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Team Hub** `/team-hub` — Their team at a glance: RSVPs, announcements to acknowledge, trips, tasks, documents (`TeamHub`, 2026-09-30; spec `phone/team-hub.md`)
 - [x] **My Qualifiers** `/my-qualifiers` — The qualifiers they're entered in and where they stand
 - [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only: standings with their row marked, and the squad once confirmed (with `/[id]`)
-- [ ] **Roster** `/roster` — Their teammates
+- [x] **Roster** `/roster` — Their teammates, read-only: the coach's cards, list and phone rows with name, class and handicap, nothing to open (`TeamRoster`, 2026-10-01; no scores, notes, requests or actions, so a card is not a control)
 - [ ] **Team info** `/team` — Team details
 - [ ] **Announcements** `/announcements` — Team news from the coaches (Clubhouse has them inside Messages)
 - [x] **Classes** `/classes` — Their class schedule by term, synced to the calendar so coaches see when they're busy (`Classes`, 2026-09-30; spec `phone/classes.md`, boards `Player - Classes.html` and its Mobile board)

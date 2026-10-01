@@ -1,7 +1,7 @@
 # P001 — Shell
 
-The frame every Clubhouse page sits in. It is not a page anyone opens, and it has no route of its
-own. Every page inherits its contracts.
+The frame every Clubhouse page sits in. It is not a page anyone opens, and it
+has no route of its own. Every page inherits its contracts.
 
 ## Identity
 
@@ -23,8 +23,8 @@ Anyone on a Clubhouse page: a coach running the program, or a player.
 
 ### Job to be done
 
-Get to the right page, see what's new, and always know whether something worked, didn't, or
-couldn't be tried because the device is offline.
+Get to the right page, see what's new, and always know whether something worked,
+didn't, or couldn't be tried because the device is offline.
 
 ### Primary action
 
@@ -32,8 +32,8 @@ Go to a page: the sidebar on a wide screen, and on a phone the tab bar and More.
 
 ### Secondary actions
 
-Open the bell, filter it, open a notification, mark all read, open Settings, skip to content, and
-Try again or Reload on a crashed page.
+Open the bell, filter it, open a notification, mark all read, open Settings,
+skip to content, and Try again or Reload on a crashed page.
 
 ### Information hierarchy
 
@@ -49,14 +49,14 @@ The page they came for. The frame never competes with it.
 
 ### User should never have to think about
 
-Whether a save went through (every save says so, or says what failed and offers Retry), whether
-they are offline (the banner says so, and nothing is sent), or which screens are finished (an
-unfinished one says so and offers a way back).
+Whether a save went through (every save says so, or says what failed and offers
+Retry), whether they are offline (the banner says so, and nothing is sent), or
+which screens are finished (an unfinished one says so and offers a way back).
 
 ### Success looks like
 
-A coach moves between Home, Roster, Calendar and Messages without a lost click, and every failure
-they meet names itself and its way out.
+A coach moves between Home, Roster, Calendar and Messages without a lost click,
+and every failure they meet names itself and its way out.
 
 ## Semantic features
 
@@ -85,8 +85,8 @@ Sign-in, which lands on Home, and every deep link into `/golf/dashboard`.
 
 ### Exits to
 
-Every page: the navigation (D-66), the bell's notification links (followed only inside GolfHelm),
-and Settings.
+Every page: the navigation (D-66), the bell's notification links (followed only
+inside GolfHelm), and Settings.
 
 ## Ownership
 

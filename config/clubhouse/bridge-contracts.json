@@ -1644,6 +1644,28 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30407,
+    "page": "P003",
+    "category": 4,
+    "item": 7,
+    "name": "A_PLAYERS_TEAM_HAS_NOBODY_ON_IT",
+    "chCode": "CH-3307",
+    "meaning": "A player's team has nobody on it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30408,
+    "page": "P003",
+    "category": 4,
+    "item": 8,
+    "name": "A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE",
+    "chCode": "CH-3308",
+    "meaning": "A player signed in with no active team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30501,
     "page": "P003",
     "category": 5,
@@ -1844,6 +1866,28 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30617,
+    "page": "P003",
+    "category": 6,
+    "item": 17,
+    "name": "THE_PLAYERS_ROSTER_DOESNT_LOAD",
+    "chCode": "CH-3210",
+    "meaning": "The player's roster doesn't load (a player's own team's members)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30618,
+    "page": "P003",
+    "category": 6,
+    "item": 18,
+    "name": "THE_PLAYERS_ROSTER_LIST_CRASHES",
+    "chCode": "CH-3211",
+    "meaning": "The player's roster list crashes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -1862,7 +1906,7 @@
     "category": 8,
     "item": 1,
     "name": "COACH_ONLY_ROSTER",
-    "meaning": "Only a coach gets the Clubhouse roster: the page hands it over for a coach with the flag on, the route checks the coach again before any read, and a player on this address gets the shell's not-rebuilt notice, never the list, the notes or the join requests.",
+    "meaning": "The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests.",
     "status": "implemented",
     "where": "src/app/golf/(dashboard)/dashboard/roster/page.tsx#GolfRosterPage; src/clubhouse/routes/roster.tsx#ClubhouseRosterRoute",
     "tests": [
@@ -1893,6 +1937,45 @@
     "where": "src/clubhouse/screens/roster/Roster.tsx#remove; useJoinRequests.ts#decideOne; RosterPeek.tsx#CoachNote",
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30804,
+    "page": "P003",
+    "category": 8,
+    "item": 4,
+    "name": "PLAYER_ROSTER_IS_READ_ONLY",
+    "meaning": "A player on this address gets their own team's roster as plain text: name, class year and handicap of the active members. No card or row is a link or a button (none takes focus), and nothing on the screen leads to a teammate's profile, stats or notes, or invites, exports, approves, removes or messages anyone.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/roster.tsx#ClubhouseRosterRoute; src/clubhouse/screens/roster/TeamRoster.tsx#TeamRoster; TeamRosterPhone.tsx#TeamRosterPhone",
+    "tests": [
+      "src/clubhouse/__tests__/roster-player.test.tsx"
+    ]
+  },
+  {
+    "id": 30805,
+    "page": "P003",
+    "category": 8,
+    "item": 5,
+    "name": "PLAYER_ROSTER_READS_NO_COACH_DATA",
+    "meaning": "The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/roster-player.ts#loadPlayerRoster",
+    "tests": [
+      "src/clubhouse/__tests__/roster-player.test.tsx"
+    ]
+  },
+  {
+    "id": 30806,
+    "page": "P003",
+    "category": 8,
+    "item": 6,
+    "name": "PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST",
+    "meaning": "With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/roster/[id]/layout.tsx#RosterPlayerLayout",
+    "tests": [
+      "src/clubhouse/__tests__/alias.test.ts"
     ]
   },
   {
@@ -2141,6 +2224,17 @@
     "name": "PHONE_A_PLAYER_ROW_IS_ONE_BUTTON",
     "chCode": "CH-3806",
     "meaning": "Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31807,
+    "page": "P003",
+    "category": 18,
+    "item": 7,
+    "name": "THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT",
+    "chCode": "CH-3807",
+    "meaning": "The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -8164,6 +8258,17 @@
     "name": "MANAGE_SELECTIONS_CRASHES",
     "chCode": "CH-09219",
     "meaning": "Manage selections crashes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90629,
+    "page": "P009",
+    "category": 6,
+    "item": 29,
+    "name": "THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE",
+    "chCode": "CH-09009",
+    "meaning": "The squad is confirmed but telling the players failed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },

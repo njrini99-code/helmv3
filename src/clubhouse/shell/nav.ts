@@ -48,6 +48,9 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
  * Player navigation (D-66): v2's Home, CoachHelm, Team Hub, Rounds (My game)
  * and Classes (School), plus the player screens already built that v2 hasn't
  * designed yet (Calendar, Messages, My stats, Qualifiers), kept until it does.
+ * The Roster is the owner's addition (2026-10-01, Q-130): the coach's screen,
+ * read-only. The boards' player nav has no Roster; it is a sidebar entry under
+ * Team, and so a row in the phone More sheet.
  */
 export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
@@ -55,6 +58,7 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
   { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, badge: 'hub' },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
   { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'My game' },
@@ -135,7 +139,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/team-hub',
     ...SETTINGS_ROUTES,
   ],
-  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new', '/golf/dashboard/rounds/recover', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
+  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new', '/golf/dashboard/rounds/recover', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
 };
 
 /**

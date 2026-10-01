@@ -4,6 +4,13 @@ Route `/golf/dashboard/roster` (coach) · code `src/clubhouse/screens/roster/`, 
 `src/clubhouse/data/roster.ts` · tests `src/clubhouse/__tests__/roster.test.tsx` · preview
 `/clubhouse-preview/roster` (`?state=empty|failed|partial|loading`).
 
+The player's roster (owner, 2026-10-01: "the same thing as coach except they
+can't click") is the same route for a player: `TeamRoster` and
+`TeamRosterPhone`, loader `src/clubhouse/data/roster-player.ts`, tests
+`src/clubhouse/__tests__/roster-player.test.tsx`, preview
+`/clubhouse-preview/roster-player` (`?state=empty|failed|noteam|loading`). CH-3210,
+CH-3211, CH-3307, CH-3308 and CH-3807 are its own; CH-3302 is shared.
+
 Success toasts sit next to their error. Every save goes through `useAction`, so
 offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 (CH-1702, CH-1703) are the shell's.
@@ -39,17 +46,21 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3207 | The team row doesn't load | Invite players shows "The join code didn't load." + "Your code still works for players who have it. Try again to show it here." (never "no join code"); the header reads "Your team" | `InviteModal`; logged `clubhouse.roster.team` | roster.test › CH-3207 |
 | CH-3208 | Focus areas or goals don't load | The panel's Development counts read "—", never 0 | `RosterPeek`; logged `clubhouse.roster.golf_player_focus_areas` / `golf_goals` | roster.test › CH-3208 |
 | CH-3209 | This coach's notes don't load | The note field is read-only with "Your notes didn't load, so this one can't be edited right now. Refresh the page to try again." A blank field can never save over a real note | `CoachNote locked`; logged `clubhouse.roster.coachNotes` | roster.test › CH-3209 |
+| CH-3210 | The player's roster doesn't load (a player's own team's members) | "The roster didn't load." + "Your team is safe. Try again, and if it keeps happening the error has already been reported." Try again. Never "No one on the roster" | `TeamRoster`, `TeamRosterPhone`; logged `clubhouse.roster.playerMembers` | roster-player.test › CH-3210 |
+| CH-3211 | The player's roster list crashes | "The roster couldn’t be shown." … The header, search and sort stay | `SectionBoundary roster.team` | roster-player.test › CH-3211 |
 
 ## 33xx Empty
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3301 | No players yet | The page empty state (v2 medallion): "No players yet" + "Share your team code, then approve requests as they arrive. Players appear here as soon as they join." + Invite players; on desktop also Copy team code when the team has one (v2 says "by email"; there is no email invite, Data gaps) | `Roster`, `RosterPhone` | roster.test › CH-3301 |
-| CH-3302 | A search matches nobody | "No players match "zzz"" + Show everyone | `Roster` | roster.test › CH-3302 |
+| CH-3302 | A search matches nobody | "No players match "zzz"" + Show everyone | `Roster`, `TeamRoster` | roster.test › CH-3302 |
 | CH-3303 | A status filter has nobody | "No inactive players." / "No active players." + Show everyone | `Roster` | roster.test › CH-3303 |
 | CH-3304 | The team has no join code | "Your team has no join code yet." + "Make one in Settings, then invite players here." + Open team settings | `InviteModal` | roster.test › CH-3304 |
 | CH-3305 | A player has no 18-hole rounds | Form reads "No 18-hole rounds this season" and "Form appears once rounds are posted." | `RosterPeek`, phone `RosterProfile` | roster.test › CH-3305 |
 | CH-3306 | A coach signed in with no active team | The page empty state (v2 medallion): "You aren't on a team yet" + "Your players appear here once your team is set up." No action. It used to be Home's state (CH-2307), whose text is about Home | `RosterNoTeam`, from `ClubhouseRosterRoute` | roster.test › CH-3306 |
+| CH-3307 | A player's team has nobody on it | The page empty state: "No one on the roster yet" + "Your teammates appear here once your coach adds them." No action | `TeamRoster`, `TeamRosterPhone` | roster-player.test › CH-3307 |
+| CH-3308 | A player signed in with no active team | The page empty state: "You aren't on a team yet" + "Your teammates appear here once your coach approves your request to join." | `RosterNoTeam viewer="player"` | roster-player.test › CH-3308 |
 
 ## 34xx Loading
 
@@ -90,3 +101,4 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3804 | The note counter is announced politely; a locked note says why it's locked | `aria-live`, `aria-describedby` | roster.test › CH-3101 |
 | CH-3805 | No axe violations in any preview state, both layouts, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-3806 | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration | `RosterPhoneRow` `aria-label`, spark `aria-hidden` | roster.test › CH-3806 |
+| CH-3807 | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed | `TeamRoster`, `TeamRosterPhone` (`ch-rs-face--static`, `ch-rsm-row--static`) | roster-player.test › CH-3807 |

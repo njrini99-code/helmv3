@@ -140,6 +140,7 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90626 | CH-09008 | `CONFIRMING_THE_SQUAD_FAILS` | Confirming the squad fails |
 | 90627 | CH-09218 | `MANAGE_SELECTIONS_DOESNT_LOAD` | Manage selections doesn't load |
 | 90628 | CH-09219 | `MANAGE_SELECTIONS_CRASHES` | Manage selections crashes |
+| 90629 | CH-09009 | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | The squad is confirmed but telling the players failed |
 
 ## 07 — Network / offline
 

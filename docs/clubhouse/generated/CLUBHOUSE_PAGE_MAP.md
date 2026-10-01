@@ -8,7 +8,7 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | Shell | (shell) | coach, player | ios_native_shell, team_communications | approved | in_progress | complete | reserved | existing | partial | current |
 | P002 | Home | `/golf/dashboard` | coach, player | team_operations, calendar_events, stats_analytics | approved | in_progress | complete | reserved | existing | partial | current |
-| P003 | Roster | `/golf/dashboard/roster` | coach | roster_team | approved | in_progress | complete | reserved | existing | partial | current |
+| P003 | Roster | `/golf/dashboard/roster` | coach, player | roster_team | approved | in_progress | complete | reserved | existing | partial | current |
 | P004 | Stats (team) | `/golf/dashboard/stats`<br>`/golf/dashboard/stats/team` | coach | stats_analytics | approved | in_progress | complete | reserved | existing | partial | current |
 | P005 | Stats (player) | `/golf/dashboard/stats` | coach, player | stats_analytics, player_coachhelm_development | approved | in_progress | complete | reserved | existing | partial | current |
 | P006 | Calendar | `/golf/dashboard/calendar` | coach, player | calendar_events | approved | in_progress | complete | reserved | existing | partial | current |

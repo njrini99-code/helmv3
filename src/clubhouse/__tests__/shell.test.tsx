@@ -369,6 +369,7 @@ describe('Shell · sidebar data', () => {
     wrap(<Sidebar userData={player} shell={shell} pathname="/golf/dashboard" />);
     expect(read()).toEqual([
       ['', ['Home', 'CoachHelm', 'Calendar', 'Team Hub', 'Messages']],
+      ['Team', ['Roster']],
       ['My game', ['Rounds', 'My stats', 'Qualifiers']],
       ['School', ['Classes']],
     ]);
@@ -816,13 +817,13 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(code('CH-1808')).not.toBeNull();
     expect(document.getElementById('ch-content')!.textContent).toMatch(/Roster body/);
     unmount();
-    // Roster is rebuilt for coaches only: a player on the same address gets the notice.
+    // Lineups is rebuilt for neither role yet: a player on that address gets the notice.
     render(
-      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/roster">
-        <p>Roster body</p>
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/lineups">
+        <p>Lineups body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.queryByText('Roster body')).toBeNull();
+    expect(screen.queryByText('Lineups body')).toBeNull();
     expect(code('CH-1301')).not.toBeNull();
   });
 
