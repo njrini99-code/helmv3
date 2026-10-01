@@ -10,7 +10,7 @@ import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, isRebuilt } from './nav';
+import { activeNavItem, isRebuilt, routeLabel } from './nav';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
@@ -73,7 +73,7 @@ export function ClubhouseFrame({
                     <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} />
                     <OfflineBanner />
                     <RouteFrame routeKey={pathname}>
-                      {rebuilt ? children : <NotRebuilt label={item?.label ?? 'This page'} />}
+                      {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
                     </RouteFrame>
                   </div>
                 </div>

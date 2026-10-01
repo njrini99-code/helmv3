@@ -91,6 +91,18 @@ export function navFor(role: ChRole): readonly ChNavItem[] {
 export const CH_NAV = CH_NAV_COACH;
 
 /** The item that owns a pathname: the longest matching href wins. */
+/**
+ * A readable name for a dashboard route with no nav item (a page not rebuilt
+ * for this role), so its top bar never says "Home" (swap audit F-39):
+ * /golf/dashboard/my-qualifiers -> "My qualifiers".
+ */
+export function routeLabel(pathname: string): string | null {
+  const seg = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/')[0];
+  if (!seg) return null;
+  const words = seg.split('-').join(' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavItem | undefined {
   let best: ChNavItem | undefined;
   for (const item of navFor(role)) {
