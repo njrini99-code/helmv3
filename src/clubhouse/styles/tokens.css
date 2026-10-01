@@ -88,7 +88,8 @@
   --ch-border-subtle: rgb(28 25 18 / 0.1);
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
-  --ch-border-focus: var(--ch-ink-900);
+  /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
+  --ch-border-focus: var(--ch-green-600);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
   --ch-green-ring: rgb(21 90 57 / 0.28);
   --ch-green-rule: rgb(21 90 57 / 0.4);

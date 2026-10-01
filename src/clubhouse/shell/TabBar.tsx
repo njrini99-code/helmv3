@@ -85,7 +85,8 @@ export function TabBar({ pathname, shell, role, user }: { pathname: string; shel
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
-      trigger?.focus({ preventScroll: true });
+      // Back on More without a ring after a tap (F-46); a keyboard user still lands on it.
+      trigger?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     };
   }, [moreOpen]);
 
