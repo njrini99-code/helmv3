@@ -12,7 +12,8 @@
 -- Nothing else in run_integrity_checks changes. The rewrite reads the
 -- LIVE definition (pg_get_functiondef), refuses to run unless its body
 -- is the one 20260901120000 installed (prosrc md5
--- 16c9eca333e04a920b0d7b1fb764c738, read 2026-10-01) or already carries
+-- 16c9eca333e04a920b0d7b1fb764c738 in production, read 2026-10-01;
+-- c2307e0e28a63c4430506829c4851fa3 on a replay) or already carries
 -- this change, and replaces one anchor that occurs exactly once.
 --
 -- Expected after apply: the check passes (0) on today's data (14 flagged,
@@ -45,11 +46,16 @@ BEGIN
   IF position('r.front_nine IS NULL AND r.back_nine IS NULL' IN src) > 0 THEN
     RETURN; -- already applied
   END IF;
-  IF md5(src) <> '16c9eca333e04a920b0d7b1fb764c738' THEN
+  -- Production's body (applied from a reformatted text) and the body a
+  -- replay of 20260901120000 installs (local reset, CI) are the same checks.
+  IF md5(src) NOT IN (
+    '16c9eca333e04a920b0d7b1fb764c738',
+    'c2307e0e28a63c4430506829c4851fa3'
+  ) THEN
     RAISE EXCEPTION
-      'run_integrity_checks is not the 20260901120000 body (md5 %);'
-      || ' rebase this file',
-      md5(src);
+      'run_integrity_checks is not the 20260901120000 body (md5 %)',
+      md5(src)
+      USING HINT = 'Rebase this file on the live body.';
   END IF;
   def := pg_get_functiondef(fn_oid);
   IF (length(def) - length(replace(def, anchor, ''))) / length(anchor) <> 1
