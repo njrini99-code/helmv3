@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { chLogServer } from '../lib/track-server';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from './coachhelm-standing-shape';
@@ -26,6 +27,21 @@ async function readBaseline(supabase: Supabase, playerId: string): Promise<ChSta
 }
 
 /**
+ * Whether the player's cohort (their team's gender, which picks the Tour the rows are graded against) reads. `loadPlayerStandingMap`
+ * resolves it inside and answers the men's default when it cannot, with nothing to say so; this is the same lookup, read beside it,
+ * so a page that fell back says the Tour may not be theirs. The two reads can disagree (a transient failure in only one), so this
+ * is a check that catches a failing lookup, not a proof of the one the map used.
+ */
+async function readCohort(playerId: string): Promise<{ failed: boolean }> {
+  try {
+    return { failed: (await loadPlayerCohort(playerId)).failed === true };
+  } catch (err) {
+    log('standing.cohort', err);
+    return { failed: true };
+  }
+}
+
+/**
  * The player's Standing (`?view=standing`), read after the route has checked CoachHelm is on for them. `playerId` is the session's,
  * never an address's: `loadPlayerStandingMap` reads `golf_player_standing` through the service client (that table is written by
  * the nightly refresh and has no per-player policy to lean on), so the id it is given is the only thing scoping it.
@@ -36,7 +52,7 @@ async function readBaseline(supabase: Supabase, playerId: string): Promise<ChSta
 export async function loadPlayerStanding(input: { playerId: string }): Promise<ChViewLoad<ChStanding>> {
   try {
     const supabase = await createClient();
-    const [map, baseline] = await Promise.all([
+    const [map, baseline, cohort] = await Promise.all([
       loadPlayerStandingMap(input.playerId).then(
         // The map is this player's already; a row that is anyone else's is never drawn, whatever the loader returned.
         (m) => ({ ok: true as const, rows: [...m.values()].filter((r) => r.player_id === input.playerId) }),
@@ -46,9 +62,10 @@ export async function loadPlayerStanding(input: { playerId: string }): Promise<C
         },
       ),
       readBaseline(supabase, input.playerId),
+      readCohort(input.playerId),
     ]);
     if (!map.ok) return { status: 'failed' };
-    return { status: 'ready', data: toChStanding(map.rows, baseline) };
+    return { status: 'ready', data: { ...toChStanding(map.rows, baseline), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
   } catch (err) {
     log('standing', err);
     return { status: 'failed' };

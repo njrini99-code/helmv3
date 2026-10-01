@@ -12,7 +12,7 @@ import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
-import { FocusCard, Head, InsightRow } from './parts';
+import { BoardPartial, FocusCard, Head, InsightRow } from './parts';
 import { Proposals } from './Proposals';
 import { useViewSwitch } from './use-view-switch';
 import { PlayerHelmTabs } from './views/PlayerHelmTabs';
@@ -64,6 +64,8 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
       {!phone && tabs}
 
       {!data.off && <Proposals proposals={data.proposals} writes={writes} onRetry={refresh} />}
+      {/* CH-13208: a read beside the cards failed (the Tour's values, the drills, which cards have a focus, how current each read is). */}
+      {!data.off && data.missing && <BoardPartial missing={data.missing} what="board" onRetry={refresh} />}
 
       {data.off ? (
         <EmptyState

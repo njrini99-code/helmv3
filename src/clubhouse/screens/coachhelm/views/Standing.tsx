@@ -184,6 +184,8 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
       ) : (
         <SectionBoundary surface="coachhelm.standing" label="Your standing" code="CH-13204">
           {s.baselineFailed && <InlineNotice code="CH-13271" title="Your projections didn’t load" body="Your scoring average, which every projection starts from, didn’t load. The comparisons below are not affected. Try again in a moment." onRetry={refresh} />}
+          {/* CH-13272: the Tour the rows are against is the men's default because the cohort lookup failed; it is not stated as theirs. */}
+          {s.cohortFailed && <InlineNotice code="CH-13272" title="Your team’s Tour couldn’t be confirmed" body="The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." onRetry={refresh} />}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
               <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds, and a comparison with your team needs 5 teammates with the stat.

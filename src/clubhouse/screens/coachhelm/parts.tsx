@@ -2,9 +2,10 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { CalendarX, ChevronDown, ChevronRight, ChevronUp, ClipboardList, Flag, ListChecks, MailQuestionMark, Target, TrendingDown, TrendingUp, Users, type LucideIcon } from 'lucide-react';
-import { stanceOf, type ChHelmAssigned, type ChHelmEvidence, type ChHelmGauge, type ChInsight, type ChPulseIcon, type ChPulseRow } from '../../data/coachhelm-shape';
+import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChHelmGauge, type ChInsight, type ChPulseIcon, type ChPulseRow } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
+import { InlineNotice } from '../../ui/Notices';
 
 /**
  * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
@@ -208,6 +209,21 @@ export function PulseList({ rows }: { rows: ChPulseRow[] }) {
       ))}
     </ol>
   );
+}
+
+/**
+ * CH-13208: a read beside the cards failed, so they were drawn without it. This says which (the Tour comparison, how current each
+ * read is, the drill text, and where the page offers them, which cards already have a focus), so a gap is never read as "none",
+ * "not assigned" or "up to date". `focus: false` leaves out the focus status, which the coach's board says at the card (CH-13207).
+ */
+export function BoardPartial({ missing, what, focus = true, onRetry }: { missing: ChBoardMissing; what: 'board' | 'page'; focus?: boolean; onRetry: () => void }) {
+  const parts: string[] = [];
+  if (missing.tour) parts.push('Tour comparison unavailable, so a card may be drawn without it.');
+  if (missing.newest) parts.push('Which reads are older than a newer round could not be checked, so a read and the counts may be out of date.');
+  if (focus && (missing.assigned || missing.declined)) parts.push('Which reads already have a focus could not be checked.');
+  if (missing.drills) parts.push('This week’s drill text is missing.');
+  if (parts.length === 0) return null;
+  return <InlineNotice code="CH-13208" title={`Part of this ${what} didn’t load`} body={`${parts.join(' ')} Try again in a moment.`} onRetry={onRetry} />;
 }
 
 /** The page's title block: the role chip, CoachHelm, one line. CH-13801: the h1 labels the page's main landmark (aria-labelledby), and each section below is a labelled region. */

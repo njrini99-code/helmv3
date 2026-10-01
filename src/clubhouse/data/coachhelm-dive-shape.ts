@@ -7,7 +7,7 @@ import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types
 import { formatSigned, formatToPar } from '../lib/format';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
-import { stanceOf, type ChInsight, type ChStance } from './coachhelm-shape';
+import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
 
 /**
@@ -137,6 +137,8 @@ export interface ChDeepDive {
   plansFailed: boolean;
   themesFailed: boolean;
   counts: { insights: number; needs: number; working: number; inPlan: number };
+  /** What the reads were drawn without because a read beside them failed (the Tour's values, the drills, which are Assigned, which are out of date). */
+  missing?: ChBoardMissing;
 }
 
 /** What the loader reads for the parts beside the insights. */

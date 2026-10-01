@@ -1,5 +1,6 @@
 import type { UIMessage } from 'ai';
 import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
+import type { ChPulseMissing } from './coachhelm-shape';
 
 /**
  * Ask CoachHelm's frame data (Clubhouse P013, the Ask sub-tab): the shapes the loader
@@ -159,6 +160,8 @@ export interface ChAskPulse {
   coverage: string | null;
   /** "as of 3:05 PM", formatted in the team's zone on the server. */
   asOfLabel: string | null;
+  /** A read the pulse is made from failed: the findings are what was found, and an empty list is never "nothing is flagged". Absent when every read landed. */
+  missing?: ChPulseMissing[];
 }
 
 export interface ChAskThread {
@@ -194,9 +197,12 @@ export type ChAskLoad =
   /** The chat context did not load (no active team, a dropped read): nothing to ask against. */
   | { status: 'failed' };
 
-/** Whether the roster has players and not one round between them. */
-export function noRoundsFrom(pulse: { active_roster: number; players_without_rounds: number } | null): boolean {
-  return !!pulse && pulse.active_roster > 0 && pulse.players_without_rounds >= pulse.active_roster;
+/**
+ * Whether the roster has players and not one round between them. A rounds read that failed answers false: it leaves every player
+ * "without a round", and that is not a fact about the team (`ProgramPulse.failed`).
+ */
+export function noRoundsFrom(pulse: { active_roster: number; players_without_rounds: number; failed?: readonly string[] } | null): boolean {
+  return !!pulse && !pulse.failed?.includes('rounds') && pulse.active_roster > 0 && pulse.players_without_rounds >= pulse.active_roster;
 }
 
 /** The `+` menu's seven starters. Each seeds the composer and never sends. */

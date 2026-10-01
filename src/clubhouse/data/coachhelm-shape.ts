@@ -1,4 +1,4 @@
-import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
+import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pulse';
 
 /**
  * CoachHelm's data shapes (Clubhouse P013) and the steps the screens share,
@@ -146,6 +146,31 @@ export interface ChProposal {
   from: string | null;
 }
 
+/**
+ * Reads beside the cards that did not load. Present only when one failed, so a board that loaded whole is exactly what it was. The
+ * cards are drawn without what the read would have said, and the screen says so (`BoardPartial`, `FocusStatusUnchecked`) instead
+ * of drawing the gap as "none", "not assigned" or "not out of date".
+ */
+export interface ChBoardMissing {
+  /** The attached drills' descriptions: "This week" has the drill's name and length, not its text. */
+  drills?: true;
+  /** The focus areas already made from the cards: whether one is Assigned is not known. */
+  assigned?: true;
+  /** The focus areas the player declined: whether Propose again is due is not known. */
+  declined?: true;
+  /** The day of each player's newest round: whether a read is older than it is not known. */
+  newest?: true;
+  /** The Tour's values, or the team they come from: the cards have no Tour comparison, and a strength may read as a finding. */
+  tour?: true;
+}
+
+/** The part of a board's reads that failed, or `undefined` when none did (the shape of a board that loaded whole). */
+export function boardMissing(flags: { [K in keyof ChBoardMissing]: boolean }): ChBoardMissing | undefined {
+  const out: ChBoardMissing = {};
+  for (const k of ['drills', 'assigned', 'declined', 'newest', 'tour'] as const) if (flags[k]) out[k] = true;
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 export interface ChPlayerHelm {
   /** CoachHelm is turned off for this player: the coach's reason when there is one. Nothing else is read. */
   off: { reason: string | null } | null;
@@ -155,6 +180,8 @@ export interface ChPlayerHelm {
   insights: { list: ChInsight[]; error: boolean };
   /** Countable rounds posted, read only when there are no insights, so the empty state can say what to do; null when unknown. */
   rounds: number | null;
+  /** What the cards were drawn without because a read beside them failed. */
+  missing?: ChBoardMissing;
 }
 
 export type ChPulseIcon = 'calendar-x' | 'trending-up' | 'trending-down' | 'rsvp' | 'practice' | 'focus' | 'tasks' | 'roster' | 'flag';
@@ -177,16 +204,57 @@ export interface ChCoachPlayer {
   top: ChInsight;
 }
 
+/**
+ * What a pulse read that failed leaves out, in the words the notice uses. The signals read is not here: neither the board nor Ask
+ * draws that item (the page's subtitle says the same count), so its failure leaves no gap on screen.
+ */
+export type ChPulseMissing = 'rounds' | 'schedule' | 'tasks' | 'focus';
+
+export const PULSE_MISSING_LABEL: Record<ChPulseMissing, string> = { rounds: 'rounds', schedule: 'the schedule', tasks: 'tasks', focus: 'focus areas' };
+
+const PULSE_SOURCE_MISSING: Partial<Record<PulseSource, ChPulseMissing>> = { rounds: 'rounds', events: 'schedule', attendance: 'schedule', tasks: 'tasks', focus: 'focus' };
+
+/** "Rounds", "Rounds and tasks", "Rounds, tasks and focus areas": what a pulse is missing, as the notices say it. */
+export function pulseGapsLabel(missing: readonly ChPulseMissing[]): string {
+  const words = missing.map((m) => PULSE_MISSING_LABEL[m]);
+  const said = words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}` : (words[0] ?? '');
+  return said.charAt(0).toUpperCase() + said.slice(1);
+}
+
+/** The gaps a pulse's failed reads leave (`ProgramPulse.failed`), each once. */
+export function pulseMissing(failed: readonly PulseSource[] | undefined): ChPulseMissing[] {
+  return [...new Set((failed ?? []).map((s) => PULSE_SOURCE_MISSING[s]).filter((m): m is ChPulseMissing => !!m))];
+}
+
+/** The reads each pulse item is made from: one that failed leaves the item missing, or untrue (no rounds read is "no player has a round"). */
+const PULSE_ITEM_NEEDS: Array<[RegExp, PulseSource[]]> = [
+  [/^coverage-/, ['rounds']],
+  [/^movement-/, ['rounds']],
+  [/^rsvp-/, ['events', 'attendance']],
+  [/^prep-gap$/, ['events']],
+  [/^focus-stalled$/, ['focus']],
+  [/^tasks-overdue$/, ['tasks']],
+];
+
+/** The pulse's items without those made from a read that failed: what is left was found, never assumed. */
+export function pulseItemsThatStand<T extends Pick<PulseItem, 'id'>>(items: readonly T[], failed: readonly PulseSource[] | undefined): T[] {
+  if (!failed || failed.length === 0) return [...items];
+  return items.filter((i) => !(PULSE_ITEM_NEEDS.find(([re]) => re.test(i.id))?.[1] ?? []).some((src) => failed.includes(src)));
+}
+
 export interface ChCoachHelmData {
   /** CoachHelm is turned off for this coach or team. Nothing else is read. */
   off: { by: 'user' | 'team' | 'global'; reason: string | null } | null;
   /** The team's active players. `error`: the roster read failed, never an empty team. */
   roster: { count: number; error: boolean };
-  pulse: { rows: ChPulseRow[]; error: boolean };
+  /** `missing`: a read the pulse is made from failed, so the rows are what was found and the board never says "nothing is flagged". */
+  pulse: { rows: ChPulseRow[]; error: boolean; missing?: ChPulseMissing[] };
   /** Players with at least one signal, most pressing first. */
   players: { list: ChCoachPlayer[]; error: boolean };
   /** Roster players with no insight yet. */
   withoutSignals: number;
+  /** What the cards were drawn without because a read beside them failed. */
+  missing?: ChBoardMissing;
 }
 
 /** Rows in the "Also worth knowing" list and in "Working". */

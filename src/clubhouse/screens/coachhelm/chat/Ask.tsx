@@ -2,10 +2,10 @@
 
 import { MessagesSquare, PanelLeftOpen, SquarePen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { describeChatError } from '../../../data/coachhelm-chat-error';
-import { titleFromQuestion, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
+import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
 import { pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
@@ -107,7 +107,13 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
   const online = useOnline();
   const refuseOffline = useRefuseOffline();
-  const [conversations, setConversations] = useState(data.conversations);
+  // The chats this visit started and the server's list does not hold yet. The list itself is the server's (`data.conversations`), read
+  // each render: a copy taken once would never take a refreshed list, and History's Try again would leave "your chats didn't load" up.
+  const [started, setStarted] = useState<ChAskConversation[]>([]);
+  const conversations = useMemo(
+    () => ({ ...data.conversations, list: [...started.filter((s) => !data.conversations.list.some((c) => c.id === s.id)), ...data.conversations.list] }),
+    [data.conversations, started],
+  );
   const [title, setTitle] = useState<string | null>(data.thread?.title ?? null);
   const [openId, setOpenId] = useState<string | null>(data.notFound ? null : (data.thread?.id ?? null));
   // Choosing a saved chat is a page read (the thread's messages), so it is a switch too: the row takes the selected look on the
@@ -124,7 +130,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
     const name = titleFromQuestion(lastSent.current);
     setOpenId(id);
     setTitle((t) => t ?? name);
-    setConversations((c) => (c.list.some((x) => x.id === id) ? c : { ...c, list: [{ id, title: name, updatedAt: new Date().toISOString() }, ...c.list] }));
+    setStarted((s) => (s.some((x) => x.id === id) ? s : [{ id, title: name, updatedAt: new Date().toISOString() }, ...s]));
     window.history.replaceState(window.history.state, '', `${COACHHELM_HREF.ask}&c=${id}`);
   }, []);
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Archive, Check, Flag, Sparkles, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { firstName, playersLine, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned } from '../../data/coachhelm-shape';
+import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -18,7 +18,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
-import { FocusCard, Head, PulseList } from './parts';
+import { BoardPartial, FocusCard, Head, PulseList } from './parts';
 import { useViewSwitch } from './use-view-switch';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
 
@@ -106,7 +106,12 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // A card that states no finding is not assigned or dismissed, and a read older than the newest round is not assigned (it is still dismissed if the coach wants it gone).
   const note = cur?.top.kind === 'note';
   const stale = !!cur?.top.stale;
+  // A read beside the cards that failed (CH-13207): whether this card was already assigned, was declined, or is still current is not
+  // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
+  const statusUnknown = !mine && !!(data.missing?.assigned || data.missing?.declined || data.missing?.newest);
   const rosterHref = coachBoardLinks.roster();
+  const pulseGapsCount = data.pulse.missing?.length ?? 0;
+  const pulseGaps = data.pulse.missing && pulseGapsCount > 0 ? pulseGapsLabel(data.pulse.missing) : null;
 
   const body = data.off ? (
     <EmptyState
@@ -149,12 +154,23 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
           <h2 id="ch-hl-pulse-h">Program pulse</h2>
           {data.pulse.error ? (
             <InlineNotice code="CH-13203" title="The program pulse didn’t load" body="Your players’ insights below are not affected. Try again in a moment." onRetry={refresh} />
-          ) : data.pulse.rows.length === 0 ? (
+          ) : data.pulse.rows.length === 0 && !pulseGaps ? (
             <p className="ch-hl-pulse__none" data-ch-code="CH-13309">
               Nothing is flagged in the pulse right now.
             </p>
           ) : (
-            <PulseList rows={data.pulse.rows} />
+            <>
+              {data.pulse.rows.length > 0 && <PulseList rows={data.pulse.rows} />}
+              {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
+              {pulseGaps && (
+                <InlineNotice
+                  code="CH-13206"
+                  title={data.pulse.rows.length === 0 ? 'The program pulse didn’t fully load' : 'The program pulse may be incomplete'}
+                  body={`${pulseGaps} didn’t load, so anything made from ${pulseGapsCount === 1 ? 'it' : 'them'} is missing here and was not checked. What is listed was found. Try again in a moment.`}
+                  onRetry={refresh}
+                />
+              )}
+            </>
           )}
         </section>
       </SectionBoundary>
@@ -178,6 +194,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
         />
       ) : (
         <>
+          {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} onRetry={refresh} />}
           <div className="ch-hl-cgrid">
             <SectionBoundary surface="coachhelm.players" label="Your players" code="CH-13204">
               <section className="ch-hl-plist" aria-labelledby="ch-hl-plist-h">
@@ -237,6 +254,13 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                             <Icon icon={Check} size={15} />
                             Assigned as {firstName(cur.name)}’s focus
                           </span>
+                        ) : statusUnknown ? (
+                          <InlineNotice
+                            code="CH-13207"
+                            title="Assign as focus isn’t offered right now"
+                            body={`${focusStatusSaid(data.missing, firstName(cur.name))} Dismiss still works. Try again in a moment.`}
+                            onRetry={refresh}
+                          />
                         ) : stale ? null : (
                           <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
                             {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
@@ -255,7 +279,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                           {dismiss.pending ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
                         </Button>
                         {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
-                        {!mine && !stale && cur.top.declined && (
+                        {!mine && !stale && !statusUnknown && cur.top.declined && (
                           <p className="ch-hl-cact__m" data-ch-code="CH-13907">
                             {firstName(cur.name)} declined this as a focus. Propose again sends it back as a new proposal.
                           </p>
@@ -297,3 +321,11 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
 
 /** The top card is a signal the count includes: a finding whose read is current. */
 const countsAsSignal = (p: ChCoachPlayer) => p.top.kind === 'finding' && !p.top.stale;
+
+/** What could not be checked about this card, in the coach's words. */
+function focusStatusSaid(missing: ChBoardMissing | undefined, who: string): string {
+  const said: string[] = [];
+  if (missing?.assigned || missing?.declined) said.push(`Whether ${who} already has a focus from this read, or declined one, couldn’t be checked.`);
+  if (missing?.newest) said.push('Whether this read is still current couldn’t be checked.');
+  return said.join(' ');
+}

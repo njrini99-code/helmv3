@@ -91,6 +91,11 @@ export interface ChStanding {
   refreshed: string | null;
   /** The Tour the rows are against: "Tour", or "LPGA Tour" for a women's team. */
   tour: string;
+  /**
+   * The cohort lookup (the player's team's gender, which picks the Tour) failed: the rows were drawn against the men's Tour as the
+   * default, which is not known to be theirs, and the page says so rather than state the Tour as fact. Absent when it read.
+   */
+  cohortFailed?: true;
   groups: ChStandGroup[];
   counts: { measures: number; tour: { of: number; ahead: number }; team: { of: number; ahead: number } };
   /** The three biggest projections, most strokes first. They overlap (one weak skill shows in several rows), so they are never added. */

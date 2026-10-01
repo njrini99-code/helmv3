@@ -620,6 +620,10 @@
   font: 400 12.5px/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* The focus status that could not be checked (CH-13207) takes the row, with Dismiss under it. */
+.ch-hl-cact .ch-notice {
+  flex-basis: 100%;
+}
 .ch-hl-done {
   display: inline-flex;
   align-items: center;

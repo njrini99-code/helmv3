@@ -10,8 +10,8 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
 import { isNote, isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
-import { firstName, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChTourBaseline } from './coachhelm-shape';
-import { loadTourBenchmarks, tourForGender } from './stats-common';
+import { boardMissing, firstName, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChTourBaseline } from './coachhelm-shape';
+import { tourForGender } from './stats-common';
 
 export type * from './coachhelm-shape';
 
@@ -104,12 +104,12 @@ export async function countCountableRounds(supabase: Supabase, playerId: string)
 /**
  * The day of each player's newest completed countable round, from `since` on (the earliest day a round could make one of the
  * reads on the page out of date, `staleFloor`); a player with none in that span is absent, and without a `since` nothing is read.
- * A failed read is logged and answers an empty map: a read that cannot be compared is drawn as it is, never as an error on the
- * page. Never a write.
+ * A failed read is logged and answers an empty map with `error`: which reads are older than a round is then not known, and the
+ * page says so instead of drawing every read as current. Never a write.
  */
-export async function newestRounds(supabase: Supabase, playerIds: string[], since: string | null): Promise<Map<string, string>> {
+export async function newestRounds(supabase: Supabase, playerIds: string[], since: string | null): Promise<{ days: Map<string, string>; error: boolean }> {
   const out = new Map<string, string>();
-  if (!since || playerIds.length === 0) return out;
+  if (!since || playerIds.length === 0) return { days: out, error: false };
   const res = await fetchAllRowsResult<{ id: string; player_id: string; round_date: string | null; total_score: number | null; front_nine: number | null; back_nine: number | null; holes_played: number | null; total_putts: number | null }>(
     (from, to) =>
       supabase
@@ -126,14 +126,14 @@ export async function newestRounds(supabase: Supabase, playerIds: string[], sinc
   );
   if (res.error) {
     log('newestRounds', res.error);
-    return out;
+    return { days: out, error: true };
   }
   for (const r of res.data ?? []) {
     const day = r.round_date?.slice(0, 10);
     if (!day || !isCountableRound(r)) continue;
     if (day > (out.get(r.player_id) ?? '')) out.set(r.player_id, day);
   }
-  return out;
+  return { days: out, error: false };
 }
 
 /** The earliest day a round could make any of these reads out of date, or null when none can be told. */
@@ -141,91 +141,126 @@ export function earliestStaleFloor(rows: ReadonlyArray<Parameters<typeof staleFl
   return rows.map(staleFloor).filter((d): d is string => !!d).sort()[0] ?? null;
 }
 
-/** The attached drill's description by insight (the delivery shape carries the drill's name and length, not its text). Failing leaves the drill's name and length. */
-export async function drillTextByInsight(supabase: Supabase, insights: EvidenceInsight[]): Promise<Map<string, string>> {
+/**
+ * The attached drill's description by insight (the delivery shape carries the drill's name and length, not its text). Failing
+ * leaves the drill's name and length, and `error`: the card says its drill text is missing instead of drawing "This week" short.
+ */
+export async function drillTextByInsight(supabase: Supabase, insights: EvidenceInsight[]): Promise<{ texts: Map<string, string>; error: boolean }> {
   const firstDrill = new Map<string, string>();
   for (const i of insights) if (i.drills?.[0]) firstDrill.set(i.id, i.drills[0].id);
   const out = new Map<string, string>();
-  if (firstDrill.size === 0) return out;
+  if (firstDrill.size === 0) return { texts: out, error: false };
   const res = await supabase
     .from('golf_drills')
     .select('id, description')
     .in('id', [...new Set(firstDrill.values())]);
   if (res.error) {
     log('drills', res.error);
-    return out;
+    return { texts: out, error: true };
   }
   const byDrill = new Map((res.data ?? []).map((d) => [d.id, d.description]));
   for (const [insightId, drillId] of firstDrill) {
     const text = byDrill.get(drillId);
     if (text) out.set(insightId, text);
   }
-  return out;
+  return { texts: out, error: false };
 }
 
-/** Focus areas already made from these insights that still stand (a declined or completed one no longer does). Failing leaves Assign available; the server's duplicate guard still holds. */
-export async function assignedByInsight(supabase: Supabase, insightIds: string[]): Promise<Map<string, ChHelmAssigned>> {
+/**
+ * Focus areas already made from these insights that still stand (a declined or completed one no longer does). Failing answers
+ * `error`, and the coach's board then does not offer Assign: "nothing is assigned" is not what a failed read says (the server's
+ * duplicate guard would still refuse a second one, but the board must not offer what it could not check).
+ */
+export async function assignedByInsight(supabase: Supabase, insightIds: string[]): Promise<{ byInsight: Map<string, ChHelmAssigned>; error: boolean }> {
   const out = new Map<string, ChHelmAssigned>();
-  if (insightIds.length === 0) return out;
+  if (insightIds.length === 0) return { byInsight: out, error: false };
   const res = await supabase.from('golf_player_focus_areas').select('from_insight_id, status').in('from_insight_id', insightIds).in('status', ['proposed', 'active', 'in_progress', 'paused']);
   if (res.error) {
     log('assigned', res.error);
-    return out;
+    return { byInsight: out, error: true };
   }
   for (const r of res.data ?? []) {
     if (!r.from_insight_id) continue;
     // A live focus beats a proposal of the same insight.
     if (r.status !== 'proposed' || !out.has(r.from_insight_id)) out.set(r.from_insight_id, r.status === 'proposed' ? 'proposed' : 'active');
   }
-  return out;
+  return { byInsight: out, error: false };
 }
 
 /**
  * Insights whose focus area the player declined (CH13-23). The board says so instead of offering Assign as if it were new.
- * Failing reads as none declined: Assign stays available, as before.
+ * Failing answers `error`: whether the player declined one is not known, so the board neither offers Assign (as if it never
+ * happened) nor says it did.
  */
-export async function declinedByInsight(supabase: Supabase, insightIds: string[]): Promise<Set<string>> {
+export async function declinedByInsight(supabase: Supabase, insightIds: string[]): Promise<{ ids: Set<string>; error: boolean }> {
   const out = new Set<string>();
-  if (insightIds.length === 0) return out;
+  if (insightIds.length === 0) return { ids: out, error: false };
   const res = await supabase.from('golf_player_focus_areas').select('from_insight_id').in('from_insight_id', insightIds).eq('status', 'declined');
   if (res.error) {
     log('declined', res.error);
-    return out;
+    return { ids: out, error: true };
   }
   for (const r of res.data ?? []) if (r.from_insight_id) out.add(r.from_insight_id);
-  return out;
+  return { ids: out, error: false };
 }
+
+/**
+ * The Tour's values for a tour (`golf_pga_standards`), with `error` when the read failed. `loadTourBenchmarks` (stats-common) logs a
+ * failed read and answers the same empty map as a tour with no rows, so this page reads it itself: a failed Tour comparison is
+ * "Tour comparison unavailable" on the board, not "no comparison".
+ */
+async function readTourValues(supabase: Supabase, tour: ChTourBaseline['tour']): Promise<{ values: Map<string, number>; error: boolean }> {
+  const values = new Map<string, number>();
+  const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
+  if (error) {
+    chLogServer('coachhelm', 'tourBenchmarks', error);
+    return { values, error: true };
+  }
+  for (const r of data ?? []) {
+    const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
+    if (v != null && Number.isFinite(v)) values.set(r.metric_id, v);
+  }
+  return { values, error: false };
+}
+
+/** What a Tour read answers: the baseline (null when none is claimed) and whether a read failed on the way. */
+export type TourRead = { baseline: ChTourBaseline | null; error: boolean };
 
 /**
  * The Tour's values for the team's own tour (Q-88: the Tour is the only benchmark): the LPGA's for a women's team, never the men's.
  * Without the team's row its tour is unknown, so no benchmark is claimed and a college comparison is left undrawn.
  */
-async function tourBaselineOf(supabase: Supabase, team: { gender: string | null } | null): Promise<ChTourBaseline | null> {
-  if (!team) return null;
+async function tourBaselineOf(supabase: Supabase, team: { gender: string | null } | null): Promise<TourRead> {
+  if (!team) return { baseline: null, error: false };
   const tour = tourForGender(team.gender);
-  return { tour, values: await loadTourBenchmarks(supabase, tour, 'coachhelm') };
+  const { values, error } = await readTourValues(supabase, tour);
+  return { baseline: { tour, values }, error };
 }
 
-/** The coach's team's Tour. A failed team read is logged and claims no benchmark. */
-async function coachTour(supabase: Supabase, teamId: string): Promise<ChTourBaseline | null> {
+/** The coach's team's Tour. A failed team read is logged, claims no benchmark and says so (`error`). */
+async function coachTour(supabase: Supabase, teamId: string): Promise<TourRead> {
   const res = await supabase.from('golf_teams').select('gender').eq('id', teamId).maybeSingle();
   if (res.error) {
     log('team', res.error);
-    return null;
+    return { baseline: null, error: true };
   }
   return tourBaselineOf(supabase, res.data);
 }
 
-/** The player's active team and its tour. `error`: the read failed, so neither the tour nor the proposals are known. */
-export async function playerTeam(supabase: Supabase, playerId: string): Promise<{ teamId: string | null; tour: ChTourBaseline | null; error: boolean }> {
+/**
+ * The player's active team and its tour. `error`: the read failed, so neither the tour nor the proposals are known. `tourError`:
+ * the team is known but the Tour's values did not read, so the cards have no Tour comparison.
+ */
+export async function playerTeam(supabase: Supabase, playerId: string): Promise<{ teamId: string | null; tour: ChTourBaseline | null; error: boolean; tourError: boolean }> {
   const res = await supabase.from('golf_team_members').select('team_id, golf_teams(gender)').eq('player_id', playerId).eq('status', 'active').maybeSingle();
   if (res.error) {
     log('playerTeam', res.error);
-    return { teamId: null, tour: null, error: true };
+    return { teamId: null, tour: null, error: true, tourError: false };
   }
   const row = res.data as { team_id: string; golf_teams: { gender: string | null } | null } | null;
-  if (!row) return { teamId: null, tour: null, error: false };
-  return { teamId: row.team_id, tour: await tourBaselineOf(supabase, row.golf_teams), error: false };
+  if (!row) return { teamId: null, tour: null, error: false, tourError: false };
+  const tour = await tourBaselineOf(supabase, row.golf_teams);
+  return { teamId: row.team_id, tour: tour.baseline, error: false, tourError: tour.error };
 }
 
 /**
@@ -329,9 +364,11 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
     ),
     newestRounds(supabase, [input.playerId], earliestStaleFloor(drawn)),
   ]);
-  const newestRound = newest.get(input.playerId) ?? null;
-  const list = drawn.map((i) => toChInsight(i, { drillText: drills.get(i.id) ?? null, assigned: assigned.get(i.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } }));
-  return { off: null, proposals, insights: { list, error: false }, rounds: null };
+  const newestRound = newest.days.get(input.playerId) ?? null;
+  const list = drawn.map((i) => toChInsight(i, { drillText: drills.texts.get(i.id) ?? null, assigned: assigned.byInsight.get(i.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } }));
+  // A read beside the cards that failed leaves them drawn without it, and the board says so (never "not assigned", "not out of date").
+  const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
+  return { off: null, proposals, insights: { list, error: false }, rounds: null, ...(missing ? { missing } : {}) };
 }
 
 /**
@@ -410,7 +447,7 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse: await pulseRead, players: { list: [], error: true }, withoutSignals: 0 };
 
   // The pulse and the Tour are not waited for until here: nothing the next reads need comes from either, so they finish beside them.
-  const [drills, assigned, declined, newest, tour, pulse] = await Promise.all([
+  const [drills, assigned, declined, newest, tourResult, pulse] = await Promise.all([
     drillTextByInsight(supabase, top),
     assignedByInsight(
       supabase,
@@ -424,20 +461,21 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     tourRead,
     pulseRead,
   ]);
+  const tour = tourResult.baseline;
   // Open signals: a player's current findings. A strength, a card that states no finding and a read older than the player's
   // newest round are not signals, and a player whose top card is one of those has none (the old floor of one counted them).
   const counts = new Map<string, number>();
-  for (const r of visible.rows) if (isOpenFinding(r, tour, newest.get(r.player_id) ?? null)) counts.set(r.player_id, (counts.get(r.player_id) ?? 0) + 1);
+  for (const r of visible.rows) if (isOpenFinding(r, tour, newest.days.get(r.player_id) ?? null)) counts.set(r.player_id, (counts.get(r.player_id) ?? 0) + 1);
 
   const list: ChCoachPlayer[] = [];
   for (const p of roster) {
     const head = heads.get(p.id)?.[0];
     if (!head) continue;
-    const newestRound = newest.get(p.id) ?? null;
+    const newestRound = newest.days.get(p.id) ?? null;
     const card = toChInsight(head, {
-      drillText: drills.get(head.id) ?? null,
-      assigned: assigned.get(head.id) ?? null,
-      declined: declined.has(head.id),
+      drillText: drills.texts.get(head.id) ?? null,
+      assigned: assigned.byInsight.get(head.id) ?? null,
+      declined: declined.ids.has(head.id),
       tour,
       newestRound,
       // The text is written to the player: by their first name on the coach's board (a player with no name keeps it as written).
@@ -446,7 +484,10 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     // The top card is a signal the board draws, so it counts even where the visible read deduped another copy of it away.
     list.push({ id: p.id, name: p.name, count: Math.max(counts.get(p.id) ?? 0, isOpenFinding(head, tour, newestRound) ? 1 : 0), top: card });
   }
-  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length };
+  // A read beside the cards that failed leaves them drawn without it, and the board says so: never "not assigned", "not declined",
+  // "not out of date" or "no Tour comparison", and with the focus status unknown it does not offer Assign.
+  const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
+  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, ...(missing ? { missing } : {}) };
 }
 
 async function topInsights(ids: string[]): Promise<Map<string, EvidenceInsight[]>> {
@@ -468,8 +509,14 @@ export function handled<T>(read: Promise<T>): Promise<T> {
   return read;
 }
 
-/** The program pulse, `null` (its own "couldn't read") shown as its own notice. */
+/**
+ * The program pulse, `null` (its own "couldn't read") shown as its own notice. A pulse some of whose reads failed is its own
+ * state too: the rows are what was found (an item made from a failed read is left out, never drawn as "no player has a round"),
+ * and `missing` names what is not in them, so an empty pulse is never "nothing is flagged" over a read that did not land.
+ */
 async function pulseOf(): Promise<ChCoachHelmData['pulse']> {
   const pulse = await getCoachProgramPulse();
-  return pulse ? { rows: pulseRows(pulse.items), error: false } : { rows: [], error: true };
+  if (!pulse) return { rows: [], error: true };
+  const missing = pulseMissing(pulse.failed);
+  return { rows: pulseRows(pulseItemsThatStand(pulse.items, pulse.failed)), error: false, ...(missing.length > 0 ? { missing } : {}) };
 }

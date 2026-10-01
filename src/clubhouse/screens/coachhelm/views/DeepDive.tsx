@@ -19,7 +19,7 @@ import { InlineNotice } from '../../../ui/Notices';
 import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
-import { Evidence } from '../parts';
+import { BoardPartial, Evidence } from '../parts';
 import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 
@@ -491,6 +491,8 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
       }
     >
       <SectionBoundary surface="coachhelm.deep-dive" label="Your deep dive" code="CH-13204">
+        {/* CH-13208: a read beside the insights failed (the Tour's values, the drills, which are Assigned, how current each is). */}
+        {d.missing && <BoardPartial missing={d.missing} what="page" onRetry={refresh} />}
         <Hero d={d} />
         <div className="ch-hd">
           <nav className="ch-hd-rail" aria-label="Your insights" data-ch-code="CH-13890">

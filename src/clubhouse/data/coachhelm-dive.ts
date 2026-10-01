@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, handled, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
 import { isNote, kindOf } from './coachhelm-classify';
+import { boardMissing } from './coachhelm-shape';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
 import { toChInsight } from './coachhelm-map';
 import { speak } from './coachhelm-voice';
@@ -126,15 +127,17 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
       plansRead,
       themesRead,
     ]);
-    const newestRound = newest.get(playerId) ?? null;
+    const newestRound = newest.days.get(playerId) ?? null;
     const say = (t: string) => speak(t, { role: 'player' });
     const list = orderDive(drawn.map((raw) => {
-      const base = toChInsight(raw, { drillText: drills.get(raw.id) ?? null, assigned: assigned.get(raw.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } });
+      const base = toChInsight(raw, { drillText: drills.texts.get(raw.id) ?? null, assigned: assigned.byInsight.get(raw.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } });
       return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say);
     }));
+    // A failed team read (or Tour read) leaves every read without its Tour comparison: the page says so, not "no comparison".
+    const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
     return {
       status: 'ready',
-      data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list) },
+      data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}) },
     };
   } catch (err) {
     log('dive', err);

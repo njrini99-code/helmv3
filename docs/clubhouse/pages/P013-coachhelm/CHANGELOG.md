@@ -3,6 +3,78 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Owner rules: a failed read is never an empty page
+
+Owner, 2026-10-01: never show 0 strokes, "No rounds yet", "no insights" or an
+empty table while loading or after a failed read; separate first load, refresh,
+empty, error and a refresh that failed over old data; a stale response never
+wins; the board frame and the top card first, the rest streams; a back
+navigation returns to what the list showed. Standard:
+`docs/clubhouse/PAGE_PERFORMANCE.md`.
+
+```text
+PR/commit:      agent/swap-audit (phase commits, see the list below)
+Design package: none (notices reuse InlineNotice; no new surface)
+Contract IDs:   CH-13206, CH-13207, CH-13208, CH-13226, CH-13272 (new);
+                CH-13221, 13223, 13309, 13322, 13325 reworded
+Actions:        none
+Data impact:    none; no write, no cache, no new table. The reads are the
+                ones the page already made; each now says when it failed
+Held items:     none
+```
+
+### Phase 1: false empties and silent degrades
+
+- **Ask roster.** `loadActiveRoster` swallowed a failed membership read and
+  answered `[]`, which Ask drew as "Add players". `loadActiveRosterResult`
+  says it failed, the chat context carries `roster_failed` (absent when the
+  read landed, so Fairway is unchanged), and the loader answers the context
+  failing (CH-13221, Try again). An empty roster that read is still the
+  first-run page.
+- **Program pulse.** Supabase answers a failed read as `{ error }` and does not
+  throw, so `safeRows` and `safeCount` read it as no rows: a failed rounds read
+  became "N players have no recorded rounds", "Nothing to report yet" and an
+  empty opener list. `ProgramPulse.failed` now names the reads that failed
+  (absent when none did; `items` and the counts are what they were, Fairway
+  reads them). The Clubhouse layer drops an item made from a failed read,
+  says what is missing (CH-13206 on the board, CH-13226 on Ask) and says
+  "Nothing is flagged" (CH-13309, CH-13325) and "Nothing to report yet"
+  (CH-13322) only when every read landed. A rounds read that failed leaves the
+  coverage line and the counts behind the openers unused ("Brief me" still
+  shows). The phone Ask Home, which draws no findings, now says when the pulse
+  did not load (CH-13223).
+- **Dead retry.** Ask copied the chats list into state once; History's Try
+  again re-ran the server render, but the key did not change and the copy was
+  never replaced, so "your chats didn't load" stayed up. The list is now the
+  server's, read each render; a chat started in this visit is kept beside it
+  until the server's list holds it.
+- **Reads beside the top card** (`ChBoardMissing`, present only when one
+  failed). Each is a decision:
+
+| Read | On failure the page shows | Why |
+| --- | --- | --- |
+| Drills (`golf_drills`) | CH-13208 "This week's drill text is missing"; the drill's name and length stay | The drill is not dropped silently; nothing else depends on it |
+| Assigned (`golf_player_focus_areas`) | Coach: CH-13207, no Assign. Player and Deep dive: CH-13208 | "Nothing is assigned" is not what a failed read says; the server's duplicate guard is not a reason to offer it |
+| Declined (same table) | Coach: CH-13207, no Assign and no Propose again, no claim either way | Both were wrong: Assign offered as new, Propose again hidden |
+| Newest round (`golf_rounds`) | CH-13208 "may be out of date" over the board, and CH-13207 on the card (no Assign) | A clean board and the counts were drawn over reads that may be stale (CH-13906 withholds Assign for a stale read; an unknown one is held back the same way) |
+| Tour values / team (`golf_pga_standards`, `golf_teams`, the membership) | CH-13208 "Tour comparison unavailable" | Was "no comparison"; a strength may also read as a finding without it |
+| Deep dive team read (`playerTeam.error`) | CH-13208 on the page | Was ignored; the insights draw, the Tour is said to be missing |
+| Standing cohort (`loadPlayerCohort`) | CH-13272 above the rows | Fell back to the men's Tour as fact; the fallback stays for the generators, now marked `failed` |
+
+  `loadTourBenchmarks` (Stats, not this page's) logs a failed read and answers
+  the same empty map as a tour with no rows, so the Tour's values are read in
+  `coachhelm.ts` with their error. The Standing cohort is probed beside the
+  standing read (`loadPlayerStandingMap` resolves it inside and cannot say it
+  fell back, and `standing/loader.ts` is not this page's): the two lookups can
+  disagree on a transient failure, so it catches a failing lookup, not a proof
+  of the one the map used.
+- **Tests.** `coachhelm-failed-reads.test.tsx` fails each read through
+  `supabase-fake` (the assigned read alone, the declined read alone, and so
+  on) and asserts the failure copy, never the empty or zero copy, and never
+  Assign; `program-pulse-failed-reads.test.ts`, `chat-roster-failed.test.ts`,
+  `player-cohort-failed.test.ts` and `coachhelm-ask-races.test.tsx` (the retry)
+  cover the library and the Ask frame.
+
 ## 2026-10-01 — Page performance: reads in parallel, a view switch that keeps the view
 
 Owner, 2026-10-01: "Everything page transition and load needs to be extremely
