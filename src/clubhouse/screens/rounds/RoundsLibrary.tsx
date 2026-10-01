@@ -7,6 +7,7 @@ import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../d
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
+import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
 import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -23,6 +24,9 @@ import { monthLabel, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './pa
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
 
 type Group = 'month' | 'course';
+
+/** Both reads landed: a library worth keeping while a later refresh of it fails (`useLastGood`). A half-read one is shown as it is, with its own notices. */
+const libraryLanded = (d: ChRoundsLibrary) => !d.rounds.error && !d.unfinished.error;
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const roundsLinks = {
@@ -51,9 +55,12 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
  * in progress, the season's scoring, then every posted round by month or by
  * course.
  */
-export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites }) {
+export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRITES }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites }) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
+  // Rule 2: a refresh that fails does not replace what the player was looking at with an error. The last library that landed in full
+  // stays (`stale`) and says it may be out of date; a first load that fails, or another player's, is the error as it came.
+  const { value: data, stale } = useLastGood(playerId, fresh, libraryLanded);
   const [q, setQ] = useState('');
   const [group, setGroup] = useState<Group>('month');
   // The cards come from the page's data, never copied into state once: a Try again that lands must show what it read. Only a discard
@@ -99,11 +106,15 @@ export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: {
   const [current, ...more] = unfinished;
 
   return (
-    <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title">
+    <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined}>
       {phone && <PhoneTop start title="Rounds" />}
       <header className="ch-rd-h">
         <div>
           <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${counted === 1 ? 'round' : 'rounds'}` : 'Since August 1'}</span>
+          {/* CH-11410: a refresh with the page on screen keeps it and says it is updating (a Try again is the usual cause). */}
+          <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
+            {refreshing ? 'Updating…' : ''}
+          </span>
           <h1 id="ch-rd-title">Your rounds</h1>
         </div>
         {newHref && !nothing && (
@@ -112,6 +123,10 @@ export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: {
           </Button>
         )}
       </header>
+
+      {stale && (
+        <InlineNotice code="CH-11213" title="Your rounds may be out of date" body="We couldn't refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />
+      )}
 
       {nothing ? (
         <EmptyState

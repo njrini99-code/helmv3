@@ -14,6 +14,15 @@
   font: 500 13px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* A refresh with the page on screen: the page stays and says it is updating (an empty status region is not drawn) */
+.ch-rd-upd {
+  margin-left: 8px;
+  font: 500 13px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-upd:empty {
+  display: none;
+}
 .ch-rd-h {
   display: flex;
   align-items: flex-end;

@@ -62,6 +62,7 @@ course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405),
 | 110208 | CH-11407 | `ROUND_ENTRY_IS_ON_ITS_WAY_THE` | Round entry is on its way: the address's own loading, and, on /rounds/new, the beat before the device's day and the player's qualifiers are read |
 | 110209 | CH-11408 | `ROUND_RECOVERY_ROUTE_LOADING` | Round recovery route loading |
 | 110210 | CH-11409 | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | Reading the device for saved rounds |
+| 110211 | CH-11410 | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | The Rounds library is refreshing (a Try again is running) with the page on screen |
 
 ## 03 — Background loading / refresh
 
@@ -176,6 +177,7 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110634 | CH-11215 | `A_FINISHED_IN_PROGRESS_ROUND_WHILE_THE` | A finished in-progress round (every hole scored) while the posted rounds didn't load, so "already posted" can't be ruled out |
 | 110635 | CH-11216 | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
+| 110637 | CH-11213 | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
 
 ## 07 — Network / offline
 
