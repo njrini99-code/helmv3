@@ -335,6 +335,26 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Q-105 (open, 2026-09-30) Player CoachHelm views not rebuilt (F-04: development, game profile, standing, deep dive). Recommended: alias development and deep dive to the CoachHelm board, profile and standing to My stats; build later if wanted.
 - Q-106 (answered 2026-09-30) The owner: "You're going to audit, and then we'll rebuild the missing routes if I decide to." The flag stays off; routes wait for Q-103.
 - Q-107 (answered 2026-09-30) CI gates on #2110: a one-time `markdown:ratchet --update` after the blank-line auto-fix (the ratchet still blocks growth), and an inline `nosemgrep` on held `20260930150000` (an `ALTER FUNCTION` was tried first and does not clear the rule).
+- Q-108 (open, 2026-09-30) Creating an event notifies every active player
+  (bell, email, push) whoever is invited (`golf.ts:3395-3500`), while the
+  editor says "Attendees will be notified". Recommended: notify invitees only;
+  an event with no invitees notifies nobody or asks first. Nothing changed.
+- Q-109 (open, 2026-09-30; reversible default taken) Attendance: "Mark all
+  present" overwrote saved Late/No-show marks and Retry resent saved marks.
+  Taken: fill only unmarked players; retry only failed marks.
+- Q-110 (open, 2026-09-30) A failed message send offers two recovery paths
+  (restored draft and the bubble's Retry); with an unknown outcome a resend can
+  duplicate. Recommended: the bubble's Retry only. Kept both for now.
+- Q-111 (open, 2026-09-30) Rounds posted as a total only (no nines) never
+  count anywhere (`isCountableRound`, Clubhouse and legacy): Demo's 14
+  qualifier rounds of Sep 25-26 are missing from Home, the leaderboard and
+  Stats. Recommended: count them for scoring average and round counts, not for
+  GIR, putts or scrambling (shared engine change).
+- Q-112 (open, 2026-09-30) Team "vs previous 10" compares different sets of
+  players (Home and Stats). Recommended: compare only players present in both
+  windows, or average each player's own change.
+- Q-113 (open, 2026-09-30) On the phone the ivory moved one step darker at the
+  owner's request (F-35); confirm the shade or ask for darker.
 - Q-98 (open, 2026-09-30; built the reversible choice) Auth (P015) choices: (1) the new screens sit behind their own flag, golf_clubhouse_auth, off in production and on in preview and development; with it off, today's sign-in and welcome render untouched; (2) the welcome's "since" line reads users.last_seen (the previous visit, written by the dashboard heartbeat) because the sign-in that just happened overwrites the auth last-sign-in time, so the header says "Since your last visit" and a user with no last_seen gets "Your first time in"; (3) a wrong password shows the design's "Incorrect email or password. Please check your credentials and try again." with both fields marked, keeping the server's "N attempts remaining" line; today production shows the raw server text and marks no field. Recommended: keep all three.
 - Q-97 (open, 2026-09-30; built the reversible choice) Stats round filter (0f18e76c9) details past the owner's brief: (1) when the chosen length has no rounds but nine-hole rounds exist, a hint says to choose 9 holes or Both (CH-4319, CH-5324); (2) season bests and "Rounds this season" stay 18-hole whatever the filter; (3) "Last 10" under Both is the ten newest rounds of either length; (4) the opening-hole floor counts raw holes; (5) a team with only nine-hole rounds no longer gets the first-run "No stats yet" page (D-71 counts nine-hole rounds). A nine-hole round weighs half a round in every per-round figure. Recommended: keep all five.
 - Q-96 (owner, 2026-09-30; for the sign up and onboarding redesign) Head coaches are always created manually by the owner and never onboard. Self-serve is: sign up → enter the team code → choose Player or Assistant coach → onboarding that differs by role. There is no email verification code step. An assistant coach joins at once, never pending ("auto sync"). Risk raised to the owner: whoever has the team's code can then become a coach and see every player's data; suggested guard that keeps it instant: a separate staff code that only the head coach shares, plus a notice to the head coach with one-tap Remove. Answered the same day, against the design handoff in design/handoff/auth/ (built on lib/golf/signup-gate.ts): the head coach sign-up path and the program code are dropped (the owner creates head coaches); assistant coaches join with the separate staff code, instantly, with no pending screen and no role picker; the roster code is players only; Request access stays (it reaches the owner); handedness and GPA are not collected. The design's other screens, states, motion and haptics stand.
