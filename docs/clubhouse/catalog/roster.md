@@ -98,7 +98,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3801 | The desktop list view is a table (phone rows: CH-3806): every value, including the player's open button, sits in a cell under a column header | `role="table|row|cell|columnheader"` | roster.test › CH-3801 |
 | CH-3802 | A face card reads its status as a word; the green dot is decoration | `ch-sr-only`, `aria-hidden` dot | roster.test › CH-3802 |
 | CH-3803 | Esc closes the player panel, except while typing a note (desktop; on the phone, Back and the edge swipe pop the profile, CH-1906) | `RosterPeek` key handler | roster.test › CH-3803 |
-| CH-3804 | The note counter is announced politely; a locked note says why it's locked | `aria-live`, `aria-describedby` | roster.test › CH-3101 |
+| CH-3804 | The note counter is announced politely; a locked note says why it's locked | `aria-live`, `aria-describedby` | roster.test › CH-3804 |
 | CH-3805 | No axe violations in any preview state, both layouts, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-3806 | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration | `RosterPhoneRow` `aria-label`, spark `aria-hidden` | roster.test › CH-3806 |
 | CH-3807 | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed | `TeamRoster`, `TeamRosterPhone` (`ch-rs-face--static`, `ch-rsm-row--static`) | roster-player.test › CH-3807 |

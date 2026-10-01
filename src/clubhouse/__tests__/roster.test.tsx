@@ -197,7 +197,7 @@ describe('Roster · saves that fail', () => {
 });
 
 describe('Roster · validation', () => {
-  it('CH-3101 a note near the 2,000 limit counts down, politely', async () => {
+  it('CH-3101 CH-3804 a note near the 2,000 limit counts down, politely', async () => {
     const user = userEvent.setup();
     const long = 'x'.repeat(NOTE_MAX - 150);
     wrap(roster({ players: [{ ...theo, coachNote: long }, ...PREVIEW_ROSTER.players.slice(1)] }));

@@ -78,6 +78,7 @@ export function Roster({ data }: { data: ChRoster }) {
   }, [phone]);
   const openPlayer = useCallback((id: string) => {
     chTrail('roster open player');
+    // CH-3701: a tick on opening a player, changing a filter, layout or sort.
     haptic('select');
     setOpenId(id);
   }, []);
@@ -169,6 +170,7 @@ export function Roster({ data }: { data: ChRoster }) {
       a.download = `${data.teamName.replace(/\W+/g, '-').toLowerCase()}-roster.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
+      // CH-3702: an export lands with the success tap.
       haptic('success');
       toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
     } catch {
@@ -480,6 +482,7 @@ function RosterList({
             >
               <span className="ch-rs-face__top">
                 <span />
+                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: the card lifts on hover and presses in. */}
                 <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
                 <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
               </span>
@@ -510,7 +513,7 @@ function RosterList({
           ))}
         </div>
       ) : (
-        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster">
+        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
           <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
             <span role="columnheader">Player</span>
             <span role="columnheader">Status</span>

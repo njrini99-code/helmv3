@@ -2127,7 +2127,7 @@
     "name": "OPENING_OR_SWITCHING_A_PLAYER",
     "chCode": "CH-3601",
     "meaning": "Opening or switching a player",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2138,7 +2138,7 @@
     "name": "HOVERING_OR_PRESSING_A_FACE_CARD_OR",
     "chCode": "CH-3602",
     "meaning": "Hovering or pressing a face card or row",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2149,7 +2149,7 @@
     "name": "OPENING_A_PLAYER_CHANGING_A_FILTER_LAYOUT",
     "chCode": "CH-3701",
     "meaning": "Opening a player; changing a filter, layout or sort",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2160,7 +2160,7 @@
     "name": "AN_EXPORT_LANDS",
     "chCode": "CH-3702",
     "meaning": "An export lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2195,7 +2195,7 @@
     "name": "THE_DESKTOP_LIST_VIEW_IS_A_TABLE",
     "chCode": "CH-3801",
     "meaning": "The desktop list view is a table (phone rows: CH-3806): every value, including the player's open button, sits in a cell under a column header",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2206,7 +2206,7 @@
     "name": "A_FACE_CARD_READS_ITS_STATUS_AS",
     "chCode": "CH-3802",
     "meaning": "A face card reads its status as a word; the green dot is decoration",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2217,7 +2217,7 @@
     "name": "ESC_CLOSES_THE_PLAYER_PANEL_EXCEPT_WHILE",
     "chCode": "CH-3803",
     "meaning": "Esc closes the player panel, except while typing a note (desktop; on the phone, Back and the edge swipe pop the profile, CH-1906)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2228,7 +2228,7 @@
     "name": "THE_NOTE_COUNTER_IS_ANNOUNCED_POLITELY_A",
     "chCode": "CH-3804",
     "meaning": "The note counter is announced politely; a locked note says why it's locked",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
