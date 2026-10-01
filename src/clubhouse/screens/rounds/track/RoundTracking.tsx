@@ -80,175 +80,177 @@ export function RoundTracking(props: RoundTrackingProps) {
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
 
   return (
-    <div className="ch-rt" data-ui="clubhouse">
-      <header className="ch-rt-top">
-        {onExit ? (
-          <button type="button" className="ch-rt-pill" onClick={onExit}>
-            <Icon icon={X} size={16} />
-            <span>Exit</span>
-          </button>
-        ) : (
-          <span />
-        )}
-        <div className="ch-rt-top__c">
-          <b>{round.course}</b>
-          {meta && (
-            <span>
-              <TeeSwatch color={round.teeColor} />
-              {meta}
-            </span>
-          )}
-        </div>
-        {onOpenScorecard ? (
-          <button type="button" className="ch-rt-pill ch-rt-pill--card" onClick={onOpenScorecard} aria-label="Scorecard">
-            <Icon icon={Table2} size={16} />
-            <span>Scorecard</span>
-          </button>
-        ) : (
-          <span />
-        )}
-      </header>
-      {statusSlot}
-      {onAutoSave && saveState !== 'idle' && (
-        // CH-11901: the round's background save, in words (retrying on its own when it fails).
-        <p className={'ch-rt-sync is-' + saveState} role="status" data-ch-code="CH-11901">
-          {saveState === 'error' ? (
-            <Icon icon={CloudOff} size={13} />
-          ) : saveState === 'saved' ? (
-            <Icon icon={Check} size={13} />
-          ) : saveState === 'device' || saveState === 'syncing' ? (
-            <Icon icon={Smartphone} size={13} />
+    <div className="ch-rt-q">
+      <div className="ch-rt" data-ui="clubhouse">
+        <header className="ch-rt-top">
+          {onExit ? (
+            <button type="button" className="ch-rt-pill" onClick={onExit}>
+              <Icon icon={X} size={16} />
+              <span>Exit</span>
+            </button>
           ) : (
-            <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
+            <span />
           )}
-          {SAVE_WORDS[saveState]}
-        </p>
-      )}
-      <TrackStrip holes={holes} current={currentHoleIndex} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />
-
-      <div className="ch-rt-body">
-        <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
-          <div className="ch-rt-hero__main">
-            <div className="ch-rt-hero__k">
-              <b className="ch-rt-hno">
-                <em>Hole</em>
-                {hole.number}
-              </b>
-              <span className="ch-rt-hmeta">
-                <b>Par {hole.par}</b>
-                {hole.yardage ? (
-                  <i>
-                    {heroDistance(hole.yardage, 'yards', distancePref).figure} {distancePref === 'meters' ? 'm' : 'yds'}
-                  </i>
-                ) : null}
+          <div className="ch-rt-top__c">
+            <b>{round.course}</b>
+            {meta && (
+              <span>
+                <TeeSwatch color={round.teeColor} />
+                {meta}
               </span>
-            </div>
-            {stats ? (
-              <div className="ch-rt-hero__done">
-                <ScoreMark score={stats.score} par={hole.par} />
-                <div>
-                  <b>{scoreName(stats.score, hole.par)}</b>
-                  <span>
-                    {stats.score} strokes · {stats.putts} putt{stats.putts === 1 ? '' : 's'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="ch-rt-hero__dist">
-                <span className="ch-rt-hero__shot">
-                  Shot {t.currentShot}
-                  <em>{shotKind(t.shotType)}</em>
-                </span>
-                <b>{far.figure}</b>
-                <em>{far.words}</em>
-              </div>
             )}
           </div>
-          <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} />
-          <ShotLog shots={t.shotHistory} pref={distancePref} />
-        </section>
+          {onOpenScorecard ? (
+            <button type="button" className="ch-rt-pill ch-rt-pill--card" onClick={onOpenScorecard} aria-label="Scorecard">
+              <Icon icon={Table2} size={16} />
+              <span>Scorecard</span>
+            </button>
+          ) : (
+            <span />
+          )}
+        </header>
+        {statusSlot}
+        {onAutoSave && saveState !== 'idle' && (
+          // CH-11901: the round's background save, in words (retrying on its own when it fails).
+          <p className={'ch-rt-sync is-' + saveState} role="status" data-ch-code="CH-11901">
+            {saveState === 'error' ? (
+              <Icon icon={CloudOff} size={13} />
+            ) : saveState === 'saved' ? (
+              <Icon icon={Check} size={13} />
+            ) : saveState === 'device' || saveState === 'syncing' ? (
+              <Icon icon={Smartphone} size={13} />
+            ) : (
+              <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
+            )}
+            {SAVE_WORDS[saveState]}
+          </p>
+        )}
+        <TrackStrip holes={holes} current={currentHoleIndex} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />
 
-        {holedOut ? (
-          <HoleReview
-            hole={hole}
+        <div className="ch-rt-body">
+          <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
+            <div className="ch-rt-hero__main">
+              <div className="ch-rt-hero__k">
+                <b className="ch-rt-hno">
+                  <em>Hole</em>
+                  {hole.number}
+                </b>
+                <span className="ch-rt-hmeta">
+                  <b>Par {hole.par}</b>
+                  {hole.yardage ? (
+                    <i>
+                      {heroDistance(hole.yardage, 'yards', distancePref).figure} {distancePref === 'meters' ? 'm' : 'yds'}
+                    </i>
+                  ) : null}
+                </span>
+              </div>
+              {stats ? (
+                <div className="ch-rt-hero__done">
+                  <ScoreMark score={stats.score} par={hole.par} />
+                  <div>
+                    <b>{scoreName(stats.score, hole.par)}</b>
+                    <span>
+                      {stats.score} strokes · {stats.putts} putt{stats.putts === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="ch-rt-hero__dist">
+                  <span className="ch-rt-hero__shot">
+                    Shot {t.currentShot}
+                    <em>{shotKind(t.shotType)}</em>
+                  </span>
+                  <b>{far.figure}</b>
+                  <em>{far.words}</em>
+                </div>
+              )}
+            </div>
+            <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} />
+            <ShotLog shots={t.shotHistory} pref={distancePref} />
+          </section>
+
+          {holedOut ? (
+            <HoleReview
+              hole={hole}
+              shots={t.shotHistory}
+              pref={distancePref}
+              checkpointStatus={t.holeCheckpointStatus}
+              backTo={backTo}
+              showUndoConfirm={t.showUndoConfirm}
+              undoSaving={t.undoSaving}
+              undoError={t.state.undoError}
+              dispatch={t.dispatch}
+              onEditShot={t.handleEditShot}
+              onNavigateToHole={t.handleNavigateToHole}
+              onRetryCheckpoint={t.handleRetryHoleCheckpoint}
+              onUndoLastShot={t.handleUndoLastShot}
+            />
+          ) : (
+            <ShotEntry
+              key={`${hole.number}:${t.currentShot}`}
+              currentHole={hole}
+              currentShot={t.currentShot}
+              shotHistory={t.shotHistory}
+              isTeeShot={t.isTeeShot}
+              isPutting={t.isPutting}
+              isApproachOrAroundGreen={t.isApproachOrAroundGreen}
+              usedDriver={t.usedDriver}
+              resultOfShot={t.resultOfShot}
+              missDirection={t.missDirection}
+              puttBreak={t.puttBreak}
+              puttSlope={t.puttSlope}
+              puttMissTags={t.puttMissTags}
+              approachMissDirection={t.approachMissDirection}
+              distanceToHole={t.distanceToHole}
+              distanceUnit={t.distanceUnit}
+              distanceAfterShot={t.distanceAfterShot}
+              distanceAfterUnit={t.distanceAfterUnit}
+              undoSaving={t.undoSaving}
+              showUndoConfirm={t.showUndoConfirm}
+              undoError={t.state.undoError}
+              distanceInputRef={t.distanceInputRef}
+              dispatch={t.dispatch}
+              pref={distancePref}
+              ready={t.isReadyForNextShot()}
+              onResultSelect={t.handleResultSelect}
+              onNextShot={t.handleNextShot}
+              onAddPenalty={t.handleAddPenalty}
+              onUndoLastShot={t.handleUndoLastShot}
+            />
+          )}
+        </div>
+
+        <UnsavedSheet open={t.pendingNavHoleIndex !== null} onStay={() => t.setPendingNavHoleIndex(null)} onDiscard={t.confirmDiscardAndNavigate} />
+        <PenaltySheet
+          open={t.showPenaltyModal}
+          holeNumber={hole.number}
+          penaltyType={t.penaltyType}
+          penaltyOrigin={t.state.penaltyOrigin}
+          lastEnteredShot={t.shotHistory[t.shotHistory.length - 1] ?? null}
+          currentLie={t.currentLie}
+          currentDistance={t.distanceToHole}
+          currentUnit={t.distanceUnit}
+          pref={distancePref}
+          dispatch={t.dispatch}
+          onConfirm={t.confirmPenalty}
+        />
+        {t.showEditModal && t.editingShot && t.editFormData && (
+          <EditShotSheet
+            open
+            shot={t.editingShot}
+            form={t.editFormData}
+            hole={{ holeNumber: hole.number, par: hole.par, yardage: hole.yardage }}
             shots={t.shotHistory}
-            pref={distancePref}
-            checkpointStatus={t.holeCheckpointStatus}
-            backTo={backTo}
-            showUndoConfirm={t.showUndoConfirm}
-            undoSaving={t.undoSaving}
-            undoError={t.state.undoError}
+            showDeleteConfirm={t.showDeleteConfirm}
+            saving={t.editSaving}
+            error={t.editError}
             dispatch={t.dispatch}
-            onEditShot={t.handleEditShot}
-            onNavigateToHole={t.handleNavigateToHole}
-            onRetryCheckpoint={t.handleRetryHoleCheckpoint}
-            onUndoLastShot={t.handleUndoLastShot}
-          />
-        ) : (
-          <ShotEntry
-            key={`${hole.number}:${t.currentShot}`}
-            currentHole={hole}
-            currentShot={t.currentShot}
-            shotHistory={t.shotHistory}
-            isTeeShot={t.isTeeShot}
-            isPutting={t.isPutting}
-            isApproachOrAroundGreen={t.isApproachOrAroundGreen}
-            usedDriver={t.usedDriver}
-            resultOfShot={t.resultOfShot}
-            missDirection={t.missDirection}
-            puttBreak={t.puttBreak}
-            puttSlope={t.puttSlope}
-            puttMissTags={t.puttMissTags}
-            approachMissDirection={t.approachMissDirection}
-            distanceToHole={t.distanceToHole}
-            distanceUnit={t.distanceUnit}
-            distanceAfterShot={t.distanceAfterShot}
-            distanceAfterUnit={t.distanceAfterUnit}
-            undoSaving={t.undoSaving}
-            showUndoConfirm={t.showUndoConfirm}
-            undoError={t.state.undoError}
-            distanceInputRef={t.distanceInputRef}
-            dispatch={t.dispatch}
-            pref={distancePref}
-            ready={t.isReadyForNextShot()}
-            onResultSelect={t.handleResultSelect}
-            onNextShot={t.handleNextShot}
-            onAddPenalty={t.handleAddPenalty}
-            onUndoLastShot={t.handleUndoLastShot}
+            onClose={t.handleCloseEditModal}
+            onSave={t.handleSaveEditedShot}
+            onDelete={t.handleDeleteShot}
           />
         )}
       </div>
-
-      <UnsavedSheet open={t.pendingNavHoleIndex !== null} onStay={() => t.setPendingNavHoleIndex(null)} onDiscard={t.confirmDiscardAndNavigate} />
-      <PenaltySheet
-        open={t.showPenaltyModal}
-        holeNumber={hole.number}
-        penaltyType={t.penaltyType}
-        penaltyOrigin={t.state.penaltyOrigin}
-        lastEnteredShot={t.shotHistory[t.shotHistory.length - 1] ?? null}
-        currentLie={t.currentLie}
-        currentDistance={t.distanceToHole}
-        currentUnit={t.distanceUnit}
-        pref={distancePref}
-        dispatch={t.dispatch}
-        onConfirm={t.confirmPenalty}
-      />
-      {t.showEditModal && t.editingShot && t.editFormData && (
-        <EditShotSheet
-          open
-          shot={t.editingShot}
-          form={t.editFormData}
-          hole={{ holeNumber: hole.number, par: hole.par, yardage: hole.yardage }}
-          shots={t.shotHistory}
-          showDeleteConfirm={t.showDeleteConfirm}
-          saving={t.editSaving}
-          error={t.editError}
-          dispatch={t.dispatch}
-          onClose={t.handleCloseEditModal}
-          onSave={t.handleSaveEditedShot}
-          onDelete={t.handleDeleteShot}
-        />
-      )}
     </div>
   );
 }

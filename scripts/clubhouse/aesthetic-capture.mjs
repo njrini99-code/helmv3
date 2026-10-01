@@ -61,7 +61,7 @@ export const FAMILIES = {
     shots: [
       { surface: 'track', role: 'player', state: 'approach', url: '/clubhouse-preview/track?state=approach' },
       { surface: 'track', role: 'player', state: 'putt', url: '/clubhouse-preview/track?state=putt' },
-      { surface: 'track', role: 'player', state: 'checkpoint-failed', url: '/clubhouse-preview/track?state=checkpointfail' },
+      { surface: 'track', role: 'player', state: 'submit-failed', url: '/clubhouse-preview/track?state=submitfail' },
     ],
   },
   calendar: {
@@ -95,7 +95,7 @@ export const FAMILIES = {
 const geometry = () => {
   const vw = window.innerWidth;
   const name = (e) => `${e.tagName.toLowerCase()}${[...e.classList].filter((c) => c.startsWith('ch-')).slice(0, 1).map((c) => `.${c}`).join('')}`;
-  const out = { overflowX: document.documentElement.scrollWidth > vw + 1, clipped: [], offscreen: [], truncated: 0, smallTargets: [] };
+  const out = { overflowX: document.documentElement.scrollWidth > vw + 1, clipped: [], offscreen: [], truncated: 0, smallTargets: [], initialsCovered: [] };
   for (const e of document.querySelectorAll('body *')) {
     const r = e.getBoundingClientRect();
     const cs = getComputedStyle(e);
@@ -130,8 +130,22 @@ const geometry = () => {
       if (!(okW && okH)) out.smallTargets.push(`${name(e)} ${Math.round(r.width)}x${Math.round(r.height)}`);
     }
   }
+  // A stacked avatar whose initials run under the next coin.
+  for (const a of document.querySelectorAll('.ch-avatar')) {
+    if (a.firstChild?.nodeType !== 3) continue;
+    const range = document.createRange();
+    range.selectNodeContents(a);
+    const t = range.getBoundingClientRect();
+    for (let n = a.nextElementSibling; n; n = n.nextElementSibling) {
+      const r = n.getBoundingClientRect();
+      if (n.classList.contains('ch-avatar') && r.left < t.right - 0.5 && r.right > t.left) {
+        out.initialsCovered.push(a.textContent);
+        break;
+      }
+    }
+  }
   const top = (a, n = 6) => [...new Set(a)].slice(0, n);
-  return { ...out, clipped: top(out.clipped), offscreen: top(out.offscreen), smallTargets: top(out.smallTargets, 12) };
+  return { ...out, clipped: top(out.clipped), offscreen: top(out.offscreen), smallTargets: top(out.smallTargets, 12), initialsCovered: top(out.initialsCovered) };
 };
 
 async function main() {
@@ -178,7 +192,7 @@ async function main() {
     await browser.close();
   }
   for (const r of report) {
-    const flags = [r.overflowX && 'OVERFLOW-X', r.clipped.length && `clipped ${r.clipped.join(',')}`, r.offscreen.length && `offscreen ${r.offscreen.join(',')}`, r.smallTargets.length && `targets<44: ${r.smallTargets.join('; ')}`].filter(Boolean);
+    const flags = [r.overflowX && 'OVERFLOW-X', r.clipped.length && `clipped ${r.clipped.join(',')}`, r.offscreen.length && `offscreen ${r.offscreen.join(',')}`, r.smallTargets.length && `targets<44: ${r.smallTargets.join('; ')}`, r.initialsCovered.length && `initials under next coin: ${r.initialsCovered.join(',')}`].filter(Boolean);
     console.log(`${r.width} ${r.surface}/${r.role}/${r.state}: ${flags.join('; ') || 'no overflow, clipping or off-screen'}${r.truncated ? ` (${r.truncated} ellipsized)` : ''}`);
   }
 }

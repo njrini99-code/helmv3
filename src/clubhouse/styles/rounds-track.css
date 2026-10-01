@@ -1,7 +1,12 @@
 /* Round tracking, the shot screen (design/handoff/rounds-track.css; logic useShotTracking). */
-.ch-rt {
+/* The container the phone rules query. It is a wrapper, not .ch-rt itself: a container query never matches its own
+   container, so the phone's 12px padding on .ch-rt never applied and the shot screen kept the desktop's 28px gutters
+   (cards 335px wide on a 390px phone, the full-bleed hole strip stopping 16px short of the edges). Aesthetic audit S-1. */
+.ch-rt-q {
   container-type: inline-size;
   container-name: chrt;
+}
+.ch-rt {
   display: flex;
   flex-direction: column;
   max-width: 1240px;
