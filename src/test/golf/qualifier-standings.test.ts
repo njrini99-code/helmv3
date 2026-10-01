@@ -28,15 +28,16 @@ async function entryAfter(rounds: Array<Record<string, unknown>>) {
 describe('updateQualifierEntryStats', () => {
   it('no scored round: the stored score is null, not 0', async () => {
     // The only round was moved out of the qualifier; a completed round without a total doesn't count.
-    const e = await entryAfter([{ id: 'r1', qualifier_id: 'q1', player_id: 'p1', status: 'completed', total_score: null, score_to_par: null }]);
+    const e = await entryAfter([{ id: 'r1', qualifier_id: 'q1', player_id: 'p1', status: 'completed', is_test: false, total_score: null, score_to_par: null }]);
     expect(e).toMatchObject({ score: null, total_score: null, total_to_par: null, rounds_completed: 0 });
   });
 
-  it('scored rounds are summed', async () => {
+  it('scored rounds are summed; a test round never counts', async () => {
     const e = await entryAfter([
-      { id: 'r1', qualifier_id: 'q1', player_id: 'p1', status: 'completed', total_score: 72, score_to_par: 0 },
-      { id: 'r2', qualifier_id: 'q1', player_id: 'p1', status: 'completed', total_score: 74, score_to_par: 2 },
-      { id: 'r3', qualifier_id: 'q1', player_id: 'p1', status: 'in_progress', total_score: 40, score_to_par: 4 },
+      { id: 'r1', qualifier_id: 'q1', player_id: 'p1', status: 'completed', is_test: false, total_score: 72, score_to_par: 0 },
+      { id: 'r2', qualifier_id: 'q1', player_id: 'p1', status: 'completed', is_test: false, total_score: 74, score_to_par: 2 },
+      { id: 'r4', qualifier_id: 'q1', player_id: 'p1', status: 'completed', is_test: true, total_score: 60, score_to_par: -12 },
+      { id: 'r3', qualifier_id: 'q1', player_id: 'p1', status: 'in_progress', is_test: false, total_score: 40, score_to_par: 4 },
     ]);
     expect(e).toMatchObject({ score: 146, total_score: 146, total_to_par: 2, rounds_completed: 2 });
   });

@@ -42,7 +42,9 @@ export async function updateQualifierEntryStats(
     .select('total_score, score_to_par')
     .eq('qualifier_id', qualifierId)
     .eq('player_id', playerId)
-    .eq('status', 'completed');
+    .eq('status', 'completed')
+    // Test rounds never count, as on the leaderboard and in selection (swap audit §11 reconciliation).
+    .eq('is_test', false);
 
   if (roundsError) {
     throw new Error(`Could not read completed qualifier rounds: ${roundsError.message}`);
