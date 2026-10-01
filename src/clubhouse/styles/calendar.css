@@ -1620,11 +1620,12 @@
     gap: 12px;
     padding: 14px 14px 24px;
   }
-  /* The route skeleton on a phone: its own shape, the desktop's bars out of the way. */
-  .ch-cal[aria-busy='true'] {
+  /* The route skeleton on a phone: its own shape, the desktop's bars out of the way. Only the skeleton: the live page
+     is aria-busy while a step or a retry is on its way, and must keep its week on screen (PAGE_PERFORMANCE.md rule 4). */
+  .ch-cal--skel {
     padding: 14px 14px 24px;
   }
-  .ch-cal[aria-busy='true'] > :not(.ch-calm-skel) {
+  .ch-cal--skel > :not(.ch-calm-skel) {
     display: none;
   }
   .ch-calm-skel {

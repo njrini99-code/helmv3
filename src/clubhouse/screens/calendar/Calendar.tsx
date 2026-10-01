@@ -231,9 +231,13 @@ export function Calendar({
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
 
   // The server is the source of truth: when it re-renders (navigation or refresh), follow it.
+  // Where a step outside the loaded window is headed while its payload is on the way. The page keeps showing (and
+  // labelling) the week it has; a second quick tap steps on from the target instead of asking for the same week again.
+  const target = useRef<string | null>(null);
   useEffect(() => {
     setView(data.view);
     setAnchor(data.anchor);
+    target.current = null;
   }, [data.view, data.anchor]);
 
   const people = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
@@ -249,11 +253,13 @@ export function Calendar({
       const url = buildUrl(nextView, nextAnchor, data.today);
       chTrail(`calendar ${nextView} ${nextAnchor}`);
       if (nextAnchor >= data.range.from && nextAnchor <= data.range.to && (nextView !== 'month' || monthKey(nextAnchor) === monthKey(data.anchor) || (monthCells(nextAnchor)[0]!.date >= data.range.from && monthCells(nextAnchor).at(-1)!.date <= data.range.to))) {
+        target.current = null;
         setView(nextView);
         setAnchor(nextAnchor);
         window.history.replaceState(null, '', url);
         return;
       }
+      target.current = nextAnchor;
       start(() => router.push(url, { scroll: false }));
     },
     [data.today, data.range, data.anchor, router],
@@ -262,9 +268,10 @@ export function Calendar({
   const step = useCallback(
     (dir: 1 | -1) => {
       haptic('select');
-      if (view === 'day') go(view, addDays(anchor, dir));
-      else if (view === 'week') go(view, addDays(anchor, 7 * dir));
-      else if (view === 'month') go(view, addMonths(anchor, dir));
+      const from = target.current ?? anchor;
+      if (view === 'day') go(view, addDays(from, dir));
+      else if (view === 'week') go(view, addDays(from, 7 * dir));
+      else if (view === 'month') go(view, addMonths(from, dir));
     },
     [view, anchor, go],
   );

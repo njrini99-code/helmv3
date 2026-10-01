@@ -298,7 +298,14 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     async (status: 'accepted' | 'tentative' | 'declined') => {
       const chosen: ChRsvp = status === 'accepted' ? 'accepted' : status === 'tentative' ? 'maybe' : 'declined';
       setValue(chosen);
-      const r = await respondToEvent(e.id, status);
+      let r: Awaited<ReturnType<typeof respondToEvent>>;
+      try {
+        r = await respondToEvent(e.id, status);
+      } catch (err) {
+        // A reply that never reached the server (a dropped connection) goes back too, never left showing as sent.
+        setValue(confirmed.current);
+        throw err;
+      }
       // Lock reasons (deadline, started, cancelled) come back as codes; say which one.
       const res = r.success ? r : { success: false, error: rsvpLockMessage(readRsvpLockCode(r), r.error).replace(' — ', '. ').replace(/^RSVPs/, 'Replies') };
       if (normalise(res).success) {

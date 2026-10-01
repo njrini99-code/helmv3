@@ -447,6 +447,15 @@ describe('Calendar · saves that fail', () => {
     expect(screen.getByRole('radio', { name: 'Going' }).getAttribute('aria-checked')).toBe('false');
   });
 
+  it('CH-6010 a player reply lost on the network (the send throws) goes back too, never left showing as sent', async () => {
+    const user = userEvent.setup();
+    a.respondToEvent.mockRejectedValueOnce(new Error('Failed to fetch'));
+    wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
+    await user.click(await screen.findByRole('radio', { name: 'Going' }));
+    await expectCode('CH-6010', /Couldn't send your reply for Round review/);
+    expect(screen.getByRole('radio', { name: 'Going' }).getAttribute('aria-checked')).toBe('false');
+  });
+
   it('CH-6011 CH-6209 CH-6405 attendance: loading, failing to load, failing to save', async () => {
     const user = userEvent.setup();
     a.getAttendanceReport.mockImplementationOnce(never);
@@ -1381,6 +1390,10 @@ describe('Calendar · moving around', () => {
     expect(router.push).not.toHaveBeenCalled();
     await next();
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/calendar?date=2026-12-02', { scroll: false });
+    // A second tap before that week lands steps on from it (last choice wins), and the page still labels the week it shows.
+    await next();
+    expect(router.push).toHaveBeenLastCalledWith('/golf/dashboard/calendar?date=2026-12-09', { scroll: false });
+    expect(title()).toBe('Nov 22 – 28');
     replace.mockRestore();
   });
 

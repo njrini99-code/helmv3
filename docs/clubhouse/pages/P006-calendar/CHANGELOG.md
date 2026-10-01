@@ -2,6 +2,33 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Page pass: the week stays on screen while the next one loads
+
+PAGE_PERFORMANCE.md rules 4, 8 and 11. The audit found every failed read
+already has its notice; empty copy only draws on loaded data.
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   none new (CH-6010, CH-6401 unchanged)
+Actions:        respondToEvent (unchanged)
+Data impact:    none
+Held items:     none
+```
+
+- **No blank phone page while busy.** The phone skeleton's rule hid every
+  child of a busy `.ch-cal`. The live page is busy during a step outside the
+  loaded window, or a Try again, so a phone went blank until the payload
+  landed. The rules now target `.ch-cal--skel` only; the live page dims.
+- **Quick steps.** A second Next or Previous tap before the new window lands
+  steps on from where the first was headed, so the last choice wins. The
+  title keeps labelling the week on screen until then.
+- **Honest reply.** A player's RSVP that never reached the server (the send
+  threw) goes back to the last confirmed reply. Before, it stayed showing as
+  sent.
+- **Left as is:** the player filter lives in component state and is lost on
+  Back (view and date are in the URL).
+
 ## 2026-10-01 — A repeating event keeps its time across a clock change (CAL-05)
 
 ```text
