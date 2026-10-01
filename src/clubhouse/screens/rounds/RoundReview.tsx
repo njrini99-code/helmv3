@@ -17,6 +17,7 @@ import { ScoreMark } from '../../ui/ScoreMark';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
+import { openedFromLibrary } from './return-state';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -280,6 +281,16 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
   const maxD = Math.max(1, ...dist.map((d) => d.count));
   const back = reviewBack(r);
+  // Rule 8: a player's review opened from the library goes back in history, so the library returns with its search and its place
+  // (screens/rounds/return-state.ts); anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
+  const stepBack = () => {
+    if (coach || !openedFromLibrary(r.id)) return false;
+    router.back();
+    return true;
+  };
+  const goBack = () => {
+    if (!stepBack()) router.push(back.href);
+  };
   const under = r.toPar != null && r.toPar < 0;
   const kicker = [r.playerName, `${fmt({ weekday: 'short' }).format(dateOf(r.date))} ${fmt({ month: 'short', day: 'numeric' }).format(dateOf(r.date))}`, r.type ? TYPE_LABEL[r.type] : null]
     .filter(Boolean)
@@ -302,9 +313,17 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
 
   return (
     <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title">
-      {phone && <PhoneTop title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => router.push(back.href) }} />}
+      {phone && <PhoneTop title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
-        <Link href={back.href} className="ch-rv-back">
+        <Link
+          href={back.href}
+          className="ch-rv-back"
+          onClick={(e) => {
+            // A plain click only: a new-tab click is the address's, as it always was.
+            if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            if (stepBack()) e.preventDefault();
+          }}
+        >
           <Icon icon={ChevronLeft} size={16} />
           {back.label}
         </Link>

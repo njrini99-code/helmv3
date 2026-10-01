@@ -7,6 +7,7 @@ import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../d
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
+import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
 import { useRefresh } from '../../lib/use-refresh';
@@ -21,6 +22,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
 import { monthLabel, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
+import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
 
 type Group = 'month' | 'course';
@@ -61,8 +63,11 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   // Rule 2: a refresh that fails does not replace what the player was looking at with an error. The last library that landed in full
   // stays (`stale`) and says it may be out of date; a first load that fails, or another player's, is the error as it came.
   const { value: data, stale } = useLastGood(playerId, fresh, libraryLanded);
-  const [q, setQ] = useState('');
-  const [group, setGroup] = useState<Group>('month');
+  // Rule 8: the search and the grouping come back with the page when the player returns from a round (the shell's session state, per
+  // route and team), and so does the place in the list (RouteFrame restores the scroll on Back). A review opened from here notes it, so its
+  // Back is a real Back (screens/rounds/return-state.ts).
+  const [q, setQ] = useChSessionState('q', '');
+  const [group, setGroup] = useChSessionState<Group>('group', 'month');
   // The cards come from the page's data, never copied into state once: a Try again that lands must show what it read. Only a discard
   // is local (the card leaves at once), and it is a list of ids to leave out, so a refreshed page is never overwritten.
   const [discarded, setDiscarded] = useState<ReadonlySet<string>>(() => new Set());
@@ -203,7 +208,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           {!data.rounds.error && list.length > 0 && (
             <SectionBoundary surface="rounds.book" label="Your rounds" code="CH-11203">
               <div className="ch-rd-tools">
-                <SearchField value={q} onChange={setQ} placeholder="Search course…" label="Search rounds by course" />
+                <SearchField value={q} onChange={setQ}placeholder="Search course…" label="Search rounds by course" />
                 <Segmented
                   label="Group rounds"
                   size="sm"
@@ -240,7 +245,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                       </div>
                       <div className="ch-rd-book">
                         {g.rounds.map((r) => (
-                          <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} />
+                          <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} />
                         ))}
                       </div>
                     </section>

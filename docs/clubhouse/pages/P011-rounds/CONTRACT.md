@@ -203,6 +203,7 @@ did not load, with Try again (CH-11208 to CH-11210).
 | 110710 | CH-11909 | `THE_SUBMIT_HAS_TAKEN_OVER_15_SECONDS` | The submit has taken over 15 seconds |
 | 110711 | CH-11910 | `EVERY_HOLE_IS_IN_BUT_THE_FINISH` | Every hole is in but the finish sheet was closed |
 | 110712 | CH-11911 | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | Opened from a submit that couldn't reach the server (`?from=submit`) |
+| 110713 | CH-11912 | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | Back from a round to the library |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 

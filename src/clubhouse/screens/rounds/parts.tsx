@@ -334,7 +334,7 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * One round in the book (rounds-flow.jsx `rf-sc`): date, course and tee, Out · In · Tot, the three meters, to par.
  * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap.
  */
-export function RoundRow({ r, href }: { r: ChLibraryRound; href: string | null }) {
+export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void }) {
   const under = r.toPar != null && r.toPar < 0;
   const body = (
     <>
@@ -388,7 +388,15 @@ export function RoundRow({ r, href }: { r: ChLibraryRound; href: string | null }
   );
   const label = `${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`;
   return href ? (
-    <Link href={href} className={'ch-rd-sc' + (under ? ' is-under' : '')} aria-label={label} onClick={() => haptic('select')}>
+    <Link
+      href={href}
+      className={'ch-rd-sc' + (under ? ' is-under' : '')}
+      aria-label={label}
+      onClick={() => {
+        haptic('select');
+        onOpen?.();
+      }}
+    >
       {body}
     </Link>
   ) : (
