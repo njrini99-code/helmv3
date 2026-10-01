@@ -12603,7 +12603,7 @@
     "name": "A_SCHEDULE_IS_BEING_READ_2",
     "chCode": "CH-12602",
     "meaning": "A schedule is being read",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -15033,7 +15033,7 @@
     "name": "STORAGE_TURNS_A_FILE_DOWN",
     "chCode": "CH-14703",
     "meaning": "Storage turns a file down (CH-14107, CH-14108)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
   {

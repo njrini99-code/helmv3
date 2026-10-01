@@ -131,6 +131,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
       await refresh();
     } else if (res.refused) {
       // CH-14107, CH-14108: the file itself was turned down, which no Retry can change. The dialog says so, beside the file.
+      // CH-14703: the error pattern, once, with no toast.
       refusedRef.current = true;
       haptic('error');
       setStaged((s) => (s && s.file === file ? { ...s, problem: refusedProblem(res.refused!, file) } : s));
