@@ -285,3 +285,36 @@ describe('Calendar · swap audit §8 deep link', () => {
   });
 });
 
+describe('Calendar · swap audit §8 attendance', () => {
+  const board = () => cal(PREVIEW_CALENDAR.events);
+
+  it('CAL-23 Mark all present fills only players with no mark: a saved Late or No-show is never overwritten', async () => {
+    const user = userEvent.setup();
+    a.getAttendanceReport.mockResolvedValue({ success: true, data: { attendance: [{ player_id: 'theo', attendance_status: 'late' }, { player_id: 'sofia', attendance_status: 'no_show' }] } });
+    a.markAttendance.mockImplementation(ok);
+    wrap(board(), 'e9');
+    await user.click(await screen.findByRole('button', { name: 'Attendance' }));
+    await user.click(await screen.findByRole('button', { name: 'Mark all present' }));
+    await user.click(screen.getByRole('button', { name: 'Save attendance · 4' }));
+    await waitFor(() => expect(a.markAttendance).toHaveBeenCalledTimes(4));
+    const players = a.markAttendance.mock.calls.map((c) => c[1]);
+    expect(players).not.toContain('theo');
+    expect(players).not.toContain('sofia');
+  });
+
+  it('CAL-24 the toast’s Retry after a partial save resends only the marks that failed', async () => {
+    const user = userEvent.setup();
+    a.markAttendance.mockImplementation(async (_e: string, player: string) => (player === 'theo' ? { success: false, error: 'nope' } : { success: true }));
+    wrap(board(), 'e9');
+    await user.click(await screen.findByRole('button', { name: 'Attendance' }));
+    await user.click(await screen.findByRole('button', { name: 'Mark all present' }));
+    await user.click(screen.getByRole('button', { name: 'Save attendance · 6' }));
+    await waitFor(() => expect(screen.getAllByText('Unsaved')).toHaveLength(1));
+    a.markAttendance.mockClear();
+    a.markAttendance.mockImplementation(ok);
+    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(a.markAttendance).toHaveBeenCalledTimes(1));
+    expect(a.markAttendance.mock.calls[0]![1]).toBe('theo');
+  });
+});
+
