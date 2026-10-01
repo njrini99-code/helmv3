@@ -8,6 +8,7 @@
  *   node scripts/clubhouse/perf-measure.mjs build [--ref HEAD] [--cache]       export a committed ref, `npm run build` it against the local stack (~12 minutes;
  *                                                                               no webpack cache is kept unless --cache: it is 5 to 8 GB).
  *                                                                               HELM_PERF_SNAPSHOT=<dir> builds (and serves) from another directory, so a server keeps running meanwhile.
+ *                                                                               --overlay <ref>:<path>[,...] lays files of another commit into the snapshot (never the checkout).
  *   node scripts/clubhouse/perf-measure.mjs serve [--port 3200]                 `next start`, detached, with the read tracer preloaded
  *   node scripts/clubhouse/perf-measure.mjs measure [--label before] [--runs 3] [--only home,stats] [--role coach,player] [--viewport 1280,390]
  *   node scripts/clubhouse/perf-measure.mjs report --before before --after after [--only home] [--before-geometry <label> --after-geometry <label>]

@@ -72,7 +72,12 @@ function probe() {
   } catch {
     /* unsupported entry type */
   }
-  watch('largest-contentful-paint', (e) => (P.lcp = e.startTime));
+  // Each candidate keeps its element and size, so a late one can be traced to the block that painted it.
+  P.lcpAll = [];
+  watch('largest-contentful-paint', (e) => {
+    P.lcp = e.startTime;
+    P.lcpAll.push([Math.round(e.startTime), e.size, describe(e.element)]);
+  });
   watch('paint', (e) => {
     if (e.name === 'first-contentful-paint') P.fcp = e.startTime;
   });
@@ -205,6 +210,7 @@ async function snapshot(page) {
       events: P.events,
       tl: P.tl,
       lcp: P.lcp,
+      lcpAll: P.lcpAll,
       fcp: P.fcp,
       ttfb: nav ? nav.responseStart : null,
       docBytes: nav ? nav.encodedBodySize : null,
@@ -231,6 +237,7 @@ function figures(snap, trace, cold) {
     jsKB: cold ? Math.round(snap.jsBytes / 1024) : null,
     fcp: cold ? r1(snap.fcp) : null,
     lcp: cold ? r1(snap.lcp) : null,
+    lcpCandidates: cold ? snap.lcpAll : null,
     cls: r1(shifts.filter(([, , input]) => !input).reduce((a, [, v]) => a + v, 0) * 1000) / 1000,
     clsRaw: r1(shifts.reduce((a, [, v]) => a + v, 0) * 1000) / 1000,
     shiftCount: shifts.length,
@@ -274,6 +281,8 @@ async function openPage(browser, base, stateFile, viewport, problems, phoneHint 
     deviceScaleFactor: phone ? 2 : 1,
     isMobile: phone,
     hasTouch: phone,
+    // HELM_PERF_REDUCED_MOTION=1 draws the app without the page crossfade (RouteFrame), to tell its share of a navigation from the data's.
+    ...(process.env.HELM_PERF_REDUCED_MOTION ? { reducedMotion: 'reduce' } : {}),
   });
   await ctx.addInitScript(probe);
   // A returning phone: the layout cookie the app sets after its first phone render (F-36), so the server draws the phone structure from the first frame.

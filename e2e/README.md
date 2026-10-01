@@ -334,6 +334,33 @@ wide; the median of `--runs`, signed in once per role):
 Results are saved to `.helm/runtime/clubhouse-perf/results/<label>.json`
 (gitignored), with every run and the per-table read counts.
 
+**Reading the numbers.** Reads, layout shift and geometry are exact; the
+milliseconds are not, on a laptop that other sessions share. Each result
+carries the load average and swap in use when it started and ended
+(`machineAtStart`, `machineAtEnd`), and the report shows the min and max of the
+runs beside each median: claim only a change larger than that spread, and a
+pass taken at load 10 or more or with the swap full (read it before trusting a
+timing) is not comparable with one taken at load 5. To compare two commits,
+build both (`HELM_PERF_SNAPSHOT=~/.helm-perf/<name> ... build --ref <sha>`, one
+`next build` at a time; `--overlay <ref>:<path>` lays a file of another commit
+into that snapshot when the ref does not build on its own), then swap the
+server between them and measure each in turn, three passes each, so a load
+spike lands on both (`stop`, then `HELM_PERF_SNAPSHOT=<dir> serve`, then
+`measure`). Measuring one build and then the other an hour apart read a
+change in the machine as a change in the code.
+
+Taps also record INP (the tap's own duration to the next paint) and cold loads
+record every LCP candidate with its element and size (`lcpCandidates` in the
+saved JSON), so a late LCP names the block that painted it.
+`HELM_PERF_REDUCED_MOTION=1 ... measure` runs the browser with reduced motion,
+which draws the app without the page crossfade: the difference from a normal
+run is the crossfade's share of a navigation. Navigations that show a route
+skeleton have a floor of about 350 ms before the page can replace it even when
+its data is back at 120 ms (React holds a Suspense reveal until 300 ms after
+the fallback committed, `FALLBACK_THROTTLE_MS` in react-dom 19), plus the
+crossfade, so compare a navigation's content time with that floor, not with
+its server time.
+
 A Clubhouse flag trap: the flag is off for `production` and `next start` runs
 with NODE_ENV=production, so the harness sets `VERCEL_ENV=development`. If a
 route does not render Clubhouse, `measure` stops rather than record a Fairway
