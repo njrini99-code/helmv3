@@ -205,6 +205,18 @@ async function cmdBuild(a) {
   const ref = typeof a.ref === 'string' ? a.ref : 'HEAD';
   const sha = await snapshotOf(ref);
   console.log(`snapshot of ${ref} (${sha.slice(0, 9)}) in ${SNAPSHOT}`);
+  // `--overlay <ref>:<path>[,...]`: files of another commit laid into the snapshot (never into the checkout), for when the ref being measured is
+  // missing a file that another session's half-finished commit left behind.
+  if (typeof a.overlay === 'string') {
+    for (const spec of a.overlay.split(',')) {
+      const [from, path] = spec.split(':');
+      if (!from || !path || path.includes('..')) throw new Error(`--overlay wants <ref>:<path>, got ${spec}`);
+      const target = join(SNAPSHOT, path);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, execFileSync('git', ['show', `${from}:${path}`], { cwd: ROOT, maxBuffer: 50_000_000 }));
+      console.log(`overlay ${path} from ${from}`);
+    }
+  }
   if (!a.cache) {
     // The webpack cache of one build is 5 to 8 GB, which a shared laptop does not have twice (a second build on top of the first filled the
     // disk). A snapshot's build starts clean and writes none; `--cache` keeps it between builds, for a disk with room.
