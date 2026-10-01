@@ -6,13 +6,15 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadPlayerProfile } from '../data/coachhelm-profile';
+import { loadPlayerStanding } from '../data/coachhelm-standing';
 import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad } from '../data/coachhelm-views-shape';
 import { Ask } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { Profile } from '../screens/coachhelm/views/Profile';
-import { ProfileSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { Standing } from '../screens/coachhelm/views/Standing';
 import { EmptyState } from '../ui/States';
 import { NotRebuilt } from '../shell/NotRebuilt';
 import { resolveClubhouseTeam } from './team';
@@ -20,6 +22,7 @@ import '../styles/coachhelm.css';
 import '../styles/coachhelm-ask.css';
 import '../styles/coachhelm-views.css';
 import '../styles/coachhelm-profile.css';
+import '../styles/coachhelm-standing.css';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway
@@ -32,7 +35,7 @@ import '../styles/coachhelm-profile.css';
  * addresses (and focus-area cards) redirect to, and the player nav's Deep dive. A link to one says it isn't rebuilt yet rather
  * than landing on the board as if it were (Q-76). `?view=insights` is the board.
  */
-const VIEWS_NOT_REBUILT: Record<string, string> = { standing: 'Standing', 'deep-dive': 'Deep dive' };
+const VIEWS_NOT_REBUILT: Record<string, string> = { 'deep-dive': 'Deep dive' };
 
 /**
  * The Ask sub-tab's content (a coach, `?view=ask`, `?c=<conversation>`). Its own async component inside a Suspense boundary, so
@@ -45,6 +48,9 @@ async function AskView({ conversationId }: { conversationId?: string }) {
 /** A view's content: its own async component inside a Suspense boundary, so the page draws the view's skeleton while it reads. */
 async function ProfileView({ playerId }: { playerId: string }) {
   return <Profile load={await loadPlayerProfile({ playerId })} />;
+}
+async function StandingView({ playerId }: { playerId: string }) {
+  return <Standing load={await loadPlayerStanding({ playerId })} />;
 }
 
 /**
@@ -62,6 +68,14 @@ async function playerDrill(drill: 'profile' | 'standing' | 'deep-dive', playerId
     return (
       <Suspense key="profile" fallback={<ProfileSkeleton />}>
         <ProfileView playerId={playerId} />
+      </Suspense>
+    );
+  }
+  if (drill === 'standing') {
+    if (closed) return <Standing load={closed} />;
+    return (
+      <Suspense key="standing" fallback={<StandingSkeleton />}>
+        <StandingView playerId={playerId} />
       </Suspense>
     );
   }

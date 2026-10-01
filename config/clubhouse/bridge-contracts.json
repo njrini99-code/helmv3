@@ -12866,6 +12866,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130210,
+    "page": "P013",
+    "category": 2,
+    "item": 10,
+    "name": "STANDING_THE_STANDING_IS_ON_ITS_WAY",
+    "chCode": "CH-13470",
+    "meaning": "Standing: the standing is on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -13084,6 +13095,50 @@
     "name": "PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND",
     "chCode": "CH-13361",
     "meaning": "Profile: some measures have enough rounds and some do not (an early read)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130421,
+    "page": "P013",
+    "category": 4,
+    "item": 21,
+    "name": "STANDING_NO_STANDING_ROW_YET",
+    "chCode": "CH-13370",
+    "meaning": "Standing: no standing row yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130422,
+    "page": "P013",
+    "category": 4,
+    "item": 22,
+    "name": "STANDING_AN_EARLY_READ",
+    "chCode": "CH-13371",
+    "meaning": "Standing: an early read (rows, but under five rounds on file, or the count unknown)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130423,
+    "page": "P013",
+    "category": 4,
+    "item": 23,
+    "name": "STANDING_A_STAT_THE_TEAM_IS_TOO",
+    "chCode": "CH-13372",
+    "meaning": "Standing: a stat the team is too small to compare on (under five teammates have it)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130424,
+    "page": "P013",
+    "category": 4,
+    "item": 24,
+    "name": "STANDING_A_STAT_WHOSE_TOUR_VALUE_IS",
+    "chCode": "CH-13373",
+    "meaning": "Standing: a stat whose Tour value is not comparable",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13372,6 +13427,28 @@
     "name": "PROFILE_THE_GAME_PROFILE_DOESNT_LOAD",
     "chCode": "CH-13260",
     "meaning": "Profile: the Game profile doesn't load (the genome read fails or throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130626,
+    "page": "P013",
+    "category": 6,
+    "item": 26,
+    "name": "STANDING_THE_STANDING_DOESNT_LOAD",
+    "chCode": "CH-13270",
+    "meaning": "Standing: the standing doesn't load (the standing read fails or throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130627,
+    "page": "P013",
+    "category": 6,
+    "item": 27,
+    "name": "STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD",
+    "chCode": "CH-13271",
+    "meaning": "Standing: their scoring average doesn't load (the read every projection starts from fails)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14014,6 +14091,17 @@
     "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
     "chCode": "CH-13860",
     "meaning": "Profile: a screen reader moves through the page",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131817,
+    "page": "P013",
+    "category": 18,
+    "item": 17,
+    "name": "STANDING_A_SCREEN_READER_MOVES_THROUGH_THE",
+    "chCode": "CH-13880",
+    "meaning": "Standing: a screen reader moves through the page",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

@@ -47,6 +47,7 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130207 | CH-13421 | `ASK_A_REPLY_IS_STREAMING` | Ask: A reply is streaming |
 | 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
 | 130209 | CH-13460 | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | Profile: the Game profile is on its way |
+| 130210 | CH-13470 | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | Standing: the standing is on its way |
 
 ## 03 — Background loading / refresh
 
@@ -80,6 +81,10 @@ First run is a whole-page empty state for each role and each way of having nothi
 | 130418 | CH-13350 | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | Ask: A read tool found nothing recorded |
 | 130419 | CH-13360 | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | Profile: no measure has enough rounds yet (no genome row, or one with nothing computed) |
 | 130420 | CH-13361 | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | Profile: some measures have enough rounds and some do not (an early read) |
+| 130421 | CH-13370 | `STANDING_NO_STANDING_ROW_YET` | Standing: no standing row yet |
+| 130422 | CH-13371 | `STANDING_AN_EARLY_READ` | Standing: an early read (rows, but under five rounds on file, or the count unknown) |
+| 130423 | CH-13372 | `STANDING_A_STAT_THE_TEAM_IS_TOO` | Standing: a stat the team is too small to compare on (under five teammates have it) |
+| 130424 | CH-13373 | `STANDING_A_STAT_WHOSE_TOUR_VALUE_IS` | Standing: a stat whose Tour value is not comparable |
 
 ## 05 — Validation
 
@@ -124,6 +129,8 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130623 | CH-13254 | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | Ask: The evidence panel is opened for a player the conversation has nothing on |
 | 130625 | CH-13260 | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | Profile: the Game profile doesn't load (the genome read fails or throws) |
+| 130626 | CH-13270 | `STANDING_THE_STANDING_DOESNT_LOAD` | Standing: the standing doesn't load (the standing read fails or throws) |
+| 130627 | CH-13271 | `STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD` | Standing: their scoring average doesn't load (the read every projection starts from fails) |
 
 ## 07 — Network / offline
 
@@ -283,6 +290,7 @@ The page is labelled by its title and each section is a labelled region (CH-1380
 | 131814 | CH-13851 | `ASK_THE_EVIDENCE_CONTROL` | Ask: The evidence control |
 | 131815 | CH-13852 | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | Ask: Evidence drawn as a chart |
 | 131816 | CH-13860 | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | Profile: a screen reader moves through the page |
+| 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 

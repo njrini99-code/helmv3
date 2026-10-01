@@ -1,12 +1,10 @@
 'use client';
 
-import { ArrowRight, ChevronDown, Dna, Lock, Play } from 'lucide-react';
-import Link from 'next/link';
+import { ChevronDown, Dna, Lock, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
-import { haptic } from '../../../lib/haptics';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
@@ -15,6 +13,7 @@ import { EmptyState } from '../../../ui/States';
 import { ReadMeter } from '../parts';
 import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
+import { KeepReading } from './KeepReading';
 
 const LINE = 'How you play, read from the rounds you posted in the last 90 days.';
 
@@ -90,30 +89,6 @@ function Measure({ m }: { m: ChMeasure }) {
           )}
         </>
       )}
-    </li>
-  );
-}
-
-/** The tile that closes the grid (it also fills the empty half of its last row): where the profile leads. */
-function Next() {
-  return (
-    <li className="ch-hg-next" aria-labelledby="ch-hg-next-t">
-      <h3 id="ch-hg-next-t">Keep reading</h3>
-      <p>This is the shape of your game. The next two say where it puts you and what to do about it.</p>
-      <Link className="ch-hg-link" href={PLAYER_HELM_HREF.standing} onClick={() => haptic('select')}>
-        <span>
-          <b>Standing</b>
-          <em>Against the Tour and your team</em>
-        </span>
-        <Icon icon={ArrowRight} size={16} />
-      </Link>
-      <Link className="ch-hg-link" href={PLAYER_HELM_HREF['deep-dive']} onClick={() => haptic('select')}>
-        <span>
-          <b>Deep dive</b>
-          <em>The insights behind it, with their evidence</em>
-        </span>
-        <Icon icon={ArrowRight} size={16} />
-      </Link>
     </li>
   );
 }
@@ -231,7 +206,16 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
               {p.measures.map((m) => (
                 <Measure key={m.id} m={m} />
               ))}
-              <Next />
+              <li className="ch-hg-tail">
+                <KeepReading
+                  id="ch-hg-next-t"
+                  line="This is the shape of your game. The next two say where it puts you and what to do about it."
+                  items={[
+                    { href: PLAYER_HELM_HREF.standing, title: 'Standing', note: 'Against the Tour and your team' },
+                    { href: PLAYER_HELM_HREF['deep-dive'], title: 'Deep dive', note: 'The insights behind it, with their evidence' },
+                  ]}
+                />
+              </li>
             </ol>
           </section>
         </SectionBoundary>

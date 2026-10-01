@@ -34,6 +34,8 @@ vi.mock('../data/coachhelm', async (orig) => ({ ...(await orig<typeof import('..
 vi.mock('../data/coachhelm-chat', () => ({ loadAskCoachHelm: vi.fn() }));
 const profileRead = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('../data/coachhelm-profile', () => ({ loadPlayerProfile: profileRead.load }));
+const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
+vi.mock('../data/coachhelm-standing', () => ({ loadPlayerStanding: standingRead.load }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
@@ -42,9 +44,10 @@ import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/c
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { Profile } from '../screens/coachhelm/views/Profile';
-import { ProfileSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { Standing } from '../screens/coachhelm/views/Standing';
 import { PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_OFF } from '../preview/fixtures-coachhelm';
-import { PREVIEW_PROFILE, profileLoad } from '../preview/fixtures-coachhelm-views';
+import { PREVIEW_PROFILE, PREVIEW_STANDING, profileLoad, standingLoad } from '../preview/fixtures-coachhelm-views';
 import { ToastProvider } from '../ui/Toast';
 
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
@@ -70,6 +73,7 @@ beforeEach(() => {
   router.push.mockClear();
   logServer.mockClear();
   profileRead.load.mockReset();
+  standingRead.load.mockReset();
   board.player.mockReset();
   board.coach.mockReset();
   vi.mocked(isCoachHelmEnabledForPlayer).mockReset();
@@ -80,67 +84,78 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('?view=profile: the player’s own, behind the same switch as the board', () => {
-  it('reads for the session’s player and nobody else, whatever the address says, inside a keyed Suspense that draws the profile’s own skeleton', async () => {
-    const el = (await ClubhouseCoachHelmRoute({ view: 'profile', player: 'pl-someone-else' })) as Gated;
+/** Each of the player's views: its address, its screen, its skeleton and the one loader it calls. */
+const VIEWS = [
+  { view: 'profile', name: 'Game profile', Screen: Profile, Skeleton: ProfileSkeleton, read: profileRead.load, ready: profileLoad(PREVIEW_PROFILE) },
+  { view: 'standing', name: 'Standing', Screen: Standing, Skeleton: StandingSkeleton, read: standingRead.load, ready: standingLoad(PREVIEW_STANDING) },
+] as const;
+const allReads = () => VIEWS.map((v) => v.read);
+
+describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same switch as the board', ({ view, Screen, Skeleton, read, ready }) => {
+  it('reads for the session’s player and nobody else, whatever the address says, inside a keyed Suspense that draws the view’s own skeleton', async () => {
+    const el = (await ClubhouseCoachHelmRoute({ view, player: 'pl-someone-else' })) as Gated;
     expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
-    expect(el.key).toBe('profile');
-    expect(el.props.fallback.type).toBe(ProfileSkeleton);
+    expect(el.key).toBe(view);
+    expect(el.props.fallback.type).toBe(Skeleton);
     expect(el.props.children.props.playerId).toBe('pl-jonah');
-    profileRead.load.mockResolvedValue(profileLoad(PREVIEW_PROFILE));
-    const view = (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown }>>)(el.props.children.props)) as ReactElement<{ load: unknown }>;
-    expect(profileRead.load).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
-    expect(profileRead.load).toHaveBeenCalledTimes(1);
-    expect(view.type).toBe(Profile);
-    expect(view.props.load).toEqual(profileLoad(PREVIEW_PROFILE));
+    read.mockResolvedValue(ready);
+    const out = (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown }>>)(el.props.children.props)) as ReactElement<{ load: unknown }>;
+    expect(read).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(allReads().filter((r) => r !== read).every((r) => r.mock.calls.length === 0)).toBe(true);
+    expect(out.type).toBe(Screen);
+    expect(out.props.load).toEqual(ready);
   });
 
   it('CH-13304 CoachHelm off: the board’s own page at once, in the coach’s words, and nothing is read', async () => {
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...off });
-    const el = (await ClubhouseCoachHelmRoute({ view: 'profile' })) as ReactElement<{ load: unknown }>;
-    expect(el.type).toBe(Profile);
+    const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ load: unknown }>;
+    expect(el.type).toBe(Screen);
     expect(el.props.load).toEqual({ status: 'off', reason: 'Back after the qualifier' });
-    expect(profileRead.load).not.toHaveBeenCalled();
+    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
   });
 
-  it('a gate lookup that failed is the profile’s own did-not-load, never "off", and never a read against a switch that may be off', async () => {
+  it('a gate lookup that failed is the view’s own did-not-load, never "off", and never a read against a switch that may be off', async () => {
     vi.mocked(isCoachHelmEnabledForPlayer).mockRejectedValue(new Error('down'));
-    const el = (await ClubhouseCoachHelmRoute({ view: 'profile' })) as ReactElement<{ load: unknown }>;
+    const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ load: unknown }>;
     expect(el.props.load).toEqual({ status: 'failed' });
-    expect(profileRead.load).not.toHaveBeenCalled();
+    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
     expect(logServer).toHaveBeenCalledWith('coachhelm', 'gate', expect.any(Error), 'coachhelm');
 
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...off, disabledBy: null, disabledReason: 'Lookup failed' });
-    const again = (await ClubhouseCoachHelmRoute({ view: 'profile' })) as ReactElement<{ load: unknown }>;
+    const again = (await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ load: unknown }>;
     expect(again.props.load).toEqual({ status: 'failed' });
   });
 
-  it('a coach is a coach here: ?view=profile is their board, no player loader runs, and no genome is read (a coach who is also a player is a coach)', async () => {
+  it('a coach is a coach here: the view’s address is their board, no player loader runs, and the player’s gate is never asked (a coach who is also a player is a coach)', async () => {
     session.current = maya;
     teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
     vi.mocked(isCoachHelmEnabledForCoach).mockResolvedValue({ ...on });
     board.coach.mockResolvedValue({ off: null, roster: { count: 0, error: false }, pulse: { rows: [], error: false }, players: { list: [], error: false }, withoutSignals: 0 });
-    const el = (await ClubhouseCoachHelmRoute({ view: 'profile' })) as ReactElement;
+    const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement;
     expect(board.coach).toHaveBeenCalled();
-    expect(profileRead.load).not.toHaveBeenCalled();
+    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
     expect(isCoachHelmEnabledForPlayer).not.toHaveBeenCalled();
-    expect(el.type).not.toBe(Profile);
+    expect(el.type).not.toBe(Screen);
 
     session.current = { ...maya, player: { id: 'pl-coach-as-player' } };
-    await ClubhouseCoachHelmRoute({ view: 'profile' });
-    expect(profileRead.load).not.toHaveBeenCalled();
+    await ClubhouseCoachHelmRoute({ view });
+    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
   });
+});
 
-  it('no session renders nothing; ?view=insights and no view are the board, not a view', async () => {
+describe('the player’s views and the board', () => {
+  it('no session renders nothing; ?view=insights, no view and any other value are the board, not a view', async () => {
     session.current = null;
     expect(await ClubhouseCoachHelmRoute({ view: 'profile' })).toBeNull();
+    expect(await ClubhouseCoachHelmRoute({ view: 'standing' })).toBeNull();
     session.current = jonah;
     board.player.mockResolvedValue(PREVIEW_HELM_PLAYER);
     for (const view of [undefined, 'insights', 'nonsense']) {
       const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement;
       expect(el.type).toBe(PlayerBoard);
     }
-    expect(profileRead.load).not.toHaveBeenCalled();
+    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
   });
 });
 

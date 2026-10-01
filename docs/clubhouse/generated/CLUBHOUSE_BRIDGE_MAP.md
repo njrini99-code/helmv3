@@ -110,7 +110,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
 | P011 | 14 | 10 |  | 15 | 10 | 32 | 12 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 160 |
 | P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
-| P013 | 7 | 9 |  | 20 | 1 | 25 | 13 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 6 | 16 | 1 |  | 1 |  | 1 |  |  | 121 |
+| P013 | 7 | 10 |  | 24 | 1 | 27 | 13 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 6 | 17 | 1 |  | 1 |  | 1 |  |  | 129 |
 | P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
 | P015 |  | 1 | 1 | 3 | 2 | 12 | 1 | 2 | 1 |  |  | 1 |  | 1 |  | 6 | 5 | 5 | 2 | 1 | 1 |  | 1 |  |  | 46 |
 
@@ -1293,6 +1293,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130207 | CH-13421 | 02 Initial loading / skeleton | `ASK_A_REPLY_IS_STREAMING` | implemented | Ask: A reply is streaming |
 | 130208 | CH-13450 | 02 Initial loading / skeleton | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | implemented | Ask: An action was confirmed and is being carried out |
 | 130209 | CH-13460 | 02 Initial loading / skeleton | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | implemented | Profile: the Game profile is on its way |
+| 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
 | 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
@@ -1313,6 +1314,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130418 | CH-13350 | 04 Empty | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | implemented | Ask: A read tool found nothing recorded |
 | 130419 | CH-13360 | 04 Empty | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | implemented | Profile: no measure has enough rounds yet (no genome row, or one with nothing computed) |
 | 130420 | CH-13361 | 04 Empty | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | implemented | Profile: some measures have enough rounds and some do not (an early read) |
+| 130421 | CH-13370 | 04 Empty | `STANDING_NO_STANDING_ROW_YET` | implemented | Standing: no standing row yet |
+| 130422 | CH-13371 | 04 Empty | `STANDING_AN_EARLY_READ` | implemented | Standing: an early read (rows, but under five rounds on file, or the count unknown) |
+| 130423 | CH-13372 | 04 Empty | `STANDING_A_STAT_THE_TEAM_IS_TOO` | implemented | Standing: a stat the team is too small to compare on (under five teammates have it) |
+| 130424 | CH-13373 | 04 Empty | `STANDING_A_STAT_WHOSE_TOUR_VALUE_IS` | implemented | Standing: a stat whose Tour value is not comparable |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
@@ -1339,6 +1344,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130623 | CH-13254 | 06 Server / system error | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | implemented | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | 06 Server / system error | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | implemented | Ask: The evidence panel is opened for a player the conversation has nothing on |
 | 130625 | CH-13260 | 06 Server / system error | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | implemented | Profile: the Game profile doesn't load (the genome read fails or throws) |
+| 130626 | CH-13270 | 06 Server / system error | `STANDING_THE_STANDING_DOESNT_LOAD` | implemented | Standing: the standing doesn't load (the standing read fails or throws) |
+| 130627 | CH-13271 | 06 Server / system error | `STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD` | implemented | Standing: their scoring average doesn't load (the read every projection starts from fails) |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
@@ -1395,6 +1402,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131814 | CH-13851 | 18 Accessibility | `ASK_THE_EVIDENCE_CONTROL` | implemented | Ask: The evidence control |
 | 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | implemented | Ask: Evidence drawn as a chart |
 | 131816 | CH-13860 | 18 Accessibility | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Profile: a screen reader moves through the page |
+| 131817 | CH-13880 | 18 Accessibility | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through the page |
 | 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | reserved | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | reserved | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | reserved | A read that fails in a loader is logged through chLogServer('coachhelm', <read>, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |

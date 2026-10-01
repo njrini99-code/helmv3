@@ -235,7 +235,7 @@ describe('the Game profile screen', () => {
 
   it('Keep reading: Standing and Deep dive, as links', () => {
     show();
-    const next = screen.getByRole('heading', { name: 'Keep reading' }).closest('li') as HTMLElement;
+    const next = screen.getByRole('heading', { name: 'Keep reading' }).closest('aside') as HTMLElement;
     expect(within(next).getByRole('link', { name: /Standing/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=standing');
     expect(within(next).getByRole('link', { name: /Deep dive/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive');
   });

@@ -1774,10 +1774,9 @@ describe('CoachHelm route', () => {
     expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30 });
   });
 
-  it('CH-1301 a link to a Fairway drill that is not rebuilt (?view=standing, deep-dive) says so; ?view=insights is the board', async () => {
+  it('CH-1301 a link to a Fairway drill that is not rebuilt (?view=deep-dive) says so; ?view=insights is the board', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     for (const [view, label] of [
-      ['standing', 'Standing'],
       ['deep-dive', 'Deep dive'],
     ]) {
       document.body.innerHTML = '';
