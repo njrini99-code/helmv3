@@ -343,6 +343,14 @@ export function Calendar({
           onRetry={refresh}
         />
       )}
+      {data.membersError && (
+        <InlineNotice
+          code="CH-6213"
+          title="The roster didn't load."
+          body="Events are complete, but players can't be invited or picked until it does. Try again; the error has been reported."
+          onRetry={refresh}
+        />
+      )}
       {data.busyError && (
         <InlineNotice code="CH-6202" title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
       )}
@@ -371,6 +379,7 @@ export function Calendar({
           }}
           events={data.events}
           people={data.people}
+          peopleError={!!data.membersError}
           timezone={data.timezone}
           today={now.date}
         />

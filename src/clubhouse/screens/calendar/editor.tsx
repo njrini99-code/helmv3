@@ -31,6 +31,8 @@ const fromHHMM = (v: string) => {
   return (h ?? 0) + (m ?? 0) / 60;
 };
 const snap = (h: number) => Math.round(h * 4) / 4;
+/** Extra days a multi-day all-day event covers after its first: 2 for 16–18 October. */
+const spanDays = (e: ChCalEvent | null | undefined) => (e?.span ? Math.round((Date.parse(`${e.span.to}T12:00:00Z`) - Date.parse(`${e.span.from}T12:00:00Z`)) / 86_400_000) : 0);
 
 type Repeat = 'none' | 'weekly' | 'weekdays';
 type Scope = 'this' | 'thisAndFuture' | 'all';
@@ -176,6 +178,7 @@ export function EventEditor({
   onSaved,
   events,
   people,
+  peopleError = false,
   timezone,
   today,
 }: {
@@ -184,6 +187,8 @@ export function EventEditor({
   onSaved: (date: string) => void;
   events: ChCalEvent[];
   people: ChCalPerson[];
+  /** The roster didn't load: the invite list is unknown, never "no players" (C-21). */
+  peopleError?: boolean;
   timezone: string;
   today: string;
 }) {
@@ -200,6 +205,8 @@ export function EventEditor({
   const [notes, setNotes] = useState('');
   const [invited, setInvited] = useState<string[]>([]);
   const [scope, setScope] = useState<Scope>('this');
+  // A multi-day all-day event keeps its length through an edit, a move or a Duplicate (CAL-06).
+  const [extraDays, setExtraDays] = useState(0);
   const [touched, setTouched] = useState(false);
   // What the editor opened with, to tell edits from a look (CH-6503).
   const [baseline, setBaseline] = useState('');
@@ -221,7 +228,8 @@ export function EventEditor({
       ? {
           title: e.title,
           type: (e.type === 'class' ? 'practice' : e.type) as ChCalType,
-          date: e.date,
+          // Each day of a multi-day event is its own entry; the event starts on the span's first day, not the one clicked.
+          date: e.span?.from ?? e.date,
           win: (seed.proposal ?? [e.start ?? 8, e.end ?? 17]) as [number, number],
           allDay: e.allDay,
           loc: e.location ?? '',
@@ -232,7 +240,7 @@ export function EventEditor({
         ? {
             title: c.title,
             type: (c.type === 'class' ? 'practice' : c.type) as ChCalType,
-            date: seed.date ?? c.date,
+            date: seed.date ?? c.span?.from ?? c.date,
             win: [c.start ?? 8, c.end ?? 17] as [number, number],
             allDay: c.allDay,
             loc: c.location ?? '',
@@ -264,15 +272,22 @@ export function EventEditor({
     setRepeat('none');
     setUntil(addDays(init.date, 56));
     setScope('this');
+    setExtraDays(spanDays(e ?? c));
     setTouched(false);
   }, [seed]);
 
   const clashes = allDay ? [] : invited.filter((pid) => busyFor(events, pid, date, base?.id).some((b) => overlaps(win, [b.start!, b.end!])));
   const moved = !!base && !!seed?.proposal && (seed.proposal[0] !== base.start || seed.proposal[1] !== base.end);
   const series = !!base?.seriesId;
+  // An overnight event is loaded ending at 24:00 on its first day. Its stored end is kept unless the coach picks a new one.
+  // Its real end isn't loaded, so it can't move with the start: moving the day asks for a new end time instead.
+  const overnight = !!base && !base.allDay && (base.end ?? 0) >= 24 && !allDay && win[1] >= 24;
+  const keepEnd = overnight && date === base!.date;
+  const needsEnd = overnight && !keepEnd;
+  const endDate = allDay && extraDays ? addDays(date, extraDays) : date;
   const primary = !base ? 'Publish event' : moved ? 'Move event' : 'Save changes';
   const invalidTitle = !title.trim();
-  const invalidTime = !allDay && win[1] <= win[0];
+  const invalidTime = (!allDay && win[1] <= win[0]) || needsEnd;
   const minutes = Math.round((win[1] - win[0]) * 60);
   const whenLabel = `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false)} – ${fmtHour(win[1])}`}`;
 
@@ -302,6 +317,7 @@ export function EventEditor({
         title: title.trim(),
         eventType: type as never,
         startDate: date,
+        endDate: endDate !== date ? endDate : undefined,
         startTime,
         endTime,
         allDay,
@@ -317,7 +333,17 @@ export function EventEditor({
         originalStartDate: base.startIso,
         scope,
         timezoneOffset: tz,
-        updates: { title: title.trim(), description: notes.trim() || undefined, startDate: date, endDate: date, startTime, endTime, location: loc.trim() || undefined },
+        // Notes and place are sent even when emptied, so clearing them clears the series (undefined is "leave as is").
+        // Notes and place apply literally to every event in scope, so they go only when the coach changed them (an
+        // emptied field goes as '', which clears it); untouched, each event keeps its own.
+        updates: {
+          title: title.trim(),
+          ...(notes.trim() !== (base.notes ?? '').trim() ? { description: notes.trim() } : {}),
+          ...(loc.trim() !== (base.location ?? '').trim() ? { location: loc.trim() } : {}),
+          startDate: date,
+          ...(keepEnd ? {} : { endDate, endTime }),
+          startTime,
+        },
       });
     }
     const add = invited.filter((p) => !base.people.includes(p));
@@ -326,9 +352,8 @@ export function EventEditor({
       title: title.trim(),
       eventType: type as never,
       startDate: date,
-      endDate: date,
+      ...(keepEnd ? {} : { endDate, endTime }),
       startTime,
-      endTime,
       allDay,
       location: loc.trim(),
       description: notes.trim(),
@@ -452,12 +477,13 @@ export function EventEditor({
             </div>
             {!allDay && (
               <p className={'ch-field__help' + (touched && invalidTime ? ' is-error' : '')} data-ch-code={touched && invalidTime ? 'CH-6102' : undefined}>
-                {invalidTime ? 'End has to be after the start.' : `${minutes} min`}
+                {needsEnd ? 'This event ran past midnight. Pick an end time for the new day.' : invalidTime ? 'End has to be after the start.' : `${minutes} min`}
               </p>
             )}
             <div className="ch-ed__opts">
               <label className="ch-switch">
-                <input type="checkbox" checked={allDay} onChange={(e) => (haptic('select'), setAllDay(e.target.checked))} />
+                {/* A series edit carries no All day (editRecurringEvent has none): flipping it there would move every time to midnight. */}
+                <input type="checkbox" checked={allDay} disabled={series && scope !== 'this'} onChange={(e) => (haptic('select'), setAllDay(e.target.checked))} />
                 <span className="ch-switch__t" aria-hidden="true" />
                 All day
               </label>
@@ -486,14 +512,17 @@ export function EventEditor({
                 <Segmented<Scope>
                   label="Apply changes to"
                   value={scope}
-                  onChange={setScope}
+                  onChange={(s) => {
+                    setScope(s);
+                    if (s !== 'this' && base) setAllDay(base.allDay);
+                  }}
                   options={[
                     { value: 'this', label: 'This event' },
                     { value: 'thisAndFuture', label: 'This and following' },
                     { value: 'all', label: 'All in series' },
                   ]}
                 />
-                {scope !== 'this' && <p className="ch-field__help">Series changes cover title, time, place and notes. Type and invitees change one event at a time.</p>}
+                {scope !== 'this' && <p className="ch-field__help">Series changes cover title, time, place and notes. Type, All day and invitees change one event at a time.</p>}
               </div>
             )}
           </div>
@@ -511,7 +540,7 @@ export function EventEditor({
           <div>
             <div className="ch-in__sechead" style={{ marginBottom: 6 }}>
               <span className="ch-ed__lbl" style={{ margin: 0 }}>
-                Invite · {invited.length} of {people.length}
+                {peopleError && !people.length ? 'Invite' : `Invite · ${invited.length} of ${people.length}`}
               </span>
               <Button size="sm" variant="ghost" onClick={() => setInvited(allOn ? [] : people.map((p) => p.id))}>
                 {allOn ? 'Clear' : 'Select all'}
@@ -537,6 +566,10 @@ export function EventEditor({
                   </label>
                 ))}
               </div>
+            ) : peopleError ? (
+              <p className="ch-in__quiet" data-ch-code="CH-6213">
+                The roster didn&apos;t load, so no one can be invited yet. Close this, try again, then invite players.
+              </p>
             ) : (
               <p className="ch-in__quiet">No active players on the roster yet.</p>
             )}

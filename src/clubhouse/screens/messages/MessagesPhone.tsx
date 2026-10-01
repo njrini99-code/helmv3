@@ -238,7 +238,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           body="Your messages are safe. Try again; the error has been reported."
           onRetry={api.refetchConvs}
         />
-      ) : api.convsLoading && !api.convs.length ? (
+      ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
         <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
           {Array.from({ length: 5 }, (_, i) => (
             <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>

@@ -50,6 +50,7 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6210 | The calendar view crashes | "The calendar couldn't be shown." + "The rest of the page is fine…" Try again | `SectionBoundary calendar.<view>` | calendar.test › CH-6210 |
 | CH-6211 | The detail panel crashes | "The detail panel couldn't be shown." … | `SectionBoundary calendar.panel` | calendar.test › CH-6211 |
 | CH-6212 | The team's timezone doesn't load | "Your team's timezone didn't load." + "Times are shown in Eastern time until it does." Try again | `Calendar`; logged `clubhouse.calendar.teamSettings` | calendar.test › CH-6212 |
+| CH-6213 | The roster doesn't load | "The roster didn't load." + "Events are complete, but players can't be invited or picked until it does." Try again; in the editor, "The roster didn't load, so no one can be invited yet." in place of the invite list | `Calendar`, `EventEditor`; logged `clubhouse.calendar.members` | calendar.test › CH-6213 |
 
 ## 63xx Empty
 

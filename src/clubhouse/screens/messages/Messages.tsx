@@ -291,6 +291,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
   // Announcements: the team feed, pinned above conversations.
   const [anns, setAnns] = useState<ChAnnouncement[]>([]);
   const [annError, setAnnError] = useState(false);
+  // Announcements sit above the conversations: until their first read answers, the inbox keeps its skeleton.
+  const [annLoaded, setAnnLoaded] = useState(false);
   const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
   const loadAnns = useCallback(async () => {
     try {
@@ -316,6 +318,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     } catch (err) {
       chReport(err, { surface: 'messages.announcements', severity: 'low' });
       setAnnError(true);
+    } finally {
+      setAnnLoaded(true);
     }
   }, [data.teamId, data.viewerUserId, data.role, data.viewerPlayerId]);
   useEffect(() => {
@@ -515,9 +519,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
     reactions: reactionMap,
     react: (messageId, key, active) => {
       const emoji = EMOJI_BY_KEY[key];
-      if (!emoji) return;
+      // The hook takes one reaction at a time; a tap while one is saving is dropped, not reported as a failure.
+      if (!emoji || reactions.pending) return;
       void attempt('react', { failed: "Couldn't save the reaction", hint: 'Try again in a moment.', code: 'CH-7009' }, async () => {
-        await reactions.setReaction(messageId, emoji, active);
+        // setReaction answers false (session gone, write refused) and never throws: that is a failure too.
+        if ((await reactions.setReaction(messageId, emoji, active)) === false) throw new Error('Reaction was not saved');
       });
     },
     attachments: loadAttachments,
@@ -571,6 +577,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     },
 
     announcements: anns,
+    annLoading: !annLoaded,
     annError,
     refetchAnns: () => void loadAnns(),
     selectedAnnId,

@@ -461,9 +461,14 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           )}
         </div>
       )}
+      {/* The invite list comes from the replies read: when that failed, an empty list is unknown, not "no one" (CAL-09). */}
       {coach && e.people.length === 0 && (
         <div className="ch-in__sec">
-          <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
+          {ctx.rsvpError ? (
+            <InlineNotice code="CH-6205" title="Replies didn't load." body="Try again to see who's going." onRetry={ctx.refresh} />
+          ) : (
+            <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
+          )}
         </div>
       )}
       <EventFiles eventId={e.id} teamId={ctx.teamId} canEdit={coach && e.canEdit && !e.cancelled} preview={ctx.preview} />

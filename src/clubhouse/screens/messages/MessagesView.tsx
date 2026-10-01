@@ -158,6 +158,8 @@ export interface ChMessagesApi {
   setMute: (muted: boolean, hours: number | null) => Promise<boolean>;
 
   announcements: ChAnnouncement[];
+  /** The first announcements read hasn't answered: the list waits, so they don't push it down when they land (CLS). */
+  annLoading?: boolean;
   annError: boolean;
   refetchAnns: () => void;
   selectedAnnId: string | null;
@@ -386,7 +388,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             body="Your messages are safe. Try again; the error has been reported."
             onRetry={api.refetchConvs}
           />
-        ) : api.convsLoading && !api.convs.length ? (
+        ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
           <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
@@ -899,9 +901,12 @@ export function Composer({
     if (ok) haptic("success");
     else {
       haptic("error");
-      // Keep what they wrote: a failed send never eats the draft.
-      setDraft(text);
-      setFiles(pending);
+      // Keep what they wrote: a failed send never eats the draft. The box stays open while a send is pending, so
+      // the failed text goes back in front of anything typed since, never over it (MSG-26). The drafts map mirrors
+      // the box (setDraft) and outlives it when the thread was switched meanwhile.
+      const since = api.drafts.get(conv.id) ?? "";
+      setDraft(since ? (text ? `${text}\n${since}` : since) : text);
+      setFiles((now) => [...pending, ...now]);
     }
     ta.current?.focus();
   };

@@ -446,6 +446,16 @@ describe('Calendar · reads that fail', () => {
     expect(code('CH-6212')!.textContent).toMatch(/Times are shown in Eastern time/);
   });
 
+  it('CH-6213 the roster does not load: the page says so, and the editor never claims an empty roster or "0 of 0"', async () => {
+    const user = userEvent.setup();
+    wrap(cal({ people: [], membersError: true }));
+    expect(code('CH-6213')!.textContent).toMatch(/The roster didn't load/);
+    await user.click(screen.getByRole('button', { name: /New event/ }));
+    await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-6213"]').length).toBe(2));
+    expect(screen.queryByText(/No active players on the roster yet/)).toBeNull();
+    expect(screen.queryByText(/Invite · 0 of 0/)).toBeNull();
+  });
+
   it('CH-6204 CH-6205 replies do not load: a notice with Try again, in the summary and on the event', async () => {
     const user = userEvent.setup();
     wrap(cal({ rsvpError: true }));
