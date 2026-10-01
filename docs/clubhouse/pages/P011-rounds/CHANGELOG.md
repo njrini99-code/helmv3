@@ -4,6 +4,70 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.
 
+## 2026-10-01 — The round's save line tells the truth
+
+Owner rule 3 (2026-10-01): "Saved" only once the server confirms; before that,
+say where the shot is. Advancing optimistically is allowed only if it is
+provably safe on the current engine; if it is not, change the status and
+report why.
+
+```text
+PR/commit:      agent/swap-audit: 6ca1cf635
+Catalog:        CH-11901 (its words); no new codes
+Contract IDs:   none changed
+Data impact:    none: no write, no read, no migration
+Held items:     none
+```
+
+- **A conflict was shown as "Round saved".** When the server answered a save
+  with `conflict`, both engines called `handleRoundSyncConflict` without
+  waiting and returned, so the hook read the save as acknowledged: "Round
+  saved", the fingerprint stored, and the comment's "next tick re-sends"
+  never happened. A conflict is now held: healed (the mismatch was this
+  device's own unreadable write, the token is adopted) is a `conflict` hold,
+  re-sent on `online` or after 20 s; otherwise the round is blocked until a
+  reload and the line says "Saved on this phone". `use-continue-round-
+  session.ts` and `use-new-round-session.ts`, with a test in each
+  preservation file that fails on the old code.
+- **"Round saved" outlived the shot after it.** A shot recorded within 2 s of
+  an acknowledgement kept "Round saved" up (the auto-save effect's cleanup
+  drops the timer that would clear it) until that shot's own save began, 5 to
+  15 s later. An acknowledgement of an older snapshot that arrives after a
+  newer shot did the same. Both now leave "saved": the effect takes it down
+  as soon as the shots on screen differ from the last acknowledged ones, and
+  an acknowledgement says "saved" only if it covers what is on screen.
+- **A word for the wait.** Between a shot and its save the line said nothing.
+  It now says "Saved on this phone · syncing" when the engine's device copy of
+  that shot landed (`emergencySave` returns whether `localStorage` took it;
+  `handleSaveShot` now returns that and the shot hook keeps it as
+  `autoSaveSyncing`). When the device copy failed the line says nothing:
+  there is no true word for it, and the engine's one-time "degraded" notice
+  already tells the player. A hole-out keeps its own line ("Saving hole N")
+  and clears nothing it did not set; leaving a hole clears the flag, because
+  a hole is left only after the server confirmed it.
+- **The journey, as a test.** `use-continue-round-session.preservation.test`:
+  a shot entered (device copy lands), the connection cut (the save is held,
+  nothing is sent), the screen left, reopened (the device copy is offered,
+  restoring it gives two shots, not three), reconnected: the server is
+  written once with each shot once, and only its answer retires the device
+  copy; a retry of the same save sends the same snapshot, never a longer one.
+  What this proves is the client side. That the server then holds the shot
+  exactly once rests on the save being a whole-snapshot replace under the
+  `expected_updated_at` lock (migration `20260820170000`), which is read, not
+  re-proved here (no pgTAP was run for it).
+- **Complete hole still waits for the server, and now with the blockers
+  named.** Submit and finalise were already strictly server-confirmed
+  (`completedRoundId` is set only after `result.success`; Save for later and
+  Discard navigate only after success). Advancing at the tap stays off; see
+  "Why Complete hole still waits" below. The new evidence: a retry of hole N
+  replays the snapshot captured at the tap under the live lock token
+  (`persistCompletedHole` sends `{ ...saveData, expectedUpdatedAt }`), and
+  every save replaces the round with its snapshot, so a retry after the
+  player has recorded shots on hole N+1 would erase them; no client
+  timeout exists, so a hung request keeps "Saving hole N" up; and nothing
+  retries a hole advanced past while unsynced (the periodic save is triggered
+  by the current hole's shots alone, though its payload is the whole round).
+
 ## 2026-10-01 — Owner rules: page states, races, Back
 
 Owner, 2026-10-01 (the page-state rules in
@@ -176,6 +240,21 @@ is not done. The evidence, in the order a change would meet it:
   offline has no id until a save lands, and two saves then both create:
   a second in-progress round. An advance needs one queue across holes, which
   does not exist.
+- **A retry replays a stale snapshot.** `persistCompletedHole` sends the
+  `saveData` captured at the tap with only the lock token refreshed, on every
+  attempt (up to three, with the quiet loop around it). Each save replaces the
+  round's shots and holes with its snapshot, so once a player advances, a retry
+  of hole N would erase whatever they recorded on hole N+1 since. Every
+  attempt would have to rebuild its payload from the live refs.
+- **No timeout, no per-hole sync state.** No client timeout or abort exists in
+  either engine or the shot hook: a hung request keeps "Saving hole N" up. A
+  thrown error is retried by resending the same snapshot; a write whose
+  answer was lost is reconciled through the conflict path (the lock token no
+  longer matches, B9 adopts the server's and sends again), which is sound only
+  for a snapshot that is the latest. The periodic save is triggered by the
+  current hole's shots alone (`useShotStateMachine` compares only that hole's
+  fingerprint), so a hole advanced past while unsynced needs a set of unsynced
+  holes, a flush on `online` and a timer, and a status derived from that set.
 - **One slot for the failure.** `pendingHoleCheckpointRef` holds one hole's
   retry intent and the next `handleHoleComplete` overwrites it. A `hole_invalid`
   answer (a hole the server refuses, which no retry fixes) must send the player

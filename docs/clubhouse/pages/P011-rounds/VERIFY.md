@@ -242,6 +242,40 @@ popstate and gives up after a second if the page is not yet tall enough, so
 a slow server render behind `loading.tsx` may leave the library at the top:
 to be looked at on a device.
 
+## The save line (2026-10-01, owner rule 3)
+
+What proves CH-11901 now (`npm run test:file -- src/hooks/golf
+src/lib/golf/round-session src/clubhouse/__tests__/round-save-status.test.tsx`
+and the round-entry and round-tracking files: 38 files, 434 tests, pass):
+
+- `use-shot-state-machine.sync-status.test.ts` (8 cases): a shot inside the 2 s
+  an acknowledgement stays up takes "saved" down at once; the
+  acknowledgement of an older snapshot after a newer shot is not "saved";
+  `autoSaveSyncing` is set only by a shot whose device copy landed, cleared
+  only by an acknowledgement of what is on screen, survives a held save that
+  has a device copy and is dropped by one that has none, and is not carried to
+  another hole; a `conflict` hold is re-sent and is "saved" only once the
+  server acknowledges. Removing the effect's `AUTO_SAVE_UNSYNCED` and the
+  acknowledgement guard failed the two "saved" cases; both were put back.
+- `use-continue-round-session.preservation.test` and `use-new-round-session.
+  preservation.test`: a conflict answer is held (`conflict` when healed,
+  `blocked` otherwise, and a blocked round sends nothing more). Each fails on
+  the old fire-and-forget code (checked by putting it back, then removing it
+  again). The continue file also holds `handleSaveShot` reporting the device
+  copy (true; false when `localStorage` throws) and the journey: shot, offline,
+  left, reopened, restored, reconnected, once.
+- `round-save-status.test.tsx` (3 new cases): the line says "Saved on this
+  phone · syncing" for a shot whose device copy landed (and never "Round
+  saved"), and says nothing for a failed device copy or a renderer that
+  reports none.
+
+Not covered: the same journey on the new-round engine (its recovery path
+differs), a lost response followed by a retry against the real row lock
+(the whole-snapshot replace and `expected_updated_at` are read, from
+migration `20260820170000`, not re-proved; no pgTAP ran), the line on a
+phone, and `e2e/golf-round.spec.ts` (its offline case still has no
+assertions).
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev`, a browser pass with a real player and a real coach account (the library, the
