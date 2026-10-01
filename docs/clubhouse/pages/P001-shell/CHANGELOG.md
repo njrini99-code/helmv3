@@ -3,7 +3,6 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
-
 ## 2026-10-01 — High-fidelity audit: no staggered reveal, honest press, flat cards, phone type
 
 Owner answers on the high-fidelity audit (PROGRESS Q-139).
