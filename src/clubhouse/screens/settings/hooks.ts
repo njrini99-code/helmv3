@@ -4,6 +4,8 @@ import * as Sentry from '@sentry/nextjs';
 import { useEffect, useState } from 'react';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import type { DistancePreference } from '@/lib/golf/distance-units';
 import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
@@ -279,9 +281,14 @@ export function useDeleteAccount(writes: ChSettingsWrites, landed: () => void) {
   return useSaveAction('settings.deleteAccount', writes.deleteAccount, SAVE_COPY.delete, landed);
 }
 
-/** Preferences kept on this device: animations and, in the native app, haptics. */
+/**
+ * Preferences kept on this device: animations, the distance unit and, in the native app, haptics. The unit is the one
+ * Fairway's Settings writes and the shot screen reads (`golf_distance_unit_pref`): a device preference, never a column,
+ * so it has no server write to fail.
+ */
 export function useDevicePrefs() {
   const { showAnimations, updatePreferences } = useAppearancePreferences();
+  const { distancePref, setDistancePref } = useDistanceUnits();
   // Read after mount: the preference lives in this device's storage.
   const [haptics, setHaptics] = useState(true);
   useEffect(() => setHaptics(areHapticsEnabled()), []);
@@ -290,6 +297,11 @@ export function useDevicePrefs() {
     setAnimations: (v: boolean) => {
       chTrail(`settings animations ${v ? 'on' : 'off'}`);
       updatePreferences({ showAnimations: v });
+    },
+    distance: distancePref,
+    setDistance: (v: DistancePreference) => {
+      chTrail(`settings distance ${v}`);
+      setDistancePref(v);
     },
     haptics,
     setHaptics: (v: boolean) => {

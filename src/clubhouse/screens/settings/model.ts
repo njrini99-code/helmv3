@@ -142,6 +142,12 @@ export const HANDICAP_OPTIONS = [
   { value: 'none', label: 'No handicap' },
 ] as const;
 
+/** The distance a shot or a hole shows in. Display only: shots are stored in yards and feet either way. */
+export const DISTANCE_OPTIONS = [
+  { value: 'yards', label: 'Yards' },
+  { value: 'meters', label: 'Meters' },
+] as const;
+
 export const TIMEZONE_OPTIONS = [
   { value: 'America/New_York', label: 'Eastern (ET)' },
   { value: 'America/Chicago', label: 'Central (CT)' },
