@@ -36,8 +36,9 @@ The plan and its order are in `docs/clubhouse/ROUNDS_PLAN.md` (the renderer firs
 wiring: #2104 moved the engines to `src/lib/golf/round-session/`, and round entry is wired to them here). Both
 entry routes are in the shell's rebuilt list for a player, so the library's New round, Start a round and Continue,
 and Home's and CoachHelm's "post a round" links, are drawn (`nav.rebuiltHref`); a coach's are not. With the flag
-off the pages render Fairway's clients exactly as before. `/rounds/recover` and `/rounds/[id]/review`
-(CoachHelm's AI review) are not part of this page and stay as they are; nothing in Clubhouse links to recover.
+off the pages render Fairway's clients exactly as before. `/rounds/[id]/review` (CoachHelm's AI review) is not part
+of this page and stays as it is. `/rounds/recover` is rebuilt for a player (swap audit F-02): where a submit that could
+not reach the server lands, with no link from the Library.
 
 ## Purpose
 

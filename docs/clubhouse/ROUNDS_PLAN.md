@@ -118,7 +118,7 @@ a coach Rounds library is not in these boards.
 
 These stay as they are:
 
-- offline recovery UI (`rounds/recover`), which keeps the legacy page until a
-  board exists;
+- offline recovery UI (`rounds/recover`), which kept the legacy page until the
+  swap audit (F-02) built Clubhouse's, with no board;
 - the CoachHelm filmstrip on the review, which belongs to CoachHelm;
 - any schema change.

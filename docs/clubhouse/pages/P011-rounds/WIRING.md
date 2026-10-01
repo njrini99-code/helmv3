@@ -265,9 +265,12 @@ approved (Q-72f).
 - A Clubhouse player can now review, discard, start and continue rounds (`/rounds/new` and `/rounds/continue/[id]`
   are in the shell's rebuilt list for a player, so New round, Start a round, Continue and Submit draw everywhere they
   link: the library, Home, CoachHelm). A coach's are still not drawn. Flag off, all of it stays Fairway's.
-- `/rounds/recover` is still Fairway's and is not rebuilt. A Clubhouse player is never linked to it: a submit that
-  could not reach the server leaves the round on the device and opens Rounds, where Continue offers the device copy
-  (CH-11905, CH-11512). Proposed to the owner as a question; the lead numbers it in the tracker.
+- `/rounds/recover` is rebuilt for a player (swap audit F-02; it was Fairway's until then). A submit that could not
+  reach the server leaves the round on the device and opens it, `?from=submit` (CH-11905, CH-11911, `ENGINE_ROUTES` in
+  `entry/routes.ts`), where Restore, Retry sync and Discard work on the rounds the device holds (CH-11017 to CH-11019,
+  CH-11520). The Library does not link to it. Fairway's recovery is ported, not moved: `FairwayRecoverRound`'s tests
+  pin its source, so the two share the lower layers (`round-missing-recovery`, the emergency save, the stores) and
+  not the scan, which is duplicated until Fairway is retired.
 - Continue's page skips the Fairway round-type editor and its qualifier reads for a Clubhouse player, so a
   round's type cannot be retyped mid-round there; Change to practice on a closed qualifier is the one retype
   (also proposed as a question).

@@ -1,8 +1,34 @@
 # P011 — Rounds: changelog
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
-log and decisions). Every entry is dated 2026-09-30: the tracker and git show no
-earlier Rounds work.
+log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
+the history show none earlier.
+
+## 2026-10-01 — Round recovery (swap audit F-02; CH-11017 to CH-11019, CH-11212, CH-11314, CH-11408, CH-11409, CH-11520, CH-11911)
+
+```text
+PR/commit:      agent/swap-audit
+Contract IDs:   110209, 110210, 110415, 110629 to 110632, 110712, 111120
+Data impact:    none (reads and writes what Fairway's recovery does; no migration)
+```
+
+- **Issue.** With the flag on, a player could not reach round recovery. The engines
+  sent a submit that could not reach the server to `/rounds`, and the Library reads
+  server rounds only, so a round saved only on the device was invisible and could
+  not be restored.
+- **Fix.** `/rounds/recover` is rebuilt for a player. The screen lists the rounds the
+  device holds for the signed-in player (recovery journal, failed-submit queue, the
+  old database, the emergency save; one card per round) and offers Restore (or
+  Submit round for a finished round whose submit failed), Retry sync for queue
+  rounds, and Discard after a question. The engines' `recover` route is that screen,
+  with `?from=submit`. Restore is Fairway's recovery, ported; Discard is the round
+  engines' discard (the Library's for a round the server holds), then every device
+  copy and the discard mark the round screens and the queue's drain honour.
+- **Changed with it.** CH-11905's toast no longer says to continue from Rounds. The
+  rebuilt-routes test now expects recover to be rebuilt for a player.
+- **Checked.** rounds-recover.test (the screen, the address, the page, the phone) and
+  rounds-recover-ports.test (the scan for the signed-in player only, Restore, Retry
+  sync, Discard). Not run: a phone, or a real failed submit.
 
 ## 2026-09-30 — Strokes gained on a round's review (CH-11313)
 

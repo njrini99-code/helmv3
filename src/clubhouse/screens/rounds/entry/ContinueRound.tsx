@@ -6,12 +6,11 @@ import { useContinueRoundSession, type ContinueRoundSessionProps } from '@/lib/g
 import { useRoundPorts } from './ports';
 import { QualifierRoundSheet } from './QualifierRoundSheet';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
+import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
 
 const LIBRARY = '/golf/dashboard/rounds';
 
-/** The recovery flow is Fairway's and has no Clubhouse screen: a submit that couldn't reach the server lands on Rounds (see `NewRound`). */
-const ENGINE_ROUTES = { recover: LIBRARY };
 const ROUTES: RoundRuntimeRoutes = { library: LIBRARY, review: (roundId) => `${LIBRARY}/${roundId}` };
 
 export interface ContinueRoundProps extends ContinueRoundSessionProps {

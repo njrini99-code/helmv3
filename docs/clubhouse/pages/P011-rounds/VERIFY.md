@@ -142,7 +142,8 @@ Result:       built to the approved spec and seen at 390; 430px is not recorded 
 | Round entry: submit | CH-11005, CH-11603, CH-11905, CH-11909, 110902 | `round-entry-routes.test` (a fake session), the engines | posted ticks the haptic once and opens the review after 2.5 s; a submit that could not reach the server says it is saved on this device and opens Rounds; slow after 15 s says so |
 | Round entry: skeleton | CH-11407 | tests (the loading switch, the skeleton before the day and the qualifiers are read) | a page-shaped skeleton in the shell; Fairway's with the flag off |
 | Round entry routes, flag on and off | 110114 | `round-entry-routes.test` | flag on: Clubhouse's screens (player); flag off and a coach: Fairway's client and the legacy message, as before |
-| The rebuilt list and the library's links | 110105, 110109 | `round-entry-routes.test`, `rounds.test` | New round, Start a round and Continue are drawn for a player and never for a coach; `/rounds/recover` is not linked |
+| The rebuilt list and the library's links | 110105, 110109 | `round-entry-routes.test`, `rounds.test` | New round, Start a round and Continue are drawn for a player and never for a coach; `/rounds/recover` is rebuilt (F-02) and not linked from the Library |
+| Round recovery (F-02) | CH-11017 to CH-11019, CH-11212, CH-11314, CH-11408, CH-11409, CH-11520, CH-11911 | `rounds-recover.test`, `rounds-recover-ports.test` | the device's rounds listed for the signed-in player only; Restore opens the round (or its review), Retry sync asks the sync engine, Discard asks first and clears every copy and marks the round; the recover address is rebuilt and where the engines send a failed submit |
 
 ## Accessibility
 
@@ -202,8 +203,9 @@ Notes:             first-load JS and LCP (CH-1954) are open
   the session and the shot screen (a stub in the wiring tests). Nothing was flipped: the flag is off in production.
 - Offline on the library's Discard and the hole's Try again (110702 stays reserved; round entry's Start and Save for
   later are forced offline), a failed Start keeping every field (111201), and the qualifier preselect effect.
-- `/rounds/recover` has no Clubhouse screen (no board): a round the device holds that the server never got is
-  offered from Rounds' Continue (CH-11512), not from recover. The entry routes' `error.tsx` files are still Fairway's.
+- `/rounds/recover` had no Clubhouse screen when this page was verified; it has one now (swap audit F-02, no board;
+  see the row above). It was not run on a phone or against a real failed submit. The entry routes' `error.tsx` files
+  are still Fairway's.
 - Offline (110702), Esc (112001), the read order (112101), a failed Start keeping the setup (111201) and a failed hole save
   keeping the shots (111202) have no test; the review's skeleton (110206) is not built.
 - Found and not fixed (see the report to the parent):

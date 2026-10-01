@@ -9827,7 +9827,7 @@
     "category": 1,
     "item": 5,
     "name": "UNBUILT_TARGETS_ARE_NOT_DRAWN",
-    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds, and /rounds/recover stays Fairway's, so nothing links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
+    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES",
     "tests": [
@@ -10044,6 +10044,28 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110209,
+    "page": "P011",
+    "category": 2,
+    "item": 9,
+    "name": "ROUND_RECOVERY_ROUTE_LOADING",
+    "chCode": "CH-11408",
+    "meaning": "Round recovery route loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110210,
+    "page": "P011",
+    "category": 2,
+    "item": 10,
+    "name": "READING_THE_DEVICE_FOR_SAVED_ROUNDS",
+    "chCode": "CH-11409",
+    "meaning": "Reading the device for saved rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -10196,6 +10218,17 @@
     "name": "A_ROUND_WITH_NO_STROKES_GAINED",
     "chCode": "CH-11313",
     "meaning": "A round with no strokes gained (posted without shots)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110415,
+    "page": "P011",
+    "category": 4,
+    "item": 15,
+    "name": "NOTHING_ON_THIS_DEVICE_TO_RECOVER",
+    "chCode": "CH-11314",
+    "meaning": "Nothing on this device to recover",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -10623,6 +10656,50 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110629,
+    "page": "P011",
+    "category": 6,
+    "item": 29,
+    "name": "RESTORING_A_SAVED_ROUND_FAILS",
+    "chCode": "CH-11017",
+    "meaning": "Restoring a saved round fails (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110630,
+    "page": "P011",
+    "category": 6,
+    "item": 30,
+    "name": "RETRY_SYNC_FAILS",
+    "chCode": "CH-11018",
+    "meaning": "Retry sync fails (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110631,
+    "page": "P011",
+    "category": 6,
+    "item": 31,
+    "name": "DISCARDING_A_SAVED_ROUND_FAILS",
+    "chCode": "CH-11019",
+    "meaning": "Discarding a saved round fails (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110632,
+    "page": "P011",
+    "category": 6,
+    "item": 32,
+    "name": "THIS_DEVICES_SAVED_ROUNDS_CANT_BE_READ",
+    "chCode": "CH-11212",
+    "meaning": "This device's saved rounds can't be read (every store failed and nothing was found)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -10739,6 +10816,17 @@
     "name": "EVERY_HOLE_IS_IN_BUT_THE_FINISH",
     "chCode": "CH-11910",
     "meaning": "Every hole is in but the finish sheet was closed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110712,
+    "page": "P011",
+    "category": 7,
+    "item": 12,
+    "name": "OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH",
+    "chCode": "CH-11911",
+    "meaning": "Opened from a submit that couldn't reach the server (`?from=submit`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -11035,6 +11123,17 @@
     "name": "THE_SAME_AND_NO_ROUND_IS_LEFT",
     "chCode": "CH-11519",
     "meaning": "The same, and no round is left to choose",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111120,
+    "page": "P011",
+    "category": 11,
+    "item": 20,
+    "name": "DISCARD_ON_A_SAVED_ROUND",
+    "chCode": "CH-11520",
+    "meaning": "Discard on a saved round (Recover)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
