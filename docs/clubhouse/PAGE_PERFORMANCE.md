@@ -99,17 +99,29 @@ The brief's seven screenshots did not reach the session. Each of its findings
 was traced in code instead; nothing below is a before and after against those
 images.
 
-| Finding | Cause found | Confidence | Fix |
-| --- | --- | --- | --- |
-| Dark name on the night welcome | Fixed on this branch (`972824ab5`, F-50), not yet on `main`: production still shows it | High (code and commit history) | Ships with this branch |
-| Viewport or scaling | One viewport tag, `viewport-fit=cover`, zoom allowed; no root zoom or scale transform | High (code) | None needed |
-| Safe-area ownership | `contentInset: 'never'`; CSS owns each edge once (top bar, tab bar, canvas) | High (code) | Left and right insets (landscape) are not handled yet |
-| Keyboard | Capacitor resize `ionic` resizes nothing in Clubhouse (no `ion-app`); the web code owns it (`--keyboard-height`) | Medium (config read, no device) | One owner; the device check stays the owner's |
-| Classes: title twice, crowded summary, Today collision | The phone kept the desktop header and term bar | High | Phone: one heading, the term in a line, Today first, overlaps before the deck (CH-12308) |
-| Approach stats hierarchy, cramped bins, sample line, "You hits" | Stats files | — | Sent to the Stats/Home agent |
-| Dashboard hero, countdown, selected day, bell | Home files | — | Sent to the Stats/Home agent |
-| QA item in the return feed | 8 orphaned "QA CRUD Announcement v3" notifications to Demo players | High (read-only SQL) | Q-136: the write was declined; production unchanged |
-| Continue gate | Shown after a fresh sign-in only | High | Q-137: on a phone it carries on by itself with the fold |
+- **Dark name on the night welcome.** Fixed on this branch (`972824ab5`, F-50),
+  not yet on `main`: production still shows it. Confidence: High (code and
+  commit history). Fix: Ships with this branch.
+- **Viewport or scaling.** One viewport tag, `viewport-fit=cover`, zoom allowed;
+  no root zoom or scale transform. Confidence: High (code). Fix: None needed.
+- **Safe-area ownership.** `contentInset: 'never'`; CSS owns each edge once (top
+  bar, tab bar, canvas). Confidence: High (code). Fix: Left and right insets
+  (landscape) are not handled yet.
+- **Keyboard.** Capacitor resize `ionic` resizes nothing in Clubhouse (no
+  `ion-app`); the web code owns it (`--keyboard-height`). Confidence: Medium
+  (config read, no device). Fix: One owner; the device check stays the owner's.
+- **Classes: title twice, crowded summary, Today collision.** The phone kept the
+  desktop header and term bar. Confidence: High. Fix: Phone: one heading, the
+  term in a line, Today first, overlaps before the deck (CH-12308).
+- **Approach stats hierarchy, cramped bins, sample line, "You hits".** Stats
+  files. Fix: Sent to the Stats/Home agent.
+- **Dashboard hero, countdown, selected day, bell.** Home files. Fix: Sent to
+  the Stats/Home agent.
+- **QA item in the return feed.** 8 orphaned "QA CRUD Announcement v3"
+  notifications to Demo players. Confidence: High (read-only SQL). Fix: Q-136:
+  the write was declined; production unchanged.
+- **Continue gate.** Shown after a fresh sign-in only. Confidence: High. Fix:
+  Q-137: on a phone it carries on by itself with the fold.
 
 Measured with `e2e/clubhouse-phone-audit.spec.ts`, coach at 320px: no page
 scrolls sideways; the smallest text is 10px (Team stats chart label), and the

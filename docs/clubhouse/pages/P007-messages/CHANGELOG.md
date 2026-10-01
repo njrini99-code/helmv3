@@ -3,7 +3,7 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
-## 2026-10-01 — Page pass: a thread that fails to refresh says so (CH-7216); a failed text stays in its bubble
+## 2026-10-01 — Page pass: stale threads said, failed text in its bubble
 
 PAGE_PERFORMANCE.md rules 4 and 11.
 

@@ -2,8 +2,7 @@
 
 Newest first.
 
-
-## 2026-10-01 — Phone: the welcome carries on into the dashboard by itself (Q-137)
+## 2026-10-01 — Phone: the welcome carries on by itself (Q-137)
 
 ```text
 PR/commit:      agent/swap-audit (#2111)
