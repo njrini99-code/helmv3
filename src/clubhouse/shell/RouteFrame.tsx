@@ -3,6 +3,7 @@
 import { useEffect, useRef, ViewTransition, type ReactNode } from 'react';
 import { useChPress } from '../lib/press';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { markAppRunning, RouteScope } from '../lib/session-state';
 
 /**
  * The page frame. Each page mounts fresh on navigation (keyed by route), so
@@ -19,17 +20,55 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 /** The longest reveal: the last of ten steps' delay plus the rise itself, with room to spare (base.css). */
 const REVEAL_MS = 1200;
 
+/** Where each page was scrolled, by route and team, for Back and Forward (this tab only). */
+const scrolled = new Map<string, { canvas: number; win: number }>();
+/** Set by a Back or Forward (popstate); a navigation that starts within this long of one is a return. */
+const RETURN_WINDOW_MS = 1500;
+let poppedAt = 0;
+if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()));
+
+/** Scrolls back to a saved place once the page is tall enough to hold it, or gives up after a second. */
+function restoreScroll(to: { canvas: number; win: number }): () => void {
+  const canvas = document.getElementById('ch-canvas');
+  const until = Date.now() + 1000;
+  let frame = 0;
+  const step = () => {
+    canvas?.scrollTo({ top: to.canvas });
+    window.scrollTo({ top: to.win });
+    const there = (!canvas || Math.abs(canvas.scrollTop - to.canvas) < 2) && Math.abs(window.scrollY - to.win) < 2;
+    if (!there && Date.now() < until) frame = requestAnimationFrame(step);
+  };
+  step();
+  return () => cancelAnimationFrame(frame);
+}
+
 export function RouteFrame({ routeKey, children }: { routeKey: string; children: ReactNode }) {
   const reduced = useChReducedMotion();
   useChPress(!reduced);
   const first = useRef(true);
+  useEffect(() => markAppRunning(), []);
+  // A new page opens at the top (CH-1904); Back or Forward returns to where that page was left (PAGE_PERFORMANCE.md
+  // rule 1). Positions are recorded as the coach scrolls, so leaving never has to read a page already swapped out.
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
+    const canvas = document.getElementById('ch-canvas');
+    const record = () => scrolled.set(routeKey, { canvas: canvas?.scrollTop ?? 0, win: window.scrollY });
+    canvas?.addEventListener('scroll', record, { passive: true });
+    window.addEventListener('scroll', record, { passive: true });
+    let cancel: (() => void) | undefined;
+    if (first.current) first.current = false;
+    else {
+      const saved = scrolled.get(routeKey);
+      if (saved && Date.now() - poppedAt < RETURN_WINDOW_MS) cancel = restoreScroll(saved);
+      else {
+        canvas?.scrollTo({ top: 0 });
+        window.scrollTo({ top: 0 });
+      }
     }
-    document.getElementById('ch-canvas')?.scrollTo({ top: 0 });
-    window.scrollTo({ top: 0 });
+    return () => {
+      cancel?.();
+      canvas?.removeEventListener('scroll', record);
+      window.removeEventListener('scroll', record);
+    };
   }, [routeKey]);
 
   // The reveal plays once per page (F-55): once the page itself (not its skeleton) is on screen and the stagger has
@@ -61,7 +100,7 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
 
   const page = (
     <div key={reduced ? routeKey : undefined} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route ch-reveal">
-      {children}
+      <RouteScope value={routeKey}>{children}</RouteScope>
     </div>
   );
   if (reduced) return page;

@@ -3,6 +3,7 @@
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useChSessionState } from '../../lib/session-state';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -204,7 +205,8 @@ export function Calendar({
   const coach = data.role === 'coach';
   const [view, setView] = useState<ChCalView>(data.view);
   const [anchor, setAnchor] = useState(data.anchor);
-  const [sel, setSel] = useState<string[]>([]);
+  // The player filter comes back with the page; view and date already live in the URL (PAGE_PERFORMANCE.md rule 1).
+  const [sel, setSel] = useChSessionState<string[]>('players', []);
   const [insp, setInsp] = useState<ChInsp>(() => {
     const e = initialEvent ? data.events.find((x) => x.id === initialEvent) : undefined;
     return e ? { kind: 'event', id: e.id, date: e.date } : null;

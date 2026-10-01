@@ -2,6 +2,7 @@
 
 import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
@@ -53,10 +54,11 @@ export function Roster({ data }: { data: ChRoster }) {
     setSeen(data.players);
     setPlayers(data.players);
   }
-  const [q, setQ] = useState('');
-  const [show, setShow] = useState<Show>('active');
-  const [sort, setSort] = useState<Sort>('avg');
-  const [view, setView] = useState<View>('faces');
+  // Search, filter, sort and layout come back when the coach returns to Roster (PAGE_PERFORMANCE.md rule 1).
+  const [q, setQ] = useChSessionState('q', '');
+  const [show, setShow] = useChSessionState<Show>('show', 'active');
+  const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
+  const [view, setView] = useChSessionState<View>('view', 'faces');
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);

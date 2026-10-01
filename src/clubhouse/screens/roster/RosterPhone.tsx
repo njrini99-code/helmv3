@@ -4,6 +4,7 @@ import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserMinus, UserP
 import { AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useChSessionState } from '../../lib/session-state';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -77,7 +78,7 @@ export function RosterPhone({
 }) {
   const backFromMore = useBackFromMore();
   const copy = useCopyText();
-  const [sort, setSort] = useState<PhoneSort>('avg');
+  const [sort, setSort] = useChSessionState<PhoneSort>('phoneSort', 'avg');
   const [requestsOpen, setRequestsOpen] = useState(false);
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
