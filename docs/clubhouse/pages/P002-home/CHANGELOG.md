@@ -25,18 +25,27 @@ Held items:     none
   timezone and cut to the week in code); the replies start as soon as the
   events are back and the season's rounds as soon as the roster's ids are, so a
   coach's Home is three round trips and a player's two (`home-reads.test.ts`
-  pins both, and that the events are read once). The
-  skeleton's head is its four lines (date, greeting, two-line sentence, the two
-  actions) and its sheet panes the loaded height. A tap on the leaderboard or
-  the next-event card shows the page's hairline while the page loads
+  pins both, and that the events are read once). The skeleton's head is its
+  four lines (date, greeting, two-line sentence, the two actions), its sheet
+  panes the loaded height and the leaderboard's heading its two lines and
+  button: measured against the loaded page, the head, the sheet and the
+  leaderboard's top land within 1 px (the head was 120 px short and the
+  leaderboard landed 362 px lower than drawn). A tap on the leaderboard or the
+  next-event card shows the page's hairline while the page loads
   (`LinkPending`).
 - **Not done, on purpose.** Nothing is cached across requests or users. The
-  phone's skeleton blocks were not re-measured (its landmarks differ from the
-  loaded phone page's classes).
+  route skeleton serves both roles and draws the coach's sheet, so a player's
+  loaded sheet is 128 px taller than it. The phone's skeleton hero is 22 px
+  (coach) or 36 px (player) taller than the loaded one (the lead's design,
+  measured, not changed). A tap into Home shows its page no earlier than about
+  350 ms whatever the server time, because React holds a Suspense reveal
+  until 300 ms after the skeleton committed; that is the shell's
+  (PROGRESS.md, "Stats and home").
 - **Checked.** `home-reads.test.ts`, `home.test.tsx`, `player-home.test.tsx`,
   `player-home-phone.test.tsx`, `stats-geometry.test.tsx` (the skeleton's head);
   measured with `npm run clubhouse:perf` (PROGRESS.md, "Page performance
-  (2026-10-01)").
+  (2026-10-01)": cold server time 172 to 148 ms coach, 129 to 116 player at
+  1280; 6 to 4 and 6 to 5 round trips on a cold load).
 
 ## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
 

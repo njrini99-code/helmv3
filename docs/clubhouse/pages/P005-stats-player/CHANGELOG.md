@@ -6,7 +6,7 @@ log and decisions).
 ## 2026-10-01 — Page performance: two round trips for a player, three for a coach, a hero that holds its shape
 
 ```text
-PR/commit:      agent/swap-audit (09870b6d6, 26cf82b2c, 2b3e64862)
+PR/commit:      agent/swap-audit (09870b6d6, 26cf82b2c, 2b3e64862, 169f17833, 9000315b7, 6e78c0dc3)
 Design package: none (no new element)
 Contract IDs:   none new (CH-5402, CH-5403 behaviour unchanged)
 Actions:        none changed; `getDetailedStats` and `getSprayChartData` run in the stats context (below)
@@ -29,11 +29,16 @@ Held items:     none
   which nothing waits on). The two actions run in the page's own stats context,
   built only from the request's signed-in user and `verifyPlayerAccess` for
   this player; a degraded session, a denied or failed check, or no user leaves
-  each action to check for itself, as before. The shot reads page four at a
-  time. The strokes gained figure keeps its change line in every window (empty
-  when there is no change), and the skeleton's hero has it too. The phone
-  skeleton is in the loaded order (header, window and filter row, figures) and
-  as tall as the loaded blocks.
+  each action to check for itself, as before. The shot reads page in growing
+  batches (2, 4, 8 at a time after the first). The strokes gained figure keeps
+  its change line in every window (empty when there is no change), and the
+  skeleton's hero has it too. A tab's count is two digits wide at least, so the
+  Development tab no longer slides 7 px when a window's round count goes from
+  one digit to two. A coach's skeleton draws the way back and the three actions
+  (hero 349 px like the page, was 307), a player's hero matches to the pixel
+  (314). On the phone a one-round trend keeps its chart frame, an empty strokes
+  gained panel the height of the bars, and the skeleton is in the loaded order
+  (header, window and filter row, figures) and as tall as the loaded blocks.
 - **Not done, on purpose.** No cross-request cache and no prefetch of other
   windows. The phone's strokes gained caption drops its change chip when a
   window has no change (F-54), so the strip is 78 px instead of 125 and the page
@@ -45,7 +50,14 @@ Held items:     none
   a degraded session, a profile not on the team reads no shots, a failed
   teammates read), `stats-player.test.tsx`, `stats-parity.test.tsx`,
   `stats-geometry.test.tsx`; measured with `npm run clubhouse:perf`
-  (PROGRESS.md, "Page performance (2026-10-01)").
+  (PROGRESS.md, "Page performance (2026-10-01)"). Reads on a cold load, coach
+  44 to 38 over 5 to 4 round trips, player 33 to 28 over 5; server time at
+  1280, coach 272 to 188 ms cold and 186 to 123 on the Season window, player
+  221 to 132 ms cold and 178 to 125 on Season. The hero, tabs, filter row and
+  panel land within 0 px of the skeleton (the coach's hero was 34 to 103 px
+  off). Raw layout shift on a switch at 1280 is 0.000 to 0.012 (was 0.006 to
+  0.013); at 390 it is unchanged (0.036 to 0.093: the figure strip and the
+  strokes gained card change height, the owner decisions above).
 
 ## 2026-10-01 — Phone to the board; smooth window changes (F-54, F-55)
 

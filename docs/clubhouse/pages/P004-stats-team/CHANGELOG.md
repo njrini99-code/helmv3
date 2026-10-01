@@ -5,7 +5,7 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification l
 ## 2026-10-01 — Page performance: fewer round trips, a page that keeps its shape across windows
 
 ```text
-PR/commit:      agent/swap-audit (09870b6d6, 26cf82b2c, 2b3e64862)
+PR/commit:      agent/swap-audit (09870b6d6, 26cf82b2c, 2b3e64862, 169f17833, a5cc23b30, 9000315b7, 6e78c0dc3)
 Design package: none (no new element; the held cards and the caption line add a little height in some windows)
 Contract IDs:   none new (CH-4402, CH-4401 behaviour unchanged)
 Actions:        none
@@ -22,18 +22,25 @@ Held items:     none
   trend card 313 px against 213 and 419 loaded, so the page moved when it
   landed.
 - **Fix.** The round figures, the window's putts and the longest putt are read
-  together after the rounds, and a long read asks for four pages at once after
-  the first (`fetchAllRowsTogether`, same contract). The longest putt is one row
+  together after the rounds, and a long read asks for its pages in growing
+  batches after the first (2, then 4, then 8 at a time: a three-page read is two
+  round trips instead of three, a six-page one three instead of six;
+  `fetchAllRowsTogether`, same contract; asking for the row count with the first
+  page measured slower, so it is not asked). The longest putt is one row
   from the database (made, 0 to 120 ft, the longest), asked in chunks of 200
   rounds and compared across them. The cards hold the height of their fullest
   layout in every window (the change chip with its words wrapped under it, the
   strokes gained note on two lines; two across, the narrow layout), the caption
   line is always there (empty when no note is shared), and the trend plot is as
-  tall as the team's players whichever have rounds, the empty window included.
-  On the phone the empty trend keeps its chart frame and the putting reading
-  holds two lines. The skeleton draws the same heights, the caption line and
-  the trend card's head, plot and note. Tapping a player row shows the page's
-  hairline while the profile loads (`LinkPending`).
+  tall as the team's players whichever have rounds, the empty window included
+  (its list keeps its top when it shortens). On the phone the empty trend keeps
+  its chart frame, an empty strokes gained panel the height of the bars, and
+  the putting reading holds two lines. The skeleton draws the same heights
+  (the card has one height variable per layout, shared with the held card; one
+  more band at a 901 to 940 px canvas, where two cards' words take a third
+  line), the caption line and the trend card's head, plot and note. Tapping a
+  player row shows the page's hairline while the profile loads
+  (`LinkPending`).
 - **Not done, on purpose.** Nothing is cached across requests, users or teams,
   and other windows are not prefetched: a window is a heavy server render and
   a stale figure is worse than a 250 ms wait. The phone's figure strip still
@@ -44,7 +51,14 @@ Held items:     none
   chunks of 200 across 450 rounds; a failed longest-putt read leaves the best
   out), `paging.test.ts`, `stats-geometry.test.tsx`, `stats-team.test.tsx` 47/47;
   measured with `npm run clubhouse:perf` (PROGRESS.md, "Page performance
-  (2026-10-01)").
+  (2026-10-01)"). Server time at 1280, median of three alternating passes: cold
+  395 to 305 ms, a tap from Home 425 to 292, the Qualifiers window 190 to 119,
+  Last 10 318 to 211; Season did not move (180 to 188, inside the spread; 168
+  to 193 at 390). Cards, strokes gained table and head land within 1 px of the
+  skeleton (the table landed 79 px lower than drawn). Raw layout shift on a
+  switch at 1280 was 0.023 to 0.026 and is 0.001 to 0.003; at 390 Qualifiers
+  went 0.110 to 0 and Last 10 0.128 to 0.042, with Season still 0.042 (the
+  coverage caption, 54 px).
 
 ## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
 

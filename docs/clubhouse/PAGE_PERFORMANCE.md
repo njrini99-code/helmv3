@@ -64,7 +64,11 @@ each one stands. Measurements go in `PROGRESS.md`, "Page performance
 - **1 Stable shell.** Shell above `RouteFrame`; only the page frame is keyed.
   Context restore per page: in the page pass.
 - **2 Feedback.** Done: `LinkPending` (selected look on the first frame,
-  hairline after `--ch-dur-press`).
+  hairline after `--ch-dur-press`), on Stats and Home's row links too. Open: a
+  tap into a route that shows its skeleton shows the page no earlier than about
+  350 ms, with its data back at 120 (React's 300 ms Suspense reveal throttle
+  after the fallback commits; PROGRESS.md, "Stats and home", for the numbers
+  and the owner decision).
 - **3 Motion.** Page crossfade done (`RouteFrame`, React `ViewTransition`);
   sheets and insertions keep the existing D-64 motion; audit queued.
 - **4 State model.** Page pass, Stats/Home and CoachHelm/Rounds/Qualifiers
@@ -73,20 +77,33 @@ each one stands. Measurements go in `PROGRESS.md`, "Page performance
   yet" and never the default team (`resolveCoachActiveTeam`, three-way);
   route Try again refreshes the server payload before resetting.
 - **5 Skeleton geometry.** Page pass: measured CLS per route and switch.
-- **6 Independent sections.** Page pass.
+  Stats and Home measured: on desktop every skeleton block lands within 1 px of
+  the loaded page (the coach's Home leaderboard landed 362 px lower than it was
+  drawn, the team's strokes gained table 79 px); raw shift on a window switch
+  is 0.000 to 0.012 at 1280. Open: the phone profile and team strips (0.036
+  to 0.093 at 390, owner decisions F-43 and F-54), the phone Home skeleton (22
+  or 36 px, by design) and a player's desktop Home sheet (128 px, one skeleton
+  for both roles).
+- **6 Independent sections.** Page pass. Stats and Home: not streamed in
+  parts, on purpose (PROGRESS.md).
 - **7 Prefetch and cache keys.** Page pass; nothing cached across users or
-  teams.
+  teams. Stats and Home: no cache and no prefetch of other windows; only the
+  per-request dedupe of the signed-in user.
 - **8 Previous content.** Stats window switch done earlier (F-55). Team
   switch done: the old team's page fades out and takes no taps until the new
   one commits, and toasts are scoped to the team. The rest in the page pass.
-- **9 Off the tap path.** Page pass, measured as long tasks and INP.
+- **9 Off the tap path.** Page pass, measured as long tasks and INP. Stats and
+  Home: INP 24 to 104 ms on every tap (clean pass, budget 200).
 - **10 Render less.** Queued: Messages history, round archive.
 - **11 Honest optimism.** Queued: Messages send, Calendar moves; Rounds in the
   page pass.
 - **12 Durable rounds.** Engine R-1..R-12 (night audit); the hole-save status
   and advancing are in the page pass.
-- **13 Measure.** Harness being built (`e2e/helpers`, production build on the
-  local stack).
+- **13 Measure.** Built: `npm run clubhouse:perf` (a production build of a
+  committed ref on the local stack, 1280 and 390, 4x CPU: reads and round trips,
+  skeleton geometry, raw shift, INP; `e2e/README.md`, which also says how to
+  compare two builds on a shared machine). Measured: Stats and Home
+  (PROGRESS.md).
 - **14 Interruptions.** F-59 (a quick Continue bounced) fixed; the rest per
   page.
 

@@ -35,6 +35,287 @@ copied from `CHECKLIST_TEMPLATE.md`. It has one section per gate, and
 `clubhouse:check` refuses a `done` gate while its section still has an unchecked
 box. That checklist is the definition of pro quality for the screen.
 
+## Page performance (2026-10-01)
+
+The standard is `PAGE_PERFORMANCE.md`; the harness is `npm run clubhouse:perf`
+(`e2e/README.md`). Each page group adds a subsection here: what changed, the
+numbers, what was left and why. Numbers come from a production build of a
+committed ref served against the local stack (nothing reaches production), a
+seeded team of 8 players with 114 rounds and 5.8k shots, Playwright at 1280
+and 390 wide, the CPU throttled 4x, three runs per case.
+
+Read them this way. Reads, round-trip depth ("waves"), layout shift and
+skeleton geometry are exact and repeat. Milliseconds do not: the laptop that
+took them was shared with other sessions (load average 5 to 22, swap full), so
+a timing is shown with the min and max of its three runs and only a change
+larger than that spread is claimed. Before and after were measured one after
+the other in the same session, a baseline build and the build under test
+swapped on one port, not against numbers taken hours apart.
+
+### Stats and home (P002, P004, P005)
+
+Commits: the loaders `2b3e64862`, `09870b6d6` (Stats), `7dd8bb3d2` (Home),
+`410727aea` then `169f17833` (long reads); the pages' geometry `26cf82b2c`,
+`19a20054b`, `a5cc23b30`, `9000315b7`, `6e78c0dc3`; the harness `a41462993`,
+`00c5232cb`, `d73eff01f`, `602d23534`, `ac07d1a5d`, `d79b3766c`, `3e4454ced`,
+`082214d1d`, `8beeff241`, `815355edf`; the page changelogs `d4f1b8fc5`.
+
+Measured: before is `23ca669f1`, the tip when the harness was written. After is
+`082214d1d` for the timings (the loaders and geometry were final in it, except
+the paging rule below) and `169f17833` for reads, waves, geometry and shifts
+and for the team page's timings (rows marked `*`, three alternating passes).
+Other sessions' commits fall between the two builds. The ones that reach a Stats
+or Home page are the team switch (`8023e72f9`), the phone More sheet
+(`9fdfe8e42`), Back and Forward (`e9b833761`) and the shared retry
+(`0505d03e6`); the rest touch CoachHelm, Rounds, Qualifiers, Classes and
+Calendar.
+
+**What changed.**
+
+- A page's reads start as soon as what they need is known. Home read in 4
+  round trips (5 with replies to read), 3 for a player; it is 3 and 2. Team
+  Stats, the coach's profile and the player's own profile read in 3, 3 and 2
+  after the shell. The signed-in user was looked up up to six times per
+  request; `getGolfAuthUser` is a `cache()` now, per request and so never
+  across users, and two lookups remain (the proxy's and the render's).
+- A read of more than 1000 rows (a team's putts, a player's holes and
+  approach shots) asks for its first page, then the rest in batches of 2, 4
+  and 8 pages together (`paging.ts`). Its first version asked for the row
+  count with the first page; a same-session A/B found the count a second scan
+  that made the Season switch 154 to 219 ms, so it was replaced (`169f17833`).
+  The team page reads the window's putts only; the season's longest putt is
+  one row per chunk of rounds.
+- Every route skeleton is the loaded page's geometry (table below), a window
+  or tab switch keeps the page on screen, dimmed, at its own height, and a
+  tap on a row shows the page's hairline while it loads.
+
+**Reads and round trips, exact** (the waves count overlapping requests and can
+differ by one between passes; the reads do not). At 390 the cold and tap
+reads are the same, within one wave.
+
+| case | reads | waves |
+| --- | --- | --- |
+| cold coach 1280 home | 20 | 6 -> 4 |
+| cold coach 1280 team | 21 -> 22 | 6 -> 5 |
+| cold coach 1280 profile | 44 -> 38 | 5 -> 4 |
+| cold player 1280 home | 19 | 6 -> 5 |
+| cold player 1280 profile | 33 -> 28 | 5 |
+| tap coach 1280 home>team | 13 -> 14 | 9 -> 8 |
+| tap coach 1280 team>home | 12 | 9 -> 6 |
+| tap player 1280 home>profile | 29 -> 24 | 7 -> 5 |
+| tap player 1280 profile>home | 15 | 7 -> 5 |
+| window coach 1280 team Season | 12 -> 14 | 8 |
+| window coach 1280 profile Season | 36 -> 30 | 7 -> 5 |
+| window player 1280 profile Season | 29 -> 24 | 7 -> 5 |
+
+Team Season reads 2 more at the same depth: the season's longest putt is a
+one-row read of its own and the window's putts come in batches. Team Stats
+cold reads 22 for the same reason. Four of the coach profile's six fewer
+reads are sign-in lookups (6 to 2).
+
+**Time of the page request (server), ms: median (min-max of 3).** Taken at
+load 5 to 8; `*` is the median of three alternating base/after passes at
+load 6 to 14 (min-max of those three medians).
+
+| case | before | after |
+| --- | --- | --- |
+| cold coach 1280 home | 172 (158-187) | 148 (122-150) |
+| cold coach 1280 team * | 395 (379-415) | 305 (302-318) |
+| cold coach 1280 profile | 272 (266-295) | 188 (168-215) |
+| cold coach 390 home | 135 (125-143) | 113 (96-116) |
+| cold coach 390 team * | 342 (340-453) | 294 (293-318) |
+| cold coach 390 profile | 235 (232-250) | 162 (152-164) |
+| cold player 1280 home | 129 (121-138) | 116 (111-137) |
+| cold player 1280 profile | 221 (216-235) | 132 (131-135) |
+| cold player 390 home | 118 (116-146) | 111 (100-126) |
+| cold player 390 profile | 248 (226-249) | 136 (127-143) |
+| nav coach 1280 home>team * | 425 (408-438) | 292 (285-296) |
+| nav coach 1280 team>home * | 137 (130-140) | 121 (119-129) |
+| nav coach 390 home>team * | 376 (369-484) | 269 (234-285) |
+| nav coach 390 team>home * | 129 (122-150) | 120 (114-130) |
+| nav player 1280 home>profile | 211 (182-237) | 128 (113-155) |
+| nav player 1280 profile>home | 101 (98-106) | 95 (93-96) |
+| nav player 390 home>profile | 213 (191-226) | 109 (104-125) |
+| nav player 390 profile>home | 118 (94-130) | 87 (87-92) |
+| switch coach 1280 team Season * | 180 (177-259) | 188 (183-192) |
+| switch coach 1280 team Qualifiers * | 190 (173-230) | 119 (116-120) |
+| switch coach 1280 team Last 10 * | 318 (273-423) | 211 (211-230) |
+| switch coach 1280 profile Season | 186 (175-186) | 123 (115-126) |
+| switch coach 1280 profile Qualifiers | 162 (161-164) | 101 (101-110) |
+| switch coach 1280 profile Last 10 | 180 (175-190) | 118 (115-118) |
+| switch coach 390 team Season * | 168 (167-178) | 193 (175-199) |
+| switch coach 390 team Qualifiers * | 164 (158-172) | 117 (108-121) |
+| switch coach 390 team Last 10 * | 267 (264-277) | 205 (203-231) |
+| switch coach 390 profile Season | 176 (175-178) | 131 (129-133) |
+| switch coach 390 profile Qualifiers | 161 (155-184) | 107 (106-108) |
+| switch coach 390 profile Last 10 | 169 (167-183) | 121 (118-121) |
+| switch player 1280 profile Season | 178 (172-180) | 125 (112-126) |
+| switch player 1280 profile Qualifiers | 155 (153-155) | 98 (97-99) |
+| switch player 1280 profile Last 10 | 166 (166-175) | 110 (106-124) |
+| switch player 390 profile Season | 234 (219-252) | 108 (107-109) |
+| switch player 390 profile Qualifiers | 191 (186-206) | 95 (88-109) |
+| switch player 390 profile Last 10 | 210 (200-216) | 108 (108-111) |
+
+Faster by more than the spread on 31 of 36 (the median is lower on 34).
+Inside the spread: the player's cold Home at both widths and the coach's
+team to Home at 390 (a request that was already 100 to 140 ms). Team
+Season did not get faster: 1280 is inside the spread and 390 is about 25 ms
+slower. It reads the season's putts either way; the cause is not isolated,
+and the extra longest-putt read and wider batches are the suspects.
+
+**Tap to the new content, ms: median (min-max of 3).**
+
+| case | before | after |
+| --- | --- | --- |
+| nav coach 1280 home>team * | 480 (469-482) | 485 (465-487) |
+| nav coach 1280 team>home * | 529 (528-538) | 476 (469-481) |
+| nav coach 390 home>team * | 429 (416-510) | 426 (409-434) |
+| nav coach 390 team>home * | 441 (441-443) | 440 (439-442) |
+| nav player 1280 home>profile | 418 (417-435) | 431 (415-451) |
+| nav player 1280 profile>home | 529 (504-564) | 472 (469-487) |
+| nav player 390 home>profile | 799 (774-800) | 756 (513-784) |
+| nav player 390 profile>home | 456 (455-485) | 454 (438-469) |
+| switch coach 1280 team Season * | 261 (256-339) | 259 (256-260) |
+| switch coach 1280 team Qualifiers * | 240 (232-288) | 171 (170-175) |
+| switch coach 1280 team Last 10 * | 373 (328-482) | 266 (266-284) |
+| switch coach 1280 profile Season | 253 (251-255) | 193 (189-199) |
+| switch coach 1280 profile Qualifiers | 216 (215-218) | 161 (152-169) |
+| switch coach 1280 profile Last 10 | 234 (234-247) | 168 (166-169) |
+| switch coach 390 team Season * | 228 (228-242) | 253 (238-265) |
+| switch coach 390 team Qualifiers * | 211 (204-222) | 165 (154-167) |
+| switch coach 390 team Last 10 * | 313 (305-317) | 244 (242-275) |
+| switch coach 390 profile Season | 253 (247-254) | 201 (200-204) |
+| switch coach 390 profile Qualifiers | 215 (214-239) | 164 (161-168) |
+| switch coach 390 profile Last 10 | 221 (220-237) | 176 (174-176) |
+| switch player 1280 profile Season | 247 (241-249) | 194 (177-195) |
+| switch player 1280 profile Qualifiers | 206 (205-207) | 151 (150-151) |
+| switch player 1280 profile Last 10 | 214 (214-223) | 157 (156-172) |
+| switch player 390 profile Season | 318 (300-335) | 184 (181-184) |
+| switch player 390 profile Qualifiers | 256 (253-266) | 149 (144-167) |
+| switch player 390 profile Last 10 | 272 (264-276) | 164 (163-166) |
+
+A switch got 45 to 135 ms quicker to its content (not team Season, above).
+A navigation did not: its content time barely moved although the taps into
+Stats saw their server time fall 83 to 133 ms. A navigation that shows a
+route skeleton cannot show the page before about 350 ms, and with the
+crossfade not before 430 to 470. The evidence: with the crossfade off
+(reduced motion, `rm-final2`, three runs of every tap) content came at 346
+to 364 ms in 7 of 8 taps while the server took 118 to 221 ms, a constant
+that no server time moves. React holds a Suspense reveal until 300 ms after
+the fallback committed (`FALLBACK_THROTTLE_MS` in react-dom 19.3), and the
+skeleton commits at about 60 ms.
+The crossfade adds another 70 to 120 ms. The 8th tap, the player's phone
+profile, paints its skeleton at 225 ms rather than 60 and reads 403 ms (756
+with the crossfade); not explained.
+
+**Cold load.** Document 30 to 46 KB, JS 1.5 to 1.8 MB, as before (JS moved
+by 5 to 180 KB between the builds on some pages; the shell commits of other
+sessions fall in that interval, so it is not attributed). Server time fell
+(table above); TBT moved by -30 to +19 ms (down on 7 of 10). LCP did not
+improve, and a cold Home's LCP is the greeting at about 1.2 s on both
+builds (a same-session check, 6 of 6 runs each): the shell's first paint is
+at about 0.62 s and the page's heading follows 570 ms later. An earlier
+baseline pass that read 0.67 s did not repeat. Not investigated.
+
+**Layout geometry: the skeleton against the loaded page** (top/height of
+each block in the skeleton frame subtracted from the loaded frame, px;
+0/0 is the same place and size). A skeleton replaces nodes, so layout shift
+cannot see it; this can.
+
+| block | before | after |
+| --- | --- | --- |
+| coach 1280 team: cards | 0/34 | 0/0 |
+| coach 1280 team: strokes gained | 79/106 | 0/1 |
+| coach 1280 profile: hero | 34/69 | 0/0 |
+| coach 1280 profile: tabs, filter | 103/0 | 0/0 |
+| coach 1280 profile: panel top | 103 | 0 |
+| player 1280 profile: hero | 0/34 | 0/0 |
+| player 1280 profile: tabs, panel | 34/0 | 0/0 |
+| coach 1280 home: head | 0/120 | 0/-1 |
+| coach 1280 home: sheet | 120/214 | -1/0 |
+| coach 1280 home: leaderboard top | 362 | -1 |
+| player 1280 home: sheet | 120/342 | -1/128 |
+| coach 390 team: head | 0/8 | 0/0 |
+| coach 390 team: figure strip | 8/18 | 0/1 |
+| coach 390 team: panel | 64/40 | 39/0 |
+| coach 390 home: hero, body | 0/-22 | not changed |
+| player 390 home: hero | 0/-36 | not changed |
+
+Left on purpose: the phone Home skeleton is the lead's design and is 22 px
+(coach) or 36 px (player) off; the player's desktop Home sheet is 128 px
+taller than the skeleton's (one route skeleton serves both roles and draws
+the coach's); the phone coach team panel is 39 px low, a caption that depends
+on the window's coverage. The phone player profile's skeleton was not
+compared: the harness found none of the loaded page's landmarks in it.
+The profile's panels run below the first screen, so its skeleton draws 313
+px of a panel that is 2647 px long.
+
+**Layout shift on a switch, raw** (every shift counted, 0 by the spec in both
+because the server answers inside the forgiven 500 ms; a slow phone's switch
+would count each).
+
+| case | before | after |
+| --- | --- | --- |
+| coach 1280 team Season, Qual., Last 10 | .026 .023 .026 | .001 .002 .003 |
+| coach 1280 profile Season, Qual., L10 | .006 .010 .009 | .000 .008 .008 |
+| player 1280 profile Season, Qual., L10 | .007 .013 .011 | .000 .012 .012 |
+| coach 390 team Season, Qual., Last 10 | .042 .110 .128 | .042 .000 .042 |
+| profile 390 (coach, player) S, Q, L10 | .036 .092 .083 | .036 .093 .083 |
+
+What still shifts, from the saved shift sources: the phone profile moves
+47 to 104 px of content when a window changes the height of its figure strip
+(86, 98 or 133 px) and of its strokes gained card (208 to 312 px; swap audit
+F-43 and F-54); the phone team page moves 54 px of panels when its last
+panel is 56 or 110 px (the coverage caption comes or goes). These change
+what a window shows, not how a page loads: whether to reserve the tallest
+size (a gap in the short windows) or to move is the owner's call, and is with
+the lead. On desktop, a 16 px text line in the figure cards moves 8 to 15 px
+(0.0016 to 0.0027), the strokes gained "ends" button appears, and the
+profile panel is 71 px shorter when a window has no rounds (an empty panel
+is shorter than a full one).
+
+**Not cached, on purpose.** No `unstable_cache`, `use cache`, route
+`revalidate`, `staleTimes` or prefetch of other windows. A Stats or Home
+figure must equal the database at the moment of the request (a round posted a
+minute ago, an RSVP, a goal), it depends on the signed-in user, the team and
+the window, and no writer (the apps, CoachHelm, an import) has an
+invalidation hook that covers all of them, so a cache could show another
+team's or an older number. The only sharing is per request: `cache()` of the
+signed-in user and the stats action context, which cannot outlive a request
+or cross users (`statsActionContext` is built from the session user and
+`verifyPlayerAccess` for that player). A window switch re-reads: 100 to 250 ms
+at the server, the old window staying on screen dimmed.
+
+**Not done.** Streaming a page in parts (figure strip, chart, table): they
+come from one loader result, a boundary per part adds a redraw per part, and
+the 300 ms reveal throttle above would hide any gain on a tap. Splitting
+client JS: not attempted; cold JS is 1.5 to 1.8 MB on Home and Stats alike,
+so it is the shell's weight more than these pages'.
+
+**For the owner, shell-level, not built.**
+
+1. The 300 ms reveal throttle. A route that shows its skeleton cannot show
+   its page earlier than about 350 ms (440 to 470 with the crossfade), with
+   its data back at 120 ms. Skipping `loading.tsx` on Home and Stats and
+   keeping the old page with the hairline (as a window switch does) would
+   bring a tap to about server time plus render, an estimate of 250 to 350
+   ms that was not measured (it needs a rebuild). The cost: a slow
+   connection shows the old page with a hairline, not a skeleton, for longer.
+2. Two serial sign-in lookups per request, the proxy's then the render's: 47
+   and 52 ms of a 230 ms request on the local stack, before any page read.
+   Verifying the token locally (`getClaims`, asymmetric keys) or passing the
+   proxy's verified user to the render would save about 50 ms per request.
+   It is an auth change and wants the security review.
+3. A cold Home's greeting paints 570 ms after the shell (above).
+
+**Conditions.** Timings were taken on a shared laptop (load 5 to 8 for the
+pass the tables come from, 6 to 14 for the alternating passes, 10 to 18 with
+the swap full for a third pass whose timings are not reported, its reads,
+waves, geometry and shifts are). INP of every tap was 24 to 104 ms in the
+clean pass (budget 200); one tap read 208 ms in the loaded one. Nothing
+reached production: a production build of a committed ref against the local
+stack, a seeded team.
+
 ## Where we left off (2026-09-30 evening: swap audit and release train)
 
 The owner's swap audit is in `SWAP_AUDIT.md` (baselines, scorecard, role × route
