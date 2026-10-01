@@ -498,6 +498,24 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   assistants, current staff), the distance unit picker row and the Team Hub
   trip menu (Edit, Delete). They reuse the approved phone grammar. Recommended:
   review on a phone and keep. Kept: built as described.
+- Q-137 (open, 2026-10-01; built, reversible) Owner on the welcome gate:
+  "Sign in on phone goes straight to dashboard but I want that smooth
+  transition still." Read as: on a phone, no Continue tap, but keep the fold
+  into the dashboard. Built: below 820px the welcome carries on by itself
+  3.6s after it arms, once the greeting and card have landed, and Continue
+  still goes sooner. The desktop still waits. If "straight to dashboard"
+  meant skipping the welcome screen entirely on a phone, that is the
+  alternative; one constant and one effect turn this off
+  (`WELCOME_PHONE_AUTO_MS`, `Welcome.tsx`).
+- Q-136 (open, 2026-10-01; nothing written) The QA leftovers in production.
+  The return feed's QA item is 8 notification rows titled "QA CRUD
+  Announcement v3" (2 Sep, to 8 Demo University Golf players; their
+  announcement is already deleted). Separately, the announcement "QA attach
+  05:24:09" (3 Aug, Demo team) has no notifications. The owner first chose
+  "mark test, clear notices", then declined the write once its exact targets
+  were shown. Kept: production unchanged. Recommended when the owner is back:
+  delete those 8 notification rows (ids listed in this session's transcript)
+  and set the announcement's `is_test`.
 - Q-135 (answered 2026-10-01, owner: bubble only. Done: faffac8ab) A failed
   text send in Messages kept its failed bubble (Retry, same id) and also put
   the text back in the composer (MSG-26). A second Send from the box

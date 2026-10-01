@@ -78,5 +78,10 @@ export const welcomeHint: Variants = {
 
 /** The hand-off's timeline, in milliseconds (the lift, then the fold; the destination is asked for as the fold lands). */
 export const HANDOFF_MS = { lift: 420, navigate: 1000, plain: 520, reducedNavigate: 240 } as const;
+/**
+ * Phone: the welcome carries on by itself once the greeting and the card have landed (the hint lands at 2.8s and takes
+ * 0.7s), so sign-in flows into the dashboard with the fold and no tap (owner, 2026-10-01, Q-137). Continue still goes sooner.
+ */
+export const WELCOME_PHONE_AUTO_MS = 3600;
 /** The form leaving on the sign-in page, before the welcome route takes over. */
 export const OPENING_MS = 720;

@@ -2,6 +2,23 @@
 
 Newest first.
 
+
+## 2026-10-01 — Phone: the welcome carries on into the dashboard by itself (Q-137)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (owner answer, iPhone brief)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- Below 820px the welcome proceeds 3.6s after it arms, once the greeting and
+  the card have landed (`WELCOME_PHONE_AUTO_MS`). The fold into the dashboard
+  still plays. Continue still goes sooner. The "or press Return" hint is not
+  drawn on a phone. The desktop still waits for Continue.
+
 ## 2026-09-30 — Sign up and onboarding, and a smooth hand-off
 
 ```text

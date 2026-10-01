@@ -8,10 +8,11 @@ import type { NotificationCategoryId } from '@/app/golf/actions/unified-notifica
 import { isDashboardDestination, welcomeDestination, type ChWelcome, type ChWelcomeItem } from '../../data/welcome-shape';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { dropHandoffCurtain } from '../../lib/handoff';
-import { HANDOFF_MS, welcomeBody, welcomeCard, welcomeDate, welcomeHint, welcomeItem, welcomeLine1, welcomeMark, welcomeName, welcomeScrim, type AuthCustom } from './auth-motion';
+import { HANDOFF_MS, WELCOME_PHONE_AUTO_MS, welcomeBody, welcomeCard, welcomeDate, welcomeHint, welcomeItem, welcomeLine1, welcomeMark, welcomeName, welcomeScrim, type AuthCustom } from './auth-motion';
 import { greetingWord, isDarkSky } from './scene-sky';
 import { useLastHereLabel, useLocalDateLabel, useLocalHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
@@ -63,8 +64,9 @@ function NewsEmpty({ icon, code, title, body, custom }: { icon: LucideIcon; code
 /**
  * /golf/welcome in Clubhouse: the course fills the frame, the camera pushes to
  * the pin, a ball lands, the greeting focuses in and the card says what has
- * happened since the last visit. There is no auto-advance: it waits for
- * Continue (or Return), then folds the course into the app canvas and hands
+ * happened since the last visit. On a desktop it waits for Continue (or
+ * Return); on a phone it carries on by itself once the greeting has landed
+ * (Q-137), and Continue still goes sooner. Then it folds the course into the app canvas and hands
  * over. The greeting and the date come off the viewer's clock after hydration
  * (the server draws the reserved lines), and the card is only as true as its
  * reads: a failed read says so.
@@ -74,6 +76,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   const stage = useWelcomeStage();
   const next = useQueryParam('next');
   const reduced = useChReducedMotion();
+  const phone = useChPhone();
   const hour = useLocalHour();
   const dateLabel = useLocalDateLabel();
   const lastHere = useLastHereLabel(data.lastSeenAt);
@@ -120,6 +123,13 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
       reduced ? HANDOFF_MS.reducedNavigate : fold ? HANDOFF_MS.navigate : HANDOFF_MS.plain,
     );
   }, [destination, fold, navigate, reduced, router, stage]);
+
+  // Phone: sign-in flows into the dashboard without a tap (Q-137); the fold still plays.
+  useEffect(() => {
+    if (!armed || !phone) return;
+    const id = window.setTimeout(proceed, WELCOME_PHONE_AUTO_MS);
+    return () => window.clearTimeout(id);
+  }, [armed, phone, proceed]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -195,9 +205,11 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
             </Button>
           </div>
         </m.div>
-        <m.span className="ch-au-wl-hint" variants={welcomeHint} custom={custom}>
-          or press <kbd>Return</kbd>
-        </m.span>
+        {!phone && (
+          <m.span className="ch-au-wl-hint" variants={welcomeHint} custom={custom}>
+            or press <kbd>Return</kbd>
+          </m.span>
+        )}
       </m.main>
     </>
   );
