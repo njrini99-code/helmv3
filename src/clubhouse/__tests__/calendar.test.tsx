@@ -43,6 +43,8 @@ const a = vi.hoisted(() => ({
   editRecurringEvent: vi.fn(),
   getCalendarFeeds: vi.fn(),
   createCalendarFeed: vi.fn(),
+  regenerateCalendarFeed: vi.fn(),
+  deleteCalendarFeed: vi.fn(),
   getEventDocuments: vi.fn(),
   attachDocumentToEvent: vi.fn(),
   detachDocumentFromEvent: vi.fn(),
@@ -59,7 +61,7 @@ vi.mock('@/app/golf/actions/golf', () => ({
   deleteCoachBlockedTime: a.deleteCoachBlockedTime,
 }));
 vi.mock('@/app/golf/actions/recurring-events', () => ({ createRecurringEvent: a.createRecurringEvent, deleteRecurringEvent: a.deleteRecurringEvent, editRecurringEvent: a.editRecurringEvent }));
-vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCalendarFeeds, createCalendarFeed: a.createCalendarFeed }));
+vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCalendarFeeds, createCalendarFeed: a.createCalendarFeed, regenerateCalendarFeed: a.regenerateCalendarFeed, deleteCalendarFeed: a.deleteCalendarFeed }));
 vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getEventDocuments, attachDocumentToEvent: a.attachDocumentToEvent, detachDocumentFromEvent: a.detachDocumentFromEvent }));
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.markAttendance }));
@@ -313,6 +315,28 @@ describe('Calendar · saves that fail', () => {
     await user.click(within(code('CH-6206') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await user.click((await screen.findAllByRole('button', { name: 'Create link' }))[0]!);
     await expectCode('CH-6003', /Couldn't create the calendar link/);
+  });
+
+  // The links' own checks (what is sent, what shows after, a player's one link) are in calendar-feed-manage.test.tsx.
+  it('CH-6504 CH-6013 CH-6505 CH-6014 replacing or removing a calendar link asks first and says the old one stops; a refusal is a toast', async () => {
+    const user = userEvent.setup();
+    a.getCalendarFeeds.mockResolvedValue({ success: true, data: [{ id: 'f1', name: 'Team', type: 'team', url: 'https://x/feed.ics' }] });
+    a.regenerateCalendarFeed.mockImplementation(fail);
+    a.deleteCalendarFeed.mockImplementation(fail);
+    wrap(cal());
+    await user.click(screen.getByRole('button', { name: /More/ }));
+    await user.click(await screen.findByRole('menuitem', { name: /Add to calendar app/ }));
+    await user.click(await screen.findByRole('button', { name: 'New link' }));
+    await expectCode('CH-6504', /current link stops working right away/);
+    expect(a.regenerateCalendarFeed).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Make a new link' }));
+    await expectCode('CH-6013', /Couldn't make a new Team schedule link/);
+    expect(a.regenerateCalendarFeed).toHaveBeenCalledWith('team');
+    await user.click(await screen.findByRole('button', { name: 'Remove' }));
+    await expectCode('CH-6505', /link stops working right away/);
+    await user.click(screen.getByRole('button', { name: 'Remove link' }));
+    await expectCode('CH-6014', /Couldn't remove the Team schedule link/);
+    expect(a.deleteCalendarFeed).toHaveBeenCalledWith('team');
   });
 
   it('CH-6004 copying a calendar link fails', async () => {

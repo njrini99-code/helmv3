@@ -24,6 +24,8 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6010 | A player's reply fails (or is locked) | "Couldn't send your reply for Round review" + the lock reason or "Replies lock at the deadline or once the event starts." The choice goes back. Done: "You're going to Round review" | `PlayerReply`, optimistic | calendar.test › CH-6010 |
 | CH-6011 | Saving attendance fails | "Couldn't save attendance" + "The marks that saved are kept. Try again for the rest." Done: "6 attendance marks saved" | `Attendance` | calendar.test › CH-6011 |
 | CH-6012 | Copying an event link fails | "Couldn't copy the link" + "Your browser blocked the clipboard." Done: "Link copied" | `EventDetail` | calendar.test › CH-6012 |
+| CH-6013 | Making a new calendar-app link fails | "Couldn't make a new Team schedule link" (or "My schedule") + the reason, or "The links below show which one works now." No Retry: the server deletes the old link before it makes the new one, so a failure can leave either state; the links are read again and the row shows what exists. Done: "New Team schedule link ready" and the new link shows | `SubscribeSheet`, `useAction('calendar.regenerateFeed')` → `regenerateCalendarFeed` | calendar-feed-manage.test › CH-6013 |
+| CH-6014 | Removing a calendar-app link fails | "Couldn't remove the Team schedule link" + the reason, or "The link is unchanged. Try again.", Retry; the link stays. Done: "Team schedule link removed" and the row goes back to Create link | `SubscribeSheet`, `useAction('calendar.removeFeed')` → `deleteCalendarFeed` | calendar-feed-manage.test › CH-6014 |
 
 ## 61xx Validation (nothing is sent; the first problem takes focus; a warning haptic)
 
@@ -84,6 +86,8 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6501 | Cancel event (event menu) | "Cancel Travel briefing?" + "Everyone invited is notified. Replies and attendance are kept, and the event stays on the calendar marked cancelled." For a series, which events; This and following and All in series delete the events, and the question says so: "…These events are removed from the calendar, and their replies and attendance with them." Keep event / Cancel event | `CancelEvent` | calendar.test › CH-6501 |
 | CH-6502 | Remove busy time | "Remove Recruiting call?" + "This block is removed from your calendar." (or every repeat) | `BusyDetail` | calendar.test › CH-6502 |
 | CH-6503 | Closing the event editor with changes | "Discard this event?" + "Nothing has been published yet. What you entered is lost." (editing: "Discard your changes?") Keep editing / Discard. Closing untouched just closes | `EventEditor` | calendar.test › CH-6503 |
+| CH-6504 | New link (a calendar-app link) | "Make a new Team schedule link?" + "The current link stops working right away. Anyone who added it to a calendar app stops getting updates until they add the new link." Keep link / Make a new link. Warning haptic as it opens; focus starts on Keep link, so Enter never confirms. Asked in the link's own row, not a second dialog over the sheet | `SubscribeSheet` | calendar-feed-manage.test › CH-6504 |
+| CH-6505 | Remove (a calendar-app link) | "Remove the Team schedule link?" + "The link stops working right away, so calendar apps that use it stop getting updates. You can create a new link any time." Keep link / Remove link (red). Same row, same haptic and focus | `SubscribeSheet` | calendar-feed-manage.test › CH-6505 |
 
 ## 66xx Motion
 

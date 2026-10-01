@@ -50,6 +50,7 @@ const rowOf = async (name: string) => {
   return title.closest('.ch-feed') as HTMLElement;
 };
 const ask = (row: HTMLElement, button: string, user: User) => user.click(within(row).getByRole('button', { name: button }));
+const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 
 beforeEach(() => {
   hapticSpy.mockClear();
@@ -58,13 +59,14 @@ beforeEach(() => {
   feeds.getCalendarFeeds.mockResolvedValue({ success: true, data: [TEAM, MINE] });
 });
 
-describe('Calendar · links · New link (D3)', () => {
+describe('Calendar · links · CH-6504 CH-6013 New link (D3)', () => {
   it('asks first, says the old link stops working, and sends nothing until it is confirmed', async () => {
     const user = show();
     const row = await rowOf('Team schedule');
     await ask(row, 'New link', user);
 
     const question = within(row).getByRole('group', { name: 'Make a new Team schedule link?' });
+    expect(code('CH-6504')).toBe(question);
     expect(question.textContent).toMatch(/current link stops working right away/);
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     expect(feeds.regenerateCalendarFeed).not.toHaveBeenCalled();
@@ -105,6 +107,7 @@ describe('Calendar · links · New link (D3)', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn't make a new Team schedule link/);
     expect(alert.textContent).toMatch(/Failed to regenerate feed/);
+    expect(code('CH-6013')).not.toBeNull();
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'calendar.regenerateFeed' }));
@@ -125,12 +128,13 @@ describe('Calendar · links · New link (D3)', () => {
   });
 });
 
-describe('Calendar · links · Remove (D3)', () => {
+describe('Calendar · links · CH-6505 CH-6014 Remove (D3)', () => {
   it('asks first, says the link stops working, and sends nothing until it is confirmed', async () => {
     const user = show();
     const row = await rowOf('My schedule');
     await ask(row, 'Remove', user);
     const question = within(row).getByRole('group', { name: 'Remove the My schedule link?' });
+    expect(code('CH-6505')).toBe(question);
     expect(question.textContent).toMatch(/link stops working right away/);
     expect(feeds.deleteCalendarFeed).not.toHaveBeenCalled();
     await user.click(within(question).getByRole('button', { name: 'Keep link' }));
@@ -164,6 +168,7 @@ describe('Calendar · links · Remove (D3)', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn't remove the Team schedule link/);
     expect(alert.textContent).toMatch(/Failed to disable calendar feed/);
+    expect(code('CH-6014')).not.toBeNull();
     expect(row.querySelector('code')).not.toBeNull();
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'calendar.removeFeed' }));
 

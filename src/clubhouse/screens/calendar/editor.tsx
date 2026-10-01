@@ -759,11 +759,13 @@ const FEED_ASK = {
     title: (name: string) => `Make a new ${name} link?`,
     body: 'The current link stops working right away. Anyone who added it to a calendar app stops getting updates until they add the new link.',
     go: 'Make a new link',
+    code: 'CH-6504',
   },
   remove: {
     title: (name: string) => `Remove the ${name} link?`,
     body: 'The link stops working right away, so calendar apps that use it stop getting updates. You can create a new link any time.',
     go: 'Remove link',
+    code: 'CH-6505',
   },
 } as const;
 
@@ -844,7 +846,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
       }
       return res;
     },
-    (type) => ({ done: `New ${FEED_NAME[type]} link ready`, failed: `Couldn't make a new ${FEED_NAME[type]} link`, hint: 'The links below show which one works now.', retry: false }),
+    (type) => ({ done: `New ${FEED_NAME[type]} link ready`, failed: `Couldn't make a new ${FEED_NAME[type]} link`, hint: 'The links below show which one works now.', retry: false, code: 'CH-6013' }),
   );
 
   const remove = useAction(
@@ -854,7 +856,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
       if (normalise(res).success) setFeeds((cur) => cur && cur.filter((f) => f.type !== type));
       return res;
     },
-    (type) => ({ done: `${FEED_NAME[type]} link removed`, failed: `Couldn't remove the ${FEED_NAME[type]} link`, hint: 'The link is unchanged. Try again.' }),
+    (type) => ({ done: `${FEED_NAME[type]} link removed`, failed: `Couldn't remove the ${FEED_NAME[type]} link`, hint: 'The link is unchanged. Try again.', code: 'CH-6014' }),
   );
   const busy = create.pending || regenerate.pending || remove.pending;
 
@@ -915,7 +917,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                   </Button>
                 )}
                 {f && asking && ask ? (
-                  <div ref={askRef} className="ch-feed__ask" role="group" aria-label={ask.title(r.name)}>
+                  <div ref={askRef} className="ch-feed__ask" role="group" aria-label={ask.title(r.name)} data-ch-code={ask.code}>
                     <b>{ask.title(r.name)}</b>
                     <p>{ask.body}</p>
                     <div className="ch-feed__acts">

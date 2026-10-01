@@ -91,7 +91,7 @@ Checked before anything is sent, with the warning haptic. An event needs a title
 
 Status: DEFINED
 
-Every change has its own toast naming what failed and what to do (60601 to 60612), and every section that fails to load has its own notice with Try again (60613 to 60621, 60624). A crash stays in its section: the calendar view (60622) and the detail panel (60623) each sit in a SectionBoundary. A write that goes through the shell's save hook gets Retry, which sends the same write again and finishes the job (61401). Three failures have no Retry because there is nothing to send again: copying a link (60604, 60612) and an Undo that fails (60609); removing a file has none either, and its toast says to try again in a moment (60608). A server refusal written for a person is shown as the toast's reason (a reply's lock: the deadline passed, the event started or was cancelled); one written for a developer is replaced by the toast's own hint. Open, not fixed: a create whose answer is lost on the way back may have landed, and Retry then creates it a second time (no write here carries an idempotency key).
+Every change has its own toast naming what failed and what to do (60601 to 60612), and every section that fails to load has its own notice with Try again (60613 to 60621, 60624). A crash stays in its section: the calendar view (60622) and the detail panel (60623) each sit in a SectionBoundary. A write that goes through the shell's save hook gets Retry, which sends the same write again and finishes the job (61401). Three failures have no Retry because there is nothing to send again: copying a link (60604, 60612) and an Undo that fails (60609); removing a file has none either, and its toast says to try again in a moment (60608). Making a new calendar-app link has no Retry either (60626): the server deletes the old link before it makes the new one, so a failure can leave either state, and the links are read again so the row shows what exists. Removing a link has one (60627). A server refusal written for a person is shown as the toast's reason (a reply's lock: the deadline passed, the event started or was cancelled); one written for a developer is replaced by the toast's own hint. Open, not fixed: a create whose answer is lost on the way back may have landed, and Retry then creates it a second time (no write here carries an idempotency key).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -120,6 +120,8 @@ Every change has its own toast naming what failed and what to do (60601 to 60612
 | 60623 | CH-6211 | `THE_DETAIL_PANEL_CRASHES` | The detail panel crashes |
 | 60624 | CH-6212 | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | The team's timezone doesn't load |
 | 60625 | CH-6213 | `THE_ROSTER_DOESNT_LOAD` | The roster doesn't load |
+| 60626 | CH-6013 | `MAKING_A_NEW_CALENDAR_APP_LINK_FAILS` | Making a new calendar-app link fails |
+| 60627 | CH-6014 | `REMOVING_A_CALENDAR_APP_LINK_FAILS` | Removing a calendar-app link fails |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002.
 
@@ -197,6 +199,8 @@ Cancelling an event asks first (61101) and says what happens. One event is a sof
 | --- | --- | --- | --- |
 | 61101 | CH-6501 | `CANCEL_EVENT` | Cancel event (event menu) |
 | 61102 | CH-6502 | `REMOVE_BUSY_TIME` | Remove busy time |
+| 61103 | CH-6504 | `NEW_LINK` | New link (a calendar-app link) |
+| 61104 | CH-6505 | `REMOVE` | Remove (a calendar-app link) |
 
 ## 12 — State preservation
 
