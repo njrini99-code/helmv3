@@ -498,7 +498,8 @@
   .ch-hm-skel__card {
     display: block;
     height: 132px;
-    margin-top: 6px;
+    /* The brief's 18px above Up next (the hero's margin), so the placeholder grows with the page it stands in for. */
+    margin-top: 24px;
     border-radius: 18px;
     background: rgb(244 241 232 / 0.08);
     box-shadow: inset 0 0 0 1px rgb(244 241 232 / 0.1);
