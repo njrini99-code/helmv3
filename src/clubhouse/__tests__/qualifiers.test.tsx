@@ -431,6 +431,112 @@ describe('Qualifiers · the loader', () => {
   });
 });
 
+describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-01)', () => {
+  const Q = { id: 'q1', team_id: 't1', name: 'Pinehurst qualifier', description: null, status: 'in_progress', start_date: '2026-09-22', end_date: '2026-10-01', entry_deadline: null, course_name: 'Finley GC', rules: null, num_rounds: 2, selection_slots_total: 3, selection_slots_coach_pick: 1, selection_state: 'selected', is_test: false };
+  const player = (id: string, first: string) => ({ id, first_name: first, last_name: 'X', graduation_year: null });
+  const entries = [
+    { qualifier_id: 'q1', player_id: 'p1', player: player('p1', 'Ann') },
+    { qualifier_id: 'q1', player_id: 'p2', player: player('p2', 'Bea') },
+  ];
+  const rounds = [{ id: 'r1', qualifier_id: 'q1', player_id: 'p1', qualifier_round_number: 1, total_score: 70, score_to_par: -2, round_date: '2026-09-22', course_name: 'Finley GC', holes_played: 18 }];
+  const miss = { error: { message: 'boom' } };
+
+  it('CH-09222 /my-qualifiers: a failed entries read is a notice with Try again, never "You aren’t entered in any qualifiers", and never a count of zero', async () => {
+    const user = userEvent.setup();
+    tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: miss, golf_rounds: { data: rounds } };
+    const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'mine' });
+    expect(data).toMatchObject({ entriesError: true, items: [] });
+    wrap(<QualifiersList data={data} />);
+    await expectCode('CH-09222', /Your qualifiers didn’t load/);
+    expect(code('CH-09306')).toBeNull();
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09222') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-09306 a player really entered in nothing still reads the empty copy, once the entries read answered', async () => {
+    tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: [] }, golf_rounds: { data: [] } };
+    const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'mine' });
+    expect(data.entriesError).toBe(false);
+    wrap(<QualifiersList data={data} />);
+    expect(code('CH-09306')).not.toBeNull();
+    expect(code('CH-09222')).toBeNull();
+  });
+
+  it('CH-09202 the hero says nothing about where you stand when the standings did not load: not "You aren’t entered", not "no rounds in yet"', async () => {
+    const standing = async (failed: 'golf_qualifier_entries' | 'golf_rounds') => {
+      tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds }, [failed]: miss };
+      const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'all' });
+      const view = wrap(<QualifiersList data={data} />);
+      await expectCode('CH-09202');
+      const hero = document.querySelector('.ch-qf-hero')!;
+      expect(hero.querySelector('.ch-qf-mine')).toBeNull();
+      expect(document.querySelector('.ch-qf-mine')).toBeNull();
+      view.unmount();
+    };
+    await standing('golf_qualifier_entries');
+    await standing('golf_rounds');
+  });
+
+  it('CH-09221 the coach’s pick notes that do not load are named, never presented as "no notes"; the squad stays', async () => {
+    const user = userEvent.setup();
+    tables.current = {
+      golf_qualifiers: { data: Q },
+      golf_qualifier_entries: { data: entries },
+      golf_rounds: { data: rounds },
+      golf_qualifier_round_courses: { data: [] },
+      golf_holes: { data: [] },
+      golf_qualifier_selections: (filters) => {
+        const cols = String(filters.find(([k]) => k === 'select')?.[1][0] ?? '');
+        return cols.includes('coach_reasoning') ? miss : { data: [{ player_id: 'p2', selection_type: 'coach_pick' }] };
+      },
+    };
+    const data = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
+    expect(data.reasonsError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'reasons', expect.anything(), 'qualifiers');
+    wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+    await expectCode('CH-09221', /Pick notes didn’t load/);
+    expect(within(code('CH-09221')!.closest('section') as HTMLElement).getByText('Bea X')).toBeTruthy();
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09221') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // A player never asks for the notes, so never sees the notice either.
+    tables.current = { ...tables.current, golf_qualifier_selections: { data: [{ player_id: 'p2', selection_type: 'coach_pick' }] } };
+    const asPlayer = (await loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p1', qualifierId: 'q1' }))!;
+    expect(asPlayer.reasonsError).toBe(false);
+  });
+
+  it('CH-09207 a confirmed squad whose entries did not load is the squad’s notice, never a row of "A player"', async () => {
+    tables.current = {
+      golf_qualifiers: { data: Q },
+      golf_qualifier_entries: miss,
+      golf_rounds: { data: rounds },
+      golf_qualifier_round_courses: { data: [] },
+      golf_holes: { data: [] },
+      golf_qualifier_selections: { data: [{ player_id: 'p1', selection_type: 'top_score' }, { player_id: 'p2', selection_type: 'coach_pick' }] },
+      'rpc:golf_qualifier_selection_reasons': { data: [] },
+    };
+    const data = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
+    expect(data).toMatchObject({ entriesError: true, selections: null, selectionsError: false });
+    wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+    await expectCode('CH-09207', /names come with the field/);
+    expect(screen.queryByText('A player')).toBeNull();
+    expect(code('CH-09203')).not.toBeNull();
+  });
+
+  it('CH-09208 no "0 of 0 active players entered" while the roster failed; the count is back when it loads', () => {
+    const f = previewCreateForm();
+    const view = wrap(<QualifierForm data={{ ...f, players: [], playersError: true }} writes={fakeWrites()} />);
+    const head = () => [...document.querySelectorAll('.ch-qf-fs__h')].find((h) => h.querySelector('h2')!.textContent === 'Players')!.textContent;
+    expect(head()).not.toMatch(/\d+ of \d+/);
+    expect(code('CH-09208')).not.toBeNull();
+    view.unmount();
+    wrap(<QualifierForm data={f} writes={fakeWrites()} />);
+    expect(head()).toMatch(/\d+ of \d+ active players entered/);
+  });
+});
+
 describe('Qualifiers · list', () => {
   it('90101 the list opens on the live qualifier as the hero, then Active and Concluded, with the counts in the head', () => {
     const data = list();

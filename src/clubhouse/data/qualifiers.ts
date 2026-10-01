@@ -95,6 +95,11 @@ export interface ChQList {
   listError: boolean;
   /** Entries or rounds didn't load: counts and leaders are missing, not zero. */
   standingsError: boolean;
+  /**
+   * The entries didn't load: who is entered is unknown, so a player's own list (/my-qualifiers) is a failed read and
+   * never "you aren't entered in any qualifiers". Left out of a fixture, it is false.
+   */
+  entriesError?: boolean;
 }
 
 export interface ChQRoundCourse {
@@ -131,9 +136,11 @@ export interface ChQDetail {
   roundCourses: ChQRoundCourse[];
   par: number | null;
   coursesError: boolean;
-  /** The confirmed squad, or null when not confirmed or not readable. */
+  /** The confirmed squad, or null when not confirmed or not readable (its names come from the entries, so a failed entries read is "not readable" too). */
   selections: Array<ChQSelection & { name: string }> | null;
   selectionsError: boolean;
+  /** Coach only: the pick notes didn't load. The squad still shows; the notes are missing, never "no notes". Left out of a fixture, it is false. */
+  reasonsError?: boolean;
 }
 
 export interface ChQFormPlayer {
@@ -278,7 +285,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
     .limit(1000);
   if (listRes.error) {
     chLogServer('qualifiers', 'list', listRes.error, 'qualifiers');
-    return { role: input.role, mode: input.mode, items: [], listError: true, standingsError: false };
+    return { role: input.role, mode: input.mode, items: [], listError: true, standingsError: false, entriesError: false };
   }
   const qs = (listRes.data ?? []) as QRow[];
   const ids = qs.map((q) => q.id);
@@ -336,7 +343,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
   const visible = input.mode === 'mine' ? items.filter((i) => i.mine?.entered) : items;
   // A player's own qualifiers come first within the list order (D-30).
   const ordered = input.role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible;
-  return { role: input.role, mode: input.mode, items: ordered, listError: false, standingsError };
+  return { role: input.role, mode: input.mode, items: ordered, listError: false, standingsError, entriesError: entries.error };
 }
 
 /**
@@ -386,8 +393,9 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
 
   const entrants = entries.rows.filter((e) => e.player).map((e) => entrantOf(e.player as PlayerCols, now));
   const nameOf = new Map(entrants.map((e) => [e.playerId, e.name]));
+  // The names come from the entries: with those unread the squad is "not readable", never a row of "A player".
   const selections: Array<ChQSelection & { name: string }> | null =
-    selectionState === 'selected' && !selRes.error
+    selectionState === 'selected' && !selRes.error && !entries.error
       ? ((selRes.data ?? []) as Array<{ player_id: string; selection_type: string }>).map((s) => ({
           playerId: s.player_id,
           type: s.selection_type === 'coach_pick' ? 'coach_pick' : 'top_score',
@@ -445,6 +453,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     coursesError: !!coursesRes.error || teesError,
     selections,
     selectionsError: !!selRes.error,
+    reasonsError: !!reasonsRes.error,
   };
 }
 

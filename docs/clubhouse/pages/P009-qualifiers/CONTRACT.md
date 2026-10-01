@@ -123,7 +123,7 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90608 | CH-09204 | `A_QUALIFIERS_ROUNDS_DONT_LOAD` | A qualifier's rounds don't load |
 | 90609 | CH-09205 | `THE_SCORECARDS_DONT_LOAD` | The scorecards don't load |
 | 90610 | CH-09206 | `THE_ROUND_COURSES_DONT_LOAD` | The round courses don't load (detail) |
-| 90611 | CH-09207 | `THE_CONFIRMED_SQUAD_DOESNT_LOAD` | The confirmed squad doesn't load |
+| 90611 | CH-09207 | `THE_CONFIRMED_SQUAD_DOESNT_LOAD` | The confirmed squad doesn't load, or the entries it takes its names from don't |
 | 90612 | CH-09208 | `THE_ROSTER_DOESNT_LOAD_IN_THE_FORM` | The roster (or, editing, the entrants or their rounds) doesn't load in the form |
 | 90613 | CH-09209 | `THE_COURSE_LIST_DOESNT_LOAD_IN_THE` | The course list doesn't load in the picker |
 | 90614 | CH-09210 | `A_COURSES_TEES_DONT_LOAD_IN_THE` | A course's tees don't load in the picker |
@@ -143,6 +143,8 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90628 | CH-09219 | `MANAGE_SELECTIONS_CRASHES` | Manage selections crashes |
 | 90629 | CH-09009 | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | The squad is confirmed but telling the players failed |
 | 90630 | CH-09010 | `GIVING_OR_TAKING_BACK_A_PLACE_AT` | Giving or taking back a place at a tied cut fails |
+| 90631 | CH-09221 | `THE_COACHS_PICK_NOTES_DONT_LOAD` | The coach's pick notes don't load (detail, coach, confirmed squad) |
+| 90632 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
 
 ## 07 — Network / offline
 

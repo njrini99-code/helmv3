@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { ArrowRight, Flag, Medal, Plus, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -12,6 +11,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
+import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
@@ -26,9 +26,12 @@ const detailHref = (id: string) => `${LIST}/${id}`;
 
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
 export function QualifiersList({ data }: { data: ChQList }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const backFromMore = useBackFromMore();
   const coach = data.role === 'coach';
+  // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
+  const mineUnknown = data.mode === 'mine' && !!data.entriesError;
+  const unread = data.listError || mineUnknown;
   const [filter, setFilter] = useState<Filter>('all');
   const [q, setQ] = useState('');
 
@@ -69,9 +72,9 @@ export function QualifiersList({ data }: { data: ChQList }) {
             {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). */}
             <span className="ch-qf-eyebrow__k">
               {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
-              {!data.listError && ' · '}
+              {!unread && ' · '}
             </span>
-            {!data.listError && `${act.length} active · ${con.length} concluded`}
+            {!unread && `${act.length} active · ${con.length} concluded`}
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>
@@ -91,7 +94,16 @@ export function QualifiersList({ data }: { data: ChQList }) {
           code="CH-09201"
           title="The qualifiers didn’t load."
           body="Nothing has changed. Try again, and if it keeps happening the error has already been reported."
-          onRetry={() => router.refresh()}
+          onRetry={refresh}
+          retrying={refreshing}
+        />
+      ) : mineUnknown ? (
+        <InlineNotice
+          code="CH-09222"
+          title="Your qualifiers didn’t load."
+          body="Which qualifiers you’re entered in didn’t load, so none are shown rather than a wrong list. Nothing has changed. Try again."
+          onRetry={refresh}
+          retrying={refreshing}
         />
       ) : data.items.length === 0 ? (
         data.mode === 'mine' ? (
@@ -144,7 +156,8 @@ export function QualifiersList({ data }: { data: ChQList }) {
               code="CH-09202"
               title="Standings didn’t load."
               body="The qualifiers are listed, but entrants, rounds in and leaders are missing until they load."
-              onRetry={() => router.refresh()}
+              onRetry={refresh}
+              retrying={refreshing}
             />
           )}
 
@@ -228,7 +241,7 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
         <h2>{item.name}</h2>
         {item.description && <p>{item.description}</p>}
         <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} />
-        <Mine item={item} />
+        {!standingsError && <Mine item={item} />}
         <span className="ch-qf-cta">
           {ctaLabel(item.status)}
           <Icon icon={ArrowRight} size={16} />

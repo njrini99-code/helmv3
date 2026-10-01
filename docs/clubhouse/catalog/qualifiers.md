@@ -59,13 +59,13 @@ Every save goes through `useAction`, so these belong to the shell:
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-09201 | The qualifiers don't load | "The qualifiers didn't load." + Try again, never "No qualifiers yet" | `InlineNotice` | qualifiers.test › CH-09201 |
-| CH-09202 | Entries or rounds don't load on the list | "Standings didn't load." The cards stay; leaders and "You're T3" are left out, not zeroed | `InlineNotice` | qualifiers.test › CH-09202 |
+| CH-09202 | Entries or rounds don't load on the list | "Standings didn't load." The cards and the hero stay; leaders and "You're T3" are left out, not zeroed, and neither "You aren't entered" nor "no rounds in yet" is said | `InlineNotice` | qualifiers.test › CH-09202 |
 | CH-09203 | A qualifier's entrants don't load | "The field didn't load." in the leaderboard; entrants read "—" | `InlineNotice` | qualifiers.test › CH-09203 |
 | CH-09204 | A qualifier's rounds don't load | "Scores didn't load." The field is never shown without its scores; round-by-round is hidden | `InlineNotice` | qualifiers.test › CH-09204 |
 | CH-09205 | The scorecards don't load | "Scorecards didn't load." inside an opened row; the totals stay | `InlineNotice` | qualifiers.test › CH-09205 |
 | CH-09206 | The round courses don't load (detail) | "The round courses didn't load." in Course per round; par reads nothing rather than a guess | `InlineNotice` | qualifiers.test › CH-09206 |
-| CH-09207 | The confirmed squad doesn't load | "The confirmed squad didn't load." in Squad | `InlineNotice` | qualifiers.test › CH-09207 |
-| CH-09208 | The roster (or, editing, the entrants or their rounds) doesn't load in the form | "The roster didn't load." Saving is blocked, so nobody is entered or taken out by mistake | `InlineNotice`, submit disabled | qualifiers.test › CH-09208 |
+| CH-09207 | The confirmed squad doesn't load, or the entries it takes its names from don't | "The confirmed squad didn't load." in Squad, with the reason: the squad list, or the players' names that come with the field. Never a row of "A player" | `InlineNotice` | qualifiers.test › CH-09207 |
+| CH-09208 | The roster (or, editing, the entrants or their rounds) doesn't load in the form | "The roster didn't load." Saving is blocked, so nobody is entered or taken out by mistake. The Players head carries no "0 of 0 active players entered" | `InlineNotice`, submit disabled | qualifiers.test › CH-09208 |
 | CH-09209 | The course list doesn't load in the picker | "Courses didn't load." + Try again | `InlineNotice` | qualifiers.test › CH-09209 |
 | CH-09210 | A course's tees don't load in the picker | "Tees didn't load." + Try again | `InlineNotice` | qualifiers.test › CH-09210 |
 | CH-09211 | The list crashes | "The qualifiers couldn't be shown." The head and filters stay | `SectionBoundary` `qualifiers.list` | qualifiers.test › CH-09211 |
@@ -77,6 +77,8 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09217 | The round courses don't load in the edit form | "The round courses didn't load." Saving keeps the courses already set | `InlineNotice` | qualifiers.test › CH-09217 |
 | CH-09218 | Manage selections doesn't load | "Selections didn't load." + Try again, never "That qualifier isn't on your team" | `RefreshNotice` in the route; logged `clubhouse.qualifiers.selection` | qualifiers.test › CH-09218 |
 | CH-09219 | Manage selections crashes | "Selections couldn't be shown." The head and steps stay | `SectionBoundary` `qualifiers.selection` | qualifiers.test › CH-09219 |
+| CH-09221 | The coach's pick notes don't load (detail, coach, confirmed squad) | "Pick notes didn't load." + "The squad is right; the coach's notes on the picks are missing until they load." + Try again, under the squad. The picks stay; the notes are never shown as "no notes" | `InlineNotice` in `Selections`; `reasonsError` from `loadQualifierDetail` | qualifiers.test › CH-09221 |
+| CH-09222 | A player's entries don't load on /my-qualifiers | "Your qualifiers didn't load." + Try again, never "You aren't entered in any qualifiers"; the head carries no "0 active · 0 concluded" | `InlineNotice`; `entriesError` from `loadQualifierList` | qualifiers.test › CH-09222 |
 
 ## 093xx Empty
 

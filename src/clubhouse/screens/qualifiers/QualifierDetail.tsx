@@ -16,6 +16,7 @@ import { ScrollRegion } from '../../ui/ScrollRegion';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
+import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
 import { dayLabel, plural, positionLabel, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
@@ -262,7 +263,7 @@ function Facts({ data, topScore }: { data: ChQDetail; topScore: number }) {
 const LB_COLS = '44px minmax(0, 1fr) 56px 56px 60px 104px 28px';
 
 function Leaderboard({ data, status }: { data: ChQDetail; status: ChQStatus }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const [open, setOpen] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
   const b = data.board;
@@ -296,13 +297,14 @@ function Leaderboard({ data, status }: { data: ChQDetail; status: ChQStatus }) {
       <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
           <InlineNotice
             code="CH-09204"
             title="Scores didn’t load."
             body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported."
-            onRetry={() => router.refresh()}
+            onRetry={refresh}
+            retrying={refreshing}
           />
         )}
       </section>
@@ -477,7 +479,7 @@ function CutLine({ text, muted = false }: { text: string; muted?: boolean }) {
 }
 
 function Tray({ row, data }: { row: ChQRow; data: ChQDetail }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   return (
     <>
       <p className="ch-qf-tray__avg">
@@ -485,7 +487,7 @@ function Tray({ row, data }: { row: ChQRow; data: ChQDetail }) {
         {row.shortRounds > 0 && ` · ${plural(row.shortRounds, 'shorter round')} left out of the average`}
       </p>
       {data.holesError && (
-        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={() => router.refresh()} />
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
       )}
       {row.rounds.map((rd) => (
         <Scorecard key={rd.id} round={rd} holes={data.holesError ? undefined : (data.holes[rd.id] ?? [])} />

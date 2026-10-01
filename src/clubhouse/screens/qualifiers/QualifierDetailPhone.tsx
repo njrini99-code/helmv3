@@ -16,6 +16,7 @@ import { Nine } from '../../ui/Nine';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -177,7 +178,7 @@ export function QualifierDetailPhone({
 
 /** The leaderboard as cards (board 02): position, avatar, name and state, to par; rounds, average and total under it. */
 function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; onPeek: (id: string) => void }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';
   const b = data.board;
   const [announce, setAnnounce] = useState('');
@@ -208,9 +209,9 @@ function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; o
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
-          <InlineNotice code="CH-09204" title="Scores didn’t load." body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-09204" title="Scores didn’t load." body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );
@@ -313,7 +314,7 @@ function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; o
 
 /** A player's rounds (board 03): a chip per round, then that round's card, Out and In. */
 function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | null; onClose: () => void }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';
   const played = row?.rounds ?? [];
   const latest = played.length ? played[played.length - 1]!.number : 1;
@@ -380,7 +381,7 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | n
                 <b>{rd.total ?? '—'}</b>
               </div>
               {data.holesError ? (
-                <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={() => router.refresh()} />
+                <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
               ) : holes && holes.length ? (
                 <>
                   <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />
