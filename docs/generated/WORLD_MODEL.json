@@ -18580,7 +18580,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/program-pulse.ts",
-          "anchor": "src/lib/golf/round-countable"
+          "anchor": "src/lib/golf/round-score-countable"
         },
         {
           "kind": "import_graph",
