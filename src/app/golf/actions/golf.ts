@@ -3513,7 +3513,11 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     const fanOutTitle = validatedData.title;
     const fanOutStartDate = validatedData.startDate;
     const fanOutLocation = validatedData.location || '';
+    // Q-108 (owner, 2026-10-01): only the invited players are told, as the editor promises ("Attendees will be notified");
+    // an event with no invitees notifies nobody. It used to email and push every active player on the team.
+    const fanOutInvitees = new Set(validatedData.attendeeIds ?? []);
     after(async () => {
+      if (fanOutInvitees.size === 0) return;
       try {
         const adminClient = createAdminClient();
         // Fire-and-forget fan-out for a newly created event. Both reads
@@ -3541,7 +3545,7 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
 
         const playerIds = (teamMembers ?? [])
           .map((m) => m.player_id)
-          .filter((id): id is string => Boolean(id));
+          .filter((id): id is string => Boolean(id) && fanOutInvitees.has(id as string));
         if (playerIds.length === 0) return;
 
         const { data: players, error: playersError } = await adminClient

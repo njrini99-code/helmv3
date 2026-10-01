@@ -2,6 +2,24 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Only invited players are notified about a new event (Q-108)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (the editor already says "Attendees will be notified")
+Contract IDs:   none new
+Actions:        calendar create (unchanged call)
+Data impact:    none; createGolfEvent's after() fan-out (bell, email, push) reads only the invited, active players
+Held items:     none
+```
+
+- **Issue.** Creating an event told every active player on the team, invited
+  or not, while the editor promised only attendees would hear.
+- **Fix.** The fan-out reaches only the invited players still on the active
+  roster; an event with no invitees notifies nobody (owner, 2026-10-01).
+- **Checked.** `golf-events.test.ts` 24/24, including the no-invitee and
+  one-invitee cases.
+
 ## 2026-10-01 — A calendar link can be replaced or removed (swap audit §14 D3)
 
 ```text
