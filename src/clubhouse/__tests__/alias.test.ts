@@ -53,3 +53,22 @@ describe('redirectToClubhouse', () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 });
+
+describe('swap audit §14 aliases (D6, D8)', () => {
+  const QID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
+
+  it('/intelligence opens a coach on CoachHelm', async () => {
+    const { default: IntelligenceLayout } = await import('@/app/golf/(dashboard)/dashboard/intelligence/layout');
+    await expect(IntelligenceLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/coachhelm');
+  });
+
+  it("the old qualifying workspace opens a coach on that qualifier's selection; an id that isn't one stays on Fairway", async () => {
+    const { default: QualifyingWorkspaceLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/qualifying/[id]/layout');
+    await expect(QualifyingWorkspaceLayout({ children: null, params: Promise.resolve({ id: QID }) })).rejects.toThrow(
+      `REDIRECT /golf/dashboard/qualifiers/${QID}/selection`,
+    );
+    redirect.mockClear();
+    await QualifyingWorkspaceLayout({ children: null, params: Promise.resolve({ id: 'not-an-id' }) });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+});

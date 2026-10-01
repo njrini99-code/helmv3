@@ -1,5 +1,6 @@
 import 'server-only';
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { Users } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm } from '../data/coachhelm';
@@ -25,7 +26,13 @@ import '../styles/coachhelm-ask.css';
  * (and focus-area cards) redirect to, and the player nav's Deep dive. The Clubhouse board is not those views, so a link to one says it isn't rebuilt
  * yet rather than landing on the board as if it were (Q-76). `?view=insights` is the board.
  */
-const VIEWS_NOT_REBUILT: Record<string, string> = { development: 'Development', profile: 'Game profile', standing: 'Standing', 'deep-dive': 'Deep dive' };
+const VIEWS_NOT_REBUILT: Record<string, string> = { profile: 'Game profile', standing: 'Standing', 'deep-dive': 'Deep dive' };
+
+/**
+ * `?view=development` is where every stored dev-plan notification points (in-app rows, pushes and emails sent before
+ * CH13-7). In Clubhouse a player's development lives on Stats' Development tab, so those links land there (swap audit §14 D4).
+ */
+const DEVELOPMENT_PATH = '/golf/dashboard/stats?tab=dev';
 
 /**
  * The Ask sub-tab's content (a coach, `?view=ask`, `?c=<conversation>`). Its own async component inside a Suspense boundary, so
@@ -37,6 +44,7 @@ async function AskView({ conversationId }: { conversationId?: string }) {
 
 /** `?player=<golf_players.id>` opens a coach's board on that player (Roster's View insights); an id not on the board is ignored. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. */
 export async function ClubhouseCoachHelmRoute({ view, player, c }: { view?: string; player?: string; c?: string } = {}) {
+  if (view === 'development') redirect(DEVELOPMENT_PATH);
   const notYet = view ? VIEWS_NOT_REBUILT[view] : undefined;
   if (notYet) return <NotRebuilt label={notYet} />;
   const session = await getGolfSessionProfile();

@@ -1774,10 +1774,9 @@ describe('CoachHelm route', () => {
     expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30 });
   });
 
-  it('CH-1301 a link to a Fairway drill (?view=development, profile, standing, deep-dive) says it is not rebuilt; ?view=insights is the board', async () => {
+  it('CH-1301 a link to a Fairway drill (?view=profile, standing, deep-dive) says it is not rebuilt; ?view=insights is the board', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     for (const [view, label] of [
-      ['development', 'Development'],
       ['profile', 'Game profile'],
       ['standing', 'Standing'],
       ['deep-dive', 'Deep dive'],
@@ -1790,6 +1789,11 @@ describe('CoachHelm route', () => {
     render(wrap(await ClubhouseCoachHelmRoute({ view: 'insights' })));
     expect(code('CH-1301')).toBeNull();
     expect(screen.getByText('Player')).toBeTruthy();
+  });
+
+  it('?view=development (every stored dev-plan notification) lands on Stats Development, not a placeholder (swap audit §14 D4)', async () => {
+    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
+    await expect(ClubhouseCoachHelmRoute({ view: 'development' })).rejects.toThrow('redirect:/golf/dashboard/stats?tab=dev');
   });
 
   it('no session renders nothing here', async () => {
