@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react';
 import { setActiveTeam } from '@/app/golf/actions/team-switcher';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { normalizeTeamGender, teamGenderLabel } from '@/lib/golf/team-theme';
@@ -47,7 +47,7 @@ const REFUSED: Record<string, string> = {
  * Switching teams: the same server action Fairway uses (it writes the active-team cookie after checking the coach is
  * staffed on that team), then `router.refresh()` so every screen reads for the new team. The new team shows at once
  * and goes back if the switch fails. The failure is a toast (CH-1003); a success says nothing more than the new team.
- * The follow-up (the refresh, `onSwitched`) is inside the action, so the toast's Retry finishes the job as well.
+ * The refresh is inside the action, so the toast's Retry finishes the job as well; `onSwitched` follows once it lands.
  *
  * Between the tap and the new team's payload, the old team's page fades out and takes no taps (`data-ch-switching`
  * on `.ch-root`, shell.css): its figures never sit under the new team's name (PAGE_PERFORMANCE.md rule 8). The
@@ -57,6 +57,7 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
   const router = useRouter();
   const [picked, setPicked] = useState<string | null>(null);
   const [refreshing, startRefresh] = useTransition();
+  const landed = useRef(false);
   // The refresh brought the server's own answer: it replaces the one shown meanwhile.
   useEffect(() => setPicked(null), [activeId]);
   const shownId = picked ?? activeId;
@@ -73,7 +74,7 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
           return { success: false, error: REFUSED[res.reason] };
         }
         startRefresh(() => router.refresh());
-        onSwitched?.();
+        landed.current = true;
         return { success: true };
       } catch (err) {
         setPicked(null);
@@ -104,6 +105,14 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
       content?.removeAttribute('aria-busy');
     };
   }, [switching]);
+
+  // `onSwitched` (the phone's More sheet closing) waits for the new team's page: closing at once unmounted this hook
+  // and lifted the mark while the old page was still on screen.
+  useEffect(() => {
+    if (switching || !landed.current) return;
+    landed.current = false;
+    onSwitched?.();
+  }, [switching, onSwitched]);
 
   const pick = useCallback(
     (teamId: string) => {

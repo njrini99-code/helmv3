@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** The team switcher (catalog/shell.md: CH-1003, CH-1305, CH-1813, CH-1814), found by its number. */
@@ -270,6 +270,40 @@ describe('Team switcher · phone', () => {
     // Under the me card, above the app's own rows.
     const me = within(sheet).getByRole('link', { name: /^Maya Reyes/ });
     expect(me.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('on the phone the sheet stays open and the old page stays marked until the new team\'s payload lands', async () => {
+    const user = userEvent.setup();
+    setActiveTeam.mockResolvedValue({ success: true });
+    // The refresh suspends inside its transition, as the real one does while the server payload is on its way.
+    let landPayload!: () => void;
+    const payload = new Promise<void>((r) => (landPayload = r));
+    let request!: (p: Promise<void>) => void;
+    function Payload() {
+      const [p, setP] = useState<Promise<void> | null>(null);
+      request = setP;
+      if (p) use(p);
+      return null;
+    }
+    router.refresh.mockImplementationOnce(() => request(payload));
+    wrap(
+      <>
+        {phoneBar(head())}
+        <Payload />
+      </>,
+    );
+    const sheet = await openMore(user);
+    await user.click(within(sheet).getByRole('button', { name: WOMEN.name }));
+    const root = document.querySelector('.ch-root')!;
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
+    // The action has answered; the payload has not: the sheet and the mark hold.
+    // Longer than the sheet's exit, so a sheet that closed early would be gone by now.
+    await new Promise((r) => setTimeout(r, 1200));
+    expect(root.hasAttribute('data-ch-switching')).toBe(true);
+    expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeNull();
+    await act(async () => landPayload());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'More' })).toBeNull());
+    expect(root.hasAttribute('data-ch-switching')).toBe(false);
   });
 
   it('CH-1814 picking the other team switches, refreshes, and closes the sheet on the new team', async () => {
