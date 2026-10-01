@@ -357,10 +357,12 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   stats; build later if wanted.
 - Q-106 (answered 2026-09-30) The owner: "You're going to audit, and then we'll rebuild the missing routes if I decide to." The flag stays off; routes wait for Q-103.
 - Q-107 (answered 2026-09-30) CI gates on #2110: a one-time `markdown:ratchet --update` after the blank-line auto-fix (the ratchet still blocks growth), and an inline `nosemgrep` on held `20260930150000` (an `ALTER FUNCTION` was tried first and does not clear the rule).
-- Q-108 (open, 2026-09-30) Creating an event notifies every active player
+- Q-108 (answered 2026-10-01) Creating an event notifies every active player
   (bell, email, push) whoever is invited (`golf.ts:3395-3500`), while the
   editor says "Attendees will be notified". Recommended: notify invitees only;
   an event with no invitees notifies nobody or asks first. Nothing changed.
+  Owner 2026-10-01: invitees only. Done: a new event notifies its invited
+  players; none invited, no notice (`24b0b9542`).
 - Q-109 (open, 2026-09-30; reversible default taken) Attendance: "Mark all
   present" overwrote saved Late/No-show marks and Retry resent saved marks.
   Taken: fill only unmarked players; retry only failed marks.
@@ -373,31 +375,43 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   leaderboard and Stats. Recommended: count them for scoring average and round
   counts, not for GIR, putts or scrambling (shared engine change). Built in
   Clubhouse only (Q-123); the shared rule and the legacy app are unchanged.
-- Q-112 (open, 2026-09-30) Team "vs previous 10" compares different sets of
+- Q-112 (answered 2026-10-01) Team "vs previous 10" compares different sets of
   players (Home and Stats). Recommended: compare only players present in both
   windows, or average each player's own change.
+  Owner 2026-10-01: a fair comparison. Done: "vs previous 10" pairs the same
+  players in both windows on Home and team Stats (`100f35007`, `a47eb7190`).
 - Q-113 (open, 2026-09-30) On the phone the ivory moved one step darker at the
   owner's request (F-35); confirm the shade or ask for darker.
-- Q-114 (open, 2026-09-30; reversible default taken) Q-104 follow-up: the
+- Q-114 (answered 2026-10-01) Q-104 follow-up: the
   board, workspace and confirm now share one order (to par, strokes, rounds,
   then name), so a tie at the cut is decided by name everywhere. Recommended:
   level players at the cut show "Tie at cut" and confirm waits for the coach.
-- Q-115 (open, 2026-09-30) Can a coach pick a player who has no round? The
+  Owner 2026-10-01: a tie at the cut waits for the coach. Done: board, selection
+  and confirm show "Tie at cut"; the coach gives the places left; Fairway gets
+  the same control (`2ea18e38c`).
+- Q-115 (answered 2026-10-01) Can a coach pick a player who has no round? The
   server allows it; the Clubhouse pick sheet doesn't offer it. Recommended: no.
-- Q-116 (open, 2026-09-30) The confirm toast says "N players told" but
+  Owner 2026-10-01: no. Done: a coach pick needs a scored round in the qualifier
+  (`f6002eaab`).
+- Q-116 (answered 2026-10-01) The confirm toast says "N players told" but
   notification is best effort. Recommended: "Squad confirmed · N players" plus
   a notice when notifying fails.
+  Owner 2026-10-01: an honest toast. Done: "Squad confirmed · N players", and a
+  failed notice says so (CH-09009, `f6002eaab`).
 - Q-117 (open, 2026-09-30; default taken) The trip builder's event step now
   lists tournament, qualifier, travel and other (no practices, meetings or
   classes). Confirm 'travel' and 'other' belong.
-- Q-118 (open, 2026-09-30) Round toast CH-11905 says "Continue it from
+- Q-118 (answered 2026-10-01) Round toast CH-11905 says "Continue it from
   Rounds to submit again", which is false when the round is gone and
   re-creating it also failed. Recommended: "It couldn't reach the server.
   It's kept on this phone; open Rounds when you're back online."
-- Q-119 (open, 2026-09-30) A round discarded on one device can be re-created
+  Owner 2026-10-01: leave it. The F-02 recover screen (`4d5f3f565`) made the
+  toast "Restore it on the next screen".
+- Q-119 (answered 2026-10-01) A round discarded on one device can be re-created
   by another device still holding it. Stopping that needs a server-side
   discard marker (soft delete, schema). Recommended: soft delete with a
   refusal code clients never re-create from; nothing written yet.
+  Owner 2026-10-01: leave it. Unchanged.
 - Q-120 (open, 2026-09-30; held) Submit has no server-side version check, so
   a stale device can overwrite newer holes. Draft migration
   `20261001000000_submit_round_expected_updated_at.sql` is HELD for review.
@@ -455,12 +469,14 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   every coach and player at once, so there is no group to compare against if
   something breaks. Recommended: a team allowlist in `isClubhouseFor` for the
   first activation (Demo team, then one real team). Kept: no allowlist.
-- Q-132 (open, 2026-10-01; nothing changed) The nightly integrity check
+- Q-132 (answered 2026-10-01) The nightly integrity check
   (`completed_round_zero_scored_holes`) has read 14 every night since 28 Sep,
   so a new lost round reads 15 and raises the same standing alert.
   Recommended for the activation window: run it hourly, alert only on rounds
   created after the deploy, and add holes-short and total-mismatch checks.
   Kept: as is.
+  Owner 2026-10-01: fix the files, owner applies. Written: held `20261001120000`
+  (`9a49d3bf9`).
 - Q-133 (open, 2026-10-01; built, reversible) The §14 fixes needed phone UI
   that no board covers: Settings coaching staff (invite code, pending
   assistants, current staff), the distance unit picker row and the Team Hub
@@ -495,10 +511,12 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   so the test-round exclusions in #2101 are not reflected (Cole's tee card
   flips direction once regenerated). Recommended: one regeneration run for
   the team after Q-124 lands (a production write). Kept: not run.
-- Q-126 (open, 2026-10-01; unchanged) `tentative_promotion_enabled` is off
+- Q-126 (answered 2026-10-01) `tentative_promotion_enabled` is off
   for the Demo team, so Tyler's six tentative cards stay hidden and archive
   around 9 October while other players' similar cards show. Recommended: on
   for teams in the beta. Kept: off.
+  Owner 2026-10-01: on. Done: `tentative_promotion_enabled` set for the Demo
+  team (production settings row).
 - Q-98 (open, 2026-09-30; built the reversible choice) Auth (P015) choices: (1) the new screens sit behind their own flag, golf_clubhouse_auth, off in production and on in preview and development; with it off, today's sign-in and welcome render untouched; (2) the welcome's "since" line reads users.last_seen (the previous visit, written by the dashboard heartbeat) because the sign-in that just happened overwrites the auth last-sign-in time, so the header says "Since your last visit" and a user with no last_seen gets "Your first time in"; (3) a wrong password shows the design's "Incorrect email or password. Please check your credentials and try again." with both fields marked, keeping the server's "N attempts remaining" line; today production shows the raw server text and marks no field. Recommended: keep all three.
 - Q-97 (open, 2026-09-30; built the reversible choice) Stats round filter (0f18e76c9) details past the owner's brief: (1) when the chosen length has no rounds but nine-hole rounds exist, a hint says to choose 9 holes or Both (CH-4319, CH-5324); (2) season bests and "Rounds this season" stay 18-hole whatever the filter; (3) "Last 10" under Both is the ten newest rounds of either length; (4) the opening-hole floor counts raw holes; (5) a team with only nine-hole rounds no longer gets the first-run "No stats yet" page (D-71 counts nine-hole rounds). A nine-hole round weighs half a round in every per-round figure. Recommended: keep all five.
 - Q-96 (owner, 2026-09-30; for the sign up and onboarding redesign) Head coaches are always created manually by the owner and never onboard. Self-serve is: sign up → enter the team code → choose Player or Assistant coach → onboarding that differs by role. There is no email verification code step. An assistant coach joins at once, never pending ("auto sync"). Risk raised to the owner: whoever has the team's code can then become a coach and see every player's data; suggested guard that keeps it instant: a separate staff code that only the head coach shares, plus a notice to the head coach with one-tap Remove. Answered the same day, against the design handoff in design/handoff/auth/ (built on lib/golf/signup-gate.ts): the head coach sign-up path and the program code are dropped (the owner creates head coaches); assistant coaches join with the separate staff code, instantly, with no pending screen and no role picker; the roster code is players only; Request access stays (it reaches the owner); handedness and GPA are not collected. The design's other screens, states, motion and haptics stand.

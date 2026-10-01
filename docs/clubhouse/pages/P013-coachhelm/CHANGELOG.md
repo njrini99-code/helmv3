@@ -2,6 +2,29 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Undo keeps an acknowledgement; Assign tells the player
+
+Swap audit CH13-14 and CH13-24.
+
+```text
+PR/commit:      agent/swap-audit (#2111): 024a7669a, f0c107d34
+Design package: none
+Contract IDs:   none new (CH-13003 Undo, CH-13001 Assign unchanged)
+Actions:        reactivateInsight gains `undoing` ('dismiss' from Clubhouse);
+                createFocusAreaFromInsight(V2) notify the player
+Data impact:    none
+Held items:     none
+```
+
+- **Undo.** Undoing a dismissal returns an acknowledged insight to
+  "acknowledged" with its stamp; before, it came back active and unread.
+- **Assign.** Assign as focus sends the player the "New focus area" notice
+  and email, as a coach's proposal from Development always did. The link is
+  Clubhouse's when the player's team is on Clubhouse (allowlist by the
+  player's team, not the coach's session: `isClubhouseForTeam`).
+- **Checked.** `reactivate-insight.test.ts` 3/3; `development.team-id.test.ts`;
+  `gate-allowlist.test.ts` 6/6; `coachhelm.test.tsx`.
+
 ## 2026-10-01 — Development links open Stats; the Ask stream respects the gate; the program pulse counts total-only rounds (§14 D4, CH13-20, F-58)
 
 ```text

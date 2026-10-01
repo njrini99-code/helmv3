@@ -35,7 +35,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09007 | Removing a coach's pick fails | "Couldn't remove Ava Chen as a pick" + "They are still a pick. Try again." Done: "Ava Chen removed as a pick" | `useAction('qualifiers.removePick')` → `removeQualifierCoachPick` | qualifiers.test › CH-09007 |
 | CH-09008 | Confirming the squad fails | "Couldn't confirm the squad" + the reason, or "Nothing was confirmed and nobody was told. Try again." Done: "Squad confirmed · 5 players" (Q-116), then the qualifier opens | `useAction('qualifiers.confirmSquad')` → `confirmQualifierSelection` | qualifiers.test › CH-09008 |
 | CH-09009 | The squad is confirmed but telling the players failed | An error toast "The players weren’t all told" + "The squad is confirmed. Let the entrants know yourself." (Q-116) | `confirmQualifierSelection` returns `notified: false` | qualifiers.test › CH-09009 |
-| CH-09010 | Giving or taking back a place at a tied cut fails | "Couldn’t give <name> the place" / "Couldn’t take the place back from <name>" + "Nothing changed. Try again." Done: "<name> takes the place at the cut" / "<name> is level at the cut again" (Q-114) | `useAction('qualifiers.chooseTie')` → `chooseQualifierTiePlace` | qualifiers.test › CH-09318 |
+| CH-09010 | Giving or taking back a place at a tied cut fails | "Couldn’t give {name} the place" / "Couldn’t take the place back from {name}" + "Nothing changed. Try again." Done: "{name} takes the place at the cut" / "{name} is level at the cut again" (Q-114) | `useAction('qualifiers.chooseTie')` → `chooseQualifierTiePlace` | qualifiers.test › CH-09318 |
 
 ## 091xx Validation
 
@@ -96,7 +96,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09314 | A course has no tee sets | "This course has no tee sets yet." | `EmptyState` | qualifiers.test › CH-09314 |
 | CH-09315 | Nobody can be a coach's pick | "Nobody else can be picked yet." + "A player needs a round in, outside the places on score, to be a coach's pick." in the pick dialog | `EmptyState` in `PickDialog` | qualifiers.test › CH-09315 |
 | CH-09316 | No place on score is filled | "Nobody has a score in yet." (or, with no places on score, "Every place is a coach's pick.") in On score now | `EmptyState` in `QualifierSelection` | qualifiers.test › CH-09316 |
-| CH-09318 | Players are level at the last place on score (Q-114) | A "Tie at the cut" panel: "<n> players level for <k> places · <g> given", each row with "Tie at cut" or "Given the place" and Give the place / Take it back in Manage selections; confirm waits and the note says how many places are left. The board shows "Tie at cut" | `tie_at_cut` from `loadQualifyingWorkspace`; `buildBoard` state `tie` | qualifiers.test › CH-09318 |
+| CH-09318 | Players are level at the last place on score (Q-114) | A "Tie at the cut" panel: "{n} players level for {k} places · {g} given", each row with "Tie at cut" or "Given the place" and Give the place / Take it back in Manage selections; confirm waits and the note says how many places are left. The board shows "Tie at cut" | `tie_at_cut` from `loadQualifyingWorkspace`; `buildBoard` state `tie` | qualifiers.test › CH-09318 |
 
 ## 094xx Loading
 

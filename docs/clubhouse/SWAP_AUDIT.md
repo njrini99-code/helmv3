@@ -123,16 +123,16 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 | --- | --- | --- | --- | --- |
 | F-01 | Blocker (flag on) | Source-confirmed | NotRebuilt for supported routes (§3). | Owner picks build, alias or retire per row, after the audit |
 | F-02 | P0 (flag on) | Source-confirmed | With the flag on, a player cannot reach round recovery. `NewRound`/`ContinueRound` send the engine's `recover` destination to `/rounds` (`ENGINE_ROUTES`). `RoundsLibrary` reads server rounds only (in-progress `limit(20)`) and never reads `getPendingRounds`, `getFailedRounds` or `getRoundRecoverySnapshots`. A round saved only on the device can be neither seen nor restored in Clubhouse. | **Fixed** `4d5f3f565`: `/rounds/recover` is rebuilt for a player (`screens/rounds/recover/`). The engines' recover route is it (`entry/routes.ts`, `?from=submit`). It lists only the signed-in player's device rounds (recovery journal, failed-submit queue, old database, emergency save; one card per round) and offers Restore (Fairway's recovery, ported), Retry sync (`getSyncEngine().retryFailed`) and Discard after a question (the Library's discard, then every device copy and the tombstone). Tests `rounds-recover.test`, `rounds-recover-ports.test`. A discard guard for a queue row with no round id is in `f6002eaab`. Not run on a phone or against a real failed submit. The Library does not link to the screen (a player reaches it from a failed submit, as on Fairway). Fairway's scan logic is duplicated, not shared, until Fairway is retired |
-| F-03 | P1 | Source-confirmed | Leaderboard `buildBoard` (`screens/qualifiers/model.ts`) shares positions on equal to-par and total, orders ties by rounds played then name, and sets the automatic slots by that order. Selection `rankCandidates` (`lib/coachhelm/v3/qualifying/loader.ts`) assigns unique ranks in input order after to-par and total, and `classifySlots` uses them. A tie across the last automatic slot can put a different player in by each view. | Owner decision (Q-104). Oracle test to be written with the chosen rule |
-| F-04 | P1 | Source-confirmed | `routes/coachhelm.tsx` `VIEWS_NOT_REBUILT`: development, profile, standing, deep-dive. | Owner decision (§3) |
+| F-03 | P1 | Source-confirmed | Leaderboard `buildBoard` (`screens/qualifiers/model.ts`) shares positions on equal to-par and total, orders ties by rounds played then name, and sets the automatic slots by that order. Selection `rankCandidates` (`lib/coachhelm/v3/qualifying/loader.ts`) assigns unique ranks in input order after to-par and total, and `classifySlots` uses them. A tie across the last automatic slot can put a different player in by each view. | **Fixed** `2ea18e38c` (Q-114): players level at the last place on score are "Tie at cut" on the board, in selection and at confirm; the coach gives the places left (Clubhouse and Fairway) and confirm waits. Name order decides nothing. Tests `qualifying.test`, `selection-guards.test`, `qualifiers.test` |
+| F-04 | P1 | Source-confirmed | `routes/coachhelm.tsx` `VIEWS_NOT_REBUILT`: development, profile, standing, deep-dive. | Owner (Q-130): the player views are being built (P013); the team switcher and the read-only player roster are built (`67f40c962`, `0672d5738`); the rest alias (`6daf50afc`) |
 | F-05 | P0 gate | Documented, not reverified | Authenticated writes on the candidate, fault injection and the iPhone pass have not run. | Preview pass by the owner (§6); local-Supabase journeys still to do |
 | F-06 | P0 gate | Source-confirmed | `e2e/golf-round.spec.ts` drives Fairway controls against the configured DB. | Not certifying Clubhouse; a Clubhouse e2e is still needed |
 | F-07 | P1 | Source-confirmed | Held numeric migrations (countable cache, test-round exclusion, putting, SG) change derived figures. | Stay held. The train does not depend on them (§5) |
 | F-08 | P1 | Risk to test | The coach CoachHelm loader shows one top insight a player; counts can exceed the reachable items. | Not reverified tonight |
 | F-09 | P2 | Documented | P013 WIRING described bugs already fixed in code. | Code is the evidence; WIRING to be reconciled |
 | F-10 | P1 | Source-confirmed | The train changes shared code (round engine #2104, stats engine #2109, security #2108, `formatToPar`). | The flag-off slice runs in `test:all` (green after F-15..F-20) |
-| F-11 | P1 | Documented | Attachment hardening SQL is not written (`held/data/message-attachments-hardening.md`: HELD). | Stays open. Qualifier hardening is held with a working fallback (§5) |
-| F-12 | P2 | Risk to test | Messages drafts live in a component `Map`: kept across conversation switches, lost across reloads. | Not exercised |
+| F-11 | P1 | Documented | Attachment hardening SQL is not written (`held/data/message-attachments-hardening.md`: HELD). | **Written, held** `076e5acff`: `20261001130000` revokes `anon` and hides a deleted message's files (2 of 14 rows today). The owner applies it |
+| F-12 | P2 | Risk to test | Messages drafts live in a component `Map`: kept across conversation switches, lost across reloads. | **Fixed** `accefa95c`: drafts are kept in the tab's session storage, per user, so a reload keeps them |
 | F-13 | P1 | Source-confirmed | The flag's `cleanup_plan` and `purpose` say "coach"; `isClubhouseFor` covers coach and player. | Fixed in docs: the flag text now names both roles and ties retirement to §3 (this commit) |
 | F-14 | **P0 (flag on)** | Source-confirmed, fixed | Only Fairway's `OfflineProvider` started the sync engine. In Clubhouse, a queued round, hole or shot synced only while a round screen was open (no interval, no initial sync after a reload). | **Fixed** `940f86f8c`: `shell/OfflineSync.tsx`, mounted in `ClubhouseShell`. Test `offline-sync.test.tsx` |
 | F-15 | P1 (CI) | Reproduced | The reduced-motion guard failed on 15 Clubhouse files. All of them gate on `useChReducedMotion`, which the guard didn't know. | **Fixed** `5dc014faa`: registered as a verified delegate |
@@ -325,7 +325,12 @@ quiet rerun.
   (CH13-9), confidence words follow the shared labels (CH13-10), no-finding
   cards are not assignable (CH13-11), card voice per role (CH13-13),
   acknowledged cards are not "Priority" (CH13-16), and Ask and its stream
-  endpoint respect the CoachHelm gate (CH13-20).
+  endpoint respect the CoachHelm gate (CH13-20). Fixed 2026-10-01: Undo after
+  Dismiss keeps an acknowledgement (CH13-14, `024a7669a`); Assign as focus
+  tells the player, and the link follows the player's team under the
+  allowlist (CH13-24, `f0c107d34`). CH13-27 (stored strokes impact not
+  reproducible) is gone after the Q-125 regeneration; the 10 team-level cards
+  (bubble player, pattern) were not regenerated.
 - **F-58 (P2 data, fixed `c7e24b4f9`).** CoachHelm's program pulse used the
   hole-by-hole rule, so a team posting qualifiers as totals read "no rounds
   in 60 days". It now uses the Q-123 score rule (shared in

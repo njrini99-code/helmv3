@@ -7,10 +7,13 @@ log and decisions).
 
 ```text
 PR/commit:      agent/swap-audit (#2111)
-Design package: none (a panel in the existing Manage selections grammar; Fairway gets a Give place button)
+Design package: none (a panel in the Manage selections grammar;
+                Fairway gets a Give place button)
 Contract IDs:   CH-09010, CH-09318 (new)
-Actions:        qualifiers.chooseTie → chooseQualifierTiePlace (new server action); confirm refuses an unsettled tie
-Data impact:    a place given at the cut is a top_score selection written before confirm; no schema change
+Actions:        qualifiers.chooseTie → chooseQualifierTiePlace (new);
+                confirm refuses an unsettled tie
+Data impact:    a place given at the cut is a top_score selection written
+                before confirm; no schema change
 Held items:     none
 ```
 
@@ -30,8 +33,10 @@ Held items:     none
 ```text
 PR/commit:      agent/swap-audit (#2111)
 Design package: none
-Contract IDs:   CH-09009 (new); CH-09008 done copy now "Squad confirmed · N players"
-Actions:        qualifiers.confirmSquad (unchanged call); setCoachPick refuses a player with no scored round
+Contract IDs:   CH-09009 (new); CH-09008 done copy now "Squad confirmed · N
+                players"
+Actions:        qualifiers.confirmSquad (unchanged call); setCoachPick refuses a
+                player with no scored round
 Data impact:    none; confirm returns whether the players were told
 Held items:     none
 ```
@@ -49,7 +54,10 @@ PR/commit:      agent/swap-audit (#2111): 802bcfbad, f55938c4b, 2e6c15651
 Design package: none (no visual change)
 Contract IDs:   none new
 Actions:        none
-Data impact:    loadQualifyingWorkspace reads the qualifier's completed, non-test rounds; updateQualifierEntryStats skips test rounds. Production: 30 entry aggregates rewritten from their rounds (owner-approved; 0 of 136 now disagree)
+Data impact:    loadQualifyingWorkspace reads the qualifier's completed,
+                non-test rounds; updateQualifierEntryStats skips test rounds.
+                Production: 30 entry aggregates rewritten from their rounds
+                (owner-approved; 0 of 136 now disagree)
 Held items:     none
 ```
 
