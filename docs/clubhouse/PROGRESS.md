@@ -1523,6 +1523,23 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-145 (open, 2026-10-01; not built) Every request looks the signed-in user
+  up twice in series (the proxy, then the render: about 50 ms of a 230 ms
+  local request). Reading the proxy's verified claims (getClaims) would save
+  one. It is an auth change and needs a security review. Kept: two lookups.
+- Q-144 (open, 2026-10-01; not built) On a phone, the profile's figure strip
+  and strokes-gained card and the team coverage caption change height with
+  the window (47 to 104 px of shift) because a line is dropped when there is
+  nothing to say (F-43, F-54: no empty band). Reserving the tallest height
+  stops the shift but leaves a blank band. Recommended: reserve. Kept: as is.
+- Q-143 (open, 2026-10-01; not built) A tap to a page with a route skeleton
+  cannot show content before about 350 ms: React holds a Suspense reveal for
+  300 ms after the skeleton commits (perf-stats-home, verified in Next's
+  bundled react-dom). Dropping `loading.tsx` on Home and the player profile
+  would keep the old page with the hairline and show the new one when ready
+  (estimated 200 to 230 ms, not measured); a direct open or refresh would
+  wait for the data with no skeleton. Recommended: yes for Home and the
+  profile, no for team Stats. Kept: the skeletons.
 - Q-142 (answered 2026-10-01, owner, component depth) "Everything is flat
   and looks basic": a full depth audit with fixes across the app, Messages as
   the example (`DEPTH_AUDIT.md`). Surfaces: the ivory ladder, never white (a
