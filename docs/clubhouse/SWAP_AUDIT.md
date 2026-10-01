@@ -39,7 +39,7 @@ affects no customer until the flag is flipped.
 | Messages | **Passed**: two-session journey on the local stack, 7/7; deep link verified. Night audit fixed failed-reaction silence, lost text on a failed send and the coach phone inbox shift (CLS 0.292, not re-measured) | §4 |
 | CoachHelm | **Open**: F-04 views not rebuilt | F-04 |
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
-| Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
+| Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
 | Build/regression | `next build` exit 0 at `6acd57346` (8 GB heap, as CI). Targeted suites green per commit (rounds 2534 tests, qualifying 327, stats 490); full `test:all` and CI not run on the night branch yet | §4 |
 | Cutover/rollback | Release package in §6; rollback = flag off (Clubhouse) or redeploy `6ee77e98e` (owner) | §6 |
 | Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
@@ -222,6 +222,37 @@ quiet rerun.
 - **F-40 (P1 privacy, Source-confirmed, fixed `85abff0dc`).** The shell's
   next-event read had no class exclusion, so a player's class could show as
   the team's next event to the coach and teammates.
+- **F-41..F-45 (P2, owner screenshots, fixed `002bc93a9`).** Player Stats on
+  the phone did not match the board: the figures were three cards, not one
+  strip; the trend drew one point per round on a single day ("Aug 2" three
+  times); the skeleton was the desktop shape; "hits" did not agree with its
+  count; the phone ivory was too white. The phone tokens are now the darker
+  ivory.
+- **F-46 (P2, owner screenshot, fixed `34ac231d7`).** A black focus box
+  around More after a tap; focus is green, and a tap restores focus without
+  a ring.
+- **F-47 (P2, owner screenshot, fixed `fdc2c9d60`).** The Classes term line
+  overlapped the week bar on the phone.
+- **F-48 (P2, fixed `2f459d9f2`).** Sheets, insets and popovers kept the
+  light desktop surface on the phone ivory.
+- **F-49 (P1 visual, owner screenshots, fixed `16618ded6`).** The phone's
+  edges did not lead in: a pale strip under the status bar above the green
+  hero (the board runs green under it), a seam between the bar and the hero,
+  and the page hard-cut at a near-opaque tab bar. The shell now sets the
+  theme colour and html background (green on Home, ivory elsewhere), the
+  hero's top fades from the bar's flat green, and the tab bar is glass.
+- **F-50 (P1 motion, owner recording, fixed `972824ab5`).** Phone sign-in:
+  the sheet left a flat green slab for about a second, the welcome redrew
+  the course at a different framing (a jump), the camera pushed and slid
+  (rejected as a zoom), and the name was ink on the night sky. The course is
+  now drawn full screen behind a window that opens, the phone camera holds
+  still, and the name is ivory at night. Verified on dev video; the welcome
+  hand-off on a real phone is unverified (no preview deploys, owner).
+- **F-51 (P1 data, Reproduced on production data).** Player Stats showed 3
+  rounds for a player with 22 completed 18-hole rounds: Last 10 stopped at
+  the season start (the legacy app used the ten newest rounds), and rounds
+  entered as totals only were dropped everywhere. Owner decisions Q-122 and
+  Q-123; fix in progress.
 - **Calendar §8 (fixed `ac64ba366`, `696b49570`).** Editing a multi-day
   all-day event shrank it to one day; overnight events could not be edited;
   a series edit could flip All day; week/day grids hid events outside 6 AM to
