@@ -105,6 +105,7 @@ Each failed read is handled on its own. The rounds or roster (40602), the round 
 | 40609 | CH-4208 | `SEASON_BESTS_CRASH` | Season bests crash |
 | 40610 | CH-4209 | `D1_BENCHMARKS_DONT_LOAD` | Tour benchmarks don't load |
 | 40611 | CH-4210 | `THE_TEAMS_OWN_DETAILS_DONT_LOAD` | The team's own details (name, men's or women's) don't load |
+| 40612 | CH-4211 | `THE_SEASONS_LONGEST_PUTT_DOESNT_LOAD` | The season's longest putt doesn't load (the one-row read of Season bests) |
 
 ## 07 — Network / offline
 

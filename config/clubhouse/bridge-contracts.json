@@ -2732,6 +2732,17 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 40612,
+    "page": "P004",
+    "category": 6,
+    "item": 12,
+    "name": "THE_SEASONS_LONGEST_PUTT_DOESNT_LOAD",
+    "chCode": "CH-4211",
+    "meaning": "The season's longest putt doesn't load (the one-row read of Season bests)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 40701,
     "page": "P004",
     "category": 7,

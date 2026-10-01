@@ -101,7 +101,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 12 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 73 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 68 |
-| P004 | 2 | 1 | 1 | 19 | 2 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
+| P004 | 2 | 1 | 1 | 19 | 2 | 12 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 61 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 32 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 91 |
@@ -370,6 +370,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40609 | CH-4208 | 06 Server / system error | `SEASON_BESTS_CRASH` | implemented | Season bests crash |
 | 40610 | CH-4209 | 06 Server / system error | `D1_BENCHMARKS_DONT_LOAD` | implemented | Tour benchmarks don't load |
 | 40611 | CH-4210 | 06 Server / system error | `THE_TEAMS_OWN_DETAILS_DONT_LOAD` | implemented | The team's own details (name, men's or women's) don't load |
+| 40612 | CH-4211 | 06 Server / system error | `THE_SEASONS_LONGEST_PUTT_DOESNT_LOAD` | implemented | The season's longest putt doesn't load (the one-row read of Season bests) |
 | 40701 | CH-4901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, or Show the season) or the round filter while offline |
 | 40702 | CH-4902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 40801 |  | 08 Permission / authorization | `COACH_ONLY_TEAM_STATS` | implemented | Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team is a coach's route in the Clubhouse frame (the Fairway page sends a player back to /stats). |
