@@ -34,13 +34,13 @@ affects no customer until the flag is flipped.
 | Complete shell swap | **Open**: route gaps in §3; the owner decides build, alias or retire (after this audit) | route table §3 |
 | Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). **Open**: F-02 (recovery unreachable with the flag on), Q-119 (cross-device discard), Q-120 (held submit version check); device fault-injection on a real phone not run | F-02, R-1..R-12, Q-119, Q-120 |
 | Calendar | **Source-confirmed fixes, runtime not exercised**: 9 bugs fixed (`ac64ba366`, `696b49570`); write journeys on the Demo team pending (they notify the whole roster: check Demo members' email and push first). Open: CAL-05 (series across the clock change), Q-108 (fan-out to the whole roster), create idempotency (in progress) | §4 Calendar |
-| Stats and visuals | **Source-confirmed fixes**: F-34, C-14, C-15, C-16, C-24 (`98f7bb52e`); Home figures state their basis. Open: Q-111 (total-only rounds never count), Q-112 (comparison cohort) | §4 Stats |
+| Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). Not reconciled: SG (needs the Tour model), Qualifiers window. Open: Q-112 (comparison cohort) | §4 §10 Stats gate |
 | Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Open: Q-104/Q-114 tie at the cut (name order now decides it everywhere), Q-115..Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
 | Messages | **Passed**: two-session journey on the local stack, 7/7; deep link verified. Night audit fixed failed-reaction silence, lost text on a failed send and the coach phone inbox shift (CLS 0.292, not re-measured) | §4 |
-| CoachHelm | **Open**: F-04 views not rebuilt | F-04 |
+| CoachHelm | **Audited**, no P0; owner: Q-124..Q-126, Q-76 | §4 §13 |
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
 | Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
-| Build/regression | `next build` exit 0 at `6acd57346` (8 GB heap, as CI). Targeted suites green per commit (rounds 2534 tests, qualifying 327, stats 490); full `test:all` and CI not run on the night branch yet | §4 |
+| Build/regression | Local gates on `c7e24b4f9`: typecheck, lint ratchet, Supabase-error and fail-open audits, `clubhouse:check`, `docs:check` all 0; unit suite 2067 files, 22182 tests, all pass; local production build used for the F-56 timings. CI on PR #2111 at `9d65dd3ff`: see §4 | §4 |
 | Cutover/rollback | Release package in §6; rollback = flag off (Clubhouse) or redeploy `6ee77e98e` (owner) | §6 |
 | Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
 
@@ -294,6 +294,25 @@ quiet rerun.
   the player profile read. Measured on a local production build at 4x CPU:
   cold first paint 0.7-1.1 s and largest paint 1.3-2.3 s; tab switches
   0.9-1.4 s; window switches 1.25-1.9 s (Season's server render 1.0 s).
+- **F-57 (P3, fixed `6e2fe5144`).** The Rounds season ribbon printed the
+  same day under every round played that day ("2 Aug 2 Aug 2 Aug"); a day is
+  labelled once.
+- **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored
+  putt, approach and tee bands, and sand saves, match a non-test recompute
+  except where the cache counts test rounds (one 15-25 ft band reads 19.2%
+  stored vs 5.8%; a driver vs layback comparison flips): the fix is the held
+  cache migrations (Q-124) and a regeneration (Q-125), both owner decisions.
+  Fixed in code: stale warm-up cards are hidden (CH13-3), the open-signal
+  count matches what is drawn (CH13-4), focus areas carry their team (CH13-5),
+  development notifications open Stats (CH13-7), evidence nouns and freshness
+  (CH13-9), confidence words follow the shared labels (CH13-10), no-finding
+  cards are not assignable (CH13-11), card voice per role (CH13-13),
+  acknowledged cards are not "Priority" (CH13-16), and Ask and its stream
+  endpoint respect the CoachHelm gate (CH13-20).
+- **F-58 (P2 data, fixed `c7e24b4f9`).** CoachHelm's program pulse used the
+  hole-by-hole rule, so a team posting qualifiers as totals read "no rounds
+  in 60 days". It now uses the Q-123 score rule (shared in
+  `src/lib/golf/round-score-countable.ts`).
 - **CI on PR #2111 (fixed `55bb26a51`).** The layout test lacked the F-36
   cookie mock, the held migration's HELD.md row lacked its date and its
   registry owner, and four test reads were unchecked.
