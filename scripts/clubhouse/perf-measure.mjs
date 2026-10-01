@@ -5,7 +5,8 @@
  * refuses a URL that is not 127.0.0.1 or localhost, and the build is checked for the production project before the server starts.
  *
  *   node scripts/clubhouse/perf-measure.mjs seed [--players 8] [--rounds 12]   seed the team (state in .helm/runtime/clubhouse-perf/seed.json)
- *   node scripts/clubhouse/perf-measure.mjs build [--ref HEAD]                 export a committed ref, `npm run build` it against the local stack (~10 minutes)
+ *   node scripts/clubhouse/perf-measure.mjs build [--ref HEAD] [--cache]       export a committed ref, `npm run build` it against the local stack (~12 minutes;
+ *                                                                               no webpack cache is kept unless --cache: it is 5 to 8 GB)
  *   node scripts/clubhouse/perf-measure.mjs serve [--port 3200]                 `next start`, detached, with the read tracer preloaded
  *   node scripts/clubhouse/perf-measure.mjs measure [--label before] [--runs 3] [--only home,stats] [--role coach,player] [--viewport 1280,390]
  *   node scripts/clubhouse/perf-measure.mjs report --before before --after after [--only home] [--before-geometry <label> --after-geometry <label>]
@@ -201,6 +202,15 @@ async function cmdBuild(a) {
   const ref = typeof a.ref === 'string' ? a.ref : 'HEAD';
   const sha = await snapshotOf(ref);
   console.log(`snapshot of ${ref} (${sha.slice(0, 9)}) in ${SNAPSHOT}`);
+  if (!a.cache) {
+    // The webpack cache of one build is 5 to 8 GB, which a shared laptop does not have twice (a second build on top of the first filled the
+    // disk). A snapshot's build starts clean and writes none; `--cache` keeps it between builds, for a disk with room.
+    rmSync(join(SNAPSHOT, '.next'), { recursive: true, force: true });
+    const configPath = join(SNAPSHOT, 'next.config.mjs');
+    const config = readFileSync(configPath, 'utf8');
+    if (!config.includes('  webpack(config) {\n')) throw new Error('next.config.mjs has no webpack(config) hook to switch the cache off in; build with --cache');
+    writeFileSync(configPath, config.replace('  webpack(config) {\n', '  webpack(config) {\n    config.cache = false; // perf harness snapshot: no persistent cache\n'));
+  }
   const env = localEnv({ NODE_OPTIONS: '--max-old-space-size=12288' });
   const log = openSync(join(STATE_DIR, 'build.log'), 'w');
   console.log('building against the local stack (log: .helm/runtime/clubhouse-perf/build.log) ...');

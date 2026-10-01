@@ -337,7 +337,8 @@ function summarise(runs) {
  * top) and its height. The skeleton-to-page swap replaces nodes, so layout-shift never sees it; this does.
  */
 const LANDMARKS = {
-  home: { desk: ['.ch-h-head', '.ch-h-sheet', '.ch-h-sec', '.ch-h-lb'], phone: [] },
+  // The phone's skeleton and page name their blocks differently (`ch-hm-skel__hero` and `ch-hm-hero`), so a landmark lists both.
+  home: { desk: ['.ch-h-head', '.ch-h-sheet', '.ch-h-sec', '.ch-h-lb'], phone: ['.ch-hm-skel__hero, .ch-hm-hero', '.ch-hm-skel__body, .ch-hm-body'] },
   'stats-team': { desk: ['.ch-st-head', '.ch-sf', '.ch-fg', '.ch-sgt'], phone: ['.ch-stm-head', '.ch-stm-controls', '.ch-stm-figs', '.ch-stm-panel'] },
   'stats-player': { desk: ['.ch-pf-hero', '.ch-pf-tabs', '.ch-sf', '.ch-st-panel, .ch-sgt'], phone: ['.ch-spm-head', '.ch-stm-controls', '.ch-stm-figs', '.ch-stm-panel'] },
 };
@@ -350,7 +351,7 @@ async function landmarkRects(page, selectors) {
     const root = document.getElementById('ch-content');
     const top0 = root ? root.getBoundingClientRect().top : 0;
     return sels.map((s) => {
-      const el = [...document.querySelectorAll(`#ch-content ${s}`)].find((e) => {
+      const el = [...(root || document).querySelectorAll(s)].find((e) => {
         const r = e.getBoundingClientRect();
         return r.width > 0 && r.height > 0;
       });
