@@ -78,5 +78,5 @@ export interface QualifyingWorkspace {
    *  to enable the "Confirm Selection" action. */
   coach_picks_complete: boolean;
   /** Null when the cut falls cleanly; otherwise confirm waits until chosen === places (Q-114). */
-  tie_at_cut: TieAtCut | null;
+  tie_at_cut?: TieAtCut | null;
 }

@@ -651,7 +651,7 @@ export async function loadQualifierSelection(input: { teamId: string; qualifierI
         selected: state === 'selected' && c.selection != null,
         tiedAtCut: !!c.tied_at_cut,
       })),
-      tie: ws.tie_at_cut,
+      tie: ws.tie_at_cut ?? null,
     },
   };
 }
