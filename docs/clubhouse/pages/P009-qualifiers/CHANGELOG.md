@@ -3,6 +3,109 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Owner rules for page states (P009)
+
+Owner, 2026-10-01: never an empty or a zero for a failed or unfinished read;
+loading, refreshing, empty, failed, stale and pending are different states;
+the last choice wins; qualifier context and standings first, the breakdowns
+stream; Back restores the list's filters and scroll. Standard:
+`docs/clubhouse/PAGE_PERFORMANCE.md`.
+
+```text
+PR/commit:      agent/swap-audit: cb1739fe9, 6dcbae1ff, dadc1f8e2, 112afa945,
+                75df19425, 8d9d48f86, 43d50e341
+Design package: none (no new visual; placeholders reuse the page's classes)
+Contract IDs:   CH-09220, CH-09221, CH-09222, CH-09409, CH-09410, CH-09904,
+                CH-09905 (new); CH-09202, CH-09205, CH-09206, CH-09207,
+                CH-09208, CH-09306, CH-09406, CH-09408 (reworded)
+Actions:        none new; the tie row has its own action (qualifiers.chooseTie)
+Data impact:    none: no write, no cache, no new table, no 'use server' file.
+                The detail's reads are the same; the courses, tees and
+                scorecards no longer hold up the first paint
+Held items:     none
+```
+
+- **False empties (rule 1).** `/my-qualifiers` says its entries failed
+  (CH-09222, with Try again) instead of "You aren't entered in any
+  qualifiers", and its head carries no "0 active · 0 concluded". The hero says
+  nothing about where a player stands when the standings did not load (it said
+  "You aren't entered" or "no rounds in yet"). The coach's pick notes that
+  did not load are named (CH-09221) instead of reading as "no notes". A
+  confirmed squad whose entries did not load is the squad's notice (CH-09207),
+  not a row of "A player". The form carries no "0 of 0 active players
+  entered" while the roster failed. Every Try again on these pages goes
+  through `useRefresh` ("Trying again", a second tap ignored).
+- **Refresh failed, old data kept (rule 2).** A live `router.refresh` whose
+  entries or rounds read fails keeps the last good standings of the same
+  qualifier, with the courses and cards that came with them, and says "These
+  standings may be out of date" with Try again (CH-09220), on desktop and phone
+  (`useLastGood`). A recovered read clears it, another qualifier never
+  inherits the rows, and a first load that fails is still CH-09203 or CH-09204.
+- **Races (rule 4).** The course picker drops a slower answer for an earlier
+  course, so the tees under a course's name are that course's. Manage
+  selections no longer copies candidates from props into state: a landed write
+  is laid over the server's read until the read shows it, or a second read has
+  come in, so a refresh started before the write cannot undo it. Giving a place
+  at a tied cut waits on that player's row only (its own action and "Saving"),
+  and counts the give in flight against the places left. On the phone, Reopen
+  keeps its sheet up while the server answers and says "Reopening" there.
+- **Small.** Manage selections has its own skeleton (CH-09409): it drew the
+  qualifier's facts and leaderboard. Creating or saving a qualifier replaces
+  the form instead of pushing it, so Back from the qualifier does not return
+  to a spent form (a Create there would make a second qualifier).
+- **Streaming (rule 6).** `loadQualifierDetail` returns the core (the
+  qualifier, its entries, rounds, squad and pick notes: what the standings,
+  facts and squad need) after two waves, and `secondary`, a promise that never
+  rejects: the round courses with their tees and pars, and the scorecards. The
+  tees start when the round courses are in and the scorecards when the rounds
+  are, not after the whole core; the privacy filter on scorecards is the same
+  expression as before. The route passes the core as `data` and the promise as
+  `secondary`; the Par fact, Course per round, an opened row's cards, the
+  phone's round sheet and the round-by-round column titles read it through
+  `Streamed` (`use()` inside its own `Suspense`) with a placeholder of the
+  final size (CH-09410). A failed read, or a stream cut off in the browser, is
+  that section's own notice (CH-09205, CH-09206), never an empty. This
+  supersedes the earlier "left" note about the scorecards.
+- **Address and scroll (rule 8).** The list's filter and search are its
+  address (`?filter=`, `&q=`; defaults left out, any other query kept): read
+  when it mounts, so they survive its remount, and rewritten with
+  `history.replaceState` after a pause in typing and before a link is
+  followed. Back from a qualifier (desktop link, phone top bar, the not-found
+  page) returns to the list as it was left, the team's or a player's own
+  (CH-09904). The list keeps its scroll when a link is followed and restores it
+  once on a return, two frames after mount so it lands after the frame's own
+  scroll to the top, on a desktop (canvas) and a phone (window) (CH-09905).
+- **Review.** An independent read of the first six commits found the phone
+  scroll, a return mark that never expired, the unguarded per-key history
+  writes and an edit that could linger over a server change; all fixed in
+  `43d50e341` with tests.
+- **Checked.** `qualifiers.test.tsx`, `qualifiers-reads.test.ts` and
+  `qualifiers-hydration.test.tsx`, 172 cases. The tests for the tees race,
+  the selection overlay, the tie row, the phone sheet, the address and the
+  return mark were each seen to fail with their fix taken out.
+- **Test assertions changed by design.** The detail loader's holes, courses
+  and logs are read from `await result.secondary` (90806, 92101, 92301); the
+  detail depth test in `qualifiers-reads.test` now asserts two waves for the
+  core and that the tees and scorecards do not delay it; the create, save,
+  retry and offline write scenarios assert `router.replace` for create and save
+  (and that `push` is not called), `push` stays for confirm.
+- **Left.** (1) Rule 2's "updating mark" on a live refresh is not drawn: a
+  refresh is a transition, so the page stays whole until the new render lands
+  and then changes in one commit; a unit test cannot see a transition's pending
+  state, so a badge for it would be untested. (2) A refresh therefore commits
+  when its courses and cards have streamed in too (as before the split, but
+  now only the refresh waits, not the first paint). (3) The sidebar's link to
+  the list while it is filtered keeps the filter on screen and drops the query
+  from the address (the filter is seeded from the address once); a reload then
+  opens unfiltered. (4) Saving an edit replaces the form with the qualifier it
+  was opened from, so Back from there reads the same qualifier once. (5)
+  Confirming a squad still pushes the qualifier, so Back lands on the confirmed
+  Manage selections page. (6) Not seen in a browser: the scroll restore under
+  the real view transition, the streamed placeholders' final sizes (no layout
+  shift measured), and the phone sheet. No `next build` was run (no
+  `'use server'` file changed); a Flight promise prop into `use()` is
+  exercised only through unit tests.
+
 ## 2026-10-01 — Page performance: the detail and the form read in fewer passes
 
 Owner, 2026-10-01: "Everything page transition and load needs to be extremely

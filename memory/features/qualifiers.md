@@ -201,6 +201,16 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
 - The selection workspace (turning the leaderboard into the travel squad) is
   hidden until it is designed (D-32); the Selections card shows who is
   qualifying now, and the confirmed squad read-only.
+- Page states (owner rules, 2026-10-01): a failed read is a notice with Try
+  again, never an empty or a zero ("You aren't entered", "no notes", "A
+  player", "0 of 0"). The detail sends the standings, facts and squad first
+  and streams the courses, tees and scorecards after them
+  (`loadQualifierDetail` returns the core and a `secondary` promise that never
+  rejects; the privacy filter on scorecards is unchanged). A refresh that
+  fails keeps the last good standings with "may be out of date". The list's
+  filter and search live in its address (`?filter=&q=`), and Back from a
+  qualifier returns to the list with them and its scroll. Detail:
+  `docs/clubhouse/pages/P009-qualifiers/WIRING.md`.
 
 ## Known Risk Areas
 
