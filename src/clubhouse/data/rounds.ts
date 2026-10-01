@@ -20,7 +20,10 @@ export type * from './rounds-shape';
  *
  * `rounds.error`: the list didn't load, and the page says so; it is never
  * shown as "no rounds". `unfinished.error`: the in-progress read failed, and
- * only that card says so.
+ * only that card says so. A card whose holes read failed says the scores
+ * didn't load (`holesError`), and one that is finished while the posted rounds
+ * didn't load is not offered Submit (`submitUnchecked`): the card never claims
+ * what it could not read.
  */
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -36,7 +39,7 @@ const log = (what: string, err: unknown) => chLogServer('rounds', what, err);
  * The in-progress cards. `completed` is the completed list still on its way (it is read beside this, not before it): it is needed
  * only to mark a finished card as not to be submitted twice, so it is awaited once the cards' own reads are in.
  */
-async function loadUnfinished(supabase: Supabase, playerId: string, completed: Promise<{ list: ChLibraryRound[] }>): Promise<{ list: ChUnfinishedRound[]; error: boolean }> {
+async function loadUnfinished(supabase: Supabase, playerId: string, completed: Promise<{ list: ChLibraryRound[]; error: boolean }>): Promise<{ list: ChUnfinishedRound[]; error: boolean }> {
   const res = await supabase
     .from('golf_rounds')
     .select(UNFINISHED_COLUMNS)
@@ -67,7 +70,7 @@ async function loadUnfinished(supabase: Supabase, playerId: string, completed: P
     undefined,
     { table: 'golf_holes', action: 'clubhouse.rounds', feature: 'round_tracking', sport: 'golf' },
   );
-  // The card still shows the round without its strip; the hole read failing is logged, not claimed as "no holes played".
+  // The card still shows the round, but it says the scores didn't load (`holesError`): an unread strip is not "no holes played".
   if (holes.error) log('unfinished-holes', holes.error);
   const byRound = new Map<string, Array<{ n: number; score: number; par: number | null }>>();
   for (const h of holes.data ?? []) {
@@ -76,8 +79,10 @@ async function loadUnfinished(supabase: Supabase, playerId: string, completed: P
     xs.push({ n: h.hole_number, score: h.score, par: h.par });
     byRound.set(h.round_id, xs);
   }
-  // Never nudge a player to submit a second finished round onto a course and day that already has one (legacy R8).
-  const taken = new Set((await completed).list.map((r) => `${r.course}|${r.date}`));
+  // Never nudge a player to submit a second finished round onto a course and day that already has one (legacy R8). With the posted
+  // rounds unread nothing can be ruled out, so a finished card is not offered Submit (`submitUnchecked`), rather than assumed new.
+  const posted = await completed;
+  const taken = new Set(posted.list.map((r) => `${r.course}|${r.date}`));
 
   return {
     error: false,
@@ -94,6 +99,7 @@ async function loadUnfinished(supabase: Supabase, playerId: string, completed: P
         }
       const course = courseName(r.course_name);
       const date = r.round_date.slice(0, 10);
+      const finished = !holes.error && total > 0 && played.length >= total;
       return {
         id: r.id,
         course,
@@ -105,7 +111,9 @@ async function loadUnfinished(supabase: Supabase, playerId: string, completed: P
         played,
         toParThru: withPar.length ? withPar.reduce((a, h) => a + h.score - h.par, 0) : null,
         nextHole: holes.error ? (r.current_hole ?? null) : next,
-        readyToSubmit: !holes.error && total > 0 && played.length >= total && !taken.has(`${course}|${date}`),
+        readyToSubmit: finished && !posted.error && !taken.has(`${course}|${date}`),
+        holesError: !!holes.error,
+        submitUnchecked: finished && posted.error,
       };
     }),
   };
@@ -137,8 +145,12 @@ export async function loadRoundsLibrary(input: { playerId: string; teamId: strin
       { table: 'golf_rounds', action: 'clubhouse.rounds', feature: 'round_tracking', sport: 'golf' },
     );
     if (listRes.error) log('list', listRes.error);
-    const list = listRes.error ? [] : (listRes.data ?? []).map(toLibraryRound).filter((r): r is ChLibraryRound => r != null);
-    return { list, error: !!listRes.error };
+    const rows = listRes.error ? [] : (listRes.data ?? []);
+    const list = rows.map(toLibraryRound).filter((r): r is ChLibraryRound => r != null);
+    // A completed round with no score at all can't be drawn as a row. It never counted (no total is never countable), but it is
+    // said, not hidden.
+    const unscored = rows.length - list.length;
+    return { list, error: !!listRes.error, ...(unscored > 0 ? { unscored } : {}) };
   })();
   const clockOf = async () => {
     const teamId = await input.teamId;

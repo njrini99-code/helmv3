@@ -18,7 +18,10 @@ export type * from './round-review-shape';
  * `inProgress`: the round is still being played; the page sends it to be
  * continued, as the legacy page does. `error`: the round itself didn't load.
  * The holes and the shots each carry their own error, so a failed shot read
- * still shows the card.
+ * still shows the card; the tee, the coach's read of the player's name and the
+ * team (the strokes gained baseline) carry theirs too (`teeError`,
+ * `playerError`, `tourError`), so the page says what is missing instead of
+ * drawing different content (a coach sees "Player", the yardage is just gone).
  */
 
 /** A player's `teamId` names the strokes gained baseline (a women's team is measured on the women's Tour curve); without it no baseline is claimed. */
@@ -87,10 +90,15 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
       holes,
       holesError: !!holesRes.error,
       shotsError: !!shotsRes.error,
-      playerName: playerRes.data ? fullName(playerRes.data) : viewer.role === 'coach' ? 'Player' : null,
+      // A failed read is not a name: the page says so (`playerError`) rather than call the player "Player".
+      playerName: playerRes.data ? fullName(playerRes.data) : viewer.role === 'coach' && !playerRes.error ? 'Player' : null,
+      coachView: viewer.role === 'coach',
       teeYards: teeRes.data?.total_yards ?? null,
-      // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210).
+      // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210); a read that failed says so.
       tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
+      teeError: !!teeRes.error,
+      playerError: !!playerRes.error,
+      tourError: !!teamRes.error,
     }),
   };
 }

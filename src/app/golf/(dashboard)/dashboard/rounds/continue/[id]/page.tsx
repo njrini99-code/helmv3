@@ -195,9 +195,11 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       errorHint: roundError.hint,
       errorDetails: roundError.details,
     }, 'critical');
+    // A failed read is not "not found": the round is there and the read didn't land. The route boundary's retry reads it again.
+    throw new Error("Couldn't load this round. Nothing was changed; please try again.");
   }
 
-  if (roundError || !round) {
+  if (!round) {
     notFound();
   }
 
@@ -513,6 +515,13 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       score: existingHole?.score ?? null,
     };
   });
+
+  // A failed course-hole read leaves every hole the draft doesn't cover with no yardage (0), which the shot state machine clamps to a
+  // 1-yard tee shot. Never start tracking on that; the route boundary's retry reads the course again. When the draft carries every
+  // yardage the read was not needed (the draft wins over the course either way), so the round opens as it would have.
+  if (courseHolesError && allHoles.some((h) => h.yardage === 0)) {
+    throw new Error("Couldn't load this course's hole yardages. Nothing was changed; please try again.");
+  }
 
   // Setup data from round
   const setupData = {

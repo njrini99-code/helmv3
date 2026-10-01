@@ -50,6 +50,13 @@ export interface ChUnfinishedRound {
   nextHole: number | null;
   /** Every hole already has a score: the round only needs submitting (legacy R8). */
   readyToSubmit: boolean;
+  /**
+   * The holes read failed: `played`, `toParThru` and the strip say nothing about the holes (they are not "none scored"), and the
+   * card says the scores didn't load. `nextHole` is then the round's saved current hole.
+   */
+  holesError?: boolean;
+  /** Every hole is scored but the posted rounds didn't load, so "already submitted" can't be judged: Submit is not offered on this card. */
+  submitUnchecked?: boolean;
 }
 
 export interface ChRoundsSeason {
@@ -69,7 +76,11 @@ export interface ChRoundsSeason {
 
 export interface ChRoundsLibrary {
   todayIso: string;
-  rounds: { list: ChLibraryRound[]; error: boolean };
+  /**
+   * `unscored`: completed rounds with no score at all (no total and no nines), which the list can't draw. They never counted in a
+   * figure (no total is never countable), and the page says how many are left out instead of hiding them. Absent when none.
+   */
+  rounds: { list: ChLibraryRound[]; error: boolean; unscored?: number };
   season: ChRoundsSeason;
   unfinished: { list: ChUnfinishedRound[]; error: boolean };
 }

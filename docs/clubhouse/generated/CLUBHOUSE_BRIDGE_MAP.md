@@ -108,7 +108,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 5 | 4 | 13 | 14 | 30 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 125 |
 | P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
-| P011 | 14 | 10 |  | 15 | 10 | 32 | 12 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 160 |
+| P011 | 14 | 10 |  | 16 | 10 | 36 | 12 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 165 |
 | P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
 | P013 | 7 | 11 |  | 29 | 1 | 31 | 17 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 145 |
 | P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
@@ -1068,6 +1068,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110413 |  | 04 Empty | `FIRST_RUN_ONLY_WHEN_EVERY_READ_ANSWERED` | implemented | The first-run page ("No rounds yet", CH-11301) shows only when the posted-rounds read and the in-progress read both answered and both were empty: a failed list read shows its own notice (CH-11201) and a failed in-progress check its own (CH-11202), never the first-run page. |
 | 110414 | CH-11313 | 04 Empty | `A_ROUND_WITH_NO_STROKES_GAINED` | implemented | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | 04 Empty | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | implemented | Nothing on this device to recover |
+| 110416 | CH-11315 | 04 Empty | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | implemented | Completed rounds with no score at all (no total and no nines) |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
@@ -1110,6 +1111,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110630 | CH-11018 | 06 Server / system error | `RETRY_SYNC_FAILS` | implemented | Retry sync fails (Recover) |
 | 110631 | CH-11019 | 06 Server / system error | `DISCARDING_A_SAVED_ROUND_FAILS` | implemented | Discarding a saved round fails (Recover) |
 | 110632 | CH-11212 | 06 Server / system error | `THIS_DEVICES_SAVED_ROUNDS_CANT_BE_READ` | implemented | This device's saved rounds can't be read (every store failed and nothing was found) |
+| 110633 | CH-11214 | 06 Server / system error | `THE_IN_PROGRESS_CARDS_HOLES_DONT_LOAD` | implemented | The in-progress card's holes don't load (the read of the round's scored holes failed) |
+| 110634 | CH-11215 | 06 Server / system error | `A_FINISHED_IN_PROGRESS_ROUND_WHILE_THE` | implemented | A finished in-progress round (every hole scored) while the posted rounds didn't load, so "already posted" can't be ruled out |
+| 110635 | CH-11216 | 06 Server / system error | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | implemented | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
+| 110636 | CH-11217 | 06 Server / system error | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | implemented | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |

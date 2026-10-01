@@ -5658,6 +5658,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70632,
+    "page": "P007",
+    "category": 6,
+    "item": 32,
+    "name": "A_CONVERSATIONS_MESSAGES_DONT_REFRESH_WHILE_AN",
+    "chCode": "CH-7216",
+    "meaning": "A conversation's messages don't refresh while an earlier copy is shown",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -10386,6 +10397,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110416,
+    "page": "P011",
+    "category": 4,
+    "item": 16,
+    "name": "COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL",
+    "chCode": "CH-11315",
+    "meaning": "Completed rounds with no score at all (no total and no nines)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110501,
     "page": "P011",
     "category": 5,
@@ -10849,6 +10871,50 @@
     "name": "THIS_DEVICES_SAVED_ROUNDS_CANT_BE_READ",
     "chCode": "CH-11212",
     "meaning": "This device's saved rounds can't be read (every store failed and nothing was found)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110633,
+    "page": "P011",
+    "category": 6,
+    "item": 33,
+    "name": "THE_IN_PROGRESS_CARDS_HOLES_DONT_LOAD",
+    "chCode": "CH-11214",
+    "meaning": "The in-progress card's holes don't load (the read of the round's scored holes failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110634,
+    "page": "P011",
+    "category": 6,
+    "item": 34,
+    "name": "A_FINISHED_IN_PROGRESS_ROUND_WHILE_THE",
+    "chCode": "CH-11215",
+    "meaning": "A finished in-progress round (every hole scored) while the posted rounds didn't load, so \"already posted\" can't be ruled out",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110635,
+    "page": "P011",
+    "category": 6,
+    "item": 35,
+    "name": "A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE",
+    "chCode": "CH-11216",
+    "meaning": "A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110636,
+    "page": "P011",
+    "category": 6,
+    "item": 36,
+    "name": "A_REVIEWS_TEAM_READ_FAILS_SO_WHICH",
+    "chCode": "CH-11217",
+    "meaning": "A review's team read fails, so which Tour the strokes gained is measured against is unknown",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

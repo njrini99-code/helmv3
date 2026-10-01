@@ -97,6 +97,7 @@ empty (110413). A test covers 110413.
 | 110413 | — | `FIRST_RUN_ONLY_WHEN_EVERY_READ_ANSWERED` | The first-run page ("No rounds yet", CH-11301) shows only when the posted-rounds read and the in-progress read both answered and both were empty: a failed list read shows its own notice (CH-11201) and a failed in-progress check its own (CH-11202), never the first-run page. |
 | 110414 | CH-11313 | `A_ROUND_WITH_NO_STROKES_GAINED` | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | Nothing on this device to recover |
+| 110416 | CH-11315 | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | Completed rounds with no score at all (no total and no nines) |
 
 ## 05 — Validation
 
@@ -171,6 +172,10 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110630 | CH-11018 | `RETRY_SYNC_FAILS` | Retry sync fails (Recover) |
 | 110631 | CH-11019 | `DISCARDING_A_SAVED_ROUND_FAILS` | Discarding a saved round fails (Recover) |
 | 110632 | CH-11212 | `THIS_DEVICES_SAVED_ROUNDS_CANT_BE_READ` | This device's saved rounds can't be read (every store failed and nothing was found) |
+| 110633 | CH-11214 | `THE_IN_PROGRESS_CARDS_HOLES_DONT_LOAD` | The in-progress card's holes don't load (the read of the round's scored holes failed) |
+| 110634 | CH-11215 | `A_FINISHED_IN_PROGRESS_ROUND_WHILE_THE` | A finished in-progress round (every hole scored) while the posted rounds didn't load, so "already posted" can't be ruled out |
+| 110635 | CH-11216 | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
+| 110636 | CH-11217 | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 
 ## 07 — Network / offline
 

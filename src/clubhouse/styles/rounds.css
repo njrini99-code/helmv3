@@ -442,6 +442,13 @@
   outline-offset: 2px;
 }
 
+/* A posted round with no score at all is said, not hidden (CH-11315) */
+.ch-rd-unscored {
+  margin: 0;
+  font: 400 13px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+
 /* Tools */
 .ch-rd-tools {
   display: flex;

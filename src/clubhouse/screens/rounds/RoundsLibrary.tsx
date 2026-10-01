@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Flag, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
+import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
 import { Button } from '../../ui/Button';
@@ -53,23 +53,25 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
  */
 export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites }) {
   const phone = useChPhone();
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const [q, setQ] = useState('');
   const [group, setGroup] = useState<Group>('month');
-  const [unfinished, setUnfinished] = useState(data.unfinished.list);
+  // The cards come from the page's data, never copied into state once: a Try again that lands must show what it read. Only a discard
+  // is local (the card leaves at once), and it is a list of ids to leave out, so a refreshed page is never overwritten.
+  const [discarded, setDiscarded] = useState<ReadonlySet<string>>(() => new Set());
   const [asking, setAsking] = useState<ChUnfinishedRound | null>(null);
 
   const list = data.rounds.list;
+  const unfinished = useMemo(() => data.unfinished.list.filter((r) => !discarded.has(r.id)), [data.unfinished.list, discarded]);
   const groups = useMemo(() => groupRounds(list, group, q), [list, group, q]);
   const newHref = roundsLinks.newRound();
   const counted = data.season.rounds;
-  const refresh = () => router.refresh();
 
   // The card leaves on success wherever the call came from, the toast's Retry included.
   const discardRound = async (r: ChUnfinishedRound) => {
     const res = await writes.discard(r.id, playerId);
     if (normalise(res).success) {
-      setUnfinished((xs) => xs.filter((x) => x.id !== r.id));
+      setDiscarded((ids) => new Set(ids).add(r.id));
       setAsking((a) => (a?.id === r.id ? null : a));
     }
     return res;
@@ -91,7 +93,9 @@ export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: {
     await discard.run(r);
   };
 
-  const nothing = !data.rounds.error && list.length === 0 && unfinished.length === 0 && !data.unfinished.error;
+  // Empty copy only on a verified empty: both reads landed and nothing is held back (an unscored round is a round, just not a row).
+  const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
+  const nothing = !data.rounds.error && list.length === 0 && unscored === 0 && unfinished.length === 0 && !data.unfinished.error;
   const [current, ...more] = unfinished;
 
   return (
@@ -133,14 +137,16 @@ export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: {
                 error={data.unfinished.error}
                 todayIso={data.todayIso}
                 last={list[0] ?? null}
+                listFailed={data.rounds.error}
                 continueHref={current ? roundsLinks.continueRound(current.id) : null}
                 startHref={newHref}
                 onRetry={refresh}
+                retrying={refreshing}
                 onDiscard={askDiscard}
               />
             </SectionBoundary>
             {data.rounds.error ? (
-              <InlineNotice code="CH-11201" title="Your rounds didn't load" body="Nothing is lost. Your posted rounds are still saved; try again in a moment." onRetry={refresh} />
+              <InlineNotice code="CH-11201" title="Your rounds didn't load" body="Nothing is lost. Your posted rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
             ) : (
               <SectionBoundary surface="rounds.season" label="Season scoring" code="CH-11203">
                 <SeasonCard season={data.season} phone={phone} />
@@ -161,7 +167,7 @@ export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: {
                       <span>
                         <b>{r.course}</b>
                         <em className="ch-num">
-                          {shortDay(r.date)} · {r.played.length ? `through ${r.played.length}` : 'not started'}
+                          {shortDay(r.date)} · {r.played.length ? `through ${r.played.length}` : r.holesError ? 'scores didn’t load' : 'not started'}
                         </em>
                       </span>
                       <button type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
@@ -227,6 +233,13 @@ export function RoundsLibrary({ data, playerId, writes = LIVE_ROUNDS_WRITES }: {
                 })
               )}
             </SectionBoundary>
+          )}
+
+          {/* CH-11315: a posted round with no score at all can't be a row; it is said, not left out silently. */}
+          {unscored > 0 && (
+            <p className="ch-rd-unscored" data-ch-code="CH-11315">
+              {unscored === 1 ? '1 posted round has no score recorded, so it isn’t listed here.' : `${unscored} posted rounds have no score recorded, so they aren’t listed here.`}
+            </p>
           )}
         </>
       )}
