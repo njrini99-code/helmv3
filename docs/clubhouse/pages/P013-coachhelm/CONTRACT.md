@@ -49,6 +49,7 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130209 | CH-13460 | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | Profile: the Game profile is on its way |
 | 130210 | CH-13470 | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | Standing: the standing is on its way |
 | 130211 | CH-13480 | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | Deep dive: the insights are on their way |
+| 130212 | CH-13405 | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | Coach: the board is drawn and the program pulse is still on its way |
 
 ## 03 — Background loading / refresh
 
@@ -70,15 +71,15 @@ First run is a whole-page empty state for each role and each way of having nothi
 | 130406 | CH-13306 | `COACH_PLAYERS_ON_THE_TEAM_NO_SIGNAL` | Coach: players on the team, no signal yet |
 | 130407 | CH-13307 | `COACH_NO_PLAYERS_ON_THE_TEAM` | Coach: no players on the team |
 | 130408 | CH-13308 | `COACH_NOT_ON_A_TEAM` | Coach: not on a team |
-| 130409 | CH-13309 | `COACH_THE_PULSE_HAS_NOTHING_FLAGGED` | Coach: the pulse has nothing flagged |
+| 130409 | CH-13309 | `COACH_THE_PULSE_HAS_NOTHING_FLAGGED` | Coach: the pulse has nothing flagged, and every read it is made from landed |
 | 130410 | CH-13310 | `COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET` | Coach: some players have no insight yet |
 | 130411 | — | `A_FAILED_READ_IS_NEVER_DRAWN_AS_EMPTY` | The delivery actions answer an empty list or map when a read fails, so the loaders tell a failed read from a first run. An empty feed, or empty top insights, while a drawable visible insight is on file (for a player, one they have not dismissed themselves: the newest feedback row per insight decides) is a failed read (CH-13201, CH-13202), and so is a failed visible-insights, feedback or roster read; only when that check finds nothing is it a first run (CH-13301, CH-13302, CH-13306). A player who dismissed every insight themselves is a first run, not a failure, and a failed roster read is never an empty team (CH-13307). |
 | 130412 | CH-13320 | `ASK_A_CONVERSATION_THAT_IS_GONE_OR` | Ask: A conversation that is gone or not the coach's |
 | 130413 | CH-13321 | `ASK_THE_ROSTER_IS_EMPTY` | Ask: The roster is empty |
-| 130414 | CH-13322 | `ASK_PLAYERS_BUT_NO_RECORDED_ROUND` | Ask: Players but no recorded round |
+| 130414 | CH-13322 | `ASK_PLAYERS_BUT_NO_RECORDED_ROUND` | Ask: Players but no recorded round (the rounds read landed and found none) |
 | 130415 | CH-13323 | `ASK_NO_CHATS_YET` | Ask: No chats yet |
 | 130416 | CH-13324 | `ASK_A_CHAT_SEARCH_WITH_NO_MATCH` | Ask: A chat search with no match |
-| 130417 | CH-13325 | `ASK_ROUNDS_RECORDED_NOTHING_FLAGGED` | Ask: Rounds recorded, nothing flagged |
+| 130417 | CH-13325 | `ASK_ROUNDS_RECORDED_NOTHING_FLAGGED` | Ask: Rounds recorded, nothing flagged, and every read the pulse is made from landed |
 | 130418 | CH-13350 | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | Ask: A read tool found nothing recorded |
 | 130419 | CH-13360 | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | Profile: no measure has enough rounds yet (no genome row, or one with nothing computed) |
 | 130420 | CH-13361 | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | Profile: some measures have enough rounds and some do not (an early read) |
@@ -123,7 +124,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130611 | CH-13205 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
 | 130612 | CH-13050 | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | Ask: An action CoachHelm proposed fails after Confirm |
 | 130613 | CH-13051 | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | Ask: Copy is refused by the clipboard |
-| 130614 | CH-13221 | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | Ask: The chat context (the program) does not load |
+| 130614 | CH-13221 | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | Ask: The chat context (the program) does not load, or its roster read fails |
 | 130615 | CH-13222 | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | Ask: The chat list does not load |
 | 130616 | CH-13223 | `ASK_THE_PULSE_DOES_NOT_LOAD` | Ask: The pulse does not load |
 | 130617 | CH-13224 | `ASK_A_CONVERSATION_OR_ITS_MESSAGES_DO` | Ask: A conversation or its messages do not load |
@@ -141,6 +142,11 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130629 | CH-13281 | `DEEP_DIVE_THE_ROUNDS_BEHIND_A_READ` | Deep dive: the rounds behind a read don't load (that one read of `golf_rounds` fails) |
 | 130630 | CH-13282 | `DEEP_DIVE_THEIR_FOCUS_AREAS_AND_GOALS` | Deep dive: their focus areas and goals don't load |
 | 130631 | CH-13283 | `DEEP_DIVE_THE_CATEGORY_TRENDS_DONT_LOAD` | Deep dive: the category trends don't load (`getThemesForPlayer` answers `success: false` or throws) |
+| 130632 | CH-13206 | `COACH_A_READ_THE_PROGRAM_PULSE_IS` | Coach: a read the program pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
+| 130633 | CH-13207 | `COACH_A_READ_ABOUT_THE_TOP_CARD` | Coach: a read about the top card failed: which focus areas were made from it, which were declined, or the newest round (whether the read is still current) |
+| 130634 | CH-13208 | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
+| 130635 | CH-13226 | `ASK_A_READ_THE_PULSE_IS_MADE` | Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
+| 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 
 ## 07 — Network / offline
 
@@ -167,6 +173,11 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130715 | CH-13981 | `DEEP_DIVE_AN_ADDRESS_NAMES_A_READ` | Deep dive: an address names a read (`?view=deep-dive&insight=<id>`) |
 | 130716 | CH-13982 | `DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS` | Deep dive: a cause is a hypothesis |
 | 130717 | CH-13907 | `COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE` | Coach: the player declined a focus made from the top card, and none stands now |
+| 130718 | CH-13908 | `COACH_THE_PLAYER_THE_COACH_HAD_PICKED` | Coach: the player the coach had picked is no longer on the refreshed board (their signal went) |
+| 130719 | CH-13909 | `PLAYER_THE_READ_THE_PLAYER_HAD_PICKED` | Player: the read the player had picked is no longer on the refreshed board |
+| 130720 | CH-13910 | `DEEP_DIVE_THE_READ_THAT_WAS_OPEN` | Deep dive: the read that was open is no longer on the page after a refresh |
+| 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
+| 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
 
 ## 08 — Permission / authorization
 

@@ -7655,6 +7655,28 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90206,
+    "page": "P009",
+    "category": 2,
+    "item": 6,
+    "name": "MANAGE_SELECTIONS_IS_LOADING",
+    "chCode": "CH-09409",
+    "meaning": "Manage selections is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90207,
+    "page": "P009",
+    "category": 2,
+    "item": 7,
+    "name": "A_QUALIFIERS_COURSES_AND_SCORECARDS_ARE_STILL",
+    "chCode": "CH-09410",
+    "meaning": "A qualifier's courses and scorecards are still streaming in behind its standings",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90301,
     "page": "P009",
     "category": 3,
@@ -8096,7 +8118,7 @@
     "item": 9,
     "name": "THE_SCORECARDS_DONT_LOAD",
     "chCode": "CH-09205",
-    "meaning": "The scorecards don't load",
+    "meaning": "The scorecards don't load (or the stream that carries them is cut off)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -8107,7 +8129,7 @@
     "item": 10,
     "name": "THE_ROUND_COURSES_DONT_LOAD",
     "chCode": "CH-09206",
-    "meaning": "The round courses don't load (detail)",
+    "meaning": "The round courses don't load (detail), or the stream that carries them is cut off",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -8118,7 +8140,7 @@
     "item": 11,
     "name": "THE_CONFIRMED_SQUAD_DOESNT_LOAD",
     "chCode": "CH-09207",
-    "meaning": "The confirmed squad doesn't load",
+    "meaning": "The confirmed squad doesn't load, or the entries it takes its names from don't",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -8332,6 +8354,39 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90631,
+    "page": "P009",
+    "category": 6,
+    "item": 31,
+    "name": "THE_COACHS_PICK_NOTES_DONT_LOAD",
+    "chCode": "CH-09221",
+    "meaning": "The coach's pick notes don't load (detail, coach, confirmed squad)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90632,
+    "page": "P009",
+    "category": 6,
+    "item": 32,
+    "name": "A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY",
+    "chCode": "CH-09222",
+    "meaning": "A player's entries don't load on /my-qualifiers",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90633,
+    "page": "P009",
+    "category": 6,
+    "item": 33,
+    "name": "A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS",
+    "chCode": "CH-09220",
+    "meaning": "A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -8354,6 +8409,28 @@
     "tests": [
       "src/clubhouse/__tests__/qualifiers.test.tsx"
     ]
+  },
+  {
+    "id": 90703,
+    "page": "P009",
+    "category": 7,
+    "item": 3,
+    "name": "THE_LISTS_FILTER_AND_SEARCH",
+    "chCode": "CH-09904",
+    "meaning": "The list's filter and search",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90704,
+    "page": "P009",
+    "category": 7,
+    "item": 4,
+    "name": "RETURNING_TO_THE_LIST_FROM_A_QUALIFIER",
+    "chCode": "CH-09905",
+    "meaning": "Returning to the list from a qualifier",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
     "id": 90801,
@@ -12999,6 +13076,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130212,
+    "page": "P013",
+    "category": 2,
+    "item": 12,
+    "name": "COACH_THE_BOARD_IS_DRAWN_AND_THE",
+    "chCode": "CH-13405",
+    "meaning": "Coach: the board is drawn and the program pulse is still on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -13093,7 +13181,7 @@
     "item": 9,
     "name": "COACH_THE_PULSE_HAS_NOTHING_FLAGGED",
     "chCode": "CH-13309",
-    "meaning": "Coach: the pulse has nothing flagged",
+    "meaning": "Coach: the pulse has nothing flagged, and every read it is made from landed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13150,7 +13238,7 @@
     "item": 14,
     "name": "ASK_PLAYERS_BUT_NO_RECORDED_ROUND",
     "chCode": "CH-13322",
-    "meaning": "Ask: Players but no recorded round",
+    "meaning": "Ask: Players but no recorded round (the rounds read landed and found none)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13183,7 +13271,7 @@
     "item": 17,
     "name": "ASK_ROUNDS_RECORDED_NOTHING_FLAGGED",
     "chCode": "CH-13325",
-    "meaning": "Ask: Rounds recorded, nothing flagged",
+    "meaning": "Ask: Rounds recorded, nothing flagged, and every read the pulse is made from landed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13482,7 +13570,7 @@
     "item": 14,
     "name": "ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD",
     "chCode": "CH-13221",
-    "meaning": "Ask: The chat context (the program) does not load",
+    "meaning": "Ask: The chat context (the program) does not load, or its roster read fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13674,6 +13762,61 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130632,
+    "page": "P013",
+    "category": 6,
+    "item": 32,
+    "name": "COACH_A_READ_THE_PROGRAM_PULSE_IS",
+    "chCode": "CH-13206",
+    "meaning": "Coach: a read the program pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130633,
+    "page": "P013",
+    "category": 6,
+    "item": 33,
+    "name": "COACH_A_READ_ABOUT_THE_TOP_CARD",
+    "chCode": "CH-13207",
+    "meaning": "Coach: a read about the top card failed: which focus areas were made from it, which were declined, or the newest round (whether the read is still current)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130634,
+    "page": "P013",
+    "category": 6,
+    "item": 34,
+    "name": "A_READ_BESIDE_THE_CARDS_FAILED_THE",
+    "chCode": "CH-13208",
+    "meaning": "A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130635,
+    "page": "P013",
+    "category": 6,
+    "item": 35,
+    "name": "ASK_A_READ_THE_PULSE_IS_MADE",
+    "chCode": "CH-13226",
+    "meaning": "Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130636,
+    "page": "P013",
+    "category": 6,
+    "item": 36,
+    "name": "STANDING_THE_COHORT_LOOKUP_FAILED",
+    "chCode": "CH-13272",
+    "meaning": "Standing: the cohort lookup (their team's gender, which picks the Tour) failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -13860,6 +14003,61 @@
     "chCode": "CH-13907",
     "meaning": "Coach: the player declined a focus made from the top card, and none stands now",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130718,
+    "page": "P013",
+    "category": 7,
+    "item": 18,
+    "name": "COACH_THE_PLAYER_THE_COACH_HAD_PICKED",
+    "chCode": "CH-13908",
+    "meaning": "Coach: the player the coach had picked is no longer on the refreshed board (their signal went)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130719,
+    "page": "P013",
+    "category": 7,
+    "item": 19,
+    "name": "PLAYER_THE_READ_THE_PLAYER_HAD_PICKED",
+    "chCode": "CH-13909",
+    "meaning": "Player: the read the player had picked is no longer on the refreshed board",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130720,
+    "page": "P013",
+    "category": 7,
+    "item": 20,
+    "name": "DEEP_DIVE_THE_READ_THAT_WAS_OPEN",
+    "chCode": "CH-13910",
+    "meaning": "Deep dive: the read that was open is no longer on the page after a refresh",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130721,
+    "page": "P013",
+    "category": 7,
+    "item": 21,
+    "name": "COACH_PLAYER_COMING_BACK_TO_THE_PAGE",
+    "chCode": "CH-13911",
+    "meaning": "Coach, player: coming back to the page (Back, a reload, a link) after leaving it",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130722,
+    "page": "P013",
+    "category": 7,
+    "item": 22,
+    "name": "ASK_COMING_BACK_TO_THE_PAGE_AFTER",
+    "chCode": "CH-13924",
+    "meaning": "Ask: coming back to the page after leaving it",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
