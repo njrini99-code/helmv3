@@ -45,10 +45,10 @@ export async function loadHoles(supabase: Supabase, roundIds: string[]): Promise
   const results = await Promise.all(
     chunkIds(roundIds).map((ids) =>
       fetchAllRowsTogether<{ round_id: string; hole_number: number; par: number | null; score: number | null }>(
-        (from, to) =>
+        (from, to, count) =>
           supabase
             .from('golf_holes')
-            .select('round_id, hole_number, par, score')
+            .select('round_id, hole_number, par, score', { count })
             .in('round_id', ids)
             .not('score', 'is', null)
             .order('id', { ascending: true })
@@ -78,10 +78,10 @@ export async function loadApproachShots(supabase: Supabase, roundIds: string[]):
   const results = await Promise.all(
     chunkIds(roundIds).map((ids) =>
       fetchAllRowsTogether<ApproachRead>(
-        (from, to) =>
+        (from, to, count) =>
           supabase
             .from('golf_shots')
-            .select('round_id, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, result, lie_after, golf_holes ( par )')
+            .select('round_id, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, result, lie_after, golf_holes ( par )', { count })
             .in('round_id', ids)
             .eq('shot_type', 'approach')
             .not('distance_to_hole_before', 'is', null)
