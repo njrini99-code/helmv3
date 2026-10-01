@@ -154,6 +154,8 @@
     0 2px 6px rgb(28 25 18 / 0.06), 0 18px 44px -14px rgb(28 25 18 / 0.24);
   --ch-elevation-overlay: 0 0 0 1px var(--ch-edge), 0 6px 16px rgb(28 25 18 / 0.08),
     0 28px 64px -20px rgb(28 25 18 / 0.3);
+  /* A bottom sheet: a fine top edge and a long soft shadow cast up over the page. */
+  --ch-elevation-sheet: 0 -1px 0 rgb(28 25 18 / 0.06), 0 -12px 40px -8px rgb(28 25 18 / 0.24);
   --ch-elevation-bubble: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.06),
     0 3px 8px -3px rgb(28 25 18 / 0.1);
   --ch-elevation-bubble-mine: 0 1px 2px rgb(11 58 37 / 0.22), 0 4px 12px -4px rgb(11 58 37 / 0.35);

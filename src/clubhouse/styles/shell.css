@@ -707,7 +707,7 @@
   padding: 0 16px calc(16px + env(safe-area-inset-bottom));
   border-radius: 22px 22px 0 0;
   background: var(--ch-sheet-bg);
-  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.18);
+  box-shadow: var(--ch-elevation-sheet);
   touch-action: pan-y;
   /* A coach with a team list under who they are has the tallest sheet: it scrolls rather than run off a short screen. */
   max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
@@ -1253,7 +1253,7 @@ button.ch-more__row[disabled] {
   padding: 0 8px calc(8px + env(safe-area-inset-bottom));
   border-radius: 22px 22px 0 0;
   background: var(--ch-sheet-bg);
-  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.18);
+  box-shadow: var(--ch-elevation-sheet);
 }
 /* It follows the finger from its grab and header (CH-1611); the list scrolls. */
 .ch-bellp__grab,

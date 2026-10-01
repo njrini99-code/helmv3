@@ -20,6 +20,7 @@ Depth follows a component's role, from one ladder of tokens:
 | Raised control | `--ch-elevation-control` | options, chips, segmented pill |
 | Floating surface | `--ch-elevation-floating` | the desktop composer |
 | Overlay | `--ch-elevation-overlay` | menus, popovers |
+| Bottom sheet | `--ch-elevation-sheet` | the More and bell sheets |
 | Message bubble | `--ch-elevation-bubble`, `-mine` | Messages |
 | Switch | `--ch-switch-*` | every switch |
 
@@ -54,8 +55,12 @@ tertiary 5.5:1 (phone).
   and a green halo (`--ch-focus-halo` was a dark halo) on inputs, selects,
   search, the composers and Ask. At rest a field is an edge with a faint inner
   top shadow, so it reads as a place to type rather than a card.
-- **D07 shell recipes: open.** The green-frame shadows in `shell.css` are
-  light-on-green and kept for now.
+- **D07 shell recipes: fixed.** Inventoried by role. The two bottom sheets
+  (More, the bell) take `--ch-elevation-sheet` (a top edge and a long soft
+  shadow) instead of a raw black shadow; the More list and card read the
+  ladder. Kept on purpose as light-on-green variants: the selected sidebar
+  item, the next-event card and the canvas frame, whose gold edge and darker
+  shadow are balanced for the green, not the ivory.
 
 Calendar (phone day): an event is a card; a class or busy block stays an
 unlifted hatch, so time a player is not free never reads as an event.
