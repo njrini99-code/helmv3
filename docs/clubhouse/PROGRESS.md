@@ -450,8 +450,9 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   totals).
 - Q-128 (answered 2026-10-01, owner: fix the files, owner applies. Done:
   OD-01 amended in place (`dcc54baea`), guards regenerated, chain replayed
-  on a scratch Postgres) Held OD-01 (`20260924120000`) would drop the 14 rounds posted as
-  totals only (7 Demo players, all since 24 Sep) from the stats cache and
+  on a scratch Postgres; pgTAP 85/85 on a local replay, `bdee0d705`) Held
+  OD-01 (`20260924120000`) would drop the 14 rounds posted as totals only
+  (7 Demo players, all since 24 Sep) from the stats cache and
   standings, which Ask CoachHelm reads, while Stats counts them in scores
   (Q-123). It now counts a completed, plausible 18-hole total in the score
   figures (scoring average, to par, best and worst round, last 5/10, the

@@ -8762,6 +8762,8 @@ BEGIN
         SELECT 1 FROM golf_holes h
         WHERE h.round_id = r.id AND h.score IS NOT NULL
       )
+      -- Q-123: a total-only round has no holes by design.
+      AND NOT (r.front_nine IS NULL AND r.back_nine IS NULL AND r.total_score IS NOT NULL)
   ) q;
   v := v || jsonb_build_object('check', 'completed_round_zero_scored_holes',
     'status', CASE WHEN n = 0 THEN 'pass' ELSE 'fail' END, 'count', n, 'sample', sample);
@@ -9743,6 +9745,14 @@ BEGIN
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Round not found, already completed, or no permission.');
+  END IF;
+
+  -- Optimistic lock (swap audit C-6): the caller's last acknowledged
+  -- updated_at. The row is already locked above, so this read is current.
+  IF NULLIF(p_round_data->>'expected_updated_at', '') IS NOT NULL
+     AND (SELECT updated_at FROM golf_rounds WHERE id = p_round_id)
+         > (p_round_data->>'expected_updated_at')::timestamptz THEN
+    RETURN jsonb_build_object('success', false, 'error', 'conflict');
   END IF;
 
   IF p_holes IS NULL OR jsonb_typeof(p_holes) <> 'array' THEN
