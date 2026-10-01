@@ -58,7 +58,20 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const edit = (playerId: string, patch: CandEdit) => {
     // A re-read that already carries the write (it can land before the write's own answer does) leaves nothing to lay over it.
     const server = served.current.find((c) => c.playerId === playerId);
-    if (server && agrees(server, patch)) return;
+    if (server && agrees(server, patch)) {
+      // ...and an older edit of the same fields (the opposite change, which the server never showed) must not keep masking it.
+      setEdits((cur) => {
+        const older = cur[playerId];
+        if (!older) return cur;
+        const rest: CandEdit = { ...older.patch };
+        for (const field of Object.keys(patch) as Array<keyof CandEdit>) delete rest[field];
+        const next = { ...cur };
+        if (Object.keys(rest).length) next[playerId] = { patch: rest, reads: older.reads };
+        else delete next[playerId];
+        return next;
+      });
+      return;
+    }
     setEdits((cur) => ({ ...cur, [playerId]: { patch: { ...cur[playerId]?.patch, ...patch }, reads: 0 } }));
   };
   useEffect(() => {

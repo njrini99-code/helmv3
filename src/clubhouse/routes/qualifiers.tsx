@@ -131,7 +131,12 @@ function CoachOnly({ view, id }: { view: 'new' | 'edit' | 'selection'; id?: stri
 function SelectionDidNotLoad() {
   return (
     <Frame>
-      <RefreshNotice code="CH-09218" title="Selections didn’t load." body="Nothing has changed. Try again; the error has been reported." />
+      {/* This page also follows a pick or a confirm whose re-read failed, under a toast that says it was made: never "nothing has changed". */}
+      <RefreshNotice
+        code="CH-09218"
+        title="Selections didn’t load."
+        body="They couldn’t be read, so none are shown rather than a wrong list. Anything already saved is still saved. Try again; the error has been reported."
+      />
     </Frame>
   );
 }

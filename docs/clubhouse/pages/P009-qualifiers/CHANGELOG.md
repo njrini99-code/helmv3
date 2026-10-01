@@ -15,8 +15,9 @@ direction, same day): see "Filter, search and Back" below.
 
 ```text
 PR/commit:      agent/swap-audit: cb1739fe9, 6dcbae1ff, dadc1f8e2, 112afa945,
-                75df19425, 8d9d48f86, 43d50e341, and the rule 8 rework (the
-                commit that adds screens/qualifiers/return-state.ts)
+                75df19425, 8d9d48f86, 43d50e341, 461d7cb1f (the rule 8 rework,
+                adds screens/qualifiers/return-state.ts), and the review fixes
+                commit after it
 Design package: none (no new visual; placeholders reuse the page's classes)
 Contract IDs:   CH-09220, CH-09221, CH-09222, CH-09409, CH-09410, CH-09904,
                 CH-09905 (new); CH-09202, CH-09205, CH-09206, CH-09207,
@@ -68,7 +69,14 @@ Held items:     none
   `Streamed` (`use()` inside its own `Suspense`) with a placeholder of the
   final size (CH-09410). A failed read, or a stream cut off in the browser, is
   that section's own notice (CH-09205, CH-09206), never an empty. This
-  supersedes the earlier "left" note about the scorecards.
+  supersedes the earlier "left" note about the scorecards. A live refresh
+  (`router.refresh`) is a transition, so the page on screen stays whole until
+  the new render, streamed part included, has landed: the placeholders are the
+  first load's and are never drawn over standings. The unit test renders new
+  standings with a part that has not landed, which a transition would not
+  show, so it does not prove the production behavior. No keyed Suspense or
+  `useDeferredValue` was added: a new round paired with an old holes map would
+  draw a false "No hole-by-hole card".
 - **Filter, search and Back (rule 8).** The list's filter and search use the
   shell's `useChSessionState` (this tab, per page and team, never restored
   while the page hydrates), so they come back when the list is opened again,
@@ -86,6 +94,32 @@ Held items:     none
   still a step to the list. A note is written by a plain click only, and a
   second tap on Back within a second is the first one's, so it cannot step
   back twice past the list.
+- **Second review (same day).** An independent read of all the commits found
+  two things to fix and some to tidy, each checked against the code first.
+  (1) A failed refresh over a good board with no round in yet drew "Awaiting
+  first round" with no notice, before the stale notice was reached: both
+  screens now draw CH-09220 above it. (2) The Manage selections workspace
+  loader (`lib/coachhelm/v3/qualifying/loader.ts`, shared with the Fairway
+  workspace page and the tie and confirm writes) did not read the picks or the
+  reasons error. A failed picks read came back as "nobody is selected", so
+  `chooseTiePlace` counted `tie.chosen` as 0 and could give a place twice, and
+  `confirmSelection` could rewrite a coach's pick as a top-score place. A
+  failed qualifier, picks, reasons or rounds read now returns null. The callers
+  were checked: the Fairway page shows not-found (as it already did for a
+  failed qualifier or rounds read), the Clubhouse loader answers CH-09218, and
+  both writes answer "workspace not loadable" and write nothing. (3) CH-09218's
+  copy no longer says "Nothing has changed": the page also follows a pick or a
+  confirm that was saved. (4) A Back note carries the time of the click and is
+  ignored and dropped after ten seconds, so a navigation that never opened its
+  page cannot send a later visit back. (5) Tidy: `return-state.ts` is marked
+  `'use client'` (it exports a hook); a change the server already shows now
+  clears an older opposite edit of the same fields in Manage selections, so a
+  take-back is not masked by the give before it.
+  Decision, left as it was: the detail's "last good" test (`board` loaded)
+  ignores the picks and the notes reads, so a refresh whose picks read fails
+  shows the squad card's own notice (CH-09207) rather than a stale squad. That
+  notice is honest and the standings, which the stale rule protects, are
+  unaffected.
 - **Review.** An independent read of the first six commits found the phone
   scroll, a return mark that never expired, the unguarded per-key history
   writes and an edit that could linger over a server change. The first three
@@ -93,13 +127,15 @@ Held items:     none
   writes, scroll keep and restore, and return mark; the edit fix stays
   (`43d50e341`).
 - **Checked.** `qualifiers.test.tsx`, `qualifiers-reads.test.ts` and
-  `qualifiers-hydration.test.tsx`, 176 cases. The tests for the tees race, the
+  `qualifiers-hydration.test.tsx`, 181 cases, and
+  `src/test/coachhelm/v3` (the loader's failed reads and the writes behind it,
+  1456 cases in the folder). The tests for the tees race, the
   selection overlay, the tie row, the phone sheet and the Back notes were each
   seen to fail with their fix taken out (the filter and the search as plain
   state, the note and its plain-click guard, the step back, a note matching
   any qualifier, a note that is not spent, the double tap, the hand back to the
   list, strict mode's second run, the list scrolling or writing the address
-  itself).
+  itself; the second review's fixes the same way).
 - **Test assertions changed by design.** The detail loader's holes, courses
   and logs are read from `await result.secondary` (90806, 92101, 92301); the
   detail depth test in `qualifiers-reads.test` now asserts two waves for the
@@ -109,7 +145,9 @@ Held items:     none
   the tests of the list's own mechanism (the address, the scroll keep and
   restore, the return mark, the remembered list address) and added tests for
   the shell's: the filter and search coming back for the same team and not
-  another, the Back notes, and the list inside RouteFrame.
+  another, the Back notes, and the list inside RouteFrame. The streaming
+  refresh test was only retitled to say what it shows (new standings and a part
+  that has not landed), not changed.
 - **Left.** (1) Rule 2's "updating mark" on a live refresh is not drawn: a
   refresh is a transition, so the page stays whole until the new render lands
   and then changes in one commit; a unit test cannot see a transition's

@@ -211,7 +211,10 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
   filter and search come back through the shell's `useChSessionState` (this tab,
   per team), its scroll through RouteFrame, and a qualifier opened from the list
   steps back to it on Back (`screens/qualifiers/return-state.ts`, the Rounds
-  library's pattern); Manage selections does the same toward the qualifier. Detail:
+  library's pattern); Manage selections does the same toward the qualifier. The
+  selection workspace loader (`lib/coachhelm/v3/qualifying/loader.ts`) fails
+  closed: a failed picks, reasons or rounds read returns null, so the tie and
+  confirm writes refuse rather than count zero picks. Detail:
   `docs/clubhouse/pages/P009-qualifiers/WIRING.md`.
 
 ## Known Risk Areas

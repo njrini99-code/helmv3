@@ -123,7 +123,7 @@ eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
 | setQualifierSquadSize, setQualifierEntrants | actions/qualifier-setup.ts | **Held** (D-61; refuses unless `isClubhouseFor('coach')`) | Edit's squad and players |
 | advanceSelectionState, setQualifierCoachPick, removeQualifierCoachPick, confirmQualifierSelection | actions/v3/qualifying.ts | Existing (shared with the CoachHelm qualifying workspace) | Manage selections; `getAuthedCoachContext` and `verifyPlayersOnTeam` gate them |
 | listCoursesStrict, getTeamSavedCourses, getCourseDetail | actions/course-library.ts | Existing | the course picker |
-| loadQualifyingWorkspace | lib/coachhelm/v3/qualifying/loader.ts | Existing (same loader the confirm uses) | Manage selections' read |
+| loadQualifyingWorkspace | lib/coachhelm/v3/qualifying/loader.ts | Existing (same loader the confirm and the tie places use) | Manage selections' read. A failed qualifier, picks, reasons or rounds read returns null (callers: the Fairway workspace page, the Clubhouse loader, `chooseTiePlace`, `confirmSelection`), never a workspace that looks empty |
 | readQualifierSelectionReasons | lib/golf/qualifier-selection-reasons.ts | Existing | pick reasons for a coach, working before and after the D-35 apply |
 
 ## Data resources

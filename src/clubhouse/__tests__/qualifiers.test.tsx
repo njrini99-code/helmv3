@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, renderHook, screen, waitFor, within, act, fireEvent } from '@testing-library/react';
+import { cleanup, render, renderHook, screen, waitFor, within, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -866,6 +866,42 @@ describe('Qualifiers · a refresh that fails keeps the standings it had (owner r
     expect(code('CH-09204')).not.toBeNull();
   });
 
+  it('CH-09220 CH-09304 a failed refresh over a good board with no round in yet says so: "awaiting first round" is never shown as current under a read that failed', async () => {
+    const user = userEvent.setup();
+    const d = detail('upcoming');
+    const { rerender } = render(tree(d));
+    expect(code('CH-09304')).not.toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    rerender(tree(failedRead(d)));
+    // The last good board was empty: it stays, with the notice that it may be out of date, and the failure is not the error either.
+    await expectCode('CH-09220', /These standings may be out of date/);
+    expect(code('CH-09304')).not.toBeNull();
+    expect(code('CH-09204')).toBeNull();
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09220') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // The read lands, still with no round in: no notice.
+    rerender(tree(d));
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09304')).not.toBeNull();
+  });
+
+  it('CH-09220 CH-09304 the same on the phone: an empty last-good board keeps the notice', () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const d = detail('upcoming');
+      const { rerender } = render(tree(d));
+      expect(code('CH-09304')).not.toBeNull();
+      rerender(tree(failedRead(d)));
+      expect(code('CH-09220')).not.toBeNull();
+      expect(code('CH-09304')).not.toBeNull();
+      expect(code('CH-09204')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
   it('CH-09220 the same on the phone: the cards of the last good standings stay, with the notice', () => {
     const real = window.matchMedia;
     window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
@@ -970,7 +1006,7 @@ describe('Qualifiers · the courses and the cards stream behind the standings (o
     expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
   });
 
-  it('CH-09410 a live refresh keeps the standings on screen and updates them while the courses and cards stream again; only their places show a placeholder', async () => {
+  it('CH-09410 a render that is not a transition, with new standings and a part that has not landed: the standings update at once and only the streamed places hold a placeholder (router.refresh is a transition and keeps the whole old page until the new part lands, which this does not prove)', async () => {
     const { core, secondary } = split(detail());
     const { rerender } = render(tree(page(core, fulfilled(secondary))));
     expect(screen.getAllByText('Finley GC', { selector: 'b' })).not.toHaveLength(0);
@@ -1051,7 +1087,16 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
   const pill = (name: RegExp) => screen.getByRole('button', { name }).getAttribute('aria-pressed');
   const searchBox = () => screen.getByLabelText('Search qualifiers') as HTMLInputElement;
   /** What a Back note says, read straight from this tab's session. */
-  const kept = (key: string) => JSON.parse(window.sessionStorage.getItem(key) ?? 'null') as { id: string; listBelow?: boolean } | null;
+  const kept = (key: string) => {
+    const note = JSON.parse(window.sessionStorage.getItem(key) ?? 'null') as { id: string; at: number; listBelow?: boolean } | null;
+    if (!note) return null;
+    // Every note says when the click was made, so a stale one can be ignored.
+    expect(typeof note.at).toBe('number');
+    const { at: _at, ...rest } = note;
+    return rest;
+  };
+  /** A note as a click leaves it, `ago` milliseconds back. */
+  const plant = (key: string, note: { id: string; listBelow?: boolean }, ago = 0) => window.sessionStorage.setItem(key, JSON.stringify({ ...note, at: Date.now() - ago }));
   /** A link click that stays in the test: jsdom does not navigate, and the handlers under test run before the default. */
   const keepHere = (link: Element) => link.addEventListener('click', (e) => e.preventDefault());
   const backLink = (name = 'Qualifiers') => screen.getByRole('link', { name });
@@ -1246,6 +1291,41 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     expect(router.back).not.toHaveBeenCalled();
   });
 
+  it('CH-09904 a note older than ten seconds is not a click being followed: the page it was for never opened, so the next visit goes to the address and the note is dropped', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    plant(FROM_LIST, { id: d.id.toLowerCase() }, 11_000);
+    const first = wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem(FROM_LIST)).toBeNull();
+    first.unmount();
+
+    // The same for Manage selections, and a note from before the timestamp existed.
+    const sel = previewSelection('picking');
+    plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: true }, 11_000);
+    const second = wrap(<QualifierSelection data={sel} writes={selWrites()} />);
+    keepHere(backLink('Qualifier'));
+    await user.click(backLink('Qualifier'));
+    expect(router.back).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem(FROM_DETAIL)).toBeNull();
+    second.unmount();
+    window.sessionStorage.setItem(FROM_LIST, JSON.stringify({ id: d.id.toLowerCase() }));
+    wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+
+    // A fresh note still steps back (the control of the above).
+    window.sessionStorage.clear();
+    plant(FROM_LIST, { id: d.id.toLowerCase() }, 9_000);
+    cleanup();
+    wrap(openQualifier(d));
+    await user.click(backLink());
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
   it('CH-09904 the phone’s top bar goes back the same way: a step back when the list opened the qualifier, the list’s address otherwise', async () => {
     const restore = asPhone();
     try {
@@ -1337,7 +1417,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     const user = userEvent.setup();
     const sel = previewSelection('picking');
     // The list opened the qualifier, and the qualifier's link opened Manage selections.
-    window.sessionStorage.setItem(FROM_DETAIL, JSON.stringify({ id: sel.id.toLowerCase(), listBelow: true }));
+    plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: true });
     const page = wrap(<QualifierSelection data={sel} writes={selWrites()} />);
     expect(kept(FROM_DETAIL)).toBeNull();
     await user.click(screen.getByRole('link', { name: 'Qualifier' }));
@@ -1356,7 +1436,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
   it('CH-09905 Manage selections opened from a qualifier the list did not open steps back to it, and hands nothing to the list', async () => {
     const user = userEvent.setup();
     const sel = previewSelection('picking');
-    window.sessionStorage.setItem(FROM_DETAIL, JSON.stringify({ id: sel.id.toLowerCase(), listBelow: false }));
+    plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: false });
     wrap(<QualifierSelection data={sel} writes={selWrites()} />);
     await user.click(screen.getByRole('link', { name: 'Qualifier' }));
     expect(router.back).toHaveBeenCalledTimes(1);
@@ -1375,7 +1455,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
 
     const restore = asPhone();
     try {
-      window.sessionStorage.setItem(FROM_DETAIL, JSON.stringify({ id: sel.id.toLowerCase(), listBelow: false }));
+      plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: false });
       const stepped = render(phoneTree(<QualifierSelection data={sel} writes={selWrites()} />));
       await user.click(phoneBack('Back to Qualifier'));
       expect(router.back).toHaveBeenCalledTimes(1);
@@ -1473,6 +1553,23 @@ describe('Qualifiers · review fixes (2026-10-01)', () => {
     // The next read the server changes: it is shown at once, not held back by an edit that was never needed.
     rerender(tree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true))));
     expect(badge('Cal')).toBe('Tie at cut');
+  });
+
+  it('CH-09408 a change the server already shows clears the older opposite edit for that player, so a take-back is not masked by the give before it', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const cand = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({ playerId, name: playerId, rank, toPar: rank, total: 70 + rank, rounds: 2, onScore, pick: null, selected: false, tiedAtCut });
+    const data: ChQSelectionData = { ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates: [cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)] };
+    const writes = selWrites();
+    wrap(<QualifierSelection data={data} writes={writes} />);
+    const badge = () => within(within(code('CH-09318') as HTMLElement).getByText('Cal', { selector: 'b' }).closest('li') as HTMLElement).getByText(/Tie at cut|Given the place/).textContent;
+    // The give lands and the page has not been re-read: the edit holds Cal's place on screen.
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    await user.click(await screen.findByRole('button', { name: 'Take it back Cal' }));
+    // The take-back lands. The server never showed the give, so it already agrees with the take-back: no edit is left holding the give.
+    await waitFor(() => expect(writes.chooseTie).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(badge()).toBe('Tie at cut'));
+    expect(screen.getByRole('button', { name: 'Give the place Cal' })).toBeTruthy();
   });
 
   it('CH-09206 a rejected chunk of the stream is the failed part at once', async () => {
@@ -2224,6 +2321,15 @@ describe('Qualifiers · Manage selections', () => {
     expect(logServer).toHaveBeenCalledWith('qualifiers', 'selection', expect.anything(), 'qualifiers');
     tables.current = { golf_qualifiers: { data: { id: 'q1', team_id: 'other' } } };
     expect((await loadQualifierSelection({ teamId: 't1', qualifierId: 'q1' })).kind).toBe('missing');
+  });
+
+  it('CH-09218 the page that cannot read the selections never says "nothing has changed": it also follows a pick or a confirm that was saved', async () => {
+    asCoachSession();
+    tables.current = { golf_qualifiers: { error: { message: 'boom' } } };
+    wrap((await ClubhouseQualifiersRoute({ view: 'selection', id: '10000000-0000-4000-8000-000000000001' })) as never);
+    const notice = code('CH-09218') as HTMLElement;
+    expect(notice.textContent).not.toMatch(/nothing has changed/i);
+    expect(notice.textContent).toMatch(/already saved is still saved/);
   });
 });
 

@@ -235,6 +235,7 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
     return (
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
+        {stale && <StaleStandings />}
         <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round." body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
       </section>
     );

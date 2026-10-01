@@ -1,3 +1,5 @@
+'use client';
+
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type MouseEvent } from 'react';
 
@@ -16,7 +18,8 @@ import { useEffect, useRef, type MouseEvent } from 'react';
  *
  * Spending the note at the first mount is what keeps it honest: a later page for the same qualifier that the list did not open (the
  * edit form's save, Confirm squad, a Forward) is not the entry after the list, so its Back goes to the address. A note is only written
- * by a plain click, since a new-tab click leaves this tab where it is.
+ * by a plain click, since a new-tab click leaves this tab where it is, and it carries the time of the click: one older than ten
+ * seconds is the click of a page that never opened, and is ignored and dropped.
  *
  * Client-only. A blocked store only costs the step back: Back then goes to the address.
  */
@@ -27,26 +30,38 @@ const FROM_LIST_KEY = 'ch:qualifiers:from-list';
 const FROM_DETAIL_KEY = 'ch:qualifiers:from-detail';
 /** A second tap on a Back control inside this long is the first tap's: it must not step back twice and skip the list. */
 const STEP_WINDOW_MS = 1000;
+/**
+ * A note is the click that is being followed. One older than this belongs to a page that never opened (a navigation that failed or
+ * was cancelled), so it must not send the next visit to that qualifier from somewhere else back to the wrong page.
+ */
+const NOTE_FRESH_MS = 10_000;
 
 interface Note {
   id: string;
+  /** When the click was made (`Date.now()`). */
+  at: number;
   /** Manage selections only: the qualifier it was opened from had itself been opened from the list. */
   listBelow?: boolean;
 }
 
-function write(key: string, note: Note): void {
+function write(key: string, note: Omit<Note, 'at'>): void {
   try {
-    sessionStorage.setItem(key, JSON.stringify({ ...note, id: note.id.toLowerCase() }));
+    sessionStorage.setItem(key, JSON.stringify({ ...note, id: note.id.toLowerCase(), at: Date.now() }));
   } catch {
     /* Back goes to the address */
   }
 }
 
-/** The note, when it names this qualifier; the note is spent as it is read. */
+/** The note, when it is fresh and names this qualifier; the note is spent as it is read, and a stale one is dropped. */
 function take(key: string, qualifierId: string): Note | null {
   try {
     const kept = JSON.parse(sessionStorage.getItem(key) ?? 'null') as Note | null;
-    if (!kept || kept.id !== qualifierId.toLowerCase()) return null;
+    if (!kept) return null;
+    if (typeof kept.at !== 'number' || Date.now() - kept.at > NOTE_FRESH_MS) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    if (kept.id !== qualifierId.toLowerCase()) return null;
     sessionStorage.removeItem(key);
     return kept;
   } catch {

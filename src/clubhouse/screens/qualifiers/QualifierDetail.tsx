@@ -349,6 +349,8 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
     return (
       <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
         {head}
+        {/* The last good board was an empty one and the latest read failed: "awaiting first round" may no longer be true. */}
+        {stale && <StaleStandings />}
         <EmptyState
           code="CH-09304"
           icon={Flag}

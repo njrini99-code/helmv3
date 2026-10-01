@@ -28,7 +28,9 @@ type Sb = SupabaseClient<Database>;
 
 /**
  * Load the workspace for one qualifier. Returns null when the qualifier
- * doesn't exist OR when the caller lacks RLS access to it.
+ * doesn't exist, when the caller lacks RLS access to it, OR when any of its
+ * reads failed (the qualifier, the picks, their reasons, the rounds): callers
+ * treat null as "not loadable", never as an empty workspace.
  */
 export async function loadQualifyingWorkspace(
   supabase: Sb,
@@ -58,7 +60,7 @@ export async function loadQualifyingWorkspace(
   if (qErr || !q) return null;
 
   // The pick reasoning comes through the coach-gated reader (D-35), not the column.
-  const [{ data: sels }, { reasons }, roundsRes] = await Promise.all([
+  const [selsRes, reasonsRes, roundsRes] = await Promise.all([
     supabase
       .from('golf_qualifier_selections')
       .select('qualifier_id, player_id, selection_type, selected_at, selected_by_user_id')
@@ -78,8 +80,14 @@ export async function loadQualifyingWorkspace(
         .range(from, to),
     ),
   ]);
-  // A failed rounds read is a failed load, never a board of unscored players.
-  if (roundsRes.error) return null;
+  // A failed read is a failed load, never a workspace that looks decided on less than it knows. This loader feeds the writes
+  // (chooseTiePlace counts `tie.chosen` from it; confirm builds the squad and the picks from it), so a failed selections read
+  // that came back as "nobody is selected" would pass the "never more than the places" guard and let a place be given twice,
+  // or confirm would rewrite a coach's pick as a top-score place. A failed reasons read would show picks without their notes
+  // and refuse a confirm that is allowed. A failed rounds read would be a board of unscored players.
+  if (selsRes.error || reasonsRes.error || roundsRes.error) return null;
+  const sels = selsRes.data;
+  const reasons = reasonsRes.reasons;
   // The board's rules (screens/qualifiers/model.ts buildBoard): a round needs a total and a to-par, and a second
   // round in the same qualifier round counts once.
   const byPlayer = new Map<string, { n: number; total: number; toPar: number; slots: Set<number> }>();
