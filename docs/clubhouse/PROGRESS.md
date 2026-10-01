@@ -1523,14 +1523,16 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
-- Q-146 (open, 2026-10-01; building, reversible) The CoachHelm gate
+- Q-146 (open, 2026-10-01; built, reversible: fail closed) The CoachHelm gate
   (`src/lib/coachhelm/v2/gate.ts`, shared with Fairway) fails open when the
   coach settings, staff, team memberships or team settings read errors (it
   predates the batching in 38a51b1a0; found by its security review). A
   transient error can turn CoachHelm on for a minor whose team disabled it.
   Choice made: every one of those reads fails closed (CoachHelm says it is
   unavailable for that request). Alternative: keep failing open, so an outage
-  never blocks CoachHelm.
+  never blocks CoachHelm. Built: each failed read answers "CoachHelm settings
+  lookup failed" and is logged; `gate-batching.test.ts` holds the serial
+  version as the reference everywhere else and names the closed worlds.
 - Q-145 (open, 2026-10-01; not built) Every request looks the signed-in user
   up twice in series (the proxy, then the render: about 50 ms of a 230 ms
   local request). Reading the proxy's verified claims (getClaims) would save

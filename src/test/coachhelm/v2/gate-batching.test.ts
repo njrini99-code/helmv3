@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * The CoachHelm gate reads in two round trips instead of four (perf, 2026-10-01), and must answer exactly as the serial version did
  * (LIVE-17's fail-closed rows, the all-teams-disabled rule, the reason it names). `gate-serial.reference.ts` is a frozen copy of that
  * version; both run over the same fake database, in every combination of the reads' outcomes, and must return the same status.
+ *
+ * Q-146 (2026-10-01) changed one thing on purpose: a failed settings, staff, membership or team settings read the answer rests on now
+ * fails closed, where the serial version read it as "no row" and so as enabled. `failsClosed` names exactly those worlds; in every other
+ * world the serial version is still the reference.
  */
 
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
@@ -107,6 +111,25 @@ function fakeDb(world: World, calls: Call[] = []) {
   return { from } as never;
 }
 
+const SETTINGS_FAILED = {
+  userEnabled: false,
+  teamEnabled: false,
+  effectivelyEnabled: false,
+  disabledReason: 'CoachHelm settings lookup failed',
+  disabledBy: null,
+};
+
+/** Whether a read the answer rests on failed, past the subject's own row (which LIVE-17 already covers): Q-146's fail-closed worlds. */
+function failsClosed(w: World, role: 'coach' | 'player'): boolean {
+  if (w.subject !== 'ok') return false;
+  if (role === 'coach') {
+    if (w.coachSettings === 'error') return true;
+    if (w.coachSettings === 'disabled' || w.coachSettings === 'disabled-no-reason') return false;
+  }
+  if (w.teams === 'error') return true;
+  return w.teams.some((id) => w.team[id] === 'error');
+}
+
 const IDS = ['t1', 't2', 't3'];
 const SETTINGS: Settings[] = ['enabled', 'disabled', 'disabled-no-reason', 'null-enabled', 'missing', 'error'];
 
@@ -143,24 +166,36 @@ afterEach(() => {
   delete process.env.NEXT_PUBLIC_COACHHELM_ENABLED;
 });
 
-describe('the batched gate answers exactly as the serial one did', () => {
+describe('the batched gate answers exactly as the serial one did, except where a read failed (Q-146: closed)', () => {
   const all = worlds();
 
   it('for a coach, in every combination of the reads (row, settings, staffed teams, up to three teams in every state)', async () => {
     expect(all.length).toBeGreaterThan(1000);
+    let closed = 0;
     for (const w of all) {
       const batched = await isCoachHelmEnabledForCoach('c1', fakeDb(w));
-      const serial = await serialCoach('c1', fakeDb(w));
-      expect(batched, JSON.stringify(w)).toEqual(serial);
+      if (failsClosed(w, 'coach')) {
+        closed++;
+        expect(batched, JSON.stringify(w)).toEqual(SETTINGS_FAILED);
+      } else {
+        expect(batched, JSON.stringify(w)).toEqual(await serialCoach('c1', fakeDb(w)));
+      }
     }
+    expect(closed).toBeGreaterThan(0);
   });
 
   it('for a player, in every combination of the reads (row, active memberships, up to three teams in every state)', async () => {
+    let closed = 0;
     for (const w of all) {
       const batched = await isCoachHelmEnabledForPlayer('p1', fakeDb(w));
-      const serial = await serialPlayer('p1', fakeDb(w));
-      expect(batched, JSON.stringify(w)).toEqual(serial);
+      if (failsClosed(w, 'player')) {
+        closed++;
+        expect(batched, JSON.stringify(w)).toEqual(SETTINGS_FAILED);
+      } else {
+        expect(batched, JSON.stringify(w)).toEqual(await serialPlayer('p1', fakeDb(w)));
+      }
     }
+    expect(closed).toBeGreaterThan(0);
   });
 
   it('with the global switch off, nothing is read and the answer is the same', async () => {
@@ -211,10 +246,34 @@ describe('the fail-closed rows (LIVE-17) and the rules the answer rests on, stat
     expect(player).toMatchObject({ effectivelyEnabled: false, disabledBy: 'coach', disabledReason: 'reason t1' });
   });
 
-  it('a failed read of the teams settings reads as the serial version read it: enabled', async () => {
-    const w: World = { ...base, team: { t1: 'disabled', t2: 'error' } };
-    expect((await isCoachHelmEnabledForCoach('c1', fakeDb(w))).effectivelyEnabled).toBe(true);
-    expect((await serialCoach('c1', fakeDb(w))).effectivelyEnabled).toBe(true);
+  it('Q-146: a failed settings, staff, membership or team settings read is closed, where the serial version opened it', async () => {
+    // The case the security review found: the team switched CoachHelm off, and a transient error turned it back on.
+    const teamRead: World = { ...base, team: { t1: 'disabled', t2: 'error' } };
+    expect(await serialCoach('c1', fakeDb(teamRead))).toMatchObject({ effectivelyEnabled: true });
+    expect(await isCoachHelmEnabledForCoach('c1', fakeDb(teamRead))).toEqual(SETTINGS_FAILED);
+    expect(await isCoachHelmEnabledForPlayer('p1', fakeDb(teamRead))).toEqual(SETTINGS_FAILED);
+    expect(await isCoachHelmEnabledForCoach('c1', fakeDb({ ...base, coachSettings: 'error' }))).toEqual(SETTINGS_FAILED);
+    expect(await isCoachHelmEnabledForCoach('c1', fakeDb({ ...base, teams: 'error' }))).toEqual(SETTINGS_FAILED);
+    expect(await isCoachHelmEnabledForPlayer('p1', fakeDb({ ...base, teams: 'error' }))).toEqual(SETTINGS_FAILED);
+  });
+
+  it('Q-146: a staff or membership read that throws is closed too, and logged', async () => {
+    const throwingList = (table: string) =>
+      ({
+        from: (t: string) => ({
+          select: () => {
+            const chain: Record<string, unknown> = {};
+            chain.eq = () => chain;
+            chain.single = () => Promise.resolve({ data: { user_id: 'u', organization_id: 'o' }, error: null });
+            chain.maybeSingle = () => Promise.resolve({ data: null, error: null });
+            chain.then = (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) =>
+              (t === table ? Promise.reject(new Error('threw')) : Promise.resolve({ data: [], error: null })).then(ok, bad);
+            return chain;
+          },
+        }),
+      }) as never;
+    expect(await isCoachHelmEnabledForCoach('c1', throwingList('golf_team_coach_staff'))).toEqual(SETTINGS_FAILED);
+    expect(await isCoachHelmEnabledForPlayer('p1', throwingList('golf_team_members'))).toEqual(SETTINGS_FAILED);
   });
 });
 
