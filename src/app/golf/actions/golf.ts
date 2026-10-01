@@ -45,6 +45,7 @@ import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
+import { isClubhouseFor } from '@/clubhouse/gate';
 import { expectRows } from '@/lib/supabase/expect-rows';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
@@ -1701,6 +1702,8 @@ async function submitGolfRoundComprehensiveImpl(
     roundId: existingRoundId ?? null,
     existingRoundId: existingRoundId ?? null,
     qualifierId: data?.qualifierId ?? null,
+    // Which UI wrote the round, so a failure rate can be compared between Clubhouse and Fairway (swap audit §18).
+    metadata: { ui: (await isClubhouseFor('player')) ? 'clubhouse' : 'fairway' },
   });
   // Idempotent trace terminator — see savePartialRoundImpl's identical
   // helper for why. Submit finalizes from many branches (RPC success,
@@ -6877,6 +6880,8 @@ async function savePartialRoundImpl(
     roundId: existingRoundId ?? null,
     existingRoundId: existingRoundId ?? null,
     qualifierId: data?.qualifierId ?? null,
+    // Which UI wrote the round, so a failure rate can be compared between Clubhouse and Fairway (swap audit §18).
+    metadata: { ui: (await isClubhouseFor('player')) ? 'clubhouse' : 'fairway' },
   });
   // Idempotent trace terminator. Every explicit finalize call in this
   // function should go through this instead of `flightRecorder.finalize`
