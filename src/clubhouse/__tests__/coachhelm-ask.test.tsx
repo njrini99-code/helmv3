@@ -517,6 +517,30 @@ describe('History: the standing panel (desktop)', () => {
     expect(panel.getByRole('link', { name: 'Weekly brief, Sept 29' })).not.toHaveAttribute('aria-current');
   });
 
+  it('choosing a chat takes the selected look on the tap and dims the conversation until it lands; a click for a new tab is still just the link', async () => {
+    router.push.mockImplementationOnce(() => new Promise(() => {}));
+    try {
+      show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
+      const panel = within(screen.getByRole('complementary', { name: 'Chats' }));
+      const main = document.querySelector('main.ch-ask')!;
+      const other = panel.getByRole('link', { name: 'Weekly brief, Sept 29' });
+      // A modified click is the browser's (a new tab): nothing is switched.
+      other.addEventListener('click', (e) => e.preventDefault(), { once: true });
+      fireEvent.click(other, { ctrlKey: true });
+      expect(router.push).not.toHaveBeenCalled();
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+
+      await userEvent.click(other);
+      expect(router.push).toHaveBeenCalledWith(other.getAttribute('href'));
+      await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
+      expect(main.getAttribute('data-switch')).toBe('chat');
+      expect(other).toHaveAttribute('aria-current', 'page');
+      expect(panel.getByRole('link', { name: 'Putting inside 6 feet' })).not.toHaveAttribute('aria-current');
+    } finally {
+      router.push.mockReset();
+    }
+  });
+
   it('CH-13324 Search chats filters by title, and a search with no match says so', async () => {
     show();
     const panel = within(screen.getByRole('complementary', { name: 'Chats' }));

@@ -35,9 +35,12 @@ Held items:     none
   `?view=`). The gate is read inside the boundary.
 - **The strip.** The tap moves it at once (`useViewSwitch`, the F-55 pattern:
   `useTransition`, the target held until the server answers, `aria-busy` on
-  the page) and the header stays crisp. The route skeletons now draw the
-  strip's place and height (38px desktop, 44px phone); before, it arrived with
-  the page and pushed everything under it down.
+  the page) and the header stays crisp. Choosing a saved chat in Ask is the
+  same switch: its row takes the selected look at once (a click for a new tab
+  is still the link), the conversation dims and the list of chats stays
+  crisp, until the thread lands. The route skeletons now draw the strip's
+  place and height (38px desktop, 44px phone); before, it arrived with the
+  page and pushed everything under it down.
 - **Not cached, not prefetched.** A server cache here cannot be shown
   correct: the delivery actions write as they read, the reads go through the
   signed-in user's own session, the standing is rewritten by a nightly job

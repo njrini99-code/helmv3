@@ -15,7 +15,7 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
 import { AskEvidencePanel } from './EvidencePanel';
-import { HistoryDrawer, HistoryPanel } from './History';
+import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHome } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
 import { useViewSwitch } from '../use-view-switch';
@@ -43,6 +43,9 @@ function subscribeOnline(cb: () => void) {
 function useOnline(): boolean {
   return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
 }
+
+/** The `useViewSwitch` value that stands for "no chat open". */
+const NEW_CHAT = 'new';
 
 /** The team's name beside the sub-tab strip: a label, not a switcher (the shell owns the active team). */
 function TeamLabel({ name }: { name: string }) {
@@ -107,6 +110,9 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const [conversations, setConversations] = useState(data.conversations);
   const [title, setTitle] = useState<string | null>(data.thread?.title ?? null);
   const [openId, setOpenId] = useState<string | null>(data.notFound ? null : (data.thread?.id ?? null));
+  // Choosing a saved chat is a page read (the thread's messages), so it is a switch too: the row takes the selected look on the
+  // tap and the conversation dims until the next one lands. 'new' stands for no open chat.
+  const chatSw = useViewSwitch<string>(openId ?? NEW_CHAT, (id) => (id === NEW_CHAT ? COACHHELM_HREF.ask : conversationHref(id)));
   const [gone, setGone] = useState(data.notFound);
   const [panelOpen, setPanelOpen] = useState(initial?.panelOpen ?? true);
   const [drawer, setDrawer] = useState(initial?.drawer ?? false);
@@ -165,7 +171,15 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   }, [chat.messages.length]);
 
   const heading = gone ? 'Chat not found' : (title ?? 'New chat');
-  const histProps = { conversations, openId, nowIso: data.nowIso, timezone: data.timezone, onNew: newChat, onRetry: () => router.refresh() };
+  const histProps = {
+    conversations,
+    openId: chatSw.shown === NEW_CHAT ? null : chatSw.shown,
+    nowIso: data.nowIso,
+    timezone: data.timezone,
+    onNew: newChat,
+    onOpen: chatSw.go,
+    onRetry: () => router.refresh(),
+  };
 
   const composer = (variant: 'hero' | 'dock') => (
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
@@ -217,7 +231,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const evidenceOpen = evidence !== null && !showHome;
 
   return (
-    <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-code="CH-13820">
+    <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820">
       {phone && (
         <>
           <PhoneTop

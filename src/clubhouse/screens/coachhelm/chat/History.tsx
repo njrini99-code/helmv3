@@ -20,6 +20,11 @@ export interface AskHistoryProps {
   onNew: () => void;
   /** A conversation was chosen (closes the phone drawer). */
   onNavigate?: () => void;
+  /**
+   * Open a conversation in place: the page's own switch (`useViewSwitch`), so the row takes the selected look on the tap and the chat
+   * dims until the next one lands. A plain tap goes through it; a modified one (a new tab) is still the link.
+   */
+  onOpen?: (id: string) => void;
   /** The list didn't load: Try again. */
   onRetry: () => void;
 }
@@ -33,7 +38,7 @@ export function conversationHref(id: string): string {
  * The chats: a search, then Today, This week and Earlier, each row a real link (so it opens in a new tab and the
  * open one is `aria-current`). A failed read is its own notice with Try again, never "No chats yet".
  */
-function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onRetry }: AskHistoryProps) {
+function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onOpen, onRetry }: AskHistoryProps) {
   const [q, setQ] = useState('');
   const groups = useMemo(() => groupConversations(filterConversations(conversations.list, q), nowIso, timezone), [conversations.list, q, nowIso, timezone]);
 
@@ -76,7 +81,12 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
                         className={'ch-ask-hist__row' + (on ? ' is-on' : '')}
                         aria-current={on ? 'page' : undefined}
                         data-ch-code={on ? 'CH-13823' : undefined}
-                        onClick={onNavigate}
+                        onClick={(e) => {
+                          onNavigate?.();
+                          if (!onOpen || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                          e.preventDefault();
+                          onOpen(c.id);
+                        }}
                       >
                         {c.title}
                       </Link>
