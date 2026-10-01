@@ -167,6 +167,19 @@ describe('Qualifiers · the standings model', () => {
     const b = buildBoard({ entrants: [e('a')], rounds: [rd('a', 1, 72, 0), rd('a', 2, 38, 2, 9)], squad: 5, picks: 1, status: 'in_progress', selectionState: 'open', selections: null });
     expect(b.rows[0]).toMatchObject({ avg: 72, shortRounds: 1, total: 110, toPar: 2, played: 2 });
   });
+  it('a total without a to-par is unknown, not even; a second round in one round slot counts once (§11.2, §11.3)', () => {
+    const b = buildBoard({
+      entrants: ['a', 'b'].map(e),
+      rounds: [rd('a', 1, 75, 3), { ...rd('a', 2, 76, 0), toPar: null }, rd('b', 1, 72, 0), { ...rd('b', 1, 80, 8), id: 'b1-dup' }],
+      squad: 2,
+      picks: 0,
+      status: 'in_progress',
+      selectionState: 'scoring',
+      selections: null,
+    });
+    expect(b.rows.find((r) => r.playerId === 'a')).toMatchObject({ played: 1, total: 75, toPar: 3 });
+    expect(b.rows.find((r) => r.playerId === 'b')).toMatchObject({ played: 1, total: 72, toPar: 0 });
+  });
   it('a completed round with no total is unknown, not a free even round (§11.2)', () => {
     const blank: ChQRound = { ...rd('a', 2, 0, 0), total: null, toPar: null };
     const b = buildBoard({
@@ -313,6 +326,10 @@ describe('Qualifiers · the loader', () => {
     tables.current = { golf_qualifiers: { error: { message: 'boom' } } };
     await expect(loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' })).rejects.toThrow();
     tables.current = { golf_qualifiers: { data: { ...Q, team_id: 'other' } } };
+    expect(await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' })).toBeNull();
+    expect(await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' })).toBeNull();
+    // A test qualifier is hidden from the list, so a link to one is not found either.
+    tables.current = { golf_qualifiers: { data: { ...Q, team_id: 't1', is_test: true } } };
     expect(await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' })).toBeNull();
     expect(await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' })).toBeNull();
   });

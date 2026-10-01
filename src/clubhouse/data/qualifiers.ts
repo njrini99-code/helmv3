@@ -321,7 +321,8 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     throw new Error('Clubhouse: the qualifier read failed');
   }
   const q = qRes.data as (QRow & { team_id: string }) | null;
-  if (!q || q.team_id !== input.teamId) return null;
+  // A test qualifier is hidden from the list, so a link to one is "not found" too (swap audit §11 reconciliation).
+  if (!q || q.team_id !== input.teamId || q.is_test) return null;
 
   const status = parseStatus(q.status);
   const selectionState = parseSelectionState(q.selection_state);
@@ -494,7 +495,8 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
     throw new Error('Clubhouse: the qualifier read failed');
   }
   const q = qRes.data as (QRow & { team_id: string }) | null;
-  if (!q || q.team_id !== input.teamId) return null;
+  // A test qualifier is hidden from the list, so a link to one is "not found" too (swap audit §11 reconciliation).
+  if (!q || q.team_id !== input.teamId || q.is_test) return null;
 
   const [entries, usedRes, placedRes, coursesRes] = await Promise.all([
     readEntries(supabase, [q.id], 'qualifiers'),

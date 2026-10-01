@@ -66,10 +66,10 @@ export async function loadQualifyingWorkspace(
     // Ranked from the rounds, as the leaderboard is, not from the entry's stored aggregate: that aggregate is only
     // rewritten by some write paths and was found stale on a live qualifier (3 rounds played, 2 stored; swap audit
     // §11). Same round set as the Clubhouse board: completed, not a test, with a total.
-    fetchAllRowsResult<{ player_id: string; total_score: number | null; score_to_par: number | null }>((from, to) =>
+    fetchAllRowsResult<{ player_id: string; qualifier_round_number: number | null; total_score: number | null; score_to_par: number | null }>((from, to) =>
       supabase
         .from('golf_rounds')
-        .select('player_id, total_score, score_to_par')
+        .select('player_id, qualifier_round_number, total_score, score_to_par')
         .eq('qualifier_id', qualifier_id)
         .eq('status', 'completed')
         .eq('is_test', false)
@@ -79,13 +79,19 @@ export async function loadQualifyingWorkspace(
   ]);
   // A failed rounds read is a failed load, never a board of unscored players.
   if (roundsRes.error) return null;
-  const byPlayer = new Map<string, { n: number; total: number; toPar: number }>();
+  // The board's rules (screens/qualifiers/model.ts buildBoard): a round needs a total and a to-par, and a second
+  // round in the same qualifier round counts once.
+  const byPlayer = new Map<string, { n: number; total: number; toPar: number; slots: Set<number> }>();
   for (const r of roundsRes.data ?? []) {
-    if (r.total_score == null) continue;
-    const agg = byPlayer.get(r.player_id) ?? { n: 0, total: 0, toPar: 0 };
+    if (r.total_score == null || r.score_to_par == null) continue;
+    const agg = byPlayer.get(r.player_id) ?? { n: 0, total: 0, toPar: 0, slots: new Set<number>() };
+    if (r.qualifier_round_number != null) {
+      if (agg.slots.has(r.qualifier_round_number)) continue;
+      agg.slots.add(r.qualifier_round_number);
+    }
     agg.n += 1;
     agg.total += r.total_score;
-    agg.toPar += r.score_to_par ?? 0;
+    agg.toPar += r.score_to_par;
     byPlayer.set(r.player_id, agg);
   }
 

@@ -86,6 +86,21 @@ describe('loadQualifyingWorkspace ranks from the rounds (swap audit §11)', () =
     expect(ws!.candidates[0]).toMatchObject({ rounds_completed: 0, total_score: null, total_to_par: null, leaderboard_rank: null });
   });
 
+  it('the board rules: a round without a to-par is unknown, and a second round in one slot counts once', async () => {
+    const ws = await loadQualifyingWorkspace(
+      fakeSupabase({
+        entries: [entry('a', 'Ann', { n: 0, total: 0, toPar: 0 })],
+        rounds: [
+          { player_id: 'a', qualifier_round_number: 1, total_score: 72, score_to_par: 0 },
+          { player_id: 'a', qualifier_round_number: 1, total_score: 80, score_to_par: 8 },
+          { player_id: 'a', qualifier_round_number: 2, total_score: 74, score_to_par: null },
+        ],
+      }),
+      'q1',
+    );
+    expect(ws!.candidates[0]).toMatchObject({ rounds_completed: 1, total_score: 72, total_to_par: 0 });
+  });
+
   it('a failed rounds read is a failed load, not a board of unscored players', async () => {
     const ws = await loadQualifyingWorkspace(fakeSupabase({ entries: [entry('a', 'Ann', { n: 1, total: 70, toPar: -2 })], rounds: { error: 'boom' } }), 'q1');
     expect(ws).toBeNull();

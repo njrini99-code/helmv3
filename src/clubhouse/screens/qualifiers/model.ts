@@ -112,7 +112,14 @@ export function buildBoard(input: {
     const rounds = (byPlayer.get(e.playerId) ?? []).slice().sort((a, b) => a.number - b.number);
     // A completed round without a total is unknown, not a free zero: it neither counts as played nor adds to the
     // sums, the same rule as the stored entry aggregate (updateQualifierEntryStats).
-    const withScore = rounds.filter((r) => r.total != null);
+    // A total without a to-par is unknown too (it would otherwise count as even), and a second round in the same
+    // qualifier round counts once: the first listed stands (audit §11.2, §11.3).
+    const seen = new Set<number>();
+    const withScore = rounds.filter((r) => {
+      if (r.total == null || r.toPar == null || seen.has(r.number)) return false;
+      seen.add(r.number);
+      return true;
+    });
     const full = withScore.filter(isFullRound);
     const sum = (k: 'total' | 'toPar') => withScore.reduce((s, r) => s + (r[k] ?? 0), 0);
     return {
