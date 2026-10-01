@@ -1530,6 +1530,8 @@ interface CreateFocusAreaFromInsightArgsV2 extends FocusAreaTimeframeFields {
   areaType: string;
   targetMetric?: string;
   targetValue?: number;
+  /** The player's value for the metric now (the insight's evidence): the starting point progress is measured from (CH13-22). */
+  currentValue?: number | null;
 }
 
 /**
@@ -1595,6 +1597,9 @@ async function createFocusAreaFromInsightV2Impl(
     status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
     target_metric: canonicalMetric,
     target_value: args.targetValue ?? null,
+    // CH13-22: the starting point, as createFocusArea writes it; accept re-anchors the baseline to the value then.
+    current_value: args.currentValue ?? null,
+    baseline_value: args.currentValue ?? null,
     from_insight_id: args.insightId,
     started_at: isCoachPromoting ? null : nowIso,
     ...(evidenceRevision ? { evidence_revision: evidenceRevision } : {}),

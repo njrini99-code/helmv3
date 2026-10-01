@@ -231,3 +231,17 @@ describe('CH13-24 Assign as focus tells the player, as every coach proposal does
     expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('CH13-22 Assign as focus carries the starting value', () => {
+  it('writes the player’s value now as the current and baseline value; no target', async () => {
+    world({ playerTeam: 'team-player' });
+    await createFocusAreaFromInsightV2({ playerId: 'player-1', insightId: 'insight-1', title: 'Lag putting', description: 'x', areaType: 'putting', targetMetric: 'putts_per_round', currentValue: 33.4 });
+    expect(lastInsert().payload).toMatchObject({ current_value: 33.4, baseline_value: 33.4, target_value: null });
+  });
+
+  it('without a value it writes none, as before', async () => {
+    world({ playerTeam: 'team-player' });
+    await createFocusAreaFromInsightV2({ playerId: 'player-1', insightId: 'insight-1', title: 'Lag putting', description: 'x', areaType: 'putting' });
+    expect(lastInsert().payload).toMatchObject({ current_value: null, baseline_value: null });
+  });
+});
