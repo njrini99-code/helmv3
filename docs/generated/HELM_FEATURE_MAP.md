@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/components/fairway/pages/rounds-tracking/**` … and 35 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/components/fairway/pages/rounds-tracking/**` … and 36 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md`
 - **Repair units:** `player-lookup-maybe-single-2026-09-25` (verified)
@@ -333,7 +333,7 @@ is a second thing to keep true.
 **iOS Native Shell** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/ios-native-shell.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/dev/**`, `src/components/golf/PushPermissionSoftAsk.tsx`, `src/components/providers/CapacitorProvider.tsx`, `src/lib/native/**`, `src/lib/utils/capacitor.ts`, `src/proxy.ts` … and 9 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/dev/**`, `src/components/golf/PushPermissionSoftAsk.tsx`, `src/components/providers/CapacitorProvider.tsx`, `src/lib/native/**`, `src/lib/utils/capacitor.ts`, `src/proxy.ts` … and 10 more in the registry
 - **Telemetry:** none. The Capacitor shell wraps the web app. Telemetry attributes to whichever feature the user is in, so a shell-specific key would double-count rather than measure anything new.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

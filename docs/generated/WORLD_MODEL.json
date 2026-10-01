@@ -1915,6 +1915,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/native-haptics.ts",
+        "pattern": "src/lib/native-haptics.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/native/**",
         "pattern": "src/lib/native/**",
         "category": "services"
@@ -15840,6 +15845,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -16677,6 +16687,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/fairway/haptics.ts"
+        }
+      ]
+    },
+    {
+      "source": "ios_native_shell",
+      "target": "services:src/lib/native-haptics.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/native-haptics.ts"
         }
       ]
     },
