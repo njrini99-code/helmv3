@@ -172,23 +172,30 @@ quiet rerun.
   recorded on the preview: login → Fairway dashboard skeleton → blank Home →
   welcome. On dev after the fix, sign-in lands on `/golf/welcome` directly.
   `auth.test.tsx` now asserts that no refresh happens.
-- **F-30 (P1, Source-confirmed and Reproduced, fix in progress).**
+- **F-30 (P1, Source-confirmed and Reproduced, fixed `b7b7d2e4d`).**
   `/golf/loading.tsx` and `(dashboard)/loading.tsx` render Fairway's shell
   and dashboard skeleton even with the flag on, so every cold entry painted
   Fairway chrome before Clubhouse (§7.1: Clubhouse layered on Fairway). With
   the flag on they now render `ClubhouseShellSkeleton` and `HomeSkeleton`.
+  Test: `route-loading-shell.test.tsx`.
 - **F-31 (P0, Reproduced on the preview and on dev).** Team Hub renders the
   error boundary for both roles at both widths. The server calls
-  `parseHubTab()`, which is exported from a `'use client'` module. Fix in
-  progress (hub worker).
-- **F-32 (P2, Reproduced on dev).** Qualifiers logs a hydration mismatch on
-  load. Fix in progress (hub worker).
+  `parseHubTab()`, which is exported from a `'use client'` module. Fixed
+  `3c2fce175`: the parser moved to `lib/hub-tabs.ts`, and a new
+  `client-boundary.test.ts` fails on any server import of a non-component
+  value from a client module.
+- **F-32 (P2, Risk to test).** Qualifiers logged a hydration mismatch on the
+  dev server only; the production build did not. A new SSR-then-hydrate test
+  of every qualifiers screen at both widths (18 cases) finds none.
 - **F-33 (P2, Reproduced on the preview).** Coach Messages on the phone has a
-  CLS of 0.292 (desktop 0.019, player phone 0). Fix in progress (Calendar and
-  Messages worker).
+  CLS of 0.292 (desktop 0.019, player phone 0). Cause: announcements loaded
+  after the conversations and pushed them down. Fixed `ac64ba366`: the inbox
+  keeps its skeleton until both arrive. Not re-measured yet.
 - **F-34 (P2, Reproduced on dev).** The coach Home figure strip reads "Rounds
-  0 this week · GIR 100% · Putts 38.0". The figures do not share a data
-  basis. Fix in progress (stats worker).
+  0 this week · GIR 100% · Putts 38.0". The figures are arithmetically true
+  (three Aug 2 practice rounds) but unlabelled, and "this week" used another
+  basis. Fixed `98f7bb52e`: the form uses the Stats Last-10 selection and
+  always shows its basis ("3 rounds · Aug 2").
 - **F-35 (owner request, done).** On the phone the ivory ramp moves one step
   darker: page `#e7e3d8`, cards `#f5f2ea`, and the top bar, tab bar and
   sheets follow. Tertiary text darkens to `#5f5c55` to hold 4.5:1. The
@@ -196,8 +203,46 @@ quiet rerun.
 - **Round preservation (§9), source audit:** R-1 to R-5 are P1 (false "Round
   saved"; Restore not rehydrating the current hole; a failed Discard
   suppressing saves; a non-idempotent Discard that a round can be resurrected
-  from; a vanished-parent submit dead-ending). Source-confirmed; fixes in
-  progress (rounds worker).
+  from; a vanished-parent submit dead-ending). Fixed `72c920ce3` with R-6 to
+  R-12 from the code audit (35 new tests, each failing on the old code). Left:
+  cross-device discard (Q-119) and the submit version check (held draft,
+  Q-120).
+- **F-36 (P1, Source-confirmed, fixed `22eda4649`, `4aaff91e1`).** The server
+  always rendered desktop (`useChPhone`'s server snapshot), so a cold phone
+  load hid the page until hydration. A `ch_phone` cookie now gives the server
+  the device's last layout.
+- **F-37 (P2, Reproduced, fixed `22eda4649`).** Tab switches on the phone went
+  blank, then skeleton, then page (a 150 ms skeleton delay), and Home's
+  skeleton was the light desktop shape before the green hero. Skeletons now
+  show at once, and Home's phone skeleton is the hero.
+- **F-38 (P3, fixed `fcb14f3b0`).** Player Home phone captions under the
+  figures were drawn at figure size.
+- **F-39 (P3, fixed `49540d392`).** An unbuilt page's phone top bar said
+  "Home".
+- **F-40 (P1 privacy, Source-confirmed, fixed `85abff0dc`).** The shell's
+  next-event read had no class exclusion, so a player's class could show as
+  the team's next event to the coach and teammates.
+- **Calendar §8 (fixed `ac64ba366`, `696b49570`).** Editing a multi-day
+  all-day event shrank it to one day; overnight events could not be edited;
+  a series edit could flip All day; week/day grids hid events outside 6 AM to
+  9 PM; cancelled events counted as busy; failed replies read "No players
+  invited"; `calendar?event=` links beyond about six weeks opened on today; a
+  failed roster read looked like an empty team; "Mark all present"
+  overwrote saved marks and Retry resent saved ones. Server-side, not
+  changed: series across the 1 Nov clock change shift an hour (CAL-05), the
+  create fan-out notifies the whole roster (Q-108), and event create has no
+  idempotency key.
+- **Messages §12 (fixed `ac64ba366`).** A failed reaction showed no error; a
+  failed send dropped text and files typed while it was pending.
+- **Qualifiers §11 (fixed `3c2fce175`).** One comparator for the board, the
+  workspace and confirm; players with no scored round never rank; confirm
+  keeps coach picks, is compare-and-set (no double notify), and no longer
+  deadlocks on a small field; picks must be entrants. Owner questions Q-114
+  to Q-117.
+- **Stats §10 (fixed `98f7bb52e`).** A degraded detail read showed zeros as
+  figures; season rounds used the stored total instead of the canonical one;
+  "Where drives finish" summed to 160%; totals-only cache rows averaged as 0.
+  Owner questions Q-111 (total-only rounds never count) and Q-112.
 - **Preview timing (provisional).** Most pages are ready in 2–3 s on the
   phone. The first Home after sign-in took 7.1 s. CLS is 0 everywhere except
   F-33.

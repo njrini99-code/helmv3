@@ -2,7 +2,8 @@
 
 The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
 (desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off). Rules:
-`.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement: `npm run clubhouse:check`, which
+`.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement:
+`npm run clubhouse:check`, which
 also validates this file.
 
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared
@@ -329,10 +330,31 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Q-99 (open, 2026-09-30; built the reversible choice) Sign up and onboarding (P015) choices past the boards: (1) the design's "Too many attempts" state at the code is not drawn, because the server reports a throttled code check the same as a wrong one on purpose (it must not say which kind of code it was); a throttled person sees "That code didn't match a team"; (2) before membership the code screen shows only the team's name and the kind of code, not the design's head coach, player count or roster faces (those are minors, and the gate deliberately exposes only the name); the "first on the roster" empty state is therefore not drawn; (3) the class year tiles are the six classes still to graduate less any year that would make the player under 13, with today's guardian-consent line kept on the account step; the year chosen is now saved (it was collected and dropped before); (4) the password rules drawn are the server's (upper and lower case added to the design's three); (5) photos are JPEG, PNG, GIF or WebP up to 2 MB, which is what the avatars bucket takes (the design said HEIC and 10 MB); (6) the member card fades with the pane at the hand-off instead of flying into the sidebar; (7) the staff path shows "Staff access granted" only when the server really granted it; otherwise it follows the server's redirect. Also found and routed, not built here: who an assistant is (every team in the program today by roster code, the invited team only by staff code), whether a staff code may carry the program-admin role, whether an assistant may delete the team (golf_teams_delete_coach allows any staff row), and how head coaches are provisioned now that nobody onboards as one (no tool exists; the old wizard is the only writer). Recommended: keep 1 to 7; answer the four routed questions before the flag flips.
 - Q-100 (open, 2026-09-30; built the reversible choice) CoachHelm compares with the Tour only (Q-88, "change it all to PGA"), on the stats-engine branch: every generator, the counterfactual and the measured impact now use the team's Tour (LPGA for a women's team) and never `level_avg`. This supersedes the 2026-09-28 college-cohort anchor. What that changes, from read-only production counts: 381 of 986 standing rows (53 players, 22 metrics) sit between the college average and the Tour, so their verdict changes side and priorities rise across the feed. The pressure gap is back on the rule before the cohort anchor (over the Tour's 0.5 is high), which that decision said flagged 6 of 10 college players HIGH. The margins were not retuned. Two related choices: (a) a women's team gets no approach green-hit card, because the LPGA publishes no green-hit-by-band value (the alternative is an LPGA proximity card); (b) goal targets still aim at the cohort (audit row 21: 2 of 768 Tour-anchored suggestions were accepted), and the goal card prints only the Tour. Recommended: keep the Tour anchor; retune the priority margins against the Tour after a week of feed; decide (a) and (b).
 - Q-101 (open, 2026-09-30; nothing built) Strokes-gained conventions from the research note (`docs/operations/2026-09-30-sg-conventions-research.md` on the stats-engine branch): (1) the Tour publishes 15-20 ft (19.72%) and 20-25 ft (12.68%) separately, and our one 15-25 ft row reads about 3 points low and 4 high against them; (2) the Tour publishes a sub-3 ft make rate (99.50%), and the stats screens drop that comparison today; (3) Around the Green is within 50 yards of the hole for us, 30 yards from the green's edge on the Tour; (4) a penalty earned on the green is charged to Around the Green, while the Tour's Putting category is every shot on the green; (5) no public source was found for the LPGA 2024 baseline rows; (6) our SG is raw against the baseline, while the Tour's is field-adjusted, so the label should read "vs Tour baseline". Recommended: split 15-25 ft and add the 0-3 ft value (both cited), keep 50 yards (it matches Data Golf), charge an on-green penalty to Putting, and label SG "vs Tour baseline".
-- Q-102 (open, 2026-09-30; the owner applies) Held migration `20260930160000_golf_document_policy_scoping.sql` fixes two live policy bugs. The announcement-file insert/delete policy compares a team with itself, so any account with a coach row anywhere can attach or detach files on any team's announcement. Document versions are organization-wide rather than team-scoped. The server actions were fixed in PR #2108 (and here), which closes the app path; the migration closes the direct-API path. Live: 0 coaches lose access and 0 cross-team links exist. Recommended: review and apply after #2108 merges.
-- Q-103 (open, 2026-09-30; nothing built, the owner decides after the audit) Routes that show "not rebuilt" with Clubhouse on (`SWAP_AUDIT.md` §3): build, alias or retire each. Suggested: build /rounds/recover (P0, F-02); alias /intelligence and its old addresses to CoachHelm, /players/* and /coachhelm/genome/[id] to Stats, /team to Settings, a coach's /rounds to Team stats, a player's /coachhelm/chat to CoachHelm; retire /whats-new; decide /courses and /coachhelm/genome/compare.
-- Q-104 (open, 2026-09-30) Qualifier ties (F-03): the leaderboard shares a position and orders ties by rounds played then name; Selection ranks them in array order. Recommended: both show a shared position, and a tie across the last automatic slot is never auto-picked (the coach chooses). Alternatives: countback (final round, best round), or keep the current order.
-- Q-105 (open, 2026-09-30) Player CoachHelm views not rebuilt (F-04: development, game profile, standing, deep dive). Recommended: alias development and deep dive to the CoachHelm board, profile and standing to My stats; build later if wanted.
+- Q-102 (open, 2026-09-30; the owner applies) Held migration
+  `20260930160000_golf_document_policy_scoping.sql` fixes two live policy bugs.
+  The announcement-file insert/delete policy compares a team with itself, so any
+  account with a coach row anywhere can attach or detach files on any team's
+  announcement. Document versions are organization-wide rather than team-scoped.
+  The server actions were fixed in PR #2108 (and here), which closes the app
+  path; the migration closes the direct-API path. Live: 0 coaches lose access
+  and 0 cross-team links exist. Recommended: review and apply after #2108
+  merges.
+- Q-103 (open, 2026-09-30; nothing built, the owner decides after the audit)
+  Routes that show "not rebuilt" with Clubhouse on (`SWAP_AUDIT.md` §3): build,
+  alias or retire each. Suggested: build /rounds/recover (P0, F-02); alias
+  /intelligence and its old addresses to CoachHelm, /players/* and
+  /coachhelm/genome/[id] to Stats, /team to Settings, a coach's /rounds to Team
+  stats, a player's /coachhelm/chat to CoachHelm; retire /whats-new; decide
+  /courses and /coachhelm/genome/compare.
+- Q-104 (open, 2026-09-30) Qualifier ties (F-03): the leaderboard shares a
+  position and orders ties by rounds played then name; Selection ranks them in
+  array order. Recommended: both show a shared position, and a tie across the
+  last automatic slot is never auto-picked (the coach chooses). Alternatives:
+  countback (final round, best round), or keep the current order.
+- Q-105 (open, 2026-09-30) Player CoachHelm views not rebuilt (F-04:
+  development, game profile, standing, deep dive). Recommended: alias
+  development and deep dive to the CoachHelm board, profile and standing to My
+  stats; build later if wanted.
 - Q-106 (answered 2026-09-30) The owner: "You're going to audit, and then we'll rebuild the missing routes if I decide to." The flag stays off; routes wait for Q-103.
 - Q-107 (answered 2026-09-30) CI gates on #2110: a one-time `markdown:ratchet --update` after the blank-line auto-fix (the ratchet still blocks growth), and an inline `nosemgrep` on held `20260930150000` (an `ALTER FUNCTION` was tried first and does not clear the rule).
 - Q-108 (open, 2026-09-30) Creating an event notifies every active player
@@ -367,6 +389,17 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
 - Q-117 (open, 2026-09-30; default taken) The trip builder's event step now
   lists tournament, qualifier, travel and other (no practices, meetings or
   classes). Confirm 'travel' and 'other' belong.
+- Q-118 (open, 2026-09-30) Round toast CH-11905 says "Continue it from
+  Rounds to submit again", which is false when the round is gone and
+  re-creating it also failed. Recommended: "It couldn't reach the server.
+  It's kept on this phone; open Rounds when you're back online."
+- Q-119 (open, 2026-09-30) A round discarded on one device can be re-created
+  by another device still holding it. Stopping that needs a server-side
+  discard marker (soft delete, schema). Recommended: soft delete with a
+  refusal code clients never re-create from; nothing written yet.
+- Q-120 (open, 2026-09-30; held) Submit has no server-side version check, so
+  a stale device can overwrite newer holes. Draft migration
+  `20261001000000_submit_round_expected_updated_at.sql` is HELD for review.
 - Q-98 (open, 2026-09-30; built the reversible choice) Auth (P015) choices: (1) the new screens sit behind their own flag, golf_clubhouse_auth, off in production and on in preview and development; with it off, today's sign-in and welcome render untouched; (2) the welcome's "since" line reads users.last_seen (the previous visit, written by the dashboard heartbeat) because the sign-in that just happened overwrites the auth last-sign-in time, so the header says "Since your last visit" and a user with no last_seen gets "Your first time in"; (3) a wrong password shows the design's "Incorrect email or password. Please check your credentials and try again." with both fields marked, keeping the server's "N attempts remaining" line; today production shows the raw server text and marks no field. Recommended: keep all three.
 - Q-97 (open, 2026-09-30; built the reversible choice) Stats round filter (0f18e76c9) details past the owner's brief: (1) when the chosen length has no rounds but nine-hole rounds exist, a hint says to choose 9 holes or Both (CH-4319, CH-5324); (2) season bests and "Rounds this season" stay 18-hole whatever the filter; (3) "Last 10" under Both is the ten newest rounds of either length; (4) the opening-hole floor counts raw holes; (5) a team with only nine-hole rounds no longer gets the first-run "No stats yet" page (D-71 counts nine-hole rounds). A nine-hole round weighs half a round in every per-round figure. Recommended: keep all five.
 - Q-96 (owner, 2026-09-30; for the sign up and onboarding redesign) Head coaches are always created manually by the owner and never onboard. Self-serve is: sign up → enter the team code → choose Player or Assistant coach → onboarding that differs by role. There is no email verification code step. An assistant coach joins at once, never pending ("auto sync"). Risk raised to the owner: whoever has the team's code can then become a coach and see every player's data; suggested guard that keeps it instant: a separate staff code that only the head coach shares, plus a notice to the head coach with one-tap Remove. Answered the same day, against the design handoff in design/handoff/auth/ (built on lib/golf/signup-gate.ts): the head coach sign-up path and the program code are dropped (the owner creates head coaches); assistant coaches join with the separate staff code, instantly, with no pending screen and no role picker; the roster code is players only; Request access stays (it reaches the owner); handedness and GPA are not collected. The design's other screens, states, motion and haptics stand.
