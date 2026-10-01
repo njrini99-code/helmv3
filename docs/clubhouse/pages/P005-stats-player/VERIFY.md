@@ -153,6 +153,13 @@ Notes:             first-load JS and LCP after the v2 reveal are open (D-27, CH-
 | Native-feel | `CH_BASE=http://localhost:3107 node scripts/clubhouse/native.mjs stats-team stats-player` (390 and 430px) | clean on the second run. The first run had one `page.tap` timeout opening a Game detail chip at 430px while other sessions' tests were running; the chips and the filter's chips and Clear were within 44 x 44 in both. Nothing here sets a height on `.ch-seg__b` or `.ch-pill` |
 | Look | not done | no browser or iPhone pass (owner) |
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+|---|---|---|---|
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390 and 430.

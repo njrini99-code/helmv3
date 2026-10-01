@@ -281,6 +281,13 @@ migration `20260820170000`, not re-proved; no pgTAP ran), the line on a
 phone, and `e2e/golf-round.spec.ts` (its offline case still has no
 assertions).
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+|---|---|---|---|
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev`, a browser pass with a real player and a real coach account (the library, the

@@ -1,0 +1,313 @@
+#!/usr/bin/env node
+/**
+ * clubhouse:shots — one naming and filing convention for Clubhouse page screenshots.
+ *
+ * Screenshots are never committed (CONTRIBUTING.md). They live in a local,
+ * gitignored store, `.helm/screenshots/clubhouse/` (CLUBHOUSE_SHOTS_DIR
+ * overrides it), and travel in the PR description. Layout:
+ *
+ *   <P###-slug>/<YYYY-MM-DD>/<P###>__<surface>__<role>__<viewport>__<state>__<phase>__<sha7>.png
+ *   <P###-slug>/<YYYY-MM-DD>/manifest.json     one entry per file (record)
+ *
+ * role is coach|player|none; viewport is a CSS width, optionally x<height>
+ * (390, 1440, 390x844); phase is before|after|baseline|evidence; surface and
+ * state are kebab-case; sha7 is the commit the shot was taken on.
+ *
+ * Usage:
+ *   clubhouse:shots -- name --page P007 --surface list --role coach --viewport 390 --state unread-mixed --phase before
+ *       prints the full path (creates the directory); save the screenshot there
+ *   clubhouse:shots -- record <file> --route /golf/dashboard/messages [--fixture ..] [--browser ..] [--note ..]
+ *       appends the file's manifest entry
+ *   clubhouse:shots -- check     every file name and directory against the convention and the page manifests
+ *                                (a no-op success when there is no store, as in CI)
+ *   clubhouse:shots -- index     writes INDEX.md in the store, grouped by page
+ */
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
+
+export const STORE = '.helm/screenshots/clubhouse';
+export const ROLES = ['coach', 'player', 'none'];
+export const PHASES = ['before', 'after', 'baseline', 'evidence'];
+export const NAME_PATTERN = '<P###>__<surface>__<coach|player|none>__<viewport>__<state>__<before|after|baseline|evidence>__<sha7>.png';
+
+const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const VIEWPORT = /^\d{3,4}(?:x\d{3,4})?$/;
+const NAME_RE = /^(P\d{3})__([a-z0-9]+(?:-[a-z0-9]+)*)__(coach|player|none)__(\d{3,4}(?:x\d{3,4})?)__([a-z0-9]+(?:-[a-z0-9]+)*)__(before|after|baseline|evidence)__([0-9a-f]{7})\.png$/;
+
+/** Problems with the fields of a screenshot name; empty when it is valid. */
+export function validateFields(f) {
+  const p = [];
+  if (!/^P\d{3}$/.test(f.page ?? '')) p.push(`page "${f.page}" is not P###`);
+  if (!KEBAB.test(f.surface ?? '')) p.push(`surface "${f.surface}" is not kebab-case`);
+  if (!ROLES.includes(f.role)) p.push(`role "${f.role}" is not ${ROLES.join('|')}`);
+  if (!VIEWPORT.test(f.viewport ?? '')) p.push(`viewport "${f.viewport}" is not a CSS width like 390 or 1440x900`);
+  if (!KEBAB.test(f.state ?? '')) p.push(`state "${f.state}" is not kebab-case`);
+  if (!PHASES.includes(f.phase)) p.push(`phase "${f.phase}" is not ${PHASES.join('|')}`);
+  if (!/^[0-9a-f]{7}$/.test(f.sha7 ?? '')) p.push(`sha7 "${f.sha7}" is not 7 hex characters`);
+  return p;
+}
+
+export function buildName(f) {
+  const problems = validateFields(f);
+  if (problems.length) throw new Error(problems.join('; '));
+  return `${f.page}__${f.surface}__${f.role}__${f.viewport}__${f.state}__${f.phase}__${f.sha7}.png`;
+}
+
+/** The fields of a screenshot file name, or null when it does not follow the convention. */
+export function parseName(name) {
+  const m = NAME_RE.exec(name);
+  if (!m) return null;
+  const [, page, surface, role, viewport, state, phase, sha7] = m;
+  return { page, surface, role, viewport, state, phase, sha7 };
+}
+
+const validDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s);
+const pageDir = (pages, id) => `${id}-${pages.get(id)}`;
+
+/** Page id to slug, from config/clubhouse/pages/P###-<slug>.json. */
+export function loadPages(root) {
+  const dir = join(root, 'config/clubhouse/pages');
+  const pages = new Map();
+  if (!existsSync(dir)) return pages;
+  for (const n of readdirSync(dir).filter((x) => /^P\d{3}-.+\.json$/.test(x))) {
+    const m = JSON.parse(readFileSync(join(dir, n), 'utf8'));
+    pages.set(m.id, m.slug);
+  }
+  return pages;
+}
+
+/**
+ * Checks a store listing. `files` are store-relative posix paths; `manifests`
+ * maps a `<page dir>/<date>` to its parsed manifest.json (an array), or null
+ * when it did not parse. Returns violations (exit 1) and warnings (exit 0:
+ * a shot with no manifest entry, an entry with no shot).
+ */
+export function checkStore({ files, pages, manifests = {} }) {
+  const violations = [];
+  const warnings = [];
+  const shots = new Set();
+  for (const file of files) {
+    const seg = file.split('/');
+    if (seg[0].startsWith('.') || seg[seg.length - 1].startsWith('.') || file === 'INDEX.md') continue;
+    if (seg.length !== 3) {
+      violations.push(`${file}: misfiled; expected <P###-slug>/<YYYY-MM-DD>/<file>`);
+      continue;
+    }
+    const [dir, date, name] = seg;
+    const dm = /^(P\d{3})-(.+)$/.exec(dir);
+    if (!dm || pages.get(dm[1]) !== dm[2]) violations.push(`${file}: "${dir}" is not a page directory (${[...pages].map(([id, s]) => `${id}-${s}`).join(', ') || 'no page manifests found'})`);
+    if (!validDate(date)) violations.push(`${file}: "${date}" is not a YYYY-MM-DD date`);
+    if (name === 'manifest.json') {
+      if (manifests[`${dir}/${date}`] === null) violations.push(`${file}: is not valid JSON (an array of entries)`);
+      continue;
+    }
+    const f = parseName(name);
+    if (!f) {
+      violations.push(`${file}: unlabeled; name it ${NAME_PATTERN} (npm run clubhouse:shots -- name ...)`);
+      continue;
+    }
+    if (dm && f.page !== dm[1]) violations.push(`${file}: misfiled; the name says ${f.page} but the directory is ${dir}`);
+    shots.add(`${dir}/${date}/${name}`);
+  }
+  for (const key of shots) {
+    const dateDir = key.split('/').slice(0, 2).join('/');
+    const entries = manifests[dateDir];
+    if (!Array.isArray(entries) || !entries.some((e) => e.file === key.split('/')[2])) warnings.push(`${key}: no manifest entry; run clubhouse:shots -- record`);
+  }
+  for (const [dateDir, entries] of Object.entries(manifests)) {
+    if (!Array.isArray(entries)) continue;
+    for (const e of entries) if (!shots.has(`${dateDir}/${e.file}`)) warnings.push(`${dateDir}/manifest.json: entry ${e.file} has no file`);
+  }
+  return { violations, warnings };
+}
+
+/**
+ * The `## Screenshots` evidence log in a page's VERIFY.md: the section must
+ * exist, and every row's label must be a convention-named file of this page
+ * whose phase matches the phase column, with a commit and a description.
+ */
+export function checkScreenshotLog(md, at, pageId) {
+  const lines = md.split('\n');
+  const start = lines.findIndex((l) => /^##\s+Screenshots\s*$/.test(l));
+  if (start < 0) return [`${at}: no "## Screenshots" section (docs/clubhouse/README.md section 8)`];
+  const v = [];
+  const end = lines.findIndex((l, i) => i > start && /^##\s/.test(l));
+  const rows = lines.slice(start + 1, end < 0 ? undefined : end).filter((l) => l.trim().startsWith('|'));
+  for (const row of rows.slice(2)) {
+    const [label, phase, commit, shows] = row.split('|').slice(1, -1).map((c) => c.trim());
+    const name = (label ?? '').replace(/`/g, '');
+    const f = parseName(name);
+    if (!f) v.push(`${at}: Screenshots row "${name}" is not a convention file name (${NAME_PATTERN})`);
+    else {
+      if (f.page !== pageId) v.push(`${at}: Screenshots row ${name} is for ${f.page}, not ${pageId}`);
+      if (phase !== f.phase) v.push(`${at}: Screenshots row ${name} says phase "${phase}" but the file name says ${f.phase}`);
+    }
+    if (!commit) v.push(`${at}: Screenshots row ${name} has no commit`);
+    if (!shows) v.push(`${at}: Screenshots row ${name} does not say what it shows`);
+  }
+  return v;
+}
+
+// ── CLI ──
+
+const rootDir = () => resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const storeDir = (root) => resolve(process.env.CLUBHOUSE_SHOTS_DIR ?? join(root, STORE));
+const git = (root, args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const fail = (msg) => {
+  console.error(`clubhouse:shots: ${msg}`);
+  process.exit(1);
+};
+
+function scanStore(dir) {
+  const files = [];
+  const walk = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else files.push(relative(dir, p).split(sep).join('/'));
+    }
+  };
+  walk(dir);
+  const manifests = {};
+  for (const f of files.filter((x) => x.split('/').length === 3 && x.endsWith('/manifest.json'))) {
+    try {
+      const parsed = JSON.parse(readFileSync(join(dir, f), 'utf8'));
+      manifests[dirname(f)] = Array.isArray(parsed) ? parsed : null;
+    } catch {
+      manifests[dirname(f)] = null;
+    }
+  }
+  return { files, manifests };
+}
+
+function cmdName(opts, root) {
+  const pages = loadPages(root);
+  if (!pages.has(opts.page)) fail(`page "${opts.page}" is not in config/clubhouse/pages (${[...pages.keys()].join(', ')})`);
+  let sha7 = opts.sha;
+  if (!sha7) {
+    try {
+      sha7 = git(root, ['rev-parse', 'HEAD']).slice(0, 7);
+    } catch {
+      fail('cannot read the git HEAD; pass --sha <7 hex>');
+    }
+  }
+  const date = opts.date ?? today();
+  if (!validDate(date)) fail(`--date "${date}" is not YYYY-MM-DD`);
+  let name;
+  try {
+    name = buildName({ page: opts.page, surface: opts.surface, role: opts.role, viewport: opts.viewport, state: opts.state, phase: opts.phase, sha7 });
+  } catch (e) {
+    fail(e.message);
+  }
+  const dir = join(storeDir(root), pageDir(pages, opts.page), date);
+  mkdirSync(dir, { recursive: true });
+  console.log(join(dir, name));
+}
+
+function cmdRecord(file, opts, root) {
+  if (!file) fail('record needs the screenshot file');
+  const abs = resolve(file);
+  if (!existsSync(abs)) fail(`${file} does not exist`);
+  const f = parseName(basename(abs));
+  if (!f) fail(`${basename(abs)} does not follow ${NAME_PATTERN}`);
+  if (!opts.route) fail('record needs --route');
+  const pages = loadPages(root);
+  const rel = relative(storeDir(root), abs).split(sep);
+  if (rel.length !== 3 || rel[0] !== pageDir(pages, f.page) || !validDate(rel[1])) fail(`${file} must sit in ${storeDir(root)}/${pageDir(pages, f.page)}/<YYYY-MM-DD>/ (clubhouse:shots -- name gives the path)`);
+  let commit = f.sha7;
+  try {
+    commit = git(root, ['rev-parse', '--verify', '--quiet', `${f.sha7}^{commit}`]) || commit;
+  } catch {
+    // keep sha7: the commit is not in this clone
+  }
+  const entry = {
+    file: basename(abs),
+    page: f.page,
+    surface: f.surface,
+    route: opts.route,
+    role: f.role,
+    viewport: f.viewport,
+    state: f.state,
+    phase: f.phase,
+    commit,
+    browser: opts.browser ?? null,
+    fixture: opts.fixture ?? null,
+    capturedAt: statSync(abs).mtime.toISOString(),
+    note: opts.note ?? null,
+  };
+  const manifest = join(dirname(abs), 'manifest.json');
+  let entries = [];
+  if (existsSync(manifest)) {
+    try {
+      entries = JSON.parse(readFileSync(manifest, 'utf8'));
+    } catch {
+      fail(`${manifest} is not valid JSON`);
+    }
+    if (!Array.isArray(entries)) fail(`${manifest} is not an array`);
+  }
+  writeFileSync(manifest, JSON.stringify([...entries.filter((e) => e.file !== entry.file), entry], null, 2) + '\n');
+  console.log(`recorded ${entry.file}`);
+}
+
+function cmdCheck(root) {
+  const dir = storeDir(root);
+  if (!existsSync(dir)) {
+    console.log(`clubhouse:shots check: no screenshot store at ${dir.startsWith(root) ? relative(root, dir) : dir}; nothing to check.`);
+    return;
+  }
+  const { files, manifests } = scanStore(dir);
+  const { violations, warnings } = checkStore({ files, pages: loadPages(root), manifests });
+  for (const w of warnings) console.warn(`  warning: ${w}`);
+  if (violations.length) {
+    console.error(`clubhouse:shots check found ${violations.length} problem(s):`);
+    for (const x of violations) console.error('  ' + x);
+    process.exit(1);
+  }
+  console.log(`clubhouse:shots check clean: ${files.filter((f) => f.endsWith('.png')).length} screenshot(s), ${warnings.length} warning(s).`);
+}
+
+function cmdIndex(root) {
+  const dir = storeDir(root);
+  if (!existsSync(dir)) fail(`no screenshot store at ${dir}`);
+  const { files, manifests } = scanStore(dir);
+  const byPage = new Map();
+  for (const f of files.filter((x) => x.endsWith('.png') && x.split('/').length === 3)) {
+    const [page, date, name] = f.split('/');
+    const entry = (manifests[`${page}/${date}`] ?? []).find((e) => e.file === name);
+    byPage.set(page, [...(byPage.get(page) ?? []), { date, name, p: parseName(name), entry }]);
+  }
+  const out = ['# Clubhouse screenshots (local, gitignored)', '', `Generated ${new Date().toISOString()} by \`npm run clubhouse:shots -- index\`.`];
+  for (const page of [...byPage.keys()].sort()) {
+    out.push('', `## ${page}`, '', '| Date | Surface | Role | Viewport | State | Phase | Commit | Route | Note | File |', '|---|---|---|---|---|---|---|---|---|---|');
+    for (const { date, name, p, entry } of byPage.get(page).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name))) {
+      const cell = (x) => String(x ?? '').replace(/\|/g, '\\|');
+      out.push(`| ${date} | ${cell(p?.surface)} | ${cell(p?.role)} | ${cell(p?.viewport)} | ${cell(p?.state)} | ${cell(p?.phase)} | ${cell(p?.sha7)} | ${cell(entry?.route)} | ${cell(entry?.note)} | ${name} |`);
+    }
+  }
+  writeFileSync(join(dir, 'INDEX.md'), out.join('\n') + '\n');
+  console.log(`wrote ${join(dir, 'INDEX.md')} (${[...byPage.values()].reduce((n, x) => n + x.length, 0)} screenshot(s), ${byPage.size} page(s))`);
+}
+
+function main() {
+  const [cmd, ...rest] = process.argv.slice(2);
+  const { values, positionals } = parseArgs({
+    args: rest,
+    allowPositionals: true,
+    options: Object.fromEntries(['page', 'surface', 'role', 'viewport', 'state', 'phase', 'sha', 'date', 'route', 'fixture', 'browser', 'note'].map((k) => [k, { type: 'string' }])),
+  });
+  const root = rootDir();
+  if (cmd === 'name') cmdName(values, root);
+  else if (cmd === 'record') cmdRecord(positionals[0], values, root);
+  else if (cmd === 'check') cmdCheck(root);
+  else if (cmd === 'index') cmdIndex(root);
+  else fail('usage: clubhouse:shots -- <name|record|check|index> (see the header of scripts/clubhouse/shots.mjs)');
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) main();

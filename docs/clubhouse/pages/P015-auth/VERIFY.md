@@ -31,6 +31,13 @@ Date:       2026-09-30
   would appear; and the pause between the fold and the dashboard showed an empty page, now held by the curtain and
   lifted when the dashboard is drawn.
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+|---|---|---|---|
+
 ## Open verification gaps
 
 - The real sign in, sign up and onboarding against a real account: not run (one database, production).

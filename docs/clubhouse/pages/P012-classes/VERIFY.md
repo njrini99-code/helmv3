@@ -133,6 +133,13 @@ Animation:         the shell's tokens, plus the hover lift and the scan line (CH
 Notes:             first-load JS and LCP (CH-1954) are open
 ```
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+|---|---|---|---|
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev`, and a browser pass with a real player account (a class saved and

@@ -41,6 +41,29 @@ rejected the result; this tree exists so that cannot happen again.
   Each page also has a manifest (`config/clubhouse/pages/`), six page docs
   (layout in `docs/clubhouse/README.md`) and numbered contracts (D-60, D-68, D-69);
   after a catalog change run `node scripts/clubhouse/registry.mjs sync`.
-- **Before you report work done,** run `npm run clubhouse:check`.
+- **Before you report work done,** run `npm run clubhouse:shots -- check` and
+  `npm run clubhouse:check` (it also gates changelogs and the VERIFY
+  screenshot logs, below).
 - **Reviews:** `ui-polish-reviewer` reviews against Fairway. Don't use it here;
   review against the handoff screenshots instead.
+
+## Docs and screenshots in the same change
+
+`clubhouse:check` fails a page whose implementation files changed since the
+merge-base with `origin/main` (tests exempt) but whose `CHANGELOG.md` did not.
+
+- **Visible change:** a dated entry in the page's `CHANGELOG.md` (the header
+  block in `docs/clubhouse/templates/CHANGELOG.md`), plus before and after
+  screenshots.
+- **Naming:** `npm run clubhouse:shots -- name --page P### --surface <kebab>
+  --role coach|player|none --viewport 390 --state <kebab> --phase
+  before|after|baseline|evidence` prints the path, in the local gitignored store
+  `.helm/screenshots/clubhouse/<P###-slug>/<YYYY-MM-DD>/`:
+  `P###__surface__role__viewport__state__phase__sha7.png`. Then
+  `clubhouse:shots -- record <file> --route <route>`.
+- **Log:** one row per file in the page's VERIFY.md `## Screenshots` (label =
+  file name, phase, commit, what it shows). Never invent rows.
+- **Screenshots go in the PR description, never in git.**
+- **Behavior or state change:** also CONTRACT.md and the catalog, then
+  `node scripts/clubhouse/registry.mjs sync`. A gate that moves in `PROGRESS.md`
+  moves with evidence; the manifest `status` stays true.

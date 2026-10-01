@@ -12,9 +12,12 @@
  *      count-ups, no staggers but the first-paint reveal (.ch-reveal in
  *      base.css), durations only from the v2 tokens (D-64).
  * It also validates docs/clubhouse/PROGRESS.md so the tracker can't drift
- * into a state its own gates forbid.
+ * into a state its own gates forbid, and holds the docs to the code: a page
+ * whose implementation changed on this branch must change its CHANGELOG.md
+ * (changelog-gate.mjs), and every page's VERIFY.md keeps a `## Screenshots`
+ * evidence log whose rows follow the screenshot naming (shots.mjs).
  *
- * Usage: node scripts/clubhouse/check.mjs [--root <dir>]
+ * Usage: node scripts/clubhouse/check.mjs [--root <dir>] [--base <ref>]
  * Exit 0 clean, 1 on any violation.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -22,6 +25,8 @@ import { dirname, join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runRegistryCheck } from './registry.mjs';
 import { checkClassOwners } from './css-owners.mjs';
+import { loadManifests, runChangelogGate } from './changelog-gate.mjs';
+import { checkScreenshotLog } from './shots.mjs';
 
 const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
@@ -358,12 +363,22 @@ function main() {
   const registry = runRegistryCheck(root);
   violations.push(...registry.violations);
 
+  // Docs move with the code: CHANGELOG per changed page, and the VERIFY screenshot log.
+  const argBase = process.argv.indexOf('--base');
+  const gate = runChangelogGate(root, argBase > -1 ? process.argv[argBase + 1] : undefined);
+  violations.push(...gate.violations);
+  for (const m of loadManifests(root)) {
+    const at = `docs/clubhouse/pages/${m.id}-${m.slug}/VERIFY.md`;
+    if (existsSync(join(root, at))) violations.push(...checkScreenshotLog(readFileSync(join(root, at), 'utf8'), at, m.id));
+  }
+
   if (violations.length) {
+    console.error(gate.note);
     console.error(`clubhouse:check found ${violations.length} violation(s):`);
     for (const x of violations) console.error('  ' + x);
     process.exit(1);
   }
-  console.log(`clubhouse:check clean: ${files.length} file(s), tracker valid, ${registry.pages} pages and ${registry.ids} Bridge IDs registered.`);
+  console.log(`clubhouse:check clean: ${files.length} file(s), tracker valid, ${registry.pages} pages and ${registry.ids} Bridge IDs registered; ${gate.note}.`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

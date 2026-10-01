@@ -155,3 +155,10 @@ gates, the Bridge registry, the tests and any held plan must match reality
 (checked where it can be). Then send the owner screenshots. The flag stays
 off in production, migrations stay unapplied, and deploys are the owner's
 call.
+
+Docs and screenshots move with the code: a page whose implementation changed
+needs a dated entry in its `CHANGELOG.md` (`clubhouse:check` fails without one),
+and a visible change gets before and after screenshots, named and filed by
+`npm run clubhouse:shots`, listed in the page's VERIFY.md `## Screenshots` table
+and attached to the PR description, never committed. The steps and the naming
+are in `.claude/rules/clubhouse.md`.

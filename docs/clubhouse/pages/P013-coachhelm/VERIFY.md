@@ -183,6 +183,13 @@ reads are out of date by the refresh-day rule and 12 by the window rule.
 `createFocusArea`, `createPlayerFocusArea` and `createFocusAreaFromInsight`
 are in a `'use server'` file: `npm run build` was not run for them here.
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+|---|---|---|---|
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev`, and a browser pass with a real
