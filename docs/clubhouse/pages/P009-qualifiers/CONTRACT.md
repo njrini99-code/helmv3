@@ -80,6 +80,7 @@ First-run and filtered are distinct, and a failed read is never drawn as empty. 
 | 90410 | CH-09314 | `A_COURSE_HAS_NO_TEE_SETS` | A course has no tee sets |
 | 90411 | CH-09315 | `NOBODY_CAN_BE_A_COACHS_PICK` | Nobody can be a coach's pick |
 | 90412 | CH-09316 | `NO_PLACE_ON_SCORE_IS_FILLED` | No place on score is filled |
+| 90413 | CH-09318 | `PLAYERS_ARE_LEVEL_AT_THE_LAST_PLACE` | Players are level at the last place on score (Q-114) |
 
 ## 05 — Validation
 
@@ -141,6 +142,7 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90627 | CH-09218 | `MANAGE_SELECTIONS_DOESNT_LOAD` | Manage selections doesn't load |
 | 90628 | CH-09219 | `MANAGE_SELECTIONS_CRASHES` | Manage selections crashes |
 | 90629 | CH-09009 | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | The squad is confirmed but telling the players failed |
+| 90630 | CH-09010 | `GIVING_OR_TAKING_BACK_A_PLACE_AT` | Giving or taking back a place at a tied cut fails |
 
 ## 07 — Network / offline
 

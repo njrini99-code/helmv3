@@ -990,6 +990,33 @@ describe('Qualifiers · Manage selections', () => {
     expect(writes.chooseTie).toHaveBeenLastCalledWith(base.id, 'Cal', false);
   });
 
+  it('CH-09010 giving a place at a tied cut that fails says so, and confirm stays off', async () => {
+    const base = previewSelection('picking');
+    const c = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({
+      playerId,
+      name: playerId,
+      rank,
+      toPar: rank,
+      total: 70 + rank,
+      rounds: 2,
+      onScore,
+      pick: null,
+      selected: false,
+      tiedAtCut,
+    });
+    const writes = selWrites();
+    vi.mocked(writes.chooseTie).mockResolvedValue({ success: false, error: 'boom' });
+    wrap(
+      <QualifierSelection
+        data={{ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates: [c('Ann', 1, true), c('Ben', 2, false, true), c('Cal', 2, false, true)] }}
+        writes={writes}
+      />,
+    );
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    await screen.findByText('Couldn’t give Cal the place');
+    expect((screen.getByRole('button', { name: 'Confirm squad' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('§11.3 a field smaller than the squad confirms once every player who can be picked is picked', () => {
     const base = previewSelection('picking');
     const c = (playerId: string, rank: number, onScore: boolean, pick: string | null) => ({
