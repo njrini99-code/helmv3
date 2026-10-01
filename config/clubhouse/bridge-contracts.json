@@ -12366,7 +12366,7 @@
     "item": 3,
     "name": "WRITES_REFUSE_OFFLINE",
     "meaning": "Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (every useAction); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12379,7 +12379,7 @@
     "item": 1,
     "name": "THE_PAGE_IS_THE_PLAYERS",
     "meaning": "Clubhouse Classes is the player's page. A session that is a player with a player profile, with the Clubhouse on for the player role, gets it; a coach (including a coach who also has a player profile), a signed-out session and everyone else get the current Fairway page, unchanged. The route itself renders nothing for a session with no player profile, and a team where the member's role is not player gets the no-team page (CH-12305).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/app/golf/(dashboard)/dashboard/classes/page.tsx; src/clubhouse/routes/classes.tsx#ClubhouseClassesRoute",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12487,7 +12487,7 @@
     "item": 1,
     "name": "RETRY_FINISHES_THE_JOB",
     "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: a save's Retry adds the class to the list, closes the sheet and starts the calendar sync; a remove's Retry takes the class out of the list and closes the question; an import's Retry shows the imported view and starts the sync; a sync's Retry puts the failed classes on the calendar. A failed sync's Retry never saves the class a second time.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (saveAction, removeAction, importAction, syncAction); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12513,7 +12513,7 @@
     "item": 3,
     "name": "TRY_AGAIN_REREADS_THE_PAGE",
     "meaning": "Try again on the classes' failed-load notice (CH-12201) and on the team events' notice (CH-12202) has the server read the whole page again (router.refresh); classes the server sends afresh replace what the page holds.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (InlineNotice onRetry, the classes effect); src/clubhouse/screens/classes/parts.tsx#OverlapsCard",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12733,7 +12733,7 @@
     "item": 1,
     "name": "PHONE_LAYOUT",
     "meaning": "At 820px and below Classes is the phone build, never a shrunken desktop: the shell's top bar reads \"Classes\" with \"‹ More\" going back to More, the page keeps its own header, and the same classes and actions are there; the sheets are bottom sheets. Below a 1000px container the side column goes under the deck, and below 640px the deck is one column, the overview stacks and the two header buttons share the row.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (phone, PhoneTop); src/clubhouse/lib/use-phone.ts#useChPhone; src/clubhouse/styles/classes.css",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12756,7 +12756,7 @@
     "item": 1,
     "name": "LOADER_READS_IN_ONE_PASS",
     "meaning": "The server loader reads the page before first paint in one pass: the team's time zone, then the player's classes and the team's events for the week together (each limited to 500 rows). Each failed read is flagged on its own (classes.error, week.error) and logged, never thrown, so the other still shows. \"Today\" is the team's day in the team's zone (in the evening in New York it is already tomorrow in UTC), and the week runs Monday to Sunday around it.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/data/classes.ts#loadClasses",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
