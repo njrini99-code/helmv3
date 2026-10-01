@@ -1063,15 +1063,19 @@
   .ch-au-forgot--field {
     display: none;
   }
+  /* Relative, so the hit area below belongs to the link. Static, the area sized
+     itself to the sheet and took taps meant for Sign in (swap audit F-28). */
   .ch-au-forgot--below {
     display: flex;
     justify-content: center;
-    position: static;
-    margin-top: 14px;
+    position: relative;
+    margin: 16px auto 0;
+    width: fit-content;
     font: 500 14px/1 var(--ch-font-sans);
   }
+  /* 44px tall: 14px of text plus 15px above and below, inside the 16px gap. */
   .ch-au-forgot--below::after {
-    inset: -16px -24px;
+    inset: -15px -24px;
   }
   .ch-au-err {
     margin-top: 12px;
