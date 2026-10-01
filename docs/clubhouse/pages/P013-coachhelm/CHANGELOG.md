@@ -3,6 +3,50 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — The CoachHelm gate reads in two round trips
+
+The gate (`src/lib/coachhelm/v2/gate.ts`) stood in front of every CoachHelm
+view and read in turn: the coach row, the coach's settings, the staffed
+teams, then each team's settings. It is shared with Fairway, the chat route
+and the actions, so its answer must not change.
+
+```text
+PR/commit:      agent/swap-audit (its own commit: "coachhelm gate: the reads
+                that do not depend on each other start together")
+Contract IDs:   none changed
+Data impact:    none; the same tables, the same filters, read-only
+Held items:     none
+```
+
+- **What changed.** The row, the settings and the staffed teams (a player's
+  row and memberships) start together; every team's settings come in one read
+  (`.in('team_id', ids)`; `team_id` is unique on `golf_team_coachhelm_settings`).
+  A coach gate is two round trips, not four; a closed gate with three teams
+  was six reads in turn and is four reads in two.
+- **The answer is the same.** `gate-batching.test.ts` runs the batched gate
+  and `gate-serial.reference.ts` (a frozen copy of the serial one) over the
+  same fake database in every combination of each read's outcome (the row
+  found, missing or failed; the settings enabled, off, off with no reason,
+  missing or failed; no teams, a failed staff read, or one to three teams each
+  enabled, off, off with no reason, null, missing or failed): over 1,000
+  worlds, equal in every one. It also states the rules outright: a failed row
+  is never enabled (LIVE-17), a missing row is the enabled default, a coach
+  who switched it off is off before any team is looked at, a gate is off only
+  when every team is, and it names the first reason given.
+- **A read nobody needed is dropped unseen.** The settings of a coach whose
+  row is missing are started anyway; their result, or their failure, is
+  ignored, and a rejection nobody awaits is handled (a test pins it).
+- **Left as it is, and worth a decision.** A failed read of a team's settings
+  reads as "enabled" (`error || !data` is null, and null is the enabled
+  default), in the serial version and in this one. Only the coach or player
+  row fails closed. A batch that fails answers the same for every team it
+  covered as each failed single read did, so the answer cannot differ by
+  one team succeeding and another failing; it can differ from the serial
+  version only on a transient failure that hit the batch and would have
+  missed every single read, which the rule above already treats as enabled.
+  Whether a failed team read should close the gate is the owner's call: it is
+  a product and safety decision, not changed here.
+
 ## 2026-10-01 — Owner rules: a failed read is never an empty page
 
 Owner, 2026-10-01: never show 0 strokes, "No rounds yet", "no insights" or an
