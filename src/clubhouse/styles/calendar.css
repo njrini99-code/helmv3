@@ -237,8 +237,9 @@
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
   border-radius: 50%;
 }
+/* 26px coins whose 9px initials run to 20px: an 8px overlap put the last stroke under the next coin (aesthetic audit C-2). */
 .ch-pp__stack > * + * {
-  margin-left: -8px;
+  margin-left: -5px;
 }
 .ch-pp__more {
   display: grid;
@@ -514,6 +515,31 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   opacity: 0.82;
+}
+/* Events that share a column (aesthetic audit C-1): at 1440px a three-way overlap leaves 29px of text, and the one-line
+   title showed "Sh..." and "Te..." (15 labels under half visible in the week). A shared block takes smaller padding,
+   wraps its title (three lines) and keeps only the start time; a short one keeps its row and drops the time. The
+   full range stays in the button's name and the side panel. */
+.ch-ev--lane {
+  padding: 5px 5px;
+}
+.ch-ev--lane .ch-ev__t {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ch-ev--lane.ch-ev--short {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.ch-ev--lane.ch-ev--short .ch-ev__t {
+  display: block;
+  white-space: nowrap;
+}
+.ch-ev--lane.ch-ev--short .ch-ev__m {
+  display: none;
 }
 .ch-ev--short {
   flex-direction: row;

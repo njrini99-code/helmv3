@@ -80,14 +80,16 @@ function EventBlock({
   const h = Math.max((end - start) * CAL_HH - 2, 20);
   const short = h < 40;
   const w = 100 / lanes;
+  /** Side by side with another event: a share of one column, 29px of text at three lanes. */
+  const shared = lanes > 1;
   const title = eventTitle(e, people);
-  const meta = short ? fmtHour(e.start!, false) : rangeLabel(e) + (h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : '');
+  const meta = short || shared ? fmtHour(e.start!, false) : rangeLabel(e) + (h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : '');
   return (
     <button
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${sel ? ' is-sel' : ''}`}
+      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${sel ? ' is-sel' : ''}`}
       style={{ top, height: h, left: `calc(${w * lane}% + 3px)`, width: `calc(${w}% - ${lanes > 1 ? 4 : 6}px)` }}
       aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}`}
       aria-pressed={sel}
