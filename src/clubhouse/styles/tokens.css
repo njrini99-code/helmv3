@@ -249,8 +249,11 @@
     --ch-phone-tabbar-bg: rgb(246 243 236 / 0.86);
     --ch-phone-composer-bg: #fbf9f4;
     --ch-glass-bg: rgb(246 243 236 / 0.86);
-    /* Tertiary text holds 4.5:1 on the darker page. */
+    /* Tertiary text holds 4.5:1 on the darker page. Raising it to #5f5c55 left only 1.07 between it and secondary on a card
+       (7.4 against 6.3), so captions, previews and times read as one gray; secondary steps darker to restore the ramp
+       (9.3 on a card; the desktop ramp is 7.4 against 5.3). Aesthetic audit M-L1. */
     --ch-ink-500: #5f5c55;
+    --ch-ink-600: #46433d;
   }
 }
 

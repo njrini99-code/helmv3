@@ -164,14 +164,14 @@
   color: var(--ch-text-secondary);
 }
 .ch-ms-row.is-unread .ch-ms-row__top b {
-  font-weight: 600;
+  font-weight: 700;
 }
 .ch-ms-row.is-unread .ch-ms-row__top > span {
   font-weight: 600;
   color: var(--ch-green-700);
 }
 .ch-ms-row.is-unread .ch-ms-row__bot > span:first-child {
-  color: var(--ch-text-secondary);
+  color: var(--ch-ink-700);
 }
 .ch-ms-count {
   display: grid;

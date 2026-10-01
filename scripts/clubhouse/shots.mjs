@@ -205,7 +205,7 @@ function scanStore(dir) {
 }
 
 /** The store path for a screenshot with these options (creates its directory). `date` is the default capture date. */
-function planTarget(opts, root, date) {
+export function shotPath(opts, root, date) {
   const pages = loadPages(root);
   if (!pages.has(opts.page)) fail(`page "${opts.page}" is not in config/clubhouse/pages (${[...pages.keys()].join(', ')})`);
   let sha7 = opts.sha;
@@ -229,7 +229,7 @@ function planTarget(opts, root, date) {
   return join(dir, name);
 }
 
-const cmdName = (opts, root) => console.log(planTarget(opts, root, today()));
+const cmdName = (opts, root) => console.log(shotPath(opts, root, today()));
 
 function cmdImport(file, opts, root) {
   if (!file) fail('import needs the loose capture file');
@@ -240,7 +240,7 @@ function cmdImport(file, opts, root) {
   const route = opts.route ?? (routes.length === 1 ? routes[0] : undefined);
   if (!route) fail(`${opts.page} has ${routes.length} routes; pass --route`);
   const mtime = statSync(src).mtime;
-  const dest = planTarget(opts, root, `${mtime.getFullYear()}-${String(mtime.getMonth() + 1).padStart(2, '0')}-${String(mtime.getDate()).padStart(2, '0')}`);
+  const dest = shotPath(opts, root, `${mtime.getFullYear()}-${String(mtime.getMonth() + 1).padStart(2, '0')}-${String(mtime.getDate()).padStart(2, '0')}`);
   if (existsSync(dest)) fail(`${dest} already exists; not overwriting`);
   try {
     renameSync(src, dest);
@@ -248,11 +248,12 @@ function cmdImport(file, opts, root) {
     copyFileSync(src, dest);
     unlinkSync(src);
   }
-  cmdRecord(dest, { ...opts, route }, root);
+  recordShot(dest, { ...opts, route }, root);
   console.log(`imported ${basename(src)} -> ${dest}`);
 }
 
-function cmdRecord(file, opts, root) {
+/** Appends a screenshot's manifest entry (`extra` fields are kept as given); exits 1 on a bad name, path or route. */
+export function recordShot(file, opts, root, extra = {}) {
   if (!file) fail('record needs the screenshot file');
   const abs = resolve(file);
   if (!existsSync(abs)) fail(`${file} does not exist`);
@@ -282,6 +283,7 @@ function cmdRecord(file, opts, root) {
     fixture: opts.fixture ?? null,
     capturedAt: statSync(abs).mtime.toISOString(),
     note: opts.note ?? null,
+    ...extra,
   };
   const manifest = join(dirname(abs), 'manifest.json');
   let entries = [];
@@ -363,7 +365,7 @@ function main() {
   });
   const root = rootDir();
   if (cmd === 'name') cmdName(values, root);
-  else if (cmd === 'record') cmdRecord(positionals[0], values, root);
+  else if (cmd === 'record') recordShot(positionals[0], values, root);
   else if (cmd === 'import') cmdImport(positionals[0], values, root);
   else if (cmd === 'check') cmdCheck(root);
   else if (cmd === 'index') cmdIndex(root);

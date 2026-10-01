@@ -120,8 +120,10 @@
 .ch-search input::-webkit-search-cancel-button {
   display: none;
 }
+/* A placeholder is the field's only label until it is filled: ink-400 measured 2.8:1 on the phone page and 3.4:1 on a
+   desktop card (aesthetic audit M-L3); tertiary holds 4.5:1 on both and still reads lighter than typed text. */
 .ch-search input::placeholder {
-  color: var(--ch-ink-400);
+  color: var(--ch-text-tertiary);
 }
 .ch-search__x {
   display: grid;
@@ -202,7 +204,7 @@
 }
 .ch-input::placeholder,
 .ch-textarea::placeholder {
-  color: var(--ch-ink-400);
+  color: var(--ch-text-tertiary);
 }
 
 /* Menu */
