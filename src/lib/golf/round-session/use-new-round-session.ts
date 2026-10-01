@@ -58,6 +58,7 @@ import {
   type RoundSessionLogSource,
   type RoundSessionRoutes,
 } from '@/lib/golf/round-session/routes';
+import { CONFLICT_CHECK_TIMEOUT_MS, settleWithin } from '@/lib/golf/round-session/settle-within';
 import {
   validateStartForm,
   validateStartHoles,
@@ -2446,7 +2447,11 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
             // A conflict is not an acknowledgement (see the continue engine):
             // healed is held and re-sent under the adopted token, otherwise
             // the round is blocked until a reload.
-            const healed = await handleRoundSyncConflict('This round was updated on another device. Please reload.');
+            const healed = await settleWithin(
+              handleRoundSyncConflict('This round was updated on another device. Please reload.'),
+              CONFLICT_CHECK_TIMEOUT_MS,
+              true,
+            );
             throw new AutoSaveHeldError(healed ? 'conflict' : 'blocked', onDevice);
           } else if (result.error === 'busy' || result.error === 'retry') {
             // Single-flight skip: another save for this round already holds the

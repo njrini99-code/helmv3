@@ -38,6 +38,7 @@ import { updateRoundType } from '@/app/golf/actions/round-type';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { useActiveWork } from '@/lib/recovery/use-active-work';
 import { resolveRoundRoutes, type RoundSessionRoutes } from '@/lib/golf/round-session/routes';
+import { CONFLICT_CHECK_TIMEOUT_MS, settleWithin } from '@/lib/golf/round-session/settle-within';
 
 export type Hole = RoundHole;
 
@@ -1252,7 +1253,9 @@ export function useContinueRoundSession({
         // mismatch was this device's own unreadable write; the token is now
         // adopted) is held and re-sent under it; otherwise the round is
         // blocked until a reload, which only a reload can clear.
-        const healed = await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
+        // The check has no client timeout and this runs inside the save lock: bounded, and a check still running is treated as healed
+        // (held and re-sent; the resend finds the round blocked if the check ends that way).
+        const healed = await settleWithin(handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE), CONFLICT_CHECK_TIMEOUT_MS, true);
         throw new AutoSaveHeldError(healed ? 'conflict' : 'blocked', onDevice);
       } else if (result.error === 'busy' || result.error === 'retry') {
         // Single-flight skip — another save for this round holds the row

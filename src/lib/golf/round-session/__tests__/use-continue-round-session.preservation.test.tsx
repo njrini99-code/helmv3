@@ -45,6 +45,7 @@ vi.mock('@/lib/recovery/use-active-work', () => ({ useActiveWork: vi.fn() }));
 
 import { emergencySave, loadEmergencySave, markRoundDiscarded, wasRoundDiscarded, DISCARDED_ROUNDS_STORAGE_KEY } from '@/lib/utils/emergency-save';
 import { isAutoSaveHeld, type AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
+import { CONFLICT_CHECK_TIMEOUT_MS } from '@/lib/golf/round-session/settle-within';
 import {
   useContinueRoundSession,
   type ContinueRoundSessionOptions,
@@ -218,6 +219,28 @@ describe('R-1: an auto-save that did not reach the server says so', () => {
     const after = await autoSave(blockedHook, [shot(1), shot(2)]);
     expect((after as AutoSaveHeldError).reason).toBe('blocked');
     expect(mocks.savePartialRound).not.toHaveBeenCalled();
+  });
+
+  it('a conflict check that hangs does not hold the save lock open: the save is held as a conflict after the bound', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      mocks.savePartialRound.mockResolvedValue({ success: false, error: 'conflict' });
+      staleness.check.mockReturnValue(new Promise(() => {}));
+      const hook = render();
+      let thrown: unknown = null;
+      const pending = act(async () => {
+        try {
+          await hook.result.current.handleAutoSave([shot(1)], 0);
+        } catch (error) {
+          thrown = error;
+        }
+      });
+      await vi.advanceTimersByTimeAsync(CONFLICT_CHECK_TIMEOUT_MS);
+      await pending;
+      expect(isAutoSaveHeld(thrown) && (thrown as AutoSaveHeldError).reason).toBe('conflict');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('handleSaveShot reports whether the device copy landed, which is the only thing the save line may claim before the server answers', async () => {

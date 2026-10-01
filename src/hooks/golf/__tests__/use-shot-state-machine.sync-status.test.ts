@@ -12,7 +12,13 @@ import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 vi.mock('@/lib/observability/client-breadcrumbs', () => ({ recordHelmBreadcrumb: vi.fn() }));
 vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
 
-import { AutoSaveHeldError, HELD_AUTO_SAVE_RESEND_MS, useShotStateMachine } from '@/hooks/golf/use-shot-state-machine';
+import {
+  AutoSaveHeldError,
+  HELD_AUTO_SAVE_RESEND_MAX_MS,
+  HELD_AUTO_SAVE_RESEND_MS,
+  heldResendDelay,
+  useShotStateMachine,
+} from '@/hooks/golf/use-shot-state-machine';
 
 const HOLE: RoundHole = { number: 1, par: 4, yardage: 400, score: null };
 const shotAt = (n: number): ShotRecord => ({
@@ -189,3 +195,63 @@ describe('a conflict is held, not saved', () => {
     expect(status(hook)).toBe('saved');
   });
 });
+
+describe('nothing on screen waiting for the server means no claim about where a shot is', () => {
+  it('a shot recorded and then taken back before its save drops "syncing"', async () => {
+    const onAutoSave = vi.fn<(shots: ShotRecord[], hole: number) => Promise<void>>(async () => {});
+    const hook = render(onAutoSave);
+    await advance(1000);
+    recordShot(hook, 2);
+    act(() => hook.result.current.dispatch({ type: 'SHOT_SAVED_ON_DEVICE', payload: { onDevice: true } }));
+    expect(syncing(hook)).toBe(true);
+
+    // Undo lands back on the acknowledged history: nothing is left to send, so nothing is claimed.
+    act(() => hook.result.current.dispatch({ type: 'UNDO_COMPLETE', payload: { newHistory: [shotAt(1)] } }));
+    expect(syncing(hook)).toBe(false);
+    expect(hook.result.current.state.autoSaveHeldOnDevice).toBe(false);
+  });
+
+  it('undoing the only shot of a hole drops it too', () => {
+    const hook = render(vi.fn(async () => {}));
+    act(() => hook.result.current.dispatch({ type: 'SHOT_SAVED_ON_DEVICE', payload: { onDevice: true } }));
+    act(() => hook.result.current.dispatch({ type: 'UNDO_COMPLETE', payload: { newHistory: [] } }));
+    expect(syncing(hook)).toBe(false);
+  });
+
+  it('leaves a save in flight alone: its own outcome says what is true', async () => {
+    const onAutoSave = vi.fn<(shots: ShotRecord[], hole: number) => Promise<void>>(() => new Promise<void>(() => {}));
+    const hook = render(onAutoSave);
+    act(() => hook.result.current.dispatch({ type: 'SHOT_SAVED_ON_DEVICE', payload: { onDevice: true } }));
+    await advance(1000);
+    expect(status(hook)).toBe('saving');
+    act(() => hook.result.current.dispatch({ type: 'AUTO_SAVE_SETTLED' }));
+    expect(syncing(hook)).toBe(true);
+  });
+});
+
+describe('a held save that is a server answer backs off while it repeats', () => {
+  it('doubles from the first resend up to a ceiling, and keeps offline and queued flat', () => {
+    expect(heldResendDelay('busy', 1)).toBe(HELD_AUTO_SAVE_RESEND_MS);
+    expect(heldResendDelay('busy', 2)).toBe(HELD_AUTO_SAVE_RESEND_MS * 2);
+    expect(heldResendDelay('conflict', 3)).toBe(HELD_AUTO_SAVE_RESEND_MS * 4);
+    expect(heldResendDelay('conflict', 50)).toBe(HELD_AUTO_SAVE_RESEND_MAX_MS);
+    expect(heldResendDelay('offline', 9)).toBe(HELD_AUTO_SAVE_RESEND_MS);
+    expect(heldResendDelay('queued', 9)).toBe(HELD_AUTO_SAVE_RESEND_MS);
+  });
+
+  it('a conflict that keeps answering conflict is not re-sent every 20 s, and a success starts it over', async () => {
+    const onAutoSave = vi.fn<(shots: ShotRecord[], hole: number) => Promise<void>>(async () => {
+      throw new AutoSaveHeldError('conflict', true);
+    });
+    render(onAutoSave);
+    await advance(1000); // the first save
+    expect(onAutoSave).toHaveBeenCalledTimes(1);
+    await advance(HELD_AUTO_SAVE_RESEND_MS); // first resend, on time
+    expect(onAutoSave).toHaveBeenCalledTimes(2);
+    await advance(HELD_AUTO_SAVE_RESEND_MS); // the second waits twice as long: not yet
+    expect(onAutoSave).toHaveBeenCalledTimes(2);
+    await advance(HELD_AUTO_SAVE_RESEND_MS);
+    expect(onAutoSave).toHaveBeenCalledTimes(3);
+  });
+});
+

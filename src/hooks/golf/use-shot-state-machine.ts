@@ -125,6 +125,8 @@ export type ShotAction =
   | { type: 'SHOT_SAVED_ON_DEVICE'; payload: { onDevice: boolean } }
   /** What is on screen differs from what the server last acknowledged: an earlier "saved" no longer describes it. */
   | { type: 'AUTO_SAVE_UNSYNCED' }
+  /** Nothing on screen is waiting for the server (no shots, or every one acknowledged): no claim about where shots are. */
+  | { type: 'AUTO_SAVE_SETTLED' }
   | { type: 'INCREMENT_PENDING_SAVE' }
   // Penalty
   | { type: 'SHOW_PENALTY_MODAL' }
@@ -346,6 +348,13 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
 
     case 'AUTO_SAVE_UNSYNCED':
       return state.autoSaveStatus === 'saved' ? { ...state, autoSaveStatus: 'idle' } : state;
+
+    case 'AUTO_SAVE_SETTLED':
+      // Undo, edit or delete can leave nothing to send (a shot recorded and taken back before its save): the device-only claims
+      // go with it. A save in flight is left alone: its own outcome says what is true.
+      return (state.autoSaveSyncing || state.autoSaveHeldOnDevice) && state.autoSaveStatus !== 'saving'
+        ? { ...state, autoSaveSyncing: false, autoSaveHeldOnDevice: false }
+        : state;
 
     case 'AUTO_SAVE_RETRY_SCHEDULED':
       return { ...state, autoSaveRetryAttempt: action.payload };
@@ -658,6 +667,21 @@ function isResendable(reason: AutoSaveHoldReason): boolean {
 /** How long a held save waits before it is sent again, when no `online` event comes first. */
 export const HELD_AUTO_SAVE_RESEND_MS = 20_000;
 
+/**
+ * A save held as `busy` or `conflict` is a server answer, and it can repeat for a cause a resend never clears (a hole the server
+ * keeps refusing, a lock that disagrees with the staleness check). Each repeat waits twice as long as the one before, up to this, so
+ * it can never become a request every 20 s for the rest of the round; the first resend is on time. `offline` and `queued` keep the
+ * flat 20 s: neither calls the server.
+ */
+export const HELD_AUTO_SAVE_RESEND_MAX_MS = 300_000;
+
+/** The wait before a held save is sent again: flat for `offline` and `queued`, doubling per consecutive server hold otherwise. */
+export function heldResendDelay(reason: AutoSaveHoldReason, serverHoldStreak: number): number {
+  if (reason !== 'busy' && reason !== 'conflict') return HELD_AUTO_SAVE_RESEND_MS;
+  const doublings = Math.max(0, Math.min(serverHoldStreak - 1, 8));
+  return Math.min(HELD_AUTO_SAVE_RESEND_MS * 2 ** doublings, HELD_AUTO_SAVE_RESEND_MAX_MS);
+}
+
 // ============================================================================
 // HOOK
 // ============================================================================
@@ -702,6 +726,8 @@ export function useShotStateMachine({
   // events are unreliable, so the timer is the floor.
   const heldResendTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heldResendableRef = useRef(false);
+  // Consecutive holds that were a server answer (busy, conflict): the resend backs off while it repeats, and a success resets it.
+  const serverHoldStreakRef = useRef(0);
   const resendHeldSaveRef = useRef<(() => Promise<void>) | null>(null);
   const hydratedHoleIndexRef = useRef<number | null>(null);
   // Track retry attempt via ref to avoid stale closure in setTimeout callbacks
@@ -742,13 +768,22 @@ export function useShotStateMachine({
   // and only sends a single probe every 60s to check if the server is back.
   useEffect(() => {
     if (autoSaveDisabled) return;
-    if (!onAutoSaveRef.current || state.shotHistory.length === 0) return;
+    if (!onAutoSaveRef.current) return;
+    if (state.shotHistory.length === 0) {
+      // Nothing on screen is waiting for the server (a shot taken back before its save, a hole with none).
+      dispatch({ type: 'AUTO_SAVE_SETTLED' });
+      return;
+    }
 
     // Circuit breaker open: skip scheduling new saves (probe timer handles recovery)
     if (circuitBreakerOpenRef.current) return;
 
     const currentFingerprint = computeShotFingerprint(state.shotHistory);
-    if (currentFingerprint === lastSavedShotsRef.current) return;
+    if (currentFingerprint === lastSavedShotsRef.current) {
+      // What is on screen is what the server last acknowledged (an edit or an undo that landed back on it).
+      dispatch({ type: 'AUTO_SAVE_SETTLED' });
+      return;
+    }
 
     // What is on screen is not what the server last acknowledged, so an earlier "saved" no longer describes it. (This effect's
     // cleanup also drops the 2 s timer that would have cleared that "saved": without this it stayed up under an unsent shot.)
@@ -759,6 +794,7 @@ export function useShotStateMachine({
     const handleSaveSuccess = (fingerprint: string) => {
       lastSavedShotsRef.current = fingerprint;
       heldResendableRef.current = false;
+      serverHoldStreakRef.current = 0;
       if (heldResendTimeoutRef.current) {
         clearTimeout(heldResendTimeoutRef.current);
         heldResendTimeoutRef.current = null;
@@ -797,12 +833,13 @@ export function useShotStateMachine({
       dispatch({ type: 'AUTO_SAVE_HELD', payload: { onDevice: held.onDevice } });
       recordHelmBreadcrumb('golf.round', 'autosave', { action: 'autosave', result: `held_${held.reason}` });
       heldResendableRef.current = isResendable(held.reason);
+      serverHoldStreakRef.current = held.reason === 'busy' || held.reason === 'conflict' ? serverHoldStreakRef.current + 1 : 0;
       if (heldResendTimeoutRef.current) clearTimeout(heldResendTimeoutRef.current);
       heldResendTimeoutRef.current = heldResendableRef.current
         ? setTimeout(() => {
             heldResendTimeoutRef.current = null;
             void resendHeldSaveRef.current?.();
-          }, HELD_AUTO_SAVE_RESEND_MS)
+          }, heldResendDelay(held.reason, serverHoldStreakRef.current))
         : null;
     };
 

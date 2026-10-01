@@ -196,7 +196,8 @@ export function useShotTracking(
   const saveShot = useCallback(
     (shot: ShotRecord) => {
       const onDevice = onSaveShot?.(shot);
-      if (typeof onDevice === 'boolean' && shot.result !== 'hole') dispatch({ type: 'SHOT_SAVED_ON_DEVICE', payload: { onDevice } });
+      // A hole-out that landed on the device claims nothing here; one that did not takes an earlier claim down.
+      if (typeof onDevice === 'boolean' && (shot.result !== 'hole' || !onDevice)) dispatch({ type: 'SHOT_SAVED_ON_DEVICE', payload: { onDevice } });
     },
     [onSaveShot, dispatch],
   );
