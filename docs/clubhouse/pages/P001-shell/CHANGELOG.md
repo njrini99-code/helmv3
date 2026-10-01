@@ -3,6 +3,16 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Kept screen state never disagrees with hydration
+
+`useChSessionState` (`src/clubhouse/lib/session-state.ts`) draws the default
+while React hydrates server markup and the kept value in the render straight
+after. A part of a hard load that streams in after the app is marked running
+(a route's Suspense) used to read the kept filter or search during hydration
+and disagree with the server's markup (Qualifiers review S1; Roster, Calendar
+and the Rounds library share the hook). Test: `session-state.test.tsx`
+(hydrateRoot over server markup, mutation-checked).
+
 ## 2026-10-01 — High-fidelity audit: no staggered reveal, honest press, flat cards, phone type
 
 Owner answers on the high-fidelity audit (PROGRESS Q-139).

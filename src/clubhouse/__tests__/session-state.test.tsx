@@ -1,4 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
+import { hydrateRoot } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { markAppRunning, RouteScope, useChSessionState } from '../lib/session-state';
 
@@ -60,5 +62,29 @@ describe('useChSessionState', () => {
     act(() => setQ('nora'));
     expect(screen.getByText('q=nora')).toBeTruthy();
     spy.mockRestore();
+  });
+
+  it('a part of a hard load that hydrates after the app is running draws the default while hydrating, then the kept value (Qualifiers review S1)', async () => {
+    const key = 'ch:screen:/qualifiers\u0000t1\u0000q';
+    // The server made the markup from the default; the app is running by the time this part hydrates.
+    const html = renderToString(at('/qualifiers\u0000t1'));
+    markAppRunning();
+    sessionStorage.setItem(key, JSON.stringify('maya'));
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const errors: string[] = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errors.push(a.map(String).join(' '));
+    });
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(host, at('/qualifiers\u0000t1'), { onRecoverableError: (e) => errors.push(String((e as Error)?.message ?? e)) });
+    });
+    spy.mockRestore();
+    expect(errors.filter((e) => /hydrat|did not match|didn't match/i.test(e))).toEqual([]);
+    expect(host.textContent).toBe('q=maya');
+    act(() => root?.unmount());
+    host.remove();
   });
 });
