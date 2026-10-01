@@ -16,13 +16,13 @@ export const SECTIONS: Record<'coach' | 'player', ReadonlyArray<{ id: ChSettings
     { id: 'notifications', label: 'Notifications', hint: 'Email and push' },
     { id: 'team', label: 'Team', hint: 'Scoring, reminders, invites' },
     { id: 'coachhelm', label: 'CoachHelm', hint: 'Priorities and alerts' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion and haptics' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
   ],
   player: [
     { id: 'account', label: 'Account', hint: 'Profile, email, password' },
     { id: 'golf', label: 'Golf profile', hint: 'Handicap and team' },
     { id: 'notifications', label: 'Notifications', hint: 'Email, push, CoachHelm' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion and haptics' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
   ],
 };
 
