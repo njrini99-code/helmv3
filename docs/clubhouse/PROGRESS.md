@@ -1228,6 +1228,13 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-138 (open, 2026-10-01; built, reversible) CoachHelm's Program pulse card
+  now holds the height of three rows while it loads (CH-13405), so nothing
+  below it moves on desktop. Cost: a pulse of one or two items leaves room in
+  the card, and a phone pulse longer than three rows still grows it.
+  Alternative: move the pulse card under the top card, which ends the shift
+  for good but changes the board's order. Kept: the reserved slot, board
+  order unchanged.
 - Q-137 (open, 2026-10-01; built, reversible) Owner on the welcome gate: "Sign
   in on phone goes straight to dashboard but I want that smooth transition
   still." Read as: on a phone, no Continue tap, but keep the fold into the
