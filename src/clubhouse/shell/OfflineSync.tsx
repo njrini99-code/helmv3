@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
+import { chReport } from '../lib/track';
 
 /**
  * Starts the offline sync engine for the whole Clubhouse session, as the
@@ -23,6 +24,17 @@ export function OfflineSync() {
         useOfflineSyncStore.getState().completeSync(result.syncedRounds + result.syncedHoles + result.syncedShots > 0);
       },
       onSyncError: (error) => useOfflineSyncStore.getState().failSync(error.message),
+      // A queued round, hole or shot that fails to sync used to leave no server signal, so a round stranded on a phone was
+      // invisible (swap audit §18). Every failure is reported; the one that ends the retries is high severity.
+      onItemFailed: (type, offlineId, error) => {
+        const final = error === 'Max sync attempts reached';
+        chReport(new Error(`Offline ${type} sync failed: ${error}`), {
+          surface: 'offline-sync',
+          action: final ? 'sync.gaveUp' : 'sync.itemFailed',
+          severity: final ? 'high' : 'low',
+          extra: { itemType: type, offlineId },
+        });
+      },
     });
     let cancelled = false;
     engine

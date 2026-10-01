@@ -23,6 +23,8 @@ const store = {
   refreshPendingCounts: vi.fn(async () => {}),
 };
 vi.mock('@/stores/offline-sync-store', () => ({ useOfflineSyncStore: { getState: () => store } }));
+const chReport = vi.hoisted(() => vi.fn());
+vi.mock('../lib/track', () => ({ chReport }));
 
 import { OfflineSync } from '../shell/OfflineSync';
 
@@ -45,6 +47,15 @@ describe('Clubhouse OfflineSync', () => {
     const callbacks = engine.setCallbacks.mock.calls[0]![0] as { onSyncComplete: (r: unknown) => void };
     callbacks.onSyncComplete({ syncedRounds: 1, syncedHoles: 0, syncedShots: 0 });
     expect(store.completeSync).toHaveBeenCalledWith(true);
+  });
+
+  it('reports a failed item to Sentry, high once the engine gives up (swap audit §18)', () => {
+    render(<OfflineSync />);
+    const callbacks = engine.setCallbacks.mock.calls[0]![0] as { onItemFailed: (t: string, id: string, e: string) => void };
+    callbacks.onItemFailed('hole', 'off-1', 'network down');
+    callbacks.onItemFailed('round', 'off-2', 'Max sync attempts reached');
+    expect(chReport).toHaveBeenNthCalledWith(1, expect.any(Error), expect.objectContaining({ surface: 'offline-sync', action: 'sync.itemFailed', severity: 'low', extra: { itemType: 'hole', offlineId: 'off-1' } }));
+    expect(chReport).toHaveBeenNthCalledWith(2, expect.any(Error), expect.objectContaining({ action: 'sync.gaveUp', severity: 'high', extra: { itemType: 'round', offlineId: 'off-2' } }));
   });
 
   it('syncs on a service worker request and stops auto sync on unmount', () => {
