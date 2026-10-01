@@ -20,7 +20,7 @@ vi.mock('@/lib/supabase/server', () => ({
     from: (table: string) => {
       const res = { data: null, error: null, count: null, ...supabaseTables.current[table] };
       const chain: Record<string, unknown> = {};
-      for (const k of ['select', 'eq', 'gte', 'is', 'order', 'limit', 'in']) chain[k] = () => chain;
+      for (const k of ['select', 'eq', 'neq', 'gte', 'is', 'order', 'limit', 'in']) chain[k] = () => chain;
       chain.maybeSingle = () => Promise.resolve(res);
       chain.then = (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => Promise.resolve(res).then(ok, bad);
       return chain;
@@ -336,12 +336,20 @@ describe('Shell · sidebar data', () => {
     const none = await loadClubhouseShell('t1');
     expect(none.nextEvent).toBeNull();
     supabaseTables.current = {
-      golf_events: { data: upcoming },
+      golf_events: { data: [upcoming] },
       golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'accepted' }, { status: 'pending' }] },
     };
     const shell = await loadClubhouseShell('t1');
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
     expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
+  });
+
+  it('F-40 a player\'s synced class is never the team\'s next event', async () => {
+    const klass = { ...upcoming, id: 'c1', title: 'GEOG 110', event_type: 'class', description: null };
+    const tagged = { ...upcoming, id: 'c2', title: 'CHEM 101', event_type: 'practice', description: '[class:abc]' };
+    supabaseTables.current = { golf_events: { data: [klass, tagged, upcoming] }, golf_event_attendance: { data: [] } };
+    const shell = await loadClubhouseShell('t1');
+    expect(shell.nextEvent?.id).toBe('e1');
   });
 
   it('D-66 10802 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {

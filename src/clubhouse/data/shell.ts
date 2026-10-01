@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
+import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 
 export interface ChNextEvent {
   id: string;
@@ -30,13 +31,15 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
   const [eventRes, joinRes, tzRes] = await Promise.all([
     supabase
       .from('golf_events')
-      .select('id, title, start_time, all_day, location')
+      .select('id, title, start_time, all_day, location, event_type, description')
       .eq('team_id', teamId)
+      // A player's synced class is never "the team's next event" (F-40): it would show one player's timetable to the
+      // whole roster. Both class markers are checked, as every team-schedule read does (lib/calendar/class-events).
+      .neq('event_type', CLASS_EVENT_TYPE)
       .gte('start_time', new Date().toISOString())
       .is('cancelled_at', null)
       .order('start_time', { ascending: true })
-      .limit(1)
-      .maybeSingle(),
+      .limit(5),
     supabase
       .from('golf_team_join_requests')
       .select('id', { count: 'exact', head: true })
@@ -55,7 +58,7 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
     chLogServer('shell', 'joinRequests', joinRes.error, 'teams');
   }
 
-  const e = eventRes.error ? null : eventRes.data;
+  const e = eventRes.error ? null : ((eventRes.data ?? []).find((row) => !isClassEvent(row)) ?? null);
   let ready: ChNextEvent['ready'] = null;
   if (e) {
     // One event's invitees: at most a roster, well under the row cap.
