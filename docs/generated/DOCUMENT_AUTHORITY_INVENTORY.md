@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 43 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 59 | 6 | 33 | 25 |
+| `AUDIT_SNAPSHOT` | 60 | 6 | 33 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 48 | 15 | 2 | 2 |
@@ -419,6 +419,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | - |
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | - |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | - |
+| `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
