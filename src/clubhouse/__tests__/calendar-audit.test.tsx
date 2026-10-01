@@ -343,4 +343,3 @@ describe('Calendar · swap audit §8 attendance', () => {
     expect(a.markAttendance.mock.calls[0]![1]).toBe('theo');
   });
 });
-
