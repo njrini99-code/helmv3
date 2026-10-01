@@ -14,7 +14,7 @@ Page:                    src/app/golf/(dashboard)/dashboard/rounds/page.tsx (a p
 Clubhouse route adapter: src/clubhouse/routes/rounds.tsx ClubhouseRoundsRoute (session; a coach renders nothing; the
                          team only sets today's time zone)
 Server loader:           src/clubhouse/data/rounds.ts loadRoundsLibrary (pure steps in data/rounds-shape.ts; each failed
-                         read logs through chLogServer('rounds', …) and never throws; each is a flag, see "Failed reads")
+                         read logs through chLogServer('rounds', …) and never throws)
 Screen:                  src/clubhouse/screens/rounds/RoundsLibrary.tsx -> parts.tsx (UnfinishedCard, SeasonCard, Ribbon, RoundRow)
 Skeleton:                src/clubhouse/screens/rounds/RoundsSkeleton.tsx (CH-11401), from rounds/loading.tsx through ClubhouseSwitch
 Route error:             rounds/error.tsx (the shared Fairway RouteErrorBoundary; there is no Clubhouse error view yet)
@@ -27,7 +27,7 @@ Clubhouse route adapter: src/clubhouse/routes/round-review.tsx ClubhouseRoundRev
                          or the coach's active team; no viewer is the same "not here" page; a round in progress redirects
                          to /rounds/continue/[id]; CH-11307 is the not-here page)
 Server loader:           src/clubhouse/data/round-review.ts loadRoundReview (pure steps in data/round-review-shape.ts; logs
-                         through chLogServer('rounds.review', …); each failed read is a flag, see "Failed reads")
+                         through chLogServer('rounds.review', …))
 Screen:                  src/clubhouse/screens/rounds/RoundReview.tsx (ReviewNine, HoleCard) and ReviewLoadFailed.tsx (CH-11206)
 Skeleton:                none of its own: rounds/[id]/loading.tsx is Fairway's (110206)
 Route error:             rounds/[id]/error.tsx (the shared Fairway RouteErrorBoundary)
