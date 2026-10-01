@@ -585,6 +585,8 @@ export interface ChQCandidate {
   pick: { reasoning: string | null } | null;
   /** On the confirmed squad (on score or a pick). */
   selected: boolean;
+  /** Level with the last place on score and the player after it: the coach gives the places left (Q-114). */
+  tiedAtCut?: boolean;
 }
 
 export interface ChQSelectionData {
@@ -595,6 +597,8 @@ export interface ChQSelectionData {
   squad: number;
   picks: number;
   candidates: ChQCandidate[];
+  /** A tie at the last place on score (Q-114): places to give among the level players, and how many are given. */
+  tie?: { places: number; chosen: number } | null;
 }
 
 export type ChQSelectionLoad = { kind: 'ok'; data: ChQSelectionData } | { kind: 'missing' } | { kind: 'error' };
@@ -645,7 +649,9 @@ export async function loadQualifierSelection(input: { teamId: string; qualifierI
         onScore: c.is_top_score_slot,
         pick: c.selection?.selection_type === 'coach_pick' ? { reasoning: c.selection.coach_reasoning } : null,
         selected: state === 'selected' && c.selection != null,
+        tiedAtCut: !!c.tied_at_cut,
       })),
+      tie: ws.tie_at_cut,
     },
   };
 }

@@ -171,6 +171,53 @@ export async function setCoachPick(
 }
 
 /**
+ * Q-114: give one of the places at a tied cut to a level player (a top_score
+ * selection before confirm), or take it back. Only while selection is closed,
+ * only for a player tied at the cut, and never more than the places the tie
+ * leaves. The coach's reasoning is not asked: the player is level on score.
+ */
+export async function chooseTiePlace(
+  supabase: Sb,
+  args: { qualifier_id: string; player_id: string; user_id: string; give: boolean },
+): Promise<ServiceResult> {
+  const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
+  if (!workspace) return { ok: false, error: 'workspace not loadable' };
+  if (workspace.selection_state !== 'closed') {
+    return { ok: false, error: `places at the cut locked in state ${workspace.selection_state}` };
+  }
+  const tie = workspace.tie_at_cut;
+  const cand = workspace.candidates.find((c) => c.player_id === args.player_id);
+  if (!tie || !cand?.tied_at_cut) return { ok: false, error: 'player is not tied at the cut' };
+
+  if (args.give) {
+    if (cand.is_top_score_slot) return { ok: true, data: undefined };
+    if (tie.chosen >= tie.places) return { ok: false, error: `all ${tie.places} places at the cut are chosen` };
+    const { error } = await supabase.from('golf_qualifier_selections').upsert(
+      {
+        qualifier_id: args.qualifier_id,
+        player_id: args.player_id,
+        selection_type: 'top_score',
+        coach_reasoning: null,
+        selected_by_user_id: args.user_id,
+        selected_at: new Date().toISOString(),
+      },
+      { onConflict: 'qualifier_id,player_id' },
+    );
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, data: undefined };
+  }
+
+  const { error } = await supabase
+    .from('golf_qualifier_selections')
+    .delete()
+    .eq('qualifier_id', args.qualifier_id)
+    .eq('player_id', args.player_id)
+    .eq('selection_type', 'top_score');
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: undefined };
+}
+
+/**
  * Remove a coach-pick. Only works on coach_pick rows; top_score rows
  * are auto-managed by confirmSelection and never deleted via this path.
  */
@@ -218,6 +265,15 @@ export async function confirmSelection(
     return {
       ok: false,
       error: 'cannot confirm: state must be closed, all coach picks chosen with reasoning',
+    };
+  }
+
+  // Q-114: level players at the last place on score wait for the coach, never name order.
+  const tie = workspace.tie_at_cut;
+  if (tie && tie.chosen !== tie.places) {
+    return {
+      ok: false,
+      error: `cannot confirm: tie at the cut, choose ${tie.places} of the level players (${tie.chosen} chosen)`,
     };
   }
 

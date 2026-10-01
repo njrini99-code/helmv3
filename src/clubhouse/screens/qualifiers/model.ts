@@ -14,7 +14,7 @@ import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ra
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
-export type ChQRowState = 'qualifying' | 'bubble' | 'qualified' | 'selected' | 'pick' | null;
+export type ChQRowState = 'qualifying' | 'bubble' | 'qualified' | 'selected' | 'pick' | null | 'tie';
 
 export interface ChQRound {
   id: string;
@@ -153,8 +153,14 @@ export function buildBoard(input: {
   const squad = Math.max(0, input.squad);
   const topScore = Math.max(0, squad - Math.max(0, input.picks));
   const confirmed = input.selectionState === 'selected' && input.selections ? new Map(input.selections.map((s) => [s.playerId, s.type])) : null;
+  // Q-114 (owner, 2026-10-01): players level with both the last place on score and the next player share a "Tie at
+  // cut" until the coach chooses in Manage selections; name order no longer decides it.
+  const cutRow = topScore > 0 ? scored[topScore - 1] : undefined;
+  const tieAtCut = !!cutRow && !!scored[topScore] && sameStanding(key(cutRow), key(scored[topScore]!));
+  const tied = (row: ChQRow) => tieAtCut && sameStanding(key(row), key(cutRow!));
   scored.forEach((row, i) => {
     if (confirmed) row.state = confirmed.get(row.playerId) === 'coach_pick' ? 'pick' : confirmed.has(row.playerId) ? 'selected' : null;
+    else if (tied(row)) row.state = 'tie';
     else if (input.status === 'completed') row.state = i < topScore ? 'qualified' : null;
     else row.state = i < topScore ? 'qualifying' : i <= squad ? 'bubble' : null;
   });
@@ -168,6 +174,7 @@ export const STATE_LABEL: Record<Exclude<ChQRowState, null>, { tone: 'positive' 
   qualified: { tone: 'positive', label: 'Qualified' },
   selected: { tone: 'positive', label: 'Selected' },
   pick: { tone: 'accent', label: 'Coach’s pick' },
+  tie: { tone: 'warning', label: 'Tie at cut' },
 };
 
 export const STATUS_LABEL: Record<ChQStatus, { tone: 'accent' | 'warning' | 'neutral'; label: string }> = {

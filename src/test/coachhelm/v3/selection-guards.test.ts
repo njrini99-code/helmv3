@@ -31,7 +31,7 @@ vi.mock('@/lib/coachhelm/v3/qualifying/loader', async (orig) => ({
 }));
 
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
-import { confirmSelection, setCoachPick, transitionSelectionState } from '@/lib/coachhelm/v3/qualifying/service';
+import { chooseTiePlace, confirmSelection, setCoachPick, transitionSelectionState } from '@/lib/coachhelm/v3/qualifying/service';
 
 const mockedLoader = vi.mocked(loadQualifyingWorkspace);
 
@@ -167,5 +167,38 @@ describe('setCoachPick guards', () => {
     const sb = buildSb();
     const r = await setCoachPick(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p2', reasoning: 'Senior', user_id: 'u9' });
     expect(r.ok).toBe(true);
+  });
+});
+
+describe('Q-114 tie at the cut', () => {
+  const tiedWs = (chosenCal: boolean) =>
+    ws(
+      [
+        cand('p1', { leaderboard_rank: 1 }),
+        cand('p2', { leaderboard_rank: 2, is_top_score_slot: false, tied_at_cut: true }),
+        cand('p3', { leaderboard_rank: 2, is_top_score_slot: chosenCal, tied_at_cut: true }),
+      ],
+      { selection_slots_coach_pick: 0, tie_at_cut: { places: 1, chosen: chosenCal ? 1 : 0 } },
+    );
+
+  it('confirm waits until the places at the cut are given', async () => {
+    const sb = buildSb();
+    mockedLoader.mockResolvedValue(tiedWs(false));
+    const r = await confirmSelection(sb as unknown as Sb, { qualifier_id: 'q1', user_id: 'u9' });
+    expect(r).toEqual({ ok: false, error: 'cannot confirm: tie at the cut, choose 1 of the level players (0 chosen)' });
+  });
+
+  it('a place goes only to a tied player, never beyond the places left, and can be taken back', async () => {
+    const sb = buildSb();
+    mockedLoader.mockResolvedValue(tiedWs(false));
+    expect(await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p1', user_id: 'u9', give: true })).toEqual({ ok: false, error: 'player is not tied at the cut' });
+    expect((await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p3', user_id: 'u9', give: true })).ok).toBe(true);
+    const { data } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    expect(data).toEqual([expect.objectContaining({ player_id: 'p3', selection_type: 'top_score' })]);
+    mockedLoader.mockResolvedValue(tiedWs(true));
+    expect(await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p2', user_id: 'u9', give: true })).toEqual({ ok: false, error: 'all 1 places at the cut are chosen' });
+    expect((await chooseTiePlace(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p3', user_id: 'u9', give: false })).ok).toBe(true);
+    const after = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    expect(after.data).toEqual([]);
   });
 });

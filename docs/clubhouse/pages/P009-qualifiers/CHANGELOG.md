@@ -3,6 +3,28 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — A tie at the cut waits for the coach (Q-114)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (a panel in the existing Manage selections grammar; Fairway gets a Give place button)
+Contract IDs:   CH-09010, CH-09318 (new)
+Actions:        qualifiers.chooseTie → chooseQualifierTiePlace (new server action); confirm refuses an unsettled tie
+Data impact:    a place given at the cut is a top_score selection written before confirm; no schema change
+Held items:     none
+```
+
+- **Issue.** Players level on to par and strokes at the last place on score
+  were split by name order on the board, in selection and at confirm.
+- **Fix.** Everyone level with the last place and the next player is "Tie at
+  cut". The players clearly above keep their places; the coach gives the
+  places left (and can take one back) before confirming, and confirm waits
+  until they are all given. The board shows "Tie at cut"; Fairway's workspace
+  gets the same Give place button so a tie never blocks it.
+- **Checked.** `qualifying.test.ts` (the board and workspace agree, clean
+  cuts are not ties); `selection-guards.test.ts` (confirm waits, places only
+  to tied players, never beyond, taken back); `qualifiers.test.tsx` 109/109.
+
 ## 2026-10-01 — Picks need a scored round; an honest confirm toast (Q-115, Q-116)
 
 ```text

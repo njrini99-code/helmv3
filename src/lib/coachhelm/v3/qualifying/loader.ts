@@ -17,9 +17,10 @@ import {
   type QualifierSelectionState,
   type QualifyingWorkspace,
   type SelectionCandidate,
+  type TieAtCut,
 } from './types';
 import { canConfirmSelection, pickableCount } from './state-machine';
-import { compareStandings } from './ranking';
+import { compareStandings, sameStanding } from './ranking';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
@@ -121,6 +122,7 @@ export async function loadQualifyingWorkspace(
 
   const top_n = Math.max(0, q.selection_slots_total - q.selection_slots_coach_pick);
   const candidates = assignScoreSlots(ranked, selByPlayer, top_n);
+  const tie_at_cut = tieAtCut(candidates, top_n);
 
   const coachPickSelections = Array.from(selByPlayer.values()).filter(
     (s) => s.selection_type === 'coach_pick',
@@ -148,6 +150,7 @@ export async function loadQualifyingWorkspace(
     target_tournament_id: q.target_tournament_id,
     candidates,
     coach_picks_complete,
+    tie_at_cut,
   };
 }
 
@@ -156,20 +159,49 @@ export async function loadQualifyingWorkspace(
  * coach's pick: a pick who climbs into the top places keeps the pick
  * (confirm never overwrites it), and the next ranked player takes the
  * place on score, so the squad stays slots_total.
+ *
+ * Q-114 (owner, 2026-10-01): when the last place on score and the next player
+ * are level (to par and strokes), name order no longer decides. Everyone level
+ * with them is `tied_at_cut`; the players clearly above keep their places, and
+ * the places left go only to tied players the coach has chosen (a top_score
+ * selection written before confirm, see service.ts chooseTiePlace).
  */
 export function assignScoreSlots(
   ranked: RankOutput[],
   selByPlayer: Map<string, QualifierSelection>,
   top_n: number,
 ): SelectionCandidate[] {
+  const keyOf = (r: RankOutput) => ({ toPar: r.total_to_par as number, total: r.total_score as number });
+  const eligible = ranked.filter((r) => r.leaderboard_rank !== null && selByPlayer.get(r.player_id)?.selection_type !== 'coach_pick');
+  const tied = new Set<string>();
+  let tiePlaces = 0;
+  if (top_n > 0 && eligible.length > top_n && sameStanding(keyOf(eligible[top_n - 1]!), keyOf(eligible[top_n]!))) {
+    const cutKey = keyOf(eligible[top_n - 1]!);
+    for (const r of eligible) if (sameStanding(keyOf(r), cutKey)) tied.add(r.player_id);
+    tiePlaces = top_n - eligible.slice(0, top_n).filter((r) => !tied.has(r.player_id)).length;
+  }
   let onScore = 0;
+  let chosen = 0;
   return ranked.map((r) => {
     const selection = selByPlayer.get(r.player_id) ?? null;
+    if (tied.has(r.player_id)) {
+      const given = selection?.selection_type === 'top_score' && chosen < tiePlaces;
+      if (given) chosen++;
+      return { ...r, selection, is_top_score_slot: given, tied_at_cut: true };
+    }
     const is_top_score_slot =
-      r.leaderboard_rank !== null && selection?.selection_type !== 'coach_pick' && onScore < top_n;
+      r.leaderboard_rank !== null && selection?.selection_type !== 'coach_pick' && onScore < top_n - tiePlaces;
     if (is_top_score_slot) onScore++;
     return { ...r, selection, is_top_score_slot };
   });
+}
+
+/** The tie at the cut, if any: the places the tied players share and how many the coach has given. */
+export function tieAtCut(candidates: SelectionCandidate[], top_n: number): TieAtCut | null {
+  const tied = candidates.filter((c) => c.tied_at_cut);
+  if (!tied.length) return null;
+  const clear = candidates.filter((c) => c.is_top_score_slot && !c.tied_at_cut).length;
+  return { places: Math.max(0, top_n - clear), chosen: tied.filter((c) => c.is_top_score_slot).length };
 }
 
 interface RankInput {

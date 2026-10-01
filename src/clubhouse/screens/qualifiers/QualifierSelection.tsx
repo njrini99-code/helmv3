@@ -55,14 +55,19 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   // A pick is never also counted on score.
   const onScore = cands.filter((c) => !c.pick && (stage === 2 ? c.selected : c.onScore)).sort(byRank);
   const picks = cands.filter((c) => c.pick);
-  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick).sort(byRank);
+  // Q-114: players level at the last place on score. The coach gives the places left; name order never does.
+  const tied = stage < 2 ? cands.filter((c) => c.tiedAtCut && !c.pick).sort(byRank) : [];
+  const tiePlaces = data.tie?.places ?? 0;
+  const tieChosen = tied.filter((c) => c.onScore).length;
+  const tieReady = tied.length === 0 || tieChosen === tiePlaces;
+  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick && !(stage < 2 && c.tiedAtCut)).sort(byRank);
   const unranked = cands.filter((c) => c.rank == null && !c.pick);
   // A field smaller than the squad has fewer players to pick than pick places; the server needs only those
   // (canConfirmSelection), so the empty places don't hold up the confirmation.
   const picksNeeded = Math.min(data.picks, eligible.length + picks.length);
   const picksReady = picks.length === picksNeeded && picks.every((p) => (p.pick?.reasoning ?? '').trim().length > 0);
   const nobody = onScore.length + picks.length === 0;
-  const canConfirm = state === 'closed' && picksReady && !nobody;
+  const canConfirm = state === 'closed' && picksReady && tieReady && !nobody;
 
   // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
   // (which runs the action again) finishes the job too: the step moves on, the question closes, the page re-reads.
@@ -107,6 +112,20 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       hint: 'Nothing was confirmed and nobody was told. Try again.',
       code: 'CH-09008',
     },
+  );
+  const chooseTie = useAction(
+    'qualifiers.chooseTie',
+    async (c: ChQCandidate, give: boolean) => {
+      const res = await writes.chooseTie(data.id, c.playerId, give);
+      if (normalise(res).success) setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, onScore: give } : x)));
+      return res;
+    },
+    (c, give) => ({
+      done: give ? `${c.name} takes the place at the cut` : `${c.name} is level at the cut again`,
+      failed: give ? `Couldn’t give ${c.name} the place` : `Couldn’t take the place back from ${c.name}`,
+      hint: 'Nothing changed. Try again.',
+      code: 'CH-09010',
+    }),
   );
   const remove = useAction(
     'qualifiers.removePick',
@@ -172,7 +191,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         ))}
       </ol>
 
-      <StageNote stage={stage} topN={topN} picks={picksNeeded} picksReady={picksReady} nobody={nobody} />
+      <StageNote stage={stage} topN={topN} picks={picksNeeded} picksReady={picksReady} nobody={nobody} tie={tied.length && !tieReady ? tiePlaces - tieChosen : 0} />
 
       <SectionBoundary surface="qualifiers.selection" label="Selections" code="CH-09219">
         <div className="ch-qf-body">
@@ -202,6 +221,41 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                 />
               )}
             </section>
+
+            {tied.length > 0 && (
+              <section className="ch-qf-panel" aria-labelledby="ch-qfs-tie" data-ch-code="CH-09318">
+                <div className="ch-qf-panel__head">
+                  <div>
+                    <h2 id="ch-qfs-tie">Tie at the cut</h2>
+                    <p className="ch-num">
+                      {plural(tied.length, 'player')} level for {plural(tiePlaces, 'place')} · {tieChosen} given
+                    </p>
+                  </div>
+                </div>
+                <ol className="ch-qf-list">
+                  {tied.map((c) => (
+                    <li key={c.playerId}>
+                      <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
+                      <Avatar name={c.name} size={26} />
+                      <b>{c.name}</b>
+                      <Badge tone={c.onScore ? 'positive' : 'warning'}>{c.onScore ? 'Given the place' : 'Tie at cut'}</Badge>
+                      <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
+                      <ToPar value={c.toPar} />
+                      {stage === 1 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={chooseTie.pending || (!c.onScore && tieChosen >= tiePlaces)}
+                          onClick={() => void chooseTie.run(c, !c.onScore)}
+                        >
+                          {c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
 
             {stage < 2 && (eligible.length > 0 || unranked.length > 0) && (
               <section className="ch-qf-panel" aria-labelledby="ch-qfs-rest">
@@ -403,9 +457,11 @@ function Row({ c }: { c: ChQCandidate }) {
   );
 }
 
-function StageNote({ stage, topN, picks, picksReady, nobody }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean }) {
+function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean; tie?: number }) {
   const text =
-    stage === 0
+    stage === 1 && tie > 0
+      ? `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`
+      : stage === 0
       ? `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`
       : stage === 1
         ? nobody

@@ -104,6 +104,7 @@ const selWrites = (over: Partial<Record<keyof ChQSelectionWrites, Mock>> = {}): 
     advance: vi.fn<ChQSelectionWrites['advance']>(ok),
     setPick: vi.fn<ChQSelectionWrites['setPick']>(ok),
     removePick: vi.fn<ChQSelectionWrites['removePick']>(ok),
+    chooseTie: vi.fn<ChQSelectionWrites['chooseTie']>(ok),
     confirm: vi.fn<ChQSelectionWrites['confirm']>(ok),
     ...over,
   }) as SelWrites;
@@ -159,8 +160,9 @@ describe('Qualifiers · the standings model', () => {
       ['d', 4, false],
       ['e', 5, false],
     ]);
-    // Two qualify on score (3 places, 1 pick); the next two are on the bubble; the rest are out.
-    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'qualifying', 'bubble', 'bubble', null]);
+    // Two places on score (3 places, 1 pick). B and C are level at the second place, so they share a tie at the cut
+    // until the coach chooses (Q-114); D is on the bubble; the rest are out.
+    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', 'bubble', null]);
     expect(b.submitted).toBe(6);
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
@@ -950,6 +952,42 @@ describe('Qualifiers · Manage selections', () => {
     expect(steps().map((s) => s.getAttribute('aria-current'))).toEqual([null, 'step', null]);
     expect(screen.getByText('Choose a player and say why')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm squad' })).toBeTruthy();
+  });
+
+  it('CH-09318 Q-114 a tie at the cut waits for the coach: confirm stays off until the place is given, and can be taken back', async () => {
+    const base = previewSelection('picking');
+    const c = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({
+      playerId,
+      name: playerId,
+      rank,
+      toPar: rank,
+      total: 70 + rank,
+      rounds: 2,
+      onScore,
+      pick: null,
+      selected: false,
+      tiedAtCut,
+    });
+    const writes = selWrites();
+    wrap(
+      <QualifierSelection
+        data={{ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates: [c('Ann', 1, true), c('Ben', 2, false, true), c('Cal', 2, false, true)] }}
+        writes={writes}
+      />,
+    );
+    const confirmBtn = () => screen.getByRole('button', { name: 'Confirm squad' }) as HTMLButtonElement;
+    expect(code('CH-09318')).toBeTruthy();
+    expect(confirmBtn().disabled).toBe(true);
+    expect(screen.getByText(/Give 1 more place to confirm the squad/)).toBeTruthy();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    expect(writes.chooseTie).toHaveBeenCalledWith(base.id, 'Cal', true);
+    await screen.findByText('Cal takes the place at the cut');
+    expect(confirmBtn().disabled).toBe(false);
+    // The one place is given, so Ben's button waits; Cal's can be taken back.
+    expect((screen.getByRole('button', { name: 'Give the place Ben' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Take it back Cal' }));
+    expect(writes.chooseTie).toHaveBeenLastCalledWith(base.id, 'Cal', false);
   });
 
   it('§11.3 a field smaller than the squad confirms once every player who can be picked is picked', () => {

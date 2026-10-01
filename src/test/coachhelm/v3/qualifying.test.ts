@@ -16,7 +16,7 @@ import {
   requiredCoachPicks,
   pickableCount,
 } from '@/lib/coachhelm/v3/qualifying/state-machine';
-import { assignScoreSlots, rankCandidates } from '@/lib/coachhelm/v3/qualifying/loader';
+import { assignScoreSlots, rankCandidates, tieAtCut } from '@/lib/coachhelm/v3/qualifying/loader';
 import type { SelectionCandidate } from '@/lib/coachhelm/v3/qualifying/types';
 
 function cand(
@@ -205,7 +205,7 @@ describe('one standings order (§11.3)', () => {
     }
   });
 
-  it('the workspace ranks a tie at the cut exactly as the Clubhouse leaderboard does', async () => {
+  it('Q-114 a tie at the cut waits for the coach on the board and in the workspace; name order no longer decides', async () => {
     const { buildBoard } = await import('@/clubhouse/screens/qualifiers/model');
     // Squad 2, no picks: Ben and Cal are level at the cut, entered in reverse name order.
     const entrants = [row('c', 'Cal', 2, 150, 6), row('b', 'Ben', 2, 150, 6), row('a', 'Ann', 2, 145, 1)];
@@ -232,9 +232,23 @@ describe('one standings order (§11.3)', () => {
     });
     const ws = assignScoreSlots(rankCandidates(entrants), new Map(), 2);
     expect(ws.map((c) => c.player_id)).toEqual(board.rows.map((r) => r.playerId));
-    expect(ws.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(
-      board.rows.filter((r) => r.state === 'qualified').map((r) => r.playerId),
-    );
+    // Ann is clear; Ben and Cal are level at the last place, so neither takes it until the coach chooses.
+    expect(ws.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['a']);
+    expect(ws.filter((c) => c.tied_at_cut).map((c) => c.player_id)).toEqual(['b', 'c']);
+    expect(tieAtCut(ws, 2)).toEqual({ places: 1, chosen: 0 });
+    expect(board.rows.map((r) => r.state)).toEqual(['qualified', 'tie', 'tie']);
+    // Once the coach gives the place to Cal, Cal holds it and the tie is settled.
+    const given = { qualifier_id: 'q', player_id: 'c', selection_type: 'top_score' as const, coach_reasoning: null, selected_at: '', selected_by_user_id: '' };
+    const after = assignScoreSlots(rankCandidates(entrants), new Map([['c', given]]), 2);
+    expect(after.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['a', 'c']);
+    expect(tieAtCut(after, 2)).toEqual({ places: 1, chosen: 1 });
+  });
+
+  it('Q-114 players level below a clean cut are not a tie at the cut', () => {
+    const ws = assignScoreSlots(rankCandidates([row('a', 'Ann', 2, 140, -4), row('b', 'Ben', 2, 150, 6), row('c', 'Cal', 2, 150, 6)]), new Map(), 1);
+    expect(ws.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['a']);
+    expect(ws.some((c) => c.tied_at_cut)).toBe(false);
+    expect(tieAtCut(ws, 1)).toBeNull();
   });
 
   it('a coach’s pick who climbs into the top places keeps the pick; the next player takes the place on score', () => {

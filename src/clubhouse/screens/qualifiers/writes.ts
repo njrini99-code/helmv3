@@ -3,7 +3,7 @@
 import { createGolfQualifier, setQualifierRoundCourses, updateGolfQualifierDetails, updateQualifierStatus } from '@/app/golf/actions/golf';
 import { setQualifierEntrants, setQualifierSquadSize } from '@/app/golf/actions/qualifier-setup';
 import { getCourseDetail, getTeamSavedCourses, listCoursesStrict } from '@/app/golf/actions/course-library';
-import { advanceSelectionState, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
+import { advanceSelectionState, chooseQualifierTiePlace, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
 import type { ServerResult } from '../../lib/use-action';
 import { chTrail } from '../../lib/track';
 
@@ -141,6 +141,8 @@ export interface ChQSelectionWrites {
   advance: (id: string, to: ChQSelectionStep) => Promise<ServerResult>;
   setPick: (id: string, playerId: string, reasoning: string) => Promise<ServerResult>;
   removePick: (id: string, playerId: string) => Promise<ServerResult>;
+  /** Give a place at a tied cut to a level player, or take it back (Q-114). */
+  chooseTie: (id: string, playerId: string, give: boolean) => Promise<ServerResult>;
   /** `data.notified` is false when the squad committed but telling the players failed (Q-116). */
   confirm: (id: string) => Promise<ServerResult<{ notified: boolean }>>;
 }
@@ -192,6 +194,7 @@ export const LIVE_SELECTION_WRITES: ChQSelectionWrites = {
   advance: async (id, to) => asResult(await advanceSelectionState(id, to)),
   setPick: async (id, playerId, reasoning) => asResult(await setQualifierCoachPick(id, playerId, reasoning)),
   removePick: async (id, playerId) => asResult(await removeQualifierCoachPick(id, playerId)),
+  chooseTie: async (id, playerId, give) => asResult(await chooseQualifierTiePlace(id, playerId, give)),
   confirm: async (id) => {
     const r = await confirmQualifierSelection(id);
     if (r.ok) return { success: true, data: { notified: r.notified !== false } };
