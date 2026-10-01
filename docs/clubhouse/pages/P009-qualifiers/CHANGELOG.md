@@ -3,6 +3,28 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Selection ranks from the rounds, as the board does; the board's unknown-round rules; test qualifiers stay hidden (swap audit §11 reconciliation, Q-134)
+
+```text
+PR/commit:      agent/swap-audit (#2111): 802bcfbad, f55938c4b, 2e6c15651
+Design package: none (no visual change)
+Contract IDs:   none new
+Actions:        none
+Data impact:    loadQualifyingWorkspace reads the qualifier's completed, non-test rounds; updateQualifierEntryStats skips test rounds. Production: 30 entry aggregates rewritten from their rounds (owner-approved; 0 of 136 now disagree)
+Held items:     none
+```
+
+- **Issue.** The board ranked from rounds and selection (and confirm) from
+  the entry's stored aggregate, which was stale on a live qualifier (3 rounds
+  played, 2 stored), so the two could rank a player differently.
+- **Fix.** Selection and confirm rank from the same rounds as the board. Both
+  treat a round with a total but no to-par as unknown (not even), count a
+  second round in one round slot once, and a link to a test qualifier (detail
+  or edit) is not found, as in the list.
+- **Checked.** The SQL oracle matched the board on all 7 Demo entrants;
+  `qualifiers.test.tsx` 107/107; `qualifying-loader-rounds.test.ts` (3 fail
+  on the old loader); qualifying suites 143/143.
+
 ## 2026-09-30 — Manage selections has its own error and loading states (swap audit F-18)
 
 ```text

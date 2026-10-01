@@ -2,6 +2,24 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — A calendar link can be replaced or removed (swap audit §14 D3)
+
+```text
+PR/commit:      agent/swap-audit (#2111): 40419c193, 279d7ed6f
+Design package: none (sheet rows in the existing Add to calendar app grammar)
+Contract IDs:   CH-6013, CH-6014, CH-6504, CH-6505
+Actions:        calendar.regenerateFeed, calendar.removeFeed
+Data impact:    reuses regenerateCalendarFeed and deleteCalendarFeed; no schema change
+Held items:     none
+```
+
+- **Issue.** The feed URL is a bearer link, and Clubhouse could only read and
+  create one: a leaked link could not be rotated or revoked.
+- **Fix.** New link and Remove under each link, each asking first and saying
+  the current link stops working. A failed replacement re-reads the links and
+  offers no Retry (the server deletes the old link first).
+- **Checked.** `calendar-feed-manage.test.tsx`; calendar suites green.
+
 ## 2026-09-30 — Duplicate, Print and the jump panel's Close (Clickables gaps 9, 15, 21); Compare schedules on a class (Clickables gap 17)
 
 ```text

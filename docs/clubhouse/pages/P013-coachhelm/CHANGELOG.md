@@ -2,6 +2,27 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Development links open Stats; the Ask stream respects the gate; the program pulse counts total-only rounds (§14 D4, CH13-20, F-58)
+
+```text
+PR/commit:      agent/swap-audit (#2111): 5c4a9c33a, ffc5861cf, c7e24b4f9
+Design package: none
+Contract IDs:   none new (CH-1301 narrowed to profile, standing, deep dive)
+Actions:        none
+Data impact:    none; 114 Demo insight rows regenerated 2026-10-01 (owner-approved, Q-125)
+Held items:     the cache migrations (Q-124) still count test rounds; regenerate again after they are applied
+```
+
+- **Development.** `?view=development` (30 unread dev-plan notifications and
+  their pushes) redirects to Stats → Development instead of the not-rebuilt
+  placeholder.
+- **Ask.** The chat stream endpoint returns 403 when CoachHelm is off for the
+  team, not only the Ask tab.
+- **Pulse.** The program pulse dates the team's latest round by the score
+  rule (Q-123), so a team posting qualifiers as totals no longer reads "no
+  rounds in 60 days".
+- **Checked.** `coachhelm.test.tsx` 144/144; route tests; F-58 test.
+
 ## 2026-10-01 — Swap audit section 13: the card, its voice, its age
 
 ```text

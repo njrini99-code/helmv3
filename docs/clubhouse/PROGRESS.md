@@ -434,24 +434,24 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   reads it as before. Kept out: test rounds, rounds in progress, implausible
   totals (the stroke floor) and nine-hole totals (the rule names 18-hole
   totals).
-- Q-128 (open, 2026-10-01; nothing applied) Held OD-01
+- Q-128 (answered 2026-10-01, owner: fix the files, owner applies) Held OD-01
   (`20260924120000`) would drop the 14 rounds posted as totals only (7
   Demo players, all since 24 Sep) from the stats cache and standings, which
   Ask CoachHelm reads, while Stats counts them in scores (Q-123). Recommended:
   amend OD-01 to count a total-only 18-hole round in score figures before it
   is applied (the md5 guards in `20260924140000`, `20260925120000` and
   `20260928150000` then need regenerating). Kept: held as written.
-- Q-129 (open, 2026-10-01; unchanged) Held `20260928160000` (SG shot end)
+- Q-129 (answered 2026-10-01, owner: fix the files. Done: guard (97b49e304)) Held `20260928160000` (SG shot end)
   is superseded by `20260930150000` and has no guard: applied after it, it
   silently reverts the penalty rule. Recommended: mark it SUPERSEDED in
   `HELD.md` (your call). Kept: HOLD.
-- Q-130 (open, 2026-10-01; reversible choices made) Aliases with
+- Q-130 (answered 2026-10-01, owner: build the team switcher, the player roster (read-only) and the player CoachHelm views; alias the rest (6daf50afc)) Aliases with
   Clubhouse on: `/intelligence` opens CoachHelm (coach) and the old
   qualifying workspace opens that qualifier's selection (§14 D6, D8; part of
   Q-103). Still for you: the team switcher (one head coach staffs two teams;
   Clubhouse has none), recurring tasks, reminders and templates, travel
   expenses, budgets and CSV, and document versions (Fairway only today).
-- Q-131 (open, 2026-10-01; nothing changed) Turning Clubhouse on reaches
+- Q-131 (answered 2026-10-01, owner: allowlist. Built: HELM_CLUBHOUSE_TEAMS (a49a75f6a)) Turning Clubhouse on reaches
   every coach and player at once, so there is no group to compare against if
   something breaks. Recommended: a team allowlist in `isClubhouseFor` for the
   first activation (Demo team, then one real team). Kept: no allowlist.
@@ -466,7 +466,7 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   assistants, current staff), the distance unit picker row and the Team Hub
   trip menu (Edit, Delete). They reuse the approved phone grammar. Recommended:
   review on a phone and keep. Kept: built as described.
-- Q-134 (open, 2026-10-01; code fixed, data unchanged) Stored qualifier entry
+- Q-134 (answered 2026-10-01, owner: rewrite. Done: 30 entries rewritten, 0 of 136 disagree; writer skips test rounds (2e6c15651)) Stored qualifier entry
   aggregates disagree with the rounds on 28 of 132 production entries (one
   live: 2 rounds stored, 3 played). Selection now ranks from the rounds
   (`802bcfbad`), but other readers of the aggregate (the legacy leaderboard)
@@ -476,7 +476,7 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   reworked (22 to 31 Aug, `2296c9466` and later); today's submit takes the
   qualifier from the persisted round and always rewrites the aggregate
   (`golf.ts:2060`, `:2855`). Kept: data as is.
-- Q-127 (open, 2026-10-01; nothing changed) The Demo team carries QA
+- Q-127 (answered 2026-10-01, owner: mark as test. Done: 11 rounds set is_test) The Demo team carries QA
   leftovers that look real in Clubhouse: eleven unfinished rounds for the
   demo player not flagged as tests ("Progress Test Course", "QA Hell Enum
   20260824-224418", Peek'n Peak drafts of 17-18 Sep reading "-7 through 6"),
@@ -490,7 +490,7 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   HELD migrations (`20260924120000`, `20260928120000`, `20260928150000`),
   then a cache refresh. Recommended: apply them in the documented order and
   refresh, after a db-migration-reviewer pass. Kept: held.
-- Q-125 (open, 2026-10-01; nothing run) All 81 visible CoachHelm rows for
+- Q-125 (answered 2026-10-01, owner: regenerate. Done: 114 rows rewritten for the 7 Demo players; regenerate again after Q-124) All 81 visible CoachHelm rows for
   the Demo team were written before production started serving `ef6e017a2`,
   so the test-round exclusions in #2101 are not reflected (Cole's tee card
   flips direction once regenerated). Recommended: one regeneration run for

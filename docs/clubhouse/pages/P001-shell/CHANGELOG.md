@@ -3,6 +3,33 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Team allowlist for the first activation; the remaining old addresses open Clubhouse screens; a failed sync reports; server events carry the UI tag (swap audit §14, §18, Q-131)
+
+```text
+PR/commit:      agent/swap-audit (#2111): a49a75f6a, 6daf50afc, 5c4a9c33a, 8a1dd47f8, a99fa9638
+Design package: none (no visual change)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none (reads only). New server env HELM_CLUBHOUSE_TEAMS (unset = every team).
+Held items:     none
+```
+
+- **Gate.** `isClubhouseFor` is async. With `HELM_CLUBHOUSE_TEAMS` set, only
+  the signed-in user's active team gets Clubhouse, and a failed team read
+  falls back to Fairway; unset, the flag alone decides (Q-131). Every call
+  site awaits it.
+- **Old addresses.** Player pages, game, print and genome open the Stats
+  profile; genome compare and a coach's `/rounds` open Team stats; `/team`
+  opens Settings (Team or Golf); `/courses` and `/whats-new` open Home;
+  `/intelligence` opens CoachHelm; the old qualifying workspace opens that
+  qualifier's selection; a player's CoachHelm chat opens CoachHelm.
+- **Push.** A tapped notification's absolute URL is reduced to a same-origin
+  path before the guard, so taps open their screen (both UIs, §14 D5).
+- **Observability.** `OfflineSync` reports every failed item to Sentry (high
+  once retries end); `chLogServer` events carry `ui` and `surface` tags.
+- **Checked.** `gate.test.ts`, `gate-allowlist.test.ts` 5/5; `alias.test.ts`
+  8/8; `offline-sync.test.tsx` 4/4; `safe-redirect.test.ts` 11/11.
+
 ## 2026-09-30 — The shell starts the offline sync engine (swap audit F-14)
 
 ```text

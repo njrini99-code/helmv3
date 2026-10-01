@@ -2,6 +2,26 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Coaching staff in Settings → Team; distance unit in Preferences (swap audit §14 D1, D7)
+
+```text
+PR/commit:      agent/swap-audit (#2111): 322ca7cfd, b0864c387, 4e3b87d44, 667d9292d
+Design package: none (desktop cards and phone groups in the approved grammar; phone sign-off Q-133)
+Contract IDs:   CH-8026, CH-8027, CH-8028, CH-8213
+Actions:        settings.staff (invite code, approve, decline), settings.distanceUnit
+Data impact:    reuses createStaffInvite, list/approve/declinePendingAssistantCoach, listTeamCoachingStaff; the unit is the device preference golf_distance_unit_pref
+Held items:     none
+```
+
+- **Issue.** A head coach with Clubhouse on could not mint a staff code or
+  approve an assistant; the distance unit the shot screen reads could not be
+  set.
+- **Fix.** Coaching staff, Assistant coach requests and Staff invitations in
+  Team (desktop and phone); Yards or Meters in Preferences. Hints read
+  "Motion, haptics and units" (rail) and "Motion, units" (phone).
+- **Checked.** `settings-staff`, `settings-distance-units`, `settings`,
+  `settings-server` 240 tests.
+
 ## 2026-09-30 — The phone Settings, to the owner-approved design
 
 ```text
