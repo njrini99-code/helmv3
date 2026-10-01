@@ -18,6 +18,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { UIMessage } from 'ai';
+import { describeChatError } from '@/lib/coachhelm/v3/chat/error-message';
 import { useCoachHelmChat, type ChatContextChip } from './useCoachHelmChat';
 import { ChatThread } from './ChatThread';
 import { PromptComposer, type ComposerPlayer } from './PromptComposer';
@@ -65,6 +66,15 @@ export interface CoachHelmChatProps {
   opening?: (ask: (text: string) => void) => React.ReactNode;
   /** Fires when the server mints a conversation for a thread that had none. */
   onConversationId?: (id: string) => void;
+  /**
+   * The coach chose "Start a new chat" under a lost-conversation error.
+   *
+   * A host that keeps the conversation id in the address bar (the Ask page and
+   * the Intelligence tab) owns this: resetting only the hook would leave `?c=`
+   * pointing at the dead thread, so a reload would open it again. Without it —
+   * the drawer never writes the URL — the hook resets itself.
+   */
+  onStartNew?: () => void;
   className?: string;
 }
 
@@ -80,6 +90,7 @@ export function CoachHelmChat({
   greeting,
   opening,
   onConversationId,
+  onStartNew,
   className,
 }: CoachHelmChatProps) {
   const chat = useCoachHelmChat({
@@ -90,6 +101,10 @@ export function CoachHelmChat({
   });
   const scroller = React.useRef<HTMLDivElement>(null);
   const isEmpty = chat.messages.length === 0;
+  const notice = React.useMemo(
+    () => (chat.error ? describeChatError(chat.error) : null),
+    [chat.error],
+  );
 
   // Autofocus is a desktop behaviour. On a phone, focusing the composer on
   // arrival summons the iOS keyboard over a page the coach hasn't read yet
@@ -275,27 +290,29 @@ export function CoachHelmChat({
             playersByName={playersByName}
           />
 
-          {chat.error && (
+          {notice && (
             <div className="mt-6 rounded-card border border-border-subtle bg-surface p-4">
-              {/* Show the server's own sanitised reason when it sent one. A
-                  generic "that didn't come through" in front of an exhausted
-                  model quota sends a coach to retry forever against something
-                  no amount of retrying fixes. */}
-              <p className="font-fw-sans text-body-sm text-text-primary">
-                {chat.error.message?.trim() || 'That answer did not come through.'}
-              </p>
-              {/* eslint-disable-next-line helm/no-raw-button -- inline retry inside an error notice */}
-              <button
-                type="button"
-                onClick={chat.retry}
-                className={cn(
-                  'mt-3 inline-flex min-h-[44px] items-center rounded-fw-md border border-border-subtle px-4',
-                  'font-fw-sans text-body-sm text-text-secondary transition-colors hover:bg-surface-sunken',
-                  'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
-                )}
-              >
-                Try again
-              </button>
+              {/* A sentence, never the response body. A stream fault keeps the
+                  server's own sanitised reason: a generic "that didn't come
+                  through" in front of an exhausted model quota sends a coach
+                  to retry forever against something no amount of retrying
+                  fixes. A refused request (rate limit, budget, lost thread,
+                  auth) arrives as JSON and is mapped in `describeChatError`. */}
+              <p className="font-fw-sans text-body-sm text-text-primary">{notice.message}</p>
+              {notice.recovery !== 'none' && (
+                // eslint-disable-next-line helm/no-raw-button -- inline retry inside an error notice
+                <button
+                  type="button"
+                  onClick={notice.recovery === 'new-chat' ? (onStartNew ?? chat.newConversation) : chat.retry}
+                  className={cn(
+                    'mt-3 inline-flex min-h-[44px] items-center rounded-fw-md border border-border-subtle px-4',
+                    'font-fw-sans text-body-sm text-text-secondary transition-colors hover:bg-surface-sunken',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                  )}
+                >
+                  {notice.recovery === 'new-chat' ? 'Start a new chat' : 'Try again'}
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -61,6 +61,20 @@ export function ChatThread({
 }: ChatThreadProps) {
   const lastIndex = messages.length - 1;
   const streamingTurn = messages[lastIndex]?.role === 'assistant';
+  // A Confirm card the coach never answered, with a newer question after it, is
+  // a Cancel — the route treats it that way too (`denyAbandonedApprovals`), so
+  // the card must not keep offering buttons that would do nothing. A card whose
+  // write ran has a receipt somewhere in the thread (its part id is
+  // `receipt-<idempotency_key>`), and stays as it was: after a reload the
+  // approval state is not replayed, so the receipt is the only proof it ran.
+  const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
+  const receipted = new Set(
+    messages.flatMap((m) =>
+      ((m.parts ?? []) as Part[])
+        .filter((p) => p.type === 'data-action-receipt' && typeof p.id === 'string')
+        .map((p) => String(p.id).replace(/^receipt-/, '')),
+    ),
+  );
 
   return (
     <div className={cn('flex flex-col gap-8', className)}>
@@ -68,6 +82,7 @@ export function ChatThread({
         <MessageTurn
           key={message.id}
           message={message}
+          isAbandoned={(key) => i < lastUserIndex && !receipted.has(key)}
           // Only the final assistant turn can be in flight. Passing `busy` to
           // every turn would put a live activity surface on answers that
           // finished ten minutes ago.
@@ -92,6 +107,7 @@ export function ChatThread({
 
 function MessageTurn({
   message,
+  isAbandoned,
   busy,
   onApprove,
   onDeny,
@@ -100,6 +116,8 @@ function MessageTurn({
   playersByName,
 }: {
   message: UIMessage;
+  /** Whether the card with this idempotency key was left unanswered and is now cancelled. */
+  isAbandoned: (idempotencyKey: string) => boolean;
   busy: boolean;
   onApprove: (id: string) => void;
   onDeny: (id: string) => void;
@@ -202,7 +220,7 @@ function MessageTurn({
           </div>
         )}
         {actionParts.map((part, index) =>
-          renderActionPart(part, index, parts, onApprove, onDeny),
+          renderActionPart(part, index, parts, onApprove, onDeny, isAbandoned),
         )}
       </article>
     );
@@ -242,7 +260,7 @@ function MessageTurn({
         }
 
         if (part.type === 'data-action-proposal' || part.type === 'data-action-receipt') {
-          return renderActionPart(part, index, parts, onApprove, onDeny);
+          return renderActionPart(part, index, parts, onApprove, onDeny, isAbandoned);
         }
 
         return null;
@@ -266,6 +284,7 @@ function renderActionPart(
   parts: Part[],
   onApprove: (id: string) => void,
   onDeny: (id: string) => void,
+  isAbandoned: (idempotencyKey: string) => boolean,
 ): React.ReactNode {
   if (part.type === 'data-action-proposal') {
     const proposal = part.data as ActionProposal & { tool: string };
@@ -286,7 +305,9 @@ function renderActionPart(
         ? ('approved' as const)
         : approvalPart?.approval?.approved === false
           ? ('denied' as const)
-          : null;
+          : isAbandoned(proposal.idempotency_key)
+            ? ('denied' as const)
+            : null;
 
     return (
       <div key={index} className="max-w-[42rem]">

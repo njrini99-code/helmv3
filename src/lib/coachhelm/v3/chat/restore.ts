@@ -165,3 +165,36 @@ function restoreFailedTurn(row: ChatMessage): UIMessage {
     ] as UIMessage['parts'],
   };
 }
+
+/** One chunk of an AI SDK UI message stream — the shape `writer.write` takes. */
+export type StoredTurnChunk = { type: string; id?: string; delta?: string; data?: unknown };
+
+/**
+ * A stored, already-answered turn as the UI message stream the browser expects.
+ *
+ * The stream route answers a retry of a turn that already has an answer with
+ * that stored answer instead of running the (paid) agent again. It used to send
+ * JSON with a 200, which the chat client cannot read: the SDK parsed it as an
+ * empty stream, so Try again finished with no answer and no error — a dead end,
+ * with the answer sitting in the database until the next reload.
+ *
+ * Built from {@link restoreUIMessages}, so it carries exactly what a reload
+ * would show: the prose and the `data-*` parts (evidence, action cards), and
+ * none of the progress parts. Tool parts are not replayed, so a replayed action
+ * card cannot be confirmed — the same as after a reload.
+ */
+export function storedTurnChunks(row: ChatMessage): StoredTurnChunk[] {
+  const chunks: StoredTurnChunk[] = [{ type: 'start' }];
+  const [message] = restoreUIMessages([row]);
+  (message?.parts ?? []).forEach((part, index) => {
+    if (part.type === 'text') {
+      const id = `replay-text-${index}`;
+      chunks.push({ type: 'text-start', id }, { type: 'text-delta', id, delta: String(part.text ?? '') }, { type: 'text-end', id });
+    } else if (part.type.startsWith('data-')) {
+      const { id, data } = part as { id?: string; data?: unknown };
+      chunks.push({ type: part.type, ...(id === undefined ? {} : { id }), data });
+    }
+  });
+  chunks.push({ type: 'finish' });
+  return chunks;
+}
