@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vite
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
   redirect: (to: string) => {
@@ -54,7 +54,7 @@ import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
-import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
+import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
 import { buildBoard, roundPars, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
@@ -118,6 +118,7 @@ const asCoachSession = () => {
 beforeEach(() => {
   hapticSpy.mockClear();
   router.push.mockClear();
+  router.replace.mockClear();
   router.refresh.mockClear();
   router.back.mockClear();
   logServer.mockClear();
@@ -897,7 +898,9 @@ describe('Qualifiers · create and edit', () => {
     expect(writes.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Conference qualifier', numRounds: 3, selectionSlotsTotal: 5, selectionSlotsCoachPick: 1, playerIds: expect.any(Array) }));
     writes.create.mockImplementation(async () => ({ success: true, data: { qualifierId: 'q-new' } }));
     await user.click(screen.getByRole('button', { name: 'Create qualifier' }));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new'));
+    // Back from the new qualifier does not return to a form whose Create would make a second one.
+    expect(router.push).not.toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new');
   });
 
   it('CH-09404 a create in flight reads Creating and cannot be sent twice', async () => {
@@ -1281,6 +1284,24 @@ describe('Qualifiers · loading', () => {
     expect(code('CH-09401')!.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-09402')!.getAttribute('aria-label')).toBe('Loading the qualifier');
     expect(code('CH-09403')!.getAttribute('aria-label')).toBe('Loading the qualifier form');
+  });
+});
+
+describe('Qualifiers · Manage selections loads in its own shape (2026-10-01)', () => {
+  it('CH-09409 its skeleton is the page’s shape, on the page’s own classes: head, three steps, the note, the lists and the picks, not the qualifier’s facts and leaderboard', () => {
+    render(<QualifierSelectionSkeleton />);
+    const sk = code('CH-09409') as HTMLElement;
+    expect(sk.getAttribute('aria-busy')).toBe('true');
+    expect(sk.getAttribute('aria-label')).toBe('Loading Manage selections');
+    expect(sk.classList.contains('ch-qfs')).toBe(true);
+    expect(sk.querySelectorAll('.ch-qfs-steps > li')).toHaveLength(3);
+    expect(sk.querySelector('.ch-qf-note')).not.toBeNull();
+    expect(sk.querySelectorAll('.ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    expect(sk.querySelector('.ch-qf-facts')).toBeNull();
+    // The route's loading file draws it, not the qualifier's skeleton.
+    const loading = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/qualifiers/[id]/selection/loading.tsx'), 'utf8');
+    expect(loading).toContain('QualifierSelectionSkeleton');
+    expect(loading).not.toContain('QualifierDetailSkeleton');
   });
 });
 
@@ -1997,6 +2018,8 @@ describe('Qualifiers · every write', () => {
     failed: string;
     /** Where the page goes once it lands, or null when it stays put. */
     goes: string | null;
+    /** How it gets there: a form that has done its job is replaced (Back does not return to it), a step on is pushed. */
+    via?: 'replace';
     /** Whether the server is asked to read the page again once it lands. */
     reads: boolean;
     /** What the screen shows once it has landed. */
@@ -2008,6 +2031,12 @@ describe('Qualifiers · every write', () => {
   };
   const detailHref = `/golf/dashboard/qualifiers/${previewSelection().id}`;
   const press = async (user: User, name: string | RegExp) => user.click(screen.getByRole('button', { name }));
+  const navigated = (sc: Scenario) => (sc.via === 'replace' ? router.replace : router.push);
+  const clearNav = () => {
+    router.push.mockClear();
+    router.replace.mockClear();
+    router.refresh.mockClear();
+  };
   const scenarios: Scenario[] = [
     {
       name: 'create',
@@ -2017,6 +2046,7 @@ describe('Qualifiers · every write', () => {
       done: 'Qualifier created · 7 players entered',
       failed: 'Couldn’t create the qualifier',
       goes: '/golf/dashboard/qualifiers/q-new',
+      via: 'replace',
       reads: false,
       landed: () => {},
     },
@@ -2028,6 +2058,7 @@ describe('Qualifiers · every write', () => {
       done: 'Qualifier saved',
       failed: 'Couldn’t save the qualifier',
       goes: `/golf/dashboard/qualifiers/${previewEditForm().id}`,
+      via: 'replace',
       reads: true,
       landed: () => expect(code('CH-09902')).toBeNull(),
     },
@@ -2157,44 +2188,42 @@ describe('Qualifiers · every write', () => {
 
   it('90902 a create, a save and a confirm move on to the qualifier; every other write leaves the coach where they are', async () => {
     for (const sc of scenarios) {
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const { view } = await drive(sc);
-      await waitFor(() => expect(sc.goes ? router.push : router.refresh).toHaveBeenCalled());
-      expect([sc.name, router.push.mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
+      await waitFor(() => expect(sc.goes ? navigated(sc) : router.refresh).toHaveBeenCalled());
+      expect([sc.name, navigated(sc).mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
+      // A create and a save replace the form, so Back from the qualifier does not return to it; the other write that moves on is a step forward.
+      if (sc.via === 'replace') expect([sc.name, router.push.mock.calls.length]).toEqual([sc.name, 0]);
       view.unmount();
     }
   });
 
   it('91501 a write that lands has the server read the page again (a create opens the new qualifier instead), and one that fails re-reads nothing', async () => {
     for (const sc of scenarios) {
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const landed = await drive(sc);
-      await waitFor(() => expect(sc.reads ? router.refresh : router.push).toHaveBeenCalled());
+      await waitFor(() => expect(sc.reads ? router.refresh : navigated(sc)).toHaveBeenCalled());
       expect([sc.name, router.refresh.mock.calls.length > 0]).toEqual([sc.name, sc.reads]);
       landed.view.unmount();
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const refused = await drive(sc, refuse);
       await screen.findByText(sc.failed);
-      expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length]).toEqual([sc.name, 0, 0]);
+      expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
       refused.view.unmount();
     }
   });
 
   it('91401 Retry in a failure toast runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
     for (const sc of scenarios) {
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const { c, view } = await drive(sc, (write) => write.mockResolvedValueOnce({ success: false, error: 'nope' }));
       await screen.findByText(sc.failed);
       await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);
       await screen.findByText(sc.done);
-      await waitFor(() => expect(sc.goes ? router.push : router.refresh).toHaveBeenCalled());
-      expect([sc.name, router.push.mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
+      await waitFor(() => expect(sc.goes ? navigated(sc) : router.refresh).toHaveBeenCalled());
+      expect([sc.name, navigated(sc).mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
       await waitFor(sc.landed);
       view.unmount();
     }
@@ -2205,12 +2234,11 @@ describe('Qualifiers · every write', () => {
     try {
       for (const sc of scenarios) {
         hapticSpy.mockClear();
-        router.push.mockClear();
-        router.refresh.mockClear();
+        clearNav();
         const { c, view } = await drive(sc);
         await expectCode('CH-1903', new RegExp(`^${sc.failed}: you're offline`));
         expect([sc.name, sc.write(c).mock.calls.length, hapticSpy.mock.calls.some(([kind]) => kind === 'error')]).toEqual([sc.name, 0, true]);
-        expect([sc.name, router.push.mock.calls.length, router.refresh.mock.calls.length]).toEqual([sc.name, 0, 0]);
+        expect([sc.name, router.push.mock.calls.length, router.replace.mock.calls.length, router.refresh.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
         view.unmount();
       }
     } finally {

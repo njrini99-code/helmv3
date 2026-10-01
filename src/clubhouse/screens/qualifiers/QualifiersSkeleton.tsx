@@ -86,6 +86,61 @@ export function QualifierDetailSkeleton() {
   );
 }
 
+/** Route loading for Manage selections: head, the three steps, the note, the places on score and the picks, in their final slots. */
+export function QualifierSelectionSkeleton() {
+  return (
+    <main className="ch-qf ch-qfs" aria-busy="true" aria-label="Loading Manage selections" data-ch-code="CH-09409">
+      <div className="ch-qf-back">
+        <Skeleton width={110} height={30} radius={8} />
+      </div>
+      <header className="ch-qf-head">
+        <div>
+          <Skeleton width={140} height={14} />
+          <Skeleton width={320} height={34} radius={10} />
+          <Skeleton width={380} height={16} />
+        </div>
+        <div className="ch-qf-head__act">
+          <Skeleton width={150} height={38} radius={10} />
+        </div>
+      </header>
+      <ol className="ch-qfs-steps" aria-hidden="true">
+        {Array.from({ length: 3 }, (_, i) => (
+          <li key={i}>
+            <Skeleton width={22} height={22} radius={11} />
+            <Skeleton width={96} height={13} />
+          </li>
+        ))}
+      </ol>
+      <div className="ch-qf-note">
+        <Skeleton width={16} height={16} radius={8} />
+        <Skeleton width="70%" height={14} />
+      </div>
+      <div className="ch-qf-body">
+        <div className="ch-qf-col">
+          <div className="ch-qf-panel ch-qf-skel" style={{ padding: 20 }}>
+            <Skeleton width={120} height={16} />
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} width="100%" height={42} radius={10} />
+            ))}
+          </div>
+          <div className="ch-qf-panel ch-qf-skel" style={{ padding: 20 }}>
+            <Skeleton width={140} height={16} />
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} width="100%" height={42} radius={10} />
+            ))}
+          </div>
+        </div>
+        <div className="ch-qf-col">
+          <div className="ch-qf-side ch-qf-skel" style={{ padding: 20 }}>
+            <Skeleton width={110} height={16} />
+            <Skeleton width="100%" height={64} radius={10} />
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 /** Route loading for the create and edit form. */
 export function QualifierFormSkeleton() {
   return (

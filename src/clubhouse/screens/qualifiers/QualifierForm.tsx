@@ -88,7 +88,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           .filter((c) => c.number <= rounds && c.courseName)
           .map((c) => ({ roundNumber: c.number, courseId: c.courseId, courseName: c.courseName, teeId: c.teeId })),
       });
-      if (normalise(res).success) router.push(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
+      // The form has done its job: replaced, so Back from the new qualifier does not return to a form whose Create would make a second one.
+      if (normalise(res).success) router.replace(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
       return res;
     },
     () => ({
@@ -128,7 +129,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       const res = await writes.saveEdit(data.id as string, plan);
       if (!res.success && res.error) setSaveNote(res.error);
       if (normalise(res).success) {
-        router.push(doneHref);
+        // Replaced, not pushed: Back from the qualifier goes to where the coach came from, not into the form they just saved.
+        router.replace(doneHref);
         router.refresh();
       }
       return res;

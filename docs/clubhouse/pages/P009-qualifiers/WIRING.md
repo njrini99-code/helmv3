@@ -18,7 +18,8 @@ Screens:                 src/clubhouse/screens/qualifiers/ QualifiersList, Quali
                          QualifierDetailPhone), QualifierForm (+ CoursePicker), QualifierSelection
 Skeletons:               QualifiersSkeleton.tsx: QualifiersSkeleton (CH-09401), QualifierDetailSkeleton (CH-09402),
                          QualifierFormSkeleton (CH-09403), through ClubhouseSwitch in each loading.tsx.
-                         qualifiers, my-qualifiers, [id], new and [id]/edit have a loading.tsx. [id]/selection has none.
+                         QualifierSelectionSkeleton (CH-09409) for [id]/selection.
+                         qualifiers, my-qualifiers, [id], new, [id]/edit and [id]/selection each have a loading.tsx.
 ```
 
 ## End-to-end graph

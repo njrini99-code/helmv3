@@ -44,6 +44,7 @@ Three route skeletons in the page's own shapes: the list (90201: head, tools, he
 | 90203 | CH-09403 | `THE_FORM_IS_LOADING` | The form is loading |
 | 90204 | CH-09407 | `COURSES_OR_TEES_ARE_LOADING_IN_THE` | Courses or tees are loading in the picker |
 | 90205 | CH-09408 | `A_SELECTION_WRITE_IS_IN_FLIGHT` | A selection write is in flight |
+| 90206 | CH-09409 | `MANAGE_SELECTIONS_IS_LOADING` | Manage selections is loading |
 
 From the shell (P001): 10201 CH-1401.
 
