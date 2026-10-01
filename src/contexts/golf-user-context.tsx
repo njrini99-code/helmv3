@@ -48,9 +48,14 @@ export function GolfUserProvider({
   );
 
   // The offline drain submits only this player's queued rounds. Set during render (idempotent) so it is known before
-  // any child's mount effect starts a sync; cleared when the dashboard unmounts (sign-out).
-  setSyncSessionPlayer(userData.playerId ?? null);
-  useEffect(() => () => setSyncSessionPlayer(null), []);
+  // any child's mount effect starts a sync; cleared when the dashboard unmounts (sign-out). The effect sets it again,
+  // so React's development double effect (mount, cleanup, mount) does not leave it cleared (swap audit §14 D9).
+  const syncPlayer = userData.playerId ?? null;
+  setSyncSessionPlayer(syncPlayer);
+  useEffect(() => {
+    setSyncSessionPlayer(syncPlayer);
+    return () => setSyncSessionPlayer(null);
+  }, [syncPlayer]);
 
   return (
     <GolfUserContext.Provider value={memoizedValue}>
