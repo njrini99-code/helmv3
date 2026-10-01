@@ -103,11 +103,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 | 2 | 1 | 3 | 6 | 2 | 16 | 1 | 3 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 25 | 1 | 8 | 1 | 2 | 2 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
+| P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
-| P008 | 2 | 1 | 3 | 5 | 15 | 36 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 123 |
+| P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 5 | 4 | 12 | 14 | 28 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 122 |
-| P010 | 2 | 7 |  | 16 | 10 | 24 | 1 | 4 | 1 |  | 3 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
+| P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
 | P011 | 14 | 8 |  | 14 | 10 | 28 | 11 | 5 | 2 |  | 19 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 151 |
 | P012 | 3 | 3 |  | 7 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 79 |
 | P013 | 7 | 8 |  | 18 | 1 | 24 | 11 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 6 | 15 | 1 |  | 1 |  | 1 |  |  | 114 |
@@ -521,6 +521,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60623 | CH-6211 | 06 Server / system error | `THE_DETAIL_PANEL_CRASHES` | implemented | The detail panel crashes |
 | 60624 | CH-6212 | 06 Server / system error | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | implemented | The team's timezone doesn't load |
 | 60625 | CH-6213 | 06 Server / system error | `THE_ROSTER_DOESNT_LOAD` | implemented | The roster doesn't load |
+| 60626 | CH-6013 | 06 Server / system error | `MAKING_A_NEW_CALENDAR_APP_LINK_FAILS` | implemented | Making a new calendar-app link fails |
+| 60627 | CH-6014 | 06 Server / system error | `REMOVING_A_CALENDAR_APP_LINK_FAILS` | implemented | Removing a calendar-app link fails |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |
@@ -535,6 +537,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61002 |  | 10 Warning | `OVERLAPS_ARE_FLAGGED_FOR_THE_COACH` | implemented | For a coach, a timed team event whose invitee has a class or another team event at the same time is marked: its block and its row are named with "schedule overlap", and its panel offers Review. A player is shown none of it. |
 | 61101 | CH-6501 | 11 Destructive | `CANCEL_EVENT` | implemented | Cancel event (event menu) |
 | 61102 | CH-6502 | 11 Destructive | `REMOVE_BUSY_TIME` | implemented | Remove busy time |
+| 61103 | CH-6504 | 11 Destructive | `NEW_LINK` | implemented | New link (a calendar-app link) |
+| 61104 | CH-6505 | 11 Destructive | `REMOVE` | implemented | Remove (a calendar-app link) |
 | 61201 | CH-6503 | 12 State preservation | `CLOSING_THE_EVENT_EDITOR_WITH_CHANGES` | implemented | Closing the event editor with changes |
 | 61202 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A publish, save or busy-time add that fails leaves the editor or sheet open with every field as typed; nothing is cleared until the write lands. |
 | 61203 |  | 12 State preservation | `ATTENDANCE_MARKS_KEPT_ON_A_PARTIAL_SAVE` | implemented | Saving attendance saves each changed mark on its own: the marks that saved show as Saved, the ones that did not stay Unsaved, and the button offers to save what is left ("Save attendance · 1"). |
@@ -720,6 +724,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80634 | CH-8210 | 06 Server / system error | `TEAM_MEMBERSHIP_DOESNT_LOAD` | implemented | Team membership doesn't load (player) |
 | 80635 | CH-8211 | 06 Server / system error | `COACHHELM_SETTINGS_DONT_LOAD` | implemented | CoachHelm settings don't load (coach) |
 | 80636 | CH-8212 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
+| 80637 | CH-8026 | 06 Server / system error | `APPROVING_AN_ASSISTANT_COACH_REQUEST_FAILS` | implemented | Approving an assistant coach request fails (head coach) |
+| 80638 | CH-8027 | 06 Server / system error | `DECLINING_AN_ASSISTANT_COACH_REQUEST_FAILS` | implemented | Declining an assistant coach request fails (head coach) |
+| 80639 | CH-8028 | 06 Server / system error | `MAKING_A_STAFF_INVITE_FAILS` | implemented | Making a staff invite fails (head coach) |
+| 80640 | CH-8213 | 06 Server / system error | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | implemented | The assistant coach requests don't load (head coach) |
 | 80701 |  | 07 Network / offline | `INSTANT_SAVE_REFUSED_OFFLINE` | implemented | While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed. |
 | 80801 |  | 08 Permission / authorization | `SECTIONS_BY_ROLE` | implemented | The rail lists only the sections the role has (coach: Account, Notifications, Team, CoachHelm, Preferences; player: Account, Golf profile, Notifications, Preferences), and a link naming a section the role does not have opens Account. |
 | 80802 |  | 08 Permission / authorization | `COACHING_LINK_BY_ROLE` | implemented | The old /settings/coaching-intelligence link opens the CoachHelm section for a coach; a player lands on their own Settings (Account) instead of a coach-only page. |
@@ -956,7 +964,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100606 | CH-10006 | 06 Server / system error | `SAVING_A_TRIP_FAILS` | implemented | Saving a trip fails |
 | 100607 | CH-10007 | 06 Server / system error | `ASSIGNING_A_TASK_FAILS` | implemented | Assigning a task fails |
 | 100608 | CH-10008 | 06 Server / system error | `UPLOADING_A_FILE_FAILS` | implemented | Uploading a file fails |
-| 100609 | CH-10009 | 06 Server / system error | `DELETING_A_POST_TASK_OR_FILE_FAILS` | implemented | Deleting a post, task or file fails |
+| 100609 | CH-10009 | 06 Server / system error | `DELETING_A_POST_TASK_OR_FILE_FAILS` | implemented | Deleting a post, task, file or trip fails |
 | 100610 | CH-10201 | 06 Server / system error | `RSVPS_DONT_LOAD` | implemented | RSVPs don't load |
 | 100611 | CH-10202 | 06 Server / system error | `UPDATES_DONT_LOAD` | implemented | Updates don't load |
 | 100612 | CH-10203 | 06 Server / system error | `TASKS_DONT_LOAD` | implemented | Tasks don't load |
@@ -972,6 +980,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100622 | CH-10211 | 06 Server / system error | `PLAN_A_TRIP_WHO_IS_INVITED_TO` | implemented | Plan a trip: who is invited to the chosen event didn't load |
 | 100623 | CH-10012 | 06 Server / system error | `A_POST_GOES_OUT_BUT_ITS_FILES` | implemented | A post goes out but its files don't attach |
 | 100624 | CH-10212 | 06 Server / system error | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_DIDNT` | implemented | Plan a trip: the travelers' classes didn't load |
+| 100625 | CH-10013 | 06 Server / system error | `SAVING_AN_EDIT_TO_A_TRIP_FAILS` | implemented | Saving an edit to a trip fails |
 | 100701 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 | 100801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The role from the session decides the controls: a player is never drawn New announcement, Plan a trip, Assign, the drop zone or a delete menu, and a coach is never drawn a reply button, Got it or a task box. |
 | 100802 |  | 08 Permission / authorization | `PLAYER_GETS_ONLY_WHAT_IS_THEIRS` | implemented | A player's data carries none of their teammates' read receipts (an announcement's acknowledged and recipient counts), replies, task completions, traveler lists or names, and no roster; those are in a coach's data only, where the same post reads 5 of 6. |
@@ -981,6 +990,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 101101 | CH-10501 | 11 Destructive | `DELETING_AN_ANNOUNCEMENT` | implemented | Deleting an announcement |
 | 101102 | CH-10502 | 11 Destructive | `DELETING_A_TASK` | implemented | Deleting a task |
 | 101103 | CH-10503 | 11 Destructive | `DELETING_A_FILE` | implemented | Deleting a file |
+| 101104 | CH-10504 | 11 Destructive | `DELETING_A_TRIP` | implemented | Deleting a trip |
 | 101201 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A post, trip or task that fails leaves its sheet open with every field as typed; nothing is cleared until the save lands, and a save that lands clears the form for the next one. Cancel keeps a half-written announcement for as long as the page stays open. |
 | 101301 |  | 13 Optimistic UI | `CHANGES_SHOW_AT_ONCE` | implemented | A reply, Got it and a task check show at once and go back to the last answer the server confirmed if the write is refused or throws; posting, planning a trip, assigning, uploading and deleting are not optimistic: they wait for the write, and a refusal leaves everything as it was. |
 | 101401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows: the reply, Got it or task tick shows, the file opens in a tab of its own, the sheet closes and clears, the page reads again, the deleted row leaves and its dialog closes, and the drop zone reads Uploading. This holds for all nine writes: a reply, Got it, a task check, opening a file, posting, planning a trip, assigning a task, uploading, and deleting a post, a task or a file. |

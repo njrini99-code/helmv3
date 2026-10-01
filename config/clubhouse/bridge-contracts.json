@@ -4343,6 +4343,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60626,
+    "page": "P006",
+    "category": 6,
+    "item": 26,
+    "name": "MAKING_A_NEW_CALENDAR_APP_LINK_FAILS",
+    "chCode": "CH-6013",
+    "meaning": "Making a new calendar-app link fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60627,
+    "page": "P006",
+    "category": 6,
+    "item": 27,
+    "name": "REMOVING_A_CALENDAR_APP_LINK_FAILS",
+    "chCode": "CH-6014",
+    "meaning": "Removing a calendar-app link fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -4514,6 +4536,28 @@
     "name": "REMOVE_BUSY_TIME",
     "chCode": "CH-6502",
     "meaning": "Remove busy time",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61103,
+    "page": "P006",
+    "category": 11,
+    "item": 3,
+    "name": "NEW_LINK",
+    "chCode": "CH-6504",
+    "meaning": "New link (a calendar-app link)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61104,
+    "page": "P006",
+    "category": 11,
+    "item": 4,
+    "name": "REMOVE",
+    "chCode": "CH-6505",
+    "meaning": "Remove (a calendar-app link)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -6503,6 +6547,50 @@
     "name": "A_SECTION_CRASHES_WHILE_DRAWING",
     "chCode": "CH-8212",
     "meaning": "A section crashes while drawing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80637,
+    "page": "P008",
+    "category": 6,
+    "item": 37,
+    "name": "APPROVING_AN_ASSISTANT_COACH_REQUEST_FAILS",
+    "chCode": "CH-8026",
+    "meaning": "Approving an assistant coach request fails (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80638,
+    "page": "P008",
+    "category": 6,
+    "item": 38,
+    "name": "DECLINING_AN_ASSISTANT_COACH_REQUEST_FAILS",
+    "chCode": "CH-8027",
+    "meaning": "Declining an assistant coach request fails (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80639,
+    "page": "P008",
+    "category": 6,
+    "item": 39,
+    "name": "MAKING_A_STAFF_INVITE_FAILS",
+    "chCode": "CH-8028",
+    "meaning": "Making a staff invite fails (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80640,
+    "page": "P008",
+    "category": 6,
+    "item": 40,
+    "name": "THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD",
+    "chCode": "CH-8213",
+    "meaning": "The assistant coach requests don't load (head coach)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -9152,7 +9240,7 @@
     "item": 9,
     "name": "DELETING_A_POST_TASK_OR_FILE_FAILS",
     "chCode": "CH-10009",
-    "meaning": "Deleting a post, task or file fails",
+    "meaning": "Deleting a post, task, file or trip fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -9322,6 +9410,17 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100625,
+    "page": "P010",
+    "category": 6,
+    "item": 25,
+    "name": "SAVING_AN_EDIT_TO_A_TRIP_FAILS",
+    "chCode": "CH-10013",
+    "meaning": "Saving an edit to a trip fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100701,
     "page": "P010",
     "category": 7,
@@ -9426,6 +9525,17 @@
     "name": "DELETING_A_FILE",
     "chCode": "CH-10503",
     "meaning": "Deleting a file",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 101104,
+    "page": "P010",
+    "category": 11,
+    "item": 4,
+    "name": "DELETING_A_TRIP",
+    "chCode": "CH-10504",
+    "meaning": "Deleting a trip",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
