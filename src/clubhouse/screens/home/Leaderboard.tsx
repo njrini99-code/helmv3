@@ -7,6 +7,7 @@ import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { changeTone, formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
+import { LinkPending } from '../../shell/LinkPending';
 import { FormLine } from '../../ui/FormLine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 
@@ -57,6 +58,7 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
   return href ? (
     <Link href={href} className="ch-h-lb__row is-link" role="row">
       {cells}
+      <LinkPending />
     </Link>
   ) : (
     <div className="ch-h-lb__row" role="row">

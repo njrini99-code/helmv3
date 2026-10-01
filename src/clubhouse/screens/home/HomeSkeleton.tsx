@@ -1,6 +1,12 @@
+import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
 import '../../styles/home.css';
+
+/** A bar centred in a box the height of its real line, so the text lands where the bar was. */
+function Line({ height, children }: { height: number; children: ReactNode }) {
+  return <div style={{ display: 'flex', alignItems: 'center', height }}>{children}</div>;
+}
 
 /** Route loading for Home: the same frame as the page, so nothing shifts when data lands. */
 export function HomeSkeleton() {
@@ -21,13 +27,26 @@ export function HomeSkeleton() {
           <Skeleton width="100%" height={150} radius={16} />
         </div>
       </div>
+      {/* Desktop head, line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions. */}
       <header className="ch-h-head">
-        <Skeleton width={140} height={13} />
-        <Skeleton width={360} height={44} radius={10} />
+        <Line height={14}>
+          <Skeleton width={140} height={13} />
+        </Line>
+        <Line height={48}>
+          <Skeleton width={360} height={44} radius={10} />
+        </Line>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 48 }}>
+          <Skeleton width="90%" height={14} />
+          <Skeleton width="60%" height={14} />
+        </div>
+        <div className="ch-h-head__actions">
+          <Skeleton width={150} height={36} radius={10} />
+          <Skeleton width={130} height={36} radius={10} />
+        </div>
       </header>
       <div className="ch-h-sheet ch-sheet">
         {[0, 1].map((k) => (
-          <div key={k} className="ch-h-pane">
+          <div key={k} className="ch-h-pane" style={{ minHeight: 423 }}>
             <Skeleton width={110} height={15} />
             <Skeleton width="100%" height={72} radius={12} />
             <Skeleton width="80%" height={13} />

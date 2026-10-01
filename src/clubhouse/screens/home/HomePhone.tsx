@@ -17,6 +17,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
+import { LinkPending } from '../../shell/LinkPending';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
@@ -147,6 +148,7 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
         </span>
       )}
       {children}
+      <LinkPending />
     </Link>
   );
 }
