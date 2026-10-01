@@ -90,6 +90,7 @@ export function ClubhouseFrame({
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
 function FrameRoot({ motionOff, children }: { motionOff: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero } = usePhoneChromeState();
+  usePhoneEdges(hero);
   return (
     <div
       className={`ch-root ${clubhouseFontVariables}`}
@@ -102,4 +103,29 @@ function FrameRoot({ motionOff, children }: { motionOff: boolean; children: Reac
       {children}
     </div>
   );
+}
+
+
+/** Phone page colours, as hex: the green hero (--ch-green-800) and the darker phone ivory (--ch-bg-page). */
+const EDGE_HERO = '#0b3a25';
+const EDGE_PAGE = '#e2dccd';
+
+/**
+ * The phone's top and bottom edges carry the app's colour (F-49): green under the status bar on the
+ * hero Home, the phone ivory elsewhere. theme-color tints the browser chrome; the html background
+ * is what newer Safari samples and what the rubber band shows. Both are put back on unmount.
+ */
+function usePhoneEdges(hero: boolean) {
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 820px)').matches) return;
+    const html = document.documentElement;
+    const meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const before = meta?.content;
+    html.setAttribute('data-ch-edge', hero ? 'hero' : 'page');
+    if (meta) meta.content = hero ? EDGE_HERO : EDGE_PAGE;
+    return () => {
+      html.removeAttribute('data-ch-edge');
+      if (meta && before !== undefined) meta.content = before;
+    };
+  }, [hero]);
 }

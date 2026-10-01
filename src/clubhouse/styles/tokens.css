@@ -205,7 +205,8 @@
     --ch-sheet-bg: linear-gradient(180deg, #f2eee5 0%, #efebe1 40%, #ebe6da 100%);
     --ch-chart-paper: #efebe1;
     --ch-phone-bar-bg: rgb(226 220 205 / 0.94);
-    --ch-phone-tabbar-bg: rgb(235 230 218 / 0.96);
+    /* Glass, not a lid: the page shows through as it slides under (F-49). */
+    --ch-phone-tabbar-bg: rgb(235 230 218 / 0.78);
     --ch-phone-composer-bg: rgb(235 230 218 / 0.96);
     --ch-glass-bg: rgb(235 230 218 / 0.8);
     /* Tertiary text holds 4.5:1 on the darker page. */

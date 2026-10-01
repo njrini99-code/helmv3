@@ -843,6 +843,7 @@ button.ch-more__row[disabled] {
   }
   /* The green hero's bar (usePhoneHero, the v2 phone Home, m-home.css .mh-hero__bar): the team and the bell on green. */
   .ch-root[data-phone-hero] .ch-topbar {
+    border-bottom-color: transparent;
     background: var(--ch-green-800);
     box-shadow: none;
   }
@@ -1357,5 +1358,18 @@ button.ch-more__row[disabled] {
     outline: none;
     background: rgb(21 90 57 / 0.08);
     border-radius: 12px;
+  }
+}
+
+
+/* The phone's edges carry the app's colour (F-49, usePhoneEdges): no pale strip under the status bar
+   or under the tab bar. Hex because html sits outside .ch-root's tokens. */
+@media (max-width: 820px) {
+  html[data-ch-edge],
+  html[data-ch-edge] body {
+    background-color: #e2dccd;
+  }
+  html[data-ch-edge='hero'] {
+    background-color: #0b3a25;
   }
 }
