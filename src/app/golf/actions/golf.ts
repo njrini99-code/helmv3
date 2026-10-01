@@ -2583,6 +2583,15 @@ async function submitGolfRoundComprehensiveImpl(
           // and retried forever. Here the failure is user-visible rather than a
           // silent loop, but the outcome is the same — a finished round that
           // cannot be submitted.
+          if (rpcResult.error === 'conflict') {
+            // The held submit lock (20261001000000) answers 'conflict' when the
+            // round changed since this client read it. Same key as the save
+            // path, so the round screen prompts a reload instead of reporting
+            // an error (swap audit §16).
+            void flightRecorder.warn('db.submit_round_atomic', { errorSummary: 'conflict' });
+            endTrace('warning');
+            return { success: false, error: 'conflict' };
+          }
           if (typeof rpcResult.error === 'string' && SUBMIT_ROUND_UNAVAILABLE.test(rpcResult.error)) {
             const alreadyCommitted = await hasConfirmedRoundSubmission(supabase, existingRoundId, player.id);
             if (alreadyCommitted) {

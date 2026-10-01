@@ -225,6 +225,27 @@ describe('submitGolfRoundComprehensive — busy carve-out (existing round path)'
     expect(severity).toBe('warning');
   });
 
+  it("a 'conflict' (the held submit lock) comes back as the conflict key, logged at warning, never an error (swap audit §16)", async () => {
+    tables = {
+      golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
+      golf_team_members: [],
+      golf_rounds: [{ id: ROUND_ID, player_id: 'player-1', status: 'in_progress', draft_data: null, total_score: HOLE_COUNT * 4 }],
+      golf_holes: [],
+      golf_shots: [],
+    };
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: { submit_round_atomic: async () => ({ data: { success: false, error: 'conflict' }, error: null }) },
+    });
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput(), ROUND_ID);
+
+    expect(result.success === false && result.error).toBe('conflict');
+    for (const [, , severity] of vi.mocked(logServerError).mock.calls) expect(severity).not.toBe('error');
+    expect(writes.filter((w) => w.op === 'delete')).toHaveLength(0);
+  });
+
   it('does not delete/reinsert holes and shots (never reaches the destructive fallback)', async () => {
     tables = {
       golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
