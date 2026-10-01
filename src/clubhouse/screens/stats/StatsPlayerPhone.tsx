@@ -128,8 +128,10 @@ export function StatsPlayerPhone({
         )}
       </header>
 
-      <WindowSwitch value={data.window} onChange={onWindow} custom={hasRange(data.filter)} />
-      {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone />}
+      <div className="ch-stm-controls">
+        <WindowSwitch value={data.window} onChange={onWindow} custom={hasRange(data.filter)} />
+        {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone />}
+      </div>
 
       {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
       {early && (

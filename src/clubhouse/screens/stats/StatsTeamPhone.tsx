@@ -47,8 +47,11 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         </span>
         <h1>Team stats</h1>
       </header>
-      <WindowSwitch value={data.window} onChange={go} custom={hasRange(data.filter)} />
-      {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+      {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
+      <div className="ch-stm-controls">
+        <WindowSwitch value={data.window} onChange={go} custom={hasRange(data.filter)} />
+        {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+      </div>
       {data.roundsError && <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />}
       {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
       {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
@@ -100,38 +103,54 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
     'Putts per round': 'Putts',
     Scrambling: 'Scrambling',
   };
+  const shown = figures.filter((f) => !f.signed).slice(0, 4);
+  // The change row only when some figure has one, so a window with no earlier rounds leaves no empty band (F-43).
+  const anyDelta = shown.some((f) => f.delta != null);
   return (
     <dl className="ch-stm-figs">
-      {figures.filter((f) => !f.signed).slice(0, 4).map((f) => (
+      {shown.map((f) => (
         <div key={f.label}>
           <dt>{short[f.label] ?? f.label}</dt>
           <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
-          <dd className={'ch-num ' + (f.delta == null || f.delta === 0 ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? ' ' : formatSigned(f.delta, f.digits)}</dd>
+          {anyDelta && (
+            <dd className={'ch-num ' + (f.delta == null || f.delta === 0 ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? ' ' : formatSigned(f.delta, f.digits)}</dd>
+          )}
         </div>
       ))}
     </dl>
   );
 }
 
-/** The team's weekly scoring average against its mean (a dashed line), with a one-line reading. */
+/** The team's average on each of its last ten round days against their mean (a dashed line), with a one-line reading. */
 function Trend({ data }: { data: ChTeamStats }) {
-  const known = data.team.score.filter((v): v is number => v != null);
-  if (known.length < 2) return null;
-  const change = known[known.length - 1]! - known[0]!;
-  const reading = Math.abs(change) < 0.2 ? 'Flat across the window.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes across the window.`;
-  const firstI = data.team.score.findIndex((v) => v != null);
-  const lastI = data.team.score.length - 1 - [...data.team.score].reverse().findIndex((v) => v != null);
+  const days = data.days ?? [];
+  const known = days.filter((d): d is { label: string; score: number } => d.score != null);
+  const head = (
+    <div className="ch-stm-panel__h">
+      <h2 id="ch-stm-trend">Scoring trend</h2>
+      <span className="ch-num">
+        Team avg · {known.length} {known.length === 1 ? 'day' : 'days'}
+      </span>
+    </div>
+  );
+  // One round day is a point, not a trend: say so instead of dropping the panel (F-41).
+  if (known.length < 2)
+    return (
+      <section className="ch-stm-panel" aria-labelledby="ch-stm-trend">
+        {head}
+        <p className="ch-stm-note">The trend draws once the team has rounds on a second day.</p>
+      </section>
+    );
+  const change = known[known.length - 1]!.score - known[0]!.score;
+  const reading = Math.abs(change) < 0.2 ? 'Flat across these rounds.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-stm-trend">
-      <div className="ch-stm-panel__h">
-        <h2 id="ch-stm-trend">Scoring trend</h2>
-        <span className="ch-num">Team avg · {known.length} weeks</span>
-      </div>
+      {head}
       <ScoreLine
-        values={data.team.score}
-        from={data.weeks[firstI] ?? ''}
-        to={data.weeks[lastI] ?? ''}
-        label={`Team scoring average by week, from ${formatFixed(known[0]!)} to ${formatFixed(known[known.length - 1]!)}. ${reading}`}
+        values={days.map((d) => d.score)}
+        from={known[0]!.label}
+        to={known[known.length - 1]!.label}
+        label={`Team scoring average by round day, from ${formatFixed(known[0]!.score)} to ${formatFixed(known[known.length - 1]!.score)}. ${reading}`}
       />
       <p className="ch-stm-note">{reading}</p>
     </section>

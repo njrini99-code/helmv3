@@ -122,6 +122,10 @@ export function GameDetail({
   onRetry?: () => void;
   phone?: boolean;
 }) {
+  // The player reading their own stats is "You": the verb agrees and mid-sentence it is lower case (F-45).
+  const you = first === 'You';
+  const verb = (third: string, base: string) => (you ? base : third);
+  const mid = you ? 'you' : first;
   const [on, setOn] = useState<string>('scoring');
   const show = (id: string) => !phone || on === id;
 
@@ -261,7 +265,7 @@ export function GameDetail({
         rule={`${basisLine}. Every scored hole of those rounds.`}
         lead={
           s.roundsPlayed
-            ? `${first} makes ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
+            ? `${first} ${verb('makes', 'make')} ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
                 p5.avg != null ? ` Par 5s ${p5.avg < 5 ? 'are a scoring chance' : 'are giving shots back'}, playing ${p5.avg.toFixed(2)} on average.` : ''
               }`
             : `No hole-by-hole scores in this window yet.`
@@ -296,7 +300,7 @@ export function GameDetail({
         lead={
           fw == null
             ? 'No tee shots are logged in this window, so fairways and distance can’t be read yet.'
-            : `${first} finds ${Math.round(fw)}% of fairways.${
+            : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
                 left != null && right != null && Math.abs(left - right) >= 1 ? ` When the drive misses it goes ${left > right ? 'left' : 'right'} more often` : ''
               }${s.penaltiesPerRound ? `, and ${s.penaltiesPerRound.toFixed(1)} penalty strokes a round come from the tee` : ''}.`
         }
@@ -343,8 +347,8 @@ export function GameDetail({
           s.girPercentage == null
             ? 'No approach shots are logged in this window.'
             : worstProx && worstProx.value! > worstProx.bench!
-              ? `${first} hits ${Math.round(s.girPercentage)}% of greens. The biggest gap to the Tour is from ${worstProx.band} yards, finishing ${Math.round(worstProx.value!)} feet away against ${Math.round(worstProx.bench!)}.`
-              : `${first} hits ${Math.round(s.girPercentage)}% of greens in regulation.`
+              ? `${first} ${verb('hits', 'hit')} ${Math.round(s.girPercentage)}% of greens. The biggest gap to the Tour is from ${worstProx.band} yards, finishing ${Math.round(worstProx.value!)} feet away against ${Math.round(worstProx.bench!)}.`
+              : `${first} ${verb('hits', 'hit')} ${Math.round(s.girPercentage)}% of greens in regulation.`
         }
         figs={[
           ['Greens in regulation', pct(s.girPercentage), bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)],
@@ -424,7 +428,7 @@ export function GameDetail({
         lead={
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
-            : `${first} gets up and down ${Math.round(s.scramblingPercentage)}% of the time.${
+            : `${first} ${verb('gets', 'get')} up and down ${Math.round(s.scramblingPercentage)}% of the time.${
                 s.scramblingPctRough != null ? ` From the rough it's ${Math.round(s.scramblingPctRough)}%` : ''
               }${s.sandSavePercentage != null ? `, and sand saves are ${Math.round(s.sandSavePercentage)}%` : ''}.`
         }
@@ -476,8 +480,8 @@ export function GameDetail({
           s.totalPutts === 0
             ? 'No putts are logged in this window.'
             : worstPutt && worstPutt.value! < worstPutt.bench!
-              ? `From ${worstPutt.band} feet ${first} makes ${Math.round(worstPutt.value!)}%. The Tour rate is ${Math.round(worstPutt.bench!)}%, so that range costs the most.`
-              : `${first} averages ${num(s.puttsPerGir, 2)} putts per green hit and ${num(s.threePuttsPerRound)} three-putts a round.`
+              ? `From ${worstPutt.band} feet ${mid} ${verb('makes', 'make')} ${Math.round(worstPutt.value!)}%. The Tour rate is ${Math.round(worstPutt.bench!)}%, so that range costs the most.`
+              : `${first} ${verb('averages', 'average')} ${num(s.puttsPerGir, 2)} putts per green hit and ${num(s.threePuttsPerRound)} three-putts a round.`
         }
         figs={[
           ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],

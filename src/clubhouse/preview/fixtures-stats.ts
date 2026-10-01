@@ -83,6 +83,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, lowerIsBetter: false, context: 'Birdies and eagles' },
   ],
   weeks: WEEKS,
+  days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: [74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4][i]! })),
   team: { sg: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], score: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], sgMean: -0.5, scoreMean: 73.6 },
   players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id] })),
   legWeeks: {

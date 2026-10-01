@@ -1614,32 +1614,44 @@ a.ch-lg__r:focus-visible {
     font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
+  /* One card, the figures side by side split by hairlines (m.css .m-figs), never a grid of cards. */
   .ch-stm-figs {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    margin: 0;
+    padding: 12px 0;
+    border-radius: 14px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
   }
   .ch-stm-figs > div {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    padding: 12px 14px;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    gap: 5px;
+    min-width: 0;
+    padding: 0 12px;
+  }
+  .ch-stm-figs > div + div {
+    border-left: 1px solid var(--ch-border-hairline);
   }
   .ch-stm-figs dt {
-    font: var(--ch-type-caption);
+    font: 500 11.5px/1.1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
+    white-space: nowrap;
+  }
+  .ch-stm-figs dd {
+    margin: 0;
   }
   .ch-stm-figs dd:first-of-type {
-    font: 600 24px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.02em;
+    font: 500 20px/1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
     color: var(--ch-text-primary);
+    white-space: nowrap;
   }
-  .ch-stm-figs dd:last-of-type {
-    min-height: 1.2em;
-    font: 500 12px/1.2 var(--ch-font-sans);
+  .ch-stm-figs dd + dd {
+    min-height: 1em;
+    font: 500 11.5px/1 var(--ch-font-sans);
   }
   .ch-stm-panel {
     display: flex;
@@ -1665,9 +1677,12 @@ a.ch-lg__r:focus-visible {
     color: var(--ch-text-tertiary);
     text-align: right;
   }
+  /* The one-line reading under a panel (m.css .m-note): italic, green. */
   .ch-stm-note {
-    font: var(--ch-type-body-s);
-    color: var(--ch-text-secondary);
+    margin: 0;
+    font: italic 400 13px/1.45 var(--ch-font-sans);
+    color: var(--ch-green-700);
+    text-wrap: pretty;
   }
   .ch-stm-chart {
     width: 100%;
@@ -1841,11 +1856,8 @@ a.ch-lg__r:focus-visible {
 
 /* Player stats on the phone (m-stats.jsx `Player`) */
 @media (max-width: 820px) {
-  .ch-stm-figs.is-three {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .ch-stm-figs.is-three dd:first-of-type {
-    font-size: 21px;
+    font-size: 20px;
   }
   .ch-stm-figs.is-three dd:last-of-type {
     color: var(--ch-text-tertiary);
@@ -2481,5 +2493,39 @@ a.ch-lg__r:focus-visible {
   }
   .ch-sf-list .ch-check {
     min-height: 44px;
+  }
+}
+
+/* Phone: the window switch and the filter on one row (F-42). The filter is an icon button until a filter is on;
+   then its chips take the full row below. */
+@media (max-width: 820px) {
+  .ch-stm-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .ch-stm-controls > :first-child {
+    min-width: 0;
+  }
+  .ch-stm-controls .ch-sf.is-phone .ch-sf__open {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--ch-bg-surface);
+    box-shadow: 0 0 0 1px var(--ch-border-hairline);
+  }
+  .ch-stm-controls .ch-sf.is-phone .ch-sf__open > span:not(.ch-sf__n) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .ch-stm-controls .ch-sf.is-phone:has(.ch-sf__chips) {
+    grid-column: 1 / -1;
   }
 }

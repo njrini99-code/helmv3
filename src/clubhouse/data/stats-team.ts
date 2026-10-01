@@ -65,6 +65,8 @@ export interface ChTeamStats {
   roundsEffective: number;
   figures: ChFigure[];
   weeks: string[];
+  /** The phone's scoring trend (m-stats.jsx: "Team avg · 10 rounds"): the team's average on each of its last ten round days, oldest first. */
+  days: Array<{ label: string; score: number | null }>;
   /** Weekly averages, and the window's own mean (strokes gained per round, scoring average), which is what the headline and the sort read. */
   team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null };
   players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null }>;
@@ -253,6 +255,10 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     roundsEffective: effectiveRounds(windowRounds),
     figures,
     weeks: weekKeys.map(weekLabel),
+    days: [...new Set(windowRounds.map((r) => r.round_date))]
+      .sort()
+      .slice(-10)
+      .map((d) => ({ label: shortDate(d), score: avgOf(windowRounds.filter((r) => r.round_date === d), (r) => r.total_score) })),
     team: {
       sg: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.strokes_gained_total)),
       score: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)),

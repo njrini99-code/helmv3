@@ -357,7 +357,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(deltas[0]!.className).toMatch(/ch-gain/);
     expect(deltas[2]!.className).toMatch(/ch-loss/);
     for (const h of ['Scoring trend', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
-    expect(screen.getByRole('img', { name: /Team scoring average by week, from 74\.8 to 73\.4\. Down 1\.4 strokes/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
   });
 
