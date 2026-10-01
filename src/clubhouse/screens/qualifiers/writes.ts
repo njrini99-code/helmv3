@@ -194,6 +194,8 @@ export const LIVE_SELECTION_WRITES: ChQSelectionWrites = {
   removePick: async (id, playerId) => asResult(await removeQualifierCoachPick(id, playerId)),
   confirm: async (id) => {
     const r = await confirmQualifierSelection(id);
-    return r.ok ? { success: true, data: { notified: r.notified !== false } } : asResult(r);
+    if (r.ok) return { success: true, data: { notified: r.notified !== false } };
+    const refused = asResult(r);
+    return { success: false, error: refused.error };
   },
 };
