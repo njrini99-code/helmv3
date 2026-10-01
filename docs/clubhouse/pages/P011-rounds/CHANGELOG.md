@@ -45,6 +45,23 @@ Held items:     none
   already tells the player. A hole-out keeps its own line ("Saving hole N")
   and clears nothing it did not set; leaving a hole clears the flag, because
   a hole is left only after the server confirmed it.
+- **Review fixes (same day).** An independent read of the change found
+  four gaps, now closed. (1) "syncing" stayed up after a shot taken back by
+  Undo before its save: when no shots are waiting for the server (none, or
+  every one acknowledged) the device-only claims clear (`AUTO_SAVE_SETTLED`;
+  a save in flight is left alone). (2) A hole-out whose device copy failed
+  left an earlier claim standing; it now takes it down. (3) A save held as
+  `busy` or `conflict` is a server answer that can repeat for a cause a
+  resend never clears (a hole the server keeps refusing): each repeat now
+  waits twice as long, from 20 s to 5 min, instead of a request every 20 s
+  for the rest of the round; `offline` and `queued` stay flat (neither calls
+  the server) and a success starts over. (4) The conflict branch awaited
+  the staleness check inside the save lock with no timeout: it is now
+  bounded at 8 s (`settleWithin`), and a check still running is held as
+  `conflict` (the resend finds the round blocked if the check ends that
+  way). Not changed: the hold loop that predates this entry on the
+  completed-hole path is backed off, not capped, because capping an
+  `offline` hold would break WKWebView recovery.
 - **The journey, as a test.** `use-continue-round-session.preservation.test`:
   a shot entered (device copy lands), the connection cut (the save is held,
   nothing is sent), the screen left, reopened (the device copy is offered,

@@ -257,6 +257,13 @@ and the round-entry and round-tracking files: 38 files, 434 tests, pass):
   another hole; a `conflict` hold is re-sent and is "saved" only once the
   server acknowledges. Removing the effect's `AUTO_SAVE_UNSYNCED` and the
   acknowledgement guard failed the two "saved" cases; both were put back.
+- Review fixes: the same file holds 5 more cases (Undo and a hole with no
+  shot left drop "syncing"; a save in flight is left alone; the held-resend
+  delay doubles per consecutive `busy` or `conflict` and stays flat for the
+  others), `settle-within.test.ts` (3 cases), and the continue file a hung
+  staleness check held as `conflict` after 8 s. Removing the two
+  `AUTO_SAVE_SETTLED` dispatches failed the two Undo cases; they were put
+  back.
 - `use-continue-round-session.preservation.test` and `use-new-round-session.
   preservation.test`: a conflict answer is held (`conflict` when healed,
   `blocked` otherwise, and a blocked round sends nothing more). Each fails on
