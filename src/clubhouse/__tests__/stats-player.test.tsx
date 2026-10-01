@@ -803,19 +803,25 @@ describe('Stats player · the loader', () => {
     expect(screen.getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?window=season');
   });
 
-  it('52101 the loader reads each source once: the team, the player and the membership together, then rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once', async () => {
+  it('52101 the loader reads each source once: the team, the player, the membership and the player’s own rounds together, a coach’s teammates’ rounds on their own, and no round twice', async () => {
     const reads: Record<string, number> = {};
+    const roundReads: string[][] = [];
+    const playerIds = (f: Filters) => f.find(([k, a]) => k === 'in' && a[0] === 'player_id')?.[1][1] as string[] | undefined;
     const count = (table: string, answer: import('./supabase-fake').ChFakeTables[string]) => (f: Filters) => {
       reads[table] = (reads[table] ?? 0) + 1;
+      if (table === 'golf_rounds') roundReads.push(playerIds(f) ?? []);
       return typeof answer === 'function' ? answer(f) : answer;
     };
-    tables.current = Object.fromEntries(Object.entries({ ...profileTables(), golf_holes: { data: [] }, golf_shots: { data: [] } }).map(([table, answer]) => [table, count(table, answer)]));
+    const observed = () => Object.fromEntries(Object.entries({ ...profileTables(), golf_holes: { data: [] }, golf_shots: { data: [] } }).map(([table, answer]) => [table, count(table, answer)]));
+    tables.current = observed();
     await loadAs('coach', OTHER, 'last10');
     expect(reads).toEqual({
       golf_teams: 1,
       golf_players: 1,
       golf_team_members: 2,
-      golf_rounds: 1,
+      // The player's own rounds, and the teammates' (the comparisons' team column): two reads that share no player, so no round is read twice.
+      golf_rounds: 2,
+      // The teammates have no round here, so only the player's own round figures are read.
       golf_round_stats_cache: 1,
       golf_pga_standards: 1,
       golf_player_focus_areas: 1,
@@ -824,8 +830,19 @@ describe('Stats player · the loader', () => {
       golf_holes: 1,
       golf_shots: 2,
     });
+    expect(roundReads.map((ids) => ids.join()).sort()).toEqual(['p2', OTHER].sort());
     expect(detailed).toHaveBeenCalledTimes(1);
     expect(getSpray).toHaveBeenCalledTimes(1);
+
+    // A player sees only themselves: no team list, and one read of rounds.
+    for (const k of Object.keys(reads)) delete reads[k];
+    roundReads.length = 0;
+    tables.current = observed();
+    await loadAs('player', OTHER, 'last10');
+    expect(reads.golf_team_members).toBe(1);
+    expect(reads.golf_rounds).toBe(1);
+    expect(roundReads).toEqual([[OTHER]]);
+
     // A failed rounds read is flagged, never thrown, and the rest of the page loads.
     tables.current = profileTables({ golf_rounds: { error: { message: 'boom' } } });
     const partial = await loadAs();

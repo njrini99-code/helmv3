@@ -642,7 +642,7 @@ describe('Stats team · the page', () => {
 /* ── The loader ── */
 
 describe('Stats team · the loader', () => {
-  it('42101 the loader reads each source once, starts the benchmarks before the rounds come back, and reads the round figures and putts after the rounds', async () => {
+  it('42101 the loader reads each source once (shots twice: the window’s putts and the season’s longest putt), starts the benchmarks before the rounds come back, and reads the round figures and putts after the rounds', async () => {
     const order: string[] = [];
     const count = (table: string, answer: import('./supabase-fake').ChFakeTables[string]) => (f: Filters) => {
       order.push(table);
@@ -650,7 +650,7 @@ describe('Stats team · the loader', () => {
     };
     tables.current = Object.fromEntries(Object.entries(seasonTables()).map(([table, answer]) => [table, count(table, answer)]));
     const data = await load();
-    expect(order.slice().sort()).toEqual(['golf_pga_standards', 'golf_round_stats_cache', 'golf_rounds', 'golf_shots', 'golf_team_members', 'golf_teams']);
+    expect(order.slice().sort()).toEqual(['golf_pga_standards', 'golf_round_stats_cache', 'golf_rounds', 'golf_shots', 'golf_shots', 'golf_team_members', 'golf_teams']);
     const at = (t: string) => order.indexOf(t);
     expect(Math.max(at('golf_teams'), at('golf_team_members'))).toBeLessThan(at('golf_rounds'));
     // The benchmarks are already on their way before the rounds are back, and the figures need the rounds' ids.

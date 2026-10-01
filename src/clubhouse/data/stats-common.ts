@@ -1,7 +1,7 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { fetchAllRowsTogether } from './paging';
 import { chLogServer } from '../lib/track-server';
 import { lastTenFloor, seasonStartDate, type ChRound } from './season';
 import { hasScore } from './stats-weight';
@@ -282,13 +282,13 @@ export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>, bands: 
   });
 }
 
-/** Every putt with a distance and a result on these rounds, read in parallel chunks. */
+/** Every putt with a distance and a result on these rounds, read in parallel chunks (and each chunk's pages together, `fetchAllRowsTogether`). */
 export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise<{ rows: ChPuttRow[]; error: boolean }> {
   const rows: ChPuttRow[] = [];
   // The chunks are independent, so they are read in parallel.
   const results = await Promise.all(
     chunkIds(roundIds).map((ids) =>
-      fetchAllRowsResult<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
+      fetchAllRowsTogether<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
         (from, to) =>
           supabase
             .from('golf_shots')
@@ -314,4 +314,38 @@ export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise
     }
   }
   return { rows, error: false };
+}
+
+/**
+ * The longest putt made on these rounds (the season's best on Team stats): one row from the database (made, a distance of 0 to 120 feet,
+ * the longest, the first by id on a tie) instead of every putt of the season to find it. Null when none was made; `error` when the read failed
+ * (the best is then left out and logged, never shown as zero). The rows are compared here too, so a source that returns more than one still answers right.
+ */
+export async function loadLongestPutt(supabase: Supabase, roundIds: string[]): Promise<{ longest: ChPuttRow | null; error: boolean }> {
+  const results = await Promise.all(
+    chunkIds(roundIds).map((ids) =>
+      supabase
+        .from('golf_shots')
+        .select('round_id, putt_distance_feet, putt_made')
+        .in('round_id', ids)
+        .eq('putt_made', true)
+        .gte('putt_distance_feet', 0)
+        .lte('putt_distance_feet', 120)
+        .order('putt_distance_feet', { ascending: false })
+        .order('id', { ascending: true })
+        .limit(1),
+    ),
+  );
+  let longest: ChPuttRow | null = null;
+  for (const res of results) {
+    if (res.error) {
+      chLogServer('stats', 'longestPutt', res.error, 'stats_analytics');
+      return { longest: null, error: true };
+    }
+    for (const r of res.data ?? []) {
+      const feet = Number(r.putt_distance_feet);
+      if (r.putt_made && Number.isFinite(feet) && feet >= 0 && feet <= 120 && (!longest || feet > longest.feet)) longest = { roundId: r.round_id, feet, made: true };
+    }
+  }
+  return { longest, error: false };
 }

@@ -7,6 +7,7 @@ import {
   bandPutts,
   earlierInFilter,
   filterOptions,
+  loadLongestPutt,
   loadTourBenchmarks,
   loadPutts,
   loadRoundCache,
@@ -151,10 +152,12 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const seasonFull = season.rounds.filter((r) => (r.holes_played ?? 18) === 18);
   const seasonRounds = seasonOnly(season.rounds);
   const figureIds = [...new Set([...holeWindow, ...holePrev, ...holeRounds(seasonRounds)].map((r) => r.id))];
-  const [cache, putts, bench] = await Promise.all([
+  const [cache, putts, longest, bench] = await Promise.all([
     loadRoundCache(supabase, figureIds, 'stats'),
-    // The window's putts for its bands, and the season's for its longest made putt.
-    loadPutts(supabase, figureIds),
+    // Only the window's putts, for its bands (the previous window's and the season's were read for nothing: the bands count the window).
+    loadPutts(supabase, holeWindow.map((r) => r.id)),
+    // The season's longest made putt is one row from the database, not every putt of the season to find it.
+    loadLongestPutt(supabase, holeRounds(seasonRounds).map((r) => r.id)),
     benchPromise,
   ]);
   const rowsFor = (rs: ChRound[]) => rs.map((r) => cache.byRound.get(r.id)).filter((x): x is ChRoundCache => !!x);
@@ -269,14 +272,12 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;
-  const windowIds = new Set(holeWindow.map((r) => r.id));
-  const windowPutts = putts.rows.filter((r) => windowIds.has(r.roundId));
-  if (!putts.error && windowPutts.length) {
-    putting = { bands: bandPutts(windowPutts, bench), putts: windowPutts.length };
+  if (!putts.error && putts.rows.length) {
+    putting = { bands: bandPutts(putts.rows, bench), putts: putts.rows.length };
   }
 
   // Season bests stay season-wide whatever the filter (and a custom range that reads earlier rounds): the section says so.
-  const bests = seasonBests(seasonOnly(seasonFull), players, cache.byRound, putts.error ? null : { rows: putts.rows, rounds: seasonRounds });
+  const bests = seasonBests(seasonOnly(seasonFull), players, cache.byRound, longest.error ? null : { longest: longest.longest, rounds: seasonRounds });
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',
@@ -318,7 +319,7 @@ function seasonBests(
   rounds: ChRound[],
   players: Array<{ id: string; first_name: string | null; last_name: string | null }>,
   cache: Map<string, ChRoundCache>,
-  putts: { rows: Array<{ roundId: string; feet: number; made: boolean }>; rounds: ChRound[] } | null,
+  putts: { longest: { roundId: string; feet: number } | null; rounds: ChRound[] } | null,
 ): ChTeamStats['bests'] {
   const name = new Map(players.map((p) => [p.id, fullName(p)]));
   const out: ChTeamStats['bests'] = [];
@@ -352,7 +353,7 @@ function seasonBests(
   // Longest putt made, from shot-level putting data (any countable round this season).
   if (putts) {
     const roundById = new Map(putts.rounds.filter((r) => name.has(r.player_id)).map((r) => [r.id, r]));
-    const top = putts.rows.filter((p) => p.made && roundById.has(p.roundId)).sort((a, b) => b.feet - a.feet)[0];
+    const top = putts.longest && roundById.has(putts.longest.roundId) ? putts.longest : undefined;
     const r = top ? roundById.get(top.roundId) : undefined;
     if (top && r) out.push({ label: 'Longest putt made', playerId: r.player_id, name: name.get(r.player_id)!, value: `${Math.round(top.feet)} ft`, meta: meta(r) });
   }

@@ -28,7 +28,7 @@ import {
 import { holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions } from './stats-filter';
 import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, type ChWindowSeason } from './stats-weight';
-import { approachBands, loadApproachShots, loadHoles, loadSpray, type ChApproachBand, type ChSpray } from './stats-detail';
+import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
 import {
   openingDelta,
   perRoundSeries,
@@ -192,20 +192,67 @@ export async function loadPlayerProfile(input: {
   const f = input.filter ?? filterFor(input.window);
   const supabase = await createClient();
   const now = new Date();
+  const coach = input.viewer === 'coach';
 
-  // The coach's team list needs only the team, so it is read with the rest of the first batch, not after it (one round
-  // trip less on every coach profile and window change, F-56).
-  const [teamRes, playerRes, memberRes, teamMembersRes] = await Promise.all([
-    supabase.from('golf_teams').select('gender').eq('id', input.teamId).maybeSingle(),
-    supabase
-      .from('golf_players')
-      .select('id, first_name, last_name, graduation_year, hometown, state, handicap, handicap_index')
-      .eq('id', input.playerId)
-      .maybeSingle(),
-    // Active and inactive members are on the roster; a pending or removed row is not (the same rule as Roster).
+  // Every read starts the moment what it needs is known, not when its siblings have answered (the profile used to be three round trips
+  // deep before the heavy reads began; now they begin one round trip in):
+  //   first, together: the player, their membership, the team, the team's list (a coach), the player's own rounds, what is theirs alone
+  //     (focus areas, goals), and the viewer's identity and access for the shot-level actions;
+  //   at once after the player's own rounds: the shot-level reads and the player's own round cache (nothing else is needed for them);
+  //   as the team list answers (a coach): the teammates' rounds, then their cache, which only the comparisons read.
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender').eq('id', input.teamId).maybeSingle());
+  const playerRead = Promise.resolve(
+    supabase.from('golf_players').select('id, first_name, last_name, graduation_year, hometown, state, handicap, handicap_index').eq('id', input.playerId).maybeSingle(),
+  );
+  // Active and inactive members are on the roster; a pending or removed row is not (the same rule as Roster).
+  const memberRead = Promise.resolve(
     supabase.from('golf_team_members').select('status').eq('team_id', input.teamId).eq('player_id', input.playerId).in('status', ['active', 'inactive']).maybeSingle(),
-    input.viewer === 'coach' ? supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active') : null,
-  ]);
+  );
+  // Coaches compare against the active team and page through it; players see only themselves.
+  const teamMembersRead = coach ? Promise.resolve(supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active')) : null;
+  const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f) });
+  const focusRead = Promise.resolve(
+    supabase
+      .from('golf_player_focus_areas')
+      .select('id, title, baseline_value, current_value, target_value, target_metric, status')
+      .eq('player_id', input.playerId)
+      .in('status', ['active', 'proposed'])
+      .order('created_at', { ascending: false })
+      .limit(20),
+  );
+  const goalsRead = Promise.resolve(
+    supabase
+      .from('golf_goals')
+      .select('id, title, state, current_value, target_value, baseline_value')
+      .eq('player_id', input.playerId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+  );
+  // CH-5208: without the team's row its tour is unknown, so no benchmark is claimed (a women's team is never graded against the men's).
+  const benchRead = teamRead.then((t) => (t.error ? null : loadTourBenchmarks(supabase, tourForGender(t.data?.gender), 'stats')));
+  const sharedContext = statsActionContext(supabase, input.playerId);
+  // The team's ids, the player first, then the list's order.
+  const teamIdsRead = (teamMembersRead ?? Promise.resolve(null)).then((res) => {
+    if (!res) return [input.playerId];
+    if (res.error) chLogServer('stats', 'teamMembers', res.error, 'teams');
+    return [...new Set([input.playerId, ...(res.data ?? []).map((m) => m.player_id)])];
+  });
+  const othersRoundsRead = teamIdsRead.then((ids) => {
+    const others = ids.filter((id) => id !== input.playerId);
+    return others.length ? loadSeasonRounds(supabase, others, { surface: 'stats', since: loadSince(f) }) : { rounds: [] as ChRound[], error: false };
+  });
+  // The teammates' cache rows: the window's rounds of every other player on the team (the comparisons' team column).
+  const othersCacheRead = Promise.all([teamIdsRead, othersRoundsRead]).then(([ids, others]) => {
+    if (!coach || others.error) return { byRound: new Map<string, ChRoundCache>(), error: false };
+    const grouped = groupByPlayer(others.rounds);
+    const teamHole = holeRounds(ids.filter((id) => id !== input.playerId).flatMap((id) => roundsInFilter(grouped.get(id) ?? [], f)));
+    return loadRoundCache(supabase, teamHole.map((r) => r.id), 'stats');
+  });
+
+  // These are awaited a little later; a rejection in the meantime is theirs to raise there, not an unhandled one here.
+  for (const pending of [ownRoundsRead, othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, sharedContext]) pending.catch(() => undefined);
+
+  const [teamRes, playerRes, memberRes] = await Promise.all([teamRead, playerRead, memberRead]);
   if (playerRes.error) chLogServer('stats', 'player', playerRes.error);
   if (teamRes.error) chLogServer('stats', 'team', teamRes.error, 'teams');
   if (memberRes.error) chLogServer('stats', 'membership', memberRes.error, 'teams');
@@ -215,36 +262,49 @@ export async function loadPlayerProfile(input: {
   // Not on this team (or not readable): the page shows not-found, never another team's player.
   if (!p || !memberRes.data) return null;
 
-  // CH-5208: without the team's row its tour is unknown, so no benchmark is claimed (a women's team is never graded against the men's).
+  // CH-5208 again: the tour is the team's.
   const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
+  const [ownRes, teamIds] = await Promise.all([ownRoundsRead, teamIdsRead]);
 
-  // Coaches compare against the active team and page through it; players see only themselves.
-  let teamIds: string[] = [input.playerId];
-  if (input.viewer === 'coach' && teamMembersRes) {
-    const { data, error } = teamMembersRes;
-    if (error) chLogServer('stats', 'teamMembers', error, 'teams');
-    teamIds = [...new Set([input.playerId, ...(data ?? []).map((m) => m.player_id)])];
-  }
-
-  const [seasonRes, bench, focusRes, goalsRes] = await Promise.all([
-    loadSeasonRounds(supabase, teamIds, { surface: 'stats', since: loadSince(f) }),
-    tour ? loadTourBenchmarks(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>()),
-    supabase
-      .from('golf_player_focus_areas')
-      .select('id, title, baseline_value, current_value, target_value, target_metric, status')
-      .eq('player_id', input.playerId)
-      .in('status', ['active', 'proposed'])
-      .order('created_at', { ascending: false })
-      .limit(20),
-    supabase
-      .from('golf_goals')
-      .select('id, title, state, current_value, target_value, baseline_value')
-      .eq('player_id', input.playerId)
-      .order('created_at', { ascending: false })
-      .limit(20),
+  // The heavy reads need only the player's own rounds (the window's ids), so they start now; the teammates' rounds, the Tour's
+  // averages and the player's focus areas and goals are still on their way and are awaited after.
+  const ownByPlayer = groupByPlayer(ownRes.rounds);
+  const ownWin = roundsInFilter(ownByPlayer.get(input.playerId) ?? [], f);
+  const ownHole = holeRounds(ownWin);
+  // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
+  // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
+  const scopeIds = ownHole.slice(0, DETAIL_MAX_ROUNDS).map((r) => r.id);
+  const [detailRead, cacheOwnRead, puttsRead, holesRead, approachRead, sprayReadRaw] = await Promise.all([
+    scopeIds.length
+      ? inStatsContext(sharedContext, () => getDetailedStats(input.playerId, scopeIds)).then(
+          (s) => ({ stats: s, error: false }),
+          (e: unknown) => {
+            chLogServer('stats', 'detailedStats', e, 'stats_analytics');
+            return { stats: null, error: true };
+          },
+        )
+      : Promise.resolve({ stats: null, error: false }),
+    loadRoundCache(supabase, ownHole.map((r) => r.id), 'stats'),
+    // The same shot-level bands as Team stats, so the make-rate curve reaches 25+ feet with exact counts.
+    loadPutts(supabase, scopeIds),
+    loadHoles(supabase, scopeIds),
+    loadApproachShots(supabase, scopeIds),
+    scopeIds.length ? inStatsContext(sharedContext, () => loadSpray(input.playerId, scopeIds)) : Promise.resolve({ spray: null, error: false }),
   ]);
+  const [othersRes, cacheOthers, benchRes, focusRes, goalsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead]);
+  const bench = benchRes ?? new Map<string, number>();
   if (focusRes.error) chLogServer('stats', 'focusAreas', focusRes.error, 'development');
   if (goalsRes.error) chLogServer('stats', 'goals', goalsRes.error, 'development');
+  // One failed rounds read (the player's or a teammate's) is a failed read: no rounds, flagged, and nothing read for them, as one combined
+  // read always was. (A round is one row: a round both reads returned is counted once.)
+  const roundsFailed = ownRes.error || othersRes.error;
+  const seasonRes = { rounds: roundsFailed ? [] : [...new Map([...ownRes.rounds, ...othersRes.rounds].map((r) => [r.id, r])).values()], error: roundsFailed };
+  const detail = roundsFailed ? { stats: null, error: false } : detailRead;
+  const cacheOwn = roundsFailed ? { byRound: new Map<string, ChRoundCache>(), error: false } : cacheOwnRead;
+  const putts = roundsFailed ? { rows: [], error: false } : puttsRead;
+  const holes = roundsFailed ? { rows: [], error: false } : holesRead;
+  const approachShots = roundsFailed ? { rows: [], error: false } : approachRead;
+  const sprayRead = roundsFailed ? { spray: null, error: false } : sprayReadRaw;
 
   const byPlayer = groupByPlayer(seasonRes.rounds);
   const mine = byPlayer.get(input.playerId) ?? [];
@@ -256,28 +316,10 @@ export async function loadPlayerProfile(input: {
   const holeWin = holeRounds(winRounds);
 
   // Team rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their holes).
-  const teamWin = input.viewer === 'coach' ? teamIds.flatMap((id) => roundsInFilter(byPlayer.get(id) ?? [], f)) : [];
+  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(byPlayer.get(id) ?? [], f)) : [];
   const teamHole = holeRounds(teamWin);
-  // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
-  // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
-  const scopeIds = holeWin.slice(0, DETAIL_MAX_ROUNDS).map((r) => r.id);
-  const [detail, cache, putts, holes, approachShots, sprayRead] = await Promise.all([
-    scopeIds.length
-      ? getDetailedStats(input.playerId, scopeIds).then(
-          (s) => ({ stats: s, error: false }),
-          (e: unknown) => {
-            chLogServer('stats', 'detailedStats', e, 'stats_analytics');
-            return { stats: null, error: true };
-          },
-        )
-      : Promise.resolve({ stats: null, error: false }),
-    loadRoundCache(supabase, [...holeWin, ...teamHole].map((r) => r.id), 'stats'),
-    // The same shot-level bands as Team stats, so the make-rate curve reaches 25+ feet with exact counts.
-    loadPutts(supabase, scopeIds),
-    loadHoles(supabase, scopeIds),
-    loadApproachShots(supabase, scopeIds),
-    scopeIds.length ? loadSpray(input.playerId, scopeIds) : Promise.resolve({ spray: null, error: false }),
-  ]);
+  // The player's own cache rows and the teammates' (the comparisons' team column), one lookup as before.
+  const cache = { byRound: new Map([...cacheOwn.byRound, ...cacheOthers.byRound]), error: cacheOwn.error || cacheOthers.error };
   const rows = (ids: string[]) => ids.map((id) => cache.byRound.get(id)).filter((x): x is ChRoundCache => !!x);
   const mineCache = rows(holeWin.map((r) => r.id));
   const teamCache = rows(teamHole.map((r) => r.id));

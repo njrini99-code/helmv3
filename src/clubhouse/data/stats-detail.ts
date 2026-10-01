@@ -1,21 +1,50 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getSprayChartData } from '@/app/golf/actions/stats-data';
 import type { SprayChartShotGroup } from '@/app/golf/actions/stats-data-types';
+import { getGolfAuthUser } from '@/lib/auth/session';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { runWithStatsActionContext, type StatsActionContext } from '@/lib/golf/stats-action-context';
 import { aggregateApproachBuckets, type ApproachShotRow, type PgaRef } from '@/lib/golf/leak-map-buckets';
 import { chLogServer } from '../lib/track-server';
+import { fetchAllRowsTogether } from './paging';
 import type { ChHoleRow } from './stats-figures';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * The viewer's identity and access to this player, answered once for the shot-level actions (getDetailedStats, getSprayChartData).
+ * Each of those is a server action that checks both itself (a sign-in read, then an access read) unless it runs inside the shared stats
+ * context, as the Fairway stats page does: the two actions then spend two sign-in reads and two access checks on the same answer. Here
+ * the sign-in is the request's own (the session already asked the auth server) and the access check is the actions' own
+ * (`verifyPlayerAccess`, the canonical one), started with the first reads, so by the time the shot reads begin they cost nothing.
+ * Null (an unreadable or degraded session, no access, any failure) leaves each action to check for itself, which is what it did before.
+ */
+export async function statsActionContext(supabase: Supabase, playerId: string): Promise<StatsActionContext | null> {
+  try {
+    const { user, degraded } = await getGolfAuthUser();
+    if (!user || degraded) return null;
+    const authorization = await verifyPlayerAccess(playerId, user.id, supabase);
+    if (!authorization.allowed) return null;
+    return { supabase, user, requestedPlayerId: playerId, authorization: { ...authorization, allowed: true } };
+  } catch {
+    return null;
+  }
+}
+
+/** Runs `read` in the shared stats context once it is known (see `statsActionContext`); without one, as it is. */
+export async function inStatsContext<T>(context: Promise<StatsActionContext | null>, read: () => Promise<T>): Promise<T> {
+  const ctx = await context;
+  return ctx ? runWithStatsActionContext(ctx, read) : read();
+}
 
 /** Every scored hole on these rounds (hole, par, score), for the toughest holes and the opening hole. */
 export async function loadHoles(supabase: Supabase, roundIds: string[]): Promise<{ rows: ChHoleRow[]; error: boolean }> {
   const rows: ChHoleRow[] = [];
   const results = await Promise.all(
     chunkIds(roundIds).map((ids) =>
-      fetchAllRowsResult<{ round_id: string; hole_number: number; par: number | null; score: number | null }>(
+      fetchAllRowsTogether<{ round_id: string; hole_number: number; par: number | null; score: number | null }>(
         (from, to) =>
           supabase
             .from('golf_holes')
@@ -48,7 +77,7 @@ export async function loadApproachShots(supabase: Supabase, roundIds: string[]):
   const rows: ApproachShotRow[] = [];
   const results = await Promise.all(
     chunkIds(roundIds).map((ids) =>
-      fetchAllRowsResult<ApproachRead>(
+      fetchAllRowsTogether<ApproachRead>(
         (from, to) =>
           supabase
             .from('golf_shots')
