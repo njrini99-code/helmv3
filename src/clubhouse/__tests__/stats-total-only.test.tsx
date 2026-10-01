@@ -8,8 +8,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
  *   Q-123 A round posted as a total only (18 holes, no nines, no holes) counts in the SCORE figures and in no HOLE-level one, and a
  *         card whose round count is fewer than the window's says how many rounds it covers.
  *
- * The data is the Demo University Golf player Cole's, as production holds it on 30 September 2026: three hole-by-hole practice rounds
- * on 2 August, two qualifiers posted as totals on 25 and 26 September, and tournaments from May to July that Last 10 used to leave out.
+ * The data is modelled on the Demo University Golf player Cole's rounds as production holds them on 30 September 2026 (read-only SQL):
+ * the same dates, types and nines, with the ids shortened. Three hole-by-hole practice rounds on 2 August, two qualifiers posted as
+ * totals on 25 and 26 September, and the tournaments, a practice round and a 9-hole round from May to July that Last 10 used to leave
+ * out. (Production stores a few totals one stroke off their nines, 85 against 45 + 39; the season read takes the nines, C-15, and so
+ * does this data.)
  */
 
 vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
@@ -39,7 +42,6 @@ afterAll(() => vi.useRealTimers());
 const COLE = 'p1';
 const START = '2026-08-01';
 
-const nines = (total: number) => ({ front_nine: Math.floor(total / 2), back_nine: total - Math.floor(total / 2) });
 const base = {
   player_id: COLE,
   status: 'completed',
@@ -52,8 +54,18 @@ const base = {
   total_fairways: 14,
   strokes_gained_total: 0.5,
 };
-/** A hole-by-hole round: the nines add up to the total. */
-const played = (id: string, date: string, score: number, type = 'tournament'): Row => ({ ...base, id, round_date: date, round_type: type, total_score: score, score_to_par: score - 72, ...nines(score) });
+/** A hole-by-hole round: the nines add up to the total (the season read takes the total from them, C-15). */
+const played = (id: string, date: string, front: number, back: number | null, type = 'tournament', over: Record<string, unknown> = {}): Row => ({
+  ...base,
+  id,
+  round_date: date,
+  round_type: type,
+  total_score: front + (back ?? 0),
+  score_to_par: front + (back ?? 0) - 72,
+  front_nine: front,
+  back_nine: back,
+  ...over,
+});
 /** A qualifier posted as a total only (production: no nines, no putts, no greens, no strokes gained, an empty hole table). */
 const posted = (id: string, date: string, score: number): Row => ({
   ...base,
@@ -73,29 +85,39 @@ const posted = (id: string, date: string, score: number): Row => ({
   strokes_gained_total: null,
 });
 
-/** Newest first: 2 totals, 3 rounds on 2 August, then 13 tournaments before the season (May to July). */
+/**
+ * Newest first, as production orders them (date, then id): 2 totals, 3 rounds on 2 August, then before the season 6 tournaments in July,
+ * a practice round (10 June), 7 more tournaments (June, May) and a 9-hole practice round (18 May). The 18-hole ones are 19 rounds.
+ */
 const COLE_ROUNDS: Row[] = [
   posted('q2', '2026-09-26', 70),
   posted('q1', '2026-09-25', 71),
-  played('h1', '2026-08-02', 71, 'practice'),
-  played('h2', '2026-08-02', 69, 'practice'),
-  played('h3', '2026-08-02', 70, 'practice'),
-  played('t01', '2026-07-10', 85),
-  played('t02', '2026-07-09', 86),
-  played('t03', '2026-07-08', 76),
-  played('t04', '2026-07-03', 78),
-  played('t05', '2026-07-02', 74),
-  played('t06', '2026-07-02', 69),
-  played('t07', '2026-06-09', 75),
-  played('t08', '2026-06-08', 75),
-  played('t09', '2026-05-29', 77),
-  played('t10', '2026-05-29', 75),
-  played('t11', '2026-05-28', 74),
-  played('t12', '2026-05-22', 71),
-  played('t13', '2026-05-21', 74),
+  played('h1', '2026-08-02', 35, 36, 'practice'),
+  played('h2', '2026-08-02', 34, 35, 'practice'),
+  played('h3', '2026-08-02', 35, 35, 'practice'),
+  played('t01', '2026-07-10', 45, 39),
+  played('t02', '2026-07-09', 43, 43),
+  played('t03', '2026-07-08', 39, 36),
+  played('t04', '2026-07-03', 39, 38),
+  played('t05', '2026-07-02', 35, 38),
+  played('t06', '2026-07-02', 35, 33),
+  played('u1', '2026-06-10', 36, 34, 'practice'),
+  played('t07', '2026-06-09', 38, 37),
+  played('t08', '2026-06-08', 35, 40),
+  played('t09', '2026-05-29', 37, 40),
+  played('t10', '2026-05-29', 38, 37),
+  played('t11', '2026-05-28', 39, 35),
+  played('t12', '2026-05-22', 36, 35),
+  played('t13', '2026-05-21', 36, 38),
+  played('n9', '2026-05-18', 38, null, 'practice', { holes_played: 9, total_putts: 16 }),
 ];
 const LAST_10 = ['q2', 'q1', 'h1', 'h2', 'h3', 't01', 't02', 't03', 't04', 't05'];
 const LAST_10_HOLES = ['h1', 'h2', 'h3', 't01', 't02', 't03', 't04', 't05'];
+/** The 18-hole rounds that follow them (the 9-hole round is not one), and their mean: 659 strokes over 9 rounds. */
+const PREVIOUS = ['t06', 'u1', 't07', 't08', 't09', 't10', 't11', 't12', 't13'];
+const PREVIOUS_MEAN = 659 / 9;
+/** The newest ten's mean: 70 + 71 + 71 + 69 + 70 + 84 + 86 + 75 + 77 + 73 = 746 over ten rounds. */
+const LAST_10_MEAN = 74.6;
 
 /** What the loaders asked for: where the rounds read started, and which rounds' figures were read. */
 const reads = { since: [] as Array<string | null>, cacheIds: [] as string[], puttIds: [] as string[] };
@@ -167,6 +189,8 @@ describe('the season read keeps a round posted as a total only, marked, and noth
     expect(error).toBe(false);
     expect(rounds).toHaveLength(COLE_ROUNDS.length);
     expect(rounds.filter((r) => r.total_only).map((r) => r.id)).toEqual(['q2', 'q1']);
+    // The nines make the total (84, not the stored 85) and move the to-par with it.
+    expect(rounds.find((r) => r.id === 't01')).toMatchObject({ total_score: 84, score_to_par: 12 });
     expect(rounds.find((r) => r.id === 'h1')!.total_only).toBeUndefined();
     // The newest first, as ever.
     expect(rounds.slice(0, 5).map((r) => r.id)).toEqual(['q2', 'q1', 'h1', 'h2', 'h3']);
@@ -229,18 +253,18 @@ describe('Q-122 Last 10 across seasons', () => {
     expect(last10.season.avg).toBeCloseTo(70.2, 10);
   });
 
-  it('"vs. previous 10" is the ten before them across seasons: his eight earlier tournaments', async () => {
+  it('"vs. previous 10" is the ten before them across seasons: his nine earlier 18-hole rounds (the 9-hole one is not one)', async () => {
     tables.current = profileTables(COLE_ROUNDS);
     const d = (await profileLoad('last10'))!;
     expect(d.extra.compare).not.toBeNull();
     expect(d.extra.compare!.lastRounds).toBe(10);
-    expect(d.extra.compare!.previousRounds).toBe(8);
-    // Scoring: the newest ten average 75.0, the eight before them 73.75 (shown to a tenth).
+    expect(d.extra.compare!.previousRounds).toBe(PREVIOUS.length);
+    // Scoring: the newest ten average 74.6, the nine before them 73.2 (shown to a tenth).
     const row = d.extra.compare!.rows.find((r) => r.label === 'Scoring avg')!;
-    expect(row.last).toBe(75);
-    expect(row.previous).toBe(73.8);
+    expect(row.last).toBe(74.6);
+    expect(row.previous).toBe(73.2);
     expect(d.extra.compare!.lastHoleRounds).toBe(8);
-    expect(d.extra.compare!.previousHoleRounds).toBe(8);
+    expect(d.extra.compare!.previousHoleRounds).toBe(9);
   });
 
   it('on the team page, each player’s ten newest across seasons, the earlier ten, and the same rounds on a second page', async () => {
@@ -248,21 +272,23 @@ describe('Q-122 Last 10 across seasons', () => {
     const d = await teamLoad('last10');
     expect(reads.since.at(-1)).toBe(lastTenFloor());
     expect(d.roundCount).toBe(10);
-    expect(figure(d, 'Scoring average').value).toBe(75);
-    expect(figure(d, 'Scoring average').delta).toBe(1.25);
+    expect(figure(d, 'Scoring average').value).toBeCloseTo(LAST_10_MEAN, 10);
+    expect(figure(d, 'Scoring average').delta).toBeCloseTo(LAST_10_MEAN - PREVIOUS_MEAN, 10);
     expect(figure(d, 'Scoring average').context).toBe('vs. previous 10');
-    expect(d.grid[0]).toMatchObject({ rounds: 10, avg: 75 });
+    expect(d.grid[0]!.rounds).toBe(10);
+    expect(d.grid[0]!.avg).toBeCloseTo(LAST_10_MEAN, 10);
     // The sheet lists everything loaded, the earlier rounds included.
     expect(d.filterOptions.total).toBe(COLE_ROUNDS.length);
     expect(d.filterOptions.seasonStart).toBe(START);
   });
 
   it('Home’s team form is the same Last 10: the newest ten across seasons, said with their dates', () => {
-    const rounds = COLE_ROUNDS.map((r) => ({ ...(r as unknown as ChRound), ...(String(r.id).startsWith('q') ? { total_only: true as const } : {}) }));
+    // As the season read hands them over: the nines make the total, and the two totals are marked.
+    const rounds = COLE_ROUNDS.map((r) => ({ ...(r as unknown as ChRound), total_score: r.front_nine == null ? (r.total_score as number) : (r.front_nine as number) + ((r.back_nine as number | null) ?? 0), ...(String(r.id).startsWith('q') ? { total_only: true as const } : {}) }));
     const f = teamForm(rounds, 0)!;
     expect(f.basis).toMatchObject({ rounds: 10, from: '2026-07-02', to: '2026-09-26' });
-    expect(f.avg).toBe(75);
-    expect(f.delta).toBe(1.25);
+    expect(f.avg).toBeCloseTo(LAST_10_MEAN, 10);
+    expect(f.delta).toBeCloseTo(LAST_10_MEAN - PREVIOUS_MEAN, 10);
   });
 });
 
@@ -273,8 +299,8 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the playe
     expect(d.win.rounds).toBe(10);
     expect(d.win.holeRounds).toBe(8);
     expect(d.extra.holeRounds).toBe(8);
-    expect(d.win.avg).toBe(75);
-    expect(comparison(d, 'Scoring avg').you).toBe(75);
+    expect(d.win.avg).toBeCloseTo(LAST_10_MEAN, 10);
+    expect(comparison(d, 'Scoring avg').you).toBeCloseTo(LAST_10_MEAN, 10);
     // The shot-level read, the round cache and the putts are the eight rounds with holes; the two totals are in none of them.
     expect(detailed).toHaveBeenCalledTimes(1);
     expect(detailed.mock.calls[0]![1]).toEqual(LAST_10_HOLES);
@@ -293,7 +319,7 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the playe
   it('the Game detail’s scoring average is the headline’s, and a total-only round shows no greens or putts in the table', async () => {
     tables.current = profileTables(COLE_ROUNDS);
     const d = (await profileLoad('last10'))!;
-    expect(d.stats!.scoringAverage18).toBe(75);
+    expect(d.stats!.scoringAverage18).toBeCloseTo(LAST_10_MEAN, 10);
     expect(d.stats!.qualifyingRounds).toBe(2);
     expect(d.stats!.qualifyingScoringAvg).toBe(70.5);
     const q = d.rounds.find((r) => r.id === 'q2')!;
@@ -301,8 +327,18 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the playe
     expect(d.rounds.find((r) => r.id === 'h1')).toMatchObject({ gir: '10/18', putts: 30 });
   });
 
+  it('Game detail’s best and worst round, and its count of 18-hole rounds, are the Rounds tab’s: a total-only 66 is the best in both', async () => {
+    tables.current = profileTables([posted('q', '2026-09-26', 66), played('a', '2026-09-20', 36, 36, 'practice'), played('b', '2026-09-19', 37, 37, 'practice')]);
+    // The calculator read the two rounds with holes only.
+    detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 2, roundsPlayed18: 2, bestRound: 72, worstRound: 74, bestRound18: 72, worstRound18: 74 });
+    const d = (await profileLoad('season'))!;
+    expect(d.extra.bests.score!.value).toBe(66);
+    expect(d.stats).toMatchObject({ bestRound: 66, worstRound: 74, bestRound18: 66, worstRound18: 74, roundsPlayed18: 3 });
+    expect(d.stats!.bestRound18).toBe(d.extra.bests.score!.value);
+  });
+
   it('the personal best score counts a total-only round; the best greens and fewest putts do not', async () => {
-    tables.current = profileTables([posted('q', '2026-09-26', 66), played('a', '2026-09-20', 72, 'practice'), played('b', '2026-09-19', 74, 'practice')]);
+    tables.current = profileTables([posted('q', '2026-09-26', 66), played('a', '2026-09-20', 36, 36, 'practice'), played('b', '2026-09-19', 37, 37, 'practice')]);
     const d = (await profileLoad('season'))!;
     expect(d.extra.bests.score).toMatchObject({ value: 66, course: 'Home course' });
     expect(d.extra.bests.toPar).toMatchObject({ value: -6 });
@@ -358,7 +394,7 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the team 
     const d = await teamLoad('last10');
     expect(d.roundCount).toBe(10);
     expect(d.holeRoundCount).toBe(8);
-    expect(figure(d, 'Scoring average').value).toBe(75);
+    expect(figure(d, 'Scoring average').value).toBeCloseTo(LAST_10_MEAN, 10);
     expect(figure(d, 'Scoring average').note).toBeUndefined();
     for (const label of ['Greens in regulation', 'Putts per round', 'Scrambling', 'Birdies per round']) {
       expect(figure(d, label).note).toBe('Hole stats from 8 of 10 rounds');
@@ -410,7 +446,7 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the team 
   });
 
   it('the season’s low round counts a total-only round', async () => {
-    tables.current = teamTables([posted('q', '2026-09-26', 66), played('a', '2026-09-20', 72, 'practice')]);
+    tables.current = teamTables([posted('q', '2026-09-26', 66), played('a', '2026-09-20', 36, 36, 'practice')]);
     const d = await teamLoad('season');
     expect(d.bests.find((b) => b.label === 'Low round')!.value).toMatch(/^66/);
   });
@@ -502,7 +538,7 @@ describe('Q-123 Total-only rounds on Home, in Rounds and on the roster', () => {
   });
 
   it('Player Home: the brief and the scoring chart count it; the leg figures are the rounds with holes, and say how many', async () => {
-    const rows: Row[] = [posted('q2', '2026-09-26', 70), posted('q1', '2026-09-25', 71), ...[0, 1, 2].map((i) => played(`h${i}`, `2026-09-${20 - i}`, 73, 'practice'))];
+    const rows: Row[] = [posted('q2', '2026-09-26', 70), posted('q1', '2026-09-25', 71), ...[0, 1, 2].map((i) => played(`h${i}`, `2026-09-${20 - i}`, 36, 37, 'practice'))];
     tables.current = {
       golf_team_settings: { data: { timezone: 'America/New_York' } },
       golf_events: { data: [] },
@@ -523,6 +559,33 @@ describe('Q-123 Total-only rounds on Home, in Rounds and on the roster', () => {
     expect(reads.cacheIds.sort()).toEqual(['h0', 'h1', 'h2']);
     const approach = home.legs!.rows.find((l) => l.key === 'approach')!;
     expect(approach.note).toBe('27 of 54 greens in the last 3 rounds');
+  });
+
+  it('Player Home: Last 5 / 10 / 20, the legs and the brief are the newest rounds in any season; strokes gained stays the season’s', async () => {
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: { data: [] },
+      golf_rounds: roundsAnswer(COLE_ROUNDS),
+      golf_round_stats_cache: cacheAnswer,
+      golf_pga_standards: { data: [] },
+      golf_players: { data: { handicap_index: 3, handicap: null } },
+      golf_teams: { data: { gender: 'men', created_by: null, organization_id: null } },
+      golf_holes: { data: [] },
+    };
+    const home = await loadPlayerHome({ teamId: 't1', playerId: COLE, firstName: 'Cole' });
+    // One read from the rolling year back, not from 1 August.
+    expect(reads.since.at(-1)).toBe(lastTenFloor());
+    // The chart's points are the player's nineteen 18-hole rounds, oldest first (the 9-hole round is not one).
+    expect(home.scoring.points).toHaveLength(19);
+    expect(home.scoring.points.at(-1)).toMatchObject({ score: 70 });
+    expect(home.scoring.points[0]!.label).toBe('May 21');
+    expect(home.brief).toMatch(/^Your last three rounds average 70\.7\./);
+    // The leg figures are the ten newest rounds with their holes, across the season's start: 'h1' to 't07' here, never the two totals.
+    expect(reads.cacheIds).toHaveLength(10);
+    expect(reads.cacheIds).not.toContain('q1');
+    expect(home.legs!.rows.find((l) => l.key === 'approach')!.note).toBe('90 of 180 greens in the last 10 rounds');
+    // Strokes gained is this season's: the three rounds of 2 August (the floor is three; the two totals have none, nor do the July rounds count).
+    expect(home.sgPerRound).toBe(0.5);
   });
 
   it('Coach Home: the team form reaches back across seasons (it is Stats’ Last 10); the leaderboard and the latest rounds stay this season', async () => {

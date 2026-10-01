@@ -202,7 +202,7 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
           <path d="M0,-34 L16,-29 L0,-24 Z" />
           {/* Near the right edge the label reads to the left of the pole, inside the chart. */}
           <text x={x(bi) > W - 160 ? -6 : 20} y="-26" textAnchor={x(bi) > W - 160 ? 'end' : 'start'} className="ch-ph-chart__ann">
-            season low · {best}
+            low · {best}
           </text>
         </g>
       )}

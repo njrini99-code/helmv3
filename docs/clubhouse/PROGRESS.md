@@ -417,8 +417,9 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   whole histories), `matchesFilter` has no season bound for Last 10, and
   Home's team form, which is Stats' Last 10, reads the same rounds (its
   leaderboard and latest rounds stay this season). Cole after: Last 10 is 10
-  rounds (was 3), Season 5 (was 3), Qualifiers 2 (was 0). Not changed: Player
-  Home's leg figures and scoring chart, which still read this season only.
+  rounds (was 3), Season 5 (was 3), Qualifiers 2 (was 0). Player Home reads
+  the same way: its scoring card (Last 5, 10, 20), leg figures and brief are
+  the newest rounds in any season; its strokes gained stays the season's.
 - Q-123 (owner, 2026-09-30; built; answers Q-111) A round posted as a total
   only (18 holes, no nines, no holes, completed, not a test round) counts in
   the score figures: scoring average, to par, the trend and by-day series,

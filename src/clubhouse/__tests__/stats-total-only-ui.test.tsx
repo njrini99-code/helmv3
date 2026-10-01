@@ -65,9 +65,15 @@ describe('Player stats · desktop', () => {
     expect(screen.getAllByText(/\b5 rounds\b/).length).toBeGreaterThan(0);
   });
 
+  it('Overview: the table against the team or the Tour says it too, and that the scoring rows read every round', () => {
+    shell(<StatsPlayer data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
+    expect(screen.getByText(/^Hole stats from 3 of 5 rounds; the scoring average and the pressure gap read all 5\. /)).toBeTruthy();
+  });
+
   it('Overview: with every round holed there is no coverage line', () => {
     shell(<StatsPlayer data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
     expect(document.querySelector('.ch-fg__n')).toBeNull();
+    expect(screen.queryByText(/Hole stats from/)).toBeNull();
   });
 
   it('Game detail: every section says the hole stats come from 3 of the 5 rounds, the rest posted as a total only', async () => {

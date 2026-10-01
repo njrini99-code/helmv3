@@ -118,8 +118,9 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
  * penalties are already per 18 holes, and its best and worst rounds are kept per length (`bestRound18`, `bestRound9`).
  *
  * `rounds` is every score round in the window; the calculator was given only the ones with their holes (Q-123), so a round posted
- * as a total only is not in its scoring average, its average to par or its scoring by round type. With one in the window the scores
- * are restated over all the window's rounds, so the Game detail's scoring average is the headline's (the hole counts stay the calculator's).
+ * as a total only is not in its scoring average, its average to par, its scoring by round type or its best and worst round. With one in
+ * the window the scores are restated over all the window's rounds, so the Game detail's scoring average and best round are the
+ * headline's and the Rounds tab's (the hole counts stay the calculator's).
  */
 export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
   // A nine-hole round always has its holes (only an 18-hole total can be posted without them), so the calculator read it.
@@ -131,6 +132,16 @@ export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
   const ofKind = (k: ChRoundKind) => rounds.filter((r) => r.total_score != null && roundKind(r.round_type) === k);
   const typed = (k: ChRoundKind) => ({ avg: weightedMean(ofKind(k), (r) => r.total_score), n: ofKind(k).length });
   const [practice, qualifying, tournament] = [typed('practice'), typed('qualifier'), typed('tournament')];
+  // The best and worst rounds, over every score round (18-hole ones apart; the nine-hole rounds all have their holes, so theirs are the calculator's).
+  const scored = rounds.filter((r) => r.total_score != null);
+  const of18 = scored.filter((r) => (r.holes_played ?? 18) === 18).map((r) => r.total_score as number);
+  const normalized = scored.map((r) => Math.round(per18(r.total_score as number, r.holes_played)));
+  const extremes = (xs: number[]) => ({ best: xs.length ? Math.min(...xs) : null, worst: xs.length ? Math.max(...xs) : null });
+  const all = extremes(normalized);
+  const eighteen = extremes(of18);
+  const bestWorst = totalOnly
+    ? { bestRound: all.best, worstRound: all.worst, bestRound18: eighteen.best, worstRound18: eighteen.worst, roundsPlayed18: of18.length }
+    : {};
   const counts = nine
     ? {
         eaglesPerRound: per(s.totalEagles),
@@ -152,6 +163,7 @@ export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
     qualifyingRounds: qualifying.n,
     tournamentScoringAvg: tournament.avg,
     tournamentRounds: tournament.n,
+    ...bestWorst,
     ...counts,
   };
 }

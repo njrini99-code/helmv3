@@ -234,7 +234,8 @@ One filter for every figure, shared with Team stats (P004) and kept in the addre
   Game detail section's line ("...; hole stats from 3 of 5 rounds, the rest
   posted as a total only"), and the comparison table on the Rounds tab. The
   Game detail's scoring average is restated over all the window's rounds, so
-  it is the headline's. `ChProfileExtra.holeRounds` carries the count.
+  it is the headline's, and its best and worst round are the Rounds tab's.
+  `ChProfileExtra.holeRounds` carries the count.
 - **The control.** A Filter button under the tabs (under the window switch on the phone) shows how many filters are on;
   each one is a removable chip (a tap removes it at once), Clear takes them all off, and a count line says what is being
   read: "12 rounds: tournaments, Sep 1 to Sep 29". The sheet (the shared Modal, a bottom sheet on the phone) has Round type

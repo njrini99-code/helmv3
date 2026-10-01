@@ -3,13 +3,18 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
-import { isFull18, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
+import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
-import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } from './stats-common';
+import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 
 /**
  * Player Home (Clubhouse; design/handoff/Player - Home.html and
  * Player - Home - Mobile.html). One server read, final data on first paint.
+ *
+ * Rounds posted as a total only count in the scores here (the brief, the
+ * scoring chart) and in none of the leg figures (Q-123). The scoring card, the
+ * legs and the brief are the newest rounds in any season (Q-122); strokes
+ * gained is the season's.
  *
  * The player's own rounds only: nothing here reads a teammate's scores (a
  * player is compared against the Tour, never against teammates, as on Stats). The
@@ -100,7 +105,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const [wk, roundsRes, playerRes, teamRes] = await Promise.all([
     // No names: a player's Home never lists who else is invited.
     loadHomeWeek(supabase, { teamId: input.teamId, tz, now, names: new Map() }),
-    loadSeasonRounds(supabase, [input.playerId], { surface: 'home' }),
+    // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
+    loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: lastTenFloor() }),
     supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle(),
     supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle(),
   ]);
@@ -119,7 +125,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     coachFor(supabase, teamRes.data ?? null),
   ]);
 
-  const season = summarizePlayer(full);
+  // Strokes gained is the season's ("Season, per round"; each leg's "this season").
+  const season = summarizePlayer(seasonOnly(full));
   const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full

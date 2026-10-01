@@ -333,6 +333,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
   // These four are hole-level: they read the window's rounds with their holes scored, not a round posted as a total only (Q-123), and say so when that is fewer.
   const holeCount = data.extra.holeRounds ?? w.rounds;
+  const coverage = holeCoverage(holeCount, w.rounds);
   const fig = (label: string, short: string) => {
     const c = cmp(label);
     const ref = coach ? c?.team : c?.bench;
@@ -344,7 +345,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       deltaDigits: c?.digits ?? 0,
       lowerIsBetter: c?.lowerIsBetter,
       context: ref == null ? `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'}` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
-      note: holeCoverage(holeCount, w.rounds) ?? undefined,
+      note: coverage ?? undefined,
     };
   };
   // Best round: one length at a time (a 9-hole score and an 18-hole score are not the same best): the 9-hole rounds when that is all
@@ -394,7 +395,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       <YardagePage
         title={coach ? `${first} vs. team` : 'You vs. the Tour'}
         meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `Tour averages where the benchmark exists · strokes gained ${baseline.vs}`}
-        note={`${coach ? "Team values are pooled from the active players' rounds in the same window, where the round cache has the figure. " : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
+        note={`${coverage ? `${coverage}; the scoring average and the pressure gap read all ${w.rounds}. ` : ''}${coach ? "Team values are pooled from the active players' rounds in the same window, where the round cache has the figure. " : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
       >
         <FieldTable rows={data.comparisons} showTeam={coach} />
       </YardagePage>

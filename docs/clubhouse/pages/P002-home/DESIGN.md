@@ -83,7 +83,9 @@ putts, and the player's four leg figures, which read the newest rounds with
 their holes and say how many ("in the last 3 rounds"). The coach's team form is
 Stats' Last 10, so it reads each player's ten newest rounds in any season
 (`lastTenFloor`); the leaderboard and the latest rounds stay this season.
-Player Home's legs and scoring chart still read this season only (Q-122).
+Player Home reads the same way: its scoring card (Last 5, 10 and 20), its leg
+figures and its brief are the player's newest rounds in any season, and its
+strokes gained ("Season, per round") stays the season's.
 
 ## Existing backend capabilities used
 
