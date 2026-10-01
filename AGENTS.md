@@ -124,7 +124,7 @@ clean checkout at the current `origin/main` SHA in the linked project
 (`vercel_project_id` in `config/release-policy.yml`). The checkout must hold
 no symlinks: a worktree's linked `.env*`, `.codex/`, `.claude/` and
 `node_modules` reach the upload despite `.vercelignore` and Vercel rejects
-the deploy ("is not a valid symlink", 2026-09-30), so remove them (copy
+the deploy ("is not a valid symlink"), so remove them (copy
 `.vercel/project.json` as a real file) or deploy from canonical. Before deploying,
 check the weekly budget in that file; if it is spent, say so and let the
 owner decide. Stamp the commit: pass `NEXT_PUBLIC_SENTRY_RELEASE=<sha>` as
