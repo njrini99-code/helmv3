@@ -76,8 +76,9 @@ each one stands. Measurements go in `PROGRESS.md`, "Page performance
 - **6 Independent sections.** Page pass.
 - **7 Prefetch and cache keys.** Page pass; nothing cached across users or
   teams.
-- **8 Previous content.** Stats window switch done earlier (F-55); the rest in
-  the page pass.
+- **8 Previous content.** Stats window switch done earlier (F-55). Team
+  switch done: the old team's page fades out and takes no taps until the new
+  one commits, and toasts are scoped to the team. The rest in the page pass.
 - **9 Off the tap path.** Page pass, measured as long tasks and INP.
 - **10 Render less.** Queued: Messages history, round archive.
 - **11 Honest optimism.** Queued: Messages send, Calendar moves; Rounds in the
@@ -90,5 +91,4 @@ each one stands. Measurements go in `PROGRESS.md`, "Page performance
   page.
 
 Queued after the first two page groups: Calendar, Messages, Team Hub, Roster
-(context restore), sheets and keyboard behaviour, and the session or team
-change flash check across the shell.
+(context restore), sheets and keyboard behaviour.
