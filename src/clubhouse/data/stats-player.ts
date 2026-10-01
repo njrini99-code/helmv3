@@ -193,7 +193,9 @@ export async function loadPlayerProfile(input: {
   const supabase = await createClient();
   const now = new Date();
 
-  const [teamRes, playerRes, memberRes] = await Promise.all([
+  // The coach's team list needs only the team, so it is read with the rest of the first batch, not after it (one round
+  // trip less on every coach profile and window change, F-56).
+  const [teamRes, playerRes, memberRes, teamMembersRes] = await Promise.all([
     supabase.from('golf_teams').select('gender').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_players')
@@ -202,6 +204,7 @@ export async function loadPlayerProfile(input: {
       .maybeSingle(),
     // Active and inactive members are on the roster; a pending or removed row is not (the same rule as Roster).
     supabase.from('golf_team_members').select('status').eq('team_id', input.teamId).eq('player_id', input.playerId).in('status', ['active', 'inactive']).maybeSingle(),
+    input.viewer === 'coach' ? supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active') : null,
   ]);
   if (playerRes.error) chLogServer('stats', 'player', playerRes.error);
   if (teamRes.error) chLogServer('stats', 'team', teamRes.error, 'teams');
@@ -217,12 +220,8 @@ export async function loadPlayerProfile(input: {
 
   // Coaches compare against the active team and page through it; players see only themselves.
   let teamIds: string[] = [input.playerId];
-  if (input.viewer === 'coach') {
-    const { data, error } = await supabase
-      .from('golf_team_members')
-      .select('player_id')
-      .eq('team_id', input.teamId)
-      .eq('status', 'active');
+  if (input.viewer === 'coach' && teamMembersRes) {
+    const { data, error } = teamMembersRes;
     if (error) chLogServer('stats', 'teamMembers', error, 'teams');
     teamIds = [...new Set([input.playerId, ...(data ?? []).map((m) => m.player_id)])];
   }

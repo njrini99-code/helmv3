@@ -923,6 +923,12 @@ async function queryDetailedStatsWithClient(
   if (requestedRoundIds?.length === 0) return calculateStatsFromShots([], [], []);
 
   const presetLimit = presetLimitCount(filter);
+  // The team's SG scale needs only the player: asked for now, beside the round read, not after the shots (F-56).
+  // An RPC answers with { data, error } rather than throwing; a rejected call reads as no scale (1), as before.
+  const sgScaleRead = Promise.resolve(supabase.rpc('sg_scale_for_player', { p_player_id: playerId })).then(
+    (res) => res.data,
+    () => null,
+  );
 
   // Read EVERY round the filters match, then apply the countable-round rule, and
   // only THEN cut to the preset ("last 5/10/20") or the DETAILED_STATS_MAX_ROUNDS
@@ -1121,7 +1127,7 @@ async function queryDetailedStatsWithClient(
     // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) so the
     // Stats page SG matches the DB cache, which already applies it. Resolved via
     // the same DB function the cache uses (sg_scale_for_player) = single source.
-    const { data: sgScaleRaw } = await supabase.rpc('sg_scale_for_player', { p_player_id: playerId });
+    const sgScaleRaw = await sgScaleRead;
     const sgScale = typeof sgScaleRaw === 'number' && sgScaleRaw > 0 ? sgScaleRaw : 1;
 
     const computed = calculateStatsFromShots(shots, holesInfo, roundsInfo, { sgScale });
