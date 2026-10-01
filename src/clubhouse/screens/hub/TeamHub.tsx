@@ -202,7 +202,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
         : p.kind === 'task'
           ? writes.deleteTask(p.t.id)
           : p.kind === 'trip'
-            ? (writes.deleteTrip?.(p.t.id) ?? { success: false, error: 'Deleting a trip is not available here.' })
+            ? writes.deleteTrip(p.t.id)
             : writes.deleteDocument(p.f.id));
       if (normalise(res).success) {
         setGone(withId(p.kind === 'ann' ? p.a.id : p.kind === 'task' || p.kind === 'trip' ? p.t.id : p.f.id));
@@ -242,13 +242,8 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     setConfirm(p);
   };
 
-  // A coach's Edit and Delete on a trip, each offered only where the page was given the write (Edit needs the times read too).
-  const tripActions = coach
-    ? {
-        onEdit: writes.editTrip && writes.tripTimes ? setEditingTrip : undefined,
-        onDelete: writes.deleteTrip ? (t: ChHubTrip) => askDelete({ kind: 'trip', t }) : undefined,
-      }
-    : {};
+  // A coach's Edit and Delete on a trip.
+  const tripActions = coach ? { onEdit: setEditingTrip, onDelete: (t: ChHubTrip) => askDelete({ kind: 'trip', t }) } : {};
 
   const anns = useMemo(
     () => data.announcements.rows.filter((a) => !gone.has(a.id)).map((a) => (edited.has(a.id) ? { ...a, ...edited.get(a.id) } : a)),
@@ -472,7 +467,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             edit={{ announcement: editing, write: writes.editAnnouncement, onSaved: (id, change) => setEdited((m) => new Map(m).set(id, change)) }}
           />
           <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} events={data.tripEvents} players={data.players} playersError={data.playersError} write={writes.planTrip} writeTravelers={writes.setTravelers} readClasses={writes.travelerClasses} onDone={refresh} />
-          {writes.editTrip && writes.tripTimes && <TripEditSheet trip={editingTrip} onClose={() => setEditingTrip(null)} write={writes.editTrip} readTimes={writes.tripTimes} onDone={refresh} />}
+          <TripEditSheet trip={editingTrip} onClose={() => setEditingTrip(null)} write={writes.editTrip} onDone={refresh} />
           <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} />
           <ConfirmDelete
             open={!!confirm}
@@ -486,7 +481,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                     ? 'Players stop seeing the itinerary. Its expenses and budgets are deleted with it, and the calendar event stays. This can’t be undone.'
                     : 'Players can no longer open it. This can’t be undone.'
             }
-            code={confirm?.kind === 'ann' ? 'CH-10501' : confirm?.kind === 'task' ? 'CH-10502' : confirm?.kind === 'trip' ? undefined : 'CH-10503'}
+            code={confirm?.kind === 'ann' ? 'CH-10501' : confirm?.kind === 'task' ? 'CH-10502' : confirm?.kind === 'trip' ? 'CH-10504' : 'CH-10503'}
             pending={remove.pending}
             onCancel={() => setConfirm(null)}
             onConfirm={onConfirmDelete}

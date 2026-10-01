@@ -73,6 +73,8 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
     assignTask: vi.fn(ok),
     deleteTask: vi.fn(ok),
     planTrip: vi.fn(ok),
+    editTrip: vi.fn(ok),
+    deleteTrip: vi.fn(ok),
     uploadDocument: vi.fn(ok),
     deleteDocument: vi.fn(ok),
     ...over,
@@ -532,6 +534,26 @@ describe('Team Hub · coach', () => {
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     await expectCode('CH-10009', /Couldn’t delete NCAA hours log/);
     expect(screen.getByText('NCAA hours log')).toBeTruthy();
+  });
+
+  // The trip's own checks (the payload, the dates and times, what the loader gives Edit) are in hub-trip-manage.test.tsx.
+  it('CH-10504 CH-10009 CH-10013 deleting a trip asks first; a refusal keeps it; a refused edit keeps the sheet', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_COACH, writes({ deleteTrip: refuse(), editTrip: refuse() }), 'travel');
+    await user.click(screen.getByRole('button', { name: 'More for Seahawk Intercollegiate' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete trip' }));
+    await expectCode('CH-10504', /expenses and budgets are deleted with it/);
+    expect(w.deleteTrip).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await expectCode('CH-10009', /Couldn’t delete Seahawk Intercollegiate/);
+    expect(screen.getByText('Seahawk Intercollegiate')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Keep it' }));
+    await user.click(screen.getByRole('button', { name: 'More for Seahawk Intercollegiate' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Edit trip' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Edit trip' })).getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-10013', /Couldn’t update Seahawk Intercollegiate/);
+    expect(w.editTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'sea', departDate: '2026-11-14', departTime: '11:00', returnDate: '2026-11-16' }));
+    expect(screen.getByRole('dialog', { name: 'Edit trip' })).toBeTruthy();
   });
 
   it('CH-10305 a coach with nothing posted: New announcement and Plan a trip', async () => {

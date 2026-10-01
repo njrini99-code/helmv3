@@ -68,7 +68,7 @@ First run is the whole-page empty state, one for a coach (CH-10305, with New ann
 
 Status: DEFINED
 
-Checked before anything is sent, with the message under the field and the warning haptic (focus does not move to the first invalid field: the checklist's rule is not met): a headline of at least three characters and at least one player when the audience is chosen (CH-10101, CH-10102); a trip's name, place, leaving day and a return that is not before it (CH-10103 to CH-10106); a task's name and at least one player (CH-10107, CH-10108). The drop zone has no client-side check on a file: one the server refuses says so by name (CH-10008).
+Checked before anything is sent, with the message under the field and the warning haptic (focus does not move to the first invalid field: the checklist's rule is not met): a headline of at least three characters and at least one player when the audience is chosen (CH-10101, CH-10102); a trip's name, place, leaving day and a return that is not before it, on Plan a trip and on Edit trip (CH-10103 to CH-10106); a task's name and at least one player (CH-10107, CH-10108). The drop zone has no client-side check on a file: one the server refuses says so by name (CH-10008).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -99,7 +99,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 100606 | CH-10006 | `SAVING_A_TRIP_FAILS` | Saving a trip fails |
 | 100607 | CH-10007 | `ASSIGNING_A_TASK_FAILS` | Assigning a task fails |
 | 100608 | CH-10008 | `UPLOADING_A_FILE_FAILS` | Uploading a file fails |
-| 100609 | CH-10009 | `DELETING_A_POST_TASK_OR_FILE_FAILS` | Deleting a post, task or file fails |
+| 100609 | CH-10009 | `DELETING_A_POST_TASK_OR_FILE_FAILS` | Deleting a post, task, file or trip fails |
 | 100610 | CH-10201 | `RSVPS_DONT_LOAD` | RSVPs don't load |
 | 100611 | CH-10202 | `UPDATES_DONT_LOAD` | Updates don't load |
 | 100612 | CH-10203 | `TASKS_DONT_LOAD` | Tasks don't load |
@@ -115,6 +115,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 100622 | CH-10211 | `PLAN_A_TRIP_WHO_IS_INVITED_TO` | Plan a trip: who is invited to the chosen event didn't load |
 | 100623 | CH-10012 | `A_POST_GOES_OUT_BUT_ITS_FILES` | A post goes out but its files don't attach |
 | 100624 | CH-10212 | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_DIDNT` | Plan a trip: the travelers' classes didn't load |
+| 100625 | CH-10013 | `SAVING_AN_EDIT_TO_A_TRIP_FAILS` | Saving an edit to a trip fails |
 
 ## 07 — Network / offline
 
@@ -163,13 +164,14 @@ Status: N/A — Team Hub has no non-blocking warnings: a mistake in a form block
 
 Status: DEFINED
 
-Deleting a post, a task or a file asks first, with the warning haptic before the question, and says what goes with it: a post takes its acknowledgements, a task leaves every player's list, a file can no longer be opened and can't be brought back (CH-10501 to CH-10503, CH-10702). Nothing is optimistic: the item leaves the page only once the server has deleted it (101301). There is no Undo.
+Deleting a post, a task, a file or a trip asks first, with the warning haptic before the question, and says what goes with it: a post takes its acknowledgements, a task leaves every player's list, a file can no longer be opened and can't be brought back, a trip's expenses and budgets go with it while its calendar event stays (CH-10501 to CH-10504, CH-10702). Nothing is optimistic: the item leaves the page only once the server has deleted it (101301). There is no Undo.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 101101 | CH-10501 | `DELETING_AN_ANNOUNCEMENT` | Deleting an announcement |
 | 101102 | CH-10502 | `DELETING_A_TASK` | Deleting a task |
 | 101103 | CH-10503 | `DELETING_A_FILE` | Deleting a file |
+| 101104 | CH-10504 | `DELETING_A_TRIP` | Deleting a trip |
 
 ## 12 — State preservation
 

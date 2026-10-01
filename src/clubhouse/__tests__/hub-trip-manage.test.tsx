@@ -14,7 +14,7 @@ const track = vi.hoisted(() => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSess
 vi.mock('../lib/track', () => track);
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
-// What the live writes import: the actions, and the browser Supabase client the times read goes through.
+// What the live writes import: the actions.
 const travel = vi.hoisted(() => ({
   createGolfTravelItinerary: vi.fn(),
   getTravelerClassConflicts: vi.fn(),
@@ -27,26 +27,8 @@ vi.mock('@/app/golf/actions/announcements', () => ({ createEnrichedAnnouncement:
 vi.mock('@/app/golf/actions/documents', () => ({ createGolfDocument: vi.fn(), deleteGolfDocument: vi.fn(), getPreviewUrl: vi.fn(), uploadGolfDocument: vi.fn() }));
 vi.mock('@/app/golf/actions/golf', () => ({ respondToEvent: vi.fn(), updateGolfEvent: vi.fn() }));
 vi.mock('@/app/golf/actions/tasks', () => ({ completeTask: vi.fn(), uncompleteTask: vi.fn(), createTask: vi.fn(), deleteTask: vi.fn() }));
-const itinerary = vi.hoisted(() => ({ read: vi.fn(), table: vi.fn(), columns: vi.fn(), id: vi.fn() }));
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    from: (table: string) => {
-      itinerary.table(table);
-      return {
-        select: (columns: string) => {
-          itinerary.columns(columns);
-          return {
-            eq: (_col: string, id: string) => {
-              itinerary.id(id);
-              return { maybeSingle: itinerary.read };
-            },
-          };
-        },
-      };
-    },
-  }),
-}));
 
+import { formatters, trip as hubTrip } from '../data/hub';
 import { TeamHub } from '../screens/hub/TeamHub';
 import { LIVE_HUB_WRITES, type ChHubWrites } from '../screens/hub/writes';
 import { ToastProvider } from '../ui/Toast';
@@ -55,7 +37,6 @@ import type { ChTeamHub } from '../data/hub';
 import './dialog-polyfill';
 
 const ok = () => Promise.resolve({ success: true });
-const TIMES = { departTime: '11:00', returnDate: '2026-11-16', returnTime: '17:30' };
 const SEA = 'Seahawk Intercollegiate';
 const CFI = 'Carolina Fall Invitational';
 
@@ -74,11 +55,10 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
     assignTask: vi.fn(ok),
     deleteTask: vi.fn(ok),
     planTrip: vi.fn(ok),
-    uploadDocument: vi.fn(ok),
-    deleteDocument: vi.fn(ok),
-    tripTimes: vi.fn(() => Promise.resolve({ success: true, data: TIMES })),
     editTrip: vi.fn(ok),
     deleteTrip: vi.fn(ok),
+    uploadDocument: vi.fn(ok),
+    deleteDocument: vi.fn(ok),
     ...over,
   };
 }
@@ -98,21 +78,28 @@ function show(data: ChTeamHub = PREVIEW_HUB_COACH, w: ChHubWrites = writes()) {
 }
 
 type User = ReturnType<typeof userEvent.setup>;
+const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const openMenu = async (user: User, trip: string, item: string) => {
   await user.click(screen.getByRole('button', { name: `More for ${trip}` }));
   await user.click(await screen.findByRole('menuitem', { name: item }));
 };
 const editSheet = async () => within(await screen.findByRole('dialog', { name: 'Edit trip' }));
+/** A date field set the way a person picks one: the value changes and the change is announced. */
+function fireDate(input: HTMLInputElement, value: string) {
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+  set.call(input, value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
 
 beforeEach(() => {
   hapticSpy.mockClear();
   track.chReport.mockClear();
   router.refresh.mockClear();
-  for (const f of [...Object.values(travel), ...Object.values(itinerary)]) f.mockReset();
+  for (const f of Object.values(travel)) f.mockReset();
 });
 
-describe('Team Hub · Travel · Delete a trip (D2)', () => {
-  it('offers a coach Edit trip and Delete trip on every trip, and a player neither', async () => {
+describe('Team Hub · Travel · who gets the menu', () => {
+  it('a coach has Edit trip and Delete trip on every trip', async () => {
     const { user } = show();
     expect(screen.getByRole('button', { name: `More for ${CFI}` })).toBeTruthy();
     expect(screen.getByRole('button', { name: `More for ${SEA}` })).toBeTruthy();
@@ -126,20 +113,15 @@ describe('Team Hub · Travel · Delete a trip (D2)', () => {
     expect(screen.getByText(SEA)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^More for / })).toBeNull();
   });
+});
 
-  it('a screen given no trip writes offers no menu', () => {
-    const w = writes();
-    delete w.editTrip;
-    delete w.deleteTrip;
-    show(PREVIEW_HUB_COACH, w);
-    expect(screen.queryByRole('button', { name: `More for ${SEA}` })).toBeNull();
-  });
-
-  it('asks first with a warning, says what goes with the trip, and Keep it sends nothing', async () => {
+describe('Team Hub · Travel · CH-10504 CH-10009 Delete a trip (D2)', () => {
+  it('CH-10504 asks first with a warning, says what goes with the trip, and Keep it sends nothing', async () => {
     const { user, w } = show();
     await openMenu(user, SEA, 'Delete trip');
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     const ask = await screen.findByRole('dialog', { name: 'Delete this trip?' });
+    expect(code('CH-10504')).toBe(ask);
     expect(ask.textContent).toMatch(/expenses and budgets are deleted with it/);
     expect(ask.textContent).toMatch(/calendar event stays/);
     expect(w.deleteTrip).not.toHaveBeenCalled();
@@ -163,7 +145,7 @@ describe('Team Hub · Travel · Delete a trip (D2)', () => {
     expect(screen.getByText(CFI)).toBeTruthy();
   });
 
-  it('a refused delete says so with the reason, keeps the trip, and Retry sends it again', async () => {
+  it('CH-10009 a refused delete says so with the reason, keeps the trip, and Retry sends it again', async () => {
     const deleteTrip = vi.fn().mockImplementationOnce(() => Promise.resolve({ success: false, error: 'Not authorized for this team' })).mockImplementationOnce(ok);
     const { user } = show(PREVIEW_HUB_COACH, writes({ deleteTrip }));
     await openMenu(user, SEA, 'Delete trip');
@@ -172,6 +154,7 @@ describe('Team Hub · Travel · Delete a trip (D2)', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn’t delete Seahawk Intercollegiate/);
     expect(alert.textContent).toMatch(/Not authorized for this team/);
+    expect(code('CH-10009')).not.toBeNull();
     expect(screen.getByText(SEA)).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'hub.delete' }));
@@ -192,32 +175,32 @@ describe('Team Hub · Travel · Delete a trip (D2)', () => {
   });
 });
 
-describe('Team Hub · Travel · Edit a trip (D2)', () => {
-  it('opens on the trip as saved, with its times read in', async () => {
-    const { user, w } = show();
+describe('Team Hub · Travel · CH-10013 CH-10103 CH-10104 CH-10105 CH-10106 Edit a trip (D2)', () => {
+  it('opens on the trip as saved, dates and times included', async () => {
+    const { user } = show();
     await openMenu(user, SEA, 'Edit trip');
     const d = await editSheet();
-    expect(w.tripTimes).toHaveBeenCalledWith('sea');
     expect((d.getByLabelText('Trip') as HTMLInputElement).value).toBe(SEA);
     expect((d.getByLabelText('Where') as HTMLInputElement).value).toBe('Country Club of Landfall · Wilmington, NC');
     expect(d.getByRole('radio', { name: 'Bus' })).toHaveAttribute('aria-checked', 'true');
     expect((d.getByLabelText('Leaves') as HTMLInputElement).value).toBe('2026-11-14');
     expect((d.getByLabelText('From') as HTMLInputElement).value).toBe('Finley lot');
+    expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-16');
     expect((d.getByLabelText('Hotel (optional)') as HTMLInputElement).value).toBe('Hotel Ballast');
-    await waitFor(() => expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-16'));
     const [leaveAt, backAt] = d.getAllByLabelText('At') as HTMLInputElement[];
     expect(leaveAt!.value).toBe('11:00');
-    expect(backAt!.value).toBe('17:30');
+    // This trip has no return time saved.
+    expect(backAt!.value).toBe('');
   });
 
-  it('Save calls editTrip with every field, the times as read, then closes, says so and reads the page again', async () => {
+  it('Save calls editTrip with every field, then closes, says so and reads the page again', async () => {
     const { user, w } = show();
     await openMenu(user, SEA, 'Edit trip');
     const d = await editSheet();
-    await waitFor(() => expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-16'));
     await user.clear(d.getByLabelText('Hotel (optional)'));
     await user.type(d.getByLabelText('Hotel (optional)'), 'Hotel Ballast Wilmington');
     await user.click(d.getByRole('radio', { name: 'Van' }));
+    fireDate(d.getByLabelText('Back') as HTMLInputElement, '2026-11-17');
     await user.click(d.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
@@ -227,12 +210,12 @@ describe('Team Hub · Travel · Edit a trip (D2)', () => {
         destination: 'Country Club of Landfall · Wilmington, NC',
         transport: 'van',
         departDate: '2026-11-14',
+        departTime: '11:00',
         from: 'Finley lot',
+        returnDate: '2026-11-17',
+        returnTime: '',
         hotel: 'Hotel Ballast Wilmington',
         notes: '',
-        departTime: '11:00',
-        returnDate: '2026-11-16',
-        returnTime: '17:30',
       }),
     );
     expect(await screen.findByText(`${SEA} updated`)).toBeTruthy();
@@ -241,12 +224,22 @@ describe('Team Hub · Travel · Edit a trip (D2)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('success');
   });
 
-  it('a refused save shows the reason, keeps the sheet with what was typed, and Retry sends it again', async () => {
+  it('a wrong date and a wrong time can be fixed: the changed values are what is sent', async () => {
+    const { user, w } = show();
+    await openMenu(user, CFI, 'Edit trip');
+    const d = await editSheet();
+    fireDate(d.getByLabelText('Leaves') as HTMLInputElement, '2026-11-04');
+    const [leaveAt] = d.getAllByLabelText('At') as HTMLInputElement[];
+    fireDate(leaveAt!, '13:30');
+    await user.click(d.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.editTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'cfi', departDate: '2026-11-04', departTime: '13:30', returnDate: '2026-11-05', returnTime: '17:00' })));
+  });
+
+  it('CH-10013 a refused save shows the reason, keeps the sheet with what was typed, and Retry sends it again', async () => {
     const editTrip = vi.fn().mockImplementationOnce(() => Promise.resolve({ success: false, error: 'Invalid travel itinerary data. Please check your inputs.' })).mockImplementationOnce(ok);
     const { user } = show(PREVIEW_HUB_COACH, writes({ editTrip }));
     await openMenu(user, SEA, 'Edit trip');
     const d = await editSheet();
-    await waitFor(() => expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-16'));
     await user.clear(d.getByLabelText('Trip'));
     await user.type(d.getByLabelText('Trip'), 'Seahawk Classic');
     await user.click(d.getByRole('button', { name: 'Save changes' }));
@@ -254,6 +247,7 @@ describe('Team Hub · Travel · Edit a trip (D2)', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn’t update Seahawk Classic/);
     expect(alert.textContent).toMatch(/Invalid travel itinerary data/);
+    expect(code('CH-10013')).not.toBeNull();
     expect(screen.getByRole('dialog', { name: 'Edit trip' })).toBeTruthy();
     expect((d.getByLabelText('Trip') as HTMLInputElement).value).toBe('Seahawk Classic');
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -266,11 +260,10 @@ describe('Team Hub · Travel · Edit a trip (D2)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Edit trip' })).toBeNull());
   });
 
-  it('a trip needs a name, a place and a leaving day, and the return cannot be before it; nothing is sent until it does', async () => {
+  it('CH-10103 CH-10104 CH-10105 CH-10106 a trip needs a name, a place and a leaving day, and the return cannot be before it; nothing is sent until it does', async () => {
     const { user, w } = show();
     await openMenu(user, SEA, 'Edit trip');
     const d = await editSheet();
-    await waitFor(() => expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-16'));
     await user.clear(d.getByLabelText('Trip'));
     await user.type(d.getByLabelText('Trip'), 'Ab');
     await user.clear(d.getByLabelText('Where'));
@@ -280,6 +273,9 @@ describe('Team Hub · Travel · Edit a trip (D2)', () => {
     expect(d.getByText('Name the trip, at least three characters.')).toBeTruthy();
     expect(d.getByText('Where is the team going?')).toBeTruthy();
     expect(d.getByText('Pick the day the team leaves.')).toBeTruthy();
+    expect(code('CH-10103')).not.toBeNull();
+    expect(code('CH-10104')).not.toBeNull();
+    expect(code('CH-10105')).not.toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     expect(w.editTrip).not.toHaveBeenCalled();
 
@@ -288,54 +284,8 @@ describe('Team Hub · Travel · Edit a trip (D2)', () => {
     fireDate(d.getByLabelText('Leaves') as HTMLInputElement, '2026-11-20');
     await user.click(d.getByRole('button', { name: 'Save changes' }));
     expect(d.getByText('The return can’t be before the departure.')).toBeTruthy();
+    expect(code('CH-10106')).not.toBeNull();
     expect(w.editTrip).not.toHaveBeenCalled();
-  });
-
-  it('when the times will not read, they stay as they are: the fields are off, Save leaves them out, and Try again reads them', async () => {
-    const tripTimes = vi
-      .fn()
-      .mockImplementationOnce(() => Promise.resolve({ success: false, error: 'no' }))
-      .mockImplementation(() => Promise.resolve({ success: true, data: TIMES }));
-    const { user, w } = show(PREVIEW_HUB_COACH, writes({ tripTimes }));
-    await openMenu(user, SEA, 'Edit trip');
-    const d = await editSheet();
-    const failed = await d.findByRole('alert');
-    expect(failed.textContent).toMatch(/The times didn’t load, so they stay as they are/);
-    expect(d.getByLabelText('Back')).toBeDisabled();
-    for (const at of d.getAllByLabelText('At')) expect(at).toBeDisabled();
-    expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'hub.editTrip', action: 'readTimes' }));
-
-    await user.type(d.getByLabelText('Hotel (optional)'), ' Wilmington');
-    await user.click(d.getByRole('button', { name: 'Save changes' }));
-    await waitFor(() => expect(w.editTrip).toHaveBeenCalledTimes(1));
-    const sent = vi.mocked(w.editTrip!).mock.calls[0]![0];
-    expect(sent.hotel).toBe('Hotel Ballast Wilmington');
-    // Not sent at all, so the trip's own stay as saved (a blank would clear them).
-    expect(sent).not.toHaveProperty('departTime');
-    expect(sent).not.toHaveProperty('returnDate');
-    expect(sent).not.toHaveProperty('returnTime');
-  });
-
-  it('Try again reads the times and opens the fields', async () => {
-    const tripTimes = vi
-      .fn()
-      .mockImplementationOnce(() => Promise.resolve({ success: false, error: 'no' }))
-      .mockImplementation(() => Promise.resolve({ success: true, data: TIMES }));
-    const { user } = show(PREVIEW_HUB_COACH, writes({ tripTimes }));
-    await openMenu(user, SEA, 'Edit trip');
-    const d = await editSheet();
-    await user.click(await d.findByRole('button', { name: 'Try again' }));
-    await waitFor(() => expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-16'));
-    expect(d.getByLabelText('Back')).not.toBeDisabled();
-    expect(d.queryByRole('alert')).toBeNull();
-  });
-
-  it('a times read that throws is reported and handled like one that failed', async () => {
-    const { user } = show(PREVIEW_HUB_COACH, writes({ tripTimes: vi.fn(() => Promise.reject(new Error('network'))) }));
-    await openMenu(user, SEA, 'Edit trip');
-    const d = await editSheet();
-    expect((await d.findByRole('alert')).textContent).toMatch(/The times didn’t load/);
-    expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'readTimes' }));
   });
 
   it('opening a different trip starts from that trip, not the last one', async () => {
@@ -349,15 +299,46 @@ describe('Team Hub · Travel · Edit a trip (D2)', () => {
     d = await editSheet();
     expect((d.getByLabelText('Trip') as HTMLInputElement).value).toBe(CFI);
     expect((d.getByLabelText('Hotel (optional)') as HTMLInputElement).value).toBe('Mid Pines Inn');
+    expect((d.getByLabelText('Back') as HTMLInputElement).value).toBe('2026-11-05');
   });
 });
 
-/** A date field set the way a person picks one: the value changes and the change is announced. */
-function fireDate(input: HTMLInputElement, value: string) {
-  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
-  set.call(input, value);
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-}
+describe('Team Hub · Travel · the loader gives Edit the trip as saved', () => {
+  const f = formatters('America/New_York', new Date('2026-10-20T12:00:00Z'));
+  const row = (over: Record<string, unknown> = {}) =>
+    hubTrip(
+      {
+        id: 'x',
+        event_id: null,
+        event_name: 'Seahawk',
+        destination: 'Wilmington',
+        transportation_type: 'bus',
+        departure_date: '2026-11-14',
+        departure_time: '11:00:00',
+        departure_location: 'Finley lot',
+        return_date: '2026-11-16',
+        return_time: '17:30:00',
+        hotel_name: null,
+        gear_list: null,
+        room_assignments: null,
+        notes: null,
+        flight_info: null,
+        uniform_requirements: null,
+        ...over,
+      },
+      f,
+      '2026-10-20',
+      { travelers: null, count: null, mine: null },
+    );
+
+  it('carries the departure time, return day and return time as HH:MM and YYYY-MM-DD, beside the words', () => {
+    expect(row()).toMatchObject({ departDate: '2026-11-14', departTime: '11:00', returnDate: '2026-11-16', returnTime: '17:30', depart: expect.stringContaining('11:00'), back: expect.stringContaining('5:30') });
+  });
+
+  it('gives null for what is not set', () => {
+    expect(row({ departure_time: null, return_date: null, return_time: null })).toMatchObject({ departTime: null, returnDate: null, returnTime: null });
+  });
+});
 
 describe('Team Hub · Travel · the live trip writes (D2)', () => {
   const edit = {
@@ -366,55 +347,42 @@ describe('Team Hub · Travel · the live trip writes (D2)', () => {
     destination: ' Landfall ',
     transport: 'van' as const,
     departDate: '2026-11-14',
+    departTime: '11:00',
     from: ' Finley lot ',
+    returnDate: '2026-11-16',
+    returnTime: '',
     hotel: ' ',
     notes: ' Bus leaves on time ',
   };
 
-  it('editTrip sends the trimmed fields to updateGolfTravelItinerary, with the times when they were read', async () => {
+  it('editTrip sends every field, trimmed, to updateGolfTravelItinerary; a blank clears one', async () => {
     travel.updateGolfTravelItinerary.mockResolvedValue({ success: true });
-    await LIVE_HUB_WRITES.editTrip!({ ...edit, departTime: '11:00', returnDate: '2026-11-16', returnTime: '' });
+    await LIVE_HUB_WRITES.editTrip(edit);
     expect(travel.updateGolfTravelItinerary).toHaveBeenCalledWith({
       id: 'sea',
       event_name: 'Seahawk Classic',
       destination: 'Landfall',
       transportation_type: 'van',
       departure_date: '2026-11-14',
+      departure_time: '11:00',
       departure_location: 'Finley lot',
+      return_date: '2026-11-16',
       // A blank clears the field (the action turns '' into null).
+      return_time: '',
       hotel_name: '',
       notes: 'Bus leaves on time',
-      departure_time: '11:00',
-      return_date: '2026-11-16',
-      return_time: '',
     });
   });
 
-  it('editTrip leaves out the times that were not read, and a transport the trip never had', async () => {
+  it('editTrip leaves out a transport the trip never had, so its own is kept', async () => {
     travel.updateGolfTravelItinerary.mockResolvedValue({ success: true });
-    await LIVE_HUB_WRITES.editTrip!({ ...edit, transport: null });
-    const sent = travel.updateGolfTravelItinerary.mock.calls[0]![0];
-    expect(Object.keys(sent).sort()).toEqual(['departure_date', 'departure_location', 'destination', 'event_name', 'hotel_name', 'id', 'notes']);
+    await LIVE_HUB_WRITES.editTrip({ ...edit, transport: null });
+    expect(travel.updateGolfTravelItinerary.mock.calls[0]![0]).not.toHaveProperty('transportation_type');
   });
 
   it('deleteTrip calls deleteGolfTravelItinerary with the trip and returns its answer', async () => {
     travel.deleteGolfTravelItinerary.mockResolvedValue({ success: false, error: 'Itinerary not found' });
-    await expect(LIVE_HUB_WRITES.deleteTrip!('sea')).resolves.toEqual({ success: false, error: 'Itinerary not found' });
+    await expect(LIVE_HUB_WRITES.deleteTrip('sea')).resolves.toEqual({ success: false, error: 'Itinerary not found' });
     expect(travel.deleteGolfTravelItinerary).toHaveBeenCalledWith('sea');
-  });
-
-  it('tripTimes reads the trip row and gives the times as HH:MM, and blank for what is not set', async () => {
-    itinerary.read.mockResolvedValue({ data: { departure_time: '11:00:00', return_date: null, return_time: null }, error: null });
-    await expect(LIVE_HUB_WRITES.tripTimes!('sea')).resolves.toEqual({ success: true, data: { departTime: '11:00', returnDate: '', returnTime: '' } });
-    expect(itinerary.table).toHaveBeenCalledWith('golf_travel_itineraries');
-    expect(itinerary.columns).toHaveBeenCalledWith('departure_time, return_date, return_time');
-    expect(itinerary.id).toHaveBeenCalledWith('sea');
-  });
-
-  it('tripTimes says so when the read fails or the trip is gone', async () => {
-    itinerary.read.mockResolvedValueOnce({ data: null, error: { message: 'boom' } });
-    await expect(LIVE_HUB_WRITES.tripTimes!('sea')).resolves.toEqual({ success: false, error: 'boom' });
-    itinerary.read.mockResolvedValueOnce({ data: null, error: null });
-    await expect(LIVE_HUB_WRITES.tripTimes!('sea')).resolves.toEqual({ success: false, error: 'This trip was not found.' });
   });
 });

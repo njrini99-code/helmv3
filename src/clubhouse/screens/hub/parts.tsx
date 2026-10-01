@@ -210,7 +210,7 @@ export function TripPass({
   /** A trip after the next one: it is a trip, not "Next trip". */
   later?: boolean;
   role: ChTeamHub['role'];
-  /** A coach's Edit and Delete, each offered only where the page was given the write. */
+  /** A coach's Edit and Delete; a player's pass has neither. */
   onEdit?: (t: ChHubTrip) => void;
   onDelete?: (t: ChHubTrip) => void;
 }) {

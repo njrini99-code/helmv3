@@ -75,9 +75,14 @@ export interface ChHubTrip {
   departDate: string | null;
   /** "Mon 12:00 PM" */
   depart: string | null;
+  /** The departure time as saved (HH:MM), for Edit; `depart` is the same time in words. */
+  departTime: string | null;
   from: string | null;
   /** "Wed · 5:00 PM" */
   back: string | null;
+  /** The return day (YYYY-MM-DD) and time (HH:MM) as saved, for Edit; `back` is the same in words. */
+  returnDate: string | null;
+  returnTime: string | null;
   hotel: string | null;
   transport: string | null;
   notes: string | null;
@@ -542,7 +547,7 @@ function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: stri
   };
 }
 
-function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: { travelers: string[] | null; ids?: string[] | null; count: number | null; mine: boolean | null }): ChHubTrip {
+export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: { travelers: string[] | null; ids?: string[] | null; count: number | null; mine: boolean | null }): ChHubTrip {
   const gear = Array.isArray(t.gear_list) ? t.gear_list.join(', ') : t.gear_list;
   return {
     id: t.id,
@@ -551,8 +556,12 @@ function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: 
     dates: f.range(t.departure_date, t.return_date),
     departDate: t.departure_date,
     depart: t.departure_date ? [f.wd(t.departure_date), t.departure_time ? f.clock(t.departure_time) : null].filter(Boolean).join(' ') : null,
+    // `time` columns come back as HH:MM:SS; the time field takes HH:MM.
+    departTime: t.departure_time ? t.departure_time.slice(0, 5) : null,
     from: t.departure_location,
     back: t.return_date ? [f.wd(t.return_date), t.return_time ? f.clock(t.return_time) : null].filter(Boolean).join(' · ') : null,
+    returnDate: t.return_date,
+    returnTime: t.return_time ? t.return_time.slice(0, 5) : null,
     hotel: t.hotel_name,
     transport: t.transportation_type,
     notes: t.notes,

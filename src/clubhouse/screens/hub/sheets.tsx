@@ -811,8 +811,7 @@ export function ConfirmDelete({
   open: boolean;
   what: string;
   body: string;
-  /** Catalog number, when the question has one. */
-  code?: string;
+  code: string;
   pending: boolean;
   onCancel: () => void;
   onConfirm: () => void;
