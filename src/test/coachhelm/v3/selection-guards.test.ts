@@ -98,7 +98,8 @@ describe('confirmSelection guards', () => {
 
     const r = await confirmSelection(sb as unknown as Sb, { qualifier_id: 'q1', user_id: 'u9' });
     expect(r.ok).toBe(true);
-    const { data } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    const { data, error } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    expect(error).toBeNull();
     const byPlayer = new Map((data as Array<Record<string, unknown>>).map((row) => [row.player_id, row]));
     expect(byPlayer.get('p1')).toMatchObject({ selection_type: 'coach_pick', coach_reasoning: 'Course history' });
     expect(byPlayer.get('p2')).toMatchObject({ selection_type: 'top_score' });
@@ -115,7 +116,8 @@ describe('confirmSelection guards', () => {
     ]);
     expect([a.ok, b.ok].sort()).toEqual([false, true]);
     expect(notify).toHaveBeenCalledTimes(1);
-    const { data } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    const { data, error } = await sb.from('golf_qualifier_selections').select('*').eq('qualifier_id', 'q1');
+    expect(error).toBeNull();
     expect(data).toHaveLength(2);
   });
 
@@ -137,7 +139,8 @@ describe('transitionSelectionState guards', () => {
     const sb = buildSb();
     const r = await transitionSelectionState(sb as unknown as Sb, 'q1', 'selected');
     expect(r.ok).toBe(false);
-    const { data } = await sb.from('golf_qualifiers').select('selection_state').eq('id', 'q1').maybeSingle();
+    const { data, error } = await sb.from('golf_qualifiers').select('selection_state').eq('id', 'q1').maybeSingle();
+    expect(error).toBeNull();
     expect((data as Record<string, unknown>).selection_state).toBe('closed');
   });
 });
@@ -147,7 +150,8 @@ describe('setCoachPick guards', () => {
     const sb = buildSb();
     const r = await setCoachPick(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p9', reasoning: 'Senior', user_id: 'u9' });
     expect(r).toEqual({ ok: false, error: 'player is not entered in this qualifier' });
-    const { data } = await sb.from('golf_qualifier_selections').select('*');
+    const { data, error } = await sb.from('golf_qualifier_selections').select('*');
+    expect(error).toBeNull();
     expect(data).toHaveLength(0);
   });
 

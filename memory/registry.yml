@@ -468,6 +468,7 @@ features:
         - supabase/migrations/*preserve_golf_history*.sql
         - supabase/migrations/*preserve_started_round*.sql
         - supabase/migrations/*single_flight*.sql
+        - supabase/migrations/*submit_round_expected_updated_at*.sql
         - supabase/migrations/*reclassify*.sql
         - supabase/migrations/*round_stranding*.sql
         - supabase/migrations/*round_recap*.sql
