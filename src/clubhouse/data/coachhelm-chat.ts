@@ -155,6 +155,7 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
   const counted = pulse && roundsFailed ? { ...pulse, players_without_rounds: 0, players_with_recent_rounds: 0 } : pulse;
 
   const data: ChAskData = {
+    coachId: ctx.coach_id,
     teamName: ctx.team_name,
     timezone: ctx.timezone,
     nowIso: new Date().toISOString(),

@@ -18,6 +18,7 @@ import { EmptyState, Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
 import { BoardPartial, FocusCard, Head, PulseList } from './parts';
+import { paramNow, writeParam } from './url-state';
 import { useViewSwitch } from './use-view-switch';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
 
@@ -39,12 +40,21 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   const phone = useChPhone();
   const toast = useToast();
   const players = data.players.list;
-  // Roster's View insights opens on its player; a player with no insight on the board opens the most pressing one. The name is kept
-  // with the id so that a refresh that takes the player off the board is said, not answered with another player's card in silence.
-  const [picked, setPicked] = useState<{ id: string; name: string } | null>(() => {
-    const first = players.find((p) => p.id === initialPlayer) ?? players[0];
+  // Roster's View insights opens on its player; a player with no insight on the board opens the most pressing one. The pick lives in the
+  // address (`?player=`, written without a server round trip) so Back and a reload return to it (owner rule 8); the address is read
+  // when the board mounts, because Back restores the render with the props it first had. The name is kept with the id so that a refresh
+  // that takes the player off the board is said, not answered with another player's card in silence.
+  const opening = (...ids: Array<string | null | undefined>) => {
+    const first = ids.map((id) => players.find((p) => p.id === id)).find((p) => p) ?? players[0];
     return first ? { id: first.id, name: first.name } : null;
-  });
+  };
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(() => opening(paramNow('player'), initialPlayer));
+  // A new `?player=` handed down by the server (a link to this page for another player) is a new opening, not a prop copied once.
+  const [seenInitial, setSeenInitial] = useState(initialPlayer);
+  if (initialPlayer !== seenInitial) {
+    setSeenInitial(initialPlayer);
+    if (players.some((p) => p.id === initialPlayer)) setPicked(opening(initialPlayer));
+  }
   // Who a write is in flight for (set inside the action, so a toast's Retry sets it too): only that player's card says "Assigning",
   // "Dismissing" or "Undoing". The controls of every card wait meanwhile, because the one write in flight is the hook's.
   const [acting, setActing] = useState<{ playerId: string; kind: 'assign' | 'dismiss' | 'undo' } | null>(null);
@@ -214,6 +224,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                       onClick={() => {
                         haptic('select');
                         setPicked({ id: p.id, name: p.name });
+                        writeParam('player', p.id);
                       }}
                     >
                       <Avatar name={p.name} size={phone ? 28 : 34} />

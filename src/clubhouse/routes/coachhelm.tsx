@@ -62,7 +62,7 @@ async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlay
  * Board's loader checks the gate itself; a view's is checked here, before its read.
  */
 async function PlayerHelmView({ playerId, drill, insight }: { playerId: string; drill: Exclude<PlayerHelmView, 'board'> | null; insight?: string }) {
-  if (!drill) return <PlayerBoard data={await loadPlayerCoachHelm({ playerId })} />;
+  if (!drill) return <PlayerBoard data={await loadPlayerCoachHelm({ playerId })} initialPicked={insight} />;
   const gate = await loadPlayerHelmGate(playerId);
   const closed: ChViewLoad<never> | null = gate.status === 'on' ? null : gate.status === 'off' ? { status: 'off', reason: gate.reason } : { status: 'failed' };
   if (drill === 'profile') return <Profile load={closed ?? (await loadPlayerProfile({ playerId }))} />;
@@ -113,8 +113,9 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
     const drill = playerHelmDrill(view);
     return (
       <Suspense fallback={viewSkeleton(drill ?? 'board')}>
-        {/* `?insight=` names a card to open on the Deep dive and means nothing on any other view. */}
-        <PlayerHelmView playerId={session.player.id} drill={drill} insight={drill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} />
+        {/* `?insight=` names a card to open on, on the Board and on the Deep dive, and means nothing on the other views. A pick on either
+            is written there without a server round trip (`screens/coachhelm/url-state.ts`), so Back and a reload return to it. */}
+        <PlayerHelmView playerId={session.player.id} drill={drill} insight={(drill === null || drill === 'deep-dive') && typeof insight === 'string' ? insight : undefined} />
       </Suspense>
     );
   }

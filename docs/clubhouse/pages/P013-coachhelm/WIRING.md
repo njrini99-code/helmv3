@@ -230,6 +230,43 @@ Read path:  the loaders, on the server, in rounds (132101); a coach's are the re
 Write path: the server actions above, through writes.ts
 ```
 
+### DATA-COACHHELM loader contract (owner rules, 2026-10-01)
+
+What the loaders say when a read fails, and what the screens may rely on.
+
+- A read that failed is never an empty or zero value. Each loader result
+  carries its own flag: `insights.error`, `proposals.error`, `roster.error`,
+  `players.error`, `pulse.error`, and, new, `missing` (`ChBoardMissing`:
+  `drills`, `assigned`, `declined`, `newest`, `tour`), present only when a
+  read beside the top card failed. The coach's board does not offer Assign or
+  Propose again while `assigned`, `declined` or `newest` is set (CH-13207).
+- `ChCoachHelmData.pulse` is a `ChPulse` (a preview's or a test's) or a
+  `Promise<ChPulseResult>` (the loader's): the loader never awaits the pulse,
+  starts it after the gate, and hands it over marked handled and never
+  rejecting (`ok` with the pulse, or `failed`). `CoachBoard` reads it with
+  `use()` in the pulse card's own Suspense. A render that adds a read adds it
+  to the loader, not to the board: the board adds none.
+- The delivery actions (`getInsightsForPlayer`, `getTopInsightsForPlayers`)
+  record what they return as shown: each runs once per render, after the
+  gate. Nothing in this contract starts one early, twice or from the client.
+- `ProgramPulse.failed` (`lib/coachhelm/v3/chat/program-pulse.ts`) names the
+  pulse reads that failed and is absent when none did; `items` and the counts
+  are what they always were. An item made from a failed read is dropped by the
+  Clubhouse layer (`pulseItemsThatStand`), and a rounds failure makes
+  `players_without_rounds` and `players_with_recent_rounds` not facts
+  (`noRoundsFrom`, the coverage line and the openers check `failed` first).
+- `CoachChatContext.roster_failed` (`lib/coachhelm/v3/chat/context.ts`) is set
+  only when the membership read failed; `loadAskCoachHelm` then answers
+  `failed`, never `noRoster`. `PlayerCohort.failed` (the cohort loader) is set
+  only on a failed lookup, for the page that would state the cohort as fact;
+  the generators and the cron read `gender` as before.
+- The coach's and the player's picks are in the address (`?player=`,
+  `?insight=`), written with `history.replaceState` and never through the
+  router, and read from the address when the screen mounts
+  (`screens/coachhelm/url-state.ts`). The Ask composer's draft is in
+  sessionStorage under the route and team, the coach and the chat; the History
+  search and the chats panel use `useChSessionState`.
+
 ### DATA-COACHHELM-VIEWS
 
 The player's Game profile, Standing and Deep dive. Reads only, for the signed-in
@@ -335,6 +372,7 @@ Development is not duplicated here).
 - Every follow-up to a write lives inside its `useAction` function. Anything
   added after `await x.run()` in a handler is skipped when the toast's Retry
   lands (131401).
-- On a coach's gate lookup failure the loader returns an empty pulse with no
-  error, so the board draws "Nothing is flagged in the pulse right now." beside
-  the roster notice (130608, found, not fixed).
+- On a coach's gate lookup failure the loader still reads the pulse (it is the
+  program's, not the gate's) and hands it over like any other, so the board
+  draws the pulse or its own notice beside the roster notice, never "Nothing
+  is flagged" over a pulse that was not read (130608).

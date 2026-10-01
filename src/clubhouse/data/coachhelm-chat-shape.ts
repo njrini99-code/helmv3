@@ -171,6 +171,8 @@ export interface ChAskThread {
 }
 
 export interface ChAskData {
+  /** The signed-in coach, so an unsent message is kept for this coach alone (`chat/drafts.ts`); absent in a preview, which then keeps none. */
+  coachId?: string;
   teamName: string;
   timezone: string;
   /** The server's clock, so History groups the same on the server and in the browser. */

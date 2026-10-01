@@ -255,3 +255,59 @@ read's focus moves to its title, as `PhoneScreen` does), and `npm run
 clubhouse:a11y` itself (its page list does not include these previews and is not
 this change's to edit). `npm run build` was not run: no `'use server'` file
 changed.
+
+## Update 2026-10-01: owner rules (false empties, pending scope, streaming, return state)
+
+Observed after the four phases (CHANGELOG.md has what changed). Run from
+`/Users/ricknini/worktrees/helmv3/swap-audit` on `agent/swap-audit`. The phases
+are `50e67be9b` (failed reads), `cc966fdbc` (pending scope and races),
+`fd7267f04` (the pulse streams) and the return-state commit after them.
+
+- Tests: `npm run test:file --` over every CoachHelm file under
+  `src/clubhouse/__tests__`, the shell, roster, alias, logic, native,
+  session-state and refresh-states tests, `src/app/api/coachhelm`,
+  `src/lib/coachhelm` and `src/test/coachhelm`: exit 0. 315 files passed and
+  1 skipped; 3760 tests passed (1 expected fail, 3 skipped, 10 todo).
+- New tests, by owner rule: failed reads (`coachhelm-failed-reads.test.tsx`
+  and the three lib tests), selection and pending scope
+  (`coachhelm-selection.test.tsx`, `coachhelm-retry.test.tsx`), Ask races
+  (`coachhelm-ask-races.test.tsx`), streaming (`coachhelm-streaming.test.tsx`)
+  and return state (`coachhelm-return-state.test.tsx`, plus the CH-13924
+  describe in the Ask races file).
+- Typecheck: `npm run typecheck:fast` exit 0 on the final tree. (An earlier run
+  in the same pass exited 1 on one error outside CoachHelm,
+  `src/clubhouse/__tests__/shell.test.tsx(109,5)` TS2554, another session's file
+  that was changed since; it was not touched here.)
+- Lint: `npx eslint` on `src/clubhouse/screens/coachhelm`, the route, the
+  CoachHelm loaders and shape files and the changed tests: exit 0, no output.
+- Clubhouse check: `npm run clubhouse:check` exit 0: 35 unit tests, 429 files,
+  15 pages, 1380 Bridge IDs (after the registry sync that minted CH-13405,
+  CH-13910, CH-13911 and CH-13924 and the others in this branch).
+- Supabase error audit: `npm run audit:supabase-errors` exit 1, 1003 unchecked
+  reads against a baseline of 1005 (down; the exit is the "lock in the paydown
+  with `--update`" slack message, which this change did not run).
+- Markdown ratchet: `npm run markdown:ratchet` exit 1 for the branch as a
+  whole (MD013 +39, and MD060, MD012 and MD056 +2, +1 and +1, in files other
+  than P013's). The P013 prose docs add no line-length violation; MD013 comes
+  from the catalog's one-line table rows, as in the other pages.
+- Build: not run; no `'use server'` file changed (the loaders are `server-only`
+  modules, the screens are client modules, the lib changes are additive).
+
+Assertions changed by design: the board loader's read depth is 7, not 10 (the
+pulse's reads leave the board's critical path and are counted apart); three
+`coachhelm.test.tsx` pulse assertions wait for the pulse (`pulseLanded`); the
+suites that mount a screen twice, or run several tests on one address, reset
+the address with `history.replaceState(null, '', '/')` because a pick now lives
+in the address (CH-13911, and CH-13701 and CH-13981 between their two loads);
+CH-13403's catalog wording.
+
+Not observed: any of it in a browser or against a real database. The address
+writes (`history.replaceState` with the entry's own state) and Back were read
+from Next 16.3.6's `app-router.js` and `restore-reducer.js` and exercised
+against jsdom's history only; the loaders ran against the table fake, so no
+read ran against Postgres. The Fairway chat hook can still take a late
+conversation id after "New chat" (its internal id), the phone Deep dive's
+Back can leave a second entry (the shell's phone-stack hook), the Ask thread's
+and the phone Deep dive's own scrollers are not restored on Back (the shell's
+`RouteFrame` restores the canvas and the window), and no time-to-first-byte
+was measured for the streamed pulse.

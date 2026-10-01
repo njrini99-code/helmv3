@@ -2,9 +2,10 @@
 
 import { MessagesSquare, PanelLeftClose, SquarePen } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { filterConversations, groupConversations, type ChAskConversation } from '../../../data/coachhelm-chat-shape';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { useChSessionState } from '../../../lib/session-state';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SearchField } from '../../../ui/SearchField';
@@ -37,7 +38,8 @@ export function conversationHref(id: string): string {
  * open one is `aria-current`). A failed read is its own notice with Try again, never "No chats yet".
  */
 function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onOpen }: AskHistoryProps) {
-  const [q, setQ] = useState('');
+  // The search comes back when the coach returns to the page (owner rule 8), as Roster's does.
+  const [q, setQ] = useChSessionState('askHistorySearch', '');
   const groups = useMemo(() => groupConversations(filterConversations(conversations.list, q), nowIso, timezone), [conversations.list, q, nowIso, timezone]);
 
   if (conversations.error) {

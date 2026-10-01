@@ -3,7 +3,7 @@
 import { AnimatePresence } from 'framer-motion';
 import { ChevronRight, Compass, Flag, Play, Target } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
@@ -19,6 +19,7 @@ import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { BoardPartial, Evidence } from '../parts';
+import { paramNow, writeParam } from '../url-state';
 import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 
@@ -401,17 +402,36 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   const startHref = coachHelmLinks.startRound();
   const dossier = useRef<HTMLDivElement>(null);
   const list = load.status === 'ready' ? load.data.list : [];
-  const [picked, setPicked] = useState<string | null>(initialId && list.some((i) => i.base.id === initialId) ? initialId : null);
+  // The read the player opened lives in the address (`?insight=`, written without a server round trip) so Back and a reload return to
+  // it (owner rule 8); the address is read when the page mounts, because Back restores the render with the props it first had.
+  const opening = (...ids: Array<string | null | undefined>) => ids.find((id): id is string => !!id && list.some((i) => i.base.id === id)) ?? null;
+  const [picked, setPicked] = useState<string | null>(() => opening(paramNow('insight'), initialId));
+  const [seenInitial, setSeenInitial] = useState(initialId);
+  if (initialId !== seenInitial) {
+    setSeenInitial(initialId);
+    const next = opening(initialId);
+    if (next) setPicked(next);
+  }
+  const choose = setPicked;
   const open = picked ? list.find((i) => i.base.id === picked) : undefined;
+  // The read the player had open is no longer on the page (a refresh took it away): what shows is another read, and it says so.
+  const gone = picked !== null && !open;
   // On desktop a read is always showing: the one picked, else the first. On the phone nothing is open until one is.
   const shown = open ?? list[0];
 
   // The open read is a history entry, so the iOS edge swipe and the browser's back close it instead of leaving the page.
-  const popTo = useCallback((level: number) => level < 1 && setPicked(null), []);
+  const popTo = useCallback((level: number) => level < 1 && choose(null), [choose]);
   usePhoneStackHistory(phone && open ? 1 : 0, popTo);
+  // The address names the read that is open. It is written after the phone's stack entry is pushed (the hook above), so the entry the
+  // pushed screen is on carries it and the list's own entry stays clean: Back, the swipe and the screen's own back all land on a list
+  // whose address names nothing. A name that is not one of the player's reads is taken out.
+  const openId = open?.base.id ?? null;
+  useEffect(() => {
+    writeParam('insight', openId);
+  }, [openId]);
 
   const pick = (id: string) => {
-    setPicked(id);
+    choose(id);
     // A narrow desktop stacks the read under the list: bring it into view.
     if (!phone) dossier.current?.scrollIntoView?.({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
   };
@@ -475,7 +495,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
           <AnimatePresence>
             {open && (
               <PhoneScreen key={open.base.id} labelledBy="ch-hd-screen-t" className="ch-hd-screen" code="CH-13980">
-                <PhoneBar back={{ label: 'Deep dive', onBack: () => setPicked(null) }} title={open.base.category} titleId="ch-hd-screen-t" />
+                <PhoneBar back={{ label: 'Deep dive', onBack: () => choose(null) }} title={open.base.category} titleId="ch-hd-screen-t" />
                 <div className="ch-hd-scroll">
                   <SectionBoundary surface="coachhelm.deep-dive.read" label="This read" code="CH-13204">
                     <Dossier i={open} d={d} />
@@ -488,6 +508,11 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
       }
     >
       <SectionBoundary surface="coachhelm.deep-dive" label="Your deep dive" code="CH-13204">
+        {gone && (
+          <p className="ch-hl-note" role="status" data-ch-code="CH-13910">
+            The read you had open is no longer on your Deep dive, so {phone ? 'none is open' : 'this is your first read'}.
+          </p>
+        )}
         {/* CH-13208: a read beside the insights failed (the Tour's values, the drills, which are Assigned, how current each is). */}
         {d.missing && <BoardPartial missing={d.missing} what="page" />}
         <Hero d={d} />

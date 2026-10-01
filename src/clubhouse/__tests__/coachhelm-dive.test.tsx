@@ -88,7 +88,11 @@ beforeEach(() => {
   goals.achieved.mockReset();
   tables.current = {};
 });
-afterEach(cleanup);
+// A read the page opens is written to the address (owner rule 8): each test starts on a clean one, as a new page does.
+afterEach(() => {
+  cleanup();
+  window.history.replaceState(null, '', '/');
+});
 
 describe('the deep dive as the page draws it', () => {
   it('findings first (a current read before one that is out of date), then what is working, in the feed’s own order', () => {
@@ -757,10 +761,13 @@ describe('the Deep dive screen', () => {
   it('CH-13981 an address that names a read opens on it; one that names nothing the player has opens on the first', () => {
     show(diveLoad(PREVIEW_DIVE), 'in-dbl');
     expect(article().getAttribute('aria-labelledby')).toBe('in-dbl-t');
+    // Each is its own page load: the first one wrote its read to the address (owner rule 8), and a remount would be a return to it.
     cleanup();
+    window.history.replaceState(null, '', '/');
     show(diveLoad(PREVIEW_DIVE), 'pl-someone-elses-insight');
     expect(article().getAttribute('aria-labelledby')).toBe('in-slope-t');
     cleanup();
+    window.history.replaceState(null, '', '/');
     show(diveLoad(PREVIEW_DIVE), '');
     expect(article().getAttribute('aria-labelledby')).toBe('in-slope-t');
   });
@@ -813,7 +820,9 @@ describe('the Deep dive on the phone', () => {
   it('CH-13981 an address that names a read opens it at once; one that names nothing of theirs shows the list', () => {
     show('in-dbl');
     expect(within(document.querySelector('.ch-pscreen') as HTMLElement).getByRole('article', { name: 'Double bogey-or-worse rate: 1.6%' })).toBeTruthy();
+    // A new page load, not a return to the address the first one wrote its read to (owner rule 8).
     cleanup();
+    window.history.replaceState(null, '', '/');
     show('pl-someone-elses-insight');
     expect(document.querySelector('.ch-pscreen')).toBeNull();
   });

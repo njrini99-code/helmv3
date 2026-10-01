@@ -43,7 +43,10 @@ const without = (data: ChCoachHelmData, name: string): ChCoachHelmData => ({ ...
 beforeEach(() => {
   router.refresh.mockClear();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.history.replaceState(null, '', '/');
+});
 
 describe('a write in flight on the coach’s board', () => {
   it('CH-13403 Assign for one player does not read "Assigning" on another player’s card, whose controls wait without a label', async () => {

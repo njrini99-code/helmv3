@@ -6,6 +6,7 @@ import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmC
 import { describeChatError } from '../../../data/coachhelm-chat-error';
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
 import { pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
+import { useChSessionState } from '../../../lib/session-state';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
@@ -117,7 +118,8 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   // tap and the conversation dims until the next one lands. 'new' stands for no open chat.
   const chatSw = useViewSwitch<string>(openId ?? NEW_CHAT, (id) => (id === NEW_CHAT ? COACHHELM_HREF.ask : conversationHref(id)));
   const [gone, setGone] = useState(data.notFound);
-  const [panelOpen, setPanelOpen] = useState(initial?.panelOpen ?? true);
+  // The chats panel stays as the coach left it when they return to this page (owner rule 8): a layout choice, not a chat's own state.
+  const [panelOpen, setPanelOpen] = useChSessionState('askPanel', initial?.panelOpen ?? true);
   const [drawer, setDrawer] = useState(initial?.drawer ?? false);
   const [evidence, setEvidence] = useState<EvidenceFocus | null>(initial?.evidence ?? null);
   const lastSent = useRef('');
@@ -218,6 +220,8 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
         // eslint-disable-next-line jsx-a11y/no-autofocus -- a component prop; the composer focuses itself in an effect
         autoFocus={variant === 'hero'}
         fresh={showHome}
+        // The unsent text is this coach's, in this chat (the new chat is its own): it comes back when they return to the page.
+        draftKey={data.coachId ? `${data.coachId}:${openId ?? NEW_CHAT}` : null}
       />
     </SectionBoundary>
   );

@@ -123,6 +123,28 @@ Dismiss share a row; on the player's page, choosing a row brings the focus into
 view, and each proposed focus area is a row with its two 44px buttons
 underneath, side by side.
 
+## Owner rules (2026-10-01)
+
+No new surface: every state below reuses `InlineNotice` (through
+`RefreshNotice`, so a retry says "Trying again" and ignores a second tap),
+the page's `ch-hl-note` line and `Skeleton`.
+
+- A failed read draws its own notice where the content would be, never the
+  empty or zero copy. The coach's focus status that could not be checked
+  replaces the Assign button with a notice in the action row (Dismiss stays);
+  a read beside the cards that failed is one notice above the board
+  (CH-13208); the pulse's partial failure sits under its rows (CH-13206).
+- The pulse card holds its place: the slot under "Program pulse" keeps the
+  height of three rows (about 197px: 65px a row, two columns on desktop), so
+  the skeleton, the rows and a notice share it and nothing below moves when
+  the pulse lands (CH-13405). Cost: a short pulse leaves room under it, and
+  the phone's single column past three rows grows the card. Moving the pulse
+  under the top card is the other way to end the shift; it changes the board's
+  order and is the owner's call.
+- A pick that the data took away (a refresh) is said in one status line above
+  the card, in the card's own register: "Priya is no longer on the board, so
+  this is Jonah's card." (CH-13908, CH-13909, CH-13910).
+
 ## The player's views (Game profile, Standing, Deep dive)
 
 Owner, 2026-10-01: "coachhelm for player you can build but be detailed." Three
