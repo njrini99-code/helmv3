@@ -115,6 +115,21 @@ export async function setCoachPick(
   }
   if (!entry) return { ok: false, error: 'player is not entered in this qualifier' };
 
+  // Q-115 (owner, 2026-10-01): a pick goes to a player with a scored round, as the Clubhouse pick sheet offers it.
+  // The same round set the board and the workspace rank from: completed, not a test, with a total.
+  const { count: scored, error: scoredError } = await supabase
+    .from('golf_rounds')
+    .select('id', { count: 'exact', head: true })
+    .eq('qualifier_id', args.qualifier_id)
+    .eq('player_id', args.player_id)
+    .eq('status', 'completed')
+    .eq('is_test', false)
+    .not('total_score', 'is', null);
+  if (scoredError) {
+    return { ok: false, error: 'could not verify the player has a scored round; please try again' };
+  }
+  if (!scored) return { ok: false, error: 'player has no scored round in this qualifier' };
+
   // Enforce the slot ceiling before inserting another coach_pick.
   const { data: existing, error: existingError } = await supabase
     .from('golf_qualifier_selections')
@@ -184,7 +199,7 @@ export async function removeCoachPick(
 export async function confirmSelection(
   supabase: Sb,
   args: { qualifier_id: string; user_id: string },
-): Promise<ServiceResult> {
+): Promise<ServiceResult<{ notified: boolean }>> {
   const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
   if (!workspace) return { ok: false, error: 'workspace not loadable' };
 
@@ -278,14 +293,17 @@ export async function confirmSelection(
   // Players never learned the outcome before this — only the coach's own
   // chat got the travel brief. Best-effort, same reasoning as above: never
   // let a notify failure undo a selection that already committed.
+  // Q-116: the coach is told when it fails, rather than a toast claiming everyone was told.
+  let notified = true;
   try {
     await notifyPlayersOfSelectionOutcome(supabase, committed);
   } catch (err) {
+    notified = false;
     await logServerError(
       `player selection-outcome notify failed for qualifier ${args.qualifier_id}: ${describeError(err)}`,
       { action: 'v3.qualifying.confirmSelection.notifyPlayers' },
     );
   }
 
-  return { ok: true, data: undefined };
+  return { ok: true, data: { notified } };
 }

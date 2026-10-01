@@ -11,6 +11,7 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { useToast } from '../../ui/Toast';
 import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -36,6 +37,7 @@ const STAGES = ['Standings', 'Coach’s picks', 'Squad confirmed'] as const;
  */
 export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { data: ChQSelectionData; writes?: ChQSelectionWrites }) {
   const router = useRouter();
+  const toast = useToast();
   const phone = useChPhone();
   const detailHref = `${LIST}/${data.id}`;
   const [state, setState] = useState(data.selectionState);
@@ -86,7 +88,12 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
     'qualifiers.confirmSquad',
     async () => {
       const res = await writes.confirm(data.id);
-      if (normalise(res).success) {
+      const landed = normalise(res);
+      if (landed.success) {
+        // Q-116: telling the players is best effort; say so when it failed rather than claiming they were told.
+        if (landed.data?.notified === false) {
+          toast({ title: 'The players weren’t all told', tone: 'error', body: 'The squad is confirmed. Let the entrants know yourself.', code: 'CH-09009' });
+        }
         setState('selected');
         setAsking(null);
         router.push(detailHref);
@@ -95,7 +102,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       return res;
     },
     {
-      done: `Squad confirmed · ${plural(onScore.length + picks.length, 'player')} told`,
+      done: `Squad confirmed · ${plural(onScore.length + picks.length, 'player')}`,
       failed: 'Couldn’t confirm the squad',
       hint: 'Nothing was confirmed and nobody was told. Try again.',
       code: 'CH-09008',

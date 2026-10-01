@@ -315,6 +315,28 @@ describe('Round recovery: Discard (the engine’s discard)', () => {
     expect(localStorage.getItem(lsKey('p1', null))).toBeNull();
     expect(localStorage.getItem(lsKey('p2', null))).not.toBeNull();
   });
+
+  it('an old queued round with no round id leaves the player’s current new-round draft alone', async () => {
+    // A finished round that never reached the server is queued as `pending_submit_<time>`, with no round id. Its
+    // emergency save was overwritten when the player started another round, whose draft now holds the null key.
+    mocks.getFailedRounds.mockResolvedValue([queueRow('p1', { id: 'pending_submit_1', syncStatus: 'failed', draftData: { ...queueRow('p1').draftData, roundId: undefined } })]);
+    saveLocally('p1', null, { setupData: { ...setup, courseName: 'Other GC' }, timestamp: SAVED_AT + 60_000 });
+    mocks.getRoundRecoverySnapshots.mockResolvedValue([{ ...snapshotOf('p1', null), data: emergencySaveOf('p1', null, { setupData: { ...setup, courseName: 'Other GC' } }) }]);
+    const { rounds } = await scanDevice('p1');
+    const old = rounds.find((r) => r.course === 'Finley GC')!;
+    expect(rounds).toHaveLength(2);
+    expect(old.copies.map((c) => c.id)).toEqual(['pending_submit_1']);
+
+    expect(await LIVE_RECOVER_PORTS.discard(old, 'p1')).toEqual({ success: true });
+
+    expect(mocks.deleteOfflineRound).toHaveBeenCalledWith('pending_submit_1');
+    expect(wasRoundDiscarded('pending_submit_1', 'p1')).toBe(true);
+    // The other round's draft and its journal entry are still there, and still offered.
+    expect(localStorage.getItem(lsKey('p1', null))).not.toBeNull();
+    expect(mocks.deleteRoundRecoverySnapshot).not.toHaveBeenCalled();
+    mocks.getFailedRounds.mockResolvedValue([]); // the queue's row is gone, as its delete said
+    expect((await scanDevice('p1')).rounds.map((r) => r.course)).toEqual(['Other GC']);
+  });
 });
 
 // ── Restore ──
@@ -431,6 +453,19 @@ describe('Round recovery: Restore (Fairway’s recovery, ported)', () => {
       expect(result).toEqual({ success: false, error: 'This qualifier has already been completed. Rounds can no longer be submitted.' });
       expect(mocks.deleteOfflineRoundThrough).not.toHaveBeenCalled();
     });
+  });
+
+  it('restoring an old queued round with no round id leaves an older new-round draft of another round in place', async () => {
+    mocks.getPendingRounds.mockResolvedValue([queueRow('p1', { id: 'pending_submit_1', draftData: { ...queueRow('p1').draftData, roundId: undefined } })]);
+    // Older than the copy being restored, so a clear "through" its time would take it if the key were not left alone.
+    saveLocally('p1', null, { setupData: { ...setup, courseName: 'Other GC' }, timestamp: SAVED_AT - 60_000 });
+    mocks.savePartialRound.mockResolvedValue(landing(ROUND));
+    const old = (await scanDevice('p1')).rounds.find((r) => r.course === 'Finley GC')!;
+
+    expect((await LIVE_RECOVER_PORTS.resume(old, 'p1')).success).toBe(true);
+
+    expect(mocks.deleteOfflineRoundThrough).toHaveBeenCalledWith('pending_submit_1', SAVED_AT);
+    expect(localStorage.getItem(lsKey('p1', null))).not.toBeNull();
   });
 
   it('a thrown write is a failure with the copy kept, not an unhandled rejection', async () => {

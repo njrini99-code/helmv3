@@ -3,6 +3,23 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Picks need a scored round; an honest confirm toast (Q-115, Q-116)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   CH-09009 (new); CH-09008 done copy now "Squad confirmed · N players"
+Actions:        qualifiers.confirmSquad (unchanged call); setCoachPick refuses a player with no scored round
+Data impact:    none; confirm returns whether the players were told
+Held items:     none
+```
+
+- **Q-115.** The server refuses a coach pick for an entrant with no scored
+  round (completed, not a test, with a total), as the pick sheet offers.
+- **Q-116.** The confirm toast reads "Squad confirmed · N players"; when
+  telling the players fails, an error toast says so (CH-09009).
+- **Checked.** `qualifiers.test.tsx` 108/108; `selection-guards.test.ts` 7/7.
+
 ## 2026-10-01 — Selection ranks from the rounds, as the board does; the board's unknown-round rules; test qualifiers stay hidden (swap audit §11 reconciliation, Q-134)
 
 ```text

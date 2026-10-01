@@ -78,6 +78,8 @@ function buildSb(selections: Array<Record<string, unknown>> = []): FakeSb {
         { id: 'e2', qualifier_id: 'q1', player_id: 'p2' },
       ],
       golf_team_coach_staff: [],
+      // p2 has a scored round; p1 has none (Q-115).
+      golf_rounds: [{ id: 'r1', qualifier_id: 'q1', player_id: 'p2', status: 'completed', is_test: false, total_score: 72 }],
     },
   });
 }
@@ -155,7 +157,13 @@ describe('setCoachPick guards', () => {
     expect(data).toHaveLength(0);
   });
 
-  it('still picks an entrant', async () => {
+  it('Q-115 refuses an entrant with no scored round', async () => {
+    const sb = buildSb();
+    const r = await setCoachPick(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p1', reasoning: 'Senior', user_id: 'u9' });
+    expect(r).toEqual({ ok: false, error: 'player has no scored round in this qualifier' });
+  });
+
+  it('still picks an entrant with a scored round', async () => {
     const sb = buildSb();
     const r = await setCoachPick(sb as unknown as Sb, { qualifier_id: 'q1', player_id: 'p2', reasoning: 'Senior', user_id: 'u9' });
     expect(r.ok).toBe(true);

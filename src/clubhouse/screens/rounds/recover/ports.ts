@@ -88,6 +88,14 @@ function isCompletedRoundError(message?: string): boolean {
 }
 
 /**
+ * Whether the emergency save and the recovery journal entry under this copy's key are the copy's own. A copy kept in
+ * the failed-submit queue or the old database with no round id (`pending_submit_<time>`: a finished round that never
+ * reached the server) has a null key, and that key is the player's current new-round draft, which is another round
+ * once they have started one. It is left alone: a copy of this round in either store clears under its own key.
+ */
+const ownsLocalKey = (copy: ChDeviceCopy) => localKeyOf(copy) !== null || copy.source === 'recovery-cache';
+
+/**
  * Clears the device copies of a round the server has now acknowledged, as Fairway's recovery does: each only through
  * the time it was written, so a newer save made while the request was in flight stays recoverable. Never throws: the
  * server has the round, so a copy left behind only shows up once more, and restoring it again is safe.
@@ -97,7 +105,7 @@ async function clearAcknowledged(round: ChRecoverRound, playerId: string): Promi
   for (const copy of round.copies) {
     const key = localKeyOf(copy);
     try {
-      clearEmergencySaveThrough(key, playerId, through);
+      if (ownsLocalKey(copy)) clearEmergencySaveThrough(key, playerId, through);
       if (copy.source === 'modern-indexeddb') await deleteOfflineRoundThrough(copy.id, through);
       else if (copy.source === 'recovery-cache') await clearRoundRecoverySnapshotThrough(key, playerId, through);
       else if (copy.source === 'legacy-indexeddb') await deleteLegacyRound(copy.id, through);
@@ -153,7 +161,7 @@ async function clearDeviceCopies(round: ChRecoverRound, playerId: string): Promi
     const marks = new Set([serverRoundIdOf(copy), copy.source === 'modern-indexeddb' ? (copy.serverRoundId ?? copy.id) : undefined]);
     for (const mark of marks) if (mark) markRoundDiscarded(mark, playerId);
     const key = localKeyOf(copy);
-    clearEmergencySave(key, playerId);
+    if (ownsLocalKey(copy)) clearEmergencySave(key, playerId);
     if (copy.source === 'modern-indexeddb') await deleteOfflineRound(copy.id);
     else if (copy.source === 'recovery-cache') await deleteRoundRecoverySnapshot(key, playerId);
     else if (copy.source === 'legacy-indexeddb') await deleteLegacyRound(copy.id);

@@ -1147,7 +1147,9 @@ describe('Qualifiers · Manage selections', () => {
     // A write that lands passes through and leaves no trail.
     vi.mocked(chTrail).mockClear();
     vi.mocked(confirmQualifierSelection).mockResolvedValueOnce({ ok: true });
-    expect(await LIVE_SELECTION_WRITES.confirm('q')).toEqual({ success: true });
+    expect(await LIVE_SELECTION_WRITES.confirm('q')).toEqual({ success: true, data: { notified: true } });
+    vi.mocked(confirmQualifierSelection).mockResolvedValueOnce({ ok: true, notified: false });
+    expect(await LIVE_SELECTION_WRITES.confirm('q')).toEqual({ success: true, data: { notified: false } });
     expect(chTrail).not.toHaveBeenCalled();
     // On the screen, with the live writes: the coach reads the words in the failure toast.
     const user = userEvent.setup();
@@ -1699,7 +1701,7 @@ describe('Qualifiers · every write', () => {
         await press(user, 'Confirm squad');
         await user.click(inDialog('CH-09505', 'Confirm squad'));
       },
-      done: 'Squad confirmed · 5 players told',
+      done: 'Squad confirmed · 5 players',
       failed: 'Couldn’t confirm the squad',
       goes: detailHref,
       reads: true,
@@ -1715,6 +1717,14 @@ describe('Qualifiers · every write', () => {
     return { c, view };
   }
   const refuse = (write: Mock) => write.mockImplementation(async () => ({ success: false, error: 'nope' }));
+
+  it('CH-09009 a squad confirmed while telling the players failed says so (Q-116)', async () => {
+    const sc = scenarios.find((x) => x.name === 'confirm the squad')!;
+    const { view } = await drive(sc, (write) => write.mockImplementation(async () => ({ success: true, data: { notified: false } })));
+    await screen.findByText('The players weren’t all told');
+    expect(screen.getByText('Squad confirmed · 5 players')).toBeTruthy();
+    view.unmount();
+  });
 
   it('90901 every write that lands says what landed in a toast and fires the success haptic', async () => {
     for (const sc of scenarios) {

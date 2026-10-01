@@ -25,6 +25,8 @@ import { describeError } from '@/lib/utils/describe-error';
 export interface QualifyingActionResult {
   ok: boolean;
   error?: string;
+  /** Confirm only: false when the squad committed but telling the players failed (Q-116). */
+  notified?: boolean;
 }
 
 async function getAuthedCoachContext(qualifier_id: string) {
@@ -196,7 +198,7 @@ async function confirmQualifierSelectionImpl(
     if (!r.ok) return r;
 
     pathsToRevalidate(qualifier_id).forEach((p) => revalidatePath(p));
-    return { ok: true };
+    return { ok: true, notified: r.data.notified };
   } catch (err) {
     await logServerError(
       `confirmQualifierSelection failed: ${describeError(err)}`,

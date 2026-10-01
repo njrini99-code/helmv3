@@ -141,7 +141,8 @@ export interface ChQSelectionWrites {
   advance: (id: string, to: ChQSelectionStep) => Promise<ServerResult>;
   setPick: (id: string, playerId: string, reasoning: string) => Promise<ServerResult>;
   removePick: (id: string, playerId: string) => Promise<ServerResult>;
-  confirm: (id: string) => Promise<ServerResult>;
+  /** `data.notified` is false when the squad committed but telling the players failed (Q-116). */
+  confirm: (id: string) => Promise<ServerResult<{ notified: boolean }>>;
 }
 
 const STEPS: ChQSelectionStep[] = ['open', 'scoring', 'closed', 'selected'];
@@ -191,5 +192,8 @@ export const LIVE_SELECTION_WRITES: ChQSelectionWrites = {
   advance: async (id, to) => asResult(await advanceSelectionState(id, to)),
   setPick: async (id, playerId, reasoning) => asResult(await setQualifierCoachPick(id, playerId, reasoning)),
   removePick: async (id, playerId) => asResult(await removeQualifierCoachPick(id, playerId)),
-  confirm: async (id) => asResult(await confirmQualifierSelection(id)),
+  confirm: async (id) => {
+    const r = await confirmQualifierSelection(id);
+    return r.ok ? { success: true, data: { notified: r.notified !== false } } : asResult(r);
+  },
 };

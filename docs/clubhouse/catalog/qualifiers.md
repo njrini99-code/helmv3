@@ -33,7 +33,8 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09005 | Start selecting fails | "Couldn't start selecting" + the reason, or "Nothing changed. Try again." Done: "Selecting is open · choose your picks" | `useAction('qualifiers.startSelecting')` → `startSelecting` (`advanceSelectionState`, one step at a time to closed) | qualifiers.test › CH-09005 |
 | CH-09006 | Saving a coach's pick fails | "Couldn't pick Ava Chen" + the reason (for example "Every pick is taken. Remove one first."), or "Nothing changed. Try again." The dialog keeps the player and the reason. Done: "Ava Chen picked" | `useAction('qualifiers.setPick')` → `setQualifierCoachPick` | qualifiers.test › CH-09006 |
 | CH-09007 | Removing a coach's pick fails | "Couldn't remove Ava Chen as a pick" + "They are still a pick. Try again." Done: "Ava Chen removed as a pick" | `useAction('qualifiers.removePick')` → `removeQualifierCoachPick` | qualifiers.test › CH-09007 |
-| CH-09008 | Confirming the squad fails | "Couldn't confirm the squad" + the reason, or "Nothing was confirmed and nobody was told. Try again." Done: "Squad confirmed · 5 players told", then the qualifier opens | `useAction('qualifiers.confirmSquad')` → `confirmQualifierSelection` | qualifiers.test › CH-09008 |
+| CH-09008 | Confirming the squad fails | "Couldn't confirm the squad" + the reason, or "Nothing was confirmed and nobody was told. Try again." Done: "Squad confirmed · 5 players" (Q-116), then the qualifier opens | `useAction('qualifiers.confirmSquad')` → `confirmQualifierSelection` | qualifiers.test › CH-09008 |
+| CH-09009 | The squad is confirmed but telling the players failed | An error toast "The players weren’t all told" + "The squad is confirmed. Let the entrants know yourself." (Q-116) | `confirmQualifierSelection` returns `notified: false` | qualifiers.test › CH-09009 |
 
 ## 091xx Validation
 
