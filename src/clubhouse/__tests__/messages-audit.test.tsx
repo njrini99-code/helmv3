@@ -143,6 +143,8 @@ function showPhone(d: ChMessagesData = data) {
 const setOnline = (v: boolean) => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => v });
 
 beforeEach(() => {
+  // Drafts persist per tab (F-12); each test starts with none.
+  sessionStorage.clear();
   // Desktop width: the newest thread opens beside the rail.
   window.matchMedia = ((q: string) => ({ matches: /min-width/.test(q), media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
   hapticSpy.mockClear();

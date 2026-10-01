@@ -190,7 +190,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const sgTotal = weightedMean(holeWindow, (r) => r.strokes_gained_total);
   const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f), 0);
   // The previous stretch needs three whole rounds with shots, as the window's own figures do.
-  const sgDelta = sgChange(weightedMean(holePaired, (r) => r.strokes_gained_total), effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null, effectiveWindow(f), earlier);
+  const sgPrev = effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null;
+  // The reason (or "vs. previous 10") reads the whole window; the number compares the same players (Q-112).
+  const sgBase = sgChange(sgTotal, sgPrev, effectiveWindow(f), earlier);
+  const sgPaired = weightedMean(holePaired, (r) => r.strokes_gained_total);
+  const sgDelta = sgBase.delta != null ? { ...sgBase, delta: sgPaired != null && sgPrev != null ? sgPaired - sgPrev : null } : sgBase;
   const baseline = sgBaseline(tour);
   const figures: ChFigure[] = [
     {
