@@ -203,7 +203,8 @@ describe('Team switcher · desktop', () => {
     expect(setActiveTeam).not.toHaveBeenCalled();
 
     await user.keyboard('{ArrowDown}');
-    await screen.findByRole('listbox');
+    // Focus lands on the current team a frame after it opens; keys pressed before then would still be the button's.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('option', { name: MEN.name })));
     await user.keyboard('{ArrowDown}{Enter}');
     await waitFor(() => expect(setActiveTeam).toHaveBeenCalledWith(WOMEN.id));
     expect(document.activeElement).toBe(trigger());
