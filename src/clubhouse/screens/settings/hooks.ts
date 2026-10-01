@@ -203,7 +203,6 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
 }
 
 const landed = (r: ChResult<unknown>) => !!(r.success || r.ok);
-const noStaff = { success: false, error: 'Coaching staff is not available here.' } as const;
 
 /**
  * The coach's staff cards: who is on the team's staff and, for a head coach, who is waiting to be approved. Both are
@@ -211,18 +210,17 @@ const noStaff = { success: false, error: 'Coaching staff is not available here.'
  * (like Fairway). The requests read is refused for an assistant: that is the answer, so it is not reported; a head
  * coach's failed read is, and says so in its card.
  */
-export function useCoachingStaff(staff: ChStaffWrites | undefined, coachId: string | null) {
+export function useCoachingStaff(staff: ChStaffWrites, coachId: string | null) {
   const [members, setMembers] = useState<ChStaffMember[] | null>(null);
   const [requests, setRequests] = useState<ChPendingCoach[]>([]);
   const [requestsFailed, setRequestsFailed] = useState(false);
   const [reads, setReads] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // The writes object is the page's and stable; a read is by what was asked (the first, and each Try again), not by it.
   const source = useRef(staff);
   source.current = staff;
-  const on = !!staff;
   useEffect(() => {
     const s = source.current;
-    if (!s) return;
     let live = true;
     const read = async <T,>(action: string, go: () => Promise<ChResult<T>>): Promise<ChResult<T>> => {
       try {
@@ -251,13 +249,13 @@ export function useCoachingStaff(staff: ChStaffWrites | undefined, coachId: stri
     return () => {
       live = false;
     };
-  }, [on, reads, coachId]);
+  }, [reads, coachId]);
 
   const me = useMemo(() => members?.find((m) => m.coachId === coachId) ?? null, [members, coachId]);
   const decide = (kind: 'approve' | 'decline') => async (c: ChPendingCoach) => {
     setBusyId(c.coachId);
     try {
-      const r: ChResult = staff ? await staff[kind](c.coachId) : noStaff;
+      const r = await staff[kind](c.coachId);
       if (landed(r)) {
         setRequests((rs) => rs.filter((x) => x.coachId !== c.coachId));
         // The new assistant joins the staff list, and the requests are read again to match the server.
@@ -271,10 +269,12 @@ export function useCoachingStaff(staff: ChStaffWrites | undefined, coachId: stri
   const approve = useAction('settings.approveAssistant', decide('approve'), (c: ChPendingCoach) => ({
     done: `${pendingCoachName(c)} is now an assistant coach`,
     failed: `Couldn't approve ${pendingCoachName(c)}`,
+    code: 'CH-8026',
   }));
   const decline = useAction('settings.declineAssistant', decide('decline'), (c: ChPendingCoach) => ({
     done: `Declined ${pendingCoachName(c)}`,
     failed: `Couldn't decline ${pendingCoachName(c)}`,
+    code: 'CH-8027',
   }));
   return {
     members,
@@ -290,7 +290,7 @@ export function useCoachingStaff(staff: ChStaffWrites | undefined, coachId: stri
 }
 
 /** A staff invite: pick what it grants, make it, then copy or share the code and the link. The server says who may (a head coach). */
-export function useStaffInvite(staff: ChStaffWrites | undefined) {
+export function useStaffInvite(staff: ChStaffWrites) {
   const [role, setRole] = useState<ChStaffRole>('coach');
   const [made, setMade] = useState<(ChStaffInvite & { link: string }) | null>(null);
   // Read after mount: the server has no navigator, and a mismatch would break hydration.
@@ -302,11 +302,11 @@ export function useStaffInvite(staff: ChStaffWrites | undefined) {
     'settings.createStaffInvite',
     async (r: ChStaffRole) => {
       setMade(null);
-      const res: ChResult<ChStaffInvite> = staff ? await staff.invite(r) : noStaff;
+      const res = await staff.invite(r);
       if (landed(res) && res.data) setMade({ ...res.data, link: `${window.location.origin}/golf/staff/join/${res.data.token}` });
       return res;
     },
-    (r: ChStaffRole) => ({ done: '', failed: `Couldn't make the ${r === 'admin' ? 'program admin' : 'assistant coach'} invite` }),
+    (r: ChStaffRole) => ({ done: '', failed: `Couldn't make the ${r === 'admin' ? 'program admin' : 'assistant coach'} invite`, code: 'CH-8028' }),
   );
   const copy = async (what: 'code' | 'link') => {
     const text = what === 'code' ? made?.code : made?.link;

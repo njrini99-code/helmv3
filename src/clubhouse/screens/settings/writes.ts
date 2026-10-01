@@ -45,24 +45,28 @@ const num = (s: string) => (s.trim() === '' ? null : Number(s));
  * The coaching staff, on the actions Fairway's Team page calls. They answer in their own shapes (`staff`, `pending`,
  * `token`); these give `{success, data, error}` like every other write here. Who may do what is the server's call.
  */
-function staffWrites(teamId: string): ChStaffWrites {
+function staffWrites(ctx: { teamId: string | null }): ChStaffWrites {
+  const noTeam = { success: false, error: 'You are not on a team yet.' } as const;
   return {
     async list() {
-      const r = await listTeamCoachingStaff(teamId);
+      if (!ctx.teamId) return noTeam;
+      const r = await listTeamCoachingStaff(ctx.teamId);
       return r.success ? { success: true, data: r.staff ?? [] } : { success: false, error: r.error };
     },
     async pending() {
-      const r = await listPendingAssistantCoaches(teamId);
+      if (!ctx.teamId) return noTeam;
+      const r = await listPendingAssistantCoaches(ctx.teamId);
       return r.success ? { success: true, data: r.pending ?? [] } : { success: false, error: r.error };
     },
     async invite(role) {
-      const r = await createStaffInvite(teamId, role);
+      if (!ctx.teamId) return noTeam;
+      const r = await createStaffInvite(ctx.teamId, role);
       if (!r.success || !r.token) return { success: false, error: r.error ?? 'Could not create an invitation.' };
       const hours = r.expiresAt ? Math.round((Date.parse(r.expiresAt) - Date.now()) / 3_600_000) : NaN;
       return { success: true, data: { token: r.token, code: r.code ?? null, role, hours: hours > 0 ? hours : null } };
     },
-    approve: (coachId) => approvePendingAssistantCoach(coachId, teamId),
-    decline: (coachId) => declinePendingAssistantCoach(coachId, teamId),
+    approve: async (coachId) => (ctx.teamId ? approvePendingAssistantCoach(coachId, ctx.teamId) : noTeam),
+    decline: async (coachId) => (ctx.teamId ? declinePendingAssistantCoach(coachId, ctx.teamId) : noTeam),
   };
 }
 
@@ -78,7 +82,7 @@ export function createLiveWrites(ctx: {
   const sb = createClient();
   return {
     refresh: ctx.refresh,
-    staff: ctx.role === 'coach' && ctx.teamId ? staffWrites(ctx.teamId) : undefined,
+    staff: staffWrites(ctx),
 
     async saveProfile(p) {
       const { error, count } =

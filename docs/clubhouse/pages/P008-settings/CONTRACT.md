@@ -127,6 +127,10 @@ Every change has its own toast (80601 to 80624) naming what failed and why when 
 | 80634 | CH-8210 | `TEAM_MEMBERSHIP_DOESNT_LOAD` | Team membership doesn't load (player) |
 | 80635 | CH-8211 | `COACHHELM_SETTINGS_DONT_LOAD` | CoachHelm settings don't load (coach) |
 | 80636 | CH-8212 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
+| 80637 | CH-8026 | `APPROVING_AN_ASSISTANT_COACH_REQUEST_FAILS` | Approving an assistant coach request fails (head coach) |
+| 80638 | CH-8027 | `DECLINING_AN_ASSISTANT_COACH_REQUEST_FAILS` | Declining an assistant coach request fails (head coach) |
+| 80639 | CH-8028 | `MAKING_A_STAFF_INVITE_FAILS` | Making a staff invite fails (head coach) |
+| 80640 | CH-8213 | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | The assistant coach requests don't load (head coach) |
 
 ## 07 — Network / offline
 

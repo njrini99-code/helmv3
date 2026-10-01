@@ -17,7 +17,6 @@ import { Card, Row } from './parts';
 export function StaffCards({ coachId, writes }: { coachId: string | null; writes: ChSettingsWrites }) {
   const staff = useCoachingStaff(writes.staff, coachId);
   const invite = useStaffInvite(writes.staff);
-  if (!writes.staff) return null;
   const { members, requests, requestsFailed } = staff;
   const deciding = staff.approve.pending || staff.decline.pending;
   return (
@@ -36,7 +35,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
       )}
       {requestsFailed ? (
         <Card id="set-requests" title="Assistant coach requests">
-          <InlineNotice title="Requests didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={staff.retry} />
+          <InlineNotice code="CH-8213" title="Requests didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={staff.retry} />
         </Card>
       ) : (
         requests.length > 0 && (

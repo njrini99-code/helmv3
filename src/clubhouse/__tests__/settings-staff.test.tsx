@@ -43,7 +43,7 @@ function staffWrites(over: Partial<ChStaffWrites> = {}): ChStaffWrites {
   };
 }
 
-function makeWrites(staff: ChStaffWrites | undefined): ChSettingsWrites {
+function makeWrites(staff: ChStaffWrites): ChSettingsWrites {
   return {
     saveProfile: vi.fn(ok),
     uploadAvatar: vi.fn(() => Promise.resolve({ success: true, data: { url: 'https://x.test/a.png' } })),
@@ -75,10 +75,9 @@ function makeWrites(staff: ChStaffWrites | undefined): ChSettingsWrites {
 
 const device: ChDevice = { native: false, push: { status: 'unsubscribed', pending: false, subscribe: vi.fn(), unsubscribe: vi.fn() } as unknown as ChDevice['push'] };
 
-/** `null` is a screen given no staff writes at all. */
-function show(staff: ChStaffWrites | null = staffWrites()) {
+function show(staff: ChStaffWrites = staffWrites()) {
   const user = userEvent.setup();
-  const writes = makeWrites(staff ?? undefined);
+  const writes = makeWrites(staff);
   render(
     <LazyMotion features={domAnimation}>
       <ToastProvider>
@@ -123,14 +122,6 @@ describe('Settings · Team · coaching staff (D1)', () => {
     expect(within(invites).getByRole('button', { name: 'Create invite' })).toBeTruthy();
   });
 
-  it('shows nothing of the staff when the screen was given no staff writes', async () => {
-    show(null);
-    await screen.findByRole('region', { name: 'Team details' });
-    noCard('Coaching staff');
-    noCard('Assistant coach requests');
-    noCard('Staff invitations');
-  });
-
   it('a name-less request shows the email as its name', async () => {
     show(staffWrites({ pending: vi.fn(() => Promise.resolve({ success: true, data: [NAMELESS] })) }));
     const requests = await card('Assistant coach requests');
@@ -138,7 +129,7 @@ describe('Settings · Team · coaching staff (D1)', () => {
   });
 });
 
-describe('Settings · Team · approving and declining (D1)', () => {
+describe('Settings · Team · CH-8026 CH-8027 approving and declining (D1)', () => {
   it('Approve calls approve with the coach, tells who was approved, drops the row and reads the staff again', async () => {
     const { user, staff } = show();
     const requests = await card('Assistant coach requests');
@@ -165,6 +156,7 @@ describe('Settings · Team · approving and declining (D1)', () => {
     expect(alert.textContent).toMatch(/Only a head coach of this team can do that/);
     expect(within(requests).getByText('Avery Lee')).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(document.querySelector('[data-ch-code="CH-8026"]')).not.toBeNull();
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'settings.approveAssistant' }));
 
     // The toast moves into the page's dialog layer once it is up, so the button is found again.
@@ -192,6 +184,7 @@ describe('Settings · Team · approving and declining (D1)', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn't decline Avery Lee/);
     expect(alert.textContent).toMatch(/could not decline that request/);
+    expect(document.querySelector('[data-ch-code="CH-8027"]')).not.toBeNull();
     expect(within(requests).getByText('Avery Lee')).toBeTruthy();
   });
 
@@ -207,7 +200,7 @@ describe('Settings · Team · approving and declining (D1)', () => {
   });
 });
 
-describe('Settings · Team · staff invitations (D1)', () => {
+describe('Settings · Team · CH-8028 staff invitations (D1)', () => {
   it('Create invite calls invite for an assistant coach, shows the code, and Copy copies the code and the link', async () => {
     const { user, staff } = show();
     const invites = await card('Staff invitations');
@@ -256,6 +249,7 @@ describe('Settings · Team · staff invitations (D1)', () => {
     expect(alert.textContent).toMatch(/Only a head coach of this team can invite staff/);
     expect(within(invites).queryByText('STAFF7QX')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(document.querySelector('[data-ch-code="CH-8028"]')).not.toBeNull();
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'settings.createStaffInvite' }));
   });
 
@@ -281,7 +275,7 @@ describe('Settings · Team · staff invitations (D1)', () => {
   });
 });
 
-describe('Settings · Team · what the server refuses or cannot read (D1)', () => {
+describe('Settings · Team · CH-8213 what the server refuses or cannot read (D1)', () => {
   it('an assistant sees the staff but no requests and no invite card, and the refused requests read is not reported', async () => {
     const asAssistant: ChStaffMember[] = [{ ...HEAD, coachId: 'someone-else' }, { ...ASSISTANT, coachId: 'maya', fullName: 'Maya Reyes' }];
     show(
@@ -308,6 +302,7 @@ describe('Settings · Team · what the server refuses or cannot read (D1)', () =
     const { user } = show(staffWrites({ pending }));
     const requests = await card('Assistant coach requests');
     expect(requests.textContent).toMatch(/Requests didn't load/);
+    expect(document.querySelector('[data-ch-code="CH-8213"]')).not.toBeNull();
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'pending', severity: 'low' }));
     await user.click(within(requests).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(within(screen.getByRole('region', { name: 'Assistant coach requests' })).getByText('Avery Lee')).toBeTruthy());
@@ -363,6 +358,17 @@ describe('Settings · phone · Team · coaching staff (D1)', () => {
     await waitFor(() => expect(staff!.approve).toHaveBeenCalledWith('avery'));
     expect(await screen.findByText('Avery Lee is now an assistant coach')).toBeTruthy();
     await waitFor(() => expect(screen.queryByRole('region', { name: /^Assistant coach requests/ })).toBeNull());
+  });
+
+  it('CH-8213 a head coach whose requests read fails is told, and Try again reads it again', async () => {
+    const pending = vi.fn().mockImplementationOnce(() => refused('We could not load pending requests.')).mockImplementation(() => Promise.resolve({ success: true, data: [WAITING] }));
+    const { user } = await openTeam(staffWrites({ pending }));
+    const failed = await group('Assistant coach requests');
+    expect(failed.getAttribute('data-ch-code')).toBe('CH-8213');
+    expect(failed.textContent).toMatch(/Requests didn't load/);
+    await user.click(within(failed).getByRole('button', { name: 'Try again' }));
+    await group('Assistant coach requests · 1');
+    expect(pending).toHaveBeenCalledTimes(2);
   });
 
   it('a failed Decline shows the error', async () => {

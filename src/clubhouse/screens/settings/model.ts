@@ -364,11 +364,8 @@ export interface ChSettingsWrites {
   cleanupAfterDelete: () => Promise<void>;
   /** After a save that changes what the server renders (names, team). */
   refresh: () => void;
-  /**
-   * Coaching staff. Optional: the screen shows the staff cards only where this is supplied (the live writes always
-   * supply it for a coach with a team).
-   */
-  staff?: ChStaffWrites;
+  /** The coaching staff of the team (Team, coach). */
+  staff: ChStaffWrites;
 }
 
 export interface ChDevice {

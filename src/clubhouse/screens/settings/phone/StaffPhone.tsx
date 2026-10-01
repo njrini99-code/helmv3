@@ -12,7 +12,6 @@ import { ActionRow, Group, PickerRow } from './ui';
 export function StaffPhone({ coachId, writes }: { coachId: string | null; writes: ChSettingsWrites }) {
   const staff = useCoachingStaff(writes.staff, coachId);
   const invite = useStaffInvite(writes.staff);
-  if (!writes.staff) return null;
   const { members, requests, requestsFailed } = staff;
   const deciding = staff.approve.pending || staff.decline.pending;
   return (
@@ -33,7 +32,7 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
         </Group>
       )}
       {requestsFailed ? (
-        <Group title="Assistant coach requests" note="Requests didn't load. Nothing was changed; the error has been reported.">
+        <Group title="Assistant coach requests" code="CH-8213" note="Requests didn't load. Nothing was changed; the error has been reported.">
           <ActionRow label="Try again" onClick={staff.retry} />
         </Group>
       ) : (
