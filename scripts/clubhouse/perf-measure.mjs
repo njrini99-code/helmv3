@@ -20,7 +20,7 @@
  * See e2e/README.md ("Clubhouse perf harness") for what is measured and how to read it.
  */
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, openSync, fstatSync, closeSync, rmSync, readdirSync, statSync, symlinkSync, realpathSync, lstatSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, openSync, fstatSync, closeSync, rmSync, readdirSync, symlinkSync, realpathSync, lstatSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -129,12 +129,27 @@ function serverPid() {
 
 async function cmdSeed(a) {
   ensureDir();
-  // Checked again, atomically, by the exclusive create below (CodeQL js/file-system-race); this early check only avoids seeding for nothing.
-  if (existsSync(SEED_FILE)) throw new Error(`a seed already exists (${SEED_FILE}); \`remove\` it first`);
-  Object.assign(process.env, localEnv());
-  const mod = await loadSeedModule();
-  const team = await mod.seedClubhouseTeam({ players: a.players ? Number(a.players) : undefined, roundsPerPlayer: a.rounds ? Number(a.rounds) : undefined });
-  writeFileSync(SEED_FILE, JSON.stringify(team, null, 2), { mode: 0o600, flag: 'wx' });
+  // The seed file is claimed before anything is seeded, by an exclusive create: a second run fails here, with nothing to undo, and
+  // there is no gap between a check and the write (CodeQL js/file-system-race).
+  let fd;
+  try {
+    fd = openSync(SEED_FILE, 'wx', 0o600);
+  } catch (err) {
+    if (err?.code === 'EEXIST') throw new Error(`a seed already exists (${SEED_FILE}); \`remove\` it first`);
+    throw err;
+  }
+  let team;
+  try {
+    Object.assign(process.env, localEnv());
+    const mod = await loadSeedModule();
+    team = await mod.seedClubhouseTeam({ players: a.players ? Number(a.players) : undefined, roundsPerPlayer: a.rounds ? Number(a.rounds) : undefined });
+    writeFileSync(fd, JSON.stringify(team, null, 2));
+  } catch (err) {
+    closeSync(fd);
+    rmSync(SEED_FILE, { force: true });
+    throw err;
+  }
+  closeSync(fd);
   console.log(`seeded team ${team.teamName} (${team.teamId}): ${JSON.stringify(team.counts)}`);
   console.log(`coach ${team.coach.email}; player ${team.players[0].email}`);
 }
@@ -157,13 +172,15 @@ async function cmdRemove() {
 function productionRefsIn(dir) {
   const hits = [];
   const walk = (d) => {
-    for (const name of readdirSync(d)) {
+    // The directory listing says what each entry is, so no path is stat'ed and then opened (CodeQL js/file-system-race).
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+      const name = entry.name;
       const p = join(d, name);
-      if (statSync(p).isDirectory()) {
+      if (entry.isDirectory()) {
         walk(p);
         continue;
       }
-      if (!/\.(js|json|html|rsc|txt|map)$/.test(name)) continue;
+      if (!entry.isFile() || !/\.(js|json|html|rsc|txt|map)$/.test(name)) continue;
       // Size and contents come from one open file, so the file checked is the file read (CodeQL js/file-system-race).
       const fd = openSync(p, 'r');
       try {
