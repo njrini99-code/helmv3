@@ -498,6 +498,11 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   assistants, current staff), the distance unit picker row and the Team Hub
   trip menu (Edit, Delete). They reuse the approved phone grammar. Recommended:
   review on a phone and keep. Kept: built as described.
+- Q-135 (answered 2026-10-01, owner: bubble only. Done: faffac8ab) A failed
+  text send in Messages kept its failed bubble (Retry, same id) and also put
+  the text back in the composer (MSG-26). A second Send from the box
+  duplicated it under a new id. Now the bubble is the one copy; failed
+  attachment sends still return to the box.
 - Q-134 (answered 2026-10-01, owner: rewrite. Done: 30 entries rewritten, 0 of 136 disagree; writer skips test rounds (2e6c15651)) Stored qualifier entry
   aggregates disagree with the rounds on 28 of 132 production entries (one
   live: 2 rounds stored, 3 played). Selection now ranks from the rounds
