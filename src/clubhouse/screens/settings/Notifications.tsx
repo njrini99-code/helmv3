@@ -53,7 +53,7 @@ function DeliveryCard({ prefs, writes, device, digest }: { prefs: Record<string,
         </Row>
       )}
 
-      <div className="ch-set-matrix" role="table" aria-label="Email and push by kind of update">
+      <div className="ch-set-matrix" role="table" aria-label="Email and push by kind of update" /* CH-8805: a table, row and column headers */>
         <div className="ch-set-matrix__row is-head" role="row">
           <span role="columnheader">Update</span>
           <span role="columnheader">Email</span>

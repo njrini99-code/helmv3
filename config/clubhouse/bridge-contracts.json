@@ -6104,7 +6104,7 @@
     "name": "A_PHOTO_IS_UPLOADING",
     "chCode": "CH-8404",
     "meaning": "A photo is uploading",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7196,7 +7196,7 @@
     "name": "SWITCHING_SECTION",
     "chCode": "CH-8601",
     "meaning": "Switching section",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7207,7 +7207,7 @@
     "name": "SAVE_STATUS_CHANGES",
     "chCode": "CH-8602",
     "meaning": "Save status changes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7218,7 +7218,7 @@
     "name": "FLIPPING_A_SWITCH",
     "chCode": "CH-8603",
     "meaning": "Flipping a switch",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7229,7 +7229,7 @@
     "name": "A_CONFIRM_OPENS",
     "chCode": "CH-8604",
     "meaning": "A confirm opens",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7240,7 +7240,7 @@
     "name": "A_TOAST_APPEARS_OR_LEAVES",
     "chCode": "CH-8605",
     "meaning": "A toast appears or leaves",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7251,7 +7251,7 @@
     "name": "MOVING_A_COACHHELM_PRIORITY",
     "chCode": "CH-8606",
     "meaning": "Moving a CoachHelm priority",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7262,7 +7262,7 @@
     "name": "PRESSING_A_SECTION_OR_BUTTON",
     "chCode": "CH-8607",
     "meaning": "Pressing a section or button",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7273,7 +7273,7 @@
     "name": "ANIMATIONS_TURNED_OFF_IN_PREFERENCES",
     "chCode": "CH-8608",
     "meaning": "Animations turned off in Preferences",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7284,7 +7284,7 @@
     "name": "PICKING_A_SECTION_FLIPPING_A_SWITCH_CHOOSING",
     "chCode": "CH-8701",
     "meaning": "Picking a section, flipping a switch, choosing a segment, each slider step",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7295,7 +7295,7 @@
     "name": "A_SAVE_LANDS",
     "chCode": "CH-8702",
     "meaning": "A Save changes that lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7306,7 +7306,7 @@
     "name": "A_SAVE_FAILS_OR_A_PHOTO_IS",
     "chCode": "CH-8703",
     "meaning": "A save fails or a photo is rejected",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7317,7 +7317,7 @@
     "name": "OPENING_DELETE_ACCOUNT_OR_PRESSING_UPDATE_PASSWORD",
     "chCode": "CH-8704",
     "meaning": "Opening Delete account, or pressing Update password with a problem",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7328,7 +7328,7 @@
     "name": "COPYING_THE_INVITE_CODE_OR_LINK",
     "chCode": "CH-8705",
     "meaning": "Copying the invite code or link",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7339,7 +7339,7 @@
     "name": "PRESSING_A_PRIMARY_BUTTON",
     "chCode": "CH-8706",
     "meaning": "Pressing a primary button (Save changes)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7350,7 +7350,7 @@
     "name": "TURNING_HAPTICS_BACK_ON",
     "chCode": "CH-8707",
     "meaning": "Turning Haptics back on",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7374,7 +7374,7 @@
     "name": "THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK",
     "chCode": "CH-8801",
     "meaning": "The section list is a navigation landmark; the open section is marked current. On the phone the list is the landmark and an open section names itself in the bar (\"Back to Settings\" and the heading)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7385,7 +7385,7 @@
     "name": "EVERY_SWITCH_HAS_A_NAME_A_SCREEN",
     "chCode": "CH-8802",
     "meaning": "Every switch has a name a screen reader reads (for example \"Messages by email\")",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7396,7 +7396,7 @@
     "name": "SAVE_STATUS_CHANGES_ARE_ANNOUNCED",
     "chCode": "CH-8803",
     "meaning": "Save status changes are announced",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7407,7 +7407,7 @@
     "name": "ERRORS_ARE_ANNOUNCED",
     "chCode": "CH-8804",
     "meaning": "Errors are announced",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7418,7 +7418,7 @@
     "name": "THE_NOTIFICATION_GRIDS_ARE_TABLES",
     "chCode": "CH-8805",
     "meaning": "The notification grids are tables. On the phone there is no grid: each kind is a button that names what is on, and its sheet has named switches",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7429,7 +7429,7 @@
     "name": "DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS",
     "chCode": "CH-8806",
     "meaning": "Dialogs trap focus, Esc closes, focus returns to the button",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7440,7 +7440,7 @@
     "name": "EVERY_FIELD_HAS_A_LABEL_AND_ITS",
     "chCode": "CH-8807",
     "meaning": "Every field has a label, and its help or error is read with it",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {

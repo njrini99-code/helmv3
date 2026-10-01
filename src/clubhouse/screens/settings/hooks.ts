@@ -179,6 +179,7 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
     chTrail(`settings copy invite ${what}`);
     try {
       await navigator.clipboard.writeText(what === 'code' ? code : link);
+      // CH-8705: copying the invite code or link lands with the success pattern.
       haptic('success');
       toast({ title: what === 'code' ? 'Invite code copied' : 'Invite link copied' });
     } catch (err) {
@@ -461,7 +462,7 @@ export function useDevicePrefs() {
       chTrail(`settings haptics ${v ? 'on' : 'off'}`);
       setHapticsEnabled(v);
       setHaptics(v);
-      // A confirming tap when turning them on, so the change is felt (D-70).
+      // CH-8707: a confirming tap when turning them on, so the change is felt (D-70).
       if (v) haptic('select');
     },
   };
