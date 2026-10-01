@@ -143,6 +143,7 @@ export function TabBar({
           aria-controls="ch-more"
           aria-label={moreCount != null ? `More, ${moreCount} unread ${moreCount === 1 ? 'message' : 'messages'}` : 'More'}
           onClick={() => {
+            // CH-1704: the tick as More opens (the swipe-shut tap is useSheetDrag's); CH-1602: the sheet rises over its scrim.
             haptic('select');
             setMoreOpen((o) => !o);
           }}

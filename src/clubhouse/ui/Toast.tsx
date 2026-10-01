@@ -120,6 +120,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
             initial={reduced ? false : { opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}
+            // CH-1604: a toast slides up 10px and fades in; the stack reflows (layout).
             transition={chTween('base')}
           >
             <Icon icon={t.tone === 'error' ? CircleAlert : CircleCheck} size={16} className="ch-toast__icon" />

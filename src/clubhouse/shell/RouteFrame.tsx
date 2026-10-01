@@ -15,7 +15,7 @@ import { markAppRunning, RouteScope } from '../lib/session-state';
  * keyed by route makes the old page and the new one an exit/enter pair, and `.ch-page`
  * (shell.css) fades them; the sidebar, top bar and tab bar are anchored and never move. Navigations are transitions,
  * so this runs on every in-app route change and on nothing else (a refresh or a Suspense reveal keeps the reveal
- * below). Reduced motion and Settings › Animations off render without it: the page swaps at once.
+ * below). Reduced motion and Settings › Animations off render without it: the page swaps at once. CH-1601.
  */
 /** The longest reveal: the last of ten steps' delay plus the rise itself, with room to spare (base.css). */
 const REVEAL_MS = 1200;

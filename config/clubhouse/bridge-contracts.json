@@ -379,7 +379,7 @@
     "name": "MOVING_TO_ANOTHER_PAGE",
     "chCode": "CH-1601",
     "meaning": "Moving to another page, or its first load",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -390,7 +390,7 @@
     "name": "OPENING_MORE_ON_A_PHONE",
     "chCode": "CH-1602",
     "meaning": "Opening More on a phone",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -401,7 +401,7 @@
     "name": "OPENING_THE_BELL_OR_ANY_MENU",
     "chCode": "CH-1603",
     "meaning": "Opening the bell or any menu",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -412,7 +412,7 @@
     "name": "A_TOAST_ARRIVES_OR_LEAVES",
     "chCode": "CH-1604",
     "meaning": "A toast arrives or leaves",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -423,7 +423,7 @@
     "name": "GOING_OFFLINE_OR_BACK_ONLINE",
     "chCode": "CH-1605",
     "meaning": "Going offline or back online",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -434,7 +434,7 @@
     "name": "PRESSING_ANY_BUTTON_ROW_OR_TAB",
     "chCode": "CH-1606",
     "meaning": "Pressing any button, row, tab or link",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -445,7 +445,7 @@
     "name": "THE_FIRST_TAB_ON_A_PAGE",
     "chCode": "CH-1607",
     "meaning": "The first Tab on a page",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -456,7 +456,7 @@
     "name": "ANIMATIONS_OFF_IN_SETTINGS_OR_THE_OS",
     "chCode": "CH-1608",
     "meaning": "Animations off in Settings, or the OS asks for reduced motion",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -467,7 +467,7 @@
     "name": "A_PAGE_OR_SECTION_IS_LOADING",
     "chCode": "CH-1609",
     "meaning": "A page or section is loading",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -500,7 +500,7 @@
     "name": "OPENING_THE_BELL_ON_A_PHONE",
     "chCode": "CH-1612",
     "meaning": "Opening the bell on a phone",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -544,7 +544,7 @@
     "name": "OPENING_MORE_SWIPING_THE_SHEET_AWAY",
     "chCode": "CH-1704",
     "meaning": "Opening More; swiping the sheet away",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -555,7 +555,7 @@
     "name": "OPENING_THE_BELL_A_NOTIFICATION_OR_A",
     "chCode": "CH-1705",
     "meaning": "Opening the bell, a notification, or a menu item",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -566,7 +566,7 @@
     "name": "THE_CONNECTION_DROPS",
     "chCode": "CH-1706",
     "meaning": "The connection drops",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -577,7 +577,7 @@
     "name": "PICKING_ANOTHER_TEAM_IN_THE_SWITCHER",
     "chCode": "CH-1707",
     "meaning": "Picking another team in the switcher",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -632,7 +632,7 @@
     "name": "THE_BELL_PANEL_IS_A_DIALOG_IT",
     "chCode": "CH-1805",
     "meaning": "The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -766,7 +766,7 @@
     "name": "THE_PAGE_IS_SLOW_TO_RESPOND_OR",
     "chCode": "CH-1954",
     "meaning": "The page is slow to respond or shifts after loading (INP, CLS, LCP)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -777,7 +777,7 @@
     "name": "SOMEONE_CLICKS_THE_SAME_THING_OVER_AND",
     "chCode": "CH-1951",
     "meaning": "Someone clicks the same thing over and over (rage click)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -788,7 +788,7 @@
     "name": "A_CLICK_THAT_DOES_NOTHING",
     "chCode": "CH-1952",
     "meaning": "A click that does nothing (dead click)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -799,7 +799,7 @@
     "name": "A_SLOW_RESPONSE_TO_A_CLICK",
     "chCode": "CH-1953",
     "meaning": "A slow response to a click (slow click)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {

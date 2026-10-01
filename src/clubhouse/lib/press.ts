@@ -20,7 +20,7 @@ export function pressScale(width: number): number {
  * `translate`, so it never fights framer-motion or a sheet drag. Skipped for
  * disabled controls, anything inside `[data-ch-nopress]`, with reduced motion
  * or Animations off (pass `enabled: false`), and where the Web Animations API
- * is missing. Mounted once, by the shell.
+ * is missing. Mounted once, by the shell. CH-1606.
  */
 export function useChPress(enabled: boolean): void {
   useEffect(() => {

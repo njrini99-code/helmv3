@@ -33,7 +33,7 @@ export const CH_ROUTE = {
   transition: chTween('base'),
 } as const;
 
-/** Popovers and menus: scale from the anchor edge. */
+/** Popovers and menus: scale from the anchor edge (CH-1603). */
 export const CH_POP = {
   initial: { opacity: 0, scale: 0.97, y: -4 },
   animate: { opacity: 1, scale: 1, y: 0 },

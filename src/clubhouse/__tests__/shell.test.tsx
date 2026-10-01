@@ -104,6 +104,14 @@ function bell(api: Partial<ChBellApi>) {
 beforeEach(() => hapticSpy.mockClear());
 
 describe('Shell · bell', () => {
+  it('CH-1705 CH-1805 opening the bell ticks, and it opens as a dialog', async () => {
+    const user = userEvent.setup();
+    bell();
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+  });
+
   it('CH-1001 mark all read fails', async () => {
     const user = userEvent.setup();
     bell({ markAll: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) });
@@ -248,7 +256,7 @@ describe('Shell · network', () => {
     vi.useRealTimers();
   });
 
-  it('CH-1901 the offline banner comes and goes', async () => {
+  it('CH-1901 CH-1605 CH-1706 the offline banner comes and goes, with the warning pattern as the connection drops', async () => {
     wrap(<OfflineBanner />);
     expect(code('CH-1901')).toBeNull();
     setOnline(false);
@@ -614,6 +622,14 @@ describe('Shell · navigation and accessibility', () => {
     expect(screen.getByRole('link', { name: /Roster/ }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('complementary', { name: 'Sidebar' })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeTruthy();
+  });
+
+  it('CH-1704 opening More ticks', async () => {
+    const user = userEvent.setup();
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
+    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+    await user.click(screen.getByRole('button', { name: /^More/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
   });
 
   it('CH-1701 changing tabs ticks; the current tab does not', async () => {

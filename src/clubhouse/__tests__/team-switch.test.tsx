@@ -128,7 +128,7 @@ describe('Team switcher · desktop', () => {
     expect(setActiveTeam).not.toHaveBeenCalled();
   });
 
-  it('CH-1813 picking the other team calls the action with its id, shows it at once, and refreshes every screen', async () => {
+  it('CH-1813 CH-1707 picking the other team calls the action with its id, shows it at once, and refreshes every screen', async () => {
     const user = userEvent.setup();
     setActiveTeam.mockResolvedValue({ success: true });
     wrap(sidebar(head()));

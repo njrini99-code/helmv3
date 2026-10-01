@@ -65,7 +65,7 @@ export function ClubhouseFrame({
           <FrameRoot motionOff={!showAnimations}>
             <ToastProvider scope={userData.teamId ?? ''}>
               <CrumbProvider>
-                {/* The first Tab on any page: jump past the navigation to the page itself. */}
+                {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
                 <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                   Skip to content
                 </a>

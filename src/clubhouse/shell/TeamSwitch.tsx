@@ -84,6 +84,7 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
   };
 
   const choose = (teamId: string) => {
+    // CH-1707: a selection tick; nothing more when the switch lands, the error pattern when it fails (useAction).
     haptic('select');
     close();
     sw.pick(teamId);

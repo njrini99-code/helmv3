@@ -94,6 +94,7 @@ export function EmptyState({
   );
 }
 
+/** CH-1609: nothing for 150ms, then the block fades in; one shared shimmer, still when motion is off (base.css). */
 export function Skeleton({ width, height = 12, radius = 6 }: { width?: number | string; height?: number; radius?: number }) {
   return <span className="ch-skel" style={{ width, height, borderRadius: radius }} aria-hidden="true" />;
 }
