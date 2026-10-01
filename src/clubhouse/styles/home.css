@@ -1710,7 +1710,7 @@
 .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(n + 3) {
   border-top: 1px solid var(--ch-champagne-rule);
 }
-.ch-ph-game.is-phone .ch-ph-figs dd {
+.ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
   font-size: 26px;
 }
 .ch-ph-game.is-phone .ch-ph-note {
