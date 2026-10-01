@@ -109,6 +109,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  */
 
 function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures']; cacheError: boolean }) {
+  const notes = new Set(figures.map((x) => x.note).filter((n): n is string => !!n));
   return (
     <>
       {cacheError && (
@@ -127,11 +128,13 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
           deltaDigits: x.digits,
           lowerIsBetter: x.lowerIsBetter,
           context: x.context,
-          note: x.note,
+          // One coverage line under the row, not the same sentence under four cards (F-54).
+          note: notes.size > 1 ? x.note : undefined,
           tone: x.signed && x.value != null ? (x.value >= 0 ? ('gain' as const) : ('loss' as const)) : undefined,
           code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
         }))}
       />
+      {notes.size === 1 && <p className="ch-st-cover">{[...notes][0]}</p>}
     </>
   );
 }

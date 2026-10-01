@@ -2625,3 +2625,10 @@ a.ch-lg__r:focus-visible {
     white-space: nowrap;
   }
 }
+
+/* The hole-coverage line under the team figures, once for the row (F-54). */
+.ch-st-cover {
+  margin: -6px 2px 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
