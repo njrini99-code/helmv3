@@ -172,16 +172,37 @@ function weekdayIndexMonFirst(date: string): number {
   return (new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1)).getUTCDay() + 6) % 7;
 }
 
+/**
+ * The week a team-local date falls in (Monday to Sunday), and the instants its events are read between: a day of slack either side
+ * covers every UTC offset (rows are bucketed by team-local date afterwards).
+ */
+export function weekWindow(today: string): { weekStart: string; weekEnd: string; from: number; to: number } {
+  const weekStart = addDays(today, -weekdayIndexMonFirst(today));
+  const weekEnd = addDays(weekStart, 6);
+  return { weekStart, weekEnd, from: new Date(`${addDays(weekStart, -1)}T00:00:00Z`).getTime(), to: new Date(`${addDays(weekEnd, 2)}T00:00:00Z`).getTime() };
+}
+
+/**
+ * The widest window any timezone's `weekWindow` can be at `now`, so the events can be asked for before the zone is known. A zone's local date
+ * is at most a day from the UTC date, so its week starts no earlier than 7 days before the UTC date and its window ends no later than 9
+ * days after it: eight days back and ten forward hold every one (home-window.test.ts walks every zone offset).
+ */
+export function wideEventWindow(now: Date): { from: string; to: string } {
+  const utcToday = ymd(now, 'UTC');
+  return { from: `${addDays(utcToday, -8)}T00:00:00Z`, to: `${addDays(utcToday, 10)}T00:00:00Z` };
+}
+
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export async function loadCoachHome(input: { teamId: string; coachName: string }): Promise<ChCoachHome> {
   const supabase = await createClient();
   const now = new Date();
 
-  const { tz, greeting, todayLabel } = await homeClock(supabase, input.teamId, now);
+  // Everything that can start now does, and each later read starts the moment the one it needs has answered, not when its siblings
+  // have: the timezone, the roster, the team chat and the week's events go together; the season's rounds follow the roster alone
+  // (they used to wait for the events and their replies too); the newest rounds' cards follow the rounds.
+  const clockRead = homeClock(supabase, input.teamId, now);
   const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
-
-  // The roster, the team chat and the week load together; the week waits for the roster's names only to label invitees.
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const rosterRead = Promise.resolve(
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
@@ -189,38 +210,46 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const rosterOf = (res: Awaited<typeof rosterRead>) =>
     ((res.data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => p !== null);
   const nameOf = fullName;
-  const [rosterRes, chatRes, wk] = await Promise.all([
-    rosterRead,
+  const chatRead = Promise.resolve(
     supabase.from('golf_conversations').select('id').eq('team_id', input.teamId).eq('is_team_chat', true).order('created_at', { ascending: true }).limit(1),
-    loadHomeWeek(supabase, { teamId: input.teamId, tz, now, names: rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, nameOf(p)]))) }),
-  ]);
+  );
+  // The week waits for the roster's names only to label invitees.
+  const weekRead = loadHomeWeek(supabase, {
+    teamId: input.teamId,
+    tz: clockRead.then((c) => c.tz),
+    now,
+    names: rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, nameOf(p)]))),
+  });
+  const roundsRead = rosterRead.then(async (res): Promise<Awaited<ReturnType<typeof loadSeasonRounds>>> => {
+    const players = rosterOf(res);
+    if (res.error || players.length === 0) return { rounds: [], error: !!res.error };
+    // The team's form is Stats' Last 10, which reaches back across seasons (Q-122): read as far as it does; the rest of Home is this season.
+    return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
+  });
+  const playerById = rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, p])));
+  const latestRead = Promise.all([roundsRead, playerById]).then(([res, byId]) =>
+    latestWithHoles(supabase, seasonOnly(res.rounds.filter(isFull18)), (id) => {
+      const p = byId.get(id);
+      return p ? nameOf(p) : 'Former player';
+    }),
+  );
+  const [{ greeting, todayLabel }, rosterRes, chatRes, wk, seasonRead, latest] = await Promise.all([clockRead, rosterRead, chatRead, weekRead, roundsRead, latestRead]);
   // CH-2208: without the team chat, Message team opens Messages instead.
   if (chatRes.error) log('team chat', chatRes.error);
 
   // ── Roster ──
   if (rosterRes.error) log('roster', rosterRes.error);
   const roster = rosterOf(rosterRes);
-  const playerById = new Map(roster.map((p) => [p.id, p]));
   const { today, weekStart, weekEnd } = wk;
 
   // ── Season rounds ──
-  let roundsError = !!rosterRes.error;
-  let rounds: Awaited<ReturnType<typeof loadSeasonRounds>>['rounds'] = [];
-  if (!rosterRes.error && roster.length > 0) {
-    // The team's form is Stats' Last 10, which reaches back across seasons (Q-122): read as far as it does; the rest of Home is this season.
-    const res = await loadSeasonRounds(supabase, roster.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
-    rounds = res.rounds;
-    roundsError = res.error;
-  }
+  const { rounds, error: roundsError } = seasonRead;
   const full = rounds.filter(isFull18);
   const seasonRounds = seasonOnly(rounds);
   const seasonFull = seasonOnly(full);
 
-  // ── Latest rounds with hole-by-hole ──
-  const { rounds: latestRounds, holesError } = await latestWithHoles(supabase, seasonFull, (id) => {
-    const p = playerById.get(id);
-    return p ? nameOf(p) : 'Former player';
-  });
+  // ── Latest rounds with hole-by-hole (read above, as soon as the rounds were in) ──
+  const { rounds: latestRounds, holesError } = latest;
 
   // ── Leaderboard ──
   const byPlayer = groupByPlayer(seasonFull);
@@ -356,26 +385,29 @@ export interface ChHomeWeek {
  */
 export async function loadHomeWeek(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  input: { teamId: string; tz: string; now: Date; names: Map<string, string> | Promise<Map<string, string>> },
+  input: { teamId: string; tz: string | Promise<string>; now: Date; names: Map<string, string> | Promise<Map<string, string>> },
 ): Promise<ChHomeWeek> {
-  const { tz, now } = input;
-  const today = ymd(now, tz);
-  const weekStart = addDays(today, -weekdayIndexMonFirst(today));
-  const weekEnd = addDays(weekStart, 6);
-  // A day of slack either side covers every UTC offset; rows are bucketed by team-local date below.
-  const windowStart = `${addDays(weekStart, -1)}T00:00:00Z`;
-  const windowEnd = `${addDays(weekEnd, 2)}T00:00:00Z`;
-
-  const eventsRes = await supabase
+  const { now } = input;
+  // The events are asked for before the team's timezone is known, over a window that holds the week of any zone (`wideEventWindow`),
+  // and cut to the exact window below. The window used to wait for the timezone read, which put a round trip in front of the events
+  // and the replies after them.
+  const wide = wideEventWindow(now);
+  const eventsRead = Promise.resolve(
+    supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, end_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
-      .gte('start_time', windowStart)
-      .lt('start_time', windowEnd)
+      .gte('start_time', wide.from)
+      .lt('start_time', wide.to)
       .order('start_time', { ascending: true })
-      .limit(500);
+      .limit(500),
+  );
+  const [tz, wideRes] = await Promise.all([input.tz, eventsRead]);
+  const today = ymd(now, tz);
+  const { weekStart, weekEnd, from, to } = weekWindow(today);
+  const eventsRes = wideRes.error ? wideRes : { ...wideRes, data: (wideRes.data ?? []).filter((e) => new Date(e.start_time).getTime() >= from && new Date(e.start_time).getTime() < to) };
 
   // ── Week ──
   if (eventsRes.error) log('events', eventsRes.error);
@@ -406,10 +438,15 @@ export async function loadHomeWeek(
   const invited = new Map<string, string[]>();
   const accepted = new Map<string, number>();
   let attendanceError = false;
-  for (const ids of chunkIds([...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))])) {
-    const { data, error } = await fetchAllRowsResult((from, to) =>
-      supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
-    );
+  // The chunks are independent, so they are read together.
+  const attendance = await Promise.all(
+    chunkIds([...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))]).map((ids) =>
+      fetchAllRowsResult((from, to) =>
+        supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
+      ),
+    ),
+  );
+  for (const { data, error } of attendance) {
     if (error) {
       // CH-2209: without replies, agenda rows drop who is invited and the confirmed count, never "0 players".
       log('attendance', error);
