@@ -1235,6 +1235,14 @@
   .ch-cl-tb__over span {
     max-width: none;
   }
+  /* The term line (F-47): room above it for "Today" so it clears the overlaps box, and no "This week" text under
+     it, where the Today marker cut through it; the highlighted band still marks the week. */
+  .ch-cl-tb__line {
+    margin: 38px 0 22px;
+  }
+  .ch-cl-tb__wkb em {
+    display: none;
+  }
   .ch-cl-tb__bar {
     height: 30px;
   }
