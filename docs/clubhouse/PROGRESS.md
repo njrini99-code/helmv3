@@ -434,6 +434,22 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   reads it as before. Kept out: test rounds, rounds in progress, implausible
   totals (the stroke floor) and nine-hole totals (the rule names 18-hole
   totals).
+- Q-124 (open, 2026-10-01; nothing applied) The §13 CoachHelm audit found
+  the lifetime stats cache still counts test rounds, so cache-backed cards
+  are wrong (Cole's 15-25 ft putting reads 19.2% and draws as a strength; the
+  truth without his test round is 5.8%, below the Tour). The fix is the three
+  HELD migrations (`20260924120000`, `20260928120000`, `20260928150000`),
+  then a cache refresh. Recommended: apply them in the documented order and
+  refresh, after a db-migration-reviewer pass. Kept: held.
+- Q-125 (open, 2026-10-01; nothing run) All 81 visible CoachHelm rows for
+  the Demo team were written before production started serving `ef6e017a2`,
+  so the test-round exclusions in #2101 are not reflected (Cole's tee card
+  flips direction once regenerated). Recommended: one regeneration run for
+  the team after Q-124 lands (a production write). Kept: not run.
+- Q-126 (open, 2026-10-01; unchanged) `tentative_promotion_enabled` is off
+  for the Demo team, so Tyler's six tentative cards stay hidden and archive
+  around 9 October while other players' similar cards show. Recommended: on
+  for teams in the beta. Kept: off.
 - Q-98 (open, 2026-09-30; built the reversible choice) Auth (P015) choices: (1) the new screens sit behind their own flag, golf_clubhouse_auth, off in production and on in preview and development; with it off, today's sign-in and welcome render untouched; (2) the welcome's "since" line reads users.last_seen (the previous visit, written by the dashboard heartbeat) because the sign-in that just happened overwrites the auth last-sign-in time, so the header says "Since your last visit" and a user with no last_seen gets "Your first time in"; (3) a wrong password shows the design's "Incorrect email or password. Please check your credentials and try again." with both fields marked, keeping the server's "N attempts remaining" line; today production shows the raw server text and marks no field. Recommended: keep all three.
 - Q-97 (open, 2026-09-30; built the reversible choice) Stats round filter (0f18e76c9) details past the owner's brief: (1) when the chosen length has no rounds but nine-hole rounds exist, a hint says to choose 9 holes or Both (CH-4319, CH-5324); (2) season bests and "Rounds this season" stay 18-hole whatever the filter; (3) "Last 10" under Both is the ten newest rounds of either length; (4) the opening-hole floor counts raw holes; (5) a team with only nine-hole rounds no longer gets the first-run "No stats yet" page (D-71 counts nine-hole rounds). A nine-hole round weighs half a round in every per-round figure. Recommended: keep all five.
 - Q-96 (owner, 2026-09-30; for the sign up and onboarding redesign) Head coaches are always created manually by the owner and never onboard. Self-serve is: sign up → enter the team code → choose Player or Assistant coach → onboarding that differs by role. There is no email verification code step. An assistant coach joins at once, never pending ("auto sync"). Risk raised to the owner: whoever has the team's code can then become a coach and see every player's data; suggested guard that keeps it instant: a separate staff code that only the head coach shares, plus a notice to the head coach with one-tap Remove. Answered the same day, against the design handoff in design/handoff/auth/ (built on lib/golf/signup-gate.ts): the head coach sign-up path and the program code are dropped (the owner creates head coaches); assistant coaches join with the separate staff code, instantly, with no pending screen and no role picker; the roster code is players only; Request access stays (it reaches the owner); handedness and GPA are not collected. The design's other screens, states, motion and haptics stand.
