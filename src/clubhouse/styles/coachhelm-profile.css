@@ -116,7 +116,7 @@
 }
 .ch-hg-early b {
   font-weight: 600;
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss-on-tint);
 }
 
 /* The measures */
@@ -171,7 +171,7 @@
 }
 .ch-hg-m.is-warn {
   --ch-hg-tone: var(--ch-chart-loss);
-  --ch-hg-ink: var(--ch-warning-600);
+  --ch-hg-ink: var(--ch-chart-loss-on-tint);
   background: linear-gradient(180deg, rgb(250 240 220 / 0.75), var(--ch-ivory-25) 46%);
 }
 .ch-hg-m.is-locked {
@@ -201,7 +201,7 @@
 }
 .ch-hg-tag.is-warn {
   background: var(--ch-warning-100);
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss-on-tint);
   box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.28);
 }
 .ch-hg-m h3 {
@@ -232,7 +232,7 @@
 }
 .ch-hg-m__edge {
   font: 500 12px/1.4 var(--ch-font-sans);
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss-on-tint);
 }
 .ch-hg-m__mean {
   font: 400 14px/1.55 var(--ch-font-sans);

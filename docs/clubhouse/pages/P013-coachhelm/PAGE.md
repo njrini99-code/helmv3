@@ -12,11 +12,13 @@ dismiss it.
 Page ID:            P013
 Page Name:          CoachHelm
 Route:              /golf/dashboard/coachhelm (coach and player);
-                    ?view=development|profile|standing show the shell's
-                    "not rebuilt yet" page (CH-1301), ?view=insights and no
-                    view draw the board; ?view=ask is the coach's Ask (off
-                    when CoachHelm is off); ?player=<id> opens a coach's
-                    board on that player (Roster's View insights)
+                    a player's ?view=profile|standing|deep-dive are their own
+                    Game profile, Standing and Deep dive (?insight=<id> opens
+                    the Deep dive on a read), ?view=development goes to
+                    Stats' Development, ?view=insights and no view draw the
+                    board; ?view=ask is the coach's Ask (off when CoachHelm
+                    is off); ?player=<id> opens a coach's board on that
+                    player (Roster's View insights)
 Bridge Namespace:   13 (Bridge IDs 13ccii, D-68; catalog codes CH-13xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/coachhelm
@@ -44,8 +46,9 @@ Decline it (Q-77). Coach: Assign as focus.
 
 ### Secondary actions
 
-Player: open another insight into the focus card, open Why we think this, try a failed proposals read again. Coach: choose another player,
-Dismiss an insight and Undo it, open Roster, and open CoachHelm settings. Both: try a failed section again.
+Player: open another insight into the focus card, open Why we think this, try a failed proposals read again, and move between
+the Board, Game profile, Standing and Deep dive (their own data, read only) or on to Stats' Development. Coach: choose another
+player, Dismiss an insight and Undo it, open Roster, and open CoachHelm settings. Both: try a failed section again.
 
 ### Information hierarchy
 
@@ -55,6 +58,9 @@ Dismiss an insight and Undo it, open Roster, and open CoachHelm settings. Both: 
    with no insight yet.
 3. The header: the role, "CoachHelm", and for a coach how many players have an open signal (the board draws
    one card per player, so it counts players, never the rows behind them).
+4. The player's views, each on a green card then white ones: the Game profile (the shape of their game, then each
+   measure), Standing (where they stand against the Tour and the team, then each stat) and the Deep dive (the list of
+   reads, then one read in full with its evidence, trend and rounds).
 
 ### User should notice first
 
@@ -103,8 +109,9 @@ The sidebar (coach and player) and the phone tab bar (CoachHelm is one of each r
 
 Roster, from Open roster and View roster (a coach), and CoachHelm settings, from Open CoachHelm settings
 (`/golf/dashboard/settings/coaching-intelligence`); Rounds, from Open Rounds or Start a round (a player). A
-control whose target is not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. The shell's
-"not rebuilt yet" page (Back to Home) is where `?view=development`, `profile` and `standing` go.
+control whose target is not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats' Development tab,
+from the player's sub-navigation and from `?view=development` (where every stored dev-plan notification points); a
+round's review, from a round under a read in the Deep dive, once that screen is rebuilt.
 
 ## Ownership
 

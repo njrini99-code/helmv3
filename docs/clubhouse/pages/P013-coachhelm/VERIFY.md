@@ -37,7 +37,7 @@ registry marks a hand contract `implemented` only when its test file names the I
 | 130101 coachhelm opens for the role | yes | “CH-13801 one focus: the page is labelled by its title”; “CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs”; “by player: each with their top signal and how many they have”; “a coach gets their board for the team the shell resolved; a player gets their own” |  |
 | 130102 the focus is the top insight that is not working | yes | “the focus is the top-ranked insight that is not working”; “a picked insight is the focus and leaves the lists”; “with only strengths there is no focus and they are all listed as working”; “the lists and the pulse are capped: five to look at, five working, six pulse rows”; “CH-13701 CH-13803 choosing another insight puts it in the focus card” |  |
 | 130103 players are ordered most pressing first | yes | “players: the most pressing top insight first, then the most signals, then the name; a strength last”; “a player whose top insight is a strength comes last, even when that insight’s own priority is high”; “by player: each with their top signal and how many they have”; “CH-13701 choosing a player shows their focus, with the selection haptic” |  |
-| 130104 fairway drill links say not rebuilt | partly | “CH-1301 a link to a Fairway drill (?view=development, profile, standing) says it is not rebuilt; ?view=insights is the board”; “the page gives a Clubhouse coach or player the new screen, and Fairway’s page is unchanged everywhere else” | Only a player session is tested; a coach following ?view= and the other values (deep-dive, unknown) drawing the board are read in the code, not run. |
+| 130104 the Fairway drills' addresses land on a screen that exists | partly | “CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board”; “?view=development (every stored dev-plan notification) lands on Stats Development, not a placeholder”; for each of profile, standing and deep-dive in `coachhelm-views.test.tsx`: “reads for the session’s player and nobody else, whatever the address says”, “CH-13304 CoachHelm off”, “a gate lookup that failed is the view’s own did-not-load”, “a coach is a coach here” | A coach following `?view=development` is not run (the redirect is before the session, read in the code). |
 | 130105 open signals follow dismissals | yes | “CH-13703 CH-13901 Dismiss: the warning comes first, then the write”; “Undo brings it back: the write restores the state it had, and the focus card returns”; “dismissing a player’s last signal takes them out of the count of players as well as of signals” (Priya, whose top card is an open finding); “CH13-4 the subtitle counts the players the board has a current finding for, in the singular when it is one” |  |
 | 130106 insights are generator output only | yes | “the downhill penalty: two make rates as bars, no gauge”; “the lede is the first sentence and the reasoning the rest”; “a lifetime value says All rounds and counts rounds; a count keeps its decimal”; “the generator’s placeholder recommended action is not shown as a drill”; “ahead of the cohort at low priority is working, and its gauge is the green one”; “a value with no comparison draws no gauge and still names its sample”; “a break gap is a finding” |  |
 | 130204 the route skeleton takes the roles shape | yes | “the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known”; “the loading file is the Clubhouse skeleton inside Clubhouse, and Fairway’s everywhere else” |  |
@@ -107,7 +107,7 @@ Result:       built to the approved spec and seen at 390; no iPhone pass, no mea
 | Server refusal | 130804 | read, not run | no test forces a server refusal |
 | Existing focus | 130903 | test, `?state=duplicate` | assigned, said in a toast, not an error |
 | Dismiss and Undo | CH-13901, 131403 | tests | the notice keeps Undo; Undo restores the state it had |
-| Not rebuilt views | CH-1301, 130104 | test (a player) | development, profile and standing show the shell page; insights draws the board |
+| The player's views | 130104, CH-13260, 13270, 13271, 13280 to 13283, 13304, 13360, 13361, 13370 to 13384, 13460, 13470, 13480 | tests (each view: ready, off, failed, empty or first run, early or partial, each part failed), `?view=profile\|standing\|deep-dive` and `?state=` | profile, standing and deep-dive are the player's own views; development goes to Stats' Development; insights draws the board; a failed read is its own notice, never an empty page |
 
 The `?state=` entries name the preview state that draws each state. Only the ones the axe run walks (listed under
 Accessibility) are recorded as visited in a browser, and none was forced against a live session.
@@ -173,8 +173,7 @@ are in a `'use server'` file: `npm run build` was not run for them here.
   VoiceOver at 1280 and 390.
 - Found in this pass, not fixed: a coach's gate lookup failure draws
   "Nothing is flagged in the pulse right now." beside the roster notice
-  (130608); `?view=deep-dive` draws the board and not the not-rebuilt page
-  (130104); `docs/clubhouse/phone/coachhelm.md` still says the Clubhouse
+  (130608); `docs/clubhouse/phone/coachhelm.md` still says the Clubhouse
   branch returns before it reads `view`, and that no Clubhouse screen has
   Accept; the `?view=` guard (Q-76) and Accept and Decline in Stats
   Development (Q-77) have since been built, as PROGRESS.md records.
@@ -201,3 +200,29 @@ Observed after the two changes (CHANGELOG.md has what changed):
 | Clubhouse check | `npm run -s clubhouse:check` | exit 1 on the registry only for this page: the seven new catalog codes have no Bridge ID and CONTRACT.md is stale, both for `registry.mjs sync` (the lead's) |
 
 Not observed: the new preview states in a browser and in axe (the preview route and `a11y.mjs` are not this change's to edit: `?state=proposed|failproposal|proposalsfailed` on `/clubhouse-preview/coachhelm-player`), a real player with a proposed focus area, and the Tour values against a real women's team. Hand contracts 130106, 130801 and 130902 were reworded for the changes; no new hand contract is written.
+
+## Update 2026-10-01: the player's Game profile, Standing and Deep dive
+
+Observed after building the three views (CHANGELOG.md has what changed). Run
+from `/Users/ricknini/worktrees/helmv3/swap-audit` at the Deep dive commit
+(`438781162`) plus the uncommitted CSS fix and docs of the commit after it.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Tests | `npm run test:file -- src/clubhouse/__tests__/coachhelm*.test.tsx src/clubhouse/__tests__/coachhelm*.test.ts` | exit 0: 13 files, 548 tests passed. `coachhelm-dive.test.tsx` alone: 61 |
+| Typecheck | `npm run typecheck:fast` | exit 0 |
+| Lint | `npx eslint` on the changed `src/clubhouse` and `src/app/clubhouse-preview` files | exit 0 |
+| Clubhouse check | `npm run clubhouse:check` | exit 0: 35 unit tests, 417 files, 15 pages, 1351 Bridge IDs |
+| Axe and tap targets | a one-off scan (`@axe-core/playwright`, WCAG 2.0 to 2.2 AA with contrast, plus a 44px hit-area probe like `native.mjs`) of `/clubhouse-preview/coachhelm-views` at 1280px and 390px: `view=deep-dive` (default, `q=in-pen`, `q=in-brk`, `partsfailed`, `young`, `empty`, `norounds`, `failed`, `off`, `loading`), `view=profile` (default, `partial`, `edge`, `empty`) and `view=standing` (default, `early`, `empty`, `womens`, `nobaseline`), and the Deep dive's open read on the phone | no axe violation and no page that scrolls sideways. One finding left, not ours: the shell's Home tab reads 76 x 46 under the Next.js dev indicator that sits over it in the preview. Fixed on the way: amber text at 4.47:1 on the phone's darker ivory, and the chip row clipping its tap area to 42px |
+| Visual | the preview in a browser at 1440, 1280, 1024 and 390px (Deep dive: the list and the read, a read with no rounds, no trend and no plan, parts failed, the phone list and the pushed read) | read against the design intent; no screenshot is kept |
+
+Mutation checks were not run for these views. The loader tests use the table
+fake (`supabase-fake.ts`), so the filters each read sent are asserted, but no
+read ran against a real database.
+
+Not observed: any of the three views with a real player's data, a device pass,
+VoiceOver, a keyboard walk (every control is a native button or link; the open
+read's focus moves to its title, as `PhoneScreen` does), and `npm run
+clubhouse:a11y` itself (its page list does not include these previews and is not
+this change's to edit). `npm run build` was not run: no `'use server'` file
+changed.

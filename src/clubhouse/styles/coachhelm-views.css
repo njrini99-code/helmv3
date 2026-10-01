@@ -15,7 +15,8 @@
   display: flex;
   gap: 8px;
   margin: 0 -16px;
-  padding: 2px 16px 4px;
+  /* The chip's tap area reaches 4px past it (below); the row scrolls, so it clips there unless the padding leaves that room. */
+  padding: 4px 16px;
   overflow-x: auto;
   scrollbar-width: none;
   scroll-snap-type: x proximity;

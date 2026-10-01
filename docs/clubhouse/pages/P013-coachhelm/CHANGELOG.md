@@ -2,6 +2,70 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — The player's Game profile, Standing and Deep dive (F-04, Q-76)
+
+Owner, 2026-10-01: "coachhelm for player you can build but be detailed."
+
+```text
+PR/commit:      agent/swap-audit (#2111): 28f83d3a8 (Game profile and the
+                sub-navigation), a657a7d15 (Standing), 438781162 (Deep dive)
+Design package: none (no owner board for these views; the phone layouts are a
+                draft built on the phone grammar, DESIGN.md)
+Contract IDs:   30 new Bridge IDs, all CH-13xxx: CH-13260, 13270, 13271,
+                13280 to 13283 (didn't load); 13360, 13361, 13370 to 13373,
+                13380 to 13384 (empty, early, partial); 13460, 13470, 13480
+                (loading); 13780 (haptic); 13860, 13880, 13890
+                (accessibility); 13930, 13931 (sub-navigation); 13980 to 13982
+                (the pushed read, ?insight=, a hypothesis). CH-13304 widened to
+                every view. CH-1301 (not rebuilt) is no longer said by this page;
+                130104 reworded
+Actions:        none: the three views are reads, with no write path
+Data impact:    none (reads of golf_player_genome, golf_player_standing,
+                golf_player_stats_cache, the delivery feed, golf_rounds,
+                golf_player_focus_areas and golf_goals; WIRING.md
+                DATA-COACHHELM-VIEWS)
+Held items:     none
+```
+
+- **Sub-navigation.** Board, Game profile, Standing and Deep dive are one
+  radiogroup of views of the page on desktop and a row of chips on the phone,
+  with a link out to Stats' Development. Each view is a real address
+  (`?view=profile`, `standing`, `deep-dive`) behind the board's own switch:
+  off is the board's page, and a gate lookup that failed is the view's
+  did-not-load, never "off". `VIEWS_NOT_REBUILT` and its not-rebuilt page are
+  gone from this route.
+- **Game profile.** The genome as the shape of their game in words, then the
+  seven measures, each on its own scale with its value, what it means, the
+  confidence word and how it is measured. No radar and no 0 to 100 score; a
+  value at the bound of its scale says it is a bound; a measure with too few
+  rounds is locked, never estimated.
+- **Standing.** Every tracked stat against the Tour (the LPGA's for a women's
+  team) and the team, with the percentile in words, what closing the gap is
+  worth in strokes a round (the shared counterfactual, five-round floor) and the
+  three biggest. A comparison that cannot be made says why and is a dash.
+- **Deep dive.** Every insight the Board draws, in full: what was measured, how
+  it has moved, the rounds behind it, why (a cause is "Measured in your shots"
+  or "Likely, not measured"), this week's drill and the focus area or goal it
+  belongs to. A list beside the read on desktop; on the phone a pushed screen
+  that the iOS back swipe pops. `?insight=<id>` opens on a read of the
+  player's own.
+- **Honest failures.** A failed read is never an empty page. The Deep dive's
+  rounds, plans and category trends each fail on their own, in place, with Try
+  again, and "In your plan" is a dash while plans did not load.
+- **Checked.** `coachhelm-dive.test.tsx` 61/61; every `coachhelm*.test.ts(x)`
+  13 files, 548/548 (exit 0); `npm run typecheck:fast` exit 0; `npx eslint` on
+  the changed files exit 0; `npm run clubhouse:check` exit 0 (15 pages, 1351
+  Bridge IDs). An axe scan (WCAG 2.2 AA, with contrast) of the previews at
+  1280px and 390px over 11 Deep dive, 4 Game profile and 5 Standing states, and
+  the Deep dive's open phone read: no violations. It found and fixed amber text
+  at 4.47:1 on the phone's darker ivory (now `--ch-chart-loss-on-tint`) and the
+  chip row clipping its own tap area to 42px.
+- **Not done.** The pages were not read against a live player session (the
+  previews and the loader tests with fakes); no device pass or VoiceOver;
+  `npm run build` not run (no `'use server'` file changed); the Fairway Deep
+  dive's shot-analysis and what-if content and the Game profile's fingerprint,
+  composite and trend cards are not rebuilt (DESIGN.md non-goals).
+
 ## 2026-10-01 — Undo keeps an acknowledgement; Assign tells the player
 
 Swap audit CH13-14 and CH13-24.

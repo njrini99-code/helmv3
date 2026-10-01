@@ -12720,11 +12720,12 @@
     "category": 1,
     "item": 4,
     "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
-    "meaning": "?view=development, ?view=profile and ?view=standing (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) show the shell's not-rebuilt page (CH-1301) naming Development, Game profile or Standing, with Back to Home, instead of the board. The page passes ?view= to the route and the route checks it before it reads the session, so it holds for a coach as well as a player. ?view=insights, no view and any other value (?view=deep-dive is a Fairway view) draw the board (Q-76, open).",
+    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for).",
     "status": "reserved",
-    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (VIEWS_NOT_REBUILT); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/shell/NotRebuilt.tsx#NotRebuilt",
+    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm.test.tsx",
+      "src/clubhouse/__tests__/coachhelm-views.test.tsx"
     ]
   },
   {

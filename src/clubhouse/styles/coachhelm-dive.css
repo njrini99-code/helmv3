@@ -152,7 +152,7 @@
 }
 .ch-hd-it.is-high {
   --ch-hd-dot: var(--ch-chart-loss);
-  --ch-hd-ink: var(--ch-warning-600);
+  --ch-hd-ink: var(--ch-chart-loss-on-tint);
 }
 .ch-hd-it.is-medium {
   --ch-hd-dot: var(--ch-champagne-500);
@@ -278,7 +278,7 @@
   --ch-hd-fig: var(--ch-green-700);
 }
 .ch-hd-meas.is-warn {
-  --ch-hd-fig: var(--ch-warning-600);
+  --ch-hd-fig: var(--ch-chart-loss-on-tint);
 }
 .ch-hd-meas__v {
   display: flex;
@@ -339,7 +339,7 @@
   --ch-hd-fig: var(--ch-green-700);
 }
 .ch-hd-tr li.is-warn {
-  --ch-hd-fig: var(--ch-warning-600);
+  --ch-hd-fig: var(--ch-chart-loss-on-tint);
 }
 .ch-hd-tr__k {
   font: 500 12.5px/1.4 var(--ch-font-sans);

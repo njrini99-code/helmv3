@@ -128,7 +128,7 @@
 }
 .ch-hs-early b {
   font-weight: 600;
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss-on-tint);
 }
 
 /* A group of stats */
@@ -183,7 +183,7 @@
 }
 .ch-hs-r.is-behind {
   --ch-hs-tone: var(--ch-chart-loss);
-  --ch-hs-ink: var(--ch-warning-600);
+  --ch-hs-ink: var(--ch-chart-loss-on-tint);
 }
 .ch-hs-r__h {
   min-width: 0;
@@ -204,7 +204,7 @@
   color: var(--ch-green-700);
 }
 .ch-hs-vs.is-behind {
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss-on-tint);
 }
 .ch-hs-vs.is-level {
   color: var(--ch-ink-600);
@@ -315,7 +315,7 @@
 }
 .ch-hs-proj b {
   font-weight: 600;
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss-on-tint);
 }
 
 /* Route skeleton: the page's own shape and height */

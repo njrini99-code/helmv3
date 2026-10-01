@@ -6,18 +6,33 @@
 Route:                   /golf/dashboard/coachhelm
 Page:                    src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx (a coach or a player with golf_clubhouse_ui on
                          -> ClubhouseCoachHelmRoute with ?view= handed to it, drawn in place; else the Fairway page; no session -> /golf/login)
-Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx ClubhouseCoachHelmRoute({ view }):
-                           ?view=development|profile|standing -> the shell's NotRebuilt (CH-1301), before the session is read;
+Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx ClubhouseCoachHelmRoute({ view, player, c, insight }):
+                           ?view=development -> redirect to Stats' Development (/golf/dashboard/stats?tab=dev), before the session is read;
                            no session -> nothing; session.coach -> resolveClubhouseTeam, and no team (or not a coach team) ->
-                           the no-team page (CH-13308), else loadCoachCoachHelm -> CoachBoard; session.player -> loadPlayerCoachHelm
-                           -> PlayerBoard (no team needed: without one there is no tour and nothing proposed)
+                           the no-team page (CH-13308), else (?view=ask the Ask sub-tab) loadCoachCoachHelm -> CoachBoard;
+                           session.player -> ?view=profile|standing|deep-dive -> playerDrill(drill, session.player.id): the gate is
+                           resolved first (loadPlayerHelmGate: off -> the board's own page CH-13304, a lookup that failed -> the
+                           view's did-not-load, never "off"), then the view's own keyed <Suspense> (its skeleton as the fallback)
+                           around an async component that calls the view's one loader; any other ?view= (insights, nothing,
+                           anything else) -> loadPlayerCoachHelm -> PlayerBoard (no team needed: without one there is no tour and
+                           nothing proposed). A view's address never chooses whose data it reads: the player id is the session's.
+                           ?insight=<id> (Deep dive only) is a name to open, passed to the screen and checked against the player's own list.
 Server loaders:          src/clubhouse/data/coachhelm.ts loadCoachCoachHelm and loadPlayerCoachHelm (one read for the role; each
                          failed read logs through chLogServer('coachhelm', …) and never throws for a partial read), with
                          coachhelm-shape.ts (types, partition, ordering, the pulse rows) and coachhelm-map.ts (generator output
-                         to what is drawn)
-Screens:                 src/clubhouse/screens/coachhelm/PlayerBoard.tsx (-> Proposals.tsx) and CoachBoard.tsx -> parts.tsx (the cards)
+                         to what is drawn). loadPlayerHelmGate is the switch the board and every view share.
+View loaders (player):   coachhelm-profile.ts loadPlayerProfile, coachhelm-standing.ts loadPlayerStanding and coachhelm-dive.ts
+                         loadPlayerDeepDive, each `({ playerId }) -> ChViewLoad<…>` (ready / off / failed), with their pure steps in
+                         coachhelm-profile-shape.ts, coachhelm-standing-shape.ts and coachhelm-dive-shape.ts and the shared
+                         coachhelm-views-shape.ts (the view union, addresses, labels, the Development link). A failed read is
+                         `failed`, never an empty page; each part beside the main read has its own flag.
+Screens:                 src/clubhouse/screens/coachhelm/PlayerBoard.tsx (-> Proposals.tsx) and CoachBoard.tsx -> parts.tsx (the cards);
+                         the player's views in screens/coachhelm/views/: Frame (page, sub-navigation, off page), PlayerHelmTabs,
+                         Profile, Standing, DeepDive, KeepReading, Skeletons
 Skeleton:                src/clubhouse/screens/coachhelm/CoachHelmSkeleton.tsx (CH-13401 player, CH-13402 coach), from coachhelm/loading.tsx
-                         through ClubhouseSwitch and CoachHelmRouteSkeleton (the role from the golf user context)
+                         through ClubhouseSwitch and CoachHelmRouteSkeleton (the role from the golf user context). A view's own
+                         skeleton is its Suspense fallback (views/Skeletons.tsx: CH-13460 profile, CH-13470 standing, CH-13480 deep
+                         dive), because coachhelm/loading.tsx cannot read ?view=
 Route error:             src/app/golf/(dashboard)/dashboard/coachhelm/error.tsx (the shared RouteErrorBoundary)
 ```
 
@@ -46,6 +61,31 @@ Bridge: recorded, not wired (D-68)
 Tests: src/clubhouse/__tests__/coachhelm.test.tsx
 ```
 
+The player's three views are reads only, with no write path and no action record (there is nothing to assign, dismiss or
+accept on them):
+
+```text
+UI (the sub-navigation, a read in the Deep dive's list, Try again on a notice, links to Development and to a round's review)
+↓
+Server component (ClubhouseCoachHelmRoute -> playerDrill -> an async view component) -> the view's loader, for session.player.id
+↓
+Reads (the shared client unless the lib's own loader says otherwise; every failure logs through chLogServer('coachhelm', …)):
+  profile  -> loadGenome (golf_player_genome)
+  standing -> loadPlayerStandingMap (golf_player_standing; the lib's service-role client, scoped by the player id and filtered to it),
+              golf_player_stats_cache (rounds played and the scoring average, the floor of five rounds the Fairway loader uses)
+  deep dive-> getInsightsForPlayer (the Board's feed), getThemesForPlayer, golf_rounds (the rounds a read names, this player's,
+              completed, not a test round), golf_player_focus_areas, loadActiveGoals and loadRecentlyAchievedGoals (the lib's
+              service-role client, scoped by the player id and filtered to it)
+↓
+Pure steps (toChProfile, toChStanding, toChDeepInsight): what the screen draws, so the preview and the tests run the same code
+↓
+Contract outcomes: CONTRACT.md (CH-13260, CH-13270, CH-13271, CH-13280 to CH-13283, CH-13304, CH-13360, CH-13361, CH-13370 to
+                   CH-13373, CH-13380 to CH-13384, CH-13460, CH-13470, CH-13480, CH-13780, CH-13860, CH-13880, CH-13890,
+                   CH-13930, CH-13931, CH-13980 to CH-13982)
+↓
+Tests: coachhelm-profile.test.tsx, coachhelm-standing.test.tsx, coachhelm-dive.test.tsx, coachhelm-views.test.tsx
+```
+
 ## Actions
 
 Each action's record is in `config/clubhouse/pages/P013-coachhelm.json` (`actions`), and the whole list is
@@ -72,16 +112,23 @@ again (131401). Choosing a player or an insight is page state, not an action rec
 | `screens/coachhelm/parts.tsx` | `FocusCard`, `Evidence` (`Gauge`, bars, `ReadMeter`), `PriPill`, `InsightRow`, `PulseList`, `Head` | CH-13802, CH-13803, CH-13804, CH-13806 |
 | `screens/coachhelm/writes.ts` | The writes interfaces, `LIVE_COACHHELM_WRITES` and `LIVE_PLAYER_WRITES`; preview and tests pass their own set | — |
 | `screens/coachhelm/CoachHelmSkeleton.tsx` | Route skeleton, one shape per role | CH-13401, CH-13402 |
-| `routes/coachhelm.tsx` | Route adapter, the `?view=` guard and the coach's no-team page | CH-1301, CH-13308 |
+| `screens/coachhelm/views/Frame.tsx` | The page every player view is drawn in (phone top bar, sub-navigation, header; `after` holds a pushed phone screen outside the page's size container) and `HelmOff` | CH-13304, CH-13801 |
+| `screens/coachhelm/views/PlayerHelmTabs.tsx` | The player's sub-navigation: Board, Game profile, Standing, Deep dive as one radiogroup, a row of chips on the phone, and the Development link | CH-13930, CH-13931 |
+| `screens/coachhelm/views/Profile.tsx` | Game profile: the persona and the seven measures, each with its value, plain meaning, sample and confidence | CH-13260, CH-13304, CH-13360, CH-13361, CH-13860 |
+| `screens/coachhelm/views/Standing.tsx` | Standing: every tracked stat against the Tour and the team, the projections and the most to gain | CH-13270, CH-13271, CH-13304, CH-13370 to CH-13373, CH-13880 |
+| `screens/coachhelm/views/DeepDive.tsx` | Deep dive: the list of reads beside one read in full (a pushed screen on the phone) | CH-13280 to CH-13283, CH-13304, CH-13380 to CH-13384, CH-13780, CH-13890, CH-13903, CH-13980 to CH-13982 |
+| `screens/coachhelm/views/Skeletons.tsx`, `KeepReading.tsx` | Each view's skeleton at final height; the closing links between views | CH-13460, CH-13470, CH-13480 |
+| `routes/coachhelm.tsx` | Route adapter, the player's view dispatch (`playerDrill`) and the coach's no-team page | CH-13308 |
 
 ## Hooks
 
 | Path | Type | Used by |
 | --- | --- | --- |
 | `src/clubhouse/lib/use-action.ts` (`useAction`, `normalise`) | Clubhouse | CoachBoard (three actions), Proposals (two) |
-| `src/clubhouse/lib/use-phone.ts` (`useChPhone`) | Clubhouse | PlayerBoard, CoachBoard |
+| `src/clubhouse/lib/use-phone.ts` (`useChPhone`) | Clubhouse | PlayerBoard, CoachBoard, every player view |
 | `src/clubhouse/ui/Toast.tsx` (`useToast`) | Clubhouse | CoachBoard (the existing-focus toast) |
-| `src/clubhouse/shell/phone-chrome.tsx` (`PhoneTop`) | Clubhouse | PlayerBoard, CoachBoard |
+| `src/clubhouse/shell/phone-chrome.tsx` (`PhoneTop`, `usePhoneStackHistory`) | Clubhouse | PlayerBoard, CoachBoard, the player views; `usePhoneStackHistory` in DeepDive (the open read is a history entry, CH-13980) |
+| `src/clubhouse/shell/PhoneScreen.tsx`, `ui/PhoneBar.tsx` | Clubhouse | DeepDive (the pushed read on the phone) |
 | `src/clubhouse/lib/haptics.ts`, `track.ts` | Clubhouse | throughout |
 
 There are no realtime hooks: the page is read once on the server.
@@ -98,6 +145,11 @@ There are no realtime hooks: the page is read once on the server.
 | getCoachProgramPulse | lib/coachhelm/v3/chat/request-cache.ts | Existing (cached per request) | The program pulse |
 | isCoachHelmEnabledForPlayer, isCoachHelmEnabledForCoach | lib/coachhelm/v2/gate.ts | Existing | Whether CoachHelm is on, and who turned it off |
 | applyInsightVisibility, fetchAllRowsResult | lib/coachhelm/v3/insight-visibility.ts, lib/supabase/fetch-all-rows.ts | Existing | The visible-insights probe, paginated |
+| loadGenome, derivePersona | lib/coachhelm/v3/genome/loader.ts, persona.ts | Existing (the Fairway Game profile's) | The stored genome row (null for none or uncomputed; a failed read throws) and the persona derived from it |
+| loadPlayerStandingMap | lib/coachhelm/v3/standing/loader.ts | Existing (the Fairway Standing's) | The player's `golf_player_standing` rows by metric (the lib's service-role client, scoped by the player id) |
+| computeCounterfactual | lib/coachhelm/v3/counterfactual/compute.ts | Existing | What closing a gap is worth, from the scoring average (five-round floor, as `loadPlayerScoringBaseline`) |
+| getThemesForPlayer | actions/insight-delivery.ts | Existing (the Fairway Deep dive's) | The category reads: where each stands, its strokes gained and trend, and the causes' team-anchored gains |
+| loadActiveGoals, loadRecentlyAchievedGoals | lib/coachhelm/v3/goals/loader.ts | Existing | The player's goals (the lib's service-role client; the loader filters rows to the player id) |
 
 ## Data resources
 
@@ -120,12 +172,37 @@ Read path:  the loaders, on the server, in rounds (132101); a coach's are the re
 Write path: the server actions above, through writes.ts
 ```
 
+### DATA-COACHHELM-VIEWS
+
+The player's Game profile, Standing and Deep dive. Reads only, for the signed-in player.
+
+```text
+Tables:   golf_player_genome (the genome row), golf_player_standing (the rows `loadPlayerStandingMap` returns),
+          golf_player_stats_cache (rounds played and the scoring average), golf_coach_insights (through the delivery action, and
+          the visible-rows probe that tells an empty feed from a failed one), golf_insight_player_feedback (a player's own
+          dismissals), golf_drills, golf_rounds (the rounds a read names: this player's, completed, not a test round; and the
+          countable-round count on the first-run page), golf_player_focus_areas (this player's focus areas and what was assigned),
+          golf_goals (through the goals loaders), golf_team_members and golf_teams (the team's tour), golf_pga_standards
+          (read-only reference data)
+RPCs:     none read here (getThemesForPlayer and the delivery action have their own reads)
+Storage:  none
+Realtime: none
+Cache:    none; Try again reads the page again (router.refresh)
+RLS:      the RLS-scoped client for every read this adapter makes itself. Three of the lib's own loaders use the service-role
+          client (loadPlayerStandingMap, loadActiveGoals, loadRecentlyAchievedGoals): the adapter hands them only the session's
+          player id and filters what they return to that id, so a row that is anyone else's is never drawn (tested)
+Read path:  the loaders, on the server, behind the same switch as the board (loadPlayerHelmGate); nothing in the address chooses
+            whose data it is
+Write path: none
+```
+
 ## Held dependencies
 
 None. Accept and Decline for a proposed focus (Q-77) are on the player's board here (`Proposals.tsx`) as well as
 in Stats Development (`screens/stats/ProposalAnswer.tsx`), which it does not import: that component's toast
 numbers (CH-5003, CH-5004) and `.ch-pf-answer` style are Stats', so this page has its own row over the same two
-actions. The Fairway page's Development, Game profile, Standing and Deep dive views are not rebuilt (Q-76).
+actions. The player's Development is Stats' Development tab, reached by `?view=development` and by a link in the
+sub-navigation (Q-76: the Game profile, Standing and Deep dive are built; Development is not duplicated here).
 
 ## Impact notes
 
@@ -147,8 +224,34 @@ actions. The Fairway page's Development, Game profile, Standing and Deep dive vi
 - The program pulse is the coach's own (`getCoachProgramPulse` resolves its team through the coach chat
   context) while this page's team comes from `resolveClubhouseTeam`; each resolves the coach's active team
   with its own resolver, and nothing here proves they can never differ.
-- The `?view=` guard runs before the session is read, so it applies to a coach and to a player alike; only
-  `development`, `profile` and `standing` are named, so `?view=deep-dive` (a Fairway view) draws the board.
+- `?view=development` redirects before the session is read, so it applies to a
+  coach and to a player alike. The other `?view=` values are read only after the
+  session: a coach's `?view=profile`, `standing` and `deep-dive` are their own
+  board (the player's gate and loaders never run for a coach, a coach who is
+  also a player is a coach), and a player's are their own views.
+- The player's views share code with the Fairway pages: the genome and persona
+  (`lib/coachhelm/v3/genome`), the standing rows and metric registry
+  (`lib/coachhelm/v3/standing`), `computeCounterfactual`, the delivery and theme
+  actions and the goals loaders. A change to what a loader returns on failure (a
+  thrown error, an empty list, `success: false`) changes which state a view
+  draws: `loadGenome` throws, `getInsightsForPlayer` answers an empty list,
+  `getThemesForPlayer` answers `success: false`, the goals loaders throw, and
+  each is read as the failure it is.
+- `team_pct` in `golf_player_standing` is direction-aligned (higher is better)
+  for every metric family the refresh functions write (checked against every
+  refresh function in
+  `supabase/migrations/20260925120000_golf_standing_team_pct_floor_5.sql`);
+  Standing's "ahead of your team" and rank wording rest on that, and the
+  projection floor of five rounds is pinned by a test that reads the Fairway
+  loader's own source. A change to either needs those looked at again.
+- A genome dimension has no stored sample size of its own (only the rounds the
+  genome was computed over and a confidence word per dimension), so the Game
+  profile says how many rounds once, in its header, and a confidence word per
+  measure, and never an n per dimension.
+- A pushed phone screen (the Deep dive's open read) is rendered beside the
+  page's `<main>`, not inside it: the page is a size container (`container-type:
+  inline-size`), and layout containment would make a `position: fixed` screen
+  fixed to the page, not the phone.
 - Every follow-up to a write lives inside its `useAction` function. Anything added after `await x.run()` in a
   handler is skipped when the toast's Retry lands (131401).
 - On a coach's gate lookup failure the loader returns an empty pulse with no error, so the board draws
