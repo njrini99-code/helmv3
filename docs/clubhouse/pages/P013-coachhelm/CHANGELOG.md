@@ -2,6 +2,51 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Swap audit section 13: the card, its voice, its age
+
+```text
+PR/commit:   agent/swap-audit
+Catalog:     CH-13903 to CH-13906 (new); CH-13302, CH-13305, CH-13806,
+             CH-13901, CH-13923 (reworded)
+Data impact: none written. One new bounded read of the player's completed
+             rounds (golf_rounds, failure logged). Focus-area creators
+             write team_id (new rows only; no backfill)
+```
+
+- **CH13-5.** The player's board read their proposals by
+  `team_id = their team`, and Fairway's Add focus area and Ask CoachHelm
+  wrote `team_id` null, so those proposals never reached them. The read
+  is now `team_id is null or = their team`, and `createFocusArea`,
+  `createPlayerFocusArea` and the legacy `createFocusAreaFromInsight`
+  write the team. Rows already on file with null are readable now; none
+  is backfilled (an owner follow-up).
+- **CH13-7.** The "New focus area" bell row and email linked
+  `/my-development`, which Clubhouse answers "not rebuilt yet". With
+  Clubhouse on they link Stats, Development tab.
+- **CH13-4.** "77 open signals across 7 players" counted every visible
+  row. The header counts players with an open signal; a strength, a card
+  that states no finding and an out-of-date read are not open signals,
+  and the floor of one is gone.
+- **CH13-11.** "No clear preference", "no directional bias", "Driver is
+  performing" and the collapsed par card are notes: no Assign or
+  Dismiss on the coach's board, no number, absent from the player's.
+- **CH13-12.** A strength is better than the comparison the card draws
+  (the Tour where the generator carried a college cohort), and
+  `deriveTone` no longer reads a missing comparison as zero.
+- **CH13-13.** The coach's board names the player; the player's board
+  drops the coach's "have the player".
+- **CH13-16.** An assigned or acknowledged finding wears Assigned or
+  Acknowledged, not a fresh Priority.
+- **CH13-10, CH13-9.** The read says Solid, Early or Thin; the sample
+  uses the generator's own unit; each card says "As of".
+- **CH13-20.** `?view=ask` and the Board and Ask strip respect the
+  CoachHelm switch like the board.
+- **CH13-3.** A read older than the player's newest completed round is
+  marked Out of date (not hidden, nothing written), does not lead, is not
+  counted and cannot be assigned.
+- **Left.** The chat stream API has no CoachHelm gate of its own; the null
+  `team_id` proposals already on file are not backfilled.
+
 ## 2026-09-30 — Accept and Decline on the player's board, and the Tour in place of the college cohort (Q-77, Q-88)
 
 ```text

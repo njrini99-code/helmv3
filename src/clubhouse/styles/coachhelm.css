@@ -83,6 +83,16 @@
   text-wrap: pretty;
 }
 
+/* A read from before the newest round: plain and next to the claim, so it is not mistaken for current (CH-13903). */
+.ch-hl-stale {
+  max-width: 58ch;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--ch-ivory-150);
+  font: 500 13px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+
 /* Priority. Amber for what is worth closing; red is kept for under par and the flag (D-42), so the board's red Priority is amber here. */
 .ch-hl-pri {
   padding: 5px 10px;

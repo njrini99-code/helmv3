@@ -21,7 +21,13 @@ const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
 const askSpy = vi.hoisted(() => vi.fn());
 vi.mock('../data/coachhelm-chat', () => ({ loadAskCoachHelm: askSpy }));
-vi.mock('../data/coachhelm', () => ({ loadCoachCoachHelm: vi.fn(() => Promise.resolve({ board: 'coach' })), loadPlayerCoachHelm: vi.fn(() => Promise.resolve({ board: 'player' })) }));
+const gateSpy = vi.hoisted(() => vi.fn());
+vi.mock('../data/coachhelm', () => ({
+  loadCoachCoachHelm: vi.fn(() => Promise.resolve({ board: 'coach' })),
+  loadPlayerCoachHelm: vi.fn(() => Promise.resolve({ board: 'player' })),
+  loadCoachHelmGate: gateSpy,
+  emptyCoachHelm: (off: unknown) => ({ board: 'off', off }),
+}));
 vi.mock('../screens/coachhelm/CoachBoard', () => ({ CoachBoard: () => null }));
 vi.mock('../screens/coachhelm/PlayerBoard', () => ({ PlayerBoard: () => null }));
 vi.mock('../screens/coachhelm/chat/Ask', () => ({ Ask: () => null }));
@@ -54,6 +60,8 @@ beforeEach(() => {
   askSpy.mockReset();
   vi.mocked(loadCoachCoachHelm).mockClear();
   vi.mocked(loadPlayerCoachHelm).mockClear();
+  gateSpy.mockReset();
+  gateSpy.mockResolvedValue({ status: 'on' });
   ctxState.ctx = ctx();
   ctxState.error = null;
   ctxState.pulse = pulse();
@@ -221,6 +229,8 @@ describe('ClubhouseCoachHelmRoute: the Ask sub-tab is the coach\'s alone', () =>
     expect(askSpy).toHaveBeenCalledWith({ conversationId: 'abc' });
     expect(out.props.load).toEqual({ status: 'failed' });
     expect(loadCoachCoachHelm).not.toHaveBeenCalled();
+    // CH13-20: Ask is read only once CoachHelm is on for this coach.
+    expect(gateSpy).toHaveBeenCalledWith('c1');
   });
 
   it('a coach without ?view=ask still gets the board, and a coach with no team gets the no-team page before any chat read', async () => {

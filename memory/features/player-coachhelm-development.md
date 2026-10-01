@@ -80,6 +80,7 @@ Player opens round review
 
 - Players see their own CoachHelm and development data, not arbitrary teammates.
 - Coaches create development/focus areas; player development views are primarily read/progress surfaces.
+- Focus-area team (swap audit CH13-5, 2026-10-01): every creator in `src/app/golf/actions/development.ts` writes `golf_player_focus_areas.team_id` (the coach's verified team, else the player's active team via `resolvePlayerTeamId`). `createFocusArea` (Fairway's Add focus area, Stats' Add focus area and Ask CoachHelm's action card), `createPlayerFocusArea` and the legacy `createFocusAreaFromInsight` used to write null, which hid those proposals from the player's Clubhouse CoachHelm (it reads their proposals by `team_id is null or = their active team`, RLS permitting the player their own rows). Rows already written with null are readable again but not backfilled (a production write: the owner's call). `pattern-management.ts`'s pattern-to-focus-area creator writes `active` rows with no team and is unchanged. The "New focus area" bell row and email link `/golf/dashboard/stats?tab=dev` with Clubhouse on (`notifyDevPlanAssigned`'s `planPath`) and Fairway's `/golf/dashboard/my-development` otherwise.
 - Feedback and acknowledgement actions must persist to player-specific records and revalidate player-facing pages.
 - Auto-generation should not fabricate insights when source data is insufficient.
 - V3 narrative and counterfactual content must preserve citation/trust rules from CoachHelm AI.

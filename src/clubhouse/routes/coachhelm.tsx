@@ -2,7 +2,7 @@ import 'server-only';
 import { Suspense } from 'react';
 import { Users } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
+import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
 import { Ask } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
@@ -58,6 +58,12 @@ export async function ClubhouseCoachHelmRoute({ view, player, c }: { view?: stri
     }
     // The Ask sub-tab is the coach's alone: a player's `?view=ask` falls through to their own board below.
     if (view === 'ask') {
+      // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
+      // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
+      // "did not load" notice, never with a chat that runs against a switch that is off.
+      const gate = await loadCoachHelmGate(team.coachId);
+      if (gate.status === 'off') return <CoachBoard data={emptyCoachHelm(gate.off)} />;
+      if (gate.status === 'failed') return <Ask load={{ status: 'failed' }} />;
       return (
         <Suspense fallback={<AskSkeleton />}>
           <AskView conversationId={c} />

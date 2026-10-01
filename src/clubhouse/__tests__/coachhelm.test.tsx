@@ -42,7 +42,7 @@ import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
 import { areaTypeFor, formatComparison, niceMax, splitContent, toChInsight, withoutCollegeAverage } from '../data/coachhelm-map';
-import { partitionInsights, pulseRows, signalsLine, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
+import { partitionInsights, playersLine, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { CoachHelmRouteSkeleton, CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
@@ -141,7 +141,7 @@ describe('Generator output to the board', () => {
       { label: 'Level', pct: 81, weak: false },
     ]);
     expect(i.evidence.gauge).toBeNull();
-    expect(i.evidence).toMatchObject({ sample: '75 putts', window: '90 days', read: { level: 3, word: 'Strong read' } });
+    expect(i.evidence).toMatchObject({ sample: '75 putts', window: '90 days', read: { level: 3, word: 'Solid read' } });
     expect(i.week).toEqual({ title: 'Downhill ladder', text: 'Start 2 ft below the hole.', meta: '12 min · intermediate' });
   });
 
@@ -192,7 +192,7 @@ describe('Generator output to the board', () => {
 
   it('being ahead of the comparison only makes an insight working at low priority: at medium priority it is still a finding', () => {
     expect(toChInsight({ ...bigNumber(jonah), priority: 'medium' })).toMatchObject({ priority: 'medium', strength: false });
-    expect(toChInsight(bigNumber(jonah)).strength).toBe(true);
+    expect(toChInsight(bigNumber(jonah), { tour: PREVIEW_TOUR }).strength).toBe(true);
   });
 
   it('a low-priority row that is behind its comparison is minor, not working', () => {
@@ -364,7 +364,7 @@ describe('Which insight leads, and who is most pressing', () => {
     const { focus, also, working } = partitionInsights(list);
     expect(focus?.title).toBe('Downhill putts inside 4-6 ft: a real penalty');
     expect(also.map((i) => i.title)).toEqual(['Penalty strokes: 1.1 per round', 'Putting break: under-reading left-to-right (10-20 ft)']);
-    expect(working.map((i) => i.title)).toEqual(['Double bogey-or-worse rate: 3.1%']);
+    expect(working.map((i) => i.title)).toEqual(['Double bogey-or-worse rate: 1.6%']);
   });
 
   it('a picked insight is the focus and leaves the lists; the one it replaced joins them', () => {
@@ -405,15 +405,15 @@ describe('Which insight leads, and who is most pressing', () => {
 
   it('a player whose top insight is a strength comes last, even when that insight’s own priority is high', () => {
     const base = PREVIEW_HELM_COACH.players.list[0]!;
-    const strong = { ...base, id: 'a', name: 'Aaron', top: { ...base.top, strength: true, priority: 'high' as const } };
-    const minor = { ...base, id: 'z', name: 'Zed', top: { ...base.top, strength: false, priority: 'low' as const } };
+    const strong = { ...base, id: 'a', name: 'Aaron', top: { ...base.top, strength: true, kind: 'strength' as const, priority: 'high' as const } };
+    const minor = { ...base, id: 'z', name: 'Zed', top: { ...base.top, strength: false, kind: 'finding' as const, priority: 'low' as const } };
     expect(sortCoachPlayers([strong, minor]).map((x) => x.name)).toEqual(['Zed', 'Aaron']);
   });
 
-  it('the subtitle counts open signals and players, in the singular when it is one', () => {
-    expect(signalsLine(7, 4)).toBe('7 open signals across 4 players.');
-    expect(signalsLine(1, 1)).toBe('1 open signal across 1 player.');
-    expect(signalsLine(0, 0)).toBe('No open signals.');
+  it('CH13-4 the subtitle counts the players the board has a current finding for, in the singular when it is one', () => {
+    expect(playersLine(4)).toBe('4 players have an open signal.');
+    expect(playersLine(1)).toBe('1 player has an open signal.');
+    expect(playersLine(0)).toBe('No open signals.');
   });
 
   it('the pulse keeps its own headline, evidence and order; the signals item is left to the subtitle; tone and icon follow the item', () => {
@@ -457,7 +457,7 @@ describe('CoachHelm for the player, on screen', () => {
     expect(bars.getByText('Level').parentElement!.textContent).toBe('Level81%');
     expect(card.getByText('75 putts')).toBeTruthy();
     expect(card.getByText('90 days')).toBeTruthy();
-    expect(card.getByText('Strong read')).toBeTruthy();
+    expect(card.getByText('Solid read')).toBeTruthy();
     expect(card.getByText('This week')).toBeTruthy();
     expect(card.getByText('Downhill ladder')).toBeTruthy();
     expect(card.getByText(/12 min · intermediate/)).toBeTruthy();
@@ -490,7 +490,7 @@ describe('CoachHelm for the player, on screen', () => {
       inList('Working')
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Course managementDouble bogey-or-worse rate: 3.1%Working3.1%']);
+    ).toEqual(['Course managementDouble bogey-or-worse rate: 1.6%Working1.6%']);
     expect(screen.getByText('Reads update as you post rounds. Your coaches see the same insights.')).toBeTruthy();
   });
 
@@ -767,10 +767,11 @@ describe('CoachHelm for the coach, on screen', () => {
   const user = () => userEvent.setup();
   const pick = (u: ReturnType<typeof userEvent.setup>, name: string) => u.click(screen.getByRole('button', { name: new RegExp(name) }));
 
-  it('the header counts open signals across players; the pulse lists what the program needs, in its own words', () => {
+  it('CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs, in its own words', () => {
     showCoach();
     expect(screen.getByText('Coach')).toBeTruthy();
-    expect(screen.getByText('7 open signals across 4 players.')).toBeTruthy();
+    // Jonah, Eli and Priya have a finding open; Theo's top card is what is working, which is not an open signal.
+    expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
     const pulse = within(screen.getByRole('region', { name: 'Program pulse' }));
     expect(pulse.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       '2 players have not responded for Team dinnerThu, Oct 16, 6:30 PM · 4 of 6 responded',
@@ -778,7 +779,8 @@ describe('CoachHelm for the coach, on screen', () => {
       '1 active focus area has no recent progressPriya Natarajan: Lag putting',
       'No rounds recorded in 9 daysThe most recent round anywhere on the team was Oct 5.',
     ]);
-    expect(screen.queryByText('7 open signals across 4 players', { exact: false })).not.toBeNull();
+    // The pulse's own signals item is left out: the header says it.
+    expect(screen.queryByText('7 open signals across 4 players', { exact: false })).toBeNull();
   });
 
   it('by player: each with their top signal and how many they have; the most pressing is open first', () => {
@@ -788,7 +790,7 @@ describe('CoachHelm for the coach, on screen', () => {
       'EBEli BrandtPenalty strokes: 1.1 per round2',
       'JOJonah OkaforDownhill putts inside 4-6 ft: a real penalty3',
       'PNPriya NatarajanPutting break: under-reading left-to-right (10-20 ft)1',
-      'TMTheo MarchettiDouble bogey-or-worse rate: 3.1%1',
+      'TMTheo MarchettiDouble bogey-or-worse rate: 1.6%0',
     ]);
     expect(players.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
     expect(focusHeading()).toBe('Penalty strokes: 1.1 per round');
@@ -808,7 +810,7 @@ describe('CoachHelm for the coach, on screen', () => {
   it("?player= (Roster's View insights) opens the board on that player; an id not on the board opens the most pressing", () => {
     render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} initialPlayer="pl-theo" />));
     expect(screen.getByRole('button', { name: /Theo Marchetti/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(focusHeading()).toBe('Double bogey-or-worse rate: 3.1%');
+    expect(focusHeading()).toBe('Double bogey-or-worse rate: 1.6%');
     cleanup();
     render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} initialPlayer="someone-else" />));
     expect(screen.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
@@ -906,7 +908,8 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(code('CH-13901')!.getAttribute('role')).toBe('status');
     expect(code('CH-13901')!.closest('[aria-live="polite"]')).not.toBeNull();
     expect(document.querySelector('.ch-hl-focus')).toBeNull();
-    expect(screen.getByText('6 open signals across 4 players.')).toBeTruthy();
+    // Jonah still has two more signals open, so he stays in the count of players; his own count drops by the one dismissed.
+    expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
     const row = screen.getByRole('button', { name: /Jonah Okafor/ });
     expect(row.textContent).toBe('JOJonah OkaforDismissed2');
     // The dismissal is saved, so nothing refreshes the page away from the notice.
@@ -922,7 +925,8 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(w.undo).toHaveBeenCalledWith('in-slope', 'detected');
     await waitFor(() => expect(code('CH-13901')).toBeNull());
     expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
-    expect(screen.getByText('7 open signals across 4 players.')).toBeTruthy();
+    expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).toBe('JOJonah OkaforDownhill putts inside 4-6 ft: a real penalty3');
   });
 
   it('Undo restores the state the insight had: a matured one comes back matured', async () => {
@@ -955,10 +959,11 @@ describe('CoachHelm for the coach, on screen', () => {
   it('dismissing a player’s last signal takes them out of the count of players as well as of signals', async () => {
     const u = user();
     showCoach();
-    await pick(u, 'Theo Marchetti');
+    await pick(u, 'Priya Natarajan');
     await u.click(screen.getByRole('button', { name: 'Dismiss' }));
     await expectCode('CH-13901');
-    expect(screen.getByText('6 open signals across 3 players.')).toBeTruthy();
+    expect(screen.getByText('2 players have an open signal.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Priya Natarajan/ }).textContent).toMatch(/Dismissed0$/);
   });
 
   it('CH-13002 a failed dismiss says so and keeps the insight; Retry that works shows the notice', async () => {
@@ -1014,7 +1019,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Working')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
     await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    expect(w.assign).toHaveBeenCalledWith(expect.objectContaining({ playerId: 'pl-theo', title: 'Double bogey-or-worse rate: 3.1%' }));
+    expect(w.assign).toHaveBeenCalledWith(expect.objectContaining({ playerId: 'pl-theo', title: 'Double bogey-or-worse rate: 1.6%' }));
     await expectCode('CH-13601', /Assigned as Theo’s focus/);
   });
 
@@ -1395,11 +1400,12 @@ describe('CoachHelm loaders', () => {
           ],
           error: false,
         });
-        // Only this player's, on this team, that still wait for an answer.
-        expect(filter(seen[0]!, 'eq', 'player_id')).toBe(p1);
-        expect(filter(seen[0]!, 'eq', 'team_id')).toBe('t1');
-        expect(filter(seen[0]!, 'eq', 'status')).toBe('proposed');
-        expect(seen[0]!.find(([k]) => k === 'order')![1]).toEqual(['created_at', { ascending: false }]);
+        // Only this player's, on this team or on none, that still wait for an answer (CH13-5).
+        const read = seen.find((f) => filter(f, 'eq', 'player_id') === p1)!;
+        expect(read.find(([k]) => k === 'or')![1]).toEqual(['team_id.is.null,team_id.eq.t1']);
+        expect(filter(read, 'eq', 'team_id')).toBeUndefined();
+        expect(filter(read, 'eq', 'status')).toBe('proposed');
+        expect(read.find(([k]) => k === 'order')![1]).toEqual(['created_at', { ascending: false }]);
       });
 
       it('a first run still says what was proposed: no insights yet is not "nothing waiting"', async () => {
@@ -1427,7 +1433,8 @@ describe('CoachHelm loaders', () => {
           },
         };
         expect((await loadPlayerCoachHelm({ playerId: p1 })).proposals).toEqual({ list: [], error: false });
-        expect(asked).toEqual([]);
+        // The proposals are not read (the focus areas made from the insights on the page are: those are by insight, not by player).
+        expect(asked.filter((f) => filter(f, 'eq', 'player_id') !== undefined)).toEqual([]);
       });
 
       it('CH-13205 a failed read is an error, logged, never "nothing proposed", and the insights still load', async () => {

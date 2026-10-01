@@ -1,9 +1,11 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import type { InsightComparisonSource, InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
-import { buildInsightUnit, readQuality } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
-import { deriveTone, isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
+import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coachhelm/confidence-label';
+import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
-import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChTourBaseline } from './coachhelm-shape';
+import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince } from './coachhelm-classify';
+import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
+import { speak, type ChViewer } from './coachhelm-voice';
 
 /**
  * Generator output to what the CoachHelm screens draw (Clubhouse P013). Pure:
@@ -12,8 +14,11 @@ import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, t
  * fixtures and the tests all run this one function.
  *
  * Polarity (which way a number is good) is the one table in
- * `isNegativePolarityMetric`; the confidence read and the drill are the legacy
- * hub's (`buildInsightUnit`), so one insight reads the same on every surface.
+ * `isNegativePolarityMetric`; the drill is the legacy hub's (`buildInsightUnit`),
+ * and the confidence read uses the one set of words every surface uses
+ * (`lib/coachhelm/confidence-label.ts`), so one insight reads the same everywhere.
+ * What a card states (a finding, a strength or a note) and whether it is current
+ * are `data/coachhelm-classify.ts`; whose voice its text is in is `data/coachhelm-voice.ts`.
  */
 
 /** The one generator whose evidence is two make rates side by side (putt-slope-bias.ts). */
@@ -106,8 +111,14 @@ function labelled(label: string | undefined, v: number, unit: InsightUnit): stri
   return /\d/.test(l) ? l : `${l} ${formatComparison(v, unit)}`;
 }
 
+/** The units a generator names its sample in (`evidence.detail.sample_unit`, par-type.ts), as the chat's provenance names them. */
+const SAMPLE_UNITS: ReadonlySet<string> = new Set(['rounds', 'shots', 'attempts', 'holes', 'events', 'players']);
+
 function nounFor(ev: InsightEvidence, n: number): string {
   const one = n === 1;
+  // The generator's own unit beats a guess from the metric's name.
+  const unit = ev.detail?.sample_unit;
+  if (typeof unit === 'string' && SAMPLE_UNITS.has(unit)) return one ? unit.replace(/s$/, '') : unit;
   if (ev.window_basis === 'lifetime') return one ? 'round' : 'rounds';
   const m = ev.metric ?? '';
   if (/putt/i.test(m)) return one ? 'putt' : 'putts';
@@ -120,7 +131,7 @@ function nounFor(ev: InsightEvidence, n: number): string {
 
 function windowFor(ev: InsightEvidence): string | null {
   // A lifetime value is not windowed: its window_days is only the span between the first and last round.
-  if (ev.window_basis === 'lifetime') return 'All rounds';
+  if (ev.window_basis === 'lifetime' || ev.detail?.window_kind === 'lifetime') return 'All rounds';
   const days = num(ev.window_days);
   return days != null && days > 0 ? `${days} days` : null;
 }
@@ -137,30 +148,15 @@ function barsFor(ev: InsightEvidence): ChHelmBar[] | null {
   ];
 }
 
-/**
- * Comparisons that are a college population, which the page does not draw (Q-88: the Tour is the only benchmark). `cohort_avg` is
- * the only one the generators write (course-mgmt.ts and pressure-gap.ts, whose value is the same metric, in the same unit, as the
- * `golf_pga_standards` row of that metric id); the division sources are listed so none can slip in later as a D1 or D2 benchmark.
- */
-const COLLEGE_SOURCES: ReadonlySet<InsightComparisonSource> = new Set<InsightComparisonSource>(['cohort_avg']);
-
-/**
- * College figures that have no like-for-like Tour row, so no gauge is drawn at all: the division targets (13 live `d2_avg` rows
- * are a "miss severity", not the metric's own quantity) and the old women's-college green-hit estimate (`estimated_target`, a
- * percent stored under a proximity-in-feet metric id). Substituting the Tour row there would print feet on a percent card.
- */
-const COLLEGE_NO_TOUR: ReadonlySet<InsightComparisonSource> = new Set<InsightComparisonSource>([
-  'd1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg', 'estimated_target',
-]);
-
 function gaugeFor(ev: InsightEvidence, good: boolean, tour: ChTourBaseline | null): ChHelmGauge | null {
   const you = num(ev.your_value);
   if (you == null) return null;
   if (COLLEGE_NO_TOUR.has(ev.comparison_source)) return null;
   // A college comparison becomes the Tour's value for this metric (the LPGA's for a women's team), and the Tour tick the generator
   // carried beside it is the same thing, so it is not drawn twice. Where the tour has no value there is no comparison and no gauge.
+  // The same comparison decides whether the card is a strength (`drawnComparison`), so the card never says Working beside a gauge that says behind.
   const college = COLLEGE_SOURCES.has(ev.comparison_source);
-  const cmp = college ? (tour?.values.get(ev.metric ?? '') ?? null) : num(ev.comparison_value);
+  const cmp = drawnComparison(ev, tour);
   if (cmp == null) return null;
   const secRaw = college ? null : num(ev.secondary_value);
   const sec = secRaw != null && secRaw !== cmp ? secRaw : null;
@@ -192,31 +188,57 @@ function gaugeFor(ev: InsightEvidence, good: boolean, tour: ChTourBaseline | nul
   };
 }
 
-function evidenceFor(ins: EvidenceInsight, strength: boolean, tour: ChTourBaseline | null): ChHelmEvidence {
+const READ_LEVEL: Record<ConfidenceTier, 1 | 2 | 3> = { solid: 3, early: 2, thin: 1 };
+
+/**
+ * The confidence read in the canonical words (Solid, Early, Thin read; the sample on a thin one), never the hub's Strong, Fair and
+ * Early. Most v3 rows are `factors_measured: false`: their confidence is the sample ramp alone, which is what "Solid read" means
+ * everywhere else (confidence-label.ts), so a read here is never stronger than the same row's on any other surface.
+ */
+function readFor(ev: InsightEvidence): ChHelmEvidence['read'] {
+  const tier = confidenceTier(ev.confidence);
+  const word = confidenceLabel(ev.confidence, ev.sample_n);
+  return tier && word ? { level: READ_LEVEL[tier], word } : null;
+}
+
+/** "As of Sep 30": the day the read was last refreshed, else the day its window ended (UTC dates, so the server and the browser agree). */
+function asOfFor(ins: EvidenceInsight): string | null {
+  const day = refreshedDay(ins) ?? dayOf(ins.evidence.window_end);
+  const label = day ? fmtShortDate(day) : null;
+  return label ? `As of ${label}` : null;
+}
+
+function evidenceFor(ins: EvidenceInsight, kind: ChKind, tour: ChTourBaseline | null, say: (text: string) => string): ChHelmEvidence {
   const ev = ins.evidence;
+  const asOf = asOfFor(ins);
+  // A note states no finding, so it draws none of the number behind it: the collapsed par card is three standings under one title,
+  // and its evidence is the par 3 row's alone.
+  if (kind === 'note') return { label: '', bars: null, gauge: null, sample: '', window: null, read: null, asOf };
   const n = num(ev.sample_n);
-  const read = readQuality(ev.confidence);
   const bars = barsFor(ev);
+  const gauge = bars ? null : gaugeFor(ev, kind === 'strength', tour);
   return {
-    label: ev.metric_label,
+    label: say(ev.metric_label),
     bars,
     // The bars say it for the slope finding; a gauge of its penalty (23 points against none) would say it twice.
-    gauge: bars ? null : gaugeFor(ev, strength, tour),
+    gauge: gauge ? { ...gauge, cmp: say(gauge.cmp), sec: gauge.sec != null ? say(gauge.sec) : null } : null,
     sample: n != null && n > 0 ? `${n} ${nounFor(ev, n)}` : '',
     window: windowFor(ev),
-    read: read ? { level: read.level, word: read.word } : null,
+    read: readFor(ev),
+    asOf,
   };
 }
 
-function weekFor(ins: EvidenceInsight, unit: ReturnType<typeof buildInsightUnit>, drillText: string | null | undefined): ChHelmWeek | null {
+function weekFor(ins: EvidenceInsight, unit: ReturnType<typeof buildInsightUnit>, drillText: string | null | undefined, say: (text: string) => string): ChHelmWeek | null {
   const drill = ins.drills?.[0];
   if (drill) {
     const minutes = num(drill.duration_min);
     const meta = [minutes != null && minutes > 0 ? `${minutes} min` : null, drill.difficulty?.trim() || null].filter(Boolean).join(' · ');
-    return { title: drill.title, text: drillText?.trim() || null, meta: meta || null };
+    const text = drillText?.trim();
+    return { title: drill.title, text: text ? say(text) : null, meta: meta || null };
   }
   const action = unit.action?.trim();
-  return action && !GENERIC_ACTION.test(action) ? { title: null, text: action, meta: null } : null;
+  return action && !GENERIC_ACTION.test(action) ? { title: null, text: say(action), meta: null } : null;
 }
 
 const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'resolved'];
@@ -225,34 +247,42 @@ const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'reso
  * One insight, ready to draw. `drillText`: the attached drill's description
  * (`golf_drills.description`, which the delivery shape does not carry), read
  * by the loader; `assigned`: a focus area already made from this insight;
- * `tour`: the team's Tour values (Q-88), which a college comparison is drawn as.
- * A strength is still the generator's own call (its priority is anchored to its
- * own comparison), so only what is drawn moves to the Tour, not which insights work.
+ * `tour`: the team's Tour values (Q-88), which a college comparison is drawn as;
+ * `newestRound`: the day of the player's newest completed countable round, which a
+ * read from before it is marked out of date against; `viewer`: whose voice the text
+ * is in (the player's first name for a coach, the player's own for the player; none leaves it as stored).
+ * A strength is better than the comparison the card draws, not than a stored one the page does not show.
  */
-export function toChInsight(ins: EvidenceInsight, extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; tour?: ChTourBaseline | null } = {}): ChInsight {
+export function toChInsight(
+  ins: EvidenceInsight,
+  extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer } = {},
+): ChInsight {
   const ev = ins.evidence;
   const unit = buildInsightUnit(ins);
-  const lowerIsBetter = isNegativePolarityMetric(ev.metric ?? '', ev);
+  const tour = extra.tour ?? null;
+  const say = (text: string) => speak(text, extra.viewer);
   const priority: ChHelmPri = ins.priority === 'urgent' ? 'high' : ins.priority === 'high' || ins.priority === 'medium' ? ins.priority : 'low';
   const you = num(ev.your_value);
-  const cmp = num(ev.comparison_value);
-  const better = you != null && cmp != null && (lowerIsBetter ? you < cmp : you > cmp);
-  const tone = deriveTone(ins);
-  // What is working: resolved or encouraging, or ahead of its comparison at low priority.
-  const strength = tone === 'celebratory' || tone === 'encouraging' || (better && priority === 'low');
+  const kind = kindOf(ins, tour);
+  const staleDay = staleSince(ins, extra.newestRound ?? null);
+  const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
   const { lede, why } = splitContent(withoutCollegeAverage(ins.content));
   return {
     id: ins.id,
     playerId: ins.player_id,
     category: unit.category,
     priority,
-    strength,
-    title: ins.title,
-    lede: lede || ev.diagnosis?.symptom?.trim() || '',
-    why,
-    value: ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),
-    evidence: evidenceFor(ins, strength, extra.tour ?? null),
-    week: weekFor(ins, unit, extra.drillText),
+    strength: kind === 'strength',
+    kind,
+    stale,
+    acknowledged: ins.status === 'acknowledged',
+    title: say(ins.title),
+    lede: say(lede || ev.diagnosis?.symptom?.trim() || ''),
+    why: why ? say(why) : null,
+    // A note has no number of its own: the par card's value is one of three standings under a title for all of them.
+    value: kind === 'note' ? '' : ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),
+    evidence: evidenceFor(ins, kind, tour, say),
+    week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,
     metric: ev.metric,
     areaType: areaTypeFor(ins.category),

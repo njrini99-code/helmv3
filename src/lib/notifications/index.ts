@@ -183,15 +183,22 @@ export async function notifyTaskAssigned(
   });
 }
 
+/** Fairway's address for a player's focus areas (a redirect onto the Player CoachHelm Development drill). */
+export const FAIRWAY_DEV_PLAN_PATH = '/golf/dashboard/my-development';
+
 /**
- * Notify golf player when a development plan / focus area is assigned
+ * Notify golf player when a development plan / focus area is assigned.
+ * `planPath`: where the bell row and the email send them. Fairway's address redirects to the Player CoachHelm
+ * Development drill, which Clubhouse does not draw (it says "not rebuilt yet"), so a caller with Clubhouse on
+ * passes the screen that is rebuilt (Stats, Development tab); without one it is Fairway's, as it always was.
  */
 export async function notifyDevPlanAssigned(
   recipientId: string,
   recipientEmail: string,
   planTitle: string,
   areaType: string,
-  coachName: string
+  coachName: string,
+  planPath: string = FAIRWAY_DEV_PLAN_PATH
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
@@ -200,7 +207,7 @@ export async function notifyDevPlanAssigned(
     type: 'dev_plan_assigned',
     title: 'New focus area',
     body: `${coachName} assigned "${planTitle}"`,
-    actionUrl: '/golf/dashboard/my-development',
+    actionUrl: planPath,
     context: 'notifications.notifyDevPlanAssigned',
   });
 
@@ -208,7 +215,7 @@ export async function notifyDevPlanAssigned(
     planTitle,
     areaType,
     coachName,
-    planUrl: `${baseUrl}/golf/dashboard/my-development`,
+    planUrl: `${baseUrl}${planPath}`,
   });
 }
 

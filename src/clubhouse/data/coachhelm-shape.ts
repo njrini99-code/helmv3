@@ -20,6 +20,18 @@ export type ChHelmLifecycle = 'detected' | 'matured' | 'addressed' | 'resolved';
 /** A focus area already made from this insight (`golf_player_focus_areas.from_insight_id`). */
 export type ChHelmAssigned = 'proposed' | 'active';
 
+/**
+ * What a card says (data/coachhelm-classify.ts): a `finding` to close, a `strength` that is working, or a `note`, which states no
+ * finding at all (the generators looked and found nothing to fix, or the card describes a standing). A note is never assigned,
+ * never counted as a signal and never drawn with a number it does not stand behind.
+ */
+export type ChKind = 'finding' | 'strength' | 'note';
+
+/** A read older than the player's newest completed round: the day of that round, as the card says it ("Sep 30"). */
+export interface ChStale {
+  newestRound: string;
+}
+
 export interface ChHelmBar {
   label: string;
   /** 0 to 100. */
@@ -72,8 +84,10 @@ export interface ChHelmEvidence {
   sample: string;
   /** "90 days", "All rounds"; null when the generator gave no window. */
   window: string | null;
-  /** The confidence read: a level of three and its word; null when the evidence has none. */
+  /** The confidence read: a level of three and its word (the canonical Solid, Early and Thin read, `lib/coachhelm/confidence-label.ts`); null when the evidence has none. */
   read: { level: 1 | 2 | 3; word: string } | null;
+  /** "As of Sep 30": the day the read was last refreshed, else the day its window ended; null when the row says neither. */
+  asOf: string | null;
 }
 
 export interface ChHelmWeek {
@@ -90,8 +104,14 @@ export interface ChInsight {
   /** "Putting", "Course management". */
   category: string;
   priority: ChHelmPri;
-  /** What is working: better than its comparison at low priority, or an encouraging or resolved insight. */
+  /** What is working: better than the comparison the card draws, at low priority or encouraging, or a resolved insight. */
   strength: boolean;
+  /** Finding, strength (`strength` above) or note. */
+  kind: ChKind;
+  /** Older than the player's newest completed round: drawn as out of date, never as current, and not counted as an open signal. */
+  stale: ChStale | null;
+  /** The coach already acknowledged it (`golf_coach_insights.status`), so it is not a fresh Priority. */
+  acknowledged: boolean;
   title: string;
   /** The first sentence of the insight's own text. */
   lede: string;
@@ -142,7 +162,7 @@ export interface ChPulseRow {
 export interface ChCoachPlayer {
   id: string;
   name: string;
-  /** Open signals: the player's visible insights after the feed's dedupe. */
+  /** Open signals: the player's visible insights after the feed's dedupe that are findings and current. A strength, a note and a stale read are not open signals; 0 when the top card is one of those. */
   count: number;
   /** The player's top-ranked insight: the row's line and the focus card. */
   top: ChInsight;
@@ -168,6 +188,26 @@ export const PULSE_MAX = 6;
 
 export const PRI_LABEL: Record<ChHelmPri, string> = { high: 'Priority', medium: 'Worth closing', low: 'Minor' };
 
+/** The pill a card wears: a class (colour is never the only carrier) and its word. */
+export interface ChStance {
+  cls: ChHelmPri | 'ok' | 'note' | 'stale' | 'done';
+  word: string;
+}
+
+/**
+ * Where a card stands. An out-of-date read says so first, then a note, then a strength (Working); a finding a focus area was already
+ * made from, or the coach acknowledged, reads Assigned or Acknowledged, never as a fresh Priority; any other finding wears its priority.
+ * `assigned` is the focus area made from it, from the board's own state (an assignment made in this visit) over what the page loaded.
+ */
+export function stanceOf(ins: ChInsight, assigned: ChHelmAssigned | null = ins.assigned): ChStance {
+  if (ins.stale) return { cls: 'stale', word: 'Out of date' };
+  if (ins.kind === 'note') return { cls: 'note', word: 'Note' };
+  if (ins.kind === 'strength') return { cls: 'ok', word: 'Working' };
+  if (assigned) return { cls: 'done', word: 'Assigned' };
+  if (ins.acknowledged) return { cls: 'done', word: 'Acknowledged' };
+  return { cls: ins.priority, word: PRI_LABEL[ins.priority] };
+}
+
 export const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
 const PRI_WEIGHT: Record<ChHelmPri, number> = { high: 3, medium: 2, low: 1 };
@@ -178,22 +218,31 @@ const PRI_WEIGHT: Record<ChHelmPri, number> = { high: 3, medium: 2, low: 1 };
  * strength (the feed's own order). The picked one leaves both lists.
  */
 export function partitionInsights(list: readonly ChInsight[], pickedId?: string | null): { focus: ChInsight | null; also: ChInsight[]; working: ChInsight[] } {
-  const picked = pickedId ? list.find((i) => i.id === pickedId) : undefined;
-  const focus = picked ?? list.find((i) => !i.strength) ?? null;
-  const rest = list.filter((i) => i.id !== focus?.id);
-  return { focus, also: rest.filter((i) => !i.strength).slice(0, ALSO_MAX), working: rest.filter((i) => i.strength).slice(0, WORKING_MAX) };
+  // A note states no finding, so it is neither the focus nor a row in either list.
+  const drawn = list.filter((i) => i.kind !== 'note');
+  const picked = pickedId ? drawn.find((i) => i.id === pickedId) : undefined;
+  // A read that is out of date does not lead while a current finding exists; the feed's own order decides within each.
+  const findings = drawn.filter((i) => i.kind === 'finding');
+  const focus = picked ?? findings.find((i) => !i.stale) ?? findings[0] ?? null;
+  const rest = drawn.filter((i) => i.id !== focus?.id);
+  const also = [...rest.filter((i) => i.kind === 'finding' && !i.stale), ...rest.filter((i) => i.kind === 'finding' && i.stale)];
+  return { focus, also: also.slice(0, ALSO_MAX), working: rest.filter((i) => i.kind === 'strength').slice(0, WORKING_MAX) };
 }
 
-/** Most pressing first: the top insight's priority (a strength last), then how many signals, then the name. */
+/** Most pressing first: the top insight's priority (an out-of-date read or a strength after it, a note last), then how many signals, then the name. */
 export function sortCoachPlayers(list: readonly ChCoachPlayer[]): ChCoachPlayer[] {
-  const weight = (p: ChCoachPlayer) => (p.top.strength ? 0 : PRI_WEIGHT[p.top.priority]);
+  const weight = (p: ChCoachPlayer) => (p.top.kind === 'note' ? -1 : p.top.kind === 'strength' || p.top.stale ? 0 : PRI_WEIGHT[p.top.priority]);
   return [...list].sort((a, b) => weight(b) - weight(a) || b.count - a.count || a.name.localeCompare(b.name));
 }
 
-/** "8 open signals across 5 players." */
-export function signalsLine(signals: number, players: number): string {
-  if (signals <= 0) return 'No open signals.';
-  return `${signals} open ${signals === 1 ? 'signal' : 'signals'} across ${players} ${players === 1 ? 'player' : 'players'}.`;
+/**
+ * "4 players have an open signal." The board draws one card per player, so it counts players, never the rows behind them
+ * ("77 open signals across 7 players" counted rows the board never draws). A player has one when a finding of theirs is open
+ * (`ChCoachPlayer.count`): a strength, a note and a read that is out of date are not findings.
+ */
+export function playersLine(players: number): string {
+  if (players <= 0) return 'No open signals.';
+  return `${players} ${players === 1 ? 'player has' : 'players have'} an open signal.`;
 }
 
 const PULSE_ICON: Array<[RegExp, ChPulseIcon]> = [

@@ -34,11 +34,11 @@ registry marks a hand contract `implemented` only when its test file names the I
 
 | Contract | Covered | Test (a leading phrase of its title) | What the tests do not show |
 | --- | --- | --- | --- |
-| 130101 coachhelm opens for the role | yes | “CH-13801 one focus: the page is labelled by its title”; “the header counts open signals across players; the pulse lists what the program needs”; “by player: each with their top signal and how many they have”; “a coach gets their board for the team the shell resolved; a player gets their own” |  |
+| 130101 coachhelm opens for the role | yes | “CH-13801 one focus: the page is labelled by its title”; “CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs”; “by player: each with their top signal and how many they have”; “a coach gets their board for the team the shell resolved; a player gets their own” |  |
 | 130102 the focus is the top insight that is not working | yes | “the focus is the top-ranked insight that is not working”; “a picked insight is the focus and leaves the lists”; “with only strengths there is no focus and they are all listed as working”; “the lists and the pulse are capped: five to look at, five working, six pulse rows”; “CH-13701 CH-13803 choosing another insight puts it in the focus card” |  |
 | 130103 players are ordered most pressing first | yes | “players: the most pressing top insight first, then the most signals, then the name; a strength last”; “a player whose top insight is a strength comes last, even when that insight’s own priority is high”; “by player: each with their top signal and how many they have”; “CH-13701 choosing a player shows their focus, with the selection haptic” |  |
 | 130104 fairway drill links say not rebuilt | partly | “CH-1301 a link to a Fairway drill (?view=development, profile, standing) says it is not rebuilt; ?view=insights is the board”; “the page gives a Clubhouse coach or player the new screen, and Fairway’s page is unchanged everywhere else” | Only a player session is tested; a coach following ?view= and the other values (deep-dive, unknown) drawing the board are read in the code, not run. |
-| 130105 open signals follow dismissals | yes | “CH-13703 CH-13901 Dismiss: the warning comes first, then the write”; “Undo brings it back: the write restores the state it had, and the focus card returns”; “dismissing a player’s last signal takes them out of the count of players as well as of signals”; “the subtitle counts open signals and players, in the singular when it is one” |  |
+| 130105 open signals follow dismissals | yes | “CH-13703 CH-13901 Dismiss: the warning comes first, then the write”; “Undo brings it back: the write restores the state it had, and the focus card returns”; “dismissing a player’s last signal takes them out of the count of players as well as of signals” (Priya, whose top card is an open finding); “CH13-4 the subtitle counts the players the board has a current finding for, in the singular when it is one” |  |
 | 130106 insights are generator output only | yes | “the downhill penalty: two make rates as bars, no gauge”; “the lede is the first sentence and the reasoning the rest”; “a lifetime value says All rounds and counts rounds; a count keeps its decimal”; “the generator’s placeholder recommended action is not shown as a drill”; “ahead of the cohort at low priority is working, and its gauge is the green one”; “a value with no comparison draws no gauge and still names its sample”; “a break gap is a finding” |  |
 | 130204 the route skeleton takes the roles shape | yes | “the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known”; “the loading file is the Clubhouse skeleton inside Clubhouse, and Fairway’s everywhere else” |  |
 | 130411 a failed read is never drawn as empty | yes | “CH-13201 an empty feed with insights on file is the feed having failed”; “CH-13201 an empty feed whose visible read fails is an error, and so is a failed feedback read”; “an empty feed where the player dismissed every insight themselves is not a failure”; “an insight the player un-dismissed, or a row the feed could not draw”; “CH-13202 heads that come back empty while insights are on file are the read having failed”; “CH-13202 a failed visible read is an error, logged”; “CH-13202 a failed roster read is an error (never an empty team), and the pulse still loads” |  |
@@ -139,23 +139,54 @@ Animation:         the shell's tokens, plus the chip's rise (base)
 Notes:             first-load JS and LCP (CH-1954) are open
 ```
 
+## Swap audit section 13, the code fixes (2026-10-01)
+
+Observed by test (`coachhelm-audit.test.ts`, `coachhelm-audit.test.tsx`,
+`development.team-id.test.ts`, `dev-plan-assigned-link.test.ts`): which cards
+state no finding and are drawn as notes (CH13-11); a strength measured
+against the comparison the card draws, and the `deriveTone` missing
+comparison (CH13-12); the shared Solid, Early and Thin words (CH13-10);
+the generator's sample unit and the "As of" line (CH13-9); out-of-date reads
+marked from the player's completed rounds, the rounds read bounded and its
+failure logged (CH13-3, CH-13903, CH-13906); the players line and the open
+signal count (CH13-4); the voice of the text on each board (CH13-13); the
+Assigned and Acknowledged pill (CH13-16); the Ask address and strip with
+CoachHelm off or unread (CH13-20); proposals read by team or no team, and
+every focus-area creator writing the team (CH13-5); the bell and email link
+for a Clubhouse player (CH13-7).
+
+Not observed: any of it in a browser or on production data. The freshness
+rules were run as a read-only SELECT against production: 23 of 602 visible
+reads are out of date by the refresh-day rule and 12 by the window rule.
+`createFocusArea`, `createPlayerFocusArea` and `createFocusAreaFromInsight`
+are in a `'use server'` file: `npm run build` was not run for them here.
+
 ## Open verification gaps
 
-- The iPhone pass through `npm run ios:dev`, and a browser pass with a real coach and a real player account (owner or
-  merge pass).
-- Every write and every failure against a live session, and the loading skeleton in a browser with real data.
-- `npm run build` was not run; no `'use server'` file changed for this page.
-- The unwalked preview states in the axe run, and a keyboard walk and VoiceOver at 1280 and 390.
-- Found in this pass, not fixed: a coach's gate lookup failure draws "Nothing is flagged in the pulse right now."
-  beside the roster notice (130608); `?view=deep-dive` draws the board and not the not-rebuilt page (130104);
-  `docs/clubhouse/phone/coachhelm.md` still says the Clubhouse branch returns before it reads `view`, and that no
-  Clubhouse screen has Accept; the `?view=` guard (Q-76) and Accept and Decline in Stats Development (Q-77) have
-  since been built, as PROGRESS.md records.
-- Found earlier, as reported by the lead in PROGRESS.md and not fixed: the generator's player-facing copy ("you're
-  averaging") shows on the coach's board; legacy `formatValue` rounds count values and `buildInsightUnit` says "over N
-  days" for a lifetime window (neither used here); the insight readers return empty on failure (the loaders probe the
-  table to tell a failure from a first run).
-- Q-76 and Q-77 are open owner questions; the page is built on their recommendations (Q-76's, and Q-77's in Stats).
+- The iPhone pass through `npm run ios:dev`, and a browser pass with a real
+  coach and a real player account (owner or merge pass).
+- Every write and every failure against a live session, and the loading
+  skeleton in a browser with real data.
+- `npm run build` was not run; no `'use server'` file changed for this
+  page. (The 2026-10-01 pass did change one, `development.ts`: see above.)
+- The unwalked preview states in the axe run, and a keyboard walk and
+  VoiceOver at 1280 and 390.
+- Found in this pass, not fixed: a coach's gate lookup failure draws
+  "Nothing is flagged in the pulse right now." beside the roster notice
+  (130608); `?view=deep-dive` draws the board and not the not-rebuilt page
+  (130104); `docs/clubhouse/phone/coachhelm.md` still says the Clubhouse
+  branch returns before it reads `view`, and that no Clubhouse screen has
+  Accept; the `?view=` guard (Q-76) and Accept and Decline in Stats
+  Development (Q-77) have since been built, as PROGRESS.md records.
+- Found earlier, as reported by the lead in PROGRESS.md: the generator's
+  player-facing copy ("you're averaging") shows on the coach's board (fixed
+  2026-10-01, CH13-13: the coach's board names the player); legacy
+  `formatValue` rounds count values and `buildInsightUnit` says "over N
+  days" for a lifetime window (neither used here); the insight readers
+  return empty on failure (the loaders probe the table to tell a failure
+  from a first run).
+- Q-76 and Q-77 are open owner questions; the page is built on their
+  recommendations (Q-76's, and Q-77's in Stats).
 
 ## Update 2026-09-30: Accept and Decline on the player's board (Q-77) and the Tour comparison (Q-88)
 

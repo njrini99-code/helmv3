@@ -1,16 +1,22 @@
 # P013 — CoachHelm
 
-One page where CoachHelm's read of the rounds a team posts reaches the people who act on it: a player
-sees the one thing to work on this week, with the evidence behind it, and a coach sees the program
-pulse and each player's top signal, and can turn it into a focus for that player or dismiss it.
+One page where CoachHelm's read of the rounds a team posts reaches the
+people who act on it: a player sees the one thing to work on this week,
+with the evidence behind it, and a coach sees the program pulse and each
+player's top signal, and can turn it into a focus for that player or
+dismiss it.
 
 ## Identity
 
 ```text
 Page ID:            P013
 Page Name:          CoachHelm
-Route:              /golf/dashboard/coachhelm (coach and player); ?view=development|profile|standing show the
-                    shell's "not rebuilt yet" page (CH-1301), ?view=insights and no view draw the board; ?player=<id> opens a coach's board on that player (Roster's View insights)
+Route:              /golf/dashboard/coachhelm (coach and player);
+                    ?view=development|profile|standing show the shell's
+                    "not rebuilt yet" page (CH-1301), ?view=insights and no
+                    view draw the board; ?view=ask is the coach's Ask (off
+                    when CoachHelm is off); ?player=<id> opens a coach's
+                    board on that player (Roster's View insights)
 Bridge Namespace:   13 (Bridge IDs 13ccii, D-68; catalog codes CH-13xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/coachhelm
@@ -21,17 +27,20 @@ Manifest:           config/clubhouse/pages/P013-coachhelm.json
 
 ### Primary user
 
-A player checking what CoachHelm found in their rounds and what to practise; a college golf coach scanning
-the team for who needs attention and what to prescribe.
+A player checking what CoachHelm found in their rounds and what to
+practise; a college golf coach scanning the team for who needs attention
+and what to prescribe.
 
 ### Job to be done
 
-Player: know the one thing to work on this week and why it is believed. Coach: see which players have a
-signal worth acting on, and act on it in a tap.
+Player: know the one thing to work on this week and why it is believed.
+Coach: see which players have a signal worth acting on, and act on it in
+a tap.
 
 ### Primary action
 
-Player: read the focus; when a coach proposed a focus area, Accept or Decline it (Q-77). Coach: Assign as focus.
+Player: read the focus; when a coach proposed a focus area, Accept or
+Decline it (Q-77). Coach: Assign as focus.
 
 ### Secondary actions
 
@@ -44,8 +53,8 @@ Dismiss an insight and Undo it, open Roster, and open CoachHelm settings. Both: 
    program pulse, then the players most pressing first with the chosen player's focus beside them.
 2. Player: Also worth knowing (the other findings), then Working (the strengths). Coach: the count of players
    with no insight yet.
-3. The header: the role, "CoachHelm", and for a coach how many open signals there are across how many
-   players.
+3. The header: the role, "CoachHelm", and for a coach how many players have an open signal (the board draws
+   one card per player, so it counts players, never the rows behind them).
 
 ### User should notice first
 

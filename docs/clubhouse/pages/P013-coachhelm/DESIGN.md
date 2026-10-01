@@ -148,5 +148,6 @@ The Fairway page's Development, Game profile, Standing and Deep dive views; the 
 [x] No old Fairway presentation is required
 [x] No old Fairway component is nested in the new screen (clubhouse:check refuses the imports)
 [x] Shared reuse is non-UI/headless infrastructure only (the delivery actions, the loaders' helpers, the
-    generator's own view-model helpers `buildInsightUnit`, `readQuality` and `deriveTone`)
+    generator's own view-model helpers `buildInsightUnit` and `deriveTone`,
+    and the confidence words in `lib/coachhelm/confidence-label.ts`)
 ```

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Archive, Check, Flag, Sparkles, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { firstName, signalsLine, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned } from '../../data/coachhelm-shape';
+import { firstName, playersLine, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -92,13 +92,16 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   );
   const busy = assign.pending || dismiss.pending || undo.pending;
 
-  // Open signals: a player's count, less the top insight when it was dismissed here.
-  const open = players.map((p) => Math.max(0, p.count - (dismissed[p.top.id] ? 1 : 0)));
-  const totalOpen = open.reduce((a, b) => a + b, 0);
+  // A player's open signals: their count, less the top insight when it was dismissed here, and only when that top insight was one of them.
+  const open = players.map((p) => Math.max(0, p.count - (dismissed[p.top.id] && countsAsSignal(p) ? 1 : 0)));
+  // The headline counts players, never the rows behind them: the board draws one card per player, so a count of signals is a count of cards it does not draw.
   const playersOpen = open.filter((n) => n > 0).length;
   const cur = players.find((p) => p.id === sel) ?? players[0] ?? null;
   // Assigned: from this visit, or a focus area the page found already made from the insight.
   const mine = cur ? (assigned[cur.top.id] ?? cur.top.assigned) : null;
+  // A card that states no finding is not assigned or dismissed, and a read older than the newest round is not assigned (it is still dismissed if the coach wants it gone).
+  const note = cur?.top.kind === 'note';
+  const stale = !!cur?.top.stale;
   const rosterHref = coachBoardLinks.roster();
 
   const body = data.off ? (
@@ -214,33 +217,47 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                   </div>
                 ) : (
                   <>
-                    <FocusCard key={cur.top.id} ins={cur.top} who={firstName(cur.name)} />
-                    <div className="ch-hl-cact">
-                      {/* A strength is assignable too, as a keep-doing focus (the board draws it on Theo’s card). */}
-                      {mine ? (
-                        <span className="ch-hl-done" role="status" data-ch-code="CH-13601">
-                          <Icon icon={Check} size={15} />
-                          Assigned as {firstName(cur.name)}’s focus
-                        </span>
-                      ) : (
-                        <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
-                          {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : 'Assign as focus'}
+                    <FocusCard key={cur.top.id} ins={cur.top} who={firstName(cur.name)} assigned={mine} />
+                    {note ? (
+                      // CH-13904: nothing to assign or dismiss on a card that states no finding.
+                      <div className="ch-hl-cact">
+                        <p className="ch-hl-cact__m" data-ch-code="CH-13904">
+                          This card states no finding, so there is nothing to assign.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="ch-hl-cact">
+                        {/* A strength is assignable too, as a keep-doing focus (the board draws it on Theo’s card). */}
+                        {mine ? (
+                          <span className="ch-hl-done" role="status" data-ch-code="CH-13601">
+                            <Icon icon={Check} size={15} />
+                            Assigned as {firstName(cur.name)}’s focus
+                          </span>
+                        ) : stale ? null : (
+                          <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
+                            {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : 'Assign as focus'}
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          leftIcon={Archive}
+                          disabled={busy}
+                          onClick={() => {
+                            // CH-13703: the warning comes before the write, as before any destructive tap (D-70).
+                            haptic('warning');
+                            void dismiss.run(cur);
+                          }}
+                        >
+                          {dismiss.pending ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        leftIcon={Archive}
-                        disabled={busy}
-                        onClick={() => {
-                          // CH-13703: the warning comes before the write, as before any destructive tap (D-70).
-                          haptic('warning');
-                          void dismiss.run(cur);
-                        }}
-                      >
-                        {dismiss.pending ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
-                      </Button>
-                      {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
-                    </div>
+                        {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
+                        {!mine && stale && (
+                          <p className="ch-hl-cact__m" data-ch-code="CH-13906">
+                            This read is older than {firstName(cur.name)}’s newest round, so it can’t be assigned as a focus yet.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
               </SectionBoundary>
@@ -256,13 +273,18 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
     </>
   );
 
+  // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
+  const tabs = data.off ? null : <CoachHelmTabs active="board" />;
   return (
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title">
       {phone && <PhoneTop start title="CoachHelm" />}
-      {phone && <CoachHelmTabs active="board" />}
-      <Head who="Coach">{players.length > 0 && !data.off ? signalsLine(totalOpen, playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>
-      {!phone && <CoachHelmTabs active="board" />}
+      {phone && tabs}
+      <Head who="Coach">{players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>
+      {!phone && tabs}
       {body}
     </main>
   );
 }
+
+/** The top card is a signal the count includes: a finding whose read is current. */
+const countsAsSignal = (p: ChCoachPlayer) => p.top.kind === 'finding' && !p.top.stale;

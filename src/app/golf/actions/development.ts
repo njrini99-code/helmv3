@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
+import { isClubhouseFor } from '@/clubhouse/gate';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -304,6 +305,9 @@ async function resolveEvidenceRevisionForInsight(
 // FOCUS AREA OPERATIONS
 // ============================================================================
 
+/** The Clubhouse screen a player's focus areas are on: their own Stats, Development tab (Accept and Decline included). */
+const CLUBHOUSE_DEV_PLAN_PATH = '/golf/dashboard/stats?tab=dev';
+
 /**
  * #1266 — refuse a target that asks the player to move the WRONG way.
  *
@@ -358,6 +362,9 @@ async function createFocusAreaImpl(
   // ACTIVE team (cookie-aware; toggle-safe for a two-team program) rather than
   // assuming the org has a single team — the old org-filtered .maybeSingle()
   // throws/nulls when an org runs both a men's and a women's team.
+  // `verifiedTeamId` is that team once the player is confirmed on it: it is the team
+  // the focus area is written under, which the player's CoachHelm reads their proposals by.
+  let verifiedTeamId: string | null = null;
   if (coach.organization_id && data.player_id) {
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
@@ -383,6 +390,7 @@ async function createFocusAreaImpl(
       if (!membership) {
         return { success: false, error: 'Player is not an active member on your team' };
       }
+      verifiedTeamId = teamId;
     }
   }
 
@@ -415,8 +423,13 @@ async function createFocusAreaImpl(
     return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
   }
 
+  // The team the focus area belongs to: the coach's own team the player was just confirmed on, else the team the player is
+  // active on. Written NULL, a proposal never reached the player's CoachHelm (it reads their proposals by team).
+  const focusTeamId = verifiedTeamId ?? (await resolvePlayerTeamId(supabase, data.player_id));
+
   const { error } = await fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
+    team_id: focusTeamId,
     coach_id: data.coach_id,
     area_type: data.area_type,
     title: data.title,
@@ -484,7 +497,10 @@ async function createFocusAreaImpl(
           userRow.email,
           data.title,
           data.area_type,
-          coach.full_name?.trim() || 'Your Coach'
+          coach.full_name?.trim() || 'Your Coach',
+          // Fairway's link redirects to a Development drill Clubhouse does not draw: send a Clubhouse player to the
+          // screen that is rebuilt, where the focus area and its Accept and Decline are.
+          isClubhouseFor('player') ? CLUBHOUSE_DEV_PLAN_PATH : undefined
         );
       }
     }
@@ -573,6 +589,8 @@ async function createPlayerFocusAreaImpl(
 
   const { error } = await fromUntyped(admin, 'golf_player_focus_areas').insert({
     player_id: player.id,
+    // The team they are on, as every other creator writes it (their own focus area is active, so no proposal waits on it).
+    team_id: await resolvePlayerTeamId(supabase, player.id),
     coach_id: null,
     area_type: data.area_type,
     title: data.title,
@@ -1313,6 +1331,39 @@ export async function reactivateFocusArea(focusAreaId: string): Promise<{ succes
  * Returns the first active team membership for the player.
  * `coach_id` falls back to whichever coach staffs that team (any one), or null.
  */
+/**
+ * The team this player is active on, or null. The creators that do not resolve a team for another reason write it with this, so a
+ * focus area is never made with `team_id` null where the player has a team (the player's CoachHelm reads the proposals made to
+ * them by team). A read that fails is logged and writes no team, as before: it never fails the create.
+ */
+async function resolvePlayerTeamId(supabase: Awaited<ReturnType<typeof createClient>>, playerId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      await logServerError(`[development] team read failed for player ${playerId}; the focus area is written without a team: ${describeError(error)}`, {
+        action: 'development.resolvePlayerTeamId',
+        featureArea: 'development',
+        playerId,
+      });
+      return null;
+    }
+    return data?.team_id ?? null;
+  } catch (err) {
+    await logServerError(`[development] team read threw for player ${playerId}; the focus area is written without a team: ${describeError(err)}`, {
+      action: 'development.resolvePlayerTeamId',
+      featureArea: 'development',
+      playerId,
+    });
+    return null;
+  }
+}
+
 async function resolvePlayerTeamAndCoach(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
@@ -1793,6 +1844,9 @@ async function createFocusAreaFromInsightImpl(
   const { data: focusArea, error: insertError } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .insert({
       player_id: data.player_id,
+      // The player's team now, as the other coach creators write it: the player's CoachHelm reads their proposals by it. The
+      // insight's own team is only a fallback (an old insight can carry the team the player has since left).
+      team_id: (await resolvePlayerTeamId(supabase, data.player_id)) ?? insight?.team_id ?? null,
       coach_id: coachId,
       area_type: areaType,
       title: data.title,
