@@ -13,6 +13,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { FocusCard, Head, InsightRow } from './parts';
 import { Proposals } from './Proposals';
+import { PlayerHelmTabs } from './views/PlayerHelmTabs';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from './writes';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
@@ -49,10 +50,14 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
     if (phone) focusTop.current?.scrollIntoView?.({ block: 'start' });
   };
 
+  // With CoachHelm off (CH-13304) nothing is read and the views lead nowhere, so the strip is not drawn, as the coach's is not (CH-13305).
+  const tabs = data.off ? null : <PlayerHelmTabs active="board" />;
   return (
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title">
       {phone && <PhoneTop start title="CoachHelm" />}
+      {phone && tabs}
       <Head who="Player">One thing to work on this week, based on the rounds you’ve posted.</Head>
+      {!phone && tabs}
 
       {!data.off && <Proposals proposals={data.proposals} writes={writes} onRetry={refresh} />}
 

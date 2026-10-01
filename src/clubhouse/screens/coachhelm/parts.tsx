@@ -17,7 +17,7 @@ export function PriPill({ ins, assigned }: { ins: ChInsight; assigned?: ChHelmAs
 }
 
 /** The confidence read: three bars and the word for the level. The bars are decoration; the word says it. */
-function ReadMeter({ read }: { read: NonNullable<ChHelmEvidence['read']> }) {
+export function ReadMeter({ read }: { read: NonNullable<ChHelmEvidence['read']> }) {
   return (
     <span className="ch-hl-conf">
       <span className="ch-hl-conf__d" aria-hidden="true">

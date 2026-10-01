@@ -7822,6 +7822,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90413,
+    "page": "P009",
+    "category": 4,
+    "item": 13,
+    "name": "PLAYERS_ARE_LEVEL_AT_THE_LAST_PLACE",
+    "chCode": "CH-09318",
+    "meaning": "Players are level at the last place on score (Q-114)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90501,
     "page": "P009",
     "category": 5,
@@ -8295,6 +8306,17 @@
     "name": "THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE",
     "chCode": "CH-09009",
     "meaning": "The squad is confirmed but telling the players failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90630,
+    "page": "P009",
+    "category": 6,
+    "item": 30,
+    "name": "GIVING_OR_TAKING_BACK_A_PLACE_AT",
+    "chCode": "CH-09010",
+    "meaning": "Giving or taking back a place at a tied cut fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -12833,6 +12855,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130209,
+    "page": "P013",
+    "category": 2,
+    "item": 9,
+    "name": "PROFILE_THE_GAME_PROFILE_IS_ON_ITS",
+    "chCode": "CH-13460",
+    "meaning": "Profile: the Game profile is on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -12872,7 +12905,7 @@
     "item": 4,
     "name": "PLAYER_COACHHELM_IS_OFF_FOR_THEM",
     "chCode": "CH-13304",
-    "meaning": "Player: CoachHelm is off for them",
+    "meaning": "Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13029,6 +13062,28 @@
     "name": "ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED",
     "chCode": "CH-13350",
     "meaning": "Ask: A read tool found nothing recorded",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130419,
+    "page": "P013",
+    "category": 4,
+    "item": 19,
+    "name": "PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET",
+    "chCode": "CH-13360",
+    "meaning": "Profile: no measure has enough rounds yet (no genome row, or one with nothing computed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130420,
+    "page": "P013",
+    "category": 4,
+    "item": 20,
+    "name": "PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND",
+    "chCode": "CH-13361",
+    "meaning": "Profile: some measures have enough rounds and some do not (an early read)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13310,6 +13365,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130625,
+    "page": "P013",
+    "category": 6,
+    "item": 25,
+    "name": "PROFILE_THE_GAME_PROFILE_DOESNT_LOAD",
+    "chCode": "CH-13260",
+    "meaning": "Profile: the Game profile doesn't load (the genome read fails or throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -13430,6 +13496,28 @@
     "chCode": "CH-13953",
     "meaning": "Ask: A confirmed action lands",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130712,
+    "page": "P013",
+    "category": 7,
+    "item": 12,
+    "name": "PLAYER_THE_SUB_NAVIGATION",
+    "chCode": "CH-13930",
+    "meaning": "Player: the sub-navigation",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130713,
+    "page": "P013",
+    "category": 7,
+    "item": 13,
+    "name": "PLAYER_DEVELOPMENT",
+    "chCode": "CH-13931",
+    "meaning": "Player: Development",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -13916,6 +14004,17 @@
     "chCode": "CH-13852",
     "meaning": "Ask: Evidence drawn as a chart",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131816,
+    "page": "P013",
+    "category": 18,
+    "item": 16,
+    "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
+    "chCode": "CH-13860",
+    "meaning": "Profile: a screen reader moves through the page",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

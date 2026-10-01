@@ -46,6 +46,7 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130206 | CH-13420 | `ASK_THE_CHAT_PAGE_LOADS` | Ask: The chat page loads |
 | 130207 | CH-13421 | `ASK_A_REPLY_IS_STREAMING` | Ask: A reply is streaming |
 | 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
+| 130209 | CH-13460 | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | Profile: the Game profile is on its way |
 
 ## 03 — Background loading / refresh
 
@@ -62,7 +63,7 @@ First run is a whole-page empty state for each role and each way of having nothi
 | 130401 | CH-13301 | `PLAYER_NO_ROUND_POSTED_YET` | Player: no round posted yet |
 | 130402 | CH-13302 | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | Player: every insight is a strength |
-| 130404 | CH-13304 | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | Player: CoachHelm is off for them |
+| 130404 | CH-13304 | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
 | 130405 | CH-13305 | `COACH_COACHHELM_IS_OFF` | Coach: CoachHelm is off (by them, by the team, or globally) |
 | 130406 | CH-13306 | `COACH_PLAYERS_ON_THE_TEAM_NO_SIGNAL` | Coach: players on the team, no signal yet |
 | 130407 | CH-13307 | `COACH_NO_PLAYERS_ON_THE_TEAM` | Coach: no players on the team |
@@ -77,6 +78,8 @@ First run is a whole-page empty state for each role and each way of having nothi
 | 130416 | CH-13324 | `ASK_A_CHAT_SEARCH_WITH_NO_MATCH` | Ask: A chat search with no match |
 | 130417 | CH-13325 | `ASK_ROUNDS_RECORDED_NOTHING_FLAGGED` | Ask: Rounds recorded, nothing flagged |
 | 130418 | CH-13350 | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | Ask: A read tool found nothing recorded |
+| 130419 | CH-13360 | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | Profile: no measure has enough rounds yet (no genome row, or one with nothing computed) |
+| 130420 | CH-13361 | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | Profile: some measures have enough rounds and some do not (an early read) |
 
 ## 05 — Validation
 
@@ -120,6 +123,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130622 | CH-13253 | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | Ask: A confirmed action failed or only partly completed |
 | 130623 | CH-13254 | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | Ask: The evidence panel is opened for a player the conversation has nothing on |
+| 130625 | CH-13260 | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | Profile: the Game profile doesn't load (the genome read fails or throws) |
 
 ## 07 — Network / offline
 
@@ -140,6 +144,8 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130709 | CH-13951 | `ASK_COACHHELM_PROPOSES_AN_ACTION` | Ask: CoachHelm proposes an action |
 | 130710 | CH-13952 | `ASK_A_PROPOSED_ACTION_IS_CANCELLED` | Ask: A proposed action is cancelled |
 | 130711 | CH-13953 | `ASK_A_CONFIRMED_ACTION_LANDS` | Ask: A confirmed action lands |
+| 130712 | CH-13930 | `PLAYER_THE_SUB_NAVIGATION` | Player: the sub-navigation |
+| 130713 | CH-13931 | `PLAYER_DEVELOPMENT` | Player: Development |
 
 ## 08 — Permission / authorization
 
@@ -276,6 +282,7 @@ The page is labelled by its title and each section is a labelled region (CH-1380
 | 131813 | CH-13850 | `ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER` | Ask: CoachHelm is working on an answer |
 | 131814 | CH-13851 | `ASK_THE_EVIDENCE_CONTROL` | Ask: The evidence control |
 | 131815 | CH-13852 | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | Ask: Evidence drawn as a chart |
+| 131816 | CH-13860 | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | Profile: a screen reader moves through the page |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 

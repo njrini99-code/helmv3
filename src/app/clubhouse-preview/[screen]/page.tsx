@@ -98,8 +98,11 @@ import {
 } from '@/clubhouse/preview/fixtures-coachhelm';
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
+import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
+import '@/clubhouse/styles/coachhelm-views.css';
+import '@/clubhouse/styles/coachhelm-profile.css';
 
 /**
  * Dev-only Clubhouse preview: every screen and state rendered from the
@@ -129,6 +132,7 @@ import '@/clubhouse/styles/coachhelm-ask.css';
  *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate   (the coach; Maya)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
+ *   /clubhouse-preview/coachhelm-views ?view=profile ?state=partial | empty | edge | failed | off | loading   (the player's Game profile; Jonah)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  *   any coach screen &teams=2   (a head coach on two teams: the team switcher; picking one fails here, there is no session)
@@ -431,6 +435,10 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/coachhelm',
       node: <PreviewAsk state={state} kind={q} />,
     },
+    'coachhelm-views': {
+      path: '/golf/dashboard/coachhelm',
+      node: <PreviewCoachHelmViews view={view} state={state} />,
+    },
   };
   const entry = screens[screen];
   if (!entry) notFound();
@@ -439,7 +447,7 @@ export default async function ClubhousePreview({
 
   return (
     <PreviewBell state={bell}>
-      <ClubhouseFrame userData={screen === 'coachhelm-player' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
+      <ClubhouseFrame userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
         {entry.node}
       </ClubhouseFrame>
     </PreviewBell>

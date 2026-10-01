@@ -238,27 +238,39 @@ async function loadProposals(supabase: Supabase, playerId: string, teamId: strin
 /** The disabled gate names why; a failed lookup is a failed read, not "off". */
 const LOOKUP_FAILED = /lookup failed/i;
 
+/**
+ * Whether CoachHelm is on for this player, for the board and for the Game profile, Standing and Deep dive views alike
+ * (`isCoachHelmEnabledForPlayer`: the global switch, their coach's and their team's). A lookup that failed is `failed`, never
+ * "off": the page says it did not load. `reason` is the coach's own words, when they gave some.
+ */
+export type PlayerHelmGate = { status: 'on' } | { status: 'off'; reason: string | null } | { status: 'failed' };
+
+export async function loadPlayerHelmGate(playerId: string): Promise<PlayerHelmGate> {
+  let gate;
+  try {
+    gate = await isCoachHelmEnabledForPlayer(playerId);
+  } catch (err) {
+    log('gate', err);
+    return { status: 'failed' };
+  }
+  if (gate.effectivelyEnabled) return { status: 'on' };
+  if (gate.disabledBy === null && gate.disabledReason && LOOKUP_FAILED.test(gate.disabledReason)) {
+    log('gate', gate.disabledReason);
+    return { status: 'failed' };
+  }
+  const reason = gate.disabledBy === 'coach' && gate.disabledReason && gate.disabledReason !== 'Disabled by coach' ? gate.disabledReason : null;
+  return { status: 'off', reason };
+}
+
 /** The player's own CoachHelm. Their insights are their own, with or without a team. */
 export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<ChPlayerHelm> {
   const supabase = await createClient();
   const noProposals: ChPlayerHelm['proposals'] = { list: [], error: false };
   const failed: ChPlayerHelm = { off: null, proposals: noProposals, insights: { list: [], error: true }, rounds: null };
 
-  let gate;
-  try {
-    gate = await isCoachHelmEnabledForPlayer(input.playerId);
-  } catch (err) {
-    log('gate', err);
-    return failed;
-  }
-  if (!gate.effectivelyEnabled) {
-    if (gate.disabledBy === null && gate.disabledReason && LOOKUP_FAILED.test(gate.disabledReason)) {
-      log('gate', gate.disabledReason);
-      return failed;
-    }
-    const reason = gate.disabledBy === 'coach' && gate.disabledReason && gate.disabledReason !== 'Disabled by coach' ? gate.disabledReason : null;
-    return { off: { reason }, proposals: noProposals, insights: { list: [], error: false }, rounds: null };
-  }
+  const gate = await loadPlayerHelmGate(input.playerId);
+  if (gate.status === 'failed') return failed;
+  if (gate.status === 'off') return { off: { reason: gate.reason }, proposals: noProposals, insights: { list: [], error: false }, rounds: null };
 
   // The team gives the tour (Q-88) and the proposals (Q-77); it reads beside the feed.
   const teamRead = playerTeam(supabase, input.playerId);
