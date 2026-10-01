@@ -197,7 +197,24 @@ export function Announcement({
 const TRANSPORT: Record<string, string> = { bus: 'Bus', van: 'Van', flight: 'Flight', carpool: 'Carpool' };
 
 /** The trip as a boarding pass (typographic: the owner rejected imagery, so no course photo). */
-export function TripPass({ t, big = false, later = false, role }: { t: ChHubTrip; big?: boolean; /** A trip after the next one: it is a trip, not "Next trip". */ later?: boolean; role: ChTeamHub['role'] }) {
+export function TripPass({
+  t,
+  big = false,
+  later = false,
+  role,
+  onEdit,
+  onDelete,
+}: {
+  t: ChHubTrip;
+  big?: boolean;
+  /** A trip after the next one: it is a trip, not "Next trip". */
+  later?: boolean;
+  role: ChTeamHub['role'];
+  /** A coach's Edit and Delete, each offered only where the page was given the write. */
+  onEdit?: (t: ChHubTrip) => void;
+  onDelete?: (t: ChHubTrip) => void;
+}) {
+  const manage = role === 'coach' && (onEdit || onDelete);
   const plan = [
     t.depart && ([t.depart, `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
     t.hotel && (['Stay', t.hotel] as const),
@@ -206,10 +223,27 @@ export function TripPass({ t, big = false, later = false, role }: { t: ChHubTrip
   return (
     <article className={'ch-hb-pass' + (big ? ' is-big' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
-        <span className="ch-hb-eyebrow ch-num">
-          <Icon icon={t.transport === 'flight' ? Plane : Bus} size={13} />
-          {t.upcoming && !later ? 'Next trip' : 'Trip'} · {t.dates}
-        </span>
+        <div className="ch-hb-pass__top">
+          <span className="ch-hb-eyebrow ch-num">
+            <Icon icon={t.transport === 'flight' ? Plane : Bus} size={13} />
+            {t.upcoming && !later ? 'Next trip' : 'Trip'} · {t.dates}
+          </span>
+          {manage && (
+            <Menu
+              label={`More for ${t.name}`}
+              align="end"
+              items={[
+                ...(onEdit ? [{ label: 'Edit trip', icon: Pencil, onSelect: () => onEdit(t) }] : []),
+                ...(onDelete ? [{ label: 'Delete trip', icon: Trash2, danger: true, onSelect: () => onDelete(t) }] : []),
+              ]}
+              trigger={(p) => (
+                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
+                  <Icon icon={MoreHorizontal} size={16} />
+                </button>
+              )}
+            />
+          )}
+        </div>
         <b id={`ch-hb-trip-${t.id}`}>{t.name}</b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
         <dl className="ch-hb-pass__f">

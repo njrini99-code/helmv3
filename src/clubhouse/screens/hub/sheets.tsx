@@ -25,7 +25,7 @@ import type { ChHubWrites, ChTripInput } from './writes';
  * the job the same way the first press would have.
  */
 
-function Field({ label, error, errorCode, children, id }: { label: string; error?: string | null; errorCode?: string; children: ReactNode; id: string }) {
+export function Field({ label, error, errorCode, children, id }: { label: string; error?: string | null; errorCode?: string; children: ReactNode; id: string }) {
   return (
     <div className="ch-field">
       <label className="ch-field__label" htmlFor={id}>
@@ -383,7 +383,7 @@ export function ComposeSheet({
   );
 }
 
-const TRANSPORTS: Array<[ChTripInput['transport'], string]> = [
+export const TRANSPORTS: Array<[ChTripInput['transport'], string]> = [
   ['bus', 'Bus'],
   ['van', 'Van'],
   ['flight', 'Flight'],
@@ -811,7 +811,8 @@ export function ConfirmDelete({
   open: boolean;
   what: string;
   body: string;
-  code: string;
+  /** Catalog number, when the question has one. */
+  code?: string;
   pending: boolean;
   onCancel: () => void;
   onConfirm: () => void;

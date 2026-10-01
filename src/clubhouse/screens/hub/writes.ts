@@ -5,7 +5,8 @@ import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } fr
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/golf';
 import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
-import { createGolfTravelItinerary, getTravelerClassConflicts } from '@/app/golf/actions/travel';
+import { createGolfTravelItinerary, deleteGolfTravelItinerary, getTravelerClassConflicts, updateGolfTravelItinerary } from '@/app/golf/actions/travel';
+import { createClient } from '@/lib/supabase/client';
 import type { ChHubUrgency } from '../../data/hub';
 import type { ChTravelerClass, ChTripWindow } from '../../data/hub-shape';
 import type { ServerResult } from '../../lib/use-action';
@@ -44,6 +45,42 @@ export interface ChHubWrites {
   travelerClasses(input: ChTripWindow & { teamId: string; playerIds: string[] }): Promise<ServerResult<{ classes: ChTravelerClass[]; partial: boolean }>>;
   uploadDocument(input: { teamId: string; file: File; folder: string | null }): Promise<ServerResult>;
   deleteDocument(id: string): Promise<ServerResult>;
+  /**
+   * A read, not a write: the trip's departure time, return date and return time as saved. The page carries them only as
+   * words ("Mon 12:00 PM"), so Edit asks for the values to open on what is there.
+   */
+  tripTimes?(id: string): Promise<ServerResult<ChTripTimes>>;
+  /** Saves what Edit shows. Optional with `tripTimes`: the page offers Edit only where both are supplied. */
+  editTrip?(input: ChTripEdit): Promise<ServerResult>;
+  /** Deletes the itinerary (its expenses and budgets go with it; the calendar event stays). */
+  deleteTrip?(id: string): Promise<ServerResult>;
+}
+
+export interface ChTripTimes {
+  /** HH:MM, or '' when none is set. */
+  departTime: string;
+  /** YYYY-MM-DD, or '' when none is set. */
+  returnDate: string;
+  returnTime: string;
+}
+
+/**
+ * What Edit sends. A value left `undefined` is not sent, so it stays as saved; a blank string clears it. The times are
+ * `undefined` while they haven't been read, because sending them blank would clear what the trip has.
+ */
+export interface ChTripEdit {
+  id: string;
+  name: string;
+  destination: string;
+  /** `null` when the trip has none and the coach hasn't picked one. */
+  transport: ChTripInput['transport'] | null;
+  departDate: string;
+  from: string;
+  hotel: string;
+  notes: string;
+  departTime?: string;
+  returnDate?: string;
+  returnTime?: string;
 }
 
 export interface ChTripInput {
@@ -113,4 +150,27 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
     });
   },
   deleteDocument: (id) => deleteGolfDocument(id),
+  async tripTimes(id) {
+    const { data, error } = await createClient().from('golf_travel_itineraries').select('departure_time, return_date, return_time').eq('id', id).maybeSingle();
+    if (error) return { success: false, error: error.message };
+    if (!data) return { success: false, error: 'This trip was not found.' };
+    // `time` columns come back as HH:MM:SS; the time field takes HH:MM.
+    const hm = (t: string | null) => (t ? t.slice(0, 5) : '');
+    return { success: true, data: { departTime: hm(data.departure_time), returnDate: data.return_date ?? '', returnTime: hm(data.return_time) } };
+  },
+  editTrip: (i) =>
+    updateGolfTravelItinerary({
+      id: i.id,
+      event_name: i.name.trim(),
+      destination: i.destination.trim(),
+      ...(i.transport && { transportation_type: i.transport }),
+      departure_date: i.departDate,
+      departure_location: i.from.trim(),
+      hotel_name: i.hotel.trim(),
+      notes: i.notes.trim(),
+      ...(i.departTime !== undefined && { departure_time: i.departTime }),
+      ...(i.returnDate !== undefined && { return_date: i.returnDate }),
+      ...(i.returnTime !== undefined && { return_time: i.returnTime }),
+    }) as Promise<ServerResult>,
+  deleteTrip: (id) => deleteGolfTravelItinerary(id),
 };
