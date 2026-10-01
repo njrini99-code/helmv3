@@ -1228,6 +1228,14 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-141 (open, 2026-10-01; built, reversible) The 390px phone audit found
+  page text down to 9.8px (chart labels, figure labels, weekday letters,
+  badges); Q-139 set phone captions at 13px but most page rules use literal
+  sizes. Each page stylesheet now ends with a phone block raising its sizes
+  under 12px to 12px (SVG chart text 12.5px); desktop unchanged. Kept at
+  their size: tab labels (11.5px, Q-139) and the bell's count numeral.
+  Alternatives: a 13px floor (denser rows would wrap; not measured), or
+  none. Kept: the 12px floor; remove a block to undo it for that page.
 - Q-140 (open, 2026-10-01; nothing changed natively) The native launch and
   WebView colour is #F2E6D2 (capacitor.config.ts, splash, LaunchScreen),
   Fairway's canvas; Clubhouse's phone page is #E2DCCD. A Clubhouse user sees

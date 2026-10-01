@@ -46,9 +46,14 @@ run). A fix proven only in jsdom says so.
   survive through `useChSessionState`.
 - **F08 reveal guard: removed** with F01; nothing replays on refresh because
   nothing staggers.
-- **F09 typography: partly fixed** (`6217041d3`). Phone type tokens 16 / 14,
-  tab labels 11.5px. Most page CSS uses literal sizes; moving the most-read
-  ones to the tokens is open, page by page.
+- **F09 typography: partly fixed** (`6217041d3`, then the phone floor).
+  Phone type tokens 16 / 14, tab labels 11.5px. The 390px audit
+  (`clubhouse-phone-audit`) found page text down to 9.8px (the Stats chart's
+  "Mean"), 11px on Home and Calendar, 11.5px figure labels. Each page
+  stylesheet now ends with a phone block that raises its sizes under 12px to
+  12px (SVG chart text 12.5px): 151 selectors in 20 stylesheets, desktop
+  unchanged, Q-141. Kept: tab labels (Q-139) and the bell's count numeral.
+  Moving the most-read literals onto the tokens stays open.
 - **F10 contrast: confirmed** for the solid pairs the audit computed; rendered
   pairs on translucent surfaces: not exercised.
 - **F11 tools: in use.** clubhouse:check, Vitest, Playwright specs on the
@@ -74,5 +79,18 @@ run). A fix proven only in jsdom says so.
   their own message), and "N new messages" takes a reader who is up down
   (`use-thread-anchor.ts`, `thread-anchor.test.tsx`). Device not exercised.
 - T26 to T32: not exercised.
+
+## Phone audit at 390px (Chromium emulation, local stack)
+
+Coach, six routes (Home, Stats, Calendar, Roster, Messages, Rounds): no route
+scrolls sideways. Touch targets: Home's "Calendar" and "Team stats" links were
+14px tall and now hit at 44px without moving the heading row; the Messages
+search field counted 20px but is hit through its 44px label (the measure now
+uses the label). With the phone floor, no coach text is under 12px and no
+control is under 24px. Player: Home and Stats do not scroll sideways; Home's
+chart note drew at 11.6px and the Stats chart axes at 5.8px (an SVG drawn wide
+and scaled down to the phone), fixed after this run. Classes timed out on the
+dev server's first compile, and the night welcome did not run: both pending.
+Emulation only: no safe areas, no WKWebView.
 
 No composite score is given: most runtime evidence is missing.

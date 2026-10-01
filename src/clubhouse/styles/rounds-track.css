@@ -1504,3 +1504,29 @@ button.ch-rt-strip__h.is-done:hover {
     inset: min(0px, calc(50% - 22px));
   }
 }
+
+/* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
+   under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+@media (max-width: 820px) {
+  .ch-rt-strip__h em,
+  .ch-rt-strip__tot em,
+  .ch-rt-hno em,
+  .ch-rt-mapw figcaption,
+  .ch-rt-log__dots i,
+  .ch-rt-log__n,
+  .ch-rt-log__r strong,
+  .ch-rt-hint,
+  .ch-rt-sub > em,
+  .ch-rt-sub > label,
+  .ch-rt-seg button em,
+  .ch-rt-amiss__k,
+  .ch-rt-bar__i,
+  .ch-rt-opts__k,
+  .ch-rt-exitc__n em,
+  .ch-rt-mc th[scope='row'],
+  .ch-rt-mc thead th,
+  .ch-rt-sum__f dt {
+    font-size: 12px;
+  }
+}

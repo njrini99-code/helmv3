@@ -572,6 +572,13 @@ a.ch-lg__r:focus-visible {
   font: 600 10.5px var(--ch-font-sans);
   fill: var(--ch-ink-500);
 }
+@media (max-width: 820px) {
+  /* Every .ch-ax sits in a 690-unit-wide chart drawn at the phone's width, about half size: 24 units reads at 11.5 to
+     14px from 320 to 430 wide (high-fidelity audit F09: it drew at 5.8px). */
+  .ch-ax {
+    font-size: 24px;
+  }
+}
 .ch-board {
   display: grid;
   grid-template-columns: repeat(var(--ch-n, 10), minmax(0, 1fr));
@@ -2704,4 +2711,37 @@ a.ch-lg__r:focus-visible {
   margin: -6px 2px 0;
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
+}
+
+/* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
+   under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+@media (max-width: 820px) {
+  .ch-tick,
+  .ch-lg__r--h,
+  .ch-board__d,
+  .ch-pf-tag,
+  .ch-pf-hero__figs dt,
+  .ch-tab-t__n,
+  .ch-fws__z em,
+  .ch-lad__b,
+  .ch-gmiss__c em,
+  .ch-gmiss__g em,
+  .ch-mk__v,
+  .ch-mk__b,
+  .ch-mk__n,
+  .ch-cup__lbl,
+  .ch-cup__split span,
+  .ch-stm-figs dt,
+  .ch-stm-figs dd + dd,
+  .ch-gx-sec__c em,
+  .ch-gx-type,
+  .ch-sf__n,
+  .ch-gd.is-phone .ch-gm__figs dt,
+  .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
+    font-size: 12px;
+  }
+  .ch-stm-chart__t {
+    font-size: 12.5px;
+  }
 }

@@ -1051,3 +1051,17 @@
     inset: min(0px, calc(50% - 22px));
   }
 }
+
+/* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
+   under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+@media (max-width: 820px) {
+  .ch-rsu-qual__b em,
+  .ch-rsu-hc__sum dt,
+  .ch-rsu-yds em,
+  .ch-rsu-crs__r,
+  .ch-rsu-tee__y em,
+  .ch-rsu-tee__f em {
+    font-size: 12px;
+  }
+}

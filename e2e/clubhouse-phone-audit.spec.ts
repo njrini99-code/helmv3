@@ -18,7 +18,7 @@ import { localSupabase, removeTeamSeed, seedClubhouseTeam, type SeededTeam } fro
 test.skip(!localSupabase(), 'Clubhouse phone audit runs only against a local Supabase');
 test.describe.configure({ mode: 'serial' });
 
-const WIDTHS = [320, 375, 390, 430];
+const WIDTHS = (process.env.PHONE_AUDIT_WIDTHS ?? '320,375,390,430').split(',').map(Number);
 const COACH_ROUTES = ['/golf/dashboard', '/golf/dashboard/stats', '/golf/dashboard/calendar', '/golf/dashboard/roster', '/golf/dashboard/messages', '/golf/dashboard/rounds'];
 const PLAYER_ROUTES = ['/golf/dashboard', '/golf/dashboard/stats', '/golf/dashboard/classes', '/golf/dashboard/calendar', '/golf/dashboard/rounds'];
 const OUT = 'test-results/phone-audit';
@@ -39,15 +39,17 @@ test.afterAll(async () => {
 
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/golf/login', { timeout: 180_000 });
-  // A dev server can hydrate after the first fill and wipe it: fill until the button takes it.
+  // A dev server can hydrate after the first fill and wipe it, or reload the page for a recompile after the click: repeat
+  // the whole sign-in until the page leaves the login screen.
   const button = page.getByRole('button', { name: 'Sign in' });
   await expect(async () => {
+    if (!new URL(page.url()).pathname.endsWith('/login')) return;
     await page.locator('#golf-signin-email').fill(email);
     await page.locator('#golf-signin-password').fill(password);
     await expect(button).toBeEnabled({ timeout: 2000 });
-  }).toPass({ timeout: 180_000 });
-  await button.click();
-  await page.waitForURL((u) => u.pathname.startsWith('/golf/') && !u.pathname.endsWith('/login'), { timeout: 300_000 });
+    await button.click();
+    await page.waitForURL((u) => u.pathname.startsWith('/golf/') && !u.pathname.endsWith('/login'), { timeout: 90_000 });
+  }).toPass({ timeout: 480_000 });
 }
 
 /** Geometry and type on the settled page. */
@@ -69,17 +71,39 @@ async function measure(page: Page) {
         if (!scroller || scroller === el) over.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} → ${Math.round(r.right)}`);
       }
     }
-    // The smallest text a person is asked to read.
+    // The smallest text a person is asked to read, and every text under the phone floor (13px, the caption token)
+    // grouped by class. SVG text is sized in viewBox units, so its size on screen is the font size times the
+    // element's screen scale.
     let smallest = { px: 99, text: '' };
+    const under: Record<string, number> = {};
     const walker = document.createTreeWalker(document.querySelector('#ch-content') ?? document.body, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const t = n.textContent?.trim();
       const el = n.parentElement;
       if (!t || !el || !visible(el) || el.closest('[aria-hidden="true"], .ch-sr-only')) continue;
-      const px = parseFloat(getComputedStyle(el).fontSize);
+      let px = parseFloat(getComputedStyle(el).fontSize);
+      if (el instanceof SVGGraphicsElement) px *= el.getScreenCTM()?.a ?? 1;
+      px = Math.round(px * 10) / 10;
       if (px < smallest.px) smallest = { px, text: t.slice(0, 40) };
+      if (px < 13) {
+        const key = `${px}px ${el.tagName.toLowerCase()}.${String(el.getAttribute('class') ?? '').split(' ')[0]}`;
+        under[key] = (under[key] ?? 0) + 1;
+      }
+    }
+    // Touch targets (audit §11): under 24px fails WCAG 2.2's minimum; under 44px misses the phone target.
+    const small: string[] = [];
+    let under44 = 0;
+    let controls = 0;
+    for (const el of Array.from(document.querySelectorAll('#ch-content button, #ch-content a[href], #ch-content [role="button"], #ch-content [role="tab"], #ch-content input, #ch-content select'))) {
+      if (!visible(el)) continue;
+      controls += 1;
+      // A field inside its label is hit through the label's whole box.
+      const r = (el.tagName === 'INPUT' && el.closest('label') ? el.closest('label')! : el).getBoundingClientRect();
+      if (Math.min(r.width, r.height) < 44) under44 += 1;
+      if (Math.min(r.width, r.height) < 24) small.push(`${el.tagName.toLowerCase()} "${(el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 24)}" ${Math.round(r.width)}x${Math.round(r.height)}`);
     }
     return {
+      targets: { controls, under44, under24: small.length, under24List: small.slice(0, 10) },
       innerWidth: window.innerWidth,
       scrollWidth: root.scrollWidth,
       clientWidth: root.clientWidth,
@@ -87,6 +111,7 @@ async function measure(page: Page) {
       viewportTags: Array.from(document.querySelectorAll('meta[name="viewport"]')).map((m) => (m as HTMLMetaElement).content),
       overflowing: over.slice(0, 8),
       smallest,
+      underFloor: under,
     };
   });
 }
@@ -95,7 +120,8 @@ async function sweep(page: Page, role: string, routes: string[]) {
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 844 });
     for (const route of routes) {
-      await page.goto(route, { timeout: 180_000 });
+      // A dev server compiles a route on its first visit; that can take minutes.
+      await page.goto(route, { timeout: 420_000 });
       await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => undefined);
       await page.waitForTimeout(800);
       const m = await measure(page);
