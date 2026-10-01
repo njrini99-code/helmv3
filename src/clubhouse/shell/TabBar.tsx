@@ -117,6 +117,7 @@ export function TabBar({
               key={t.id}
               href={t.href}
               className="ch-tab"
+              // CH-1803: the current tab is marked; CH-1701: changing tabs ticks, tapping the current one does not.
               aria-current={active ? 'page' : undefined}
               onClick={() => !active && haptic('select')}
             >

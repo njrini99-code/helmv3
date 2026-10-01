@@ -511,7 +511,7 @@
     "name": "CHANGING_TABS",
     "chCode": "CH-1701",
     "meaning": "Changing tabs (not tapping the tab they're on)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -522,7 +522,7 @@
     "name": "ANY_SAVE_OR_SEND_LANDS",
     "chCode": "CH-1702",
     "meaning": "Any save or send lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -533,7 +533,7 @@
     "name": "ANY_SAVE_OR_SEND_FAILS",
     "chCode": "CH-1703",
     "meaning": "Any save or send fails",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -610,7 +610,7 @@
     "name": "THE_CURRENT_PAGE_IS_MARKED_IN_THE",
     "chCode": "CH-1803",
     "meaning": "The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -621,7 +621,7 @@
     "name": "TOASTS_ARE_ANNOUNCED_CONFIRMATIONS_POLITELY_ERRORS_RIGHT",
     "chCode": "CH-1804",
     "meaning": "Toasts are announced: confirmations politely, errors right away",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -687,7 +687,7 @@
     "name": "ON_THE_PHONE_THE_TOP_BAR_NAMES",
     "chCode": "CH-1810",
     "meaning": "On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes (\"Back to More\") in place of the bell",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -5844,7 +5844,7 @@
     "name": "A_MESSAGE_ARRIVES_OR_IS_SENT",
     "chCode": "CH-7601",
     "meaning": "A message arrives or is sent",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5855,7 +5855,7 @@
     "name": "SOMEONE_IS_TYPING",
     "chCode": "CH-7602",
     "meaning": "Someone is typing",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5866,7 +5866,7 @@
     "name": "OPENING_DETAILS_OR_A_REACTION_BAR",
     "chCode": "CH-7603",
     "meaning": "Opening details or a reaction bar",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5888,7 +5888,7 @@
     "name": "A_CHANGE_FAILS",
     "chCode": "CH-7701",
     "meaning": "A change fails",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5899,7 +5899,7 @@
     "name": "A_CHANGE_LANDS",
     "chCode": "CH-7702",
     "meaning": "A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5910,7 +5910,7 @@
     "name": "PICKING_A_REACTION_A_FILTER_OR_A",
     "chCode": "CH-7703",
     "meaning": "Picking a reaction, a filter or a conversation",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5932,7 +5932,7 @@
     "name": "THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION",
     "chCode": "CH-7801",
     "meaning": "The composer is named for the conversation (\"Message Varsity team\"); a message that didn't send is an alert",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5943,7 +5943,7 @@
     "name": "SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE",
     "chCode": "CH-7802",
     "meaning": "Search results are announced as they arrive; Enter sends, Shift+Enter adds a line",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {

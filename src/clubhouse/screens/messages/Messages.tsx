@@ -141,6 +141,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const fail = useCallback(
     (surface: string, err: unknown, title: string, hint: string, code: string) => {
       chReport(err, { surface: `messages.${surface}`, action: `messages.${surface}` });
+      // CH-7701: a change that fails gives the error pattern; CH-7702: one that lands, the success pattern (each write below).
       haptic('error');
       const reason = err instanceof Error ? friendlyReason(err.message) : null;
       toast({ tone: 'error', title, body: reason ?? hint, code });

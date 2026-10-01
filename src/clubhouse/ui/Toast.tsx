@@ -108,6 +108,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
   const host = useToastHost(toasts.length > 0);
 
   const stack = (
+    // CH-1804: confirmations are announced politely; an error toast is role="alert", announced at once.
     <div className={'ch-toasts' + (host ? ' ch-toasts--in-dialog' : '')} aria-live="polite" data-ui="clubhouse">
       <AnimatePresence initial={false}>
         {toasts.map((t) => (

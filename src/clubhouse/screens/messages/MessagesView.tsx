@@ -210,6 +210,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
     <section
       className="ch-ms-sec"
       aria-label="Messages matching your search"
+      // CH-7802: results are announced as they arrive.
       aria-live="polite"
     >
       <div className="ch-ms-sec__l">In messages</div>
@@ -239,6 +240,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
               type="button"
               className="ch-ms-row is-hit"
               onClick={() => {
+                // CH-7703: a tick on picking a reaction, a filter or a conversation.
                 haptic("select");
                 chTrail("messages open search hit");
                 api.openHit(h);
@@ -700,7 +702,7 @@ export function Bubble({
             </div>
           )}
           {picking && (
-            <div className="ch-ms-reactbar" role="menu" aria-label="Reactions">
+            <div className="ch-ms-reactbar" role="menu" aria-label="Reactions" /* CH-7603: it pops from the bubble */>
               {REACTIONS.map((r) => {
                 const on = reacts.some((x) => x.key === r.key && x.mine);
                 return (
@@ -943,6 +945,7 @@ export function Composer({
         <textarea
           ref={ta}
           rows={1}
+          // CH-7801: the composer is named for the conversation. CH-7802: Enter sends, Shift+Enter adds a line (onKey).
           aria-label={`Message ${label}`}
           placeholder={`Message ${label}`}
           value={draft}
@@ -1097,6 +1100,7 @@ function Thread({
       <div
         className="ch-ms-scroll"
         ref={scroller}
+        // CH-7601: a message that arrives or is sent eases in at the end of the thread, and is announced.
         aria-live="polite"
         aria-relevant="additions"
       >
@@ -1156,7 +1160,7 @@ function Thread({
             )
           )}
           {api.typing && (
-            <div className="ch-ms-msg is-first">
+            <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
               <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
               <div className="ch-ms-msg__col">
