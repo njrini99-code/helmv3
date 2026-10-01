@@ -37,7 +37,7 @@ affects no customer until the flag is flipped.
 | Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). SG and Qualifiers reconciled (§4); stale stored SG on 7 rounds waits on the recompute. Q-112 fixed: the comparison pairs the same players (`100f35007`) | §4 §10 Stats gate |
 | Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Fixed 2026-10-01: Q-114 tie at the cut waits for the coach (`2ea18e38c`), Q-115, Q-116 (`f6002eaab`); stored entry totals rewritten (Q-134). Open: Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
 | Messages | **Passed**: two-session journey on the local stack, 7/7; deep link verified. Night audit fixed failed-reaction silence, lost text on a failed send and the coach phone inbox shift (CLS 0.292, not re-measured) | §4 |
-| CoachHelm | **Audited**, no P0. Demo regenerated (Q-125), tentative cards on (Q-126); CH13-14, CH13-24 and the CH13-22 server half fixed. **Open**: Q-124 cache migrations (owner applies); CH13-8, CH13-21, CH13-22 client half, CH13-23 | §4 §13 §7 |
+| CoachHelm | **Audited**, no P0. Demo regenerated (Q-125), tentative cards on (Q-126); CH13-14, CH13-21, CH13-22, CH13-23, CH13-24 fixed; CH13-8 labelled. **Open**: Q-124 cache migrations (owner applies) | §4 §13 §7 |
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
 | Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
 | Build/regression | Local gates on `c7e24b4f9`: typecheck, lint ratchet, Supabase-error and fail-open audits, `clubhouse:check`, `docs:check` all 0; unit suite 2067 files, 22182 tests, all pass; local production build used for the F-56 timings. CI on PR #2111 at `9d65dd3ff`: see §4 | §4 |
@@ -329,7 +329,13 @@ quiet rerun.
   endpoint respect the CoachHelm gate (CH13-20). Fixed 2026-10-01: Undo after
   Dismiss keeps an acknowledgement (CH13-14, `024a7669a`); Assign as focus
   tells the player, and the link follows the player's team under the
-  allowlist (CH13-24, `f0c107d34`). CH13-27 (stored strokes impact not
+  allowlist (CH13-24, `f0c107d34`); Assign sends the player's value now as
+  the focus's starting point (CH13-22, `1435fc9dd`, `39270df3b`); a declined
+  focus says so and Assign reads Propose again (CH13-23, `22a26ff00`); only
+  the cards a Clubhouse page draws are recorded as shown (CH13-21,
+  `5107895ee`). CH13-8 (unlabelled round sets): every live card (599 of 599,
+  read-only) carries its window ("90 days", "All rounds") and sample since
+  CH13-9; the test rounds in the stored cache are Q-124's apply. CH13-27 (stored strokes impact not
   reproducible) is gone after the Q-125 regeneration; the 10 team-level cards
   (bubble player, pattern) were not regenerated.
 - **F-58 (P2 data, fixed `c7e24b4f9`).** CoachHelm's program pulse used the
@@ -448,9 +454,6 @@ approved; held files written or fixed for F-11 (`20261001130000`), Q-128
 
 Still to do on the branch:
 
-- CoachHelm CH13-22 (send the starting value from the Assign button), CH13-23
-  (say when a player declined a focus), CH13-21 (count exposure when drawn),
-  CH13-8 (label each card's round set). They follow the views worker.
 - F-06: a Clubhouse round e2e that runs only against the local stack and
   cleans up after itself.
 - Final registry sync, full gates, one push, CI green.

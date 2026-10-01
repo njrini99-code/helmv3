@@ -3,6 +3,33 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Assign starts from the player's value; a decline shows; only drawn cards count
+
+Swap audit CH13-22, CH13-23, CH13-21 and CH13-8.
+
+```text
+PR/commit:      agent/swap-audit (#2111): 39270df3b, 22a26ff00, 5107895ee
+Design package: none
+Contract IDs:   CH-13907 (new)
+Actions:        createFocusAreaFromInsightV2 takes currentValue;
+                getInsightsForPlayer takes `drawn`
+Data impact:    a new focus area made from a card carries its starting
+                value; exposure rows only for drawn cards
+Held items:     Q-124 (test rounds in the stored cache)
+```
+
+- **Starting value.** Assign as focus sends the player's value for the
+  metric now; the focus starts there (owner: starting value only, no target).
+- **Declined.** When the player declined a focus made from the top card and
+  none stands now, the button reads Propose again and a note says the player
+  declined it (CH-13907).
+- **Shown.** The player board and Deep dive record exposure only for the
+  cards they draw; a card that states no finding is no longer counted.
+- **Round sets.** Every live card names its window and sample (CH13-9);
+  nothing new to build for CH13-8.
+- **Checked.** CoachHelm suites 555/555; `insight-delivery-drawn-exposure`
+  2/2; `development.team-id` for the server half.
+
 ## 2026-10-01 — The player's Game profile, Standing and Deep dive (F-04, Q-76)
 
 Owner, 2026-10-01: "coachhelm for player you can build but be detailed."
