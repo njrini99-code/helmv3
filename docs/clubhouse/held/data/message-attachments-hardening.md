@@ -5,7 +5,7 @@ Plan ID: HD-message-attachments-hardening
 Status: HELD
 Pages: Messages (P007): desktop and phone attachments, phone Details › Files
 Feature: team_communications (memory/features/team-communications.md)
-Migration: none written
+Migration: supabase/migrations/20261001130000_golf_attachments_revoke_anon_hide_deleted.sql (written 2026-10-01, HOLD)
 Date: 2026-09-29
 ```
 
