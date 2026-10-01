@@ -1,7 +1,7 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
@@ -10,7 +10,24 @@ import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
-import { channelsFor, ROUTING_GROUPS, ROUTING_LABEL, type ChCoachHelmSettings, type ChDevice, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
+import { useAction } from '../../lib/use-action';
+import {
+  channelsFor,
+  pendingCoachName,
+  ROUTING_GROUPS,
+  ROUTING_LABEL,
+  type ChCoachHelmSettings,
+  type ChDevice,
+  type ChMembership,
+  type ChPendingCoach,
+  type ChResult,
+  type ChSettingsData,
+  type ChSettingsWrites,
+  type ChStaffInvite,
+  type ChStaffMember,
+  type ChStaffRole,
+  type ChStaffWrites,
+} from './model';
 import { useInstantSave, useSaveAction } from './parts';
 
 /**
@@ -183,6 +200,142 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
     }
   };
   return { code, canShare, link, regen, copy, share };
+}
+
+const landed = (r: ChResult<unknown>) => !!(r.success || r.ok);
+const noStaff = { success: false, error: 'Coaching staff is not available here.' } as const;
+
+/**
+ * The coach's staff cards: who is on the team's staff and, for a head coach, who is waiting to be approved. Both are
+ * read when Team opens, and again after an approval. A read that fails shows nothing rather than a false "no staff"
+ * (like Fairway). The requests read is refused for an assistant: that is the answer, so it is not reported; a head
+ * coach's failed read is, and says so in its card.
+ */
+export function useCoachingStaff(staff: ChStaffWrites | undefined, coachId: string | null) {
+  const [members, setMembers] = useState<ChStaffMember[] | null>(null);
+  const [requests, setRequests] = useState<ChPendingCoach[]>([]);
+  const [requestsFailed, setRequestsFailed] = useState(false);
+  const [reads, setReads] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const source = useRef(staff);
+  source.current = staff;
+  const on = !!staff;
+  useEffect(() => {
+    const s = source.current;
+    if (!s) return;
+    let live = true;
+    const read = async <T,>(action: string, go: () => Promise<ChResult<T>>): Promise<ChResult<T>> => {
+      try {
+        return await go();
+      } catch (err) {
+        chReport(err, { surface: 'settings.staff', action });
+        return { success: false };
+      }
+    };
+    void Promise.all([read('list', () => s.list()), read('pending', () => s.pending())]).then(([l, p]) => {
+      if (!live) return;
+      const list = landed(l) ? (l.data ?? []) : null;
+      // A later read that fails keeps what is on screen; the first one that fails leaves the card out.
+      if (list) setMembers(list);
+      else chReport(new Error(l.error || 'staff read failed'), { surface: 'settings.staff', action: 'list', severity: 'low' });
+      if (landed(p)) {
+        setRequests(p.data ?? []);
+        setRequestsFailed(false);
+        return;
+      }
+      setRequests([]);
+      const head = list?.some((m) => m.coachId === coachId && m.role === 'head_coach') ?? false;
+      setRequestsFailed(head);
+      if (head) chReport(new Error(p.error || 'requests read failed'), { surface: 'settings.staff', action: 'pending', severity: 'low' });
+    });
+    return () => {
+      live = false;
+    };
+  }, [on, reads, coachId]);
+
+  const me = useMemo(() => members?.find((m) => m.coachId === coachId) ?? null, [members, coachId]);
+  const decide = (kind: 'approve' | 'decline') => async (c: ChPendingCoach) => {
+    setBusyId(c.coachId);
+    try {
+      const r: ChResult = staff ? await staff[kind](c.coachId) : noStaff;
+      if (landed(r)) {
+        setRequests((rs) => rs.filter((x) => x.coachId !== c.coachId));
+        // The new assistant joins the staff list, and the requests are read again to match the server.
+        setReads((n) => n + 1);
+      }
+      return r;
+    } finally {
+      setBusyId(null);
+    }
+  };
+  const approve = useAction('settings.approveAssistant', decide('approve'), (c: ChPendingCoach) => ({
+    done: `${pendingCoachName(c)} is now an assistant coach`,
+    failed: `Couldn't approve ${pendingCoachName(c)}`,
+  }));
+  const decline = useAction('settings.declineAssistant', decide('decline'), (c: ChPendingCoach) => ({
+    done: `Declined ${pendingCoachName(c)}`,
+    failed: `Couldn't decline ${pendingCoachName(c)}`,
+  }));
+  return {
+    members,
+    requests,
+    requestsFailed,
+    /** A known assistant: the server would refuse an invite, so the card isn't offered. Unknown (no read) still offers it. */
+    isAssistant: !!me && me.role !== 'head_coach',
+    approve,
+    decline,
+    busyId,
+    retry: () => setReads((n) => n + 1),
+  };
+}
+
+/** A staff invite: pick what it grants, make it, then copy or share the code and the link. The server says who may (a head coach). */
+export function useStaffInvite(staff: ChStaffWrites | undefined) {
+  const [role, setRole] = useState<ChStaffRole>('coach');
+  const [made, setMade] = useState<(ChStaffInvite & { link: string }) | null>(null);
+  // Read after mount: the server has no navigator, and a mismatch would break hydration.
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => setCanShare(typeof navigator.share === 'function'), []);
+  const toast = useToast();
+  // The one on screen goes first, so a refusal never leaves a code for another role showing.
+  const create = useAction(
+    'settings.createStaffInvite',
+    async (r: ChStaffRole) => {
+      setMade(null);
+      const res: ChResult<ChStaffInvite> = staff ? await staff.invite(r) : noStaff;
+      if (landed(res) && res.data) setMade({ ...res.data, link: `${window.location.origin}/golf/staff/join/${res.data.token}` });
+      return res;
+    },
+    (r: ChStaffRole) => ({ done: '', failed: `Couldn't make the ${r === 'admin' ? 'program admin' : 'assistant coach'} invite` }),
+  );
+  const copy = async (what: 'code' | 'link') => {
+    const text = what === 'code' ? made?.code : made?.link;
+    if (!text) return;
+    chTrail(`settings copy staff invite ${what}`);
+    try {
+      await navigator.clipboard.writeText(text);
+      haptic('success');
+      toast({ title: what === 'code' ? 'Staff code copied' : 'Staff invite link copied' });
+    } catch (err) {
+      haptic('error');
+      chReport(err, { surface: 'settings.staffInvite', action: 'copy', severity: 'low' });
+      toast({ tone: 'error', title: "Couldn't copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
+    }
+  };
+  const share = async () => {
+    if (!made) return;
+    chTrail('settings share staff invite');
+    try {
+      await navigator.share({ title: 'Join our coaching staff on GolfHelm', text: made.code ? `Join with code ${made.code}` : 'Join our coaching staff', url: made.link });
+    } catch (err) {
+      // Closing the share sheet rejects with AbortError; that isn't a failure.
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        chReport(err, { surface: 'settings.staffInvite', action: 'share', severity: 'low' });
+        void copy('link');
+      }
+    }
+  };
+  return { role, setRole, made, canShare, create, copy, share };
 }
 
 /** A player's team: leave it, ask to join another, cancel a request (CH-8017 to CH-8019). */

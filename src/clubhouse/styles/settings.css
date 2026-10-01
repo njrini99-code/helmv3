@@ -193,6 +193,10 @@
 .ch-set-row__c > .ch-select {
   width: 240px;
 }
+/* Two buttons on one row (Decline and Approve). */
+.ch-set-row__c > .ch-btn + .ch-btn {
+  margin-left: 8px;
+}
 .ch-set-row.is-dim .ch-set-row__l {
   color: var(--ch-text-secondary);
 }
@@ -1079,6 +1083,11 @@
   }
   .ch-setm-invite .ch-setm-link {
     margin-left: -4px;
+  }
+  .ch-setm-invite__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 16px;
   }
   .ch-setm-pill {
     position: relative;

@@ -4,7 +4,16 @@ import { createClient } from '@/lib/supabase/client';
 import { updateNotificationPreferences } from '@/app/actions/notification-preferences';
 import { setAllChannels, setCategoryChannel, setQuietMode } from '@/app/golf/actions/v3/notification-prefs';
 import { revalidateCoachingPhilosophyPaths, saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
-import { cancelJoinRequest, createTeamJoinRequest, regenerateJoinCode } from '@/app/golf/actions/teams';
+import {
+  approvePendingAssistantCoach,
+  cancelJoinRequest,
+  createStaffInvite,
+  createTeamJoinRequest,
+  declinePendingAssistantCoach,
+  listPendingAssistantCoaches,
+  listTeamCoachingStaff,
+  regenerateJoinCode,
+} from '@/app/golf/actions/teams';
 import { updateTeamCoachHelmSettings } from '@/app/golf/actions/insights';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
@@ -14,7 +23,7 @@ import { isNativeApp } from '@/lib/utils/capacitor';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { chReport } from '../../lib/track';
 import { chSignOut } from '../../lib/sign-out';
-import type { ChResult, ChSettingsWrites } from './model';
+import type { ChResult, ChSettingsWrites, ChStaffWrites } from './model';
 
 /**
  * The live writes. Each keeps the table, columns and server action the
@@ -32,6 +41,31 @@ const changed = <T = unknown,>(error: { message?: string } | null | undefined, c
   error ? res<T>(error) : count === 0 ? { success: false, error: `Nothing was saved. ${what} was not found, or you are not allowed to change it.` } : { success: true };
 const num = (s: string) => (s.trim() === '' ? null : Number(s));
 
+/**
+ * The coaching staff, on the actions Fairway's Team page calls. They answer in their own shapes (`staff`, `pending`,
+ * `token`); these give `{success, data, error}` like every other write here. Who may do what is the server's call.
+ */
+function staffWrites(teamId: string): ChStaffWrites {
+  return {
+    async list() {
+      const r = await listTeamCoachingStaff(teamId);
+      return r.success ? { success: true, data: r.staff ?? [] } : { success: false, error: r.error };
+    },
+    async pending() {
+      const r = await listPendingAssistantCoaches(teamId);
+      return r.success ? { success: true, data: r.pending ?? [] } : { success: false, error: r.error };
+    },
+    async invite(role) {
+      const r = await createStaffInvite(teamId, role);
+      if (!r.success || !r.token) return { success: false, error: r.error ?? 'Could not create an invitation.' };
+      const hours = r.expiresAt ? Math.round((Date.parse(r.expiresAt) - Date.now()) / 3_600_000) : NaN;
+      return { success: true, data: { token: r.token, code: r.code ?? null, role, hours: hours > 0 ? hours : null } };
+    },
+    approve: (coachId) => approvePendingAssistantCoach(coachId, teamId),
+    decline: (coachId) => declinePendingAssistantCoach(coachId, teamId),
+  };
+}
+
 export function createLiveWrites(ctx: {
   role: 'coach' | 'player';
   userId: string;
@@ -44,6 +78,7 @@ export function createLiveWrites(ctx: {
   const sb = createClient();
   return {
     refresh: ctx.refresh,
+    staff: ctx.role === 'coach' && ctx.teamId ? staffWrites(ctx.teamId) : undefined,
 
     async saveProfile(p) {
       const { error, count } =
