@@ -689,6 +689,10 @@
   background: var(--ch-ivory-25);
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
 }
+.ch-hl-sk__tabs {
+  display: flex;
+  align-items: center;
+}
 .ch-hl-sk__col {
   display: flex;
   flex-direction: column;

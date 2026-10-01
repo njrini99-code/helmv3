@@ -40,6 +40,19 @@ function RowsSkeleton({ rows, avatar }: { rows: number; avatar: number }) {
 }
 
 /**
+ * The view strip (the player's Board, Game profile, Standing and Deep dive; the coach's Board and Ask) in the place and at the
+ * height the page draws it: the radiogroup's 38px on desktop, the phone's 44px (the 36px chips or segments and the room their tap
+ * area keeps). Without it the strip arrived with the page and pushed everything below it down.
+ */
+function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
+  return (
+    <div className="ch-hl-sk__tabs" style={{ height: phone ? 44 : 38 }}>
+      <Skeleton width={phone ? '100%' : coach ? 150 : 380} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
+    </div>
+  );
+}
+
+/**
  * Route loading for CoachHelm, in each role's own shape (gh-states.jsx): the
  * player's focus beside a short list; the coach's program pulse, then the
  * players beside the focus. CH-13401 (player) and CH-13402 (coach).
@@ -49,11 +62,13 @@ export function CoachHelmSkeleton({ view }: { view: 'coach' | 'player' }) {
   const phone = useChPhone();
   return (
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-ch-code={coach ? 'CH-13402' : 'CH-13401'}>
+      {phone && <StripSkeleton coach={coach} phone />}
       <header className="ch-hl-h">
         <Skeleton width={62} height={24} radius={12} />
         <Skeleton width={190} height={44} radius={10} />
         <Skeleton width={360} height={14} />
       </header>
+      {!phone && <StripSkeleton coach={coach} phone={false} />}
       {coach ? (
         <>
           <div className="ch-hl-sk__pulse">
