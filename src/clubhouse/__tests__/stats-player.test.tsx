@@ -48,6 +48,7 @@ import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome'
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
 import { ClubhouseMarker } from '../shell/context';
+import { markAppRunning, RouteScope } from '../lib/session-state';
 import StatsLoading from '@/app/golf/(dashboard)/dashboard/stats/loading';
 import './dialog-polyfill';
 
@@ -1047,6 +1048,35 @@ describe('Stats player · network', () => {
     }
   });
 
+  it('CH-5903 the note names the figures still shown while a window loads (the last 10 rounds), outside the dimmed page; a quick Season, Qualifiers, Season ends with the last tap (the last choice wins)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      router.push.mockImplementation(() => new Promise(() => {}));
+      show(player({ window: 'last10' }));
+      const checked = () =>
+        within(screen.getByRole('radiogroup', { name: 'Window' }))
+          .getAllByRole('radio')
+          .filter((r) => r.getAttribute('aria-checked') === 'true')
+          .map((r) => r.textContent);
+      expect(code('CH-5903')).toBeNull();
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      expect(code('CH-5903')!.textContent).toBe('Showing the last 10 rounds, loading the season');
+      expect(document.querySelector('.ch-st')!.contains(code('CH-5903'))).toBe(false);
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      expect(code('CH-5903')!.textContent).toBe('Showing the last 10 rounds, loading qualifier rounds');
+      // Back to what is on screen: the switch, the note and the slow notice all end with the last tap.
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      expect(code('CH-5903')).toBeNull();
+      expect(checked()).toEqual(['Last 10']);
+      vi.advanceTimersByTime(7000);
+      expect(code('CH-5902')).toBeNull();
+    } finally {
+      router.push.mockReset();
+      vi.useRealTimers();
+    }
+  });
+
   it("CH-1903 a focus area proposed offline is refused before it is sent, and the shell's toast names what did not happen", async () => {
     const user = userEvent.setup();
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
@@ -1160,6 +1190,75 @@ describe('Stats player · a failed read is never drawn as zero', () => {
     expect(document.querySelector('.ch-pf-hero__figs')!.textContent).toMatch(/0 rounds/);
     expect(code('CH-5305')).not.toBeNull();
     expect(code('CH-5201')).toBeNull();
+  });
+});
+
+describe('Stats player · what the coach chose comes back (PAGE_PERFORMANCE.md rule 1)', () => {
+  beforeEach(() => sessionStorage.clear());
+  const selected = () => screen.getByRole('tab', { selected: true }).textContent;
+
+  it('51404 the tab comes back on a return to the profile; an address that names a tab wins until one is chosen; another team starts on Overview', async () => {
+    markAppRunning();
+    const user = userEvent.setup();
+    const at = (scope: string, tab?: string) =>
+      wrap(
+        <RouteScope value={scope}>
+          <StatsPlayer data={player()} coachId="c1" initialTab={tab} />
+        </RouteScope>,
+      );
+    const first = at('/golf/dashboard/stats\u0000t1');
+    expect(selected()).toBe('Overview');
+    await openTab(user, /Game detail/);
+    first.unmount();
+    const back = at('/golf/dashboard/stats\u0000t1');
+    expect(selected()).toBe('Game detail');
+    back.unmount();
+    // Roster's "All N" opens the rounds tab (D-53): the address wins, and the first tab chosen after it is kept.
+    const named = at('/golf/dashboard/stats\u0000t1', 'rounds');
+    expect(selected()).toMatch(/^Rounds/);
+    await openTab(user, /Development/);
+    expect(selected()).toBe('Development');
+    named.unmount();
+    const again = at('/golf/dashboard/stats\u0000t1');
+    expect(selected()).toBe('Development');
+    again.unmount();
+    at('/golf/dashboard/stats\u0000t2');
+    expect(selected()).toBe('Overview');
+  });
+
+  it('51404 on the phone the game section chosen comes back; on desktop the section only follows the scroll and is not kept', async () => {
+    markAppRunning();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const user = userEvent.setup();
+      function Slot() {
+        const { setSlot } = usePhoneChromeState();
+        return <div ref={setSlot} />;
+      }
+      const at = (scope: string) =>
+        wrap(
+          <RouteScope value={scope}>
+            <PhoneChromeProvider>
+              <Slot />
+              <StatsPlayer data={player()} coachId="c1" />
+            </PhoneChromeProvider>
+          </RouteScope>,
+        );
+      const pressed = () => screen.getAllByRole('button', { pressed: true }).map((b) => b.textContent);
+      const first = at('/golf/dashboard/stats\u0000t1');
+      expect(pressed()).toContain('Scoring');
+      await user.click(screen.getByRole('button', { name: 'Putting' }));
+      expect(pressed()).toContain('Putting');
+      first.unmount();
+      const back = at('/golf/dashboard/stats\u0000t1');
+      expect(pressed()).toContain('Putting');
+      back.unmount();
+      at('/golf/dashboard/stats\u0000t2');
+      expect(pressed()).toContain('Scoring');
+    } finally {
+      window.matchMedia = real;
+    }
   });
 });
 

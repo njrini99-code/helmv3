@@ -17,13 +17,14 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
+import { useChSessionState } from '../../lib/session-state';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale, sgTint } from '../../lib/sg';
-import { changeWords, WindowSwitch } from './WindowSwitch';
+import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { teamPlayerHref } from './links';
 import { LinkPending } from '../../shell/LinkPending';
@@ -67,6 +68,10 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   // The filter being loaded; cleared when the server answers with a new address.
   const [loading, setLoading] = useState<ChFilter | null>(null);
   useEffect(() => setLoading(null), [here]);
+  // A choice back to what is already on screen (a quick Season, Qualifiers, Season) has nothing left to wait for: its slow notice ends with the tap.
+  useEffect(() => {
+    if (loading && statsHref('/golf/dashboard/stats', loading) === here) setLoading(null);
+  }, [loading, here]);
   useEffect(() => {
     if (!loading) return;
     // CH-4902: a slow window or filter change says so once instead of dimming forever.
@@ -92,6 +97,8 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
       </main>
+      {/* CH-4903: the figures on screen are dimmed until the new ones land; this says which ones they are. */}
+      <UpdatingNote from={current} to={loading} code="CH-4903" />
     </GoFilter.Provider>
   );
 }
@@ -161,7 +168,8 @@ export function RetryNotice({ code, title, body }: { code: string; title: string
 /** The trend, the leg cards and the grid: one island, because they share the focused player and the chosen leg. */
 export function TeamCharts({ data }: { data: ChTeamCharts }) {
   const [focus, setFocus] = useState<string | null>(null);
-  const [leg, setLeg] = useState<ChLeg>('Approach');
+  // The chosen leg and lens come back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1).
+  const [leg, setLeg] = useChSessionState<ChLeg>('team-leg', 'Approach');
   return (
     <>
       <SectionBoundary surface="stats.team.trend" label="The trend chart" code="CH-4205">
@@ -197,7 +205,7 @@ function LegTrends({ legWeeks, legTotals, leg, setLeg }: { legWeeks: ChTeamStats
 }
 
 function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: string | null; setFocus: (id: string | null) => void }) {
-  const [lens, setLens] = useState<Lens>('sg');
+  const [lens, setLens] = useChSessionState<Lens>('team-lens', 'sg');
   const isSg = lens === 'sg';
   const n = data.weeks.length;
   const team = isSg ? data.team.sg : data.team.score;

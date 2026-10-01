@@ -32,6 +32,38 @@
 .ch-st.is-phone[aria-busy='true'] .ch-stm > :not(.ch-stm-head):not(.ch-spm-head):not(.ch-stm-controls) {
   opacity: 0.55;
 }
+/* A window or filter change in flight (CH-4903, CH-5903): the figures stay, dimmed, and this names which ones they are, so the
+   switch (already on the new choice) never labels the old figures with the new period. Fixed under the top bar, so it moves
+   nothing; it fades in after a press beat, so a change that lands at once never shows it. A sibling of the dimmed page. */
+.ch-st-updating {
+  position: fixed;
+  z-index: 55;
+  top: calc(var(--ch-topbar-h) + 10px);
+  left: 50%;
+  translate: -50% 0;
+  box-sizing: border-box;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 6px 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--ch-ink-900);
+  color: #f4f2ec;
+  font: 500 12.5px/18px var(--ch-font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4), 0 8px 22px -8px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+  animation: ch-fade var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
+}
+@media (max-width: 820px) {
+  .ch-st-updating {
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top) + 8px);
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-st-updating {
+  animation: none;
+}
 .ch-st-head {
   padding-bottom: 22px;
   border-bottom: 1px solid rgb(176 149 96 / 0.22);

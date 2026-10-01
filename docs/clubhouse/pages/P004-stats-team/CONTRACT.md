@@ -117,6 +117,7 @@ Changing the window while offline is refused before anything is requested: the s
 | --- | --- | --- | --- |
 | 40701 | CH-4901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, or Show the season) or the round filter while offline |
 | 40702 | CH-4902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
+| 40703 | CH-4903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 

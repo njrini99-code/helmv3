@@ -132,6 +132,7 @@ Changing the window while offline is refused before anything is requested, and a
 | --- | --- | --- | --- |
 | 50701 | CH-5901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
 | 50702 | CH-5902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
+| 50703 | CH-5903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { CircleDot, Crosshair, FlagTriangleRight, MoveUpRight, PenLine, type LucideIcon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import type { ChLegKey, ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -10,6 +10,7 @@ import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { formatHcp } from '../roster/format';
+import { useChSessionState } from '../../lib/session-state';
 
 type Span = 5 | 10 | 20;
 const SPANS: Span[] = [5, 10, 20];
@@ -38,7 +39,8 @@ function commonPar(points: ChScoringPoint[]): number | null {
 }
 
 function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
-  const [n, setN] = useState<Span>(10);
+  // The span of rounds (Last 5, 10, 20) comes back when the player returns to Home (PAGE_PERFORMANCE.md rule 1).
+  const [n, setN] = useChSessionState<Span>('home-span', 10);
   const all = data.scoring.points;
   const shown = all.slice(-n);
   const before = all.slice(-2 * n, -n);

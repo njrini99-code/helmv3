@@ -2,7 +2,7 @@
 
 import { ChevronRight, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
@@ -23,6 +23,7 @@ import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { WindowSwitch } from './WindowSwitch';
+import { useChSessionState } from '../../lib/session-state';
 
 type Sort = 'avg' | 'sg';
 
@@ -244,7 +245,8 @@ function Legs({ data }: { data: ChTeamStats }) {
 }
 
 function Players({ data }: { data: ChTeamStats }) {
-  const [sort, setSort] = useState<Sort>('avg');
+  // The sort comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1).
+  const [sort, setSort] = useChSessionState<Sort>('team-players-sort', 'avg');
   const rows = useMemo(
     () => [...data.grid].sort((a, b) => (sort === 'sg' ? (b.total ?? -99) - (a.total ?? -99) || a.name.localeCompare(b.name) : (a.avg ?? 999) - (b.avg ?? 999) || a.name.localeCompare(b.name))),
     [data.grid, sort],

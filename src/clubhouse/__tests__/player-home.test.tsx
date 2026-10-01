@@ -26,6 +26,7 @@ import { scoringNote } from '../screens/home/PlayerGame';
 import { Countdown } from '../screens/home/Countdown';
 import { chReport, chTrail } from '../lib/track';
 import { PhoneChromeProvider } from '../shell/phone-chrome';
+import { markAppRunning, RouteScope } from '../lib/session-state';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HOME_NOW } from '../preview/fixtures';
@@ -141,6 +142,24 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(screen.getByRole('img', { name: /Your scores over the last 5 rounds/ })).toBeTruthy();
     expect(figs()[0]).toBe('69.8');
     expect(figs()[3]).toBe('5 of 5');
+  });
+
+  it('21703 the span of rounds comes back when the player returns to Home; another team starts on the last 10', async () => {
+    markAppRunning();
+    sessionStorage.clear();
+    const user = userEvent.setup();
+    const at = (scope: string) => wrap(<RouteScope value={scope}><PlayerHome data={home()} now={PREVIEW_HOME_NOW} /></RouteScope>);
+    const spanOf = () => screen.getAllByRole('radio').find((r) => r.getAttribute('aria-checked') === 'true')!.textContent;
+    const first = at('/golf/dashboard\u0000t1');
+    expect(spanOf()).toBe('Last 10');
+    await user.click(screen.getByRole('radio', { name: 'Last 5' }));
+    first.unmount();
+    const back = at('/golf/dashboard\u0000t1');
+    expect(spanOf()).toBe('Last 5');
+    expect(screen.getByRole('img', { name: /Your scores over the last 5 rounds/ })).toBeTruthy();
+    back.unmount();
+    at('/golf/dashboard\u0000t2');
+    expect(spanOf()).toBe('Last 10');
   });
 
   it('the parts of the game: strokes gained, a Tour mark only where a benchmark exists', () => {

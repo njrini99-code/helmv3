@@ -2,6 +2,7 @@
 
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useChSessionState } from '../../lib/session-state';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { holeCoverage } from '../../data/round-scope';
 import type { ChPuttBand, ChWindow } from '../../data/stats-common';
@@ -127,7 +128,12 @@ export function GameDetail({
   const you = first === 'You';
   const verb = (third: string, base: string) => (you ? base : third);
   const mid = you ? 'you' : first;
-  const [on, setOn] = useState<string>('scoring');
+  // On the phone `on` is a choice (one section at a time) and comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1);
+  // on desktop it only follows the scroll, so it is not kept.
+  const [chosen, setChosen] = useChSessionState<string>('game-section', 'scoring');
+  const [spied, setSpied] = useState<string>('scoring');
+  const on = phone ? chosen : spied;
+  const setOn = phone ? setChosen : setSpied;
   const show = (id: string) => !phone || on === id;
 
   useEffect(() => {
@@ -136,7 +142,7 @@ export function GameDetail({
     const io = new IntersectionObserver(
       (entries) => {
         const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (top) setOn(top.target.id.replace('gm-', ''));
+        if (top) setSpied(top.target.id.replace('gm-', ''));
       },
       { rootMargin: '-140px 0px -55% 0px' },
     );

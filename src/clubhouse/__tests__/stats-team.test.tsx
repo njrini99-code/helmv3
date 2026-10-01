@@ -27,6 +27,7 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadTeamStats, type ChTeamStats } from '../data/stats-team';
+import { markAppRunning, RouteScope } from '../lib/session-state';
 import { loadPlayerProfile } from '../data/stats-player';
 import { resolveClubhouseTeam } from '../routes/team';
 import { ClubhouseStatsRoute, StatsNoTeam } from '../routes/stats';
@@ -329,6 +330,93 @@ describe('Stats team · network', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('Stats team · a change in flight, and the last choice wins', () => {
+  const checked = () =>
+    within(screen.getByRole('radiogroup', { name: 'Window' }))
+      .getAllByRole('radio')
+      .filter((r) => r.getAttribute('aria-checked') === 'true')
+      .map((r) => r.textContent);
+  afterEach(() => router.push.mockReset());
+
+  it('CH-4903 4403 while a window loads, the switch is on the new choice and a note names the figures still shown (the last 10 rounds), never the new period', async () => {
+    const user = userEvent.setup();
+    router.push.mockImplementation(() => new Promise(() => {}));
+    wrap(stats({ window: 'last10' }));
+    expect(code('CH-4903')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Season' }));
+    await expectCode('CH-4903', /^Showing the last 10 rounds, loading the season$/);
+    expect(code('CH-4903')!.getAttribute('role')).toBe('status');
+    expect(checked()).toEqual(['Season']);
+    // The note is outside the dimmed page, so it is not dimmed with it.
+    expect(document.querySelector('.ch-st')!.contains(code('CH-4903'))).toBe(false);
+    expect(screen.getByText('Scoring average')).toBeTruthy();
+  });
+
+  it('CH-4903 CH-4902 a quick Season, Qualifiers, Season ends where it started: the switch, the note and the slow notice follow the last tap (the last choice wins)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      router.push.mockImplementation(() => new Promise(() => {}));
+      wrap(stats({ window: 'season' }));
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      // Two choices in flight: the last one is what the note and the switch say.
+      expect(code('CH-4903')!.textContent).toBe('Showing the season, loading the last 10 rounds');
+      expect(checked()).toEqual(['Last 10']);
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      expect(router.push.mock.calls.map((c) => c[0])).toEqual(['/golf/dashboard/stats?window=qualifiers', '/golf/dashboard/stats', '/golf/dashboard/stats?window=season']);
+      // Back on what is on screen: nothing left to wait for.
+      expect(code('CH-4903')).toBeNull();
+      expect(checked()).toEqual(['Season']);
+      vi.advanceTimersByTime(7000);
+      expect(code('CH-4902')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('CH-4902 two choices in flight: the slow notice names the last one only', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      router.push.mockImplementation(() => new Promise(() => {}));
+      wrap(stats({ window: 'season' }));
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      vi.advanceTimersByTime(3000);
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      // The first choice's five seconds would end here; it was replaced, so nothing is said about it.
+      vi.advanceTimersByTime(2500);
+      expect(code('CH-4902')).toBeNull();
+      vi.advanceTimersByTime(2600);
+      await expectCode('CH-4902', /Still loading the last 10 rounds…/);
+      expect(document.querySelectorAll('[data-ch-code="CH-4902"]')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('Stats team · what the coach chose comes back (PAGE_PERFORMANCE.md rule 1)', () => {
+  const lensOf = () => screen.getAllByRole('radio').find((r) => /^(Scoring|Strokes gained)$/.test(r.textContent ?? '') && r.getAttribute('aria-checked') === 'true')!.textContent;
+  beforeEach(() => sessionStorage.clear());
+
+  it('4404 the trend’s lens comes back on a return to the page, and another team starts on strokes gained', async () => {
+    markAppRunning();
+    const user = userEvent.setup();
+    const at = (scope: string) => render(<RouteScope value={scope}>{tree(stats())}</RouteScope>);
+    const first = at('/golf/dashboard/stats\u0000t1');
+    expect(lensOf()).toBe('Strokes gained');
+    await user.click(screen.getByRole('radio', { name: 'Scoring' }));
+    expect(lensOf()).toBe('Scoring');
+    first.unmount();
+    const back = at('/golf/dashboard/stats\u0000t1');
+    expect(lensOf()).toBe('Scoring');
+    back.unmount();
+    at('/golf/dashboard/stats\u0000t2');
+    expect(lensOf()).toBe('Strokes gained');
   });
 });
 

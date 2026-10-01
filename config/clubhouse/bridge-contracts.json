@@ -2765,6 +2765,17 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 40703,
+    "page": "P004",
+    "category": 7,
+    "item": 3,
+    "name": "A_WINDOW_OR_FILTER_CHANGE_IS_IN",
+    "chCode": "CH-4903",
+    "meaning": "A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 40801,
     "page": "P004",
     "category": 8,
@@ -3605,6 +3616,17 @@
     "name": "A_WINDOW_CHANGE_TAKES_LONGER_THAN_5",
     "chCode": "CH-5902",
     "meaning": "A window or filter change takes longer than 5 seconds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50703,
+    "page": "P005",
+    "category": 7,
+    "item": 3,
+    "name": "A_WINDOW_OR_FILTER_CHANGE_IS_IN",
+    "chCode": "CH-5903",
+    "meaning": "A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },

@@ -3,7 +3,7 @@
 import { CalendarPlus, Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
-import { useEffect, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -39,7 +39,8 @@ import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
 import { ProposalAnswer } from './ProposalAnswer';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
-import { changeWords, WindowSwitch } from './WindowSwitch';
+import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
+import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devProgress, devTitle, goalLine } from './dev-format';
@@ -64,7 +65,15 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const toast = useToast();
   const reduced = useChReducedMotion();
   const phone = useChPhone();
-  const [tab, setTab] = useState<Tab>(() => TABS.find((t) => t === initialTab) ?? 'overview');
+  // The tab comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1); an address that names one (Roster's "All N" opens
+  // `?tab=rounds`, D-53) wins until a tab is chosen.
+  const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
+  const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab));
+  const tab = named.current ?? keptTab;
+  const setTab = (t: Tab) => {
+    named.current = undefined;
+    setKeptTab(t);
+  };
   const [focusOpen, setFocusOpen] = useState(false);
   const [pending, start] = useTransition();
   const coach = data.viewer === 'coach';
@@ -89,6 +98,10 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const here = href(data.id, data.filter);
   const [loading, setLoading] = useState<ChFilter | null>(null);
   useEffect(() => setLoading(null), [here]);
+  // A choice back to what is already on screen (a quick Season, Qualifiers, Season) has nothing left to wait for: its slow notice ends with the tap.
+  useEffect(() => {
+    if (loading && href(data.id, loading) === here) setLoading(null);
+  }, [loading, here]); // eslint-disable-line react-hooks/exhaustive-deps -- href is built from data.id and the base alone
   useEffect(() => {
     if (!loading) return;
     const words = changeWords(data.filter, loading);
@@ -142,187 +155,195 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 
   const sheet = coach && coachId && <FocusAreaSheet open={focusOpen} onClose={() => setFocusOpen(false)} playerId={data.id} coachId={coachId} first={first} />;
 
+  // CH-5903: the figures on screen are dimmed until the new ones land; this says which ones they are.
+  const updating = <UpdatingNote from={data.filter} to={loading} code="CH-5903" />;
   if (phone)
     return (
-      <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
-        <StatsPlayerPhone
-          data={data}
-          initialTab={initialTab}
-          playerHref={href(data.id, data.filter)}
-          messageHref={messageHref}
-          windowShown={(loading ?? data.filter).window}
-          onWindow={changeWindow}
-          onFilter={changeFilter}
-          onBackToTeam={() => go(null, data.filter)}
-          onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
-          onRetry={() => router.refresh()}
-        />
-        {sheet}
-      </main>
+      <>
+        <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+          <StatsPlayerPhone
+            data={data}
+            initialTab={initialTab}
+            playerHref={href(data.id, data.filter)}
+            messageHref={messageHref}
+            windowShown={(loading ?? data.filter).window}
+            onWindow={changeWindow}
+            onFilter={changeFilter}
+            onBackToTeam={() => go(null, data.filter)}
+            onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
+            onRetry={() => router.refresh()}
+          />
+          {sheet}
+        </main>
+        {updating}
+      </>
     );
 
   // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
   return (
-    <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
-      {coach && (
-        <div className="ch-st-back">
-          <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
-            Team stats
-          </Button>
-          {data.nav && (
-            <div className="ch-st-back__nav">
-              <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" onClick={() => haptic('select')} scroll={false}>
-                <Icon icon={ChevronLeft} size={15} />
-              </Link>
-              <span className="ch-num">
-                {data.nav.index} of {data.nav.total}
-              </span>
-              <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" onClick={() => haptic('select')} scroll={false}>
-                <Icon icon={ChevronRight} size={15} />
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-
-      <section className="ch-pf-hero" aria-label={data.name}>
-        <span className="ch-pf-hero__av">
-          <Avatar name={data.name} size={112} />
-        </span>
-        <div className="ch-pf-hero__id">
-          <div className="ch-pf-hero__tags">
-            <span className={`ch-pf-tag is-${data.status}`}>
-              <i aria-hidden="true" />
-              {data.status === 'active' ? 'Active' : 'Inactive'}
-            </span>
+    <>
+      <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+        {coach && (
+          <div className="ch-st-back">
+            <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
+              Team stats
+            </Button>
+            {data.nav && (
+              <div className="ch-st-back__nav">
+                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" onClick={() => haptic('select')} scroll={false}>
+                  <Icon icon={ChevronLeft} size={15} />
+                </Link>
+                <span className="ch-num">
+                  {data.nav.index} of {data.nav.total}
+                </span>
+                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" onClick={() => haptic('select')} scroll={false}>
+                  <Icon icon={ChevronRight} size={15} />
+                </Link>
+              </div>
+            )}
           </div>
-          <h1 className="ch-display">{coach ? data.name : 'Your stats'}</h1>
-          <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join(' · ')}</p>
-          {coach && (messageHref || planHref || coachId) && (
-            <div className="ch-pf-hero__act">
-              {messageHref && (
-                <Button leftIcon={MessageSquare} href={messageHref}>
-                  Message
-                </Button>
-              )}
-              {planHref && (
-                <Button leftIcon={CalendarPlus} href={planHref}>
-                  Schedule 1:1
-                </Button>
-              )}
-              {coachId && (
-                <Button variant="primary" leftIcon={Target} onClick={() => setFocusOpen(true)}>
-                  Add focus area
-                </Button>
-              )}
+        )}
+
+        <section className="ch-pf-hero" aria-label={data.name}>
+          <span className="ch-pf-hero__av">
+            <Avatar name={data.name} size={112} />
+          </span>
+          <div className="ch-pf-hero__id">
+            <div className="ch-pf-hero__tags">
+              <span className={`ch-pf-tag is-${data.status}`}>
+                <i aria-hidden="true" />
+                {data.status === 'active' ? 'Active' : 'Inactive'}
+              </span>
             </div>
+            <h1 className="ch-display">{coach ? data.name : 'Your stats'}</h1>
+            <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join(' · ')}</p>
+            {coach && (messageHref || planHref || coachId) && (
+              <div className="ch-pf-hero__act">
+                {messageHref && (
+                  <Button leftIcon={MessageSquare} href={messageHref}>
+                    Message
+                  </Button>
+                )}
+                {planHref && (
+                  <Button leftIcon={CalendarPlus} href={planHref}>
+                    Schedule 1:1
+                  </Button>
+                )}
+                {coachId && (
+                  <Button variant="primary" leftIcon={Target} onClick={() => setFocusOpen(true)}>
+                    Add focus area
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+          <dl className="ch-pf-hero__figs">
+            {heroFigs.map(([l, v, s, cls, chip]) => (
+              <div key={l}>
+                <dt>{l}</dt>
+                <dd className={`ch-num${cls ? ` ${cls}` : ''}`}>{v}</dd>
+                <dd className="ch-pf-hero__sub">{s}</dd>
+                {chip && <dd className="ch-pf-hero__chg">{chip}</dd>}
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <div className="ch-pf-tabs">
+          <div className="ch-tabs" role="tablist" aria-label="Profile sections">
+            {tabs.map(([t, l, n]) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                id={`tab-${t}`}
+                aria-selected={tab === t}
+                aria-controls={`panel-${t}`}
+                tabIndex={tab === t ? 0 : -1}
+                className="ch-tab-t"
+                onClick={() => pickTab(t)}
+                onKeyDown={tabKeys}
+              >
+                {l}
+                {n != null && <span className="ch-tab-t__n ch-num">{n}</span>}
+                {tab === t && <m.span className="ch-tab-t__bar" layoutId={reduced ? undefined : 'pf-tab'} transition={chTween('base')} />}
+              </button>
+            ))}
+          </div>
+          {/* The switch moves on the tap: the window being loaded, not the one whose figures are still showing (F-55). */}
+          <WindowSwitch value={(loading ?? data.filter).window} onChange={changeWindow} custom={hasRange(data.filter)} />
+        </div>
+
+        {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}
+
+        {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${data.firstName} has` : 'You have'} />}
+        {early && (
+          <div className="ch-pf-early" role="note" data-ch-code="CH-5305">
+            <Icon icon={Info} size={15} />
+            Early read. {first} has {countWords(w.rounds, w.effRounds)} in this window, so averages and trends will move a lot. Strokes gained shows once there are three.
+          </div>
+        )}
+        {noShots && (
+          <div className="ch-pf-early" role="note" data-ch-code="CH-5308">
+            <Icon icon={Info} size={15} />
+            Strokes gained needs three rounds posted with shots. {first} has {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
+          </div>
+        )}
+        {data.roundsError && (
+          <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
+        )}
+
+        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="ch-st-panel">
+          {emptyFilter && tab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
+
+          {tab === 'overview' && !emptyFilter && !failed && (
+            <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
+              {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
+              <Overview data={data} coach={coach} />
+            </SectionBoundary>
+          )}
+
+          {tab === 'game' && !emptyFilter && !failed && (
+            <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
+              {data.statsError ? (
+                <InlineNotice
+                  code="CH-5202"
+                  title="Shot-level detail didn't load."
+                  body="Scores and rounds above are correct. Try again; the error has been reported."
+                  onRetry={() => router.refresh()}
+                />
+              ) : data.stats && data.stats.roundsPlayed > 0 ? (
+                <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={first} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
+              ) : (
+                <div className="ch-st-card">
+                  <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
+                </div>
+              )}
+            </SectionBoundary>
+          )}
+
+          {tab === 'rounds' && !emptyFilter && !failed && (
+            <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
+              {data.rounds.length > 0 && (
+                <div className="ch-st-grid2">
+                  <RoundsExtra x={data.extra} filter={data.filter} />
+                </div>
+              )}
+              <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
+            </SectionBoundary>
+          )}
+
+          {tab === 'dev' && (
+            <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
+              <Development data={data} coach={coach} first={first} onAdd={coach && coachId ? () => setFocusOpen(true) : null} />
+            </SectionBoundary>
           )}
         </div>
-        <dl className="ch-pf-hero__figs">
-          {heroFigs.map(([l, v, s, cls, chip]) => (
-            <div key={l}>
-              <dt>{l}</dt>
-              <dd className={`ch-num${cls ? ` ${cls}` : ''}`}>{v}</dd>
-              <dd className="ch-pf-hero__sub">{s}</dd>
-              {chip && <dd className="ch-pf-hero__chg">{chip}</dd>}
-            </div>
-          ))}
-        </dl>
-      </section>
 
-      <div className="ch-pf-tabs">
-        <div className="ch-tabs" role="tablist" aria-label="Profile sections">
-          {tabs.map(([t, l, n]) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              id={`tab-${t}`}
-              aria-selected={tab === t}
-              aria-controls={`panel-${t}`}
-              tabIndex={tab === t ? 0 : -1}
-              className="ch-tab-t"
-              onClick={() => pickTab(t)}
-              onKeyDown={tabKeys}
-            >
-              {l}
-              {n != null && <span className="ch-tab-t__n ch-num">{n}</span>}
-              {tab === t && <m.span className="ch-tab-t__bar" layoutId={reduced ? undefined : 'pf-tab'} transition={chTween('base')} />}
-            </button>
-          ))}
-        </div>
-        {/* The switch moves on the tap: the window being loaded, not the one whose figures are still showing (F-55). */}
-        <WindowSwitch value={(loading ?? data.filter).window} onChange={changeWindow} custom={hasRange(data.filter)} />
-      </div>
-
-      {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}
-
-      {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${data.firstName} has` : 'You have'} />}
-      {early && (
-        <div className="ch-pf-early" role="note" data-ch-code="CH-5305">
-          <Icon icon={Info} size={15} />
-          Early read. {first} has {countWords(w.rounds, w.effRounds)} in this window, so averages and trends will move a lot. Strokes gained shows once there are three.
-        </div>
-      )}
-      {noShots && (
-        <div className="ch-pf-early" role="note" data-ch-code="CH-5308">
-          <Icon icon={Info} size={15} />
-          Strokes gained needs three rounds posted with shots. {first} has {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
-        </div>
-      )}
-      {data.roundsError && (
-        <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
-      )}
-
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="ch-st-panel">
-        {emptyFilter && tab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
-
-        {tab === 'overview' && !emptyFilter && !failed && (
-          <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
-            {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
-            <Overview data={data} coach={coach} />
-          </SectionBoundary>
-        )}
-
-        {tab === 'game' && !emptyFilter && !failed && (
-          <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
-            {data.statsError ? (
-              <InlineNotice
-                code="CH-5202"
-                title="Shot-level detail didn't load."
-                body="Scores and rounds above are correct. Try again; the error has been reported."
-                onRetry={() => router.refresh()}
-              />
-            ) : data.stats && data.stats.roundsPlayed > 0 ? (
-              <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={first} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
-            ) : (
-              <div className="ch-st-card">
-                <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
-              </div>
-            )}
-          </SectionBoundary>
-        )}
-
-        {tab === 'rounds' && !emptyFilter && !failed && (
-          <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
-            {data.rounds.length > 0 && (
-              <div className="ch-st-grid2">
-                <RoundsExtra x={data.extra} filter={data.filter} />
-              </div>
-            )}
-            <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
-          </SectionBoundary>
-        )}
-
-        {tab === 'dev' && (
-          <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
-            <Development data={data} coach={coach} first={first} onAdd={coach && coachId ? () => setFocusOpen(true) : null} />
-          </SectionBoundary>
-        )}
-      </div>
-
-      {sheet}
-    </main>
+        {sheet}
+      </main>
+      {updating}
+    </>
   );
 }
 
