@@ -314,6 +314,14 @@ describe('Messages · reads that fail', () => {
     await expectCode('CH-7202', /This conversation didn't load/);
   });
 
+  it('CH-7216 a conversation that fails to refresh keeps its messages and says they may be out of date', async () => {
+    live.msgs.error = new Error('boom');
+    show();
+    await expectCode('CH-7216', /This conversation may be out of date/);
+    expect(code('CH-7202')).toBeNull();
+    expect(code('CH-7304')).toBeNull();
+  });
+
   it('CH-7203 71402 message search does not load, with Try again', async () => {
     const user = userEvent.setup();
     a.searchGolfMessages.mockRejectedValueOnce(new Error('boom'));

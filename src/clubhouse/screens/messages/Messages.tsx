@@ -458,6 +458,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     msgs: chMsgs,
     msgsLoading: msgs.loading,
     msgsError: !!msgs.error && !chMsgs.length,
+    // The read failed but an earlier copy is on screen: it stays, marked as possibly out of date (PAGE_PERFORMANCE.md rule 4).
+    msgsStale: !!msgs.error && chMsgs.length > 0,
     refetchMsgs: () => void msgs.refetch(),
     typing: msgs.isOtherTyping,
     onTyping: (on) => msgs.sendTypingStatus(on),

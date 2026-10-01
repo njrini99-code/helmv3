@@ -104,7 +104,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P004 | 2 | 1 | 1 | 19 | 2 | 11 | 2 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 60 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 2 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
-| P007 | 2 | 10 | 1 | 9 | 5 | 31 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 90 |
+| P007 | 2 | 10 | 1 | 9 | 5 | 32 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 91 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 5 | 4 | 13 | 14 | 30 | 2 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 125 |
 | P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
@@ -640,6 +640,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70629 | CH-7213 | 06 Server / system error | `DETAILS_CRASH` | implemented | Details crash |
 | 70630 | CH-7214 | 06 Server / system error | `THE_SHARED_FILES_DONT_LOAD` | implemented | The shared files don't load (Details) |
 | 70631 | CH-7215 | 06 Server / system error | `THE_ADD_SHEETS_TEAM_LIST_DOESNT_LOAD` | implemented | The Add sheet's team list doesn't load |
+| 70632 | CH-7216 | 06 Server / system error | `A_CONVERSATIONS_MESSAGES_DONT_REFRESH_WHILE_AN` | implemented | A conversation's messages don't refresh while an earlier copy is shown |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |

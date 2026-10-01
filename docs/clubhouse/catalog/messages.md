@@ -68,6 +68,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7213 | Details crash | "Details couldn't be shown." … | `SectionBoundary messages.details` | messages.test › CH-7213 |
 | CH-7214 | The shared files don't load (Details) | "Files didn't load." + "Your messages are fine…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
 | CH-7215 | The Add sheet's team list doesn't load | "The team list didn't load." Try again | `AddMembersModal` | messages.test › CH-7215 |
+| CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date." + "It didn't refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
 
 ## 73xx Empty
 

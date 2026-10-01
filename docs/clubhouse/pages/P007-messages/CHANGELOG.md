@@ -3,6 +3,32 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Page pass: a thread that fails to refresh says so (CH-7216)
+
+PAGE_PERFORMANCE.md rules 4 and 11.
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   CH-7216 (new)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- **Out of date, said so.** When a thread's read fails but an earlier copy is
+  on screen, the messages stay and a notice above them says they may be out
+  of date, with Try again. Before, a failed refresh was silent. CH-7202 still
+  covers a thread with nothing to show.
+- **Send, audited.** The send is already honest. It uses a client id threaded
+  to the server (a retry after a commit is not a duplicate), keeps the failed
+  bubble with Retry and Discard, and says "couldn't confirm" apart from "not
+  sent".
+- **Open question (owner):** on a failed text send, the composer also puts
+  the text back in the box (MSG-26). Sending it again from the box posts a
+  second message under a new id, while the bubble's Retry would not. This is
+  left as is pending the owner's call.
+
 ## 2026-10-01 — An unsent draft survives a reload (swap audit F-12)
 
 ```text

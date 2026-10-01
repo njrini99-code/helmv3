@@ -121,6 +121,7 @@ Every change has its own toast (70601 to 70616) naming what failed and what to d
 | 70629 | CH-7213 | `DETAILS_CRASH` | Details crash |
 | 70630 | CH-7214 | `THE_SHARED_FILES_DONT_LOAD` | The shared files don't load (Details) |
 | 70631 | CH-7215 | `THE_ADD_SHEETS_TEAM_LIST_DOESNT_LOAD` | The Add sheet's team list doesn't load |
+| 70632 | CH-7216 | `A_CONVERSATIONS_MESSAGES_DONT_REFRESH_WHILE_AN` | A conversation's messages don't refresh while an earlier copy is shown |
 
 ## 07 — Network / offline
 

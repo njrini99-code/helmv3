@@ -371,6 +371,14 @@ function PhoneThread({
       <SectionBoundary surface="messages.thread" label="This conversation" code="CH-7212">
         <div className="ch-msp-scroll ch-ms-scroll" ref={scroller} aria-live="polite" aria-relevant="additions">
           <div className="ch-ms-msgs">
+            {api.msgsStale && (
+              <InlineNotice
+                code="CH-7216"
+                title="This conversation may be out of date."
+                body="It didn't refresh. What's here is what was last loaded. Try again; the error has been reported."
+                onRetry={api.refetchMsgs}
+              />
+            )}
             {api.msgsError ? (
               <InlineNotice
                 code="CH-7202"
