@@ -118,8 +118,9 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
         <div key={f.label}>
           <dt>{short[f.label] ?? f.label}</dt>
           <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
+          {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
           {anyDelta && (
-            <dd className={'ch-num ' + (f.delta == null || f.delta === 0 ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? ' ' : formatSigned(f.delta, f.digits)}</dd>
+            <dd className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? ' ' : formatSigned(f.delta, f.digits)}</dd>
           )}
         </div>
       ))}
