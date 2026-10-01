@@ -337,6 +337,16 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     expect(screen.getByRole('link', { name: 'Continue' })).toBeTruthy();
   });
 
+  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Submit', () => {
+    const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
+    const finished = { ...PREVIEW_UNFINISHED, id: 'a0000000-0000-4000-8000-000000000043', course: 'Governors Club', played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
+    show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [PREVIEW_UNFINISHED, finished], error: false } });
+    const more = screen.getByRole('region', { name: '1 more unfinished round' });
+    expect(within(more).getByText(/through 18 · couldn’t check if posted/)).toBeTruthy();
+    expect(within(more).queryByRole('link', { name: 'Submit' })).toBeNull();
+    expect(within(more).getByRole('link', { name: 'Continue' })).toBeTruthy();
+  });
+
   it('a Try again that lands shows the in-progress card it read (the cards are not seeded once from the first render)', () => {
     const { rerender } = render(lib({ ...PREVIEW_ROUNDS_IDLE, unfinished: { list: [], error: true } }));
     expect(code('CH-11202')).not.toBeNull();

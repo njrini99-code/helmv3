@@ -4,6 +4,114 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.
 
+## 2026-10-01 — Owner rules: page states, races, Back
+
+Owner, 2026-10-01 (the page-state rules in
+`docs/clubhouse/PAGE_PERFORMANCE.md`): never "0 strokes", "No rounds yet"
+or "no insights" while loading or after a failed read; a failed refresh
+keeps the old data and says it may be out of date; a late answer never wins;
+returning from a detail view restores the list.
+
+```text
+PR/commit:      agent/swap-audit: 10e8e8568 (false empties, the review,
+                the continue loader), 201d35d84 (the library keeps its
+                last good page), 571aea89c (setup's tee race), 6307c072a
+                (Back from a round)
+Catalog:        CH-11213 to CH-11217, CH-11315, CH-11410, CH-11912 (new);
+                the Try again notices now say "Trying again" while they run
+Contract IDs:   110633 to 110636, 110416, and those of CH-11213, CH-11410
+                and CH-11912 (registry sync)
+Data impact:    none: no write, no new read, no cache
+Held items:     none
+```
+
+- **The posted-rounds read fails (library).** The idle card said "No rounds
+  posted yet" beside the error notice. It now says nothing about the last
+  round (`listFailed`), and the page shows only CH-11201.
+- **The holes read fails (library).** The card read "Set up, no holes scored
+  yet" (the more-unfinished list "not started"); the loader only logged it,
+  under a comment that said otherwise. It now carries `holesError`: the strip
+  draws numbers only (nothing scored, no hole ringed), the score-through
+  line is dropped, and CH-11214 says the scores didn't load, with Try again.
+  Continue still goes to the round's saved current hole.
+- **A finished round while the posted rounds are unread.** The "already
+  submitted" set was empty after a failed list read, so a finished card
+  offered Submit round. It is now not ready to submit (`submitUnchecked`):
+  CH-11215 says so, and the card is Continue, whose finish sheet submits.
+  The more-unfinished list says "couldn't check if posted".
+- **A Try again that lands.** `useState(data.unfinished.list)` seeded the
+  cards once, so a retry that read the card still showed "No round in
+  progress" (or the first-run page). The cards now come from the page's
+  data; only a local discard is state, as ids to leave out. No other screen
+  in the Rounds folders seeds state from props.
+- **Rounds with no score.** `toLibraryRound` drops a completed round with no
+  total at all (no `total_score`, no nines). No total is never countable, so
+  no count or average understated, but the round was hidden. The loader now
+  counts them (`rounds.unscored`) and the page says "N posted rounds have no
+  score recorded, so they aren't listed here" (CH-11315). A page whose only
+  rounds are unscored is not "No rounds yet".
+- **The review's hero.** `total_score ?? 0` could show "0 strokes". A
+  missing total is now an em dash and "Score not recorded". The tee read, a
+  coach's read of the player's name and the team read each carry a flag: a
+  missing yardage or name is said (CH-11216), a missing baseline is said in
+  the strokes gained card (CH-11217), each with Try again. A coach no longer
+  sees an invented "Player"; Back to Stats and "The player's notes" follow a
+  coach flag, not the name. A player with no team gets no baseline notice
+  (that claims none). The review's hole re-picks the first hole over par
+  when a card arrives after a retry.
+- **The continue loader** (`rounds/continue/[id]/page.tsx`, shared with
+  Fairway; only its failed-read handling changed). A failed round read was
+  `notFound()`; it now throws, so the route boundary offers its retry. A
+  failed course-hole read threw nothing and opened every hole the draft did
+  not cover at 0 yards (a 1-yard tee shot to the state machine); it now
+  throws when any hole would open with no yardage. A draft that carries
+  every yardage opens as it would have (the draft wins over the course
+  either way). Unchanged: the holes, shots and detail reads, and `notFound`
+  for a round that is not there. This is a page file, not `'use server'`; it
+  still needs the lead's `next build` with the stack.
+- **Retry controls.** Every retry on the library and the review is
+  `useRefresh` plus `InlineNotice retrying`: it says "Trying again" and
+  ignores a second tap.
+- **A failed refresh keeps the old page (rule 2).** The library draws the
+  last library that landed in full for the same player (`useLastGood`, key:
+  the player) while a refresh fails, with CH-11213 and Try again. A first
+  load that fails, and another player's, are the error as before. A Try
+  again in flight keeps the page, marks it busy and says "Updating"
+  (CH-11410). Differs from the brief: "good" means the posted rounds and the
+  in-progress read both landed, so a card the player was looking at is not
+  replaced by an error either.
+- **Setup's tee race (rule 4).** `RoundSetup.loadHoles` took the last answer
+  to arrive. Each choice now takes a number and an answer that is not the
+  latest is dropped, as `CoursePicker`'s read does; a course typed in by
+  hand counts as the latest choice too, so a late tee read cannot overwrite
+  the holes the player entered. (The file is `setup/RoundSetup.tsx`, not
+  `track/RoundSetup.tsx`.) `rounds-setup-race.test` holds the reads open and
+  answers them out of order; it fails without the guard.
+- **Back from a round (rule 8).** Differs from the brief (the address,
+  `replaceState` and a scroll kept in `sessionStorage`): the shell has since
+  gained the shared pieces (`useChSessionState`, and RouteFrame restoring
+  the scroll on Back or Forward), so the library uses them instead of a
+  second mechanism. Its search and grouping are session state per route and
+  team; its place in the list is RouteFrame's. The review's Back was a push,
+  which RouteFrame treats as a new page (top of the list). A review opened
+  from the library now notes it (`screens/rounds/return-state.ts`, this tab)
+  and its Back, on a plain click or the phone bar, steps back in history
+  (CH-11912). Opened any other way, or by a coach, it goes to the address as
+  before. The note is not checked against history: after leaving a review
+  another way and reopening that round, Back steps to the real previous
+  page, which is what Back means.
+- **Left, and why.**
+  - The review's route throws the whole page when the team-membership read
+    fails (`routes/team.ts`, the lead's), while the library catches it. The
+    review keeps that: failing to know who is looking is an error, and the
+    route boundary offers the retry.
+  - A coach's Back from the review still pushes the player's rounds on
+    Stats; that list's filters are Stats'.
+  - The Back step and the scroll restore were observed in jsdom with the
+    real RouteFrame (`rounds-return-state.test`), not in a browser. The
+    review's Back going through `router.back()` into RouteFrame's popstate
+    window is the part to look at on a phone and on the desktop.
+
 ## 2026-10-01 — Page performance: the library and the review, and why the next hole still waits
 
 Owner, 2026-10-01: "Everything page transition and load needs to be extremely

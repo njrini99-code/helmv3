@@ -188,6 +188,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                         <b>{r.course}</b>
                         <em className="ch-num">
                           {shortDay(r.date)} · {r.played.length ? `through ${r.played.length}` : r.holesError ? 'scores didn’t load' : 'not started'}
+                          {r.submitUnchecked ? ' · couldn’t check if posted' : ''}
                         </em>
                       </span>
                       <button type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
