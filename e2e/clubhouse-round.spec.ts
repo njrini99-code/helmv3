@@ -29,7 +29,8 @@ test.afterAll(async () => {
 /** Plays the current hole as a par-4 birdie: driver to the fairway, approach to 10 ft, one putt. */
 async function birdie(page: Page, hole: number) {
   const region = page.getByRole('region', { name: `Hole ${hole}`, exact: true });
-  await expect(region).toBeVisible();
+  // The next hole opens once the last one's save lands ("Saving hole N…"); a dev server can take seconds.
+  await expect(region).toBeVisible({ timeout: 20_000 });
   await page.getByRole('radiogroup', { name: 'Club off tee' }).getByRole('radio', { name: 'Driver', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Shot result' }).getByRole('radio', { name: 'Fairway', exact: true }).click();
   await page.getByRole('group', { name: 'Quick distances' }).getByRole('button', { name: '140', exact: true }).click();
@@ -73,9 +74,8 @@ test('a player sets up a round, saves it for later, continues it and submits all
     await page.getByRole('dialog', { name: 'Exit round' }).getByRole('button', { name: /Save for later/ }).click();
     await page.waitForURL(/\/golf\/dashboard\/rounds(\?|$)/, { timeout: 60_000 });
     await expect(page.getByText(seed.courseName)).toBeVisible();
-    // Save for later's own navigation settles first: a Continue tapped while it is still in flight is pulled back to
-    // the library (swap audit F-59, logged; a second tap works).
-    await page.waitForLoadState('networkidle');
+    // Tapped as soon as it shows: a Save for later that refreshed the library after navigating there used to pull a
+    // quick Continue back to it (swap audit F-59).
     await page.getByRole('link', { name: 'Continue at hole 2' }).click();
     await page.waitForURL(/\/rounds\/continue\//, { timeout: 60_000 });
     await expect(page.getByRole('region', { name: 'Hole 2' })).toBeVisible({ timeout: 60_000 });
@@ -89,6 +89,7 @@ test('a player sets up a round, saves it for later, continues it and submits all
   await test.step('the database holds a completed round with 18 scored holes', async () => {
     await expect.poll(async () => (await seededRounds(seed.playerId)).map((r) => r.status), { timeout: 60_000 }).toEqual(['completed']);
     const [round] = await seededRounds(seed.playerId);
+    if (!round) throw new Error('no round');
     expect(round.total_score).toBe(54);
     expect(await scoredHoles(round.id)).toBe(18);
   });

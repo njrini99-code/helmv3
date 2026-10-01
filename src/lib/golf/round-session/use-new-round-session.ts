@@ -2845,8 +2845,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     // re-save. Set before router.push (async; the listeners stay live until
     // the component actually unmounts).
     roundExitedSafelyRef.current = true;
+    // No router.refresh() after the push (swap audit F-59): the refresh is bound to the library and, landing after a
+    // quick tap on Continue, pulled the player back to it. The push already renders the library fresh (dynamic page,
+    // no staleTimes override), as the continue engine's own Save for later does.
     router.push(routesRef.current.library);
-    router.refresh();
   };
 
   const handleDeleteRound = async () => {
