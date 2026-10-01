@@ -125,6 +125,13 @@ export interface GetInsightsForPlayerOptions {
   categories?: string[];
   minConfidence?: number;
   window_days?: number;
+  /**
+   * Swap audit CH13-21: which returned rows the calling surface actually draws.
+   * Only those are recorded as shown; a row the surface drops (Clubhouse leaves
+   * out cards that state no finding) is returned but never counted as exposed.
+   * Omitted: every returned row counts, as before. A server-side caller only.
+   */
+  drawn?: (insight: EvidenceInsight) => boolean;
 }
 
 export interface GetInsightsForCoachOptions {
@@ -713,7 +720,7 @@ async function getInsightsForPlayerImpl(
   const shown = applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
-  recordExposureForReturned(shown, 'player_feed', null, scoreById);
+  recordExposureForReturned(opts.drawn ? shown.filter(opts.drawn) : shown, 'player_feed', null, scoreById);
   return shown;
 }
 

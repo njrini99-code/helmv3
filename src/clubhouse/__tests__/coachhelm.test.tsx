@@ -1207,7 +1207,7 @@ describe('CoachHelm loaders', () => {
       vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(p1), bigNumber(p1)]);
       tables.current = { golf_drills: { data: [{ id: 'dr-ladder', description: 'Start 2 ft below the hole.' }] } };
       const d = await loadPlayerCoachHelm({ playerId: p1 });
-      expect(getInsightsForPlayer).toHaveBeenCalledWith(p1, { limit: 30 });
+      expect(getInsightsForPlayer).toHaveBeenCalledWith(p1, { limit: 30, drawn: expect.any(Function) }); // CH13-21: only drawn cards count as shown
       expect(d.off).toBeNull();
       expect(d.insights.error).toBe(false);
       expect(d.insights.list.map((i) => i.id)).toEqual(['in-slope', 'in-dbl']);
@@ -1773,7 +1773,7 @@ describe('CoachHelm route', () => {
     expect(screen.queryByRole('region', { name: 'By player' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Assign|Dismiss/ })).toBeNull();
     expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
-    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30 });
+    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawn: expect.any(Function) });
   });
 
   it('CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board', async () => {

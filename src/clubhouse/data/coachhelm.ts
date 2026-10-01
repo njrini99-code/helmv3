@@ -8,7 +8,7 @@ import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
-import { isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
+import { isNote, isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
 import { firstName, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChTourBaseline } from './coachhelm-shape';
 import { loadTourBenchmarks, tourForGender } from './stats-common';
@@ -293,7 +293,8 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   let feed: EvidenceInsight[] = [];
   let threw = false;
   try {
-    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT });
+    // CH13-21: a card that states no finding is not drawn here, so it is not counted as shown.
+    feed = await getInsightsForPlayer(input.playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i) });
   } catch (err) {
     log('feed', err);
     threw = true;

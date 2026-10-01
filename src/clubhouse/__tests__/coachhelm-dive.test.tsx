@@ -304,7 +304,7 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
 
   it('ready: the delivery feed, the category reads and both goal reads for the player id it was given, and only that id', async () => {
     const out = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
-    expect(delivery.insights).toHaveBeenCalledWith('pl-jonah', { limit: 30 });
+    expect(delivery.insights).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawn: expect.any(Function) });
     expect(delivery.themes).toHaveBeenCalledWith('pl-jonah');
     expect(goals.active).toHaveBeenCalledWith('pl-jonah');
     expect(goals.achieved).toHaveBeenCalledWith('pl-jonah');

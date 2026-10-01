@@ -7,7 +7,7 @@ import type { AssembledThemes } from '@/lib/coachhelm/v3/themes/types';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
-import { kindOf } from './coachhelm-classify';
+import { isNote, kindOf } from './coachhelm-classify';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
 import { toChInsight } from './coachhelm-map';
 import { speak } from './coachhelm-voice';
@@ -91,7 +91,8 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const supabase = await createClient();
     let feed: EvidenceInsight[];
     try {
-      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT });
+      // CH13-21: only the cards this page draws count as shown.
+      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i) });
     } catch (err) {
       log('dive.feed', err);
       return { status: 'failed' };
