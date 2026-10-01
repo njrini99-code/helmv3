@@ -246,6 +246,21 @@ items:
       - src/lib/admin/__tests__/selfheal-registry.test.ts
     queued_for_release: false
     first_seen: '2026-09-25T09:05:00Z'
+  - id: retired-runner-key-heartbeat-2026-09-30
+    feature_id: admin_selfheal
+    root_cause: >-
+      selectStageHeartbeat recognised a retired runner only by metadata.method;
+      the retired cloud Diagnose task's 2026-09-30 failed row named itself in
+      metadata.runner, so it decided Diagnose's status again.
+    incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
+    status: verified
+    risk: R1
+    sha: ec225fe22ce5d42995b98d6667135733ba043641
+    pr: 2103
+    regression_tests:
+      - src/lib/admin/__tests__/selfheal-registry.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-30T09:18:00Z'
   - id: exposure-returned-transient-retry-2026-09-27
     feature_id: coachhelm_ai
     root_cause: >-
@@ -337,3 +352,18 @@ items:
       - src/hooks/golf/__tests__/use-message-reactions.test.tsx
     queued_for_release: false
     first_seen: '2026-09-11T03:17:49Z'
+  - id: best-effort-budget-abort-2026-09-30
+    feature_id: coachhelm_ai
+    root_cause: >-
+      fetchShotDriversByCategory and getTopInsightForPlayer's urgent pass logged
+      their own abort-budget trips at 'warning', so NOT A DEFECT closes of
+      8ff00f0e / 20ed2ddd were reopened as REGRESSED by the next abort.
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md
+    status: verified
+    risk: R1
+    sha: 0e1abb150e9fc460b9b64547dd7c82372f6ec6be
+    pr: null
+    regression_tests:
+      - src/lib/coachhelm/__tests__/best-effort-miss.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-02T01:01:46Z'

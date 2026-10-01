@@ -279,4 +279,31 @@ describe('SignalDossier — related context', () => {
     );
     expect(container.textContent).toContain('1.20 est. strokes');
   });
+
+  it('clamps an impossible single-leak strokes figure the way EvidencePanel does', () => {
+    // The evidence panel's own strokes line is omitted in the dossier, so this
+    // stat is the only strokes figure on screen; a stale row once carried
+    // 42 strokes per round.
+    const current = makeSignal({ strokeImpact: -42.5 });
+    const { container } = render(
+      <SignalDossier {...baseProps()} entry={{ signal: current, group: makeGroup([current]) }} />,
+    );
+    expect(container.textContent).toContain('8.00 est. strokes');
+    expect(container.textContent).not.toContain('42.50');
+  });
+
+  it('does not clamp a roster roll-up, whose figure is a sum across players', () => {
+    const rollup = makeSignal({
+      id: 'team:putts_made_3_5ft_pct',
+      kind: 'team_synthesis',
+      category: 'putts_made_3_5ft_pct',
+      playerId: null,
+      strokeImpact: 12.4,
+      evidence: { metric: 'putts_made_3_5ft_pct', metric_label: 'Putts Made 3-5 ft', players_affected: 7 },
+    });
+    const { container } = render(
+      <SignalDossier {...baseProps()} entry={{ signal: rollup, group: makeGroup([rollup]) }} />,
+    );
+    expect(container.textContent).toContain('12.40 est. strokes');
+  });
 });

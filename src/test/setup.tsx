@@ -65,6 +65,9 @@ vi.mock('next/font/google', () => ({
   Space_Grotesk: mockFont,
   Playfair_Display: mockFont,
   Satisfy: mockFont,
+  // Clubhouse (src/clubhouse/lib/fonts.ts)
+  Instrument_Sans: mockFont,
+  JetBrains_Mono: mockFont,
 }));
 
 // Mock Next.js image

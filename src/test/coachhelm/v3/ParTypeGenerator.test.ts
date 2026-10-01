@@ -147,10 +147,18 @@ describe('ParTypeGenerator — Phase E honest window + per-par hole sample', () 
     expect(c.evidence.window_days).toBe(54);
     expect(c.content).not.toContain('90');
   });
-  it('sample_n is the number of holes of that par played, not rounds', () => {
+  // Audit row 13 (2026-09-28): sample_n was the HOLE count while every
+  // "n rounds" reader (signals vocabulary, ranking damping tuned on rounds)
+  // read it as rounds — 51 holes displayed as 51 rounds. Rounds go in
+  // sample_n; the hole count stays in the prose and detail.holes_scored.
+  it('sample_n is ROUNDS; the hole count is carried separately in detail', () => {
     const c = new ParTypeGenerator(PLAYER_ID, 3).composeContent(makeAgg(3, 3.3, 20, { holes_scored: 72 }));
-    expect(c.evidence.sample_n).toBe(72);
+    expect(c.evidence.sample_n).toBe(20);
+    expect(c.evidence.detail?.holes_scored).toBe(72);
+    expect(c.evidence.detail?.sample_unit).toBe('rounds');
+    expect(c.evidence.detail?.window_kind).toBe('lifetime');
     expect(c.content).toContain('72 par 3s');
+    expect(c.content).toContain('20 rounds');
   });
   it('still seeds strokes_impact 0 and stays descriptive (audit contract preserved)', () => {
     const c = new ParTypeGenerator(PLAYER_ID, 4).composeContent(makeAgg(4, 4.4));

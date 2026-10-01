@@ -133,6 +133,11 @@ vi.mock('@/lib/coachhelm/v3/chat/provenance', async (importOriginal) => {
     ...actual,
     auditNumericClaims: mocks.auditNumericClaims,
     collectNumbers: mocks.collectNumbers,
+    // route.ts reads detail numbers through `collectScopedNumbers` since
+    // audit row 47b. The mock keeps returning bare numbers — a bare number is
+    // still a valid (unscoped) `extraSupported` entry — so every existing
+    // assertion about what reaches the audit is unchanged.
+    collectScopedNumbers: (...args: unknown[]) => mocks.collectNumbers(...args),
   };
 });
 vi.mock('@/lib/coachhelm/v3/chat/persistence', () => ({
@@ -213,6 +218,50 @@ describe('POST /coachhelm/v3/chat/stream — grounding-flag persistence (real ai
         data: expect.objectContaining({
           note: expect.stringContaining("could not be traced back to your program's data"),
         }),
+      }),
+    );
+  });
+
+  /**
+   * Audit row 47(c): a failed turn stored `status: 'failed'` and nothing else
+   * durable about WHY. The verdict part now carries the reason kind and the
+   * unmatched tokens, and the ledger row gets the same reason.
+   */
+  it('records the reject reason and unmatched tokens on the message and on the ledger row', async () => {
+    mocks.auditNumericClaims.mockReturnValue([
+      { text: '76.5', value: 76.5, misattributed: true },
+      { text: '81', value: 81 },
+    ] as { text: string; value: number }[]);
+    // The ledger insert needs a client with `.from().insert()`; the default
+    // `{}` admin double makes recordTurnCost bail out before building the row.
+    mocks.createAdminClient.mockReturnValue({ from: () => ({ insert: async () => ({ error: null }) }) } as ReturnType<typeof mocks.createAdminClient>);
+    try {
+      await runPostAndSettle(baseBody);
+    } finally {
+      mocks.createAdminClient.mockReturnValue({});
+    }
+
+    const assistantCall = mocks.appendMessage.mock.calls.find(
+      (call) => (call[1] as { role?: string })?.role === 'assistant',
+    );
+    const persisted = assistantCall![1] as { ui_parts?: unknown[] };
+    expect(persisted.ui_parts).toContainEqual(
+      expect.objectContaining({
+        type: 'data-grounding-flag',
+        data: expect.objectContaining({
+          reason: 'ungrounded_claims',
+          unmatched_tokens: ['76.5', '81'],
+          misattributed_tokens: ['76.5'],
+        }),
+      }),
+    );
+
+    const { buildChatLlmCallRow } = await import('@/lib/coachhelm/v3/llm/chat-call-row');
+    expect(vi.mocked(buildChatLlmCallRow)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        grounded: false,
+        unmatchedTokens: ['76.5', '81'],
+        verdictReason: 'ungrounded_claims',
       }),
     );
   });

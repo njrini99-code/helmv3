@@ -39,6 +39,12 @@ vi.mock('@/lib/coachhelm/v3/engine/hole-diagnosis', async (importOriginal) => {
   };
 });
 
+// The team's gender picks the Tour (Q-88): LPGA for a women's team.
+let teamGender: 'mens' | 'womens' | null = null;
+vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
+  loadPlayerCohort: vi.fn(async () => ({ gender: teamGender })),
+}));
+
 import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap';
 import { computeMeasuredFactors } from '@/lib/coachhelm/v3/engine/generator-base';
 
@@ -68,10 +74,10 @@ function makeAgg(over: Partial<{
   competitive_avg: number;
   practice_count: number;
   competitive_count: number;
-  double_rate_delta: number;
-  three_putt_delta: number;
-  penalty_delta: number;
-  opening3_delta: number;
+  doubles_per18_delta: number;
+  three_putts_per18_delta: number;
+  penalty_per18_delta: number;
+  opening3_strokes_delta: number;
 }> = {}) {
   return {
     sampleN: (over.practice_count ?? 8) + (over.competitive_count ?? 5),
@@ -80,10 +86,16 @@ function makeAgg(over: Partial<{
     competitive_avg: over.competitive_avg ?? 2.3,
     practice_count: over.practice_count ?? 8,
     competitive_count: over.competitive_count ?? 5,
-    double_rate_delta: over.double_rate_delta ?? 0,
-    three_putt_delta: over.three_putt_delta ?? 0,
-    penalty_delta: over.penalty_delta ?? 0,
-    opening3_delta: over.opening3_delta ?? 0,
+    doubles_per18_delta: over.doubles_per18_delta ?? 0,
+    three_putts_per18_delta: over.three_putts_per18_delta ?? 0,
+    penalty_per18_delta: over.penalty_per18_delta ?? 0,
+    opening3_strokes_delta: over.opening3_strokes_delta ?? 0,
+    gap_se: 0.4,
+    noise_band: 1.0,
+    tour_gap: 0.5,
+    tour_label: 'PGA Tour',
+    window_start: null,
+    window_end: null,
   };
 }
 
@@ -134,14 +146,14 @@ describe('C5 pressure gap decomposition', () => {
     const c = g.composeContent(
       makeAgg({
         playerValue: 1.5,
-        double_rate_delta: 8, // +8 pp doubles in competition — the dominant break
-        three_putt_delta: 2,
-        penalty_delta: 1,
-        opening3_delta: 0.1,
+        doubles_per18_delta: 1.4, // +1.4 doubles per 18 in competition — the dominant break
+        three_putts_per18_delta: 0.4,
+        penalty_per18_delta: 0.2,
+        opening3_strokes_delta: 0.1,
       }),
     );
     expect(c.content.toLowerCase()).toContain('double');
-    expect(c.content).toContain('8');
+    expect(c.content).toContain('1.4');
   });
 
   it('a positive gap with no decomposed driver does NOT fabricate one', () => {
@@ -276,12 +288,12 @@ describe('PressureGapGenerator.aggregate (pg-1/pg-2 per-bucket floor)', () => {
     holeRows = [...practiceHoles, ...compHoles];
     const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
     expect(agg).not.toBeNull();
-    // 3/9 competitive holes are double-plus (33.33%) vs 0% practice → +33.3 pp.
-    expect(agg!.double_rate_delta).toBeCloseTo(100 / 3, 4);
-    expect(agg!.three_putt_delta).toBeCloseTo(0, 5);
-    expect(agg!.penalty_delta).toBeCloseTo(0, 5);
-    // Opening 3 holes: competitive +2 each (avg +2.0), practice +0 → +2.0.
-    expect(agg!.opening3_delta).toBeCloseTo(2.0, 5);
+    // 3/9 competitive holes are double-plus vs 0 in practice → +6 per 18 holes.
+    expect(agg!.doubles_per18_delta).toBeCloseTo(6, 4);
+    expect(agg!.three_putts_per18_delta).toBeCloseTo(0, 5);
+    expect(agg!.penalty_per18_delta).toBeCloseTo(0, 5);
+    // Opening 3 holes: competitive +2 each, practice +0 → +6 strokes over the three.
+    expect(agg!.opening3_strokes_delta).toBeCloseTo(6.0, 5);
     // SV-1: every competitive round scored +2.5 → zero dispersion.
     expect(agg!.stddev).toBeCloseTo(0, 5);
     // SV-1 wiring: round_dates must be exposed (the competitive rounds) or the
@@ -296,8 +308,10 @@ describe('PressureGapGenerator.aggregate (pg-1/pg-2 per-bucket floor)', () => {
 
   it('SV-1 is fully wired: the real stddev IS consumed (factors_measured:true, not placeholder)', async () => {
     // Competitive rounds with GENUINE score-to-par spread so stddev > 0.
+    // Practice sits far enough below (−5) that the gap (8) clears its noise
+    // band (t(2) × 1.15 ≈ 5.0) — a gap inside the band is suppressed.
     roundRows = [
-      ...rounds('practice', 3, 0.5),
+      ...rounds('practice', 3, -5),
       { ...rounds('tournament', 1, 1)[0], id: 'tournament-0', round_date: new Date(Date.now() - 1 * 86400_000).toISOString().slice(0, 10) },
       { ...rounds('tournament', 1, 5)[0], id: 'tournament-1', round_date: new Date(Date.now() - 2 * 86400_000).toISOString().slice(0, 10) },
       { ...rounds('tournament', 1, 3)[0], id: 'tournament-2', round_date: new Date(Date.now() - 3 * 86400_000).toISOString().slice(0, 10) },
@@ -327,5 +341,94 @@ describe('PressureGapGenerator.aggregate (pg-1/pg-2 per-bucket floor)', () => {
     // (the exact failure mode this fix closes).
     const withoutDates = computeMeasuredFactors({ ...agg!, round_dates: [] }, 90);
     expect(withoutDates).toBeNull();
+  });
+});
+
+/** Rounds of one type with the given 18-hole to-par values. */
+function roundsWith(round_type: string, values: number[]): Row[] {
+  return values.map((v, i) => ({ ...rounds(round_type, 1, v)[0], id: `${round_type}-v${i}` }));
+}
+
+function holesFor(roundId: string, shape: (h: number) => Partial<HoleRow>): HoleRow[] {
+  return Array.from({ length: 9 }, (_, h) => ({
+    round_id: roundId, hole_number: h + 1, par: 4, score: 4, putts: 2,
+    penalty_strokes: 0, gir: true, up_and_down: false, ...shape(h),
+  }));
+}
+
+describe('audit row 14 — pressure gap accuracy', () => {
+  beforeEach(() => { roundRows = []; holeRows = []; teamGender = null; });
+
+  it('suppresses a gap that sits inside its 95% noise band (Welch SE, t critical)', async () => {
+    // Practice mean 1.0 (spread 4), pressure mean 3.0 (spread 4): gap 2.0,
+    // SE = sqrt(20/3/3 + 20/3/3) ≈ 2.1 → the band is far wider than the gap.
+    roundRows = [
+      ...roundsWith('practice', [-3, 1, 5]),
+      ...roundsWith('tournament', [-1, 3, 7]),
+    ];
+    expect(await new PressureGapGenerator(PLAYER_ID).aggregate()).toBeNull();
+  });
+
+  it('keeps a gap that clears its noise band and reports the band', async () => {
+    roundRows = [
+      ...roundsWith('practice', [0, 1, 0, 1]),
+      ...roundsWith('tournament', [6, 7, 6, 7]),
+    ];
+    const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.playerValue).toBeCloseTo(6);
+    expect(agg!.gap_se).toBeGreaterThan(0);
+    expect(agg!.noise_band).toBeLessThan(6);
+  });
+
+  it('ranks the decomposition on one scale (per 18 holes), so penalties can be the driver', async () => {
+    roundRows = [
+      ...rounds('practice', 3, 0),
+      ...rounds('tournament', 3, 4),
+    ];
+    // Competition: per 9 holes one double (no penalty) and two penalty bogeys.
+    // Old units: doubles +11.1 "pp" outranked penalties +2.0 "per round".
+    // Per 18 holes: doubles +2.0 vs penalty strokes +4.0 → penalties lead.
+    holeRows = [
+      ...['practice-0', 'practice-1', 'practice-2'].flatMap((r) => holesFor(r, () => ({}))),
+      ...['tournament-0', 'tournament-1', 'tournament-2'].flatMap((r) =>
+        holesFor(r, (h) =>
+          h === 5 ? { score: 6, gir: false }
+            : h === 6 || h === 7 ? { score: 5, penalty_strokes: 1, gir: false }
+              : {})),
+    ];
+    const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.doubles_per18_delta).toBeCloseTo(2, 5);
+    expect(agg!.penalty_per18_delta).toBeCloseTo(4, 5);
+    const c = new PressureGapGenerator(PLAYER_ID).composeContent(agg!);
+    expect(c.content).toMatch(/Most of that gap is penalties: \+4\.0 per 18 holes/);
+  });
+
+  it("priority and the only comparison are the team's Tour gap (Q-88, never a college cohort)", () => {
+    const g = new PressureGapGenerator(PLAYER_ID);
+    const c = g.composeContent(makeAgg({ playerValue: 1.5 }));
+    expect(c.priority).toBe('high'); // over the Tour's 0.5
+    expect(c.evidence.comparison_value).toBe(0.5);
+    expect(c.evidence.comparison_label).toBe('PGA Tour pressure gap');
+    expect(c.evidence.comparison_source).toBe('pga_baseline');
+    expect(c.evidence.secondary_value).toBeUndefined();
+    expect(c.content.toLowerCase()).not.toMatch(/college|cohort/);
+    expect(g.composeContent(makeAgg({ playerValue: 0.3 })).priority).toBe('medium');
+    expect(g.composeContent(makeAgg({ playerValue: -0.2 })).priority).toBe('low');
+  });
+
+  it("aggregate labels a women's team with the LPGA Tour", async () => {
+    teamGender = 'womens';
+    roundRows = [
+      ...rounds('practice', 3, 0),
+      ...rounds('tournament', 3, 4),
+    ];
+    const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
+    teamGender = null;
+    expect(agg!.tour_label).toBe('LPGA Tour');
+    expect(agg!.tour_gap).toBe(0.5);
+    const c = new PressureGapGenerator(PLAYER_ID).composeContent(agg!);
+    expect(c.content).toContain('The LPGA Tour gap is ~0.5 strokes.');
   });
 });

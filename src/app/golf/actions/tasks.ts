@@ -242,6 +242,70 @@ export async function completeTask(
   return observedCompleteTask(taskId, _uploadUrl, notes);
 }
 
+/**
+ * Undo a player's own completion (an accidental tick): their assignment goes back
+ * to pending and the parent task's status is rolled up again. Only the signed-in
+ * player's own assignment is touched, and only a completed one; the notes stay.
+ */
+async function uncompleteTaskImpl(taskId: string): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: player, error: playerError } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (playerError || !player) {
+      return { success: false, error: 'Player not found' };
+    }
+
+    // Note: golf_task_assignments may not be in generated types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: updated, error: updateError } = await (supabase as any)
+      .from('golf_task_assignments')
+      .update({ status: 'pending', completed_at: null })
+      .eq('task_id', taskId)
+      .eq('player_id', player.id)
+      .eq('status', 'completed')
+      .select('id') as { data: Array<{ id: string }> | null; error: { message: string } | null };
+
+    if (updateError) {
+      await logServerError(`[uncompleteTask Update Error]: ${describeError(updateError)}`, { action: 'tasks.uncompleteTask' });
+      return { success: false, error: "Couldn't reopen the task. Please try again." };
+    }
+    // No row changed: not this player's completed task (or a policy hid it). Saying it worked would be a lie.
+    if (!updated || updated.length === 0) {
+      return { success: false, error: 'This task is not marked done for you.' };
+    }
+
+    await syncTaskStatusFromAssignments(supabase, taskId);
+
+    revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    return { success: true };
+  } catch (error) {
+    await logServerError(`[uncompleteTask Error]: ${describeError(error)}`, { action: 'tasks.uncompleteTask' });
+    return formatSafeErrorResponse(error);
+  }
+}
+
+const observedUncompleteTask = withAdminObserved(
+  'uncompleteTask',
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
+  uncompleteTaskImpl,
+);
+
+export async function uncompleteTask(taskId: string): Promise<ActionResult> {
+  return observedUncompleteTask(taskId);
+}
+
 // ============================================================================
 // CREATE TASK (Coach only)
 // ============================================================================

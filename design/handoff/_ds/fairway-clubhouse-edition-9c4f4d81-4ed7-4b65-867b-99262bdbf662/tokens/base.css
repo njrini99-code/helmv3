@@ -1,0 +1,9 @@
+.fairway{background:var(--bg-page);color:var(--text-primary);font:var(--type-body);letter-spacing:-0.003em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:"ss01","cv05"}
+.fairway *,.fairway *::before,.fairway *::after{box-sizing:border-box}
+.fairway a{color:var(--text-primary);text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:3px}
+.fairway a:hover{text-decoration-color:currentColor}
+.fairway ::selection{background:var(--green-100);color:var(--ink-900)}
+.fw-num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.fw-display{font-family:var(--font-display);font-weight:600;letter-spacing:var(--tracking-display);font-variation-settings:"wdth" 88}
+.fw-overline{font:var(--type-overline);letter-spacing:var(--tracking-overline);color:var(--text-tertiary)}
+@media (prefers-reduced-motion:reduce){.fairway *{transition-duration:1ms!important;animation-duration:1ms!important}}

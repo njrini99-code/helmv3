@@ -13,6 +13,8 @@
 
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { getBenchmarkData, type BenchmarkLevel } from './sg-benchmarks';
+import { PUTTING_BENCHMARK_MIN_SAMPLE } from './benchmarks/putting';
+import { TOUR_STANDARDS, type TourKey, type TourPuttBand } from './benchmarks/tour';
 
 // ============================================
 // LOCAL TYPE DEFINITIONS
@@ -150,6 +152,7 @@ export function getExpectedStrokes(
   return baseline[minDist] ?? 3.0;
 }
 
+
 // ============================================
 // STATISTICAL STRENGTHS & WEAKNESSES
 // ============================================
@@ -159,100 +162,68 @@ export function getExpectedStrokes(
  * evidence, and shot-type/distance specificity.
  */
 export interface StatisticalStrengthWeakness {
-  category: string;           // e.g., "Approach 125-150 yds", "Putting 5-10ft"
+  category: string;           // e.g., "Putting 5-10ft", "SG: Approach"
   subcategory: string;        // e.g., "approach", "putting", "driving", "scrambling", "scoring"
-  label: string;              // Human-readable: "GIR from 125-150 yards"
-  detail: string;             // Specific insight: "Hitting 72% GIR (benchmark: 60%)"
+  label: string;              // Human-readable: "Putting 5-10ft make rate"
+  detail: string;             // Specific insight: "45% (PGA Tour: 62%), -0.9 strokes/round"
   strokeImpact: number;       // Positive = gaining strokes, negative = losing strokes
   playerValue: number;        // The player's actual metric value
-  benchmark: number;          // What they're compared against
+  benchmark: number;          // What they're compared against (the Tour value)
   unit: string;               // "%", "strokes/round", "per round"
   trend?: 'improving' | 'declining' | 'stable';
   confidence: number;         // 0-1 how reliable this insight is
   recommendation?: string;    // What to do about it (for weaknesses)
 }
 
-// Benchmarks for college-level competitive golf
+// TOUR-ONLY GRADING (owner decision Q-93, 2026-09-30: "change it all to PGA
+// moving forward"). Every non-SG item below compares the player with the Tour
+// value from `golf_pga_standards` (`./benchmarks/tour.ts`): the PGA Tour for a
+// men's team, the LPGA Tour for a women's team. The old `COLLEGE_BENCHMARKS`
+// table (D1-style targets) is gone.
 //
-// NOTE ON STROKES GAINED (2026-07-25): there are deliberately no `sgTee` /
-// `sgApproach` / `sgAroundGreen` / `sgPutting` constants here any more. They
-// used to be `0`, i.e. PGA-Tour scratch, which made every SG category a
-// "weakness" for essentially every college player: measured across the 30
-// players in `golf_player_stats_cache`, SG Approach was negative for 30/30 and
-// SG Putting for 29/30. The list told almost everyone the same three things and
-// buried each player's genuine weak link.
+// WHAT AN "EST. STROKES" VALUE IS. `strokeImpact` = (gap to the Tour, on the
+// Tour's own band and basis) x (the player's OWN event count per 18 holes,
+// from the stats counts) x (a per-event cost that is a definitional lower
+// bound). The per-event costs are the `STROKES_PER_*` constants below: a holed
+// putt versus a miss saves at least the next putt, a penalty is one stroke, a
+// failed save is par-or-better versus bogey-or-worse, a double-or-worse is at
+// least one stroke worse than the bogey it would most plausibly have been.
+// They are floors, not measurements, so the figure is an estimate; the spine
+// prints it with an "est." suffix (`buildPriorities`). No volume is guessed:
+// the old hard-coded putts-per-round and approaches-per-round constants are
+// gone.
 //
-// SG categories are now graded **self-relatively** in `addSGCandidates` —
-// each category against the player's own average category SG. That is the
-// actual question a strengths/weaknesses list should answer ("which part of MY
-// game is the weak link"), and it is automatically division- and
-// gender-neutral, because a lower overall level shifts all four categories
-// together. The percentage benchmarks below stay absolute; those are calibrated
-// to this population (see the scrambling note).
-const COLLEGE_BENCHMARKS = {
-  // Putting make percentages
-  puttMake0_3: 98,
-  puttMake3_5: 75,
-  puttMake5_10: 45,
-  puttMake10_15: 25,
-  puttMake15_20: 15,
+// ITEMS DROPPED, NOT APPROXIMATED, because the Tour has no value on the same
+// basis: 0-3 ft putts, 15-20 ft putts (an exact Tour 15-25 ft band needs a
+// 20-25 ft count that GolfStats does not expose), 3-putts per round, GIR by
+// distance band, GIR from fairway / rough, par-5 GIR, fairway %, overall
+// scrambling %, birdies per round, and the tee-shot miss pattern (its -0.2
+// impact was an invented constant). The qualifying-vs-practice gap is also
+// gone: GolfStats holds a raw-score average over qualifier rounds only, while
+// the Tour value (`practice_tournament_delta`) is a to-par delta over
+// tournament and qualifier rounds; the Standing drill already shows that gap
+// on the right basis.
+//
+// STROKES GAINED (2026-07-25). There are deliberately no `sgTee` /
+// `sgApproach` / `sgAroundGreen` / `sgPutting` Tour constants here (they would
+// be `0`). Graded against the Tour's zero, every SG category was a "weakness"
+// for essentially every college player (SG Approach negative for 30/30
+// players, SG Putting for 29/30 in `golf_player_stats_cache`), which buried
+// each player's genuine weak link. SG categories are graded **self-relatively**
+// in `addSGCandidates`: each against the player's own average category SG.
+// That is not a division benchmark, and it is automatically level- and
+// gender-neutral because a lower overall level shifts all four categories
+// together.
 
-  // GIR overall + by par
-  girPct: 60,
-  girPctPar3: 50,
-  girPctPar4: 55,
-  girPctPar5: 75,
+/** Floors for the cost of one event, in strokes. See the note above. */
+const STROKES_PER_PUTT_MADE = 1;
+const STROKES_PER_PENALTY = 1;
+const STROKES_PER_FAILED_SAVE = 1;
+const STROKES_PER_BIG_NUMBER = 1;
 
-  // GIR by distance
-  girPct50_75: 85,
-  girPct75_100: 75,
-  girPct100_125: 70,
-  girPct125_150: 60,
-  girPct150_175: 50,
-  girPct175_200: 40,
-  girPct200_225: 30,
-  girPct225Plus: 20,
-
-  // GIR by lie
-  girFromFairway: 68,
-  girFromRough: 42,
-
-  // Driving
-  fairwayPct: 60,
-
-  // Scrambling
-  //
-  // RECALIBRATED 2026-07-25. `scramblingPct` was 55, which **no player in the
-  // population could reach** — measured across `golf_player_stats_cache`:
-  // mean 32.6%, median 33.7%, max 50.0%. A bar above the population maximum
-  // makes scrambling an unconditional weakness for 30/30 players, which is
-  // noise, not a finding. `scramblingPct` is now the measured population median
-  // (34). `scramblingFromRough` / `scramblingFromSand` are NOT independently
-  // measured — the stats cache has no rough/sand scrambling split — so they are
-  // rescaled to preserve the original relative ordering (rough ≈ 0.91×,
-  // sand ≈ 0.82× of overall). Treat those two as provisional.
-  scramblingPct: 34,
-  scramblingFromRough: 31,
-  scramblingFromSand: 28,
-
-  // Putting efficiency (strokes to hole out)
-  puttEff5_10: 1.5,
-  puttEff10_15: 1.8,
-  puttEff15_20: 2.0,
-
-  // Three putts
-  threePuttsPerRound: 0.8,
-
-  // Scoring
-  birdiesPerRound: 3.0,
-  doublePlusPerRound: 1.0,
-
-  // Penalties
-  penaltiesPerRound: 0.5,
-
-  // Pressure
-  qualifyingVsPracticeGap: 1.5,
-};
+function finite(n: number | null | undefined): number | null {
+  return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
 
 interface StrengthWeaknessCandidate {
   category: string;
@@ -267,24 +238,30 @@ interface StrengthWeaknessCandidate {
   confidence: number;
   recommendation?: string;
   /**
-   * What `benchmark` represents, when it is not an absolute standard. SG
-   * categories are graded against the player's own category average, so calling
-   * that a "benchmark" in user-facing copy would be misleading.
-   * Defaults to "benchmark" when omitted.
+   * What `benchmark` represents. SG categories are graded against the player's
+   * own category average, so calling that a "benchmark" in user-facing copy
+   * would be misleading; the Tour items name the tour ("PGA Tour" / "LPGA
+   * Tour"). Defaults to "benchmark" when omitted.
    */
   benchmarkLabel?: string;
 }
 
 /**
- * Generates rich, statistically-backed strengths and weaknesses
- * from detailed GolfStats. Analyzes 30+ specific metrics across
- * distance ranges, lies, and shot types.
+ * Generates strengths and weaknesses from detailed GolfStats: the four
+ * strokes-gained categories (self-relative) plus the items that have a Tour
+ * value (putting 3-15 ft, penalties, sand saves, big numbers).
+ *
+ * `tour` picks the Tour the player is compared with: 'lpga' for a women's team,
+ * 'pga' otherwise (`tourFor(team.gender)`). It is required: GolfStats carries
+ * no gender, so a default would silently grade a women's player against the
+ * PGA Tour.
  *
  * Returns top 3 strengths (positive stroke impact) and
  * top 3 weaknesses (negative stroke impact).
  */
 export function generateStatisticalStrengthsWeaknesses(
-  stats: GolfStats
+  stats: GolfStats,
+  tour: TourKey,
 ): {
   strengths: StatisticalStrengthWeakness[];
   weaknesses: StatisticalStrengthWeakness[];
@@ -299,25 +276,16 @@ export function generateStatisticalStrengthsWeaknesses(
   addSGCandidates(stats, candidates);
 
   // ─── PUTTING BY DISTANCE ────────────────────────────────────
-  addPuttingCandidates(stats, candidates);
+  addPuttingCandidates(stats, tour, candidates);
 
-  // ─── GIR BY DISTANCE ───────────────────────────────────────
-  addGIRCandidates(stats, candidates);
+  // ─── PENALTIES ──────────────────────────────────────────────
+  addPenaltyCandidates(stats, tour, candidates);
 
-  // ─── GIR BY LIE ────────────────────────────────────────────
-  addGIRByLieCandidates(stats, candidates);
+  // ─── SAND SAVES ─────────────────────────────────────────────
+  addSandSaveCandidates(stats, tour, candidates);
 
-  // ─── DRIVING ────────────────────────────────────────────────
-  addDrivingCandidates(stats, candidates);
-
-  // ─── SCRAMBLING ─────────────────────────────────────────────
-  addScramblingCandidates(stats, candidates);
-
-  // ─── SCORING PATTERNS ───────────────────────────────────────
-  addScoringCandidates(stats, candidates);
-
-  // ─── PRESSURE ───────────────────────────────────────────────
-  addPressureCandidates(stats, candidates);
+  // ─── BIG NUMBERS ────────────────────────────────────────────
+  addBigNumberCandidates(stats, tour, candidates);
 
   // Split into strengths (positive impact) and weaknesses (negative impact)
   const strengths = candidates
@@ -335,6 +303,11 @@ export function generateStatisticalStrengthsWeaknesses(
   return { strengths, weaknesses };
 }
 
+/** One decimal when the value is a whole tenth (0.3), two otherwise (0.36). */
+function perRoundText(value: number): string {
+  return Number.isInteger(Math.round(value * 100) / 10) ? value.toFixed(1) : value.toFixed(2);
+}
+
 function toStatisticalSW(c: StrengthWeaknessCandidate): StatisticalStrengthWeakness {
   const isStrength = c.strokeImpact > 0;
   const sign = c.strokeImpact >= 0 ? '+' : '';
@@ -348,7 +321,7 @@ function toStatisticalSW(c: StrengthWeaknessCandidate): StatisticalStrengthWeakn
   } else if (c.unit === 'strokes/round') {
     detail = `${c.playerValue >= 0 ? '+' : ''}${c.playerValue.toFixed(2)} (${benchLabel}: ${c.benchmark >= 0 ? '+' : ''}${c.benchmark.toFixed(2)}), ${impactStr}`;
   } else if (c.unit === 'per round') {
-    detail = `${c.playerValue.toFixed(1)} per round (${benchLabel}: ${c.benchmark.toFixed(1)}), ${impactStr}`;
+    detail = `${perRoundText(c.playerValue)} per round (${benchLabel}: ${perRoundText(c.benchmark)}), ${impactStr}`;
   } else {
     detail = `${c.playerValue.toFixed(1)} ${c.unit} (${benchLabel}: ${c.benchmark.toFixed(1)}), ${impactStr}`;
   }
@@ -376,17 +349,17 @@ function addSGCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate
     value: number | null;
     rec: string;
   }> = [
-    { key: 'tee', label: 'SG: Off the Tee', value: stats.sgTeePerRound, rec: 'Focus on tee shot accuracy: fairway hitting drills and club selection.' },
-    { key: 'approach', label: 'SG: Approach', value: stats.sgApproachPerRound, rec: 'Work on iron play from various distances and lies.' },
-    { key: 'around', label: 'SG: Around the Green', value: stats.sgAroundGreenPerRound, rec: 'Dedicate practice to chipping and pitching within 30 yards.' },
-    { key: 'putting', label: 'SG: Putting', value: stats.sgPuttingPerRound, rec: 'Invest in putting practice, especially distance control.' },
+    { key: 'tee', label: 'SG: Off the Tee', value: finite(stats.sgTeePerRound), rec: 'Focus on tee shot accuracy: fairway hitting drills and club selection.' },
+    { key: 'approach', label: 'SG: Approach', value: finite(stats.sgApproachPerRound), rec: 'Work on iron play from various distances and lies.' },
+    { key: 'around', label: 'SG: Around the Green', value: finite(stats.sgAroundGreenPerRound), rec: 'Dedicate practice to chipping and pitching within 30 yards.' },
+    { key: 'putting', label: 'SG: Putting', value: finite(stats.sgPuttingPerRound), rec: 'Invest in putting practice, especially distance control.' },
   ];
 
-  // Self-relative baseline (see the SG note on COLLEGE_BENCHMARKS): each
-  // category is graded against the player's OWN average category SG rather than
-  // PGA scratch. A category below the player's own mean is a genuine weak link;
-  // one above it is a genuine strength. Because a lower overall standard shifts
-  // all four categories together, this needs no division or gender adjustment.
+  // Self-relative baseline (see the SG note above): each category is graded
+  // against the player's OWN average category SG rather than the Tour's zero.
+  // A category below the player's own mean is a genuine weak link; one above
+  // it is a genuine strength. Because a lower overall level shifts all four
+  // categories together, this needs no level or gender adjustment.
   const present = sgEntries.filter(
     (e): e is typeof e & { value: number } => e.value !== null,
   );
@@ -415,356 +388,191 @@ function addSGCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate
 
 // ── Putting by Distance ──────────────────────────────────────────────────────
 
-function addPuttingCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate[]): void {
-  const puttRanges: Array<{
-    label: string;
-    value: number | null;
-    benchmark: number;
-    puttsPerRound: number;
-  }> = [
-    { label: 'Putting 0-3ft', value: stats.puttMakePct0_3, benchmark: COLLEGE_BENCHMARKS.puttMake0_3, puttsPerRound: 4.5 },
-    { label: 'Putting 3-5ft', value: stats.puttMakePct3_5, benchmark: COLLEGE_BENCHMARKS.puttMake3_5, puttsPerRound: 2.5 },
-    { label: 'Putting 5-10ft', value: stats.puttMakePct5_10, benchmark: COLLEGE_BENCHMARKS.puttMake5_10, puttsPerRound: 3.0 },
-    { label: 'Putting 10-15ft', value: stats.puttMakePct10_15, benchmark: COLLEGE_BENCHMARKS.puttMake10_15, puttsPerRound: 2.0 },
-    { label: 'Putting 15-20ft', value: stats.puttMakePct15_20, benchmark: COLLEGE_BENCHMARKS.puttMake15_20, puttsPerRound: 1.5 },
-  ];
+/** The putting distance bands with an exact Tour band (`putts_made_*_pct`). */
+const TOUR_PUTT_BAND_FIELDS = [
+  { band: '3_5', label: '3-5ft', pct: 'puttMakePct3_5', count: 'puttMakeCount3_5' },
+  { band: '5_10', label: '5-10ft', pct: 'puttMakePct5_10', count: 'puttMakeCount5_10' },
+  { band: '10_15', label: '10-15ft', pct: 'puttMakePct10_15', count: 'puttMakeCount10_15' },
+] as const satisfies ReadonlyArray<{
+  band: TourPuttBand;
+  label: string;
+  pct: keyof GolfStats;
+  count: keyof GolfStats;
+}>;
 
-  for (const range of puttRanges) {
-    if (range.value === null) continue;
-    // Each % point of make rate saves ~0.01 strokes per putt in that range
-    const deltaPct = range.value - range.benchmark;
-    const strokeImpact = (deltaPct / 100) * range.puttsPerRound;
+/** The distance range `puttingStrokesVsTour` covers, for the copy that quotes it. */
+export const PUTTING_VS_TOUR_RANGE = '3 to 15 ft';
 
+interface PuttingBandImpact {
+  label: string;
+  makePct: number;
+  tourPct: number;
+  /** Estimated strokes per round, negative = behind the Tour. */
+  strokeImpact: number;
+}
+
+/**
+ * Estimated strokes per round each gradable putting band gains or loses
+ * against the Tour: (make % - Tour make %) x the player's putts in that band
+ * per 18 holes x one stroke per holed putt. A band needs
+ * PUTTING_BENCHMARK_MIN_SAMPLE putts, the same floor the benchmark sheet uses.
+ */
+function puttingBandImpacts(stats: GolfStats, tour: TourKey): PuttingBandImpact[] {
+  const holes = finite(stats.holesPlayed);
+  if (holes === null || holes <= 0) return [];
+  const tourPutts = TOUR_STANDARDS[tour].putts;
+
+  const impacts: PuttingBandImpact[] = [];
+  for (const def of TOUR_PUTT_BAND_FIELDS) {
+    const makePct = finite(stats[def.pct]);
+    const putts = finite(stats[def.count]);
+    if (makePct === null || putts === null || putts < PUTTING_BENCHMARK_MIN_SAMPLE) continue;
+    const tourPct = tourPutts[def.band];
+    const puttsPer18 = (putts / holes) * 18;
+    impacts.push({
+      label: def.label,
+      makePct,
+      tourPct,
+      strokeImpact: ((makePct - tourPct) / 100) * puttsPer18 * STROKES_PER_PUTT_MADE,
+    });
+  }
+  return impacts;
+}
+
+/**
+ * Net estimated strokes per round putting gains (positive) or costs (negative)
+ * against the Tour across the 3-15 ft bands that have a Tour value and enough
+ * putts; null when no band qualifies. Drives the Putting drill's cost line.
+ */
+export function puttingStrokesVsTour(
+  stats: GolfStats,
+  tour: TourKey,
+): { strokes: number; bands: number } | null {
+  const impacts = puttingBandImpacts(stats, tour);
+  if (impacts.length === 0) return null;
+  return { strokes: impacts.reduce((sum, i) => sum + i.strokeImpact, 0), bands: impacts.length };
+}
+
+function addPuttingCandidates(
+  stats: GolfStats,
+  tour: TourKey,
+  candidates: StrengthWeaknessCandidate[],
+): void {
+  const tourName = TOUR_STANDARDS[tour].label;
+  for (const impact of puttingBandImpacts(stats, tour)) {
+    const deltaPct = impact.makePct - impact.tourPct;
     candidates.push({
-      category: range.label,
+      category: `Putting ${impact.label}`,
       subcategory: 'putting',
-      label: range.label + ' make rate',
-      playerValue: range.value,
-      benchmark: range.benchmark,
+      label: `Putting ${impact.label} make rate`,
+      playerValue: impact.makePct,
+      benchmark: impact.tourPct,
+      benchmarkLabel: tourName,
       unit: '%',
-      strokeImpact,
+      strokeImpact: impact.strokeImpact,
       confidence: Math.min(1, stats.roundsPlayed / 8),
       recommendation: deltaPct < 0
-        ? `Practice putts in this range. ${Math.abs(deltaPct).toFixed(0)}% below benchmark.`
-        : undefined,
-    });
-  }
-
-  // Three-putts
-  if (stats.threePuttsPerRound !== null) {
-    const delta = COLLEGE_BENCHMARKS.threePuttsPerRound - stats.threePuttsPerRound;
-    // Each three-putt costs ~1 extra stroke
-    const strokeImpact = delta;
-    candidates.push({
-      category: 'Three-Putt Avoidance',
-      subcategory: 'putting',
-      label: 'Three-putts per round',
-      playerValue: stats.threePuttsPerRound,
-      benchmark: COLLEGE_BENCHMARKS.threePuttsPerRound,
-      unit: 'per round',
-      strokeImpact,
-      confidence: Math.min(1, stats.roundsPlayed / 6),
-      recommendation: delta < 0
-        ? `Averaging ${stats.threePuttsPerRound.toFixed(1)} three-putts/round. Work on lag putting to get inside 3ft.`
+        ? `Practice putts in this range. ${Math.abs(deltaPct).toFixed(0)} points below the ${tourName} make rate.`
         : undefined,
     });
   }
 }
 
-// ── GIR by Distance ──────────────────────────────────────────────────────────
+// ── Penalties ────────────────────────────────────────────────────────────────
 
-function addGIRCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate[]): void {
-  const girRanges: Array<{
-    label: string;
-    value: number | null;
-    benchmark: number;
-    approachesPerRound: number;
-  }> = [
-    { label: 'GIR 50-75 yds', value: stats.girPct50_75, benchmark: COLLEGE_BENCHMARKS.girPct50_75, approachesPerRound: 1.5 },
-    { label: 'GIR 75-100 yds', value: stats.girPct75_100, benchmark: COLLEGE_BENCHMARKS.girPct75_100, approachesPerRound: 2.0 },
-    { label: 'GIR 100-125 yds', value: stats.girPct100_125, benchmark: COLLEGE_BENCHMARKS.girPct100_125, approachesPerRound: 2.5 },
-    { label: 'GIR 125-150 yds', value: stats.girPct125_150, benchmark: COLLEGE_BENCHMARKS.girPct125_150, approachesPerRound: 3.0 },
-    { label: 'GIR 150-175 yds', value: stats.girPct150_175, benchmark: COLLEGE_BENCHMARKS.girPct150_175, approachesPerRound: 2.5 },
-    { label: 'GIR 175-200 yds', value: stats.girPct175_200, benchmark: COLLEGE_BENCHMARKS.girPct175_200, approachesPerRound: 2.0 },
-    { label: 'GIR 200-225 yds', value: stats.girPct200_225, benchmark: COLLEGE_BENCHMARKS.girPct200_225, approachesPerRound: 1.0 },
-    { label: 'GIR 225+ yds', value: stats.girPct225Plus, benchmark: COLLEGE_BENCHMARKS.girPct225Plus, approachesPerRound: 0.5 },
-  ];
+function addPenaltyCandidates(
+  stats: GolfStats,
+  tour: TourKey,
+  candidates: StrengthWeaknessCandidate[],
+): void {
+  const perRound = finite(stats.penaltiesPerRound);
+  if (perRound === null) return;
+  const { label: tourName, penaltiesPerRound: tourRate } = TOUR_STANDARDS[tour];
+  const delta = tourRate - perRound;
+  if (Math.abs(delta) <= 0.1) return;
 
-  for (const range of girRanges) {
-    if (range.value === null) continue;
-    // Missing a GIR costs ~0.4 strokes on average (scramble vs birdie putt)
-    const deltaPct = range.value - range.benchmark;
-    const strokeImpact = (deltaPct / 100) * range.approachesPerRound * 0.4;
-
-    candidates.push({
-      category: range.label,
-      subcategory: 'approach',
-      label: range.label,
-      playerValue: range.value,
-      benchmark: range.benchmark,
-      unit: '%',
-      strokeImpact,
-      confidence: Math.min(1, stats.roundsPlayed / 8),
-      recommendation: deltaPct < 0
-        ? `Hitting ${range.value.toFixed(0)}% GIR at this distance (${Math.abs(deltaPct).toFixed(0)}% below target). Focus on this distance range in practice.`
-        : undefined,
-    });
-  }
+  candidates.push({
+    category: 'Penalty Avoidance',
+    subcategory: 'driving',
+    label: 'Penalties per round',
+    playerValue: perRound,
+    benchmark: tourRate,
+    benchmarkLabel: tourName,
+    unit: 'per round',
+    strokeImpact: delta * STROKES_PER_PENALTY,
+    confidence: Math.min(1, stats.roundsPlayed / 6),
+    recommendation: delta < 0
+      ? `Averaging ${perRound.toFixed(1)} penalties/round, against ${tourRate.toFixed(1)} on the ${tourName}. Course management and conservative club choices on tight holes.`
+      : undefined,
+  });
 }
 
-// ── GIR by Lie ──────────────────────────────────────────────────────────────
+// ── Sand saves ───────────────────────────────────────────────────────────────
 
-function addGIRByLieCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate[]): void {
-  if (stats.girPctFromFairway !== null) {
-    const deltaPct = stats.girPctFromFairway - COLLEGE_BENCHMARKS.girFromFairway;
-    // Roughly 8 approaches per round from the fairway
-    const strokeImpact = (deltaPct / 100) * 8 * 0.4;
-    candidates.push({
-      category: 'GIR from Fairway',
-      subcategory: 'approach',
-      label: 'GIR when hitting from fairway',
-      playerValue: stats.girPctFromFairway,
-      benchmark: COLLEGE_BENCHMARKS.girFromFairway,
-      unit: '%',
-      strokeImpact,
-      confidence: Math.min(1, stats.roundsPlayed / 6),
-      recommendation: deltaPct < 0
-        ? `Only ${stats.girPctFromFairway.toFixed(0)}% GIR from the fairway. Iron play needs work even from good lies.`
-        : undefined,
-    });
-  }
+function addSandSaveCandidates(
+  stats: GolfStats,
+  tour: TourKey,
+  candidates: StrengthWeaknessCandidate[],
+): void {
+  const savePct = finite(stats.sandSavePercentage);
+  const attempts = finite(stats.sandSaveAttempts);
+  const holes = finite(stats.holesPlayed);
+  if (savePct === null || attempts === null || attempts < 5 || holes === null || holes <= 0) return;
 
-  if (stats.girPctFromRough !== null) {
-    const deltaPct = stats.girPctFromRough - COLLEGE_BENCHMARKS.girFromRough;
-    // Roughly 4 approaches per round from the rough
-    const strokeImpact = (deltaPct / 100) * 4 * 0.4;
-    candidates.push({
-      category: 'GIR from Rough',
-      subcategory: 'approach',
-      label: 'GIR when hitting from rough',
-      playerValue: stats.girPctFromRough,
-      benchmark: COLLEGE_BENCHMARKS.girFromRough,
-      unit: '%',
-      strokeImpact,
-      confidence: Math.min(1, stats.roundsPlayed / 6),
-      recommendation: deltaPct < 0
-        ? `Only ${stats.girPctFromRough.toFixed(0)}% GIR from rough (benchmark: ${COLLEGE_BENCHMARKS.girFromRough}%). Practice iron shots from thick lies.`
-        : undefined,
-    });
-  }
+  const { label: tourName, scramblingPct } = TOUR_STANDARDS[tour];
+  const tourPct = scramblingPct.sand;
+  const deltaPct = savePct - tourPct;
+  const attemptsPer18 = (attempts / holes) * 18;
+
+  candidates.push({
+    category: 'Sand Saves',
+    subcategory: 'scrambling',
+    label: 'Sand save percentage',
+    playerValue: savePct,
+    benchmark: tourPct,
+    benchmarkLabel: tourName,
+    unit: '%',
+    strokeImpact: (deltaPct / 100) * attemptsPer18 * STROKES_PER_FAILED_SAVE,
+    confidence: Math.min(1, attempts / 15),
+    recommendation: deltaPct < 0
+      ? `Sand save rate ${savePct.toFixed(0)}%, against ${tourPct}% on the ${tourName}. Prioritize greenside bunker practice.`
+      : undefined,
+  });
 }
 
-// ── Driving ──────────────────────────────────────────────────────────────────
+// ── Big numbers ──────────────────────────────────────────────────────────────
 
-function addDrivingCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate[]): void {
-  if (stats.fairwayPercentage !== null) {
-    const deltaPct = stats.fairwayPercentage - COLLEGE_BENCHMARKS.fairwayPct;
-    // ~14 fairway opportunities per round, missing costs ~0.3 strokes (rough vs fairway approach)
-    const strokeImpact = (deltaPct / 100) * 14 * 0.3;
+function addBigNumberCandidates(
+  stats: GolfStats,
+  tour: TourKey,
+  candidates: StrengthWeaknessCandidate[],
+): void {
+  // Holes, not rounds: `doublePlusPerRound` divides by the round count, which
+  // overstates the rate whenever a 9-hole round is in the mix, and the Tour
+  // value is per 100 holes.
+  const doubles = finite(stats.totalDoublePlus);
+  const holes = finite(stats.holesPlayed);
+  if (doubles === null || holes === null || holes <= 0) return;
 
-    candidates.push({
-      category: 'Fairway Accuracy',
-      subcategory: 'driving',
-      label: 'Fairway hit percentage',
-      playerValue: stats.fairwayPercentage,
-      benchmark: COLLEGE_BENCHMARKS.fairwayPct,
-      unit: '%',
-      strokeImpact,
-      confidence: Math.min(1, stats.roundsPlayed / 6),
-      recommendation: deltaPct < 0
-        ? `Hitting ${stats.fairwayPercentage.toFixed(0)}% fairways. Consider club selection off the tee and alignment drills.`
-        : undefined,
-    });
-  }
+  const { label: tourName, bigNumbersPer100Holes } = TOUR_STANDARDS[tour];
+  const perRound = (doubles / holes) * 18;
+  const tourPerRound = (bigNumbersPer100Holes / 100) * 18;
+  const delta = tourPerRound - perRound;
+  const strokeImpact = delta * STROKES_PER_BIG_NUMBER;
+  if (Math.abs(strokeImpact) <= 0.1) return;
 
-  // Driving miss pattern (if heavily one-sided)
-  if (stats.missLeftPct !== null && stats.missRightPct !== null) {
-    const totalMisses = stats.missLeftCount + stats.missRightCount;
-    if (totalMisses > 10) {
-      const leftPct = stats.missLeftPct;
-      const rightPct = stats.missRightPct;
-      const dominant = leftPct > rightPct ? 'left' : 'right';
-      const dominantPct = Math.max(leftPct, rightPct);
-
-      // Only flag if miss pattern is heavily one-sided (>65%)
-      if (dominantPct > 65) {
-        candidates.push({
-          category: `Tee Shot Miss Pattern`,
-          subcategory: 'driving',
-          label: `Misses ${dominant} ${dominantPct.toFixed(0)}% of the time`,
-          playerValue: dominantPct,
-          benchmark: 50, // Balanced is 50/50
-          unit: '%',
-          // A one-sided miss pattern costs about 0.2-0.3 strokes (harder to play for one shape)
-          strokeImpact: -0.2,
-          confidence: Math.min(1, totalMisses / 30),
-          recommendation: `${dominantPct.toFixed(0)}% of tee shot misses go ${dominant}. Work with coach on swing path and face angle to develop a more balanced shot shape.`,
-        });
-      }
-    }
-  }
-
-  // Penalties
-  if (stats.penaltiesPerRound !== null) {
-    const delta = COLLEGE_BENCHMARKS.penaltiesPerRound - stats.penaltiesPerRound;
-    // Each penalty costs ~1 stroke
-    const strokeImpact = delta;
-    if (Math.abs(delta) > 0.1) {
-      candidates.push({
-        category: 'Penalty Avoidance',
-        subcategory: 'driving',
-        label: 'Penalties per round',
-        playerValue: stats.penaltiesPerRound,
-        benchmark: COLLEGE_BENCHMARKS.penaltiesPerRound,
-        unit: 'per round',
-        strokeImpact,
-        confidence: Math.min(1, stats.roundsPlayed / 6),
-        recommendation: delta < 0
-          ? `Averaging ${stats.penaltiesPerRound.toFixed(1)} penalties/round. Course management and conservative club choices on tight holes.`
-          : undefined,
-      });
-    }
-  }
+  candidates.push({
+    category: 'Big Number Avoidance',
+    subcategory: 'scoring',
+    label: 'Doubles+ per round',
+    playerValue: perRound,
+    benchmark: tourPerRound,
+    benchmarkLabel: tourName,
+    unit: 'per round',
+    strokeImpact,
+    confidence: Math.min(1, stats.roundsPlayed / 6),
+    recommendation: delta < 0
+      ? `Averaging ${perRound.toFixed(1)} double bogeys or worse per 18 holes, against ${tourPerRound.toFixed(1)} on the ${tourName}. Focus on course management and avoiding big mistakes.`
+      : undefined,
+  });
 }
-
-// ── Scrambling ──────────────────────────────────────────────────────────────
-
-function addScramblingCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate[]): void {
-  if (stats.scramblingPercentage !== null) {
-    const deltaPct = stats.scramblingPercentage - COLLEGE_BENCHMARKS.scramblingPct;
-    // ~7 scramble attempts per round (18 holes * ~40% miss GIR), each failed scramble costs ~0.5 strokes
-    const scrambleAttempts = Math.max(1, stats.scrambleAttempts / Math.max(1, stats.roundsPlayed));
-    const strokeImpact = (deltaPct / 100) * scrambleAttempts * 0.5;
-
-    candidates.push({
-      category: 'Overall Scrambling',
-      subcategory: 'scrambling',
-      label: 'Scrambling percentage',
-      playerValue: stats.scramblingPercentage,
-      benchmark: COLLEGE_BENCHMARKS.scramblingPct,
-      unit: '%',
-      strokeImpact,
-      confidence: Math.min(1, stats.roundsPlayed / 6),
-      recommendation: deltaPct < 0
-        ? `Scrambling at ${stats.scramblingPercentage.toFixed(0)}% (target: ${COLLEGE_BENCHMARKS.scramblingPct}%). Focus on up-and-down practice from common miss areas.`
-        : undefined,
-    });
-  }
-
-  // Scrambling from sand
-  if (stats.sandSavePercentage !== null && stats.sandSaveAttempts >= 5) {
-    const deltaPct = stats.sandSavePercentage - COLLEGE_BENCHMARKS.scramblingFromSand;
-    const sandAttempts = stats.sandSaveAttempts / Math.max(1, stats.roundsPlayed);
-    const strokeImpact = (deltaPct / 100) * sandAttempts * 0.5;
-
-    candidates.push({
-      category: 'Sand Saves',
-      subcategory: 'scrambling',
-      label: 'Sand save percentage',
-      playerValue: stats.sandSavePercentage,
-      benchmark: COLLEGE_BENCHMARKS.scramblingFromSand,
-      unit: '%',
-      strokeImpact,
-      confidence: Math.min(1, stats.sandSaveAttempts / 15),
-      recommendation: deltaPct < 0
-        ? `Sand save rate ${stats.sandSavePercentage.toFixed(0)}% (target: ${COLLEGE_BENCHMARKS.scramblingFromSand}%). Prioritize greenside bunker practice.`
-        : undefined,
-    });
-  }
-}
-
-// ── Scoring Patterns ────────────────────────────────────────────────────────
-
-function addScoringCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate[]): void {
-  // Birdie rate
-  if (stats.birdiesPerRound !== null) {
-    const delta = stats.birdiesPerRound - COLLEGE_BENCHMARKS.birdiesPerRound;
-    // Each extra birdie saves 1 stroke
-    candidates.push({
-      category: 'Birdie Making',
-      subcategory: 'scoring',
-      label: 'Birdies per round',
-      playerValue: stats.birdiesPerRound,
-      benchmark: COLLEGE_BENCHMARKS.birdiesPerRound,
-      unit: 'per round',
-      strokeImpact: delta,
-      confidence: Math.min(1, stats.roundsPlayed / 6),
-      recommendation: delta < 0
-        ? `Averaging ${stats.birdiesPerRound.toFixed(1)} birdies/round (target: ${COLLEGE_BENCHMARKS.birdiesPerRound}). Attack par 5s and short par 4s more aggressively.`
-        : undefined,
-    });
-  }
-
-  // Double bogey+ rate (big number avoidance)
-  if (stats.doublePlusPerRound !== null) {
-    const delta = COLLEGE_BENCHMARKS.doublePlusPerRound - stats.doublePlusPerRound;
-    // Each double bogey costs ~2 strokes vs par
-    const strokeImpact = delta * 2;
-    if (Math.abs(strokeImpact) > 0.1) {
-      candidates.push({
-        category: 'Big Number Avoidance',
-        subcategory: 'scoring',
-        label: 'Doubles+ per round',
-        playerValue: stats.doublePlusPerRound,
-        benchmark: COLLEGE_BENCHMARKS.doublePlusPerRound,
-        unit: 'per round',
-        strokeImpact,
-        confidence: Math.min(1, stats.roundsPlayed / 6),
-        recommendation: delta < 0
-          ? `Averaging ${stats.doublePlusPerRound.toFixed(1)} double bogeys+/round. Focus on course management and avoiding big mistakes.`
-          : undefined,
-      });
-    }
-  }
-
-  // Par 5 GIR (scoring opportunities)
-  if (stats.girPctPar5 !== null) {
-    const deltaPct = stats.girPctPar5 - COLLEGE_BENCHMARKS.girPctPar5;
-    // ~4 par 5s per round, GIR on par 5 creates eagle/birdie chances
-    const strokeImpact = (deltaPct / 100) * 4 * 0.5;
-
-    candidates.push({
-      category: 'Par 5 GIR',
-      subcategory: 'scoring',
-      label: 'GIR on par 5s',
-      playerValue: stats.girPctPar5,
-      benchmark: COLLEGE_BENCHMARKS.girPctPar5,
-      unit: '%',
-      strokeImpact,
-      confidence: Math.min(1, stats.roundsPlayed / 6),
-      recommendation: deltaPct < 0
-        ? `Only ${stats.girPctPar5.toFixed(0)}% GIR on par 5s (target: ${COLLEGE_BENCHMARKS.girPctPar5}%). These are scoring holes: work on long approach play.`
-        : undefined,
-    });
-  }
-}
-
-// ── Pressure Performance ────────────────────────────────────────────────────
-
-function addPressureCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate[]): void {
-  if (
-    stats.qualifyingScoringAvg !== null &&
-    stats.practiceScoringAvg !== null &&
-    stats.qualifyingRounds >= 3 &&
-    stats.practiceRounds >= 3
-  ) {
-    const gap = stats.qualifyingScoringAvg - stats.practiceScoringAvg;
-    // Gap directly translates to strokes lost in competition
-    if (Math.abs(gap) > 0.5) {
-      candidates.push({
-        category: 'Pressure Performance',
-        subcategory: 'scoring',
-        label: 'Qualifying vs practice scoring gap',
-        playerValue: gap,
-        benchmark: COLLEGE_BENCHMARKS.qualifyingVsPracticeGap,
-        unit: 'strokes',
-        strokeImpact: gap > COLLEGE_BENCHMARKS.qualifyingVsPracticeGap ? -(gap - COLLEGE_BENCHMARKS.qualifyingVsPracticeGap) : 0,
-        confidence: Math.min(1, Math.min(stats.qualifyingRounds, stats.practiceRounds) / 5),
-        recommendation: gap > COLLEGE_BENCHMARKS.qualifyingVsPracticeGap
-          ? `Scoring ${gap.toFixed(1)} strokes higher in qualifying than practice. Work on pre-round routines, on-course mental game, and simulating pressure in practice.`
-          : undefined,
-      });
-    }
-  }
-}
-

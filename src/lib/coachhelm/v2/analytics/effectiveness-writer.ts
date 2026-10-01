@@ -487,6 +487,7 @@ async function backfillInsightOutcomes(
       'player_id, round_date, total_score, score_to_par, strokes_gained_total, strokes_gained_putting, strokes_gained_approach, strokes_gained_tee, strokes_gained_around_green, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible',
     )
     .in('player_id', playerIds)
+    .eq('is_test', false)
     .gte('round_date', earliestNeededIso.split('T')[0]);
 
   if (roundErr) {

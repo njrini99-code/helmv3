@@ -42,11 +42,15 @@
 import { m } from 'framer-motion';
 import { useRouteRevealMotion } from '@/lib/motion/route-motion';
 import { isGolfLateralDestination } from '@/lib/golf/nav-registry';
+import { useInClubhouse } from '@/clubhouse/shell/context';
 
 export default function DashboardTemplate({ children }: { children: React.ReactNode }) {
   // Back/forward lands instantly: swipe-back already showed its own motion
   // (audit MOT-12). Pushes keep the short opacity reveal.
   const reveal = useRouteRevealMotion(isGolfLateralDestination, { instantOnPop: true });
+  // Clubhouse owns its route transition (src/clubhouse/shell/RouteFrame.tsx).
+  const inClubhouse = useInClubhouse();
+  if (inClubhouse) return <>{children}</>;
   return (
     <m.div
       key={reveal.routeKey}

@@ -17,6 +17,7 @@
  * ========================================================================== */
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { tourOnlyEvidence } from '@/lib/coachhelm/v2/insights/tour-only';
 import type { InsightComparisonSource, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
 import type { ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import { resolveMetricDirection } from '@/lib/coachhelm/focus-areas/direction';
@@ -282,6 +283,8 @@ export function comparisonName(source: InsightComparisonSource | undefined, labe
       return 'team';
     case 'pga_baseline':
       return 'Tour';
+    case 'cohort_avg':
+      return 'college cohort';
     case 'your_baseline':
       return 'own baseline';
     case 'd1_avg':
@@ -425,7 +428,8 @@ export function buildClaim(
   rounds: ScoutingRound[],
   activeAreas: ScoutingFocusArea[],
 ): ScoutingClaim {
-  const e = insight.evidence;
+  // Q-88: a stored college comparison never reaches the page (tour-only.ts).
+  const e = tourOnlyEvidence(insight.evidence);
   const unit = e.unit;
   const n = Number.isFinite(e.sample_n) ? e.sample_n : 0;
   const quality = readQuality(insight);

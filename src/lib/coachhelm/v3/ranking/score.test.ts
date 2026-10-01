@@ -5,6 +5,8 @@ import {
   sampleDamping,
   DAMP_MIN,
   scoreInsight,
+  scoreInsightFactors,
+  scoreInsightWithCalibration,
   URGENT_SHORT_CIRCUIT,
 } from './score';
 import type { RankableInsight } from './score';
@@ -231,5 +233,56 @@ describe('scoreInsight exemption', () => {
       metric: 'scoring_par_4', sample_n: 15,
     });
     expect(scoreInsight(par, {})).toBeGreaterThan(0);
+  });
+});
+
+describe('scoreInsightFactors (audit row 51: the factors behind a stored score)', () => {
+  it('returns the same score as scoreInsight plus every multiplier', () => {
+    const ins: RankableInsight = {
+      insight_type: 'putt_distance',
+      strokes_impact: 0.9,
+      confidence: 0.8,
+      metric: 'putts_made_5_10ft_pct',
+      priority: 'medium',
+      sample_n: 3,
+    };
+    const f = scoreInsightFactors(ins, {});
+    expect(f.score).toBe(scoreInsight(ins, {}));
+    expect(f.magnitude_basis).toBe('strokes');
+    expect(f.magnitude).toBeCloseTo(0.9);
+    expect(f.sample_damping).toBeCloseTo(0.5);
+    expect(f.score).toBeCloseTo(
+      f.magnitude * f.confidence * f.coach_weight * f.goal_boost * f.coachability * f.sample_damping,
+      10,
+    );
+  });
+
+  it('names the priority floor when the impact rounds to zero', () => {
+    const f = scoreInsightFactors(
+      { insight_type: 'approach_miss', strokes_impact: 0, confidence: 1, metric: 'approach_proximity_50_125ft', priority: 'high' },
+      {},
+    );
+    expect(f.magnitude_basis).toBe('priority_floor');
+  });
+
+  it('names an exempt zero for descriptive metrics', () => {
+    const f = scoreInsightFactors(
+      { insight_type: 'par_scoring', strokes_impact: 0, confidence: 1, metric: 'scoring_par_4', priority: 'low' },
+      {},
+    );
+    expect(f.magnitude_basis).toBe('exempt_zero');
+    expect(f.score).toBe(0);
+  });
+});
+
+describe('scoreInsightWithCalibration (defect 4: documented no-op)', () => {
+  it('never touches the database and returns the raw-confidence score', async () => {
+    const sb = new Proxy({}, {
+      get: () => {
+        throw new Error('calibration must not read the database');
+      },
+    }) as unknown as Parameters<typeof scoreInsightWithCalibration>[2];
+    const ins: RankableInsight = { insight_type: 'putt_distance', strokes_impact: 1.2, confidence: 0.35 };
+    await expect(scoreInsightWithCalibration(ins, {}, sb)).resolves.toBe(scoreInsight(ins, {}));
   });
 });

@@ -15,6 +15,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { recapDateWindow } from '@/lib/coachhelm/v3/recap/window';
+import { isCountableRound } from '@/lib/golf/round-countable';
 
 type Sb = SupabaseClient<Database>;
 
@@ -26,7 +27,16 @@ export interface WeeklyRecap {
   week_end_iso: string;
   totals: {
     rounds_played: number;
-    insights_surfaced: number;
+    /** Visible insights first detected this week (created_at in the window). */
+    insights_new: number;
+    /**
+     * Visible insights detected earlier whose row was refreshed this week
+     * (updated_at in the window). created_at is frozen at first detection, so
+     * counting only created rows reported 15 while 474 of 521 visible insights
+     * changed that week (audit row 10). updated_at moves on every refresh,
+     * so this is "updated", never "new".
+     */
+    insights_updated: number;
     goals_active: number;
     avg_score_to_par: number | null;
   };
@@ -84,13 +94,16 @@ export async function buildWeeklyRecap(
   if (playerIds.length > 0) {
     const { data: rounds } = await sb
       .from('golf_rounds')
-      .select('player_id, score_to_par')
+      .select('player_id, score_to_par, holes_played, total_score, front_nine, back_nine, total_putts')
       .in('player_id', playerIds)
+      .eq('is_test', false)
       .eq('status', 'completed')
       // DATE column — filter on calendar days, not instants.
       .gte('round_date', window.startDate)
       .lte('round_date', window.endDate);
-    for (const r of rounds ?? []) {
+    // A hole-less or implausible round (e.g. a 37-stroke 18) must not count
+    // toward rounds or the average — the same rule every stat surface uses.
+    for (const r of (rounds ?? []).filter(isCountableRound)) {
       totalRounds += 1;
       const slot = perPlayer.get(r.player_id) ?? { rounds: 0, sum: 0, n: 0 };
       slot.rounds += 1;
@@ -121,7 +134,8 @@ export async function buildWeeklyRecap(
     .slice(0, 3);
 
   // Insights this week
-  let insightsCount = 0;
+  let insightsNew = 0;
+  let insightsUpdated = 0;
   const insightTypeCount = new Map<string, Set<string>>();
   if (playerIds.length > 0) {
     // Apply the SAME product-visibility contract (P2): the weekly recap email's
@@ -131,13 +145,21 @@ export async function buildWeeklyRecap(
     const { data: insights } = await applyInsightVisibility(
       sb
         .from('golf_coach_insights')
-        .select('insight_type, player_id, created_at')
+        .select('insight_type, player_id, created_at, updated_at')
         .in('player_id', playerIds)
-        .gte('created_at', weekStart.toISOString())
+        .gte('updated_at', weekStart.toISOString())
         .lte('created_at', weekEnd.toISOString()),
     );
-    insightsCount = (insights ?? []).length;
+    const startMs = weekStart.getTime();
+    const endMs = weekEnd.getTime();
+    const inWindow = (iso: string | null) => {
+      const t = iso ? Date.parse(iso) : NaN;
+      return t >= startMs && t <= endMs;
+    };
     for (const row of insights ?? []) {
+      if (inWindow(row.created_at)) insightsNew += 1;
+      else if (inWindow(row.updated_at)) insightsUpdated += 1;
+      else continue;
       if (!row.player_id) continue;
       if (!insightTypeCount.has(row.insight_type)) insightTypeCount.set(row.insight_type, new Set());
       insightTypeCount.get(row.insight_type)!.add(row.player_id);
@@ -167,7 +189,8 @@ export async function buildWeeklyRecap(
     week_end_iso: weekEnd.toISOString(),
     totals: {
       rounds_played: totalRounds,
-      insights_surfaced: insightsCount,
+      insights_new: insightsNew,
+      insights_updated: insightsUpdated,
       goals_active: goalsActive,
       avg_score_to_par: scoredRounds > 0 ? totalScoreToPar / scoredRounds : null,
     },

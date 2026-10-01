@@ -18,6 +18,7 @@ import {
   type SelectionCandidate,
 } from './types';
 import { canConfirmSelection } from './state-machine';
+import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 
 type Sb = SupabaseClient<Database>;
 
@@ -55,14 +56,18 @@ export async function loadQualifyingWorkspace(
 
   if (qErr || !q) return null;
 
-  const { data: sels } = await supabase
-    .from('golf_qualifier_selections')
-    .select('qualifier_id, player_id, selection_type, coach_reasoning, selected_at, selected_by_user_id')
-    .eq('qualifier_id', qualifier_id);
+  // The pick reasoning comes through the coach-gated reader (D-35), not the column.
+  const [{ data: sels }, { reasons }] = await Promise.all([
+    supabase
+      .from('golf_qualifier_selections')
+      .select('qualifier_id, player_id, selection_type, selected_at, selected_by_user_id')
+      .eq('qualifier_id', qualifier_id),
+    readQualifierSelectionReasons(supabase, qualifier_id),
+  ]);
 
   const selByPlayer = new Map<string, QualifierSelection>();
-  for (const s of (sels ?? []) as QualifierSelection[]) {
-    selByPlayer.set(s.player_id, s);
+  for (const s of (sels ?? []) as Array<Omit<QualifierSelection, 'coach_reasoning'>>) {
+    selByPlayer.set(s.player_id, { ...s, coach_reasoning: reasons.get(s.player_id) ?? null });
   }
 
   // Project entries → candidates (filter out malformed rows defensively)

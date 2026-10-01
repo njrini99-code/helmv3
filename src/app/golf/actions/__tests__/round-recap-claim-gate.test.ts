@@ -252,6 +252,13 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+
+// Season context now comes from the player's countable, non-test rounds
+// (recap-season-context.ts), not golf_player_stats_cache.
+vi.mock('@/lib/golf/recap-season-context', () => ({
+  loadRecapSeasonContext: vi.fn(async () => mockStats),
+}));
+
 import { generateRoundRecap } from '../round-recap';
 import { logServerError } from '@/lib/server-error-logger';
 import { buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
@@ -641,7 +648,7 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
     mockRpcOverridePersisted = false; // this call's UPDATE touched zero rows — a concurrent call already won
     const winnerText = "Someone else's generation won the race and is what's actually stored.";
     winnerAiRecap = winnerText;
-    const thisCallsOwnText = 'This call generated its own text, but it lost the race and was never stored.';
+    const thisCallsOwnText = 'This call generated its own text. It lost the race and was never stored.';
     generateTextMock.mockResolvedValueOnce({ text: thisCallsOwnText, usage: { inputTokens: 20, outputTokens: 20 } });
 
     const result = await generateRoundRecap('round-1');
@@ -663,7 +670,7 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
     isFlagEnabledMock.mockReturnValue(false);
     mockRpcOverridePersisted = false;
     winnerReadError = { message: 'connection reset', code: '08006' };
-    const thisCallsOwnText = 'This call generated its own text, but it lost the race and was never stored.';
+    const thisCallsOwnText = 'This call generated its own text. It lost the race and was never stored.';
     generateTextMock.mockResolvedValueOnce({ text: thisCallsOwnText, usage: { inputTokens: 20, outputTokens: 20 } });
 
     const result = await generateRoundRecap('round-1');

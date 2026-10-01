@@ -148,7 +148,6 @@ const NON_CRM_ACTION_FILES = [
   'insight-attribution.ts',
   'insight-celebration.ts',
   'insight-delivery.ts',
-  'insight-evidence.ts',
   'insight-management.ts',
   'insights.ts',
   'intelligence-dashboard.ts',

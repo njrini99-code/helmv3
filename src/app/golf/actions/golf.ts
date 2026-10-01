@@ -39,6 +39,7 @@ import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
+import { findShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
@@ -52,6 +53,8 @@ import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { assertHolesPlayedMatchesPayload } from '@/lib/golf/holes-played-assert';
 import { validateRoundEntry, validateHolesPlayed, firstBlockingPartialHoleIssue, clampPuttDistanceFeet } from '@/lib/golf/round-entry-validation';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
+import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { isUuid } from '@/lib/utils/uuid';
 import {
   createHelmFlightRecorder,
   recordRescuedStepOutcome,
@@ -2307,6 +2310,20 @@ async function submitGolfRoundComprehensiveImpl(
     );
     const shotsCount = shotsPayload.reduce((sum, group) => sum + group.shots.length, 0);
 
+    // Audit row 46: per-shot SG assumes each shot starts where the previous
+    // one ended. Flag (never refuse) a submitted ledger that does not chain,
+    // so a discontinuity shows up in telemetry instead of silently shifting
+    // strokes gained between shots. Info-level: this is data quality, not an
+    // outage.
+    const chainBreaks = findShotChainDiscontinuities(shotsPayload);
+    if (chainBreaks.length > 0) {
+      void logServerEvent(`Round submit: ${chainBreaks.length} shot-chain discontinuities`, {
+        action: 'submitGolfRoundComprehensive.shotChain',
+        featureArea: 'shot_tracking',
+        extra: { shotsCount, discontinuities: chainBreaks.slice(0, 20) },
+      });
+    }
+
     const attemptDirectSubmitFallback = async (
       _roundId: string,
       _path: 'existing_round' | 'new_round_rpc',
@@ -4468,11 +4485,36 @@ async function setQualifierRoundCoursesImpl(
   roundCourses: QualifierRoundCourseInput[],
 ): Promise<ActionResult> {
   try {
+    if (!isUuid(qualifierId)) {
+      return { success: false, error: 'That qualifier link isn’t valid.' };
+    }
+    if (roundCourses.some((rc) => [rc.courseId, rc.teeId].some((id) => id != null && !isUuid(id)))) {
+      return { success: false, error: 'A round’s course or tees aren’t valid. Choose them again.' };
+    }
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'You must be signed in to edit a qualifier' };
+    }
+
+    // The caller must coach the qualifier's team before anything is written;
+    // RLS stays the second gate. The team comes from the row, never the caller.
+    const { data: owner, error: ownerError } = await supabase.from('golf_qualifiers').select('team_id').eq('id', qualifierId).maybeSingle();
+    if (ownerError) {
+      await logServerError(`setQualifierRoundCourses: qualifier read failed: ${ownerError.message}`, { action: 'setQualifierRoundCourses.access', featureArea: 'qualifiers' }, 'warning');
+      return { success: false, error: 'Couldn’t check this qualifier. Try again.' };
+    }
+    if (!owner) {
+      return { success: false, error: 'That qualifier wasn’t found. It may have been deleted.' };
+    }
+    const access = await verifyTeamAccess(owner.team_id, user.id, supabase);
+    if (!access.allowed) {
+      return {
+        success: false,
+        error: access.reason === 'unavailable' ? 'Couldn’t confirm your access to this team. Try again.' : 'Only a coach of this team can change this qualifier.',
+      };
     }
 
     // Never coerce a malformed update into a one-round qualifier. That turns a
@@ -4558,7 +4600,7 @@ async function setQualifierRoundCoursesImpl(
 
 const observedSetQualifierRoundCourses = withAdminObserved(
   'setQualifierRoundCourses',
-  { sport: 'golf', feature: 'qualifiers' },
+  { sport: 'golf', feature: 'qualifiers', demoSafe: true },
   setQualifierRoundCoursesImpl,
 );
 

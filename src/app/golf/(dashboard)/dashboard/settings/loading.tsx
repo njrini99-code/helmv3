@@ -1,6 +1,8 @@
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface, ViewHeader } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
 
 /**
  * Route Suspense fallback for /golf/dashboard/settings.
@@ -17,6 +19,10 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * the exact classnames used there.
  */
 export default function SettingsLoading() {
+  return <ClubhouseSwitch clubhouse={<SettingsSkeleton />} fallback={<FairwaySettingsLoading />} />;
+}
+
+function FairwaySettingsLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">

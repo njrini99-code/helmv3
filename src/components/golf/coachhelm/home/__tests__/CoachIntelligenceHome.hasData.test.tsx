@@ -12,18 +12,27 @@
  * out — this file only exercises the gate, not the desk's own behavior
  * (covered by `buildTriageViewModel.test.ts` + manual QA).
  * ========================================================================== */
+import type React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CoachIntelligenceHome } from '../CoachIntelligenceHome';
 import type { TeamOverviewResult, TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
-import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
+import type { PlayersGridViewProps } from '@/components/fairway';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }),
 }));
 
+// The desk is mocked, but it must still render what it is handed for Home:
+// the overview-failure notice travels in `homeLead` (or `homeNotice`), not
+// as a sibling of the desk.
 vi.mock('@/components/golf/coachhelm/triage/TriageDesk', () => ({
-  TriageDesk: () => <div data-testid="triage-desk" />,
+  TriageDesk: ({ homeLead, homeNotice }: { homeLead?: React.ReactNode; homeNotice?: React.ReactNode }) => (
+    <div data-testid="triage-desk">
+      {homeLead}
+      {homeNotice}
+    </div>
+  ),
 }));
 
 function overview(playerCount: number): TeamOverviewResult {
@@ -32,7 +41,7 @@ function overview(playerCount: number): TeamOverviewResult {
     data: {
       teamComposite: 62,
       teamCategories: { teeGame: 60, approach: 58, shortGame: 65, putting: 63, scoring: 61 },
-      teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [] },
+      teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [], teamAvgSG: null, penaltyStrokes: 0 },
       playerCount,
       statsRowCount: playerCount,
     },
@@ -69,13 +78,6 @@ function playersDrillProps(players: PlayersGridViewProps['players']): PlayersGri
   };
 }
 
-const effectivenessDrillProps: FairwayEffectivenessProps = {
-  teamId: 'team-1',
-  coachId: 'coach-1',
-  initialView: 'cockpit',
-  initialRange: '30d',
-};
-
 describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () => {
   it('shows onboarding when the overview loaded fine and the roster is genuinely empty', () => {
     render(
@@ -83,12 +85,12 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         command={null}
         overview={overview(0)}
         categoryInsights={emptyCategoryInsights}
+        teamIntelligence={{ success: false, error: 'not fetched in this test' }}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
@@ -102,12 +104,12 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         command={null}
         overview={overview(5)}
         categoryInsights={emptyCategoryInsights}
+        teamIntelligence={{ success: false, error: 'not fetched in this test' }}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
@@ -121,12 +123,12 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         command={null}
         overview={failedOverview('Query timed out')}
         categoryInsights={emptyCategoryInsights}
+        teamIntelligence={{ success: false, error: 'not fetched in this test' }}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
@@ -142,12 +144,12 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         command={null}
         overview={failedOverview()}
         categoryInsights={emptyCategoryInsights}
+        teamIntelligence={{ success: false, error: 'not fetched in this test' }}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never, { id: 'p-2' } as never])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 

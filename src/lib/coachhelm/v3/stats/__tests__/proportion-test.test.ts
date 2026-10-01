@@ -41,3 +41,15 @@ describe('twoProportionZTest', () => {
     expect(r.reason).toBe('effect_too_small');
   });
 });
+
+describe('twoProportionZTest alpha option', () => {
+  it('a per-call alpha tightens the significance gate without moving the default', () => {
+    // p ≈ 0.03: significant at 0.05, not at the two-band 0.025.
+    const loose = twoProportionZTest(14, 20, 7, 20, { minPerSide: 8 });
+    const strict = twoProportionZTest(14, 20, 7, 20, { minPerSide: 8, alpha: 0.025 });
+    expect(loose.pValue).toBeGreaterThan(0.025);
+    expect(loose.pValue).toBeLessThan(0.05);
+    expect(loose.significant).toBe(true);
+    expect(strict.significant).toBe(false);
+  });
+});

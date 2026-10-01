@@ -81,6 +81,7 @@ interface RoundData {
   // page's TS type reflects the columns it now threads through to
   // `FilmstripReview` -> `RoundSGSummary`.
   strokes_gained_total: number | null;
+  team_id?: string | null;
   strokes_gained_tee: number | null;
   strokes_gained_approach: number | null;
   strokes_gained_around_green: number | null;
@@ -840,6 +841,7 @@ export default function RoundReviewPage() {
           holes={round.holes ?? []}
           playerName={isCoachViewer ? viewedPlayerName : null}
           strokesGainedTotal={round.strokes_gained_total}
+          teamId={round.team_id ?? null}
           strokesGainedTee={round.strokes_gained_tee}
           strokesGainedApproach={round.strokes_gained_approach}
           strokesGainedAroundGreen={round.strokes_gained_around_green}

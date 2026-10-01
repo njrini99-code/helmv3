@@ -138,6 +138,11 @@ interface CronSummary {
    */
   method_version_column_missing?: boolean;
   /**
+   * v3: true when at least one insert had to drop the control/interval
+   * columns because migration 20260928230000 is not applied yet.
+   */
+  control_columns_missing?: boolean;
+  /**
    * A9 slice 1: successfully wrote a CLEAN `method_version: 'comparable_
    * opportunities_v1'` row (see `causality/comparable-attribute.ts`) for one
    * of the shot-level "needs-shot-level-join" metrics — no confounding
@@ -655,13 +660,35 @@ async function handle(): Promise<NextResponse> {
       // unapplied (production apply is owner-only; see supabase/migrations/
       // HELD.md's own convention for a prepared-not-applied additive column).
       // Every other field above is still the real, checked column shape.
+      // v3 (deep audit row 35): the control window and the lift interval.
+      // Migration 20260928230000 adds these columns; until it is applied the
+      // insert degrades to the row without them (method_version kept), so the
+      // lift is still written and only the interval is not persisted.
+      const controlColumns = {
+        control_value: row.control_value,
+        n_rounds_control: row.n_rounds_control,
+        lift_ci_low: row.lift_ci_low,
+        lift_ci_high: row.lift_ci_high,
+        lift_z: row.lift_z,
+      };
       let { error: insErr } = await fromUntyped(sb, 'golf_insight_outcome_attribution')
         .insert({
           ...attributionRow,
           // N10: distinguishes this row from a pre-fix v1 row (NULL). See
           // src/lib/coachhelm/v3/causality/attribute.ts's file header.
           method_version: row.method_version,
+          ...controlColumns,
         });
+      // A missing method_version means neither migration is applied (the
+      // control columns come later), so that case goes straight to the bare
+      // row below; any other unknown column is one of the control columns.
+      if (insErr && isUnknownColumnError(insErr) && !`${insErr.message ?? ''}`.includes('method_version')) {
+        summary.control_columns_missing = true;
+        ({ error: insErr } = await fromUntyped(sb, 'golf_insight_outcome_attribution').insert({
+          ...attributionRow,
+          method_version: row.method_version,
+        }));
+      }
       if (insErr && isUnknownColumnError(insErr)) {
         // Migration not applied yet -- degrade to the pre-N10 row shape
         // rather than failing every attribution write until the owner
@@ -716,8 +743,10 @@ async function handle(): Promise<NextResponse> {
       });
 
       // Update coach weight EMA for (coach, insight_type, intent='general').
-      // P0-01: learning is driven by `improvement_lift` — the direction-CORRECTED
-      // signal — never the raw delta. A drop in a lower-is-better metric is a
+      // v3: learning is driven by `lift_z` — the controlled, direction-
+      // corrected lift divided by its standard error, so units cannot saturate
+      // the tanh (a percent metric and a stroke metric share one scale).
+      // P0-01: never the raw delta. A drop in a lower-is-better metric is a
       // positive improvement_lift and so correctly RAISES the weight.
       // Skip entirely when improvement_lift is null: nextWeight no-ops on null
       // (returns prev unchanged), so the upsert would only re-write the
@@ -725,11 +754,11 @@ async function handle(): Promise<NextResponse> {
       // freshly-wiped weights table with zero-evidence baseline rows that LOOK
       // like learned state, and touching updated_at on real rows without any
       // weight movement.
-      if (c.coach_id && row.improvement_lift !== null) {
+      if (c.coach_id && row.lift_z !== null) {
         const weightErr = await updateCoachWeight(sb, {
           coach_id: c.coach_id,
           insight_type: c.insight_type,
-          lift: row.improvement_lift,
+          lift: row.lift_z,
         });
         if (weightErr) {
           await logServerError(

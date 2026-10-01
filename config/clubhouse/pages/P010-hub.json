@@ -1,0 +1,279 @@
+{
+  "id": "P010",
+  "name": "Team Hub",
+  "slug": "hub",
+  "bridgeNamespace": 10,
+  "routes": [
+    "/golf/dashboard/team-hub"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "player_hub",
+    "team_communications",
+    "team_operations"
+  ],
+  "progressRow": "Team Hub",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "complete",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md)",
+    "desktop": [
+      "design/handoff/Coach - Team Hub.html",
+      "design/handoff/Player - Team Hub.html",
+      "design/handoff/hub.jsx",
+      "design/handoff/hub.css",
+      "design/handoff/hub-data.js"
+    ],
+    "phone": [
+      "design/handoff/Coach and Player - Team Hub - Mobile.html",
+      "design/handoff/hub.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/hub",
+    "loader": "src/clubhouse/data/hub.ts",
+    "route": "src/clubhouse/routes/hub.tsx",
+    "styles": "src/clubhouse/styles/hub.css",
+    "tests": [
+      "src/clubhouse/__tests__/hub.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/hub.md",
+  "checklist": "docs/clubhouse/screens/team-hub.md",
+  "phoneSpec": "docs/clubhouse/phone/team-hub.md",
+  "actions": [
+    {
+      "id": "ACT-P010-REPLY",
+      "label": "Reply to an event (player)",
+      "component": "src/clubhouse/screens/hub/parts.tsx#Rsvps",
+      "handler": "onReply",
+      "service": "src/app/golf/actions/golf.ts#respondToEvent",
+      "data": [
+        "golf_event_attendance"
+      ],
+      "bridge": {
+        "success": 100901,
+        "failure": 100601,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-ACKNOWLEDGE",
+      "label": "Acknowledge a post with Got it (player)",
+      "component": "src/clubhouse/screens/hub/parts.tsx#Announcement",
+      "handler": "onAck",
+      "service": "src/app/golf/actions/communication.ts#acknowledgeAnnouncement",
+      "data": [
+        "golf_announcement_acknowledgements"
+      ],
+      "bridge": {
+        "failure": 100602,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-COMPLETE-TASK",
+      "label": "Check off a task (player)",
+      "component": "src/clubhouse/screens/hub/parts.tsx#Tasks",
+      "handler": "onToggle",
+      "service": "src/app/golf/actions/tasks.ts#completeTask",
+      "data": [
+        "golf_task_assignments"
+      ],
+      "bridge": {
+        "success": 100901,
+        "failure": 100603,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-OPEN-FILE",
+      "label": "Open a file in its own tab",
+      "component": "src/clubhouse/screens/hub/parts.tsx#Documents",
+      "handler": "onOpen",
+      "service": "src/app/golf/actions/documents.ts#getPreviewUrl",
+      "data": [
+        "golf_documents",
+        "storage documents"
+      ],
+      "bridge": {
+        "failure": 100604,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-POST-ANNOUNCEMENT",
+      "label": "Post an announcement (coach)",
+      "component": "src/clubhouse/screens/hub/sheets.tsx#ComposeSheet",
+      "handler": "submit",
+      "service": "src/app/golf/actions/announcements.ts#createEnrichedAnnouncement",
+      "data": [
+        "golf_announcements",
+        "golf_announcement_recipients",
+        "golf_announcement_documents"
+      ],
+      "bridge": {
+        "validation": 100501,
+        "loading": 100202,
+        "success": 100901,
+        "failure": 100605,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-EDIT-ANNOUNCEMENT",
+      "label": "Edit an announcement (coach)",
+      "component": "src/clubhouse/screens/hub/sheets.tsx#ComposeSheet",
+      "handler": "submit",
+      "service": "src/app/golf/actions/announcements.ts#updateAnnouncement",
+      "data": [
+        "golf_announcements"
+      ],
+      "bridge": {
+        "validation": 100501,
+        "loading": 100206,
+        "success": 100901,
+        "failure": 100618,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-PLAN-TRIP",
+      "label": "Plan a trip (coach)",
+      "component": "src/clubhouse/screens/hub/sheets.tsx#TripSheet",
+      "handler": "submit",
+      "service": "src/app/golf/actions/travel.ts#createGolfTravelItinerary",
+      "data": [
+        "golf_travel_itineraries"
+      ],
+      "bridge": {
+        "validation": 100503,
+        "loading": 100203,
+        "success": 100901,
+        "failure": 100606,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-ASSIGN-TASK",
+      "label": "Assign a task (coach)",
+      "component": "src/clubhouse/screens/hub/sheets.tsx#AssignSheet",
+      "handler": "submit",
+      "service": "src/app/golf/actions/tasks.ts#createTask",
+      "data": [
+        "golf_tasks",
+        "golf_task_assignments"
+      ],
+      "bridge": {
+        "validation": 100507,
+        "loading": 100204,
+        "success": 100901,
+        "failure": 100607,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-UPLOAD-FILE",
+      "label": "Share a file with the team (coach)",
+      "component": "src/clubhouse/screens/hub/parts.tsx#Documents",
+      "handler": "onUpload",
+      "service": "src/app/golf/actions/documents.ts#uploadGolfDocument",
+      "data": [
+        "storage documents",
+        "golf_documents"
+      ],
+      "bridge": {
+        "loading": 100201,
+        "success": 100901,
+        "failure": 100608,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-DELETE",
+      "label": "Delete a post, a task or a file (coach)",
+      "component": "src/clubhouse/screens/hub/sheets.tsx#ConfirmDelete",
+      "handler": "onConfirmDelete",
+      "service": "src/app/golf/actions/announcements.ts#deleteAnnouncement",
+      "data": [
+        "golf_announcements",
+        "golf_tasks",
+        "golf_documents"
+      ],
+      "bridge": {
+        "confirm": 101101,
+        "success": 100901,
+        "failure": 100609,
+        "recovery": 101401,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P010-TRY-AGAIN",
+      "label": "Try a failed read again",
+      "component": "src/clubhouse/ui/RefreshNotice.tsx#RefreshNotice",
+      "handler": "RefreshNotice",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "loadFailed": 100610,
+        "recovery": 101402
+      },
+      "tests": [
+        "src/clubhouse/__tests__/hub.test.tsx"
+      ]
+    }
+  ],
+  "held": [
+    "docs/clubhouse/held/data/document-policy-scoping.md"
+  ]
+}

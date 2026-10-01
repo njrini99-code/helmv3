@@ -134,6 +134,7 @@ async function handle(): Promise<NextResponse> {
       supabase
         .from('golf_rounds')
         .select('player_id')
+        .eq('is_test', false)
         .eq('status', 'completed')
         .gte('round_date', windowStart)
         .order('id', { ascending: true })

@@ -227,7 +227,7 @@ async function createEnrichedAnnouncementImpl(input: {
   recipientPlayerIds: string[] | null;
   documentIds: string[];
   inlineTasks: Array<{ title: string; description?: string; dueDate?: string }>;
-}): Promise<ActionResult<{ announcementId: string }>> {
+}): Promise<ActionResult<{ announcementId: string; attachmentsError?: string }>> {
   try {
     const validated = createAnnouncementSchema.parse(input);
     const supabase = await createClient();
@@ -277,6 +277,30 @@ async function createEnrichedAnnouncementImpl(input: {
       }
     }
 
+    // Attached documents must be this team's own. The ids arrive from the
+    // browser and the link row is all a player needs to open the file from the
+    // announcement, so an unchecked id attached another team's document (or one
+    // of this team's coach-only documents) to a post players can read. Checked
+    // before anything is written, like the roster above.
+    if (validated.documentIds.length > 0) {
+      const { data: ownDocs, error: ownDocsError } = await supabase
+        .from('golf_documents')
+        .select('id')
+        .eq('team_id', teamId)
+        .in('id', validated.documentIds);
+      if (ownDocsError) {
+        await logServerError(
+          `[createEnrichedAnnouncement] document check failed: ${describeError(ownDocsError)}`,
+          { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements', userId: user.id },
+        );
+        return { success: false, error: "Couldn't check the attached files just now, so nothing was sent. Please try again." };
+      }
+      const own = new Set((ownDocs ?? []).map((d) => d.id));
+      if (validated.documentIds.some((id) => !own.has(id))) {
+        return { success: false, error: "Some attached files aren't in your team's documents" };
+      }
+    }
+
     // Who this actually reaches. Resolved before the write for the reason above.
     const targetPlayerIds = validated.recipientPlayerIds ?? roster.ids;
 
@@ -316,6 +340,14 @@ async function createEnrichedAnnouncementImpl(input: {
     }
 
     // 3. Link documents
+    //
+    // The insert's error was discarded, so a post whose attachments failed said
+    // it had posted, and the coach believed players had the files. The post is
+    // real and stays (one statement, so none of the links landed either); the
+    // failure comes back beside the id so the caller can say the files did not
+    // attach. `success` stays true: callers that never look at the field behave
+    // as before, and nothing may replay the post to fix the links.
+    let attachmentsError: string | undefined;
     if (validated.documentIds.length > 0) {
       const docRows = validated.documentIds.map((docId, i) => ({
         announcement_id: announcementId,
@@ -323,9 +355,17 @@ async function createEnrichedAnnouncementImpl(input: {
         sort_order: i,
       }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      const { error: attachError } = await (supabase as any)
         .from('golf_announcement_documents')
         .insert(docRows);
+      if (attachError) {
+        attachmentsError = "The announcement was posted, but its files didn't attach.";
+        await logServerError(
+          `[createEnrichedAnnouncement] attachment insert failed for announcement ${announcementId}; posted without ${docRows.length} file(s): ${describeError(attachError)}`,
+          { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements' },
+          'error'
+        );
+      }
     }
 
     // 4. Create inline tasks, link them, and assign to players.
@@ -598,7 +638,7 @@ async function createEnrichedAnnouncementImpl(input: {
 
     revalidatePath('/golf/dashboard/announcements');
     updateTag(CACHE_TAGS.DASHBOARD);
-    return { success: true, data: { announcementId } };
+    return { success: true, data: { announcementId, ...(attachmentsError ? { attachmentsError } : {}) } };
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -649,7 +689,7 @@ export async function createEnrichedAnnouncement(input: {
   recipientPlayerIds: string[] | null;
   documentIds: string[];
   inlineTasks: Array<{ title: string; description?: string; dueDate?: string }>;
-}): Promise<ActionResult<{ announcementId: string }>> {
+}): Promise<ActionResult<{ announcementId: string; attachmentsError?: string }>> {
   return observedCreateEnrichedAnnouncement(input);
 }
 

@@ -25,6 +25,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { upsertInsightV3, V3_SIGNATURE_PREFIX, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v3';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { loadSourceRoundIds } from '@/lib/coachhelm/v3/engine/source-rounds';
 import {
   computeCounterfactual,
   type ComputeCounterfactualInput,
@@ -617,9 +618,6 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             direction: cfg.direction,
             player_value: agg.playerValue,
             pga_value: standing.pga_value,
-            // College/division cohort target (Tour stays the ceiling fallback).
-            // Null until the cohort RPC populates level_avg → unchanged behavior.
-            cohort_value: standing.level_avg,
             player_30d_scoring_avg: baseline,
             cohort_gender: cohort.gender,
             player_attempts_per_round: attemptsPerRound,
@@ -699,6 +697,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       evidence = { ...evidence, diagnosis } as typeof composed.evidence;
 
       const supabase = createAdminClient();
+      // Audit row 22: persist the rounds behind the claim (failure-silent).
+      const sourceRoundIds = await loadSourceRoundIds(
+        supabase,
+        this.playerId,
+        evidence.window_start,
+        evidence.window_end,
+      );
+      if (sourceRoundIds) {
+        evidence = { ...evidence, source_round_ids: sourceRoundIds } as typeof composed.evidence;
+      }
       const result = await upsertInsightV3(supabase, {
         player_id: this.playerId,
         category: this.category,

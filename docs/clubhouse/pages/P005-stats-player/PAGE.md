@@ -1,0 +1,123 @@
+# P005 — Stats (player)
+
+One player, read like a head pro would: who they are, four numbers, then the game in five sections with a sentence each. A coach opens any player on their team; a player opens only their own, as "My stats". The team's numbers are P004 (Stats, team).
+
+## Identity
+
+```text
+Page ID:            P005
+Page Name:          Stats (player)
+Route:              /golf/dashboard/stats?player=<golf_players.id> (coach) and
+                    /golf/dashboard/stats (player, their own profile)
+Bridge Namespace:   5 (Bridge IDs 5ccii, D-68; catalog codes CH-5xxx)
+Roles:              coach, player
+Implementation Root: src/clubhouse/screens/stats
+Manifest:           config/clubhouse/pages/P005-stats-player.json
+```
+
+## Purpose
+
+### Primary user
+
+A college golf coach reading one player before a conversation, a lineup call or a practice plan. The
+same page is a player's own view of their game against the Tour, without any teammate's numbers.
+
+### Job to be done
+
+Coach: understand why a player's scores are what they are and decide what to work on. Player: see
+where their game stands and what the coach has asked them to work on.
+
+### Primary action
+
+Coach: Add focus area (propose something to work on, which the player accepts). Player: read; the page
+has no action of theirs.
+
+### Secondary actions
+
+Change the window (Last 10, Season, Qualifiers), filter the rounds (round type, a date range, course, and Only these or
+Exclude these rounds), switch between Overview, Game detail, Rounds and
+Development, page to the previous or next player (coach), Message the player (coach), and on the phone
+Share the link (coach) and open all rounds.
+
+### Information hierarchy
+
+1. Who and four numbers: scoring average, handicap, strokes gained a round, rounds this season.
+2. Overview: five figure cards, the scoring chart and strokes gained by leg, and the comparison table
+   (against the team for a coach, against the Tour for a player).
+3. Game detail (Scoring, Off the tee, Approach, Short game, Putting: each a sentence, four figures, the rounds
+   it counts, the panels, and a More detail disclosure with the rest of the area), Rounds (score by round, personal
+   bests, this window against the one before, and the rounds table), Development. Everything the production
+   player stats page shows is here or named with a reason in PARITY.md.
+
+### User should notice first
+
+Whether the player is improving, and which leg is losing strokes.
+
+### User should never have to think about
+
+Whether they may see this (a player only ever sees their own), whether a small sample is a trend
+(under three rounds it says Early read), or whether missing shot detail means zero (it says it did not
+load, or that no round has shots).
+
+### Success looks like
+
+A coach reads a player's weakest leg and proposes a focus area for it in two minutes; a player sees
+their game against the Tour and their coach's focus areas in one place.
+
+## Semantic features
+
+Canonical IDs from `memory/registry.yml`:
+
+```text
+- stats_analytics
+- player_coachhelm_development
+```
+
+## Design authority
+
+```text
+Package:          design/handoff/ (v2; VERSIONS.md). v1 files kept where records cite them.
+Desktop reference: design/handoff/Coach - Stats.html, stats.jsx, stats-game.jsx, stats-sg.jsx,
+                  stats-sheet.jsx, stats-game.css (v1: screenshots stats-player-01..14)
+Phone spec:       docs/clubhouse/phone/stats-player.md (approved, D-22), from
+                  design/handoff/Coach - Stats - Mobile.html and m-stats.jsx, board "Player · approach"
+Status:           approved
+```
+
+## Related pages
+
+### Enters from
+
+Team stats (a grid row, a Season best, a phone row), Roster (a card, the player panel, the phone
+profile, and "All N" rounds, which opens `window=season&tab=rounds`, D-53), Home (the leaderboard, the
+latest round, the phone Home), the phone Qualifiers detail, a direct thread's Details in Messages
+(coach), a round's review, and for a player the sidebar and More sheet ("My stats").
+
+### Exits to
+
+Team stats (the back button, or Team on the phone), Messages on the direct thread with the player
+(`?player=`), and the previous or next player.
+
+## Ownership
+
+```text
+Design:          the owner (Claude Design)
+Implementation:  src/clubhouse/screens/stats (StatsPlayer, GameDetail, StatsPlayerPhone), loader
+                 src/clubhouse/data/stats-player.ts, route src/clubhouse/routes/stats.tsx
+Data:            stats_analytics and player_coachhelm_development: golf_players, golf_team_members,
+                 golf_rounds, golf_round_stats_cache, shot-level stats through getDetailedStats,
+                 golf_pga_standards (the Tour values), golf_player_focus_areas and golf_goals (read); a proposed focus
+                 area is written to golf_player_focus_areas by createFocusArea
+```
+
+## Current status
+
+```text
+Design:         approved
+Implementation: in_progress (desktop and phone built; gates in PROGRESS.md)
+Contract:       complete (CONTRACT.md: all 25 categories answered)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
+Data:           existing (no schema change)
+Verification:   partial (VERIFY.md)
+Docs:           current
+```

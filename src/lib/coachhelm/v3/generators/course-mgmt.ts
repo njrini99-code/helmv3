@@ -21,7 +21,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
-import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { TOUR_STANDARDS, tourFor } from '@/lib/golf/benchmarks/tour';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS, proximateCause } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import type {
@@ -45,20 +45,16 @@ interface CourseMgmtAggregate extends GeneratorAggregate {
   metric_value: number;
   rounds_played: number;
   /**
-   * Realistic baseline the priority + prose anchor to (cm-1): the college/division
-   * COHORT average (golf_player_standing.level_avg) when populated, else the PGA
-   * value as the fallback ceiling. This is the SAME target the BaseGenerator feeds
-   * the counterfactual (compute.ts: cohort-primary, Tour-ceiling), so an at/below-
-   * cohort player no longer gets a HIGH "3× Tour" card whose counterfactual is 0.
-   * Null only when no standing row exists yet (cold-start) → falls back to the raw
-   * PGA anchors below, unchanged from the pre-cm-1 behavior.
+   * The baseline the priority, the prose and the comparison tick all use: the
+   * team's Tour value for this metric (Q-88, "change it all to PGA"): the PGA
+   * Tour for a men's or unknown team, the LPGA Tour for a women's team, from
+   * `TOUR_STANDARDS` (golf_pga_standards). Never a college or cohort average.
+   * One anchor for all three keeps a card from being HIGH against one baseline
+   * while its sentence cites another (cm-1).
    */
-  anchor_value: number | null;
-  /** True when anchor_value came from the cohort (level_avg), not the PGA fallback. */
-  anchor_is_cohort: boolean;
-  /** Player cohort gender — women's cards must not cite men's Tour anchors
-   *  when no cohort baseline exists (rescore item 7: honesty over coverage). */
-  cohort_gender: 'mens' | 'womens' | null;
+  anchor_value: number;
+  /** "PGA Tour" or "LPGA Tour". */
+  anchor_label: string;
   /** Of this player's double-plus holes, the % whose proximate cause was a penalty. */
   cause_penalty_pct: number;
   /** % whose proximate cause was a missed GIR with no scramble. */
@@ -208,19 +204,11 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       )
       .slice(0, 2);
 
-    // cm-1: anchor the card's priority + prose to the SAME baseline the
-    // counterfactual measures the gap to — the cohort (level_avg) when present,
-    // else the PGA value. Cold-start (no standing row) leaves anchor_value null
-    // and composeContent falls back to the raw PGA anchors.
-    const standing = await loadStandingForMetric(this.playerId, this.metricId);
+    // One anchor for the priority, the prose and the tick: the team's Tour
+    // (Q-88). LPGA for a women's team, PGA otherwise.
     const playerCohort = await loadPlayerCohort(this.playerId);
-    const cohort = standing?.level_avg ?? null;
-    const anchorIsCohort = cohort !== null && Number.isFinite(cohort);
-    const anchorValue = anchorIsCohort
-      ? cohort
-      : standing && Number.isFinite(standing.pga_value)
-        ? standing.pga_value
-        : null;
+    const tour = TOUR_STANDARDS[tourFor(playerCohort.gender)];
+    const anchorValue = this.variant === 'penalty' ? tour.penaltiesPerRound : tour.bigNumbersPer100Holes;
 
     return {
       sampleN: roundsPlayed,
@@ -229,8 +217,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       variant: this.variant,
       rounds_played: roundsPlayed,
       anchor_value: anchorValue,
-      anchor_is_cohort: anchorIsCohort,
-      cohort_gender: playerCohort.gender,
+      anchor_label: tour.label,
       cause_penalty_pct: cpct(penaltyN),
       cause_missed_gir_pct: cpct(missedGirN),
       cause_three_putt_pct: cpct(threePuttN),
@@ -246,23 +233,30 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
   }
 
   /**
-   * Severity anchored to the realistic baseline the counterfactual uses (cm-1):
-   * the cohort (level_avg) when present, else the PGA value, else the hard-coded
-   * PGA default. `highMargin`/`medMargin` are the over-anchor margins (in the
-   * metric's unit) at which the gap escalates. An at/below-anchor player is `low`
-   * — never a HIGH "3× Tour" card whose counterfactual is 0.
+   * Severity against the team's Tour value. `highMargin`/`medMargin` are the
+   * over-anchor margins (in the metric's unit) at which the gap escalates; an
+   * at/below-Tour player is `low`. The margins are the pre-cm-1 PGA thresholds
+   * (penalties 0.6 high / 0.3 medium; big numbers 4% / 2%), not retuned.
    */
   private anchoredPriority(
     agg: CourseMgmtAggregate,
-    pgaDefault: number,
     medMargin: number,
     highMargin: number,
   ): InsightPriority {
-    const anchor = agg.anchor_value ?? pgaDefault;
-    const over = agg.metric_value - anchor; // lower_better: positive = worse than anchor
+    const over = agg.metric_value - agg.anchor_value; // lower_better: positive = worse than anchor
     if (over > highMargin) return 'high';
     if (over > medMargin) return 'medium';
     return 'low';
+  }
+
+  /**
+   * Evidence comparison: the same Tour value the priority used, labelled with
+   * the team's tour. No secondary tick: there is no college reference (Q-88).
+   */
+  private comparisonFields(
+    agg: CourseMgmtAggregate,
+  ): Pick<ComposedContent['evidence'], 'comparison_value' | 'comparison_label' | 'comparison_source'> {
+    return { comparison_value: agg.anchor_value, comparison_label: `${agg.anchor_label} avg`, comparison_source: 'pga_baseline' };
   }
 
   composeContent(agg: CourseMgmtAggregate): ComposedContent {
@@ -314,25 +308,17 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
 
     if (agg.variant === 'penalty') {
       const valueDisp = agg.metric_value.toFixed(1);
-      // Women's players never see the men's-Tour citation when there's no
-      // cohort baseline — omit rather than mislead (rescore item 7).
-      const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
-        ? `College players in our data average ~${agg.anchor_value.toFixed(1)}`
-        : agg.cohort_gender === 'womens'
-          ? `Every avoided penalty is a stroke back`
-          : `PGA Tour is ~0.3; top college teams stay under 0.5`;
+      const anchorClause = `The ${agg.anchor_label} averages ~${agg.anchor_value.toFixed(1)}`;
       return {
         title: `Penalty strokes: ${valueDisp} per round`,
         content:
-          `Across your last ${agg.rounds_played} rounds you're averaging ` +
+          `Across all ${agg.rounds_played} rounds on file you're averaging ` +
           `${valueDisp} penalty strokes per round. ${anchorClause}.` +
           causeClause + worstClause +
           ` Every penalty avoided is worth ~1.5 strokes per round.` +
           staleDataSuffix(agg.last_round_date),
-        // Severity anchored to the cohort the counterfactual uses (cm-1): >0.3 over
-        // anchor is high, >0.1 over medium, at/under the anchor low. PGA fallback
-        // (0.3) keeps the pre-cm-1 thresholds (0.6 high / 0.3 medium) at cold-start.
-        priority: this.anchoredPriority(agg, 0.3, 0, 0.3),
+        // >0.3 over the Tour is high, over it at all is medium, at/under low.
+        priority: this.anchoredPriority(agg, 0, 0.3),
         signature: `course_management:penalty_rate`,
         evidence: {
           metric: this.metricId,
@@ -340,12 +326,13 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
           unit: 'count',
           your_value: agg.metric_value,
           your_value_display: valueDisp,
-          comparison_value: 0.3,
-          comparison_label: 'PGA Tour avg',
-          comparison_source: 'pga_baseline',
+          ...this.comparisonFields(agg),
           sample_n: agg.rounds_played,
           // Honest lifetime span — this generator reads LIFETIME cache columns
           // (regrade VAL-P2: rows older than 90d sat inside the claimed window).
+          // window_basis tells renderers the value is all-time: window_days is
+          // only the first-to-last-round span, never the value's window.
+          window_basis: 'lifetime',
           window_days: agg.spanDays ?? 0,
           window_start: agg.first_round_date ?? '',
           window_end: agg.last_round_date ?? '',
@@ -363,22 +350,16 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
 
     // big_number variant
     const valueDisp = `${agg.metric_value.toFixed(1)}%`;
-    const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
-      ? `College players in our data average ~${agg.anchor_value.toFixed(1)}%`
-      : agg.cohort_gender === 'womens'
-        ? `This is the #1 controllable scoring leak`
-        : `PGA Tour is ~2%`;
+    const anchorClause = `The ${agg.anchor_label} is ~${agg.anchor_value.toFixed(1)}%`;
     return {
       title: `Double bogey-or-worse rate: ${valueDisp}`,
       content:
-        `Across your last ${agg.rounds_played} rounds, ${valueDisp} of holes ` +
+        `Across all ${agg.rounds_played} rounds on file, ${valueDisp} of holes ` +
         `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
         `this is the #1 separator between 70s and 80s rounds.` +
         causeClause + worstClause + staleDataSuffix(agg.last_round_date),
-      // Severity anchored to the cohort the counterfactual uses (cm-1): >2pp over
-      // anchor is high, >0.5pp over medium, at/under the anchor low. PGA fallback
-      // (2%) keeps the pre-cm-1 thresholds (4% high / 2% medium) at cold-start.
-      priority: this.anchoredPriority(agg, 2, 0, 2),
+      // >2pp over the Tour is high, over it at all is medium, at/under low.
+      priority: this.anchoredPriority(agg, 0, 2),
       signature: `course_management:big_number`,
       evidence: {
         metric: this.metricId,
@@ -386,10 +367,9 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         unit: 'percent',
         your_value: agg.metric_value,
         your_value_display: valueDisp,
-        comparison_value: 2,
-        comparison_label: 'PGA Tour avg',
-        comparison_source: 'pga_baseline',
+        ...this.comparisonFields(agg),
         sample_n: agg.rounds_played,
+        window_basis: 'lifetime',
         window_days: agg.spanDays ?? 0,
         window_start: agg.first_round_date ?? '',
         window_end: agg.last_round_date ?? '',

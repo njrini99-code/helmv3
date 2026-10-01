@@ -440,6 +440,7 @@ export class ShotStateIntelligence {
       .from('golf_rounds')
       .select('id, player_id')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
       .limit(50);

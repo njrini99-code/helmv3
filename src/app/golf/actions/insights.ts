@@ -17,6 +17,7 @@
 //
 // ============================================================================
 
+import { notifyInsightResolved } from '@/lib/notifications/insight-notifier';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -74,6 +75,7 @@ import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
 import { getStatsActionContext } from '@/lib/golf/stats-action-context';
 import { isMissingGolfPatternsTableError } from '@/lib/golf/stats-pattern-error';
+import { rankByAbsoluteStrokeImpact } from '@/lib/golf/pattern-impact-ranking';
 
 // ============================================================================
 // TYPES
@@ -1627,7 +1629,7 @@ async function resolveInsightImpl(insightId: string) {
       })
       .eq('id', insightId)
       .eq('team_id', access.teamId)
-      .select('id, player_id');
+      .select('id, player_id, category');
 
     if (error) {
       await logServerError(`resolveInsight failed: ${error.message}`, {
@@ -1651,6 +1653,12 @@ async function resolveInsightImpl(insightId: string) {
         actor_id: user.id,
         actor_role: 'coach',
         action_type: 'resolved',
+      });
+      // Audit row 53: the player hears their insight was closed (never throws).
+      await notifyInsightResolved({
+        player_id: resolvePlayerId,
+        insight_id: insightId,
+        category: (data[0] as { category?: string | null }).category ?? 'general',
       });
     }
 
@@ -2263,6 +2271,11 @@ async function observePlayerPatternsFailure(error: unknown, playerId: string): P
   });
 }
 
+/** Patterns returned to the player/coach surfaces. */
+const PLAYER_PATTERNS_TOP_N = 10;
+/** Upper bound on the rows read before ranking (PostgREST caps a response at 1000). */
+const PLAYER_PATTERNS_READ_CAP = 500;
+
 async function getPlayerPatternsImpl(playerId: string): Promise<{
   success: boolean;
   patterns?: MinedPattern[];
@@ -2289,12 +2302,17 @@ async function getPlayerPatternsImpl(playerId: string): Promise<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
 
-    const { data: patterns, error } = await patternsTable
+    // `stroke_impact` is signed (a leak is negative), so `ORDER BY stroke_impact
+    // DESC LIMIT 10` kept the ten biggest POSITIVE rows and dropped the biggest
+    // leaks. PostgREST cannot order by abs(): read the player's active rows
+    // (bounded; production holds at most a few dozen per player) and rank by
+    // absolute impact in JS before cutting to ten.
+    const { data: patternRows, error } = await patternsTable
       .select('*')
       .eq('player_id', playerId)
       .eq('is_active', true)
-      .order('stroke_impact', { ascending: false })
-      .limit(10);
+      .order('id', { ascending: true })
+      .limit(PLAYER_PATTERNS_READ_CAP);
 
     if (isMissingGolfPatternsTableError(error)) {
       return { success: true, patterns: [] };
@@ -2303,6 +2321,11 @@ async function getPlayerPatternsImpl(playerId: string): Promise<{
       await observePlayerPatternsFailure(error, playerId);
       return { success: false, error: 'Failed to load player patterns' };
     }
+
+    const patterns = rankByAbsoluteStrokeImpact(
+      (patternRows ?? []) as Array<Record<string, unknown> & { id?: string; stroke_impact?: number | null }>,
+      PLAYER_PATTERNS_TOP_N,
+    );
 
     // Transform to MinedPattern type
     const transformedPatterns: MinedPattern[] = (patterns || []).map((p: Record<string, unknown>) => ({

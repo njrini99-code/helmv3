@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { QualifierFormSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -51,7 +53,7 @@ function FieldSkeleton({
  * FormSections in the same order, `gap-8` between sections (Form
  * spacing="roomy"), and the Cancel/Create action row.
  */
-export default function NewQualifierLoading() {
+function LegacyNewQualifierLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -135,4 +137,9 @@ export default function NewQualifierLoading() {
       </div>
     </div>
   );
+}
+
+/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+export default function NewQualifierLoading() {
+  return <ClubhouseSwitch clubhouse={<QualifierFormSkeleton />} fallback={<LegacyNewQualifierLoading />} />;
 }

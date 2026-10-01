@@ -174,6 +174,11 @@ function makeSupabaseMock(opts: {
     },
     from: vi.fn((table: string) => {
       if (table === 'golf_coach_insights') return insightBuilder;
+      // The signed-in coach's own row: exposure rows are attributed from the session.
+      if (table === 'golf_coaches') {
+        const self = { select: () => self, eq: () => self, maybeSingle: async () => ({ data: { id: 'coach-self' }, error: null }) };
+        return self;
+      }
       if (table === 'golf_insight_player_feedback') return feedbackBuilder;
       throw new Error(`unexpected table "${table}"`);
     }),

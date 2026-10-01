@@ -103,6 +103,9 @@ function readJsonObject(data: Json | null): Record<string, unknown> {
 export function categorizeNotificationRow(row: Pick<RawNotificationRow, 'type' | 'data'>): NotificationCategoryId {
   const data = readJsonObject(row.data);
   if (typeof data.coachhelm_category === 'string') return 'coachhelm';
+  // Per-category receipt types (dispatch.ts inAppTypeFor, once the enum
+  // migration lands) are CoachHelm by construction.
+  if (row.type.startsWith('coachhelm_')) return 'coachhelm';
   if (data.task_type === 'task_reminder') return 'tasks';
   // Announcement fan-out rows (announcements.ts createEnrichedAnnouncement)
   // share the `event_reminder` enum value the same way task reminders do —
@@ -273,4 +276,117 @@ export function countByCategory(
   for (const id of NOTIFICATION_CATEGORY_IDS) counts[id] = 0;
   for (const item of items) counts[item.category] += 1;
   return counts;
+}
+
+// ── First page: stale calendar collapse + CoachHelm reservation (rows 53/56) ─
+
+/**
+ * Calendar rows describe events and RSVPs; after a month the event is almost
+ * always past. Prod had 1,581 of 3,480 unread calendar rows older than 30
+ * days (median unread age 27 days, one user at 407 unread), which made the
+ * badge a number nobody could act on. Older calendar rows stop counting as
+ * unread and collapse into one summary item on the first page. Nothing is
+ * deleted or marked read in the database.
+ */
+export const CALENDAR_UNREAD_MAX_AGE_DAYS = 30;
+
+export function calendarUnreadCutoffIso(now: Date = new Date()): string {
+  return new Date(now.getTime() - CALENDAR_UNREAD_MAX_AGE_DAYS * 86_400_000).toISOString();
+}
+
+export const CALENDAR_OLDER_SUMMARY_ID = 'calendar-older-summary';
+
+/** CoachHelm slots held on a first page: min(5, floor(limit / 3)). */
+export function reservedCoachHelmSlots(limit: number): number {
+  return Math.min(5, Math.floor(limit / 3));
+}
+
+/**
+ * The feed's first page. Calendar rows older than the cutoff are dropped and
+ * replaced by one summary item (already "read", so it never counts toward
+ * the badge and a click only navigates). CoachHelm receipts get a reserved
+ * share of the page: with 4,971 calendar rows against 228 CoachHelm rows for
+ * the active players' users, a time-only merge let a calendar burst push
+ * every receipt out of a limit-N page. Displaced items are the OLDEST
+ * non-CoachHelm ones; the result stays newest-first.
+ */
+export function composeFirstPage(args: {
+  notifications: readonly UnifiedNotificationItem[];
+  calendar: readonly UnifiedNotificationItem[];
+  /** Total calendar rows (read or not) older than the cutoff, from a count query. */
+  staleCalendarCount: number;
+  limit: number;
+  now?: Date;
+}): UnifiedNotificationItem[] {
+  const cutoffIso = calendarUnreadCutoffIso(args.now);
+  const cutoff = Date.parse(cutoffIso);
+  const freshCalendar = args.calendar.filter((c) => timeValue(c.created_at) >= cutoff);
+  const merged = mergeAndSortNotifications(args.notifications, freshCalendar);
+
+  const hasSummary = args.staleCalendarCount > 0;
+  const capacity = Math.max(0, args.limit - (hasSummary ? 1 : 0));
+  let page = merged.slice(0, capacity);
+
+  const held = page.filter((i) => i.category === 'coachhelm').length;
+  const want = Math.min(reservedCoachHelmSlots(args.limit), capacity) - held;
+  if (want > 0) {
+    const promoted = merged
+      .slice(capacity)
+      .filter((i) => i.category === 'coachhelm')
+      .slice(0, want);
+    if (promoted.length > 0) {
+      let toDrop = promoted.length;
+      const kept: UnifiedNotificationItem[] = [];
+      for (let i = page.length - 1; i >= 0; i--) {
+        const item = page[i]!;
+        if (toDrop > 0 && item.category !== 'coachhelm') {
+          toDrop--;
+          continue;
+        }
+        kept.unshift(item);
+      }
+      page = mergeAndSortNotifications(kept, promoted);
+    }
+  }
+
+  if (hasSummary) {
+    const n = args.staleCalendarCount;
+    page.push({
+      id: CALENDAR_OLDER_SUMMARY_ID,
+      source: 'golf_calendar_notifications',
+      category: 'events',
+      title: `${n} older calendar ${n === 1 ? 'update' : 'updates'}`,
+      body: `Calendar updates from more than ${CALENDAR_UNREAD_MAX_AGE_DAYS} days ago.`,
+      action_url: '/golf/dashboard/calendar',
+      created_at: cutoffIso,
+      read_at: cutoffIso,
+    });
+  }
+  return page;
+}
+
+/** The insight a CoachHelm receipt points at, when it points at one. */
+export function insightIdOfReceipt(data: Json | null): string | null {
+  const obj = readJsonObject(data);
+  return typeof obj.insightId === 'string' && obj.insightId ? obj.insightId : null;
+}
+
+/**
+ * Which receipts point at an insight the reader can no longer see. `rows` may
+ * repeat an id (page rows + unread scan); each id counts once.
+ */
+export function partitionExpiredReceipts(
+  rows: ReadonlyArray<{ id: string; read_at: string | null; data: Json | null }>,
+  visibleInsightIds: ReadonlySet<string>,
+): { expired: Set<string>; expiredUnread: number } {
+  const expired = new Set<string>();
+  let expiredUnread = 0;
+  for (const r of rows) {
+    if (expired.has(r.id)) continue;
+    const insightId = insightIdOfReceipt(r.data);
+    if (!insightId || visibleInsightIds.has(insightId)) continue;
+    expired.add(r.id);
+    if (r.read_at == null) expiredUnread++;
+  }
+  return { expired, expiredUnread };
 }

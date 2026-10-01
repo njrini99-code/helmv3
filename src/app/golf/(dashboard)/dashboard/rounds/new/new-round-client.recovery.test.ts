@@ -7,10 +7,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(
+const source = [
+  // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
+  readFileSync(
+  new URL('../../../../../../lib/golf/round-session/use-new-round-session.ts', import.meta.url),
+  'utf8',
+),
+  readFileSync(
   new URL('./new-round-client.tsx', import.meta.url),
   'utf8',
-);
+),
+].join('\n');
 
 describe('New Round shot recovery boundary', () => {
   it('creates a server round before the player enters tracking', () => {
@@ -61,7 +68,7 @@ describe('New Round shot recovery boundary', () => {
     // round_missing helper so a dead snapshot id is re-created, not echoed.
     expect(restoreSource).toContain('await writeRoundRecreatingIfMissing(');
     expect(restoreSource).toContain('recoveryData,');
-    expect(restoreSource).toContain('router.push(`/golf/dashboard/rounds/continue/${result.data.roundId}`)');
+    expect(restoreSource).toContain('router.push(routesRef.current.continueRound(result.data.roundId))');
   });
 
   it('keeps a completed-hole retry distinct from a deliberate re-edit and reopens a scorecard slot correctly', () => {

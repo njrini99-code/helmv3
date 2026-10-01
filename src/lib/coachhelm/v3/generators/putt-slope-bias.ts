@@ -84,6 +84,15 @@ const WINDOW_DAYS = 90;
  */
 const MIN_PUTTS_PER_SIDE = 8;
 
+/**
+ * Per-band significance level. The selector tests BOTH bands and keeps the
+ * better one, so at the plain 0.05 each player gets two chances at a false
+ * positive (~0.65-1.3 expected false flags over the 26 testable cells the
+ * 2026-09-28 audit counted). Bonferroni over the two-band search keeps the
+ * family-wise rate at 0.05.
+ */
+export const SLOPE_SEARCH_ALPHA = 0.05 / 2;
+
 /** The only two bands with a measured, material downhill penalty. 7-10 ft+
  *  is deliberately excluded — see file header. */
 export type SlopeBand = '0-3 ft' | '4-6 ft';
@@ -183,6 +192,7 @@ export function selectDownhillPenaltyCut(rows: PuttSlopeRow[]): WinningCut | nul
     // generator is allowed to make).
     const test = twoProportionZTest(t.levelMade, t.levelN, t.downhillMade, t.downhillN, {
       minPerSide: MIN_PUTTS_PER_SIDE,
+      alpha: SLOPE_SEARCH_ALPHA,
     });
     if (!test.significant) continue;
     if (test.gapPp <= 0) continue; // downhill was NOT the weaker side — never claim a penalty backwards
@@ -228,6 +238,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const { data: rounds, error: rErr } = await fromUntyped(supabase, 'golf_rounds')
       .select('id')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', since) as {
         data: Array<{ id: string }> | null;
@@ -317,20 +328,34 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
       priority: 'medium',
       signature: `putt_slope_bias:${agg.band}`,
       evidence: {
+        // The metric is the PENALTY, so the stored value is the penalty:
+        // level make % − downhill make %, in percentage points. It used to
+        // store the downhill make % under this name (audit row 27), so a
+        // reader of `your_value` saw "55" where the metric promised a gap.
+        // Both make rates stay in `detail`.
         metric: 'putt_slope_downhill_penalty_pct',
-        metric_label: 'Downhill vs level putt make % (distance-controlled)',
+        metric_label: 'Downhill penalty vs level putts (distance-controlled)',
         unit: 'percent',
-        your_value: agg.downhill_pct,
-        your_value_display: downhillDisp,
-        comparison_value: agg.level_pct,
-        comparison_label: `Your level-putt make % (same band)`,
-        comparison_source: 'your_baseline',
+        polarity: 'lower_better',
+        your_value: agg.gap_pp,
+        your_value_display: `${gap} pts`,
+        comparison_value: 0,
+        comparison_label: `No downhill penalty (your level putts ${levelDisp}, downhill ${downhillDisp})`,
+        comparison_source: 'absolute_target',
         sample_n: agg.downhill_n + agg.level_n,
         window_days: WINDOW_DAYS,
         window_start: '',
         window_end: '',
         strokes_impact: 0,
         strokes_impact_method: 'peer_delta',
+        detail: {
+          band: agg.band,
+          downhill_pct: agg.downhill_pct,
+          level_pct: agg.level_pct,
+          downhill_n: agg.downhill_n,
+          level_n: agg.level_n,
+          alpha: SLOPE_SEARCH_ALPHA,
+        },
         confidence: Math.min(1, (agg.downhill_n + agg.level_n) / 60),
         confidence_factors: {
           sample_adequacy: Math.min((agg.downhill_n + agg.level_n) / 60, 1),

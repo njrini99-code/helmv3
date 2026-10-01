@@ -14,6 +14,14 @@ import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { isPuttMade, puttMakeStartFeet } from '@/lib/golf/putt-make';
+import {
+  holeRates,
+  MIN_ATTEMPTS_FOR_RULES,
+  MIN_FAIRWAYS_FOR_RULES,
+  MIN_HOLES_FOR_RULES,
+  windowLabel,
+} from '@/lib/golf/shot-analytics-basis';
 
 // ============================================================================
 // INPUT VALIDATION
@@ -112,7 +120,15 @@ export interface PlayerShotAnalytics {
   playerId: string;
   playerName: string;
   analyzedAt: string;
+  /** The window every rate below was computed over (may be wider than asked). */
   periodDays: number;
+  /** The window the caller asked for. */
+  requestedPeriodDays: number;
+  /** True when no round fell in the requested window and it was widened to
+   *  90 days — every rate then describes the wider window (audit row 31). */
+  windowWidened: boolean;
+  /** Label for every card: which window produced these numbers. */
+  windowLabel: string;
   roundsAnalyzed: number;
 
   // Core stats
@@ -174,7 +190,6 @@ interface ShotRow {
   shot_distance: number | null;
   miss_direction: string | null;
   result: string | null;
-  putt_distance_feet: number | null;
   putt_made: boolean | null;
 }
 
@@ -309,7 +324,7 @@ async function getPlayerShotAnalyticsImpl(
     // Get rounds from previous period for trends
     const { data: previousRoundsData } = await supabase
       .from('golf_rounds')
-      .select('id, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, holes_played')
+      .select('id, round_date, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, total_score, holes_played')
       .eq('player_id', playerId)
       .eq('is_test', false)
       .eq('status', 'completed')
@@ -372,7 +387,7 @@ async function getPlayerShotAnalyticsImpl(
         id, round_id, hole_number, shot_number, shot_type, club_type,
         lie_before, distance_to_hole_before, distance_unit_before,
         distance_to_hole_after, distance_unit_after, shot_distance,
-        miss_direction, result, putt_distance_feet, putt_made
+        miss_direction, result, putt_made
       `)
       .in('round_id', roundIds)
       .order('id', { ascending: true })
@@ -391,6 +406,31 @@ async function getPlayerShotAnalyticsImpl(
     }
 
     const shots = (shotsData || []) as ShotRow[];
+
+    // Prior-period HOLES, so the trend compares like with like: the current
+    // period's fairway % / GIR % are hole-derived, and the prior period used
+    // to read round totals (audit row 31).
+    let previousHoles: HoleRow[] = [];
+    if (previousRounds.length > 0) {
+      const { data: prevHolesData, error: prevHolesError } = await fetchAllRowsResult((from, to) => supabase
+        .from('golf_holes')
+        .select(`
+          id, round_id, hole_number, par, score, putts,
+          fairway_hit, gir, up_and_down, sand_save
+        `)
+        .in('round_id', previousRounds.map((r) => r.id))
+        .order('id', { ascending: true })
+        .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerShotAnalytics.previous', feature: 'stats_analytics', sport: 'golf' });
+      // A failed prior read only costs the trend; it is logged, never faked.
+      if (prevHolesError) {
+        await logServerError(
+          `[shot analytics] prior-period hole read failed for player ${playerId}; trends omitted: ${describeError(prevHolesError)}`,
+          { action: 'getPlayerShotAnalytics', featureArea: 'stats_analytics' },
+        );
+      } else {
+        previousHoles = (prevHolesData || []) as HoleRow[];
+      }
+    }
 
     // ========================================================================
     // CALCULATE TEE STATS
@@ -622,9 +662,13 @@ async function getPlayerShotAnalyticsImpl(
 
     const puttShots = shots.filter(s => s.shot_type === 'putt' || s.shot_type === 'putting');
 
+    // The ONE putt make % definition (src/lib/golf/putt-make.ts, owner decision
+    // Q-93): start distance from distance_to_hole_before (feet, clamped, never
+    // unit-converted; no start distance = not banded), made = result 'hole' OR
+    // putt_made true. The three bands here are unions of its (lo, hi] bands.
     puttShots.forEach(p => {
-      const dist = p.putt_distance_feet ?? toFeet(p.distance_to_hole_before, p.distance_unit_before);
-      const made = p.putt_made ?? p.result === 'hole';
+      const dist = puttMakeStartFeet(p);
+      const made = isPuttMade(p);
       if (dist != null) {
         if (dist <= 5) {
           puttsByDistance.inside5ft.attempts++;
@@ -641,7 +685,7 @@ async function getPlayerShotAnalyticsImpl(
 
     // Putt miss tendencies from shots
     const puttMissTendencies = { low: 0, high: 0, short: 0 };
-    const missedPuttShots = puttShots.filter(p => (p.putt_made ?? p.result === 'hole') === false);
+    const missedPuttShots = puttShots.filter(p => !isPuttMade(p));
 
     missedPuttShots.forEach(p => {
       if (p.miss_direction) {
@@ -748,10 +792,10 @@ async function getPlayerShotAnalyticsImpl(
     const trends: TrendData[] = [];
 
     if (previousRounds.length > 0) {
-      // Fairway percentage trend
-      const prevFairwaysHit = previousRounds.reduce((sum, r) => sum + (r.total_fairways_hit || 0), 0);
-      const prevFairwaysTotal = previousRounds.reduce((sum, r) => sum + (r.total_fairways || 0), 0);
-      const prevFairwayPct = calculatePercentage(prevFairwaysHit, prevFairwaysTotal);
+      // Fairway % and GIR % trends — both periods from hole rows (holeRates),
+      // one basis by construction.
+      const prevRates = holeRates(previousHoles);
+      const prevFairwayPct = prevRates.fairwayPct;
 
       if (prevFairwayPct !== null && teeStats.fairwayPct !== null) {
         const fwyDirection = determineTrend(teeStats.fairwayPct, prevFairwayPct, true);
@@ -766,9 +810,7 @@ async function getPlayerShotAnalyticsImpl(
       }
 
       // GIR trend
-      const prevGirHit = previousRounds.reduce((sum, r) => sum + (r.total_gir || 0), 0);
-      const prevGirTotal = previousRounds.reduce((sum, r) => sum + (r.total_gir_possible || 0), 0);
-      const prevGirPct = calculatePercentage(prevGirHit, prevGirTotal);
+      const prevGirPct = prevRates.girPct;
 
       if (prevGirPct !== null && approachStats.girPct !== null) {
         const girDirection = determineTrend(approachStats.girPct, prevGirPct, true);
@@ -817,7 +859,11 @@ async function getPlayerShotAnalyticsImpl(
       .filter((e): e is [string, number] => e[1] !== null && e[1] > 0)
       .sort((a, b) => b[1] - a[1]);
 
-    if (approachMissArray.length > 0) {
+    // Audit row 31: a threshold rule needs a real sample behind its rate
+    // (two rounds of holes, or 10 attempts) before it names a weakness or a
+    // strength. The rates themselves are still reported above.
+    const holesWithPuttsN = allHolesWithPutts.length;
+    if (approachMissArray.length > 0 && totalApproachMissesCount >= MIN_ATTEMPTS_FOR_RULES) {
       const firstEntry = approachMissArray[0];
       if (firstEntry && firstEntry[1] > 40) {
         const [missDir, pct] = firstEntry;
@@ -830,7 +876,7 @@ async function getPlayerShotAnalyticsImpl(
     }
 
     // Putting insights (null = no putt data → not a weakness)
-    if (puttingStats.threePuttRate !== null && puttingStats.threePuttRate > 10) {
+    if (puttingStats.threePuttRate !== null && holesWithPuttsN >= MIN_HOLES_FOR_RULES && puttingStats.threePuttRate > 10) {
       insights.push(`Three-putt rate of ${puttingStats.threePuttRate}% is higher than target. Focus on lag putting.`);
       weaknessCandidates.push({
         label: 'Three-putt rate needs improvement',
@@ -839,7 +885,7 @@ async function getPlayerShotAnalyticsImpl(
     }
 
     // Driving insights (null = no recorded fairway data → not a weakness)
-    if (teeStats.fairwayPct !== null && teeStats.fairwayPct < 50) {
+    if (teeStats.fairwayPct !== null && fairwaysTotal >= MIN_FAIRWAYS_FOR_RULES && teeStats.fairwayPct < 50) {
       const missType = (teeStats.leftMissPct ?? 0) > (teeStats.rightMissPct ?? 0) ? 'left' : 'right';
       insights.push(`Fairway percentage of ${teeStats.fairwayPct}% with ${missType} tendency. Work on consistency off the tee.`);
       weaknessCandidates.push({
@@ -849,7 +895,7 @@ async function getPlayerShotAnalyticsImpl(
     }
 
     // GIR — approach consistency (null = no green data → not a weakness)
-    if (approachStats.girPct !== null && approachStats.girPct < 40) {
+    if (approachStats.girPct !== null && girEvaluatedHoles >= MIN_HOLES_FOR_RULES && approachStats.girPct < 40) {
       weaknessCandidates.push({
         label: `Greens in regulation (${approachStats.girPct}%)`,
         severity: 3,
@@ -857,7 +903,7 @@ async function getPlayerShotAnalyticsImpl(
     }
 
     // Up and down insights
-    if (aroundGreenStats.upAndDownPct !== null && aroundGreenStats.upAndDownPct < 40 && aroundGreenStats.totalShots > 5) {
+    if (aroundGreenStats.upAndDownPct !== null && upAndDownAttempts >= MIN_ATTEMPTS_FOR_RULES && aroundGreenStats.upAndDownPct < 40) {
       insights.push(`Up-and-down rate of ${aroundGreenStats.upAndDownPct}% suggests short game needs work.`);
       weaknessCandidates.push({
         label: `Short-game up-and-down (${aroundGreenStats.upAndDownPct}%)`,
@@ -866,7 +912,7 @@ async function getPlayerShotAnalyticsImpl(
     }
 
     // Sand save — dedicated check, was previously invisible to primaryWeakness
-    if (aroundGreenStats.sandSavePct !== null && aroundGreenStats.sandSavePct < 30 && aroundGreenStats.totalShots > 3) {
+    if (aroundGreenStats.sandSavePct !== null && sandSaveAttempts >= MIN_ATTEMPTS_FOR_RULES && aroundGreenStats.sandSavePct < 30) {
       insights.push(`Sand save rate of ${aroundGreenStats.sandSavePct}% suggests bunker play needs attention.`);
       weaknessCandidates.push({
         label: `Sand saves (${aroundGreenStats.sandSavePct}%)`,
@@ -881,13 +927,13 @@ async function getPlayerShotAnalyticsImpl(
       : 'No significant weaknesses detected';
 
     // Identify strength (null = no data → not a strength)
-    if (puttingStats.inside5ft.pct !== null && puttingStats.inside5ft.pct >= 90) {
+    if (puttingStats.inside5ft.pct !== null && puttingStats.inside5ft.attempts >= MIN_ATTEMPTS_FOR_RULES && puttingStats.inside5ft.pct >= 90) {
       primaryStrength = 'Excellent short putt conversion';
-    } else if (approachStats.girPct !== null && approachStats.girPct >= 65) {
+    } else if (approachStats.girPct !== null && girEvaluatedHoles >= MIN_HOLES_FOR_RULES && approachStats.girPct >= 65) {
       primaryStrength = 'Strong approach play';
-    } else if (teeStats.fairwayPct !== null && teeStats.fairwayPct >= 70) {
+    } else if (teeStats.fairwayPct !== null && fairwaysTotal >= MIN_FAIRWAYS_FOR_RULES && teeStats.fairwayPct >= 70) {
       primaryStrength = 'Consistent driving';
-    } else if (aroundGreenStats.upAndDownPct !== null && aroundGreenStats.upAndDownPct >= 60) {
+    } else if (aroundGreenStats.upAndDownPct !== null && upAndDownAttempts >= MIN_ATTEMPTS_FOR_RULES && aroundGreenStats.upAndDownPct >= 60) {
       primaryStrength = 'Solid scrambling';
     }
 
@@ -907,6 +953,9 @@ async function getPlayerShotAnalyticsImpl(
         playerName,
         analyzedAt: new Date().toISOString(),
         periodDays: effectivePeriodDays,
+        requestedPeriodDays: periodDays,
+        windowWidened: effectivePeriodDays !== periodDays,
+        windowLabel: windowLabel(periodDays, effectivePeriodDays),
         roundsAnalyzed: rounds.length,
         teeStats,
         approachStats,

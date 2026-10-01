@@ -86,6 +86,7 @@
   // the case raw `tsc` could not handle.
   "exclude": [
     "node_modules",
+    "design",
     "archive",
     "scripts",
     "supabase/functions",

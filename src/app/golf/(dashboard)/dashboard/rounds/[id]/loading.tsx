@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
@@ -44,7 +46,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * it is the original matte table (row-label + 9 hole columns + total).
  * Reproduced below with the same `md:hidden` / `hidden md:block` boundary.
  */
-export default function Loading() {
+function LegacyRoundLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -201,3 +203,7 @@ export default function Loading() {
   );
 }
 
+/** Inside Clubhouse the review loads in its own shape (CH-11406); everywhere else, Fairway's. */
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<RoundReviewSkeleton />} fallback={<LegacyRoundLoading />} />;
+}

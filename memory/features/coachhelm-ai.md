@@ -127,9 +127,16 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   short-side and pressure-decel composites). Heuristic severities go in
   `ComposedInsight.rankScore`, never `strokeImpact`. A row whose `your_value`
   is not the registry quantity for its metric id declares `evidence.polarity`
-  (approach_miss: green-hit percent under `approach_proximity_*ft`). Women's
-  cohort anchors ship as `comparison_source: 'estimated_target'` with a
-  `target (est.)` label. Specific-hole rankings key on (`course_id`,
+  (approach_miss: green-hit percent under `approach_proximity_*ft`). Every
+  comparison is the team's Tour (Q-88, 2026-09-30): the PGA Tour for a men's
+  or unknown team, the LPGA Tour for a women's team, `comparison_source:
+  'pga_baseline'` with a label naming the tour. No generator, counterfactual
+  or measured impact reads `golf_player_standing.level_avg`; a metric with no
+  Tour value (green-hit by band for the LPGA) gets no comparison, and
+  `approach_miss` writes no card for a women's team. Stored insights carrying a
+  college source (`d2_avg`, `estimated_target`, `cohort_avg`) render without
+  that tick (`v2/insights/tour-only.ts`). Goal targets still aim at the cohort
+  (audit row 21), but the card prints only the Tour. Specific-hole rankings key on (`course_id`,
   `hole_number`); derived tee distances carry `distance_method:
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
@@ -154,7 +161,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   caption the omission (`pgaOmissionNote`).
   `ApproachMissGenerator.standingTourComparable` no longer force-overrides
   this — it trusts the loader's basis-aware `standing.pga_omitted`.
-- Benchmark provenance (2026-09-23, repair plan N16): a `comparison_source` name is not itself a promise the number is measured. Every `BaselineEntry` in `src/lib/coachhelm/v2/insights/baseline-registry.ts` and every per-gender anchor in `src/lib/coachhelm/v3/counterfactual/cohort-baselines.ts` carries `provenance: 'measured' | 'derived'` plus a `sourceNote` next to the value. A `'derived'` entry's `label` must read as a target/estimate and must never say "average"/"avg"/"norm"/"measured" — enforced by `baseline-registry.test.ts`'s `N16: derived entries never carry measured-sounding wording` block and `cohort-baselines.test.ts`'s `typed provenance metadata` block. Women's cohort anchors are always `'derived'` (LPGA/NCAA figures discounted to college, never a measured women's-college population stat); men's putt-make/scrambling/GIR anchors are `'measured'` (`golf_pga_standards`, verified 2026-06-06), but the men's green-hit-by-band anchors (`GREEN_HIT_ANCHORS`) are `'derived'` too — an approximate Tour band figure the `approach_miss` generator has always printed, not part of that verification pass. `baselineRegistry` itself has no live caller anywhere in the codebase (dead code, kept corrected regardless — see that file's own LIVENESS note); `d1_avg`/`d3_avg`/`naia_avg`/`juco_avg` have zero producers. Full contract: `docs/architecture/coachhelm-evidence-contract.md`'s "Provenance: measured vs. derived" section.
+- Benchmark provenance (2026-09-23, repair plan N16): a `comparison_source` name is not itself a promise the number is measured. Every `BaselineEntry` in `src/lib/coachhelm/v2/insights/baseline-registry.ts` and every per-gender anchor in `src/lib/coachhelm/v3/counterfactual/cohort-baselines.ts` carries `provenance: 'measured' | 'derived'` plus a `sourceNote` next to the value. A `'derived'` entry's `label` must read as a target/estimate and must never say "average"/"avg"/"norm"/"measured" — enforced by `baseline-registry.test.ts`'s `N16: derived entries never carry measured-sounding wording` block and `cohort-baselines.test.ts`'s `typed provenance metadata` block. Since Q-88 every putt-make/scrambling/GIR anchor is `'measured'` and read from `TOUR_STANDARDS` (`golf_pga_standards`, PGA for men and LPGA for women, read 2026-09-30); the women's college estimates are gone, but the men's green-hit-by-band anchors (`GREEN_HIT_ANCHORS`) are `'derived'` too — an approximate Tour band figure the `approach_miss` generator has always printed, not part of that verification pass. `baselineRegistry` itself has no live caller anywhere in the codebase (dead code, kept corrected regardless — see that file's own LIVENESS note); `d1_avg`/`d3_avg`/`naia_avg`/`juco_avg` have zero producers. Full contract: `docs/architecture/coachhelm-evidence-contract.md`'s "Provenance: measured vs. derived" section.
 - Severity ordering (2026-09-12, N5): `golf_coach_insights.priority` is TEXT
   and sorts alphabetically at the database. Never `.order('priority')`. Rank
   feeds with `rankEvidenceInsights`; order a "sort by priority" list with
@@ -1140,7 +1147,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   every row reads back `method_version: null` until migration
   20260922230000 is applied, exactly like the write side's pre-N10 shape.
   `src/lib/coachhelm/v3/effectiveness/attribution-view-model.ts`: pure
-  labeling — `null`/`'v2_observed_delta'` (the round-level path, which
+  labeling — `'v3_did_prewindow'` (round-level, 2026-09-28: lift against a
+  matched pre-window control with an interval) is `'controlled_change'`,
+  never clean; `null` rows are no longer returned by the primary read
+  (legacy v1 math, deep audit row 35); `null`/`'v2_observed_delta'` (the round-level path, which
   predates the A9 slice 2 confounding check entirely) both collapse to
   `'earlier_method'`, never `isClean`; `'comparable_opportunities_v1'` is
   `'observed_change'`, the ONLY `isClean: true` value (it's the only

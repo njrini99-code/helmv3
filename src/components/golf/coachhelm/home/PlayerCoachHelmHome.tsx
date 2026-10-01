@@ -43,8 +43,7 @@ import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationsh
 import type { AreaAutoFillStats } from '@/lib/coachhelm/focus-areas/catalog';
 
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
-import { createGoal } from '@/app/golf/actions/v3/goals';
-import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import { createGoal, suggestGoalTarget } from '@/app/golf/actions/v3/goals';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { useToast } from '@/components/ui/sonner';
 
@@ -219,8 +218,10 @@ export function PlayerCoachHelmHome({
             typeof cause.standingPlayerValue === 'number' && Number.isFinite(cause.standingPlayerValue)
               ? cause.standingPlayerValue
               : null;
-          const canTarget = baseline !== null && typeof cause.standingPgaValue === 'number' && Number.isFinite(cause.standingPgaValue);
-          const target = canTarget ? computeTargetValue({ playerValue: baseline, pgaValue: cause.standingPgaValue as number, metricId: cause.metric }) : null;
+          // Same anchor as the goal modal and engine suggestions: halfway to
+          // the player's cohort, the Tour only once past it (audit row 21).
+          const suggestion = await suggestGoalTarget(cause.metric);
+          const target = suggestion.ok ? suggestion.suggested_target : null;
 
           const result = await createGoal({
             metric_id: cause.metric,

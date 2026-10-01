@@ -22,6 +22,11 @@ import { observeStorageResult } from '@/lib/observability/supabase/observe-stora
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  recruitDocMime,
+  recruitDocExtension,
+  recruitDocMaxBytes,
+} from './recruit-documents-limits';
 
 const BUCKET = 'recruit-documents';
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB — matches the bucket file_size_limit
@@ -68,6 +73,8 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  /** Set when the file itself was refused (its type or its size), so a caller can say so beside the file instead of as a generic failure. */
+  refused?: 'size' | 'type';
 }
 
 function normalizeCategory(category?: string | null): RecruitDocCategory {
@@ -270,6 +277,256 @@ export async function uploadRecruitDocument(
   opts: { title?: string; category?: string } = {},
 ): Promise<ActionResult<{ id: string }>> {
   return observedUploadRecruitDocument(recruitId, file, opts);
+}
+
+// ── Direct upload (Clubhouse): the file never passes through a server action ──────────────────────────────────────
+// A server action carries a file in its request body, which is capped well below a film (next.config
+// serverActions.bodySizeLimit, and the platform's own request limit). So the Clubhouse page asks here for a signed
+// upload URL, sends the bytes to Storage itself, and then asks for the row to be recorded. Nothing here trusts the
+// browser: the object path is built on the server from the recruit's own team, the type comes from the extension,
+// and the row's size is read back from what Storage actually holds. Both steps are safe to repeat with the same
+// uploadId, so a Retry after a lost answer finds what its first attempt did and never uploads or records twice.
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MB = 1024 * 1024;
+
+/** The coach's recruit (RLS limits the read to their own team's), or why there is none. */
+async function resolveRecruitTeam(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  recruitId: string,
+): Promise<{ ok: true; teamId: string; userId: string } | { ok: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+  const { data: recruit, error } = await supabase
+    .from('golf_recruits')
+    .select('id, team_id')
+    .eq('id', recruitId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!recruit) return { ok: false, error: 'Recruit not found' };
+  return { ok: true, teamId: recruit.team_id as string, userId: user.id };
+}
+
+async function findStoredObject(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  folder: string,
+  objectName: string,
+): Promise<{ found: boolean; size: number | null; readFailed: boolean }> {
+  const { data, error } = await supabase.storage.from(BUCKET).list(folder, { search: objectName, limit: 10 });
+  observeStorageResult({
+    error,
+    operation: 'download',
+    feature: 'recruiting_prospect_tracking',
+    action: 'list_recruit_document_object',
+    bucketClass: 'recruit-documents/recruit_document',
+    accessDeniedOnOwnPath: true,
+  });
+  if (error) return { found: false, size: null, readFailed: true };
+  const hit = (data ?? []).find((o) => o.name === objectName);
+  if (!hit) return { found: false, size: null, readFailed: false };
+  const size = Number((hit.metadata as { size?: number } | null)?.size);
+  return { found: true, size: Number.isFinite(size) ? size : null, readFailed: false };
+}
+
+export interface RecruitUploadMeta {
+  fileName: string;
+  fileSize: number;
+  /** One per chosen file, made by the page and kept across a Retry: it names the object, so a repeat finds the first attempt's. */
+  uploadId: string;
+}
+
+/**
+ * Step one: check the file against the bucket's rules and hand back a signed URL to send it to (valid for two hours).
+ * `signedUrl` is null when the object is already in Storage, which happens when an earlier attempt sent it and its
+ * answer was lost: the page skips the transfer and goes straight to recording it.
+ */
+async function prepareRecruitDocumentUploadImpl(
+  recruitId: string,
+  meta: RecruitUploadMeta,
+): Promise<ActionResult<{ contentType: string; signedUrl: string | null }>> {
+  if (!recruitId) return { success: false, error: 'Recruit id required' };
+  if (!meta || !UUID_RE.test(meta.uploadId ?? '')) return { success: false, error: 'Upload id required' };
+  const ext = recruitDocExtension(meta.fileName ?? '');
+  const contentType = recruitDocMime(ext);
+  if (!contentType) return { success: false, refused: 'type', error: 'Unsupported file type' };
+  if (!(meta.fileSize > 0)) return { success: false, error: 'Choose a file to upload' };
+  const max = recruitDocMaxBytes(ext);
+  if (meta.fileSize > max) {
+    return { success: false, refused: 'size', error: `File is too large (max ${Math.round(max / MB)} MB)` };
+  }
+
+  try {
+    const supabase = await createClient();
+    const team = await resolveRecruitTeam(supabase, recruitId);
+    if (!team.ok) return { success: false, error: team.error };
+
+    const folder = `${team.teamId}/${recruitId}`;
+    const objectName = `${meta.uploadId}.${ext}`;
+
+    // A repeat: the bytes are already there. (A failed read is not proof either way, so it falls through to signing; a
+    // second transfer to an existing path is refused by Storage as a duplicate, which the page also treats as "already there".)
+    const stored = await findStoredObject(supabase, folder, objectName);
+    if (stored.found) return { success: true, data: { contentType, signedUrl: null } };
+
+    const { data: signed, error: signError } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUploadUrl(`${folder}/${objectName}`);
+    observeStorageResult({
+      error: signError,
+      operation: 'upload',
+      feature: 'recruiting_prospect_tracking',
+      action: 'sign_recruit_document_upload',
+      bucketClass: 'recruit-documents/recruit_document',
+      accessDeniedOnOwnPath: true,
+    });
+    if (signError || !signed?.signedUrl) {
+      await logServerError(`prepareRecruitDocumentUpload sign failed: ${signError?.message ?? 'no url'}`, {
+        action: 'recruit_documents.prepareRecruitDocumentUpload',
+        featureArea: 'recruiting',
+        extra: { recruitId },
+      });
+      return { success: false, error: "Couldn't start the upload. Try again." };
+    }
+    return { success: true, data: { contentType, signedUrl: signed.signedUrl } };
+  } catch (err) {
+    await logServerError(
+      `prepareRecruitDocumentUpload error: ${describeError(err)}`,
+      { action: 'recruit_documents.prepareRecruitDocumentUpload', featureArea: 'recruiting', extra: { recruitId } },
+    );
+    return { success: false, error: "Couldn't start the upload. Try again." };
+  }
+}
+
+const observedPrepareRecruitDocumentUpload = withAdminObserved(
+  'prepareRecruitDocumentUpload',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  prepareRecruitDocumentUploadImpl,
+);
+
+export async function prepareRecruitDocumentUpload(
+  recruitId: string,
+  meta: RecruitUploadMeta,
+): Promise<ActionResult<{ contentType: string; signedUrl: string | null }>> {
+  return observedPrepareRecruitDocumentUpload(recruitId, meta);
+}
+
+/**
+ * Step two: record a file Storage now holds. The object's path is rebuilt here from the recruit's team and the
+ * uploadId (a path from the browser is never taken), and its size is read back from Storage. Safe to repeat: a
+ * document already recorded for that object is returned as it is.
+ */
+async function completeRecruitDocumentUploadImpl(
+  recruitId: string,
+  meta: { uploadId: string; fileName: string; title?: string; category?: string },
+): Promise<ActionResult<{ id: string }>> {
+  if (!recruitId) return { success: false, error: 'Recruit id required' };
+  if (!meta || !UUID_RE.test(meta.uploadId ?? '')) return { success: false, error: 'Upload id required' };
+  const ext = recruitDocExtension(meta.fileName ?? '');
+  const contentType = recruitDocMime(ext);
+  if (!contentType) return { success: false, refused: 'type', error: 'Unsupported file type' };
+
+  try {
+    const supabase = await createClient();
+    const team = await resolveRecruitTeam(supabase, recruitId);
+    if (!team.ok) return { success: false, error: team.error };
+
+    const folder = `${team.teamId}/${recruitId}`;
+    const objectName = `${meta.uploadId}.${ext}`;
+    const storagePath = `${folder}/${objectName}`;
+
+    const { data: existing, error: existingError } = await supabase
+      .from('golf_recruit_documents')
+      .select('id')
+      .eq('recruit_id', recruitId)
+      .eq('storage_path', storagePath)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (existing) return { success: true, data: { id: existing.id as string } };
+
+    const stored = await findStoredObject(supabase, folder, objectName);
+    if (stored.readFailed) return { success: false, error: "Couldn't check the file. Try again." };
+    if (!stored.found) return { success: false, error: 'The file did not reach storage. Try again.' };
+    const max = recruitDocMaxBytes(ext);
+    if (stored.size !== null && stored.size > max) {
+      // Over this type's limit whatever the bucket let through: take it back out rather than keep what cannot be recorded.
+      const { error: removeError } = await supabase.storage.from(BUCKET).remove([storagePath]);
+      observeStorageResult({
+        error: removeError,
+        operation: 'delete',
+        feature: 'recruiting_prospect_tracking',
+        action: 'complete_recruit_document_upload_oversize_remove',
+        bucketClass: 'recruit-documents/recruit_document',
+        accessDeniedOnOwnPath: true,
+      });
+      if (removeError) {
+        await logServerError(
+          `completeRecruitDocumentUpload oversize remove failed (object ${storagePath}): ${removeError.message}`,
+          { action: 'recruit_documents.completeRecruitDocumentUpload', featureArea: 'recruiting', extra: { recruitId } },
+        );
+      }
+      return { success: false, refused: 'size', error: `File is too large (max ${Math.round(max / MB)} MB)` };
+    }
+
+    const title = (meta.title ?? '').trim() || meta.fileName;
+    const { data: row, error: insertError } = await supabase
+      .from('golf_recruit_documents')
+      .insert({
+        recruit_id: recruitId,
+        team_id: team.teamId,
+        title: title.slice(0, 200),
+        category: normalizeCategory(meta.category),
+        file_name: meta.fileName,
+        storage_path: storagePath,
+        file_type: contentType,
+        file_size: stored.size,
+        uploaded_by: team.userId,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      await logServerError(`completeRecruitDocumentUpload insert failed: ${insertError.message}`, {
+        action: 'recruit_documents.completeRecruitDocumentUpload',
+        featureArea: 'recruiting',
+        extra: { recruitId, code: insertError.code },
+      });
+      maybeCaptureRlsDenial(insertError, {
+        table: 'golf_recruit_documents',
+        verb: 'insert',
+        action: 'completeRecruitDocumentUpload',
+        feature: 'recruiting_prospect_tracking',
+        sport: 'golf',
+      });
+      // The object stays, on purpose: a Retry carries the same uploadId, finds it, and records it without sending the file
+      // again (a film is too large to send twice for a row that failed to save).
+      return {
+        success: false,
+        error: insertError.code === '42501'
+          ? "Only this team's coaches can add recruit documents"
+          : 'Failed to save document',
+      };
+    }
+    return { success: true, data: { id: row.id as string } };
+  } catch (err) {
+    await logServerError(
+      `completeRecruitDocumentUpload error: ${describeError(err)}`,
+      { action: 'recruit_documents.completeRecruitDocumentUpload', featureArea: 'recruiting', extra: { recruitId } },
+    );
+    return { success: false, error: 'Failed to save document' };
+  }
+}
+
+const observedCompleteRecruitDocumentUpload = withAdminObserved(
+  'completeRecruitDocumentUpload',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  completeRecruitDocumentUploadImpl,
+);
+
+export async function completeRecruitDocumentUpload(
+  recruitId: string,
+  meta: { uploadId: string; fileName: string; title?: string; category?: string },
+): Promise<ActionResult<{ id: string }>> {
+  return observedCompleteRecruitDocumentUpload(recruitId, meta);
 }
 
 /** Delete a recruit document (storage object + row). RLS gates to team coaches. */

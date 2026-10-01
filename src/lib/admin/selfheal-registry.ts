@@ -70,10 +70,10 @@ export interface SelfHealStage {
    *  for what happened when the contract lived only in routine config. */
   contract: string;
   /**
-   * `metadata.method` values written by RETIRED runners of this stage. A row
-   * carrying one is kept in the run history (it is real evidence that a
-   * retired runner is still firing) but never decides the stage's status:
-   * see `selectStageHeartbeat`.
+   * `metadata.method` (or `metadata.runner`) values written by RETIRED
+   * runners of this stage. A row carrying one is kept in the run history (it
+   * is real evidence that a retired runner is still firing) but never decides
+   * the stage's status: see `selectStageHeartbeat`.
    */
   retiredMethods?: readonly string[];
 }
@@ -210,8 +210,12 @@ export function selectStageHeartbeat<T extends { metadata?: unknown }>(
   const fromLiveRunner = runs.find((r) => {
     const meta = r.metadata;
     if (typeof meta !== 'object' || meta === null || Array.isArray(meta)) return true;
-    const method = (meta as Record<string, unknown>).method;
-    return !(typeof method === 'string' && retired.includes(method));
+    // A retired runner has named itself under either key: `method` through
+    // 2026-09-29, `runner` on 2026-09-30 (no `method` at all). Matching only
+    // one let that row decide the stage's status again.
+    const { method, runner } = meta as Record<string, unknown>;
+    const isRetired = (v: unknown) => typeof v === 'string' && retired.includes(v);
+    return !(isRetired(method) || isRetired(runner));
   });
   return fromLiveRunner ?? runs[0] ?? null;
 }

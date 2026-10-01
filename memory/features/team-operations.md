@@ -130,6 +130,15 @@ Player Team Hub
 - Task templates create defaults, but assigned task records remain the operational truth.
 - Travel itinerary data can include hotel, flight, room, packing, and uniform details; treat as potentially sensitive.
 - Documents need visibility controls and safe versioning.
+- Every document write is coach-only on the document's own team, checked in the
+  action before storage or the row is touched: create, upload, update, delete,
+  delete version and restore (`resolveTeamRole` in `documents.ts`). A player
+  reads a document, its versions, preview or text only when it is shared with
+  players (`is_public`). A delete that matched no row is a failure, not success.
+  Pinned by `src/app/golf/actions/__tests__/documents-coach-only.test.ts`.
+- Files attached to an announcement must be the team's own documents, checked
+  before the announcement is written; a post whose file links fail reports
+  `attachmentsError` beside the id (`announcements.ts`).
 - Travel expense split support is incomplete; do not assume per-player split logic exists.
 
 ## UI Contract

@@ -101,4 +101,29 @@ describe('buildChatLlmCallRow', () => {
     const row = buildChatLlmCallRow({ ...BASE, grounded: true, unmatchedTokens: ['71'] });
     expect(row.citations).toBeNull();
   });
+
+  /**
+   * Audit row 47(c): `stream_incomplete` and `claim_validation_failed` were
+   * indistinguishable from an ungrounded claim in the ledger — all three
+   * wrote `reason: 'verification_failed'`. `reason` keeps that shared shape
+   * (round_review uses it); `verdict_reason` says which check rejected.
+   */
+  it('records which verdict check rejected the turn', () => {
+    const row = buildChatLlmCallRow({
+      ...BASE,
+      grounded: false,
+      unmatchedTokens: [],
+      verdictReason: 'stream_incomplete',
+    });
+    expect(row.citations).toEqual({
+      reason: 'verification_failed',
+      verdict_reason: 'stream_incomplete',
+      unmatched_tokens: [],
+    });
+  });
+
+  it('never attaches a verdict reason to a grounded turn', () => {
+    const row = buildChatLlmCallRow({ ...BASE, grounded: true, verdictReason: 'ungrounded_claims' });
+    expect(row.citations).toBeNull();
+  });
 });

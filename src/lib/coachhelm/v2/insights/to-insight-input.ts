@@ -6,6 +6,22 @@ import type {
 } from './types';
 
 const MIN_SAMPLE_N = 5;
+
+/**
+ * v2 insight types this adapter no longer persists.
+ *
+ * `bubble_player` ("primary stroke sink", audit row 11, 2026-09-28) was not a
+ * stroke-sink calculation: any urgent-tone v2 alert fell through to it
+ * (insights.ts determineInsightType), the category word came from keywords in
+ * the headline, and strokes_impact was |composed impact|. Measured: the named
+ * category was the player's worst 90-day SG category on 15 of 31 rows, 16 of
+ * 33 rows described a context where the player scores BETTER, and the stored
+ * impact averaged 2.2× its source pattern. No feed showed the rows (the v3
+ * visibility filter excludes engine v2), so nothing downstream loses them. The
+ * category ranking it pretended to be is what v3 already carries: the
+ * per-category sg_* standings and the strokes-ranked feed.
+ */
+export const RETIRED_V2_INSIGHT_TYPES: ReadonlySet<string> = new Set(['bubble_player']);
 const DEFAULT_WINDOW_DAYS = 90;
 
 export interface InsightRecordForUpsert {
@@ -103,15 +119,23 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
   const sampleN = supportRounded;
 
   const unit = evidenceUnit(metadata);
-  const strokeImpact = Math.abs(
+  const rawImpact =
     numberValue(metadata.stroke_impact)
       ?? numberValue(metadata.stroke_impact_score)
       ?? numberValue(metadata.prediction_value)
-      ?? confidence,
-  );
+      ?? confidence;
+  // pattern_detected keeps its sign (audit row 16): a mined pattern's
+  // stroke_impact is signed (positive = worse under the condition), and 24 of
+  // 73 active conditional patterns were FAVOURABLE, yet Math.abs turned them
+  // into stroke losses. A favourable pattern costs nothing (strokes_impact 0)
+  // and its signed value stays in your_value and detail. Every other legacy
+  // type keeps the magnitude contract.
+  const signedPattern =
+    record.insight_type === 'pattern_detected' && numberValue(metadata.stroke_impact) !== null;
+  const strokeImpact = signedPattern ? Math.max(0, rawImpact) : Math.abs(rawImpact);
   const yourValue = unit === 'percent'
     ? confidence
-    : strokeImpact;
+    : signedPattern ? rawImpact : strokeImpact;
 
   // 2026-05-17: closes audit Q-NEW-1. Comparison values must come from a real
   // baseline (BaselineRegistry or a team-aggregate query), not be fabricated
@@ -156,6 +180,12 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
     detail: {
       source: 'v2_legacy_adapter',
       insight_type: record.insight_type,
+      ...(signedPattern
+        ? {
+            direction: rawImpact < 0 ? 'favourable' : 'unfavourable',
+            signed_stroke_impact: rawImpact,
+          }
+        : {}),
     },
   };
 }
@@ -171,6 +201,7 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
  * function now refuses to emit when data is insufficient.
  */
 export function toInsightInput(record: InsightRecordForUpsert): InsightInput | null {
+  if (RETIRED_V2_INSIGHT_TYPES.has(record.insight_type)) return null;
   const category = categoryFor(record);
   const evidence = buildEvidence(record, category);
   if (evidence === null) return null;

@@ -96,6 +96,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { notifyGoalAchieved, notifyGoalMissed } from '@/lib/coachhelm/v3/notifications/notify';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
@@ -138,6 +139,28 @@ export interface GoalProgressSummary {
 }
 
 /**
+ * The value a goal's progress is measured with this pass. Pure.
+ *
+ * A windowed metric is measured ONLY over countable rounds played since the
+ * goal started. With none yet, there is no observation: null, so the
+ * evaluator leaves the goal untouched. It used to fall back to the all-time
+ * standing and snapshot THAT every day, which is the frozen series behind 9
+ * of 12 active-player goals (audit row 20) and could mark a goal achieved or
+ * missed on a number that says nothing about the goal window. A non-windowed
+ * metric (legacy goals; new ones are refused at creation) keeps the standing.
+ */
+export function resolveGoalObservedValue(
+  goal: Pick<Goal, 'metric_id' | 'started_at'>,
+  standingValue: number | null,
+  windowRounds: readonly WindowRound[],
+): number | null {
+  if (!isWindowedMetric(goal.metric_id)) return standingValue;
+  const startDate = goal.started_at.slice(0, 10);
+  const inWindow = windowRounds.filter((r) => r.round_date >= startDate);
+  return aggregateWindowMetric(goal.metric_id, inWindow);
+}
+
+/**
  * Shared per-goal evaluation core. Runs the deterministic evaluator against the
  * player's latest standing for each goal and persists current_value + snapshots
  * + any terminal transition. Skips the write when nothing changed (`unchanged`)
@@ -171,17 +194,7 @@ async function evaluatePlayerGoals(
 
   for (const goal of goals) {
     const st = standing.get(goal.metric_id);
-    // Observed value: prefer the goal-WINDOW value (rounds since it started) for
-    // accurate in-progress tracking; fall back to the all-time standing when the
-    // metric isn't windowable or no rounds have been played in the window yet
-    // (then current ≈ baseline → the card honestly reads "not started").
-    let observed = st?.player_value ?? null;
-    if (isWindowedMetric(goal.metric_id)) {
-      const startDate = goal.started_at.slice(0, 10);
-      const inWindow = windowRounds.filter((r) => r.round_date >= startDate);
-      const windowed = aggregateWindowMetric(goal.metric_id, inWindow);
-      if (windowed !== null) observed = windowed;
-    }
+    const observed = resolveGoalObservedValue(goal, st?.player_value ?? null, windowRounds);
     const cfg = getMetricRenderConfig(goal.metric_id);
     const direction: MetricDirection =
       cfg?.direction === 'lower_better' ? 'lower_better' : 'higher_better';
@@ -209,13 +222,24 @@ async function evaluatePlayerGoals(
       patch.outcome_evaluated_at = result.outcome_evaluated_at;
     }
 
-    const { error } = await fromUntyped(supabase, 'golf_goals')
+    // Guard on state='active' so a cron run and a post-round run racing on
+    // the same goal cannot both apply (and both notify) a terminal outcome.
+    const { data: written, error } = await fromUntyped(supabase, 'golf_goals')
       .update(patch) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
-      .eq('id', goal.id);
+      .eq('id', goal.id)
+      .eq('state', 'active')
+      .select('id');
 
-    if (!error) {
+    if (!error && Array.isArray(written) && written.length > 0) {
       updated += 1;
       if (result.state === 'achieved') achieved += 1;
+      // Audit row 53: terminal goal outcomes reach the player (never throws).
+      const title = (goal as { title?: string | null }).title ?? 'Your goal';
+      if (result.state === 'achieved') {
+        await notifyGoalAchieved({ player_id: playerId, goal_id: goal.id, goal_title: title });
+      } else if (result.state === 'missed') {
+        await notifyGoalMissed({ player_id: playerId, goal_id: goal.id, goal_title: title });
+      }
     }
   }
 
@@ -489,6 +513,8 @@ async function loadWindowRoundsByPlayer(
         .select('id, player_id, round_date')
         .in('player_id', batch)
         .eq('status', 'completed')
+        // Test rounds (QA/demo data, OD-03) never advance a player's focus area.
+        .eq('is_test', false)
         .gte('round_date', sinceDate)
         .order('id', { ascending: true })
         .range(from, to),

@@ -95,3 +95,19 @@ describe('toParInkClass (frosted score panel)', () => {
     expect(toParInkClass(Number.NaN)).toBe('text-text-secondary');
   });
 });
+
+describe('formatHoleSgNarrative baseline label (audit row 46)', () => {
+  it('names the baseline the per-shot SG was measured against', () => {
+    const result = formatHoleSgNarrative(
+      sg({ total: -2.1, tee: -1.1, putting: -1.0, approach: 0, around_green: null }),
+      'LPGA Tour',
+    );
+    expect(result!.text).toBe('Lost 2.1 strokes vs LPGA Tour here: 1.1 off the tee, 1.0 putting.');
+  });
+
+  it('labels the even case too', () => {
+    expect(formatHoleSgNarrative(sg({ total: 0.01, putting: 0.01 }), 'PGA Tour')!.text).toBe(
+      'Even strokes gained vs PGA Tour here.',
+    );
+  });
+});

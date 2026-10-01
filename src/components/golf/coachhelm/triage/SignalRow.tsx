@@ -2,12 +2,16 @@
 
 /**
  * ============================================================================
- * SignalRow — one triage-queue row (Triage Desk spec §3)
+ * SignalRow — one row of The Lab's signal queue
  * ----------------------------------------------------------------------------
- * Severity dot, category label, one-line claim, age. A real PressTarget
- * (keyboard-activatable, focus-visible ring), `aria-selected` for the
- * containing `role="listbox"`, and a roving `tabIndex` so `SignalQueue`'s
- * arrow-key navigation only ever lands on the currently reachable row.
+ * Severity dot, category, the claim in two lines. A real link (so a modified
+ * click opens the signal in a new tab), `aria-selected` for the containing
+ * `role="listbox"`, and a roving `tabIndex` so `SignalQueue`'s arrow-key
+ * navigation only ever lands on the currently reachable row.
+ *
+ * Selection is a deeper cream well with a control-weight edge, never a green
+ * wash (owner: no green highlights; `surface-sunken` is the row-highlight
+ * token).
  * ========================================================================== */
 
 import { forwardRef } from 'react';
@@ -22,11 +26,11 @@ const SEVERITY_DOT: Record<SignalSeverity, string> = {
   urgent: 'bg-fw-danger',
   high: 'bg-fw-danger',
   medium: 'bg-fw-warning',
-  low: 'bg-text-tertiary/50',
+  low: 'bg-border-control',
 };
 
 /** Severity chip — status tokens (danger/warning/neutral), used sparingly on
- *  chips/dots only per the Triage Desk palette rule. */
+ *  chips/dots only. */
 export function SeverityChip({ severity }: { severity: SignalSeverity }) {
   const tone = severity === 'urgent' || severity === 'high' ? 'danger' : severity === 'medium' ? 'warning' : 'neutral';
   return (
@@ -39,19 +43,17 @@ export function SeverityChip({ severity }: { severity: SignalSeverity }) {
 export interface SignalRowProps {
   signal: GroupedSignal;
   selected: boolean;
-  /** Roving tab stop: true for the selected row, OR — when nothing is
-   *  selected yet (first load, before a URL `signal`/mouse pick) — the first
-   *  visible row, so a keyboard-only user always has one reachable row
-   *  instead of every row landing on -1. */
+  /** Roving tab stop: true for the selected row, OR, when nothing is
+   *  selected yet, the first visible row, so a keyboard-only user always has
+   *  exactly one reachable row. */
   tabbable: boolean;
   href: string;
   onSelect: () => void;
   /**
    * Whose signal this is. The NLG layer writes every claim in the second
    * person for the player's own surfaces ("Across YOUR last 13 rounds…"), but
-   * the reader here is a coach, not the subject (audit M12). Supplying the
-   * name retells the claim in the third person; omitting it leaves the copy
-   * exactly as generated, so the player-facing surfaces are unaffected.
+   * the reader here is a coach (audit M12). Supplying the name retells the
+   * claim in the third person; omitting it leaves the copy as generated.
    */
   subjectName?: string | null;
 }
@@ -85,39 +87,43 @@ export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function 
       data-signal-id={signal.id}
       tabIndex={tabbable ? 0 : -1}
       className={cn(
-        'flex w-full items-start gap-2.5 rounded-fw-sm px-3 py-2.5 text-left',
-        'border transition-colors [transition-duration:150ms]',
-        selected ? 'border-accent-200 bg-accent-50' : 'border-transparent hover:bg-surface-sunken',
-        // MOT-19: the row the coach just came back from holds a wash, then
-        // fades out over 700ms (SignalQueue clears the attribute).
-        'data-[returned=true]:bg-accent-wash data-[returned=true]:[transition-duration:0ms] motion-safe:[transition-duration:700ms]',
+        'flex min-h-[44px] w-full items-start gap-3 rounded-fw-md border px-3 py-2.5 text-left outline-none',
+        'transition-[background-color,border-color] [transition-duration:var(--fw-dur-fast)]',
+        'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+        selected ? 'border-border-control bg-surface-sunken' : 'border-transparent hover:bg-surface-sunken',
+        // MOT-19: the row the coach just came back from lights at once, holds
+        // for SignalQueue's 900ms, then eases out when the attribute clears.
+        'data-[returned=true]:border-border-strong data-[returned=true]:bg-surface-sunken data-[returned=true]:[transition-duration:0ms]',
       )}
     >
       <span
-        className={cn('mt-1.5 h-2 w-2 flex-shrink-0 rounded-full', SEVERITY_DOT[signal.severity])}
+        className={cn('mt-[7px] h-2 w-2 flex-shrink-0 rounded-full', SEVERITY_DOT[signal.severity])}
         aria-hidden="true"
       />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="font-fw-sans text-caption font-semibold uppercase tracking-wide text-text-tertiary">
+          <span className="truncate font-fw-sans text-caption font-medium text-text-tertiary">
             {formatCategoryLabel(signal.category)}
           </span>
           {signal.supersededCount > 0 ? (
-            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+            <span className="shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary">
               +{signal.supersededCount} earlier
             </span>
           ) : null}
         </span>
         {/* line-clamp-2, not truncate: single-line truncation hid ~95% of every
-            claim — measured 2,300-2,500px of hidden text per row, and still
-            ~2,500px at 1440px wide (audit 2026-07-24, H4). */}
-        <span className="mt-0.5 block font-fw-sans text-body-sm text-text-primary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+            claim (audit 2026-07-24, H4). */}
+        <span
+          className={cn(
+            'mt-0.5 block overflow-hidden font-fw-sans text-body-sm text-text-primary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]',
+            selected && 'font-medium',
+          )}
+        >
           {toCoachVoice(signal.claim || signal.title, subjectName)}
         </span>
       </span>
-      {/* Age removed — `ageDays` is `created_at` (the insert batch), so this
-          printed "55d ago" for content recomputed the same morning. See the
-          note in SignalDossier. Restore with `content_generated_at`. */}
+      {/* No age: `ageDays` is the insert batch, not content freshness. See
+          SignalDossier. Restore with `content_generated_at`. */}
     </Link>
   );
 });

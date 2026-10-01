@@ -63,6 +63,7 @@ interface FocusAreaRow {
 let focusAreaRows: FocusAreaRow[] = [];
 let roundRows: Array<{ id: string; player_id: string; round_date: string }> = [];
 let statsRows: Array<{ round_id: string; total_putts: number | null }> = [];
+const roundQueryEqCalls: Array<[string, unknown]> = [];
 const updateCalls: Array<{ id: string; patch: Record<string, unknown> }> = [];
 
 /**
@@ -98,14 +99,19 @@ function makeAdminClient() {
         };
       }
       if (table === 'golf_rounds') {
+        // `.eq()` may repeat (status, is_test, ...): record each call and keep chaining.
         return {
-          select: () => ({
-            in: () => ({
-              eq: () => ({
-                gte: () => pagedResult(roundRows),
-              }),
-            }),
-          }),
+          select: () => {
+            const node = {
+              in: () => node,
+              eq: (column: string, value: unknown) => {
+                roundQueryEqCalls.push([column, value]);
+                return node;
+              },
+              gte: () => pagedResult(roundRows),
+            };
+            return node;
+          },
         };
       }
       if (table === 'golf_round_stats_cache') {
@@ -138,7 +144,7 @@ vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({
   }),
 }));
 
-import { runFocusAreaProgressForPlayers } from '../progress-drivers';
+import { runFocusAreaProgressForPlayers, resolveGoalObservedValue } from '../progress-drivers';
 
 describe('runFocusAreaProgressForPlayers — standing fallback (B2 / P0 fix)', () => {
   beforeEach(() => {
@@ -220,6 +226,26 @@ describe('runFocusAreaProgressForPlayers — standing fallback (B2 / P0 fix)', (
     expect(updateCalls).toHaveLength(1);
     expect(updateCalls[0]!.id).toBe('area-3');
     expect(updateCalls[0]!.patch.current_value).toBe(28);
+  });
+
+  it('windows completed rounds of real players only: the golf_rounds read filters is_test = false', async () => {
+    focusAreaRows = [
+      {
+        id: 'area-4',
+        player_id: 'player-4',
+        target_metric: 'putts_per_round',
+        current_value: 32,
+        started_at: '2026-06-01',
+      },
+    ];
+    roundRows = [{ id: 'round-1', player_id: 'player-4', round_date: '2026-06-10' }];
+    statsRows = [{ round_id: 'round-1', total_putts: 28 }];
+    roundQueryEqCalls.length = 0;
+
+    await runFocusAreaProgressForPlayers(['player-4']);
+
+    expect(roundQueryEqCalls).toContainEqual(['status', 'completed']);
+    expect(roundQueryEqCalls).toContainEqual(['is_test', false]);
   });
 
   it('mixed batch: legacy-catalog area and standing-fallback area are both evaluated independently', async () => {
@@ -401,5 +427,39 @@ describe('runFocusAreaProgressForPlayers — baseline + snapshots (#1240 / #1241
 
     expect(summary.evaluated).toBe(0);
     expect(updateCalls).toHaveLength(0);
+  });
+});
+
+describe('resolveGoalObservedValue — audit row 20 frozen goal series', () => {
+  const wr = (round_date: string, sg: number) => ({
+    round_date,
+    strokes_gained_total: null,
+    strokes_gained_putting: sg,
+    strokes_gained_tee: null,
+    strokes_gained_approach: null,
+    strokes_gained_around_green: null,
+    greens_hit: null,
+    greens_total: null,
+    sand_saves: null,
+    sand_attempts: null,
+    penalty_strokes: 0,
+  });
+  const goal = { metric_id: 'sg_putting' as const, started_at: '2026-09-01T12:00:00Z' };
+
+  it('does NOT fall back to the all-time standing when no round was played in the window', () => {
+    // Before: observed = standing (-6.475) every day -> one repeated value.
+    expect(resolveGoalObservedValue(goal, -6.475, [wr('2026-08-20', -2)])).toBeNull();
+  });
+
+  it('measures only rounds on or after the goal start', () => {
+    expect(
+      resolveGoalObservedValue(goal, -6.475, [wr('2026-08-20', -9), wr('2026-09-03', -3), wr('2026-09-10', -1)]),
+    ).toBeCloseTo(-2, 6);
+  });
+
+  it('keeps the standing for a legacy non-windowed goal', () => {
+    expect(
+      resolveGoalObservedValue({ metric_id: 'scoring_par_4', started_at: '2026-09-01' }, 4.22, []),
+    ).toBe(4.22);
   });
 });

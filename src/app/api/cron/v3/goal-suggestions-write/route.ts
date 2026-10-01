@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { runSuggestionWriter } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import { notifyEngineSuggestedGoals } from '@/lib/coachhelm/v3/notifications/notify';
 import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
@@ -47,6 +48,13 @@ async function handle(): Promise<NextResponse> {
       // Still return 200 with the structured payload so cron retries don't
       // double-write — the error is surfaced in the JSON body.
       return NextResponse.json(result, { status: 200 });
+    }
+    // Audit row 53: players with new suggestions hear about them (throttled
+    // per player per day; never throws). Only after a clean insert.
+    for (const p of result.per_player) {
+      if (p.inserted > 0) {
+        await notifyEngineSuggestedGoals({ player_id: p.player_id, count: p.inserted });
+      }
     }
     return NextResponse.json(result, { status: 200 });
   } catch (err) {

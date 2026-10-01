@@ -652,85 +652,125 @@ describe('updateFocusAreaProgress — progress_notes append (Sparkline source)',
 
 /**
  * P092: deleteFocusArea is the server action behind the restored Delete
- * affordance in the Fairway FocusAreaCard. These tests pin its coach-only
- * ownership guard (delete is scoped by coach_id) and its auth gates.
+ * affordance in the Fairway FocusAreaCard. Q-86 (2026-09-30): it used to delete
+ * with `.eq('coach_id', own)` and no select-back, so a co-staff coach (not the
+ * coach who created the area) matched no row, got error:null, and was told
+ * "Focus area deleted" while the row survived. It now authorises by the
+ * player's team staffing (the same rule as golf_player_focus_areas_delete_coach)
+ * and selects the deleted row back, so a refusal is reported as one.
  */
-describe('deleteFocusArea — coach-only, ownership-scoped', () => {
+describe('deleteFocusArea — any coach staffed on the player, honest outcome (Q-86)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('rejects an unauthenticated caller', async () => {
-    createClientMock.mockResolvedValue({
-      auth: { getUser: async () => ({ data: { user: null }, error: null }) },
-      from: () => ({}),
-    });
-
-    const result = await deleteFocusArea('fa-1');
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/authenticated/i);
-  });
-
-  it('rejects a non-coach caller', async () => {
-    createClientMock.mockResolvedValue({
-      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
-      from: (table: string) => {
-        if (table === 'golf_coaches') {
-          return {
-            select: () => ({
-              eq: () => ({
-                single: async () => ({ data: null, error: { message: 'no row' } }),
-              }),
-            }),
-          };
-        }
-        return {};
-      },
-    });
-
-    const result = await deleteFocusArea('fa-1');
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/not authorized/i);
-  });
-
-  it('deletes scoped by id AND coach_id when the caller owns the focus area', async () => {
+  function harness({
+    user = { id: 'user-1' } as { id: string } | null,
+    focusArea = { player_id: 'p-1' } as Record<string, unknown> | null,
+    readError = null as { message: string } | null,
+    access = { allowed: true, reason: 'coach' } as { allowed: boolean; reason?: string },
+    deleted = [{ id: 'fa-1' }] as { id: string }[] | null,
+    deleteError = null as { message: string } | null,
+  } = {}) {
     const eqChain: string[] = [];
     const deleteSpy = vi.fn().mockReturnValue({
       eq: (col: string) => {
         eqChain.push(col);
-        return {
-          eq: (col2: string) => {
-            eqChain.push(col2);
-            return Promise.resolve({ error: null });
-          },
-        };
+        return { select: async () => ({ data: deleted, error: deleteError }) };
       },
     });
-
+    verifyPlayerAccessMock.mockResolvedValue(access);
     createClientMock.mockResolvedValue({
-      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
-      from: (table: string) => {
-        if (table === 'golf_coaches') {
-          return {
-            select: () => ({
-              eq: () => ({
-                single: async () => ({ data: { id: 'coach-1' }, error: null }),
-              }),
-            }),
-          };
-        }
-        if (table === 'golf_player_focus_areas') {
-          return { delete: deleteSpy };
-        }
-        return {};
-      },
+      auth: { getUser: async () => ({ data: { user }, error: null }) },
+      from: () => ({
+        select: () => ({
+          eq: () => ({ maybeSingle: async () => ({ data: focusArea, error: readError }) }),
+        }),
+        delete: deleteSpy,
+      }),
     });
+    return { deleteSpy, eqChain };
+  }
+
+  it('rejects an unauthenticated caller', async () => {
+    const { deleteSpy } = harness({ user: null });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/authenticated/i);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it('says so when the focus area does not exist, and deletes nothing', async () => {
+    const { deleteSpy } = harness({ focusArea: null });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/not found/i);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it('reports a failed read as a load failure, not as a missing record', async () => {
+    const { deleteSpy } = harness({ focusArea: null, readError: { message: 'boom' } });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/couldn't load/i);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it('refuses a caller who is not a coach on the player (denied)', async () => {
+    const { deleteSpy } = harness({ access: { allowed: false, reason: 'denied' } });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/not authorized/i);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it('refuses the player themselves: self-access is not a coach', async () => {
+    const { deleteSpy } = harness({ access: { allowed: true, reason: 'self' } });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/not authorized/i);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it('says the access check could not run (not "not authorized") when it was unavailable', async () => {
+    const { deleteSpy } = harness({ access: { allowed: false, reason: 'unavailable' } });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/try again/i);
+    expect(result.error).not.toMatch(/not authorized/i);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it('deletes for a co-staff coach: filtered by id only, never by the creating coach_id', async () => {
+    const { deleteSpy, eqChain } = harness();
 
     const result = await deleteFocusArea('fa-1');
     expect(result.success).toBe(true);
     expect(deleteSpy).toHaveBeenCalledTimes(1);
-    // Ownership scope: deletion is filtered by both id and coach_id.
-    expect(eqChain).toEqual(['id', 'coach_id']);
+    expect(eqChain).toEqual(['id']);
+    expect(verifyPlayerAccessMock).toHaveBeenCalledWith('p-1', 'user-1', expect.anything());
+  });
+
+  it('reports a delete that matched no row as a failure, not "deleted"', async () => {
+    harness({ deleted: [] });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/not found or not permitted/i);
+  });
+
+  it('reports a database error on delete as a failure', async () => {
+    harness({ deleted: null, deleteError: { message: 'nope' } });
+
+    const result = await deleteFocusArea('fa-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/failed to delete/i);
   });
 });
 

@@ -45,6 +45,11 @@ function edge(
     intervention_potential: 0.6,
     created_at: '2026-08-01T00:00:00.000Z',
     updated_at: '2026-08-17T00:00:00.000Z',
+    // Passes the honest-correlation gate (n >= 15, q < 0.05, |r| >= 0.3).
+    correlation: 0.7,
+    sample_n: 20,
+    p_value: 0.001,
+    q_value: 0.003,
     ...over,
   };
 }
@@ -65,7 +70,7 @@ describe('composeCausalChains', () => {
     const chains = composeCausalChains([
       edge('total_fairways_hit', 'total_gir'),
       edge('total_gir', 'total_putts'),
-      edge('total_putts', 'score_to_par'),
+      edge('total_putts', 'three_putt_rate'),
     ]);
 
     const longest = chains[0]!;
@@ -73,11 +78,11 @@ describe('composeCausalChains', () => {
       'total_fairways_hit',
       'total_gir',
       'total_putts',
-      'score_to_par',
+      'three_putt_rate',
     ]);
   });
 
-  it('returns the LONGEST chain first — that is the deepest root cause', () => {
+  it('returns the LONGEST chain first', () => {
     // Two disjoint chains so the ordering has something to order. The first
     // fixture for this test produced only ONE chain (a lone score edge cannot
     // chain), so chains[0] and chains[last] were the same row and the
@@ -86,7 +91,7 @@ describe('composeCausalChains', () => {
       // 3 hops
       edge('total_fairways_hit', 'total_gir'),
       edge('total_gir', 'total_putts'),
-      edge('total_putts', 'score_to_par'),
+      edge('total_putts', 'three_putt_rate'),
       // 2 hops, sharing no metric with the above
       edge('penalty_strokes', 'double_bogey_rate'),
       edge('double_bogey_rate', 'round_variance'),
@@ -178,19 +183,19 @@ describe('composeCausalChains — parallel edges are one chain, not two', () => 
   it('emits a single chain when a hop exists under two relationship types', () => {
     const chains = composeCausalChains([
       edge('total_fairways_hit', 'total_gir'),
-      edge('total_gir', 'score_to_par', { id: 'gir-direct', relationship_type: 'direct', confidence: 0.6 }),
-      edge('total_gir', 'score_to_par', { id: 'gir-mediated', relationship_type: 'mediated', confidence: 0.9 }),
+      edge('total_gir', 'total_putts', { id: 'gir-direct', relationship_type: 'direct', confidence: 0.6 }),
+      edge('total_gir', 'total_putts', { id: 'gir-mediated', relationship_type: 'mediated', confidence: 0.9 }),
     ]);
 
     expect(chains).toHaveLength(1);
-    expect(chains[0]!.metrics).toEqual(['total_fairways_hit', 'total_gir', 'score_to_par']);
+    expect(chains[0]!.metrics).toEqual(['total_fairways_hit', 'total_gir', 'total_putts']);
   });
 
   it('keeps the better-supported reading of a duplicated path', () => {
     const chains = composeCausalChains([
       edge('total_fairways_hit', 'total_gir'),
-      edge('total_gir', 'score_to_par', { id: 'gir-direct', relationship_type: 'direct', confidence: 0.6 }),
-      edge('total_gir', 'score_to_par', { id: 'gir-mediated', relationship_type: 'mediated', confidence: 0.9 }),
+      edge('total_gir', 'total_putts', { id: 'gir-direct', relationship_type: 'direct', confidence: 0.6 }),
+      edge('total_gir', 'total_putts', { id: 'gir-mediated', relationship_type: 'mediated', confidence: 0.9 }),
     ]);
 
     // Weakest hop of the surviving chain is min(0.8, 0.9) — the 0.6 reading lost.
@@ -208,5 +213,69 @@ describe('composeCausalChains — parallel edges are one chain, not two', () => 
 
     const paths = chains.map((c) => c.metrics.join('>'));
     expect(new Set(paths).size).toBe(paths.length);
+  });
+});
+
+/**
+ * Deep audit row 34 (2026-09-28): chains composed correlations into a
+ * "root cause" with no sign and no joint check. On 9 of 9 checkable triangles
+ * the indirect path had the opposite sign of the direct edge, and 26 of 42
+ * two-hop paths ended in score arithmetic. Owner decision "honest
+ * correlation": a linked pattern is drawn only when every hop passes the gate,
+ * no hop is score arithmetic, and the signs compose consistently.
+ */
+describe('composeCausalChains — honest-correlation rules', () => {
+  it('carries the composed SIGN (product of hop signs) and each hop sign', () => {
+    const chains = composeCausalChains([
+      edge('total_fairways_hit', 'total_gir', { correlation: 0.6 }),
+      edge('total_gir', 'total_putts', { correlation: -0.5 }),
+    ]);
+    expect(chains).toHaveLength(1);
+    expect(chains[0]!.hopSigns).toEqual([1, -1]);
+    expect(chains[0]!.sign).toBe(-1);
+  });
+
+  it('drops score-arithmetic hops, so no chain ends at the scorecard', () => {
+    const chains = composeCausalChains([
+      edge('total_fairways_hit', 'total_gir'),
+      edge('total_gir', 'score_to_par'),
+    ]);
+    expect(chains).toEqual([]);
+  });
+
+  it('draws nothing when any hop lacks significance evidence (a pre-gate row)', () => {
+    const chains = composeCausalChains([
+      edge('total_fairways_hit', 'total_gir'),
+      edge('total_gir', 'total_putts', { correlation: null, sample_n: null, p_value: null, q_value: null }),
+    ]);
+    expect(chains).toEqual([]);
+  });
+
+  it('draws nothing when any hop fails the gate (q above 0.05)', () => {
+    const chains = composeCausalChains([
+      edge('total_fairways_hit', 'total_gir'),
+      edge('total_gir', 'total_putts', { q_value: 0.2 }),
+    ]);
+    expect(chains).toEqual([]);
+  });
+
+  it('draws nothing when a direct edge between two chain nodes contradicts the composed sign', () => {
+    // A -> B (+), B -> C (+) implies A and C move together; a stored A -> C
+    // that is NEGATIVE says otherwise, and the story would read backwards.
+    const chains = composeCausalChains([
+      edge('metric_a', 'metric_b', { correlation: 0.6 }),
+      edge('metric_b', 'metric_c', { correlation: 0.6 }),
+      edge('metric_a', 'metric_c', { correlation: -0.5 }),
+    ]);
+    expect(chains.filter((c) => c.metrics.length >= 3)).toEqual([]);
+  });
+
+  it('keeps the chain when the direct edge agrees with the composed sign', () => {
+    const chains = composeCausalChains([
+      edge('metric_a', 'metric_b', { correlation: 0.6 }),
+      edge('metric_b', 'metric_c', { correlation: -0.6 }),
+      edge('metric_a', 'metric_c', { correlation: -0.4 }),
+    ]);
+    expect(chains.some((c) => c.metrics.join('>') === 'metric_a>metric_b>metric_c')).toBe(true);
   });
 });

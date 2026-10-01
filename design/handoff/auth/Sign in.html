@@ -1,0 +1,72 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Sign in</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="src/depth.css">
+<script src="src/gh-core.js"></script>
+<link rel="stylesheet" href="../gh-polish.css">
+<link rel="stylesheet" href="src/login.css">
+<style>html,body{margin:0;height:100%}a{color:var(--green-700)}a:hover{color:var(--green-800)}</style>
+<script>(()=>{const z=new URLSearchParams(location.search).get('zoom');if(z)document.documentElement.style.zoom=z})()</script>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0B3A25"/><circle cx="50" cy="50" r="22" fill="none" stroke="#E6D3A2" stroke-width="4"/><path d="M50 30v40M30 50h40" stroke="#E6D3A2" stroke-width="4"/></svg></template>
+</head><body class="fairway"><div id="root" data-screen-label="Sign in"></div>
+<script type="text/babel" src="src/scene.jsx"></script>
+<script type="text/babel" src="src/login.jsx"></script>
+<script type="text/babel">
+const KEY = 'gh-signin-rev';
+function Seg({ label, value, opts, set }) {
+  return <><p className="ghp__k">{label}</p><div className="ghp__seg" role="radiogroup" aria-label={label}>{opts.map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={value === v} onClick={() => set(v)}>{l}</button>)}</div></>;
+}
+function App() {
+  const [r, setR] = React.useState(() => { const q = new URLSearchParams(location.search); const v = { role: 'coach', hour: null, failFirst: false, fail: 'none', news: 'some', anon: false, stay: false, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; delete v.tod; ['fail', 'news', 'role'].forEach((k) => { if (q.get(k)) v[k] = q.get(k); }); if (q.get('hour')) v.hour = +q.get('hour'); if (q.get('anon')) v.anon = true; return v; });
+  const [sweep, setSweep] = React.useState(null);
+  const playDay = () => { const t0 = performance.now(), D = 16000; const step = (t) => { const u = Math.min(1, (t - t0) / D); setSweep(4.5 + u * 19); if (u < 1) requestAnimationFrame(step); else setSweep(null); }; requestAnimationFrame(step); };
+  const shown = sweep ?? r.hour ?? lgNowHour();
+  const fmt = (x) => { const hh = Math.floor(x) % 24, mm = Math.floor((x % 1) * 60); return ((hh + 11) % 12 + 1) + ':' + String(mm).padStart(2, '0') + (hh < 12 ? ' am' : ' pm'); };
+  const [open, setOpen] = React.useState(false);
+  const [k, setK] = React.useState(0);
+  const [handed, setHanded] = React.useState(false);
+  React.useEffect(() => { if (!handed) document.title = 'GolfHelm · Sign in'; }, [handed]);
+  const flow = React.useRef(null);
+  window.__review = { set: (p) => { set(p); setK((x) => x + 1); }, flow };
+  const set = (p) => { const n = { ...r, ...p }; setR(n); localStorage.setItem(KEY, JSON.stringify(n)); };
+  return (<>
+    <SignInDesktop key={k} {...r} hour={sweep ?? r.hour} flowRef={flow} onHanded={setHanded} />
+    <div className="ghp" data-gh-nopress="" data-haptic="none" style={handed && !open ? { bottom: 56 } : undefined}>
+      {open && <div className="ghp__body">
+        <p className="ghp__k">Reviewer controls. Not part of the product.</p>
+        <Seg label="Signs in as" value={r.role} set={(v) => { set({ role: v }); setK(k + 1); }} opts={[['coach', 'Coach'], ['player', 'Player']]} />
+        <p className="ghp__k" style={{ display: 'flex', justifyContent: 'space-between' }}><span>Time of day</span><span style={{ color: '#12110E' }}>{fmt(shown)}{r.hour == null && sweep == null ? ' · your clock' : ''}</span></p>
+        <input type="range" min="0" max="23.75" step="0.25" value={shown} onChange={(e) => set({ hour: +e.target.value })} style={{ width: '100%', accentColor: '#1F6B45', margin: 0 }} aria-label="Time of day" />
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button type="button" className="ghp__btn" style={{ flex: 1, background: '#EFECE4', color: '#12110E' }} onClick={() => set({ hour: null })}>Use my clock</button>
+          <button type="button" className="ghp__btn" style={{ flex: 1 }} onClick={playDay}>Play the day</button>
+        </div>
+        <p className="ghp__k">First sign-in attempt</p>
+        <select value={r.fail || 'none'} onChange={(e) => { set({ fail: e.target.value, failFirst: false }); setK(k + 1); }} style={{ height: 32, borderRadius: 9, border: 0, background: '#EFECE4', padding: '0 8px', font: '500 12.5px/1 var(--font-sans)' }}>
+          {[['none', 'Succeeds'], ['creds', 'Wrong email or password'], ['unconfirmed', 'Email not verified'], ['rate', 'Too many attempts'], ['network', 'No connection'], ['stale', 'App updated in background']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <p className="ghp__k">Welcome notifications</p>
+        <select value={r.news || 'some'} onChange={(e) => set({ news: e.target.value })} style={{ height: 32, borderRadius: 9, border: 0, background: '#EFECE4', padding: '0 8px', font: '500 12.5px/1 var(--font-sans)' }}>
+          {[['some', 'Three updates'], ['none', 'Empty · all caught up'], ['first', 'Empty · first sign-in']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <label className="ghp__tg"><input type="checkbox" checked={r.anon} onChange={(e) => set({ anon: e.target.checked })} /><span>Name lookup fails</span></label>
+        <button type="button" className="ghp__btn" onClick={() => { setHanded(false); if (handed) { setK(k + 1); setTimeout(() => flow.current && flow.current.reset('welcome'), 60); } else flow.current && flow.current.reset('welcome'); }}>Play welcome</button>
+        <button type="button" className="ghp__btn" style={{ background: '#EFECE4', color: '#12110E' }} onClick={() => { setHanded(false); setK(k + 1); }}>Back to sign-in</button>
+      </div>}
+      <button type="button" className="ghp__chip" aria-expanded={open} onClick={() => setOpen(!open)}><i></i><span>Prototype · {r.role === 'coach' ? 'Coach' : 'Player'}</span></button>
+    </div>
+  </>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

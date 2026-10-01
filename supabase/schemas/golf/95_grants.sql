@@ -454,8 +454,6 @@ GRANT ALL ON TABLE "public"."golf_predictions" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_predictions" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_qualifier_entries" TO "anon";
-
 GRANT ALL ON TABLE "public"."golf_qualifier_entries" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_qualifier_entries" TO "service_role";
@@ -464,13 +462,12 @@ GRANT ALL ON TABLE "public"."golf_qualifier_round_courses" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_qualifier_round_courses" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_qualifier_selections" TO "anon";
+GRANT INSERT, UPDATE, DELETE, REFERENCES, TRIGGER, TRUNCATE ON TABLE "public"."golf_qualifier_selections" TO "authenticated";
 
-GRANT ALL ON TABLE "public"."golf_qualifier_selections" TO "authenticated";
+-- D-35: every column but coach_reasoning; coaches read it through golf_qualifier_selection_reasons().
+GRANT SELECT ("qualifier_id", "player_id", "selection_type", "selected_at", "selected_by_user_id") ON TABLE "public"."golf_qualifier_selections" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_qualifier_selections" TO "service_role";
-
-GRANT ALL ON TABLE "public"."golf_qualifiers" TO "anon";
 
 GRANT ALL ON TABLE "public"."golf_qualifiers" TO "authenticated";
 

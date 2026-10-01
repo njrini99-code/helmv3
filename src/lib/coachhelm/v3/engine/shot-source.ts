@@ -103,10 +103,10 @@ export interface TeeStrategyShot {
   club_type: 'driver' | 'non_driver';
   /** From golf_holes.par — pre-filtered to par 4/5 only (par-3 tees excluded). */
   par: number;
-  /** True when the player's tee shot ended in the fairway. Authoritative
-   *  source is golf_holes.fairway_hit; falls back to lie_after = 'fairway'
-   *  when the hole-level flag isn't recorded. */
-  fairway_hit: boolean;
+  /** True when the player's tee shot ended in the fairway, from
+   *  golf_holes.fairway_hit. Null when the flag was not recorded (unknown,
+   *  never a miss — see resolveTeeFairway). */
+  fairway_hit: boolean | null;
   /** Yards. Prefer recorded shot_distance; fall back to
    *  hole.yardage - distance_to_hole_after when shot_distance is null —
    *  see `distance_method` for what the number then means. */
@@ -171,6 +171,7 @@ export async function loadApproachShots(
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
   if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
@@ -208,6 +209,22 @@ export async function loadApproachShots(
     });
 }
 
+/** One raw golf_shots row as {@link resolveSandShots} reads it. */
+export interface SandSourceRow {
+  round_id: string;
+  hole_number: number | null;
+  shot_number: number | null;
+  shot_type: string | null;
+  lie_before: string | null;
+  lie_after: string | null;
+  result: string | null;
+  is_penalty: boolean | null;
+  distance_to_hole_before: number | null;
+  distance_unit_before: string | null;
+  distance_to_hole_after: number | null;
+  distance_unit_after: string | null;
+}
+
 /** Greenside-bunker threshold (yards from hole). Mirrors
  *  golf-stats-calculator-shots `AROUND_GREEN_THRESHOLD_YARDS` so this loader's
  *  denominator matches the engine's `sand_save_percentage`. */
@@ -235,6 +252,7 @@ export async function loadSandShots(
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
   if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
@@ -242,20 +260,6 @@ export async function loadSandShots(
   const roundIds = rounds.map((r) => r.id);
 
   // All shots in those rounds (we need putting rows to count putts_after).
-  interface SandSourceRow {
-    round_id: string;
-    hole_number: number | null;
-    shot_number: number | null;
-    shot_type: string | null;
-    lie_before: string | null;
-    lie_after: string | null;
-    result: string | null;
-    is_penalty: boolean | null;
-    distance_to_hole_before: number | null;
-    distance_unit_before: string | null;
-    distance_to_hole_after: number | null;
-    distance_unit_after: string | null;
-  }
   const { data, error } = await fetchAllRowsResult<SandSourceRow>((from, to) =>
     fromUntyped(supabase, 'golf_shots')
       .select(
@@ -306,6 +310,20 @@ export async function loadSandShots(
     // No flags available — generator falls back to the shot-derived save heuristic.
   }
 
+  return resolveSandShots(data, flagByHole);
+}
+
+/**
+ * Pure: resolve raw golf_shots rows (every shot in the window's rounds, putts
+ * included) into greenside-bunker shots with their escape result, leave
+ * distance and putts after. `flagByHole` maps `${round_id}:${hole_number}` to
+ * golf_holes.sand_save. Exported so the escape/lag read can be recomputed from
+ * raw shots in a test (audit row 28).
+ */
+export function resolveSandShots(
+  data: readonly SandSourceRow[],
+  flagByHole: ReadonlyMap<string, boolean | null>,
+): SandShot[] {
   const out: SandShot[] = [];
   for (const s of data) {
     if ((s.lie_before ?? '').toLowerCase() !== 'sand') continue;
@@ -380,6 +398,7 @@ export async function loadTeeShots(
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
   if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
@@ -396,6 +415,21 @@ export async function loadTeeShots(
   if (error) throw new Error(`shot-source shots query failed: ${error.message}`);
   if (!data) return [];
   return data.filter((s) => s.club_type === 'driver' || s.club_type === 'non_driver');
+}
+
+/**
+ * Fairway result for one tee shot: the hole-level fairway_hit flag, or null
+ * (unknown) when it was not recorded. The old fallback read a missing flag as
+ * `lie_after === 'fairway'`, so an unrecorded hole with any other lie counted
+ * as a MISS, while the canonical fairway denominator (fairway_hit IS NOT NULL)
+ * leaves it out (audit row 29). `_lieAfter` stays in the signature to make the
+ * decision to ignore it explicit.
+ */
+export function resolveTeeFairway(
+  holeFairwayHit: boolean | null | undefined,
+  _lieAfter: string | null | undefined,
+): boolean | null {
+  return holeFairwayHit === true ? true : holeFairwayHit === false ? false : null;
 }
 
 /**
@@ -425,6 +459,7 @@ export async function loadTeeShotsForStrategy(
       player_id: string | null;
       round_date: string | null;
       status: string | null;
+      is_test: boolean | null;
     } | null;
     golf_holes: {
       par: number | null;
@@ -439,13 +474,16 @@ export async function loadTeeShotsForStrategy(
         `
       round_id, hole_number, club_type, lie_after, shot_distance,
       distance_to_hole_after, is_penalty,
-      golf_rounds!inner ( player_id, round_date, status ),
+      golf_rounds!inner ( player_id, round_date, status, is_test ),
       golf_holes!inner ( par, yardage, fairway_hit )
     `,
       )
       .eq('shot_type', 'tee')
       .eq('golf_rounds.player_id', playerId)
       .eq('golf_rounds.status', 'completed')
+      // QA rounds never feed a player's tee read (audit row 29: 14 test-round
+      // tee shots sat in the 90-day window and one stored row included them).
+      .eq('golf_rounds.is_test', false)
       .gte('golf_rounds.round_date', since)
       .order('id', { ascending: true })
       .range(from, to)); // paginate past PostgREST 1000-row cap
@@ -461,14 +499,7 @@ export async function loadTeeShotsForStrategy(
     if (hole.par !== 4 && hole.par !== 5) continue;
     if (r.club_type !== 'driver' && r.club_type !== 'non_driver') continue;
 
-    // Prefer the authoritative hole-level fairway_hit flag; only fall
-    // back to lie_after when the flag wasn't recorded.
-    const fairway =
-      hole.fairway_hit === true
-        ? true
-        : hole.fairway_hit === false
-          ? false
-          : r.lie_after === 'fairway';
+    const fairway = resolveTeeFairway(hole.fairway_hit, r.lie_after);
 
     // Prefer the recorded shot_distance; derive progress-toward-the-hole from
     // yardage when null, and say which one the value is.

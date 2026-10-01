@@ -103,6 +103,7 @@ export async function loadCompletedHoles(
     .from('golf_rounds')
     .select('id, course_id, course_name')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .not('total_score', 'is', null)
     .gte('round_date', since);

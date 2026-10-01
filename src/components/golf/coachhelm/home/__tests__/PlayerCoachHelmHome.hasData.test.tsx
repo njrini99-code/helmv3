@@ -30,6 +30,7 @@ vi.mock('@/app/golf/actions/player-feedback', () => ({
 
 vi.mock('@/app/golf/actions/v3/goals', () => ({
   createGoal: vi.fn(),
+  suggestGoalTarget: vi.fn(),
 }));
 
 vi.mock('@/components/fairway/modules', () => ({
