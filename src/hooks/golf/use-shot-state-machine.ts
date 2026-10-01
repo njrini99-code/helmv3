@@ -47,6 +47,14 @@ export interface ShotTrackingState {
   distanceAfterUnit: 'yards' | 'feet';
   // Auto-save
   autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  /**
+   * The last background save was kept on this device and has NOT reached the
+   * server (offline, queued behind another save, refused until a reload, or a
+   * hole the server would not accept). It is a separate flag rather than a
+   * fifth `autoSaveStatus` value so renderers that only know the four values
+   * keep compiling: for them a held save reads as `idle`, never `saved`.
+   */
+  autoSaveHeldOnDevice: boolean;
   pendingSaveCount: number;
   autoSaveRetryAttempt: number;
   // Penalty modal
@@ -101,6 +109,8 @@ export type ShotAction =
   | { type: 'SET_AUTO_SAVE_STATUS'; payload: 'idle' | 'saving' | 'saved' | 'error' }
   | { type: 'AUTO_SAVE_RETRY_SCHEDULED'; payload: number }
   | { type: 'AUTO_SAVE_RESET' }
+  /** The save did not reach the server; `onDevice` says whether a device copy holds it. */
+  | { type: 'AUTO_SAVE_HELD'; payload: { onDevice: boolean } }
   | { type: 'INCREMENT_PENDING_SAVE' }
   // Penalty
   | { type: 'SHOW_PENALTY_MODAL' }
@@ -293,7 +303,15 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
       return { ...state, distanceAfterUnit: action.payload };
 
     case 'SET_AUTO_SAVE_STATUS':
-      return { ...state, autoSaveStatus: action.payload };
+      return {
+        ...state,
+        autoSaveStatus: action.payload,
+        // Only a server acknowledgement clears the device-only flag.
+        autoSaveHeldOnDevice: action.payload === 'saved' ? false : state.autoSaveHeldOnDevice,
+      };
+
+    case 'AUTO_SAVE_HELD':
+      return { ...state, autoSaveStatus: 'idle', autoSaveHeldOnDevice: action.payload.onDevice };
 
     case 'AUTO_SAVE_RETRY_SCHEDULED':
       return { ...state, autoSaveRetryAttempt: action.payload };
@@ -537,6 +555,7 @@ function computeInitialState(
     distanceAfterShot: '',
     distanceAfterUnit: initialLie === 'green' ? 'feet' : 'yards',
     autoSaveStatus: 'idle',
+    autoSaveHeldOnDevice: false,
     pendingSaveCount: 0,
     autoSaveRetryAttempt: 0,
     showPenaltyModal: false,
@@ -554,6 +573,55 @@ function computeInitialState(
     selectedShotNumber: null,
   };
 }
+
+// ============================================================================
+// HELD AUTO-SAVES
+// ============================================================================
+
+/**
+ * Why an `onAutoSave` call did not reach the server although nothing failed:
+ *   offline   — no connection; the device copy holds the shots.
+ *   queued    — another save for this round is in flight; this one waits.
+ *   busy      — the server skipped it (another save holds the row).
+ *   blocked   — the round changed on another device; writes wait for a reload.
+ *   invalid   — the server refused a hole; resending the same shots can't help.
+ *   discarded — the player discarded or left the round; nothing is written.
+ */
+export type AutoSaveHoldReason = 'offline' | 'queued' | 'busy' | 'blocked' | 'invalid' | 'discarded';
+
+const AUTO_SAVE_HELD_KIND = 'golf.autosave_held';
+
+/**
+ * Thrown by an `onAutoSave` handler (the round engines' `handleAutoSave`) when
+ * it returned without a server acknowledgement. Resolving instead used to read
+ * as success: the hook showed "Round saved" and stored the fingerprint, so the
+ * shots were never re-sent (swap audit R-1). A thrown signal, not a return
+ * value, keeps the `Promise<void>` handler type every caller already uses.
+ */
+export class AutoSaveHeldError extends Error {
+  readonly kind = AUTO_SAVE_HELD_KIND;
+  constructor(
+    readonly reason: AutoSaveHoldReason,
+    /** A device copy holds these shots (the engine's emergency save landed). */
+    readonly onDevice: boolean,
+  ) {
+    super(`Auto-save held: ${reason}`);
+    this.name = 'AutoSaveHeldError';
+  }
+}
+
+/** Matched by `kind`, so a copy of the class from another bundle still counts. */
+export function isAutoSaveHeld(error: unknown): error is AutoSaveHeldError {
+  return typeof error === 'object' && error !== null && (error as { kind?: unknown }).kind === AUTO_SAVE_HELD_KIND;
+}
+
+/** Held saves a later resend can clear by itself: the connection or the other save comes back. */
+function isResendable(reason: AutoSaveHoldReason): boolean {
+  return reason === 'offline' || reason === 'queued' || reason === 'busy';
+}
+
+/** How long a held save waits before it is sent again, when no `online` event comes first. */
+export const HELD_AUTO_SAVE_RESEND_MS = 20_000;
 
 // ============================================================================
 // HOOK
@@ -594,6 +662,12 @@ export function useShotStateMachine({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // A held save (AutoSaveHeldError) is sent again on the `online` event or
+  // after HELD_AUTO_SAVE_RESEND_MS, whichever comes first; WKWebView's online
+  // events are unreliable, so the timer is the floor.
+  const heldResendTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heldResendableRef = useRef(false);
+  const resendHeldSaveRef = useRef<(() => Promise<void>) | null>(null);
   const hydratedHoleIndexRef = useRef<number | null>(null);
   // Track retry attempt via ref to avoid stale closure in setTimeout callbacks
   const autoSaveRetryAttemptRef = useRef(0);
@@ -613,6 +687,8 @@ export function useShotStateMachine({
   shotHistoryRef.current = state.shotHistory;
   const currentHoleIndexRef = useRef(currentHoleIndex);
   currentHoleIndexRef.current = currentHoleIndex;
+  const autoSaveDisabledRef = useRef(autoSaveDisabled);
+  autoSaveDisabledRef.current = autoSaveDisabled;
 
   // ---- EFFECT: Reset on hole change ----
   useEffect(() => {
@@ -643,6 +719,11 @@ export function useShotStateMachine({
 
     const handleSaveSuccess = (fingerprint: string) => {
       lastSavedShotsRef.current = fingerprint;
+      heldResendableRef.current = false;
+      if (heldResendTimeoutRef.current) {
+        clearTimeout(heldResendTimeoutRef.current);
+        heldResendTimeoutRef.current = null;
+      }
       dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
       recordHelmBreadcrumb('golf.round', 'autosave', { action: 'autosave', result: 'success' });
       autoSaveRetryAttemptRef.current = 0;
@@ -664,6 +745,51 @@ export function useShotStateMachine({
       autoSaveStatusTimeoutRef.current = setTimeout(() => {
         dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
       }, 2000);
+    };
+
+    // The save did not reach the server, and nothing failed. The fingerprint
+    // is NOT stored, so the same shots go again on reconnect, after the resend
+    // timer, or with the next shot. It never counts toward the breaker.
+    const handleSaveHeld = (held: AutoSaveHeldError) => {
+      if (!isMountedRef.current) return;
+      dispatch({ type: 'AUTO_SAVE_HELD', payload: { onDevice: held.onDevice } });
+      recordHelmBreadcrumb('golf.round', 'autosave', { action: 'autosave', result: `held_${held.reason}` });
+      heldResendableRef.current = isResendable(held.reason);
+      if (heldResendTimeoutRef.current) clearTimeout(heldResendTimeoutRef.current);
+      heldResendTimeoutRef.current = heldResendableRef.current
+        ? setTimeout(() => {
+            heldResendTimeoutRef.current = null;
+            void resendHeldSaveRef.current?.();
+          }, HELD_AUTO_SAVE_RESEND_MS)
+        : null;
+    };
+
+    resendHeldSaveRef.current = async () => {
+      if (!isMountedRef.current || autoSaveDisabledRef.current || circuitBreakerOpenRef.current) return;
+      if (!onAutoSaveRef.current || shotHistoryRef.current.length === 0) return;
+      const resendFingerprint = computeShotFingerprint(shotHistoryRef.current);
+      if (resendFingerprint === lastSavedShotsRef.current) return;
+      try {
+        dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
+        await onAutoSaveRef.current(shotHistoryRef.current, currentHoleIndexRef.current);
+        if (isMountedRef.current) handleSaveSuccess(resendFingerprint);
+      } catch (error) {
+        if (isAutoSaveHeld(error)) {
+          handleSaveHeld(error);
+          return;
+        }
+        logError(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useShotStateMachine',
+            action: 'auto-save held resend',
+            currentHoleIndex: currentHoleIndexRef.current,
+            shotCount: shotHistoryRef.current.length,
+          },
+          'high'
+        );
+        if (isMountedRef.current) handleSaveFailure();
+      }
     };
 
     const handleSaveFailure = () => {
@@ -692,6 +818,12 @@ export function useShotStateMachine({
               await onAutoSaveRef.current(shotHistoryRef.current, currentHoleIndexRef.current);
               if (isMountedRef.current) handleSaveSuccess(probeFingerprint);
             } catch (error) {
+              if (isAutoSaveHeld(error)) {
+                // Not a server answer: the breaker stays open and probes again.
+                handleSaveHeld(error);
+                if (isMountedRef.current) scheduleCooldownProbe();
+                return;
+              }
               logError(
                 error instanceof Error ? error : new Error(String(error)),
                 {
@@ -739,6 +871,10 @@ export function useShotStateMachine({
             await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
             handleSaveSuccess(retryFingerprint);
           } catch (error) {
+            if (isAutoSaveHeld(error)) {
+              handleSaveHeld(error);
+              return;
+            }
             logError(
               error instanceof Error ? error : new Error(String(error)),
               {
@@ -766,6 +902,10 @@ export function useShotStateMachine({
         await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
         handleSaveSuccess(freshFingerprint);
       } catch (error) {
+        if (isAutoSaveHeld(error)) {
+          handleSaveHeld(error);
+          return;
+        }
         logError(
           error instanceof Error ? error : new Error(String(error)),
           {
@@ -786,6 +926,11 @@ export function useShotStateMachine({
       if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
       if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
       if (autoSaveRetryTimeoutRef.current) clearTimeout(autoSaveRetryTimeoutRef.current);
+      // A held resend is superseded by the save this effect schedules next.
+      if (heldResendTimeoutRef.current) {
+        clearTimeout(heldResendTimeoutRef.current);
+        heldResendTimeoutRef.current = null;
+      }
       // Note: circuitBreakerCooldownRef is NOT cleared here — it persists
       // across effect re-runs so the probe timer keeps running even when
       // the effect skips due to circuitBreakerOpenRef being true.
@@ -803,7 +948,20 @@ export function useShotStateMachine({
         clearTimeout(circuitBreakerCooldownRef.current);
         circuitBreakerCooldownRef.current = null;
       }
+      if (heldResendTimeoutRef.current) {
+        clearTimeout(heldResendTimeoutRef.current);
+        heldResendTimeoutRef.current = null;
+      }
     };
+  }, []);
+
+  // ---- EFFECT: resend a held save when the connection comes back ----
+  useEffect(() => {
+    const handleOnline = () => {
+      if (heldResendableRef.current) void resendHeldSaveRef.current?.();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, []);
 
   // ---- EFFECT: Auto-set distance unit based on result ----

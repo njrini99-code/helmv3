@@ -143,10 +143,36 @@ describe('112401 Continue round: a round saved on this device (CH-11512, CH-1151
     const user = renderContinue();
     await waitFor(() => expect(code('CH-11512')).toHaveAttribute('open'));
     expect(code('CH-11512')).toHaveTextContent('Finley GC');
+    // R-11: this engine restores on the device; the round's next save sends it. It doesn't claim "Saves it".
+    expect(code('CH-11512')).toHaveTextContent('It saves with your next shot.');
+    expect(code('CH-11512')).not.toHaveTextContent('Saves it, then');
     expect(screen.getByTestId('tracking')).toHaveAttribute('data-hole', '0');
     await user.click(within(code('CH-11512')!).getByRole('button', { name: /^Restore round/ }));
     await waitFor(() => expect(code('CH-11512')).not.toHaveAttribute('open'));
     expect(screen.getByTestId('tracking')).toHaveAttribute('data-hole', '3');
+  });
+
+  it('R-2 Restore on the SAME hole remounts the tracker with the restored shots (it re-reads shots only on a hole change)', async () => {
+    const shot = (n: number) => ({ shotNumber: n, shotType: n === 1 ? 'tee' : 'approach', result: 'fairway' }) as never;
+    emergencySave({
+      playerId: 'player-1',
+      roundId: 'round-9',
+      timestamp: Date.now(),
+      setupData,
+      holes,
+      completedHoleStats: [],
+      inProgressShotsByHole: { 0: [shot(1), shot(2)] },
+      currentHoleIndex: 0,
+    });
+    const user = renderContinue({ initialShots: [shot(1)], initialShotNumber: 2 });
+    await waitFor(() => expect(code('CH-11512')).toHaveAttribute('open'));
+    const before = screen.getByTestId('tracking');
+    await user.click(within(code('CH-11512')!).getByRole('button', { name: /^Restore round/ }));
+    await waitFor(() => expect(code('CH-11512')).not.toHaveAttribute('open'));
+
+    expect(screen.getByTestId('tracking')).toHaveAttribute('data-hole', '0');
+    expect(screen.getByTestId('tracking')).not.toBe(before);
+    expect((mocks.tracking.current as unknown as { initialShots: unknown[] }).initialShots).toHaveLength(2);
   });
 
   it('CH-11513 Discard saved shots asks first, and removes the device copy', async () => {

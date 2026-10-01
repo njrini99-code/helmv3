@@ -25,7 +25,7 @@ import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
-import { saveOfflineRound } from '@/lib/offline/indexed-db';
+import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import type { HoleConfig } from '@/lib/types/golf-course';
 import {
@@ -34,10 +34,14 @@ import {
   clearEmergencySave,
   clearEmergencySaveThrough,
   isRecoverableRoundSubmitError,
+  markRoundDiscarded,
   migrateEmergencySave,
+  wasRoundDiscarded,
+  DISCARDED_ROUNDS_STORAGE_KEY,
   EMERGENCY_SAVE_DEGRADED_EVENT,
   type EmergencySaveData,
 } from '@/lib/utils/emergency-save';
+import { AutoSaveHeldError, isAutoSaveHeld } from '@/hooks/golf/use-shot-state-machine';
 import { describeRoundWriteFailure, describeRoundWriteResult, writeRoundRecreatingIfMissing, isQualifierClosedError } from '@/lib/golf/round-missing-recovery';
 import { isUnreadableWriteFailure } from '@/lib/golf/round-write-outcome';
 import { updateRoundType } from '@/app/golf/actions/round-type';
@@ -153,6 +157,15 @@ export interface NewRoundSessionOptions {
  * The new-round engine: setup, holes, tracking, autosave, recovery and submit, without the screen that draws it.
  * Moved out of NewRoundClient unchanged (ROUNDS_PLAN step 4a), so a second renderer can drive the same engine.
  */
+/**
+ * Drop the v1 failed-submit entry queued for a discarded round, never failing
+ * the discard: best effort, since the sync drain also skips a round marked
+ * discarded on this device.
+ */
+function forgetQueuedRound(roundId: string): void {
+  void Promise.resolve().then(() => deleteOfflineRound(roundId)).catch(() => {});
+}
+
 export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRoundClientProps & NewRoundSessionOptions) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -325,6 +338,27 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
   // (and the pagehide beacon) bail out for exactly those two exits — a
   // genuinely unsaved close/refresh/back is untouched.
   const roundExitedSafelyRef = useRef(false);
+  // R-8: once the round is discarded or left, no timer writes its device copy back.
+  const backupOnDevice = useCallback((data: EmergencySaveData): boolean => {
+    if (roundDiscardedRef.current || roundExitedSafelyRef.current) return false;
+    return emergencySave(data);
+  }, []);
+  // The auto-save's offline test, read at call time: `navigator.onLine` alone
+  // is not trusted (WKWebView reports false on some networks), so it is
+  // offline only when the last /api/health probe agrees, as the start path does.
+  const probeConnectedRef = useRef(connectionStatus.isConnected);
+  probeConnectedRef.current = connectionStatus.isConnected;
+  // R-4: another tab on this device (the Library, a second round screen)
+  // discarded this round; this screen must not re-create it.
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === DISCARDED_ROUNDS_STORAGE_KEY && wasRoundDiscarded(savedRoundIdRef.current, playerId)) {
+        roundDiscardedRef.current = true;
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [playerId]);
   // B9: true while a write issued under the current lock token has an
   // outcome this device could not read — a background beacon, or a
   // foreground save the browser killed mid-flight. See the matching ref in
@@ -2273,6 +2307,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     if (completedHoleStats[currentHoleIndex]) {
       return;
     }
+    // R-8: a discarded or left round gets no device copy back.
+    if (roundDiscardedRef.current || roundExitedSafelyRef.current) return;
 
     const currentInProgress = inProgressShotsByHoleRef.current;
     const existing = currentInProgress[currentHoleIndex] ?? [];
@@ -2307,6 +2343,11 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
   const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
     // Skip auto-save entirely if the round has been submitted or is being submitted
     if (isSubmittingRef.current || completedRoundId) return;
+    // R-8: after Discard or Save for later nothing is written, not even the
+    // device copy a debounce or retry timer would otherwise bring back.
+    if (roundDiscardedRef.current || roundExitedSafelyRef.current) {
+      throw new AutoSaveHeldError('discarded', false);
+    }
 
     // Update the ref before React schedules its render. The synchronous backup
     // below needs a complete cross-hole snapshot, not a setState updater that
@@ -2323,7 +2364,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
 
     // SYNCHRONOUS localStorage backup — always runs, always completes
     const emergencyTimestamp = Date.now();
-    emergencySave({
+    const onDevice = backupOnDevice({
       playerId,
       roundId: savedRoundIdRef.current,
       timestamp: emergencyTimestamp,
@@ -2342,21 +2383,25 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     // the server. The localStorage backup above still ran, but writing to
     // the server now would replace the round with this device's outdated
     // snapshot — refuse until reload.
-    if (roundConflictBlockedRef.current) return;
-    // C1: the player discarded this round — the localStorage backup above
-    // still ran, but a server write (including a round_missing re-create)
-    // must not resurrect it.
-    if (roundDiscardedRef.current) return;
+    // R-1: every return below that did not reach the server throws
+    // AutoSaveHeldError, so the tracker says "on this device", not "saved",
+    // and sends the same shots again.
+    if (roundConflictBlockedRef.current) throw new AutoSaveHeldError('blocked', onDevice);
+    // C1: the player discarded this round while the backup above ran — a
+    // server write (including a round_missing re-create) must not resurrect it.
+    if (roundDiscardedRef.current) throw new AutoSaveHeldError('discarded', false);
+    if (!navigator.onLine && !probeConnectedRef.current) throw new AutoSaveHeldError('offline', onDevice);
 
     // Server save — awaited so the hook's circuit breaker can detect failures.
     // localStorage backup above already succeeded, so throwing here is safe and
     // lets the hook track consecutive failures to engage the circuit breaker.
-    if (navigator.onLine) {
+    // (Always true past the offline guard above; it names the network branch.)
+    if (navigator.onLine || probeConnectedRef.current) {
       // A completed-hole edit is another complete checkpoint, never an
       // in-progress duplicate. This keeps the scorecard and shot map in one
       // coherent server snapshot.
       if (hasCompletedHole) {
-        await persistCompletedHole(
+        const checkpointed = await persistCompletedHole(
           buildPartialRoundData(
             completedHoleStatsRef.current,
             activeProgressHoleRef.current,
@@ -2365,12 +2410,20 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
           emergencyTimestamp,
           false,
         );
+        // Its own retry loop already ran; held, not a breaker failure (B3).
+        if (!checkpointed) {
+          throw new AutoSaveHeldError(
+            roundDiscardedRef.current ? 'discarded' : roundConflictBlockedRef.current ? 'blocked' : 'busy',
+            onDevice,
+          );
+        }
         return;
       }
       if (serverSaveInProgressRef.current) {
         // Queue this save — it will execute after the current one completes.
-        // Don't throw here: the queued save will be picked up after the in-flight one finishes.
+        // Not a server acknowledgement (R-1): held, and re-sent.
         pendingServerSaveRef.current = { shots, holeIndex, emergencyTimestamp };
+        throw new AutoSaveHeldError('queued', onDevice);
       } else {
         serverSaveInProgressRef.current = true;
         try {
@@ -2391,15 +2444,15 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
             void handleRoundSyncConflict('This round was updated on another device. Please reload.');
           } else if (result.error === 'busy' || result.error === 'retry') {
             // Single-flight skip: another save for this round already holds the
-            // row server-side (FOR UPDATE NOWAIT). Not a failure — the next
-            // tick re-sends the full state — so it must not advance the
-            // circuit breaker, warn, or throw.
+            // row server-side (FOR UPDATE NOWAIT). Not a failure, so it must not
+            // advance the circuit breaker or warn; held, so the tracker re-sends.
+            throw new AutoSaveHeldError('busy', onDevice);
           } else if (isCompletedRoundError(result.error)) {
             redirectToCompletedRound();
           } else if (result.error === 'round_missing') {
             // C1: the delete landed while this save was in flight — re-creating
             // now would resurrect the round the player just discarded.
-            if (roundDiscardedRef.current) return;
+            if (roundDiscardedRef.current) throw new AutoSaveHeldError('discarded', false);
             // Re-create immediately with the same snapshot instead of throwing:
             // the circuit breaker must not open on a failure we can recover from.
             const staleRoundId = savedRoundIdRef.current;
@@ -2430,6 +2483,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
             // for outages, and would keep retrying a failure retrying can
             // never clear). Surface the specific sentence immediately.
             setError(describeRoundWriteResult(result));
+            throw new AutoSaveHeldError('invalid', onDevice);
           } else {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
@@ -2439,6 +2493,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
             throw new Error(`Auto-save server error: ${result.error}`);
           }
         } catch (err) {
+          // A held save is not a failure: no count, no warning.
+          if (isAutoSaveHeld(err)) throw err;
           consecutiveSaveFailuresRef.current++;
           if (consecutiveSaveFailuresRef.current >= 2) {
             showAutoSaveWarning();
@@ -2497,6 +2553,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       }
     }
   }, [
+    backupOnDevice,
     buildPartialRoundData,
     completedRoundId,
     dropStaleRoundId,
@@ -2752,7 +2809,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     // C1: unless the player discarded this exact round moments ago (the exit
     // modal's Save & Exit and Delete are two buttons in the same dialog) — in
     // that case re-creating would resurrect it.
-    if (!result.success && result.error === 'round_missing' && !roundDiscardedRef.current) {
+    if (!result.success && result.error === 'round_missing' && !roundDiscardedRef.current && !wasRoundDiscarded(savedRoundId, playerId)) {
       dropStaleRoundId();
       result = await savePartialRoundTracked(buildPartialRoundData(), undefined);
     }
@@ -2800,7 +2857,16 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       // late for the race it exists to prevent.
       roundDiscardedRef.current = true;
       // Delete from database if it exists
-      const result = await deleteInProgressRound(savedRoundId);
+      let result: Awaited<ReturnType<typeof deleteInProgressRound>>;
+      try {
+        result = await deleteInProgressRound(savedRoundId);
+      } catch (error) {
+        // R-3: a thrown discard (a dropped connection) leaves the round live
+        // exactly as a refused one does. Only a refusal used to reset this,
+        // so every later save and hole checkpoint was silently refused.
+        roundDiscardedRef.current = false;
+        throw error;
+      }
       if (!result.success) {
         // The round is still live — a later round_missing for it is a real
         // anomaly, not this race, so re-creating should still be allowed.
@@ -2809,6 +2875,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
         setShowExitModal(false);
         return;
       }
+      // R-4/R-10: no other tab may re-create it, and a failed-submit entry
+      // queued for it must not sync it back.
+      markRoundDiscarded(savedRoundId, playerId);
+      forgetQueuedRound(savedRoundId);
     }
 
     // Clear local recovery state after successful server delete (or no server round)

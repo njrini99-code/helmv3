@@ -525,6 +525,8 @@ export function useShotTracking(
     distanceAfterShot,
     distanceAfterUnit,
     autoSaveStatus,
+    /** The last background save is on this device only, not on the server yet. */
+    autoSaveHeldOnDevice: state.autoSaveHeldOnDevice,
     showPenaltyModal,
     penaltyType,
     showUndoConfirm,

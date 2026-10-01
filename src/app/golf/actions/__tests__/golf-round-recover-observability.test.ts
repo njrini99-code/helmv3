@@ -125,11 +125,24 @@ describe('deleteInProgressRound ("recover") — helm.workflow.* + helmLog', () =
     expect(recordWorkflow).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'player_not_found' }));
   });
 
-  it('records outcome:"stale_round_state" (not db_error) for the ordinary already-finished/removed race — the 0-row delete', async () => {
-    // A round that does not match (wrong id, already submitted, or someone
-    // else's) — the fake's delete().eq(...).select('id') resolves an empty
-    // array, exactly the 0-row-delete shape the function's own comment
-    // documents as an "ordinary race", not a system fault.
+  it('records outcome:"already_removed" and succeeds when the round is already gone (swap audit R-4: discard is idempotent)', async () => {
+    const result = await deleteInProgressRound(OTHER_ROUND);
+
+    expect(result.success).toBe(true);
+    expect(recordWorkflow).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'already_removed' }));
+    expect(recordWorkflow).not.toHaveBeenCalledWith(expect.objectContaining({ outcome: 'db_error' }));
+  });
+
+  it('records outcome:"stale_round_state" (not db_error) for the ordinary already-finished race — the 0-row delete of a round that still exists', async () => {
+    // The round is still there but already submitted: the in-progress delete
+    // matches 0 rows, exactly the "ordinary race" the function documents,
+    // not a system fault. (A round that is simply gone is the R-4 case above.)
+    seed({
+      rounds: [
+        { id: ROUND, player_id: 'player-1', status: 'in_progress' },
+        { id: OTHER_ROUND, player_id: 'player-1', status: 'completed' },
+      ],
+    });
     const result = await deleteInProgressRound(OTHER_ROUND);
 
     expect(result.success).toBe(false);

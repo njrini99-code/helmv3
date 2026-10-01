@@ -222,6 +222,73 @@ export function isEmergencySaveEquivalentToProgress(
 }
 
 /**
+ * True when the server already holds at least as much progress as the device
+ * copy, hole by hole: every hole the copy finished is finished on the server,
+ * and every hole the copy has shots on is finished there or has at least as
+ * many shots. Only then may a server timestamp newer than the copy retire it.
+ *
+ * A device clock against the server's `updated_at` alone is not proof
+ * (swap audit R-7): a shot recorded at T1 is written to the copy at T1, while
+ * the autosave built BEFORE that shot commits at T1+ε. On reload the copy
+ * looked older than the server and was deleted with the newer shot in it.
+ */
+export function isEmergencySaveCoveredByProgress(
+  emergencySaveData: EmergencySaveData,
+  serverProgress: EmergencySaveProgress,
+): boolean {
+  const serverFinished = (index: number) => serverProgress.completedHoleStats[index]?.score != null;
+  const finishedCovered = (emergencySaveData.completedHoleStats ?? []).every(
+    (stats, index) => stats?.score == null || serverFinished(index),
+  );
+  if (!finishedCovered) return false;
+  return Object.entries(emergencySaveData.inProgressShotsByHole ?? {}).every(([key, shots]) => {
+    const index = Number(key);
+    if (!Array.isArray(shots) || shots.length === 0) return true;
+    return serverFinished(index) || (serverProgress.inProgressShotsByHole[index]?.length ?? 0) >= shots.length;
+  });
+}
+
+const DISCARDED_ROUNDS_KEY = 'golf_discarded_rounds_v1';
+const DISCARDED_ROUNDS_LIMIT = 50;
+
+function readDiscardedRounds(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(DISCARDED_ROUNDS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Remember on this device that the player discarded `roundId` (swap audit
+ * R-4). A save from another tab, or a queued submission, whose round comes
+ * back `round_missing` must not re-create a round the player threw away; the
+ * row is hard-deleted, so the server cannot tell a discard from a lost row.
+ * Device-scoped: another phone still re-creates (no server tombstone).
+ */
+export function markRoundDiscarded(roundId: string, playerId: string): void {
+  try {
+    const entries = Object.entries({ ...readDiscardedRounds(), [`${playerId}:${roundId}`]: Date.now() })
+      .sort(([, left], [, right]) => right - left)
+      .slice(0, DISCARDED_ROUNDS_LIMIT);
+    localStorage.setItem(DISCARDED_ROUNDS_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    // Best effort: the discarding tab's own ref still guards its saves.
+  }
+}
+
+/** Whether this device discarded `roundId` for `playerId` (see markRoundDiscarded). */
+export function wasRoundDiscarded(roundId: string | null | undefined, playerId: string | null | undefined): boolean {
+  if (!roundId || !playerId) return false;
+  return readDiscardedRounds()[`${playerId}:${roundId}`] != null;
+}
+
+/** The storage key, for a `storage` event listener in another tab. */
+export const DISCARDED_ROUNDS_STORAGE_KEY = DISCARDED_ROUNDS_KEY;
+
+/**
  * Remove an emergency save only when it is no newer than the snapshot the
  * server has acknowledged. A pagehide or later edit may have written a newer
  * copy while an async save was in flight; that copy must remain recoverable.

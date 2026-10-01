@@ -15,12 +15,18 @@ import {
   loadEmergencySave,
   clearEmergencySave,
   clearEmergencySaveThrough,
+  isEmergencySaveCoveredByProgress,
   isEmergencySaveEquivalentToProgress,
   isRecoverableRoundSubmitError,
+  markRoundDiscarded,
   migrateEmergencySave,
+  wasRoundDiscarded,
+  DISCARDED_ROUNDS_STORAGE_KEY,
   EMERGENCY_SAVE_DEGRADED_EVENT,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
+import { AutoSaveHeldError, isAutoSaveHeld } from '@/hooks/golf/use-shot-state-machine';
+import { computeShotFingerprint } from '@/lib/utils/shot-helpers';
 import {
   writeRoundRecreatingIfMissing,
   ROUND_CONFLICT_MESSAGE,
@@ -34,6 +40,15 @@ import { useActiveWork } from '@/lib/recovery/use-active-work';
 import { resolveRoundRoutes, type RoundSessionRoutes } from '@/lib/golf/round-session/routes';
 
 export type Hole = RoundHole;
+
+/**
+ * Drop the v1 failed-submit entry queued for a discarded round, never failing
+ * the discard: best effort, since the sync drain also skips a round marked
+ * discarded on this device.
+ */
+function forgetQueuedRound(roundId: string): void {
+  void Promise.resolve().then(() => deleteOfflineRound(roundId)).catch(() => {});
+}
 
 function hasAllHolesScored(holeStats: HoleStats[], roundHoles: Hole[]): boolean {
   return holeStats.length === roundHoles.length
@@ -275,6 +290,37 @@ export function useContinueRoundSession({
   // Emergency save recovery state
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [recoveryData, setRecoveryData] = useState<EmergencySaveData | null>(null);
+  // R-2: while a device copy is offered and neither restored nor discarded,
+  // an auto-save of the server's own shots must not overwrite or clear it.
+  const recoveryDataRef = useRef(recoveryData);
+  recoveryDataRef.current = recoveryData;
+  // R-2: bumped by Restore. The shot tracker only re-reads its shots when the
+  // hole changes, so a renderer keys it by this to load the restored shots on
+  // the SAME hole (the common case: the phone locked mid-hole).
+  const [restoreEpoch, setRestoreEpoch] = useState(0);
+  // The shots the server page loaded for a hole (finished or in progress).
+  const serverShotsForHole = useCallback((holeIndex: number): ShotRecord[] => {
+    const serverInProgress = initialInProgressShotsByHole
+      ?? (initialShots.length > 0 ? { [startHoleIndex]: initialShots } : {});
+    return initialCompletedStats[holeIndex]?.shots ?? serverInProgress[holeIndex] ?? [];
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the server page's data, fixed for this mount
+  }, []);
+  // R-8: once the round is discarded or left, no timer writes its device copy back.
+  const backupOnDevice = useCallback((data: EmergencySaveData): boolean => {
+    if (roundDiscardedRef.current || roundExitedSafelyRef.current) return false;
+    return emergencySave(data);
+  }, []);
+  // R-4: another tab on this device (the Library, a second round screen)
+  // discarded this round; this screen must not re-create it.
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === DISCARDED_ROUNDS_STORAGE_KEY && wasRoundDiscarded(roundId, playerId)) {
+        roundDiscardedRef.current = true;
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [roundId, playerId]);
 
   // Refs for visibility change handler — prevents stale closures
   const completedHoleStatsRef = useRef(completedHoleStats);
@@ -555,10 +601,16 @@ export function useContinueRoundSession({
       return;
     }
 
-    // If server data is newer, discard stale local data
+    // A server newer than the copy retires it only when the server also holds
+    // every hole and shot the copy has (R-7): the device clock against
+    // `updated_at` cannot prove that on its own.
     if (serverDataTimestamp) {
       const serverTime = new Date(serverDataTimestamp).getTime();
-      if (emergencyData.timestamp <= serverTime) {
+      if (emergencyData.timestamp <= serverTime && isEmergencySaveCoveredByProgress(emergencyData, {
+        holes: initialHoles,
+        completedHoleStats: initialCompletedStats,
+        inProgressShotsByHole: serverInProgress,
+      })) {
         clearEmergencySave(roundId, playerId);
         return;
       }
@@ -799,8 +851,9 @@ export function useContinueRoundSession({
   ): Promise<boolean> => {
     const staleRoundId = liveRoundId();
     // C1: the delete landed while this save was in flight — re-creating now
-    // would resurrect the round the player just discarded.
-    if (roundDiscardedRef.current) return false;
+    // would resurrect the round the player just discarded. R-4: or another
+    // tab on this device (the Library, a second round screen) discarded it.
+    if (roundDiscardedRef.current || wasRoundDiscarded(staleRoundId, playerId)) return false;
     const recreated = await savePartialRound(saveData, undefined);
     if (!recreated.success) {
       if (surfaceFailure) {
@@ -1051,6 +1104,8 @@ export function useContinueRoundSession({
     if (completedHoleStats[currentHoleIndex]) {
       return;
     }
+    // R-8: a discarded or left round gets no device copy back.
+    if (roundDiscardedRef.current || roundExitedSafelyRef.current) return;
 
     allHolesCheckpointedRef.current = false;
     const currentInProgress = inProgressShotsByHoleRef.current;
@@ -1089,6 +1144,18 @@ export function useContinueRoundSession({
   const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
     // Skip auto-save entirely if the round has been submitted or is being submitted
     if (isSubmittingRef.current || completedRoundId) return;
+    // R-8: after Discard or Save for later nothing is written, not even the
+    // device copy a debounce or retry timer would otherwise bring back.
+    if (roundDiscardedRef.current || roundExitedSafelyRef.current) {
+      throw new AutoSaveHeldError('discarded', false);
+    }
+    // R-2: an offered device copy is still undecided, and these are the
+    // server's own shots for this hole (the tracker's first save after
+    // mount). The server already has them; writing a device copy of them
+    // would replace the offered one, and the ack would clear it.
+    if (recoveryDataRef.current && computeShotFingerprint(shots) === computeShotFingerprint(serverShotsForHole(holeIndex))) {
+      return;
+    }
 
     // Update the ref before React schedules its render. Recovery writes below
     // must include other in-progress holes too; a setState updater is not
@@ -1105,7 +1172,7 @@ export function useContinueRoundSession({
 
     // SYNCHRONOUS localStorage backup — always runs, always completes
     const emergencyTimestamp = Date.now();
-    emergencySave({
+    const onDevice = backupOnDevice({
       playerId,
       roundId,
       timestamp: emergencyTimestamp,
@@ -1120,11 +1187,14 @@ export function useContinueRoundSession({
     // the server. The localStorage backup above still ran (never lose local
     // progress), but writing to the server now would replace the round with
     // this device's outdated in-memory snapshot — refuse until reload.
-    if (roundConflictBlockedRef.current) return;
+    // R-1: every early return below that did not reach the server throws
+    // AutoSaveHeldError, so the tracker says "on this device", not "saved",
+    // and sends the same shots again.
+    if (roundConflictBlockedRef.current) throw new AutoSaveHeldError('blocked', onDevice);
 
     // Background save to database — protects mid-hole shot data.
     // Uses ref-based data to avoid stale closure, plus queue for concurrent saves.
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) throw new AutoSaveHeldError('offline', onDevice);
 
     // Editing a completed hole persists the revised complete scorecard, not
     // a contradictory in-progress copy of that same hole. This checkpoint
@@ -1133,7 +1203,7 @@ export function useContinueRoundSession({
     // it on that separate path rather than folding it into the circuit
     // breaker below (B3: "keep hole checkpoints separate").
     if (hasCompletedHole) {
-      await persistCompletedHole(
+      const checkpointed = await persistCompletedHole(
         buildPartialRoundData(
           completedHoleStatsRef.current,
           activeProgressHoleRef.current,
@@ -1142,16 +1212,17 @@ export function useContinueRoundSession({
         emergencyTimestamp,
         false,
       );
+      // Its own retry loop already ran; held, not a breaker failure (B3).
+      if (!checkpointed) throw new AutoSaveHeldError(roundConflictBlockedRef.current ? 'blocked' : 'busy', onDevice);
       return;
     }
 
     if (serverSaveInProgressRef.current) {
       // Queue this save — it will execute (fire-and-forget) once the
-      // in-flight primary save below releases the lock. Don't throw here:
-      // this call's own promise resolving early is correct, since another
-      // primary save is already in flight and being tracked.
+      // in-flight primary save below releases the lock. Not a failure, but
+      // not a server acknowledgement either (R-1): held, and re-sent.
       pendingServerSaveRef.current = { shots, holeIndex, emergencyTimestamp };
-      return;
+      throw new AutoSaveHeldError('queued', onDevice);
     }
 
     // Server save — AWAITED (B3) so `useShotStateMachine`'s auto-save effect
@@ -1178,7 +1249,8 @@ export function useContinueRoundSession({
         void handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
       } else if (result.error === 'busy' || result.error === 'retry') {
         // Single-flight skip — another save for this round holds the row
-        // server-side; the next tick re-sends the full state. Not a failure.
+        // server-side. Not a failure; held, so the tracker re-sends it.
+        throw new AutoSaveHeldError('busy', onDevice);
       } else if (isCompletedRoundError(result.error)) {
         redirectToCompletedRound();
       } else if (result.error === 'round_missing') {
@@ -1201,11 +1273,14 @@ export function useContinueRoundSession({
         // would keep retrying a failure retrying can never clear). Surface
         // the specific sentence immediately instead.
         setError(describeRoundWriteResult(result));
+        throw new AutoSaveHeldError('invalid', onDevice);
       } else {
         // Throw so the hook's circuit breaker can track this failure.
         throw new Error(`Auto-save server error: ${result.error}`);
       }
     } catch (err) {
+      // A held save is not a failure: no count, no warning.
+      if (isAutoSaveHeld(err)) throw err;
       consecutiveSaveFailuresRef.current++;
       if (consecutiveSaveFailuresRef.current >= 2) {
         showAutoSaveWarning();
@@ -1252,6 +1327,7 @@ export function useContinueRoundSession({
       }
     }
   }, [
+    backupOnDevice,
     buildPartialRoundData,
     completedRoundId,
     handleRoundSyncConflict,
@@ -1263,6 +1339,7 @@ export function useContinueRoundSession({
     redirectToCompletedRound,
     roundId,
     savePartialRoundTracked,
+    serverShotsForHole,
     setupData,
     showAutoSaveWarning,
   ]);
@@ -1516,7 +1593,7 @@ export function useContinueRoundSession({
       // C1: unless the player discarded this exact round moments ago (Save &
       // Exit and Discard are two buttons in the same exit dialog) — in that
       // case re-creating would resurrect it.
-      if (!result.success && result.error === 'round_missing' && !roundDiscardedRef.current) {
+      if (!result.success && result.error === 'round_missing' && !roundDiscardedRef.current && !wasRoundDiscarded(roundId, playerId)) {
         result = await savePartialRoundTracked(buildPartialRoundData(), undefined);
       }
 
@@ -1573,7 +1650,11 @@ export function useContinueRoundSession({
         showToast?.(result.error || 'Failed to delete round. Please try again.', 'error');
         return;
       }
-        clearEmergencySave(roundId, playerId);
+      clearEmergencySave(roundId, playerId);
+      // R-4/R-10: no other tab may re-create it, and a failed-submit entry
+      // queued for it must not sync it back.
+      markRoundDiscarded(roundId, playerId);
+      forgetQueuedRound(roundId);
       setShowExitModal(false);
       // The round is gone server-side — nothing left to warn about or
       // re-save on a coincident unload/pagehide. Same reasoning as
@@ -1594,6 +1675,7 @@ export function useContinueRoundSession({
     clearEmergencySave(roundId, playerId);
     setShowRecoveryDialog(false);
     setRecoveryData(null);
+    recoveryDataRef.current = null;
   };
   const handleRestoreRecovery = () => {
     // Restore data from emergency save
@@ -1611,8 +1693,18 @@ export function useContinueRoundSession({
       setCurrentHoleIndex(recoveryData.currentHoleIndex);
       activeProgressHoleRef.current = recoveryData.currentHoleIndex;
     }
+    // R-9: a restored copy with every hole scored is ready to submit, as the
+    // mount check offers for a server round with every hole scored.
+    const restoredHoles = recoveryData.holes && recoveryData.holes.length > 0 ? recoveryData.holes : holesRef.current;
+    const restoredStats = recoveryData.completedHoleStats ?? completedHoleStatsRef.current;
+    if (hasAllHolesScored(restoredStats, restoredHoles)) {
+      setPendingFinalStats(restoredStats);
+      setShowFinishConfirm(true);
+    }
+    setRestoreEpoch((epoch) => epoch + 1);
     setShowRecoveryDialog(false);
     setRecoveryData(null);
+    recoveryDataRef.current = null;
     // Don't clear emergency save yet — will be cleared after next successful server save
   };
 
@@ -1708,6 +1800,7 @@ export function useContinueRoundSession({
     handleDeleteRound,
     handleDiscardRecovery,
     handleRestoreRecovery,
+    restoreEpoch,
     handleQualifierRoundDialogChange,
     handleQualifierRoundBack,
     handleQualifierRoundSubmit,

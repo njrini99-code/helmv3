@@ -62,7 +62,7 @@ vi.mock('@/lib/offline/sync-engine', () => ({
     syncNow: vi.fn(),
   }),
 }));
-vi.mock('@/lib/offline/indexed-db', () => ({ saveOfflineRound: vi.fn(async () => {}) }));
+vi.mock('@/lib/offline/indexed-db', () => ({ saveOfflineRound: vi.fn(async () => {}), deleteOfflineRound: vi.fn(async () => {}) }));
 vi.mock('@/lib/offline/partial-save-beacon', () => ({ beaconPartialSave: vi.fn(() => false) }));
 vi.mock('@/lib/offline/shot-storage', () => ({
   getRoundRecoverySnapshots: vi.fn(async () => []),

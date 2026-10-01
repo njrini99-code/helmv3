@@ -1910,7 +1910,48 @@ async function submitGolfRoundComprehensiveImpl(
         .select('id, player_id, status, round_type, qualifier_id, qualifier_round_number, holes_played')
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
-        .single();
+        .maybeSingle();
+
+      // Swap audit R-5: a round whose row is gone (discarded elsewhere, or a
+      // create that never landed) used to get the permission sentence below,
+      // which no client recovers from — the round_missing re-create only runs
+      // on the bare key, so the submit overlay dead-ended. Answer round_missing
+      // when the row provably does not exist for ANYONE: the client then
+      // re-submits the same scorecard as a new round (the no-id branch creates
+      // and completes it atomically). The id-only existence check uses the
+      // admin client because RLS hides another player's row; a row that does
+      // exist under another player keeps the refusal, so a scorecard queued on
+      // a shared device can never be re-created under the wrong account.
+      if (!verifyError && !existingRound) {
+        let rowExists: boolean | null = null;
+        try {
+          const { data: anyRow, error: anyRowError } = await createAdminClient()
+            .from('golf_rounds')
+            .select('id')
+            .eq('id', existingRoundId)
+            .maybeSingle();
+          rowExists = anyRowError ? null : anyRow != null;
+        } catch {
+          rowExists = null;
+        }
+        if (rowExists === false) {
+          void logServerError('Round submit target is missing before submit — client may re-submit as new', {
+            action: 'submitGolfRoundComprehensive',
+            featureArea: 'shot_tracking',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            extra: { path: 'existing_round_preflight' },
+          }, 'warning');
+          return { success: false, error: 'round_missing' };
+        }
+        if (rowExists === null) {
+          // Unknown, not proven gone: a transient answer the client keeps the
+          // round on the device for and offers again.
+          return { success: false, error: 'Failed to submit round. Your data was preserved on this device. Please try again.' };
+        }
+      }
 
       if (verifyError || !existingRound) {
         void logServerError('Round submit failed: existing round not found or permission denied', {
@@ -8427,6 +8468,26 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
     }
 
     if (!deletedRows || deletedRows.length === 0) {
+      // Swap audit R-4: a discard is idempotent. When the row is simply gone
+      // (this discard's first response was lost, or the Library or another
+      // device discarded it first) the player's intent already holds — say
+      // so, rather than an error whose Retry can never succeed while the
+      // client resets its discarded flag and re-creates the round. Only a
+      // row that still exists in another state (a submitted round) refuses.
+      // A failed probe proves nothing and keeps the refusal below.
+      const { data: remaining, error: probeError } = await supabase
+        .from('golf_rounds')
+        .select('id, status')
+        .eq('id', roundId)
+        .eq('player_id', player.id)
+        .maybeSingle();
+      if (!probeError && !remaining) {
+        recordDiscardRoundOutcome('already_removed');
+        revalidatePath('/golf/dashboard/rounds');
+        updateTag(CACHE_TAGS.ROUNDS);
+        return { success: true, data: undefined };
+      }
+
       // Deliberately specific. The player is one tap from losing their local
       // recovery copy, so "try again" would be the wrong steer — the round is
       // not in a discardable state and retrying cannot change that.

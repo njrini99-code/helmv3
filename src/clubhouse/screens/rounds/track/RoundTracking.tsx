@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CloudOff, Table2, X } from 'lucide-react';
+import { Check, CloudOff, Smartphone, Table2, X } from 'lucide-react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
@@ -35,7 +35,9 @@ export type RoundTrackingProps = ShotTrackingProps & {
 // hook's navigation callbacks keep their identity (ShotTrackingPorts).
 const PORTS: ShotTrackingPorts = { haptic: () => haptic('select') };
 
-const SAVE_WORDS = { saving: 'Saving round', saved: 'Round saved', error: 'Not synced yet, retrying' } as const;
+// "Round saved" only for a server acknowledgement. A save held on the device (offline, waiting on another save, or
+// refused until a reload) says where the shots are instead (swap audit R-1).
+const SAVE_WORDS = { saving: 'Saving round', saved: 'Round saved', error: 'Not synced yet, retrying', device: 'Saved on this phone' } as const;
 
 /**
  * The shot screen, Clubhouse's renderer (board `rounds-track.jsx`). All of its
@@ -66,6 +68,7 @@ export function RoundTracking(props: RoundTrackingProps) {
   const backTo = holedOut && !!onNavigateToHole && frontier >= 0 && frontier !== currentHoleIndex ? { index: frontier, number: holes[frontier]!.number } : null;
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
   const far = heroDistance(t.distanceToHole, t.distanceUnit, distancePref);
+  const saveState = t.autoSaveStatus === 'idle' && t.autoSaveHeldOnDevice ? 'device' : t.autoSaveStatus;
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
 
   return (
@@ -98,17 +101,19 @@ export function RoundTracking(props: RoundTrackingProps) {
         )}
       </header>
       {statusSlot}
-      {onAutoSave && t.autoSaveStatus !== 'idle' && (
+      {onAutoSave && saveState !== 'idle' && (
         // CH-11901: the round's background save, in words (retrying on its own when it fails).
-        <p className={'ch-rt-sync is-' + t.autoSaveStatus} role="status" data-ch-code="CH-11901">
-          {t.autoSaveStatus === 'error' ? (
+        <p className={'ch-rt-sync is-' + saveState} role="status" data-ch-code="CH-11901">
+          {saveState === 'error' ? (
             <Icon icon={CloudOff} size={13} />
-          ) : t.autoSaveStatus === 'saved' ? (
+          ) : saveState === 'saved' ? (
             <Icon icon={Check} size={13} />
+          ) : saveState === 'device' ? (
+            <Icon icon={Smartphone} size={13} />
           ) : (
             <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
           )}
-          {SAVE_WORDS[t.autoSaveStatus]}
+          {SAVE_WORDS[saveState]}
         </p>
       )}
       <TrackStrip holes={holes} current={currentHoleIndex} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />

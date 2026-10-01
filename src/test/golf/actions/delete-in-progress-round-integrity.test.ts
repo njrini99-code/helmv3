@@ -57,13 +57,22 @@ const ok = (data: unknown): Outcome => ({ data, error: null });
 let deleteReturns: unknown[] = [{ id: 'r1' }];
 /** The player profile lookup. */
 let playerRow: unknown = { id: 'player-1' };
+/**
+ * Swap audit R-4: after a zero-row delete the action looks the round up again.
+ * A row still there (submitted) keeps the refusal; no row means an earlier
+ * discard already removed it, which is success.
+ */
+let probeOutcome: Outcome = ok({ id: 'r1', status: 'completed' });
 
-function tableChain() {
+function tableChain(table: string) {
   const node: Record<string, unknown> = {};
   const self = () => node;
   let mode: 'select' | 'delete' = 'select';
 
-  const settle = (): Outcome => (mode === 'select' ? ok(playerRow) : ok(deleteReturns));
+  const settle = (): Outcome => {
+    if (mode === 'delete') return ok(deleteReturns);
+    return table === 'golf_rounds' ? probeOutcome : ok(playerRow);
+  };
 
   Object.assign(node, {
     select: self,
@@ -83,7 +92,7 @@ function tableChain() {
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } }, error: null }) },
-    from: () => tableChain(),
+    from: (table: string) => tableChain(table),
   }),
 }));
 
@@ -96,6 +105,25 @@ describe('deleteInProgressRound reports failure when it deleted nothing', () => 
     vi.clearAllMocks();
     playerRow = { id: 'player-1' };
     deleteReturns = [{ id: ROUND_ID }];
+    probeOutcome = ok({ id: ROUND_ID, status: 'completed' });
+  });
+
+  it('succeeds when the round is already gone: a repeated discard is not an error (R-4)', async () => {
+    deleteReturns = [];
+    probeOutcome = ok(null);
+
+    const result = await deleteInProgressRound(ROUND_ID);
+
+    expect(result.success).toBe(true);
+  });
+
+  it('keeps the refusal when the follow-up lookup itself fails (nothing is proven gone)', async () => {
+    deleteReturns = [];
+    probeOutcome = { data: null, error: { code: '57014', message: 'canceling statement' } };
+
+    const result = await deleteInProgressRound(ROUND_ID);
+
+    expect(result.success).toBe(false);
   });
 
   it('does not claim success when the round no longer matches (already submitted)', async () => {

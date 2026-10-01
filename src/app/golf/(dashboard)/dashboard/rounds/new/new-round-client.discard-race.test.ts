@@ -76,13 +76,15 @@ describe('New Round — discard racing an in-flight save cannot resurrect the ro
 
   it('auto-save refuses to recreate a discarded round on its primary save', () => {
     const autoSave = slice('const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {', 'const handleRoundSubmit = async (');
-    // Entry guard, mirroring the existing conflict-block check.
-    const conflictGuardIndex = autoSave.indexOf('roundConflictBlockedRef.current) return;');
-    const discardGuardIndex = autoSave.indexOf('roundDiscardedRef.current) return;');
+    // Entry guard, mirroring the existing conflict-block check. Swap audit R-1:
+    // both guards THROW AutoSaveHeldError now instead of returning — a bare
+    // `return` resolved the save, which the tracker showed as "Round saved".
+    const conflictGuardIndex = autoSave.indexOf("roundConflictBlockedRef.current) throw new AutoSaveHeldError('blocked'");
+    const discardGuardIndex = autoSave.indexOf("roundDiscardedRef.current) throw new AutoSaveHeldError('discarded'", conflictGuardIndex);
     expect(conflictGuardIndex).toBeGreaterThanOrEqual(0);
     expect(discardGuardIndex).toBeGreaterThan(conflictGuardIndex);
     // Both entry guards must run BEFORE the network branch below.
-    expect(discardGuardIndex).toBeLessThan(autoSave.indexOf('if (navigator.onLine)'));
+    expect(discardGuardIndex).toBeLessThan(autoSave.indexOf('if (navigator.onLine || probeConnectedRef.current)'));
     const missingBranch = autoSave.slice(
       autoSave.indexOf("result.error === 'round_missing'"),
       autoSave.indexOf('} else if', autoSave.indexOf("result.error === 'round_missing'")),

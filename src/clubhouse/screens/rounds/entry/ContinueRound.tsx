@@ -75,6 +75,7 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
     // The continue engine restores the device copy in one step, with nothing to wait for.
     recovery: { open: engine.showRecoveryDialog, data: engine.recoveryData, restoring: false },
     restoreRecovery: engine.handleRestoreRecovery,
+    restoreEpoch: engine.restoreEpoch,
     discardRecovery: engine.handleDiscardRecovery,
     closeRecovery: () => engine.setShowRecoveryDialog(false),
   };
@@ -89,6 +90,7 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
         onRestore={() => latest.current.handleRestoreRecovery()}
         onDiscard={() => latest.current.handleDiscardRecovery()}
         onClose={() => latest.current.setShowRecoveryDialog(false)}
+        restoreHint="Opens the round where you left off. It saves with your next shot."
       />
       <QualifierRoundSheet
         open={engine.showQualifierRoundNumberDialog}
