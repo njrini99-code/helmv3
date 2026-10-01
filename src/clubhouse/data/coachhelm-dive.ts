@@ -73,7 +73,7 @@ async function readThemes(playerId: string): Promise<AssembledThemes | null> {
   }
 }
 
-const EMPTY = (rounds: number | null): ChDeepDive => ({ list: [], rounds, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: { insights: 0, needs: 0, working: 0, inPlan: 0 } });
+const EMPTY = (rounds: number | null, tour: ChDeepDive['tour']): ChDeepDive => ({ list: [], tour, rounds, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: { insights: 0, needs: 0, working: 0, inPlan: 0 } });
 
 /**
  * The player's Deep dive (`?view=deep-dive`), read after the route has checked CoachHelm is on for them. `playerId` is the session's,
@@ -97,14 +97,15 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
       return { status: 'failed' };
     }
     const team = await playerTeam(supabase, playerId);
+    const tourName: ChDeepDive['tour'] = team.tour?.tour === 'lpga' ? 'LPGA Tour' : 'Tour';
     if (feed.length === 0) {
       const [visible, dismissed] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId)]);
       if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return { status: 'failed' };
-      return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId)) };
+      return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) };
     }
     // A card that states no finding is not drawn on the Board, and is not here.
     const drawn = feed.filter((i) => kindOf(i, team.tour) !== 'note');
-    if (drawn.length === 0) return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId)) };
+    if (drawn.length === 0) return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) };
 
     const [drills, assigned, newest, rounds, plans, themes] = await Promise.all([
       drillTextByInsight(supabase, drawn),
@@ -125,7 +126,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     }));
     return {
       status: 'ready',
-      data: { list, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list) },
+      data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list) },
     };
   } catch (err) {
     log('dive', err);

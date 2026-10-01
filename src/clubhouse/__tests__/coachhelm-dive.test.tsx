@@ -117,15 +117,28 @@ describe('the deep dive as the page draws it', () => {
     expect(by(PREVIEW_DIVE, 'in-dbl').base.kind).toBe('strength');
   });
 
-  it('the movement is toned by the metric’s own direction: down is good where lower is better, and amber where higher is', () => {
-    expect(by(PREVIEW_DIVE, 'in-slope').movement).toEqual({ text: 'From 31% to 23%, down 26%', tone: 'good' });
-    expect(by(PREVIEW_DIVE, 'in-dbl').movement).toEqual({ text: 'From 3.1% to 1.6%, down 48%', tone: 'good' });
+  it('the movement is in the stat’s own unit (points for a share, never a percent of a percent), toned by the metric’s own direction: down is good where lower is better, and amber where higher is', () => {
+    expect(by(PREVIEW_DIVE, 'in-slope').movement).toEqual({ text: 'From 31% to 23%, down 8 pts', tone: 'good' });
+    expect(by(PREVIEW_DIVE, 'in-dbl').movement).toEqual({ text: 'From 3.1% to 1.6%, down 1.5 pts', tone: 'good' });
     const higher: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, polarity: 'higher_better' } };
     expect(deep(higher, FULL_INPUTS).movement?.tone).toBe('warn');
     // No movement, or one without both ends, is no movement.
     expect(by(PREVIEW_DIVE, 'in-brk').movement).toBeNull();
     const broken: EvidenceInsight = { ...DIVE_SLOPE, metadata: { movement: { from: 31, to: Number.NaN, direction: 'down', percent_change: -0.26 } } };
     expect(deep(broken, FULL_INPUTS).movement).toBeNull();
+  });
+
+  it('a movement is said in the unit of the stat: a share in points (whether stored as a fraction or a number), a count plain, strokes and distances with their unit; none when it rounds to no change', () => {
+    const moved = (unit: 'percent' | 'count' | 'strokes' | 'feet', from: number, to: number) => {
+      const raw: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, unit }, metadata: { movement: { from, to, direction: to > from ? 'up' : 'down', percent_change: (to - from) / from } } };
+      return deep(raw, FULL_INPUTS).movement?.text ?? null;
+    };
+    expect(moved('percent', 0.52, 0.58)).toBe('From 52% to 58%, up 6 pts');
+    expect(moved('percent', 52, 58.4)).toBe('From 52% to 58.4%, up 6.4 pts');
+    expect(moved('count', 3.1, 1.6)).toBe('From 3.1 to 1.6, down 1.5');
+    expect(moved('strokes', 0.3, -0.1)).toBe('From +0.3 to −0.1, down 0.4 strokes');
+    expect(moved('feet', 38, 31)).toBe('From 38 ft to 31 ft, down 7 ft');
+    expect(moved('percent', 31, 31.04)).toBeNull();
   });
 
   it('the outcome: Improved, No change or Got worse, with the day it was measured; nothing when it was not', () => {
@@ -152,13 +165,16 @@ describe('the deep dive as the page draws it', () => {
     expect(deep(blank, FULL_INPUTS).diagnosis).toBeNull();
   });
 
-  it('what closing the gap to the team average is worth comes only from a cascade cause that has a number', () => {
-    expect(by(PREVIEW_DIVE, 'in-pen').closes).toBe('0.9');
+  it('what closing the gap is worth comes only from a cascade cause that has a number, and says what it is closed to: the team’s average, or the Tour when there was no team average to anchor on', () => {
+    expect(by(PREVIEW_DIVE, 'in-pen').closes).toEqual({ strokes: '0.9', anchor: 'team' });
     expect(by(PREVIEW_DIVE, 'in-slope').closes).toBeNull();
     const cause = (over: object) => ({ ...DIVE_THEMES, themes: [{ ...DIVE_THEMES.themes[1]!, causes: [{ ...DIVE_THEMES.themes[1]!.causes[0]!, ...over }] }] }) as AssembledThemes;
     expect(deep(DIVE_PENALTIES, { ...FULL_INPUTS, themes: cause({ counterfactualSuppressed: true }) }).closes).toBeNull();
     expect(deep(DIVE_PENALTIES, { ...FULL_INPUTS, themes: cause({ strokesSavedPerRound: 0 }) }).closes).toBeNull();
     expect(deep(DIVE_PENALTIES, { ...FULL_INPUTS, themes: null }).closes).toBeNull();
+    // No team average (no team, or a stat the team has no value for): the cascade carries the whole Tour gap, and the page says Tour.
+    expect(deep(DIVE_PENALTIES, { ...FULL_INPUTS, themes: cause({ strokesSavedPerRound: 1.4, standingTeamAvgValue: null }) }).closes).toEqual({ strokes: '1.4', anchor: 'tour' });
+    expect(deep(DIVE_PENALTIES, { ...FULL_INPUTS, themes: cause({ standingPlayerValue: null }) }).closes?.anchor).toBe('tour');
   });
 
   it('the rounds behind a read: the newest, newest first, of the total it names, with the true minus and a nine marked', () => {
@@ -299,7 +315,8 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
     expect(out.data).toMatchObject({ roundsFailed: false, plansFailed: false, themesFailed: false });
     expect(by(out.data, 'in-slope').rounds.list).toHaveLength(8);
     expect(by(out.data, 'in-slope').plan.focus?.title).toBe('Downhill putts inside 6 ft');
-    expect(by(out.data, 'in-pen').closes).toBe('0.9');
+    expect(by(out.data, 'in-pen').closes).toEqual({ strokes: '0.9', anchor: 'team' });
+    expect(out.data.tour).toBe('Tour');
     expect(logServer).not.toHaveBeenCalled();
   });
 
@@ -327,6 +344,17 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
     // Every read that is scoped by id is scoped by this player's, and no other id was ever put in a filter.
     expect(JSON.stringify(seen)).not.toContain('pl-someone-else');
     expect(seen.filter((s) => s.table === 'golf_player_focus_areas' && has(s.filters, 'eq', 'player_id')).every((s) => s.filters.some(([k, a]) => k === 'eq' && a[0] === 'player_id' && a[1] === 'pl-jonah'))).toBe(true);
+  });
+
+  it('a women’s team is read against the LPGA Tour, by name, and a player with no team against the Tour', async () => {
+    tables.current = { ...tables.current, golf_team_members: { data: { team_id: 't1', golf_teams: { gender: 'womens' } } } };
+    const women = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
+    if (women.status !== 'ready') throw new Error('not ready');
+    expect(women.data.tour).toBe('LPGA Tour');
+    tables.current = { ...tables.current, golf_team_members: { data: null } };
+    const none = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
+    if (none.status !== 'ready') throw new Error('not ready');
+    expect(none.data.tour).toBe('Tour');
   });
 
   it('a card that states no finding is not drawn, as on the Board', async () => {
@@ -473,6 +501,13 @@ describe('the Deep dive screen', () => {
     expect(within(working).getByRole('button').textContent).toContain('Course management · Working');
   });
 
+  it('the list says it is in CoachHelm’s own order, not by date', () => {
+    show();
+    const needs = within(rail()).getByRole('region', { name: 'Needs work' });
+    expect(needs.textContent).toContain('in the order it ranks them');
+    expect(needs.textContent).not.toMatch(/recent/i);
+  });
+
   it('the first read is showing, and marked current in the list', () => {
     show();
     expect(article().getAttribute('aria-labelledby')).toBe('in-slope-t');
@@ -512,10 +547,23 @@ describe('the Deep dive screen', () => {
     expect(article().textContent).not.toMatch(/\blosing\b|\bloses?\b/i);
   });
 
+  it('with no team average to anchor on, the gap is said to the Tour (the LPGA Tour for a women’s team), never to a team', () => {
+    const onTour = (tour: 'Tour' | 'LPGA Tour') => {
+      const themes = { ...DIVE_THEMES, themes: [{ ...DIVE_THEMES.themes[1]!, causes: [{ ...DIVE_THEMES.themes[1]!.causes[0]!, strokesSavedPerRound: 1.4, standingTeamAvgValue: null }] }] } as AssembledThemes;
+      return diveLoad(diveOf([deep(DIVE_PENALTIES, { ...FULL_INPUTS, themes })], { tour }));
+    };
+    show(onTour('Tour'));
+    expect(within(article()).getByRole('region', { name: 'What was measured' }).textContent).toContain('Closing the gap to the Tour is worth about 1.4 strokes a round.');
+    cleanup();
+    show(onTour('LPGA Tour'));
+    expect(within(article()).getByRole('region', { name: 'What was measured' }).textContent).toContain('Closing the gap to the LPGA Tour is worth about 1.4 strokes a round.');
+    expect(article().textContent).not.toMatch(/your team’s average/);
+  });
+
   it('how it has moved: since it was first seen, the category’s trend in words, and the scores in the rounds below', () => {
     show();
     const part = within(article()).getByRole('region', { name: 'How it has moved' });
-    expect(part.textContent).toContain('From 31% to 23%, down 26%');
+    expect(part.textContent).toContain('From 31% to 23%, down 8 pts');
     expect(part.textContent).toContain('Improving');
     expect(part.textContent).toContain('Putting: strokes gained averaged −0.31 a round over your last 5 rounds, against −0.62 over the 5 before');
     expect(part.textContent).toContain('+6 to +2');

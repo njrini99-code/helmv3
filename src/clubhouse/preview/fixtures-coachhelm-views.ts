@@ -230,7 +230,7 @@ const themeNode = (n: Pick<ThemeNode, 'category' | 'displayLabel' | 'state'> & P
   causes: [],
   ...n,
 });
-/** The category reads the cascade assembles: putting is improving, course management has no trend, and the penalty cause carries what closing the gap is worth. */
+/** The category reads the cascade assembles: putting is improving, course management has no trend, and the penalty cause carries what closing the gap to the team's average is worth (a cause with no team average would carry the Tour gap, 1.4). */
 export const DIVE_THEMES: AssembledThemes = {
   playerId: JONAH,
   totalStrokesPerRound: 1.3,
@@ -247,7 +247,7 @@ export const DIVE_THEMES: AssembledThemes = {
       displayLabel: 'Course management',
       state: 'leak',
       themeStrokesPerRound: 0.9,
-      causes: [{ insight_id: 'in-pen', strokesSavedPerRound: 0.9, counterfactualSuppressed: false } as CauseNode],
+      causes: [{ insight_id: 'in-pen', strokesSavedPerRound: 0.9, tourGapPerRound: 1.4, counterfactualSuppressed: false, standingPlayerValue: 1.1, standingPgaValue: 0.3, standingTeamAvgValue: 0.6 } as CauseNode],
     }),
   ],
 };
@@ -263,7 +263,7 @@ const FAILED_INPUTS: Inputs = { rounds: new Map(), focusAreas: [], goals: [], th
 export const deep = (raw: EvidenceInsight, inputs: Inputs, drillText: string | null = null) => toChDeepInsight(raw, diveBase(raw, drillText), inputs, diveSay);
 export const diveOf = (list: ChDeepInsight[], over: Partial<ChDeepDive> = {}): ChDeepDive => {
   const ordered = orderDive(list);
-  return { list: ordered, rounds: null, themes: themesByCategory(DIVE_THEMES), roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(ordered), ...over };
+  return { list: ordered, tour: 'Tour', rounds: null, themes: themesByCategory(DIVE_THEMES), roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(ordered), ...over };
 };
 
 export const PREVIEW_DIVE: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);

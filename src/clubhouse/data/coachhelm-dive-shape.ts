@@ -54,7 +54,7 @@ export interface ChDiveRounds {
 }
 
 export interface ChDiveMovement {
-  /** "From 52% to 58%, up 12%". */
+  /** "From 31% to 23%, down 8 pts": the change in the stat's own unit (points for a share), never a percent of a percent. */
   text: string;
   tone: ChDiveTone;
 }
@@ -115,14 +115,19 @@ export interface ChDeepInsight {
   diagnosis: ChDiveDiagnosis | null;
   movement: ChDiveMovement | null;
   outcome: ChDiveOutcome | null;
-  /** What closing the gap to the team average is worth, a round ("0.4"); null when the cascade carries none. */
-  closes: string | null;
+  /**
+   * What closing the gap is worth, strokes a round ("0.4"), and what it is closed to: the team's average, or the Tour when the
+   * cascade had no team average to anchor on (it then carries the whole Tour gap). Null when the cascade carries none.
+   */
+  closes: { strokes: string; anchor: 'team' | 'tour' } | null;
   rounds: ChDiveRounds;
   plan: ChDivePlan;
 }
 
 export interface ChDeepDive {
   list: ChDeepInsight[];
+  /** The team's Tour, by name, for a gain closed to it ("LPGA Tour" for a women's team); the Tour without a team. */
+  tour: 'Tour' | 'LPGA Tour';
   /** Countable rounds posted, read only when there is nothing to draw, so the empty page can say what to do; null when unknown. */
   rounds: number | null;
   /** The category reads, by category key; empty when they did not load (`themesFailed`). */
@@ -200,14 +205,34 @@ function higherIsBetter(ev: InsightEvidence): boolean | null {
   return dir === 'higher_better' ? true : dir === 'lower_better' ? false : null;
 }
 
+/** How far a stat moved, in its own unit: points for a share (never a percent of a percent), else the unit's own figure. Null when it rounds to no change. */
+function movementChange(from: number, to: number, unit: InsightUnit): string | null {
+  const pct = (v: number) => (Math.abs(v) <= 1 ? v * 100 : v);
+  const gap = unit === 'percent' ? Math.abs(pct(to) - pct(from)) : Math.abs(to - from);
+  const r = Number(gap.toFixed(unit === 'yards' || unit === 'feet' ? 0 : 1));
+  if (r === 0) return null;
+  switch (unit) {
+    case 'percent':
+      return `${r} pts`;
+    case 'strokes':
+      return `${r} ${r === 1 ? 'stroke' : 'strokes'}`;
+    case 'yards':
+      return `${r} yd`;
+    case 'feet':
+      return `${r} ft`;
+    default:
+      return String(r);
+  }
+}
+
 function movementFor(raw: EvidenceInsight): ChDiveMovement | null {
   const m: InsightMovement | undefined = raw.metadata?.movement;
   if (!m || num(m.from) == null || num(m.to) == null || (m.direction !== 'up' && m.direction !== 'down')) return null;
   const unit: InsightUnit = raw.evidence.unit;
-  const pct = num(m.percent_change);
-  const by = pct != null ? `, ${m.direction} ${Math.round(Math.abs(pct) * 100)}%` : '';
+  const change = movementChange(m.from, m.to, unit);
+  if (!change) return null;
   const hi = higherIsBetter(raw.evidence);
-  return { text: `From ${formatComparison(m.from, unit)} to ${formatComparison(m.to, unit)}${by}`, tone: hi == null ? 'plain' : (m.direction === 'up') === hi ? 'good' : 'warn' };
+  return { text: `From ${formatComparison(m.from, unit)} to ${formatComparison(m.to, unit)}, ${m.direction} ${change}`, tone: hi == null ? 'plain' : (m.direction === 'up') === hi ? 'good' : 'warn' };
 }
 
 const OUTCOME: Record<string, { word: ChDiveOutcome['word']; tone: ChDiveTone }> = {
@@ -268,10 +293,16 @@ function planFor(raw: EvidenceInsight, focusAreas: readonly DiveFocusRow[], goal
   };
 }
 
-/** The gap to the team average a cascade carries for this insight, a round: what the cause is worth, never "strokes you are losing". */
-function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): string | null {
+/**
+ * What closing the gap a cascade cause carries is worth, a round: what the cause is worth, never "strokes you are losing". The
+ * cascade anchors it on the team's average when it has one (the player's value, the team's and the Tour's all known), and
+ * otherwise carries the whole gap to the Tour (`CauseNode.strokesSavedPerRound`), so the page says which.
+ */
+function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeepInsight['closes'] {
   const cause = themes?.themes.flatMap((t) => t.causes).find((c) => c.insight_id === raw.id);
-  return cause && !cause.counterfactualSuppressed && cause.strokesSavedPerRound > 0 ? cause.strokesSavedPerRound.toFixed(1) : null;
+  if (!cause || cause.counterfactualSuppressed || !(cause.strokesSavedPerRound > 0)) return null;
+  const team = cause.standingTeamAvgValue != null && cause.standingPlayerValue != null && cause.standingPgaValue != null;
+  return { strokes: cause.strokesSavedPerRound.toFixed(1), anchor: team ? 'team' : 'tour' };
 }
 
 function themeRead(t: ThemeNode): ChDiveTheme {

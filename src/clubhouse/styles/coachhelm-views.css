@@ -70,6 +70,10 @@
 .ch-hv-sk-tabs {
   display: flex;
 }
+/* The phone's chip row is the chips (36px) and the room its tap area keeps (4px each side). */
+:is(.ch-hv.is-phone) .ch-hv-sk-tabs {
+  padding: 4px 0;
+}
 
 /* A view's note under its title: where the read comes from and how fresh it is. */
 .ch-hv-basis {

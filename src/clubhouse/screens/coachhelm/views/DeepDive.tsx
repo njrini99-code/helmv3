@@ -282,7 +282,7 @@ function Dossier({ i, d, onRetry }: { i: ChDeepInsight; d: ChDeepDive; onRetry: 
           {i.measured.span && <p className="ch-hd-meas__s ch-num">{i.measured.span}</p>}
           {i.closes && (
             <p className="ch-hd-meas__w">
-              Closing the gap to your team’s average is worth about <b className="ch-num">{i.closes} strokes</b> a round.
+              Closing the gap to {i.closes.anchor === 'team' ? 'your team’s average' : `the ${d.tour}`} is worth about <b className="ch-num">{i.closes.strokes} strokes</b> a round.
             </p>
           )}
         </div>
@@ -463,7 +463,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   const working = list.filter((i) => i.base.kind === 'strength');
   const groups = (
     <>
-      <Group id="ch-hd-needs" title="Needs work" note="Where CoachHelm sees the most to gain, the most recent read first." items={needs} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
+      <Group id="ch-hd-needs" title="Needs work" note="Where CoachHelm sees the most to gain, in the order it ranks them." items={needs} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
       <Group id="ch-hd-working" title="Working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
     </>
   );
