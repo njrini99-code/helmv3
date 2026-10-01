@@ -9,11 +9,13 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import pg from 'pg';
+import { tryGetSecretKey } from '../../src/lib/supabase/keys.mjs';
 import { PAR_LAYOUTS, genRound, makeRng, yardsFor, type GenRound, type RoundShape } from './clubhouse-team-data';
 
 export function localSupabase(): { url: string; serviceKey: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? '';
+  // The repo's one reader of the secret key (Review Gate: no direct env read outside it).
+  const serviceKey = tryGetSecretKey().key ?? '';
   if (!url || !serviceKey) return null;
   let host = '';
   try {
