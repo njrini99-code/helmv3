@@ -38,7 +38,17 @@ function probe() {
       /* unsupported entry type */
     }
   };
-  watch('layout-shift', (e) => P.shifts.push([e.startTime, e.value, e.hadRecentInput]));
+  // A shift keeps the elements that moved (a short selector and where each was and went), so a switch that shifts can be traced to its cause.
+  const describe = (n) => {
+    if (!n || !n.tagName) return '?';
+    const cls = typeof n.className === 'string' ? n.className.split(/\s+/).filter(Boolean).slice(0, 2).join('.') : '';
+    const parent = n.parentElement && typeof n.parentElement.className === 'string' ? n.parentElement.className.split(/\s+/).filter(Boolean)[0] : '';
+    return (parent ? parent + ' > ' : '') + n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + (cls ? '.' + cls : '');
+  };
+  const box = (r) => [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)];
+  watch('layout-shift', (e) =>
+    P.shifts.push([e.startTime, e.value, e.hadRecentInput, (e.sources || []).slice(0, 3).map((src) => ({ el: describe(src.node), from: box(src.previousRect), to: box(src.currentRect) }))]),
+  );
   watch('longtask', (e) => P.long.push([e.startTime, e.duration]));
   watch('largest-contentful-paint', (e) => (P.lcp = e.startTime));
   watch('paint', (e) => {
@@ -174,6 +184,8 @@ async function snapshot(page) {
       lcp: P.lcp,
       fcp: P.fcp,
       ttfb: nav ? nav.responseStart : null,
+      docBytes: nav ? nav.encodedBodySize : null,
+      jsBytes: performance.getEntriesByType('resource').filter((e) => e.initiatorType === 'script' || /\.js(\?|$)/.test(e.name)).reduce((a, e) => a + (e.encodedBodySize || 0), 0),
       heading: h1 ? h1.textContent : null,
       clubhouse: !!document.getElementById('ch-content'),
       path: location.pathname + location.search,
@@ -192,11 +204,14 @@ function figures(snap, trace, cold) {
     skeleton: rel(snap.skelAt),
     content: rel(snap.contentAt),
     ttfb: cold ? r1(snap.ttfb) : null,
+    docKB: cold && snap.docBytes != null ? Math.round(snap.docBytes / 1024) : null,
+    jsKB: cold ? Math.round(snap.jsBytes / 1024) : null,
     fcp: cold ? r1(snap.fcp) : null,
     lcp: cold ? r1(snap.lcp) : null,
     cls: r1(shifts.filter(([, , input]) => !input).reduce((a, [, v]) => a + v, 0) * 1000) / 1000,
     clsRaw: r1(shifts.reduce((a, [, v]) => a + v, 0) * 1000) / 1000,
     shiftCount: shifts.length,
+    shifts: shifts.map(([t, v, input, src]) => ({ t: r1(t - t0), v: Math.round(v * 10000) / 10000, input, src })),
     long: { count: long.length, ms: r1(long.reduce((a, [, d]) => a + d, 0)), max: r1(Math.max(0, ...long.map(([, d]) => d))), tbt: r1(long.reduce((a, [, d]) => a + Math.max(0, d - 50), 0)) },
     timeline: tl,
     server: summariseTrace(trace),
@@ -220,7 +235,7 @@ async function signIn(browser, base, who, stateFile) {
   await sleep(1500); // the sign-in's own requests finish before the first run starts
 }
 
-async function openPage(browser, base, stateFile, viewport, problems) {
+async function openPage(browser, base, stateFile, viewport, problems, phoneHint = true) {
   const phone = viewport < 700;
   const ctx = await browser.newContext({
     storageState: stateFile,
@@ -230,6 +245,9 @@ async function openPage(browser, base, stateFile, viewport, problems) {
     hasTouch: phone,
   });
   await ctx.addInitScript(probe);
+  // A returning phone: the layout cookie the app sets after its first phone render (F-36), so the server draws the phone structure from the first frame.
+  // `--first-visit` leaves it out, which is the one-time desktop-to-phone swap a brand new device sees.
+  if (phone && phoneHint) await ctx.addCookies([{ name: 'ch_phone', value: '1', url: base }]);
   const page = await ctx.newPage();
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
@@ -291,6 +309,8 @@ function summarise(runs) {
     readMs: r1(pick((r) => r.server.readMs)),
     waves: pick((r) => r.server.waves),
     serverMs: r1(pick((r) => r.server.serverMs)),
+    docKB: pick((r) => r.docKB),
+    jsKB: pick((r) => r.jsKB),
     // A switch should keep the page on screen (dimmed): any frame with a skeleton or nothing in the page is a flash.
     flash: runs.some((r) => r.kind === 'switch' && r.timeline.some(([t, k]) => t >= 0 && (k === 'skeleton' || k === 'none'))),
   };
@@ -328,7 +348,7 @@ export async function measure(opts) {
         for (const [name, path] of Object.entries(pathsCold)) {
           if (!wants(name) || !wants('cold')) continue;
           for (let i = 0; i < runsN; i++) {
-            const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems);
+            const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems, !opts['first-visit']);
             try {
               const { snap, trace } = await loadCold(page, base, path, readsFile);
               if (!snap.clubhouse) throw new Error(`${path} did not render Clubhouse (is the flag on for this build?)`);
@@ -347,7 +367,7 @@ export async function measure(opts) {
           for (const [from, to, fromPath, toPath] of nav) {
             if (!wants(from) && !wants(to)) continue;
             for (let i = 0; i < runsN; i++) {
-              const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems);
+              const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems, !opts['first-visit']);
               try {
                 await loadCold(page, base, fromPath, readsFile);
                 await sleep(1500); // links in view are prefetched
@@ -369,7 +389,7 @@ export async function measure(opts) {
           for (const [name, path] of targets) {
             if (!wants(name)) continue;
             for (let i = 0; i < runsN; i++) {
-              const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems);
+              const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems, !opts['first-visit']);
               try {
                 await loadCold(page, base, path, readsFile);
                 await sleep(1200);
@@ -417,10 +437,45 @@ export async function measure(opts) {
   const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: '4x CPU (CDP)', rows, runs: all };
   const file = join(stateDir, 'results', `${label}.json`);
   writeFileSync(file, JSON.stringify(out, null, 2));
-  const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | TBT ms | reads | read ms | waves | server ms | flash |';
+  const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | TBT ms | reads | read ms | waves | server ms | doc KB | JS KB | flash |';
   console.log(head);
   console.log(head.replace(/[^|]/g, '-'));
-  for (const r of rows) console.log(`| ${r.key} | ${r.skeleton ?? '-'} | ${r.content ?? '-'} | ${r.lcp ?? '-'} | ${r.cls} | ${r.clsRaw} | ${r.longCount} | ${r.tbt} | ${r.reads} | ${r.readMs} | ${r.waves} | ${r.serverMs} | ${r.flash ? 'YES' : ''} |`);
+  for (const r of rows) console.log(`| ${r.key} | ${r.skeleton ?? '-'} | ${r.content ?? '-'} | ${r.lcp ?? '-'} | ${r.cls} | ${r.clsRaw} | ${r.longCount} | ${r.tbt} | ${r.reads} | ${r.readMs} | ${r.waves} | ${r.serverMs} | ${r.docKB ?? '-'} | ${r.jsKB ?? '-'} | ${r.flash ? 'YES' : ''} |`);
   for (const p of all.filter((x) => x.kind === 'problems')) console.log(`problems ${p.role} ${p.viewport}: ${p.problems.join(' ; ')}`);
   console.log(`saved ${file}`);
+}
+
+/**
+ * A before and an after run side by side, as markdown (what docs/clubhouse/PROGRESS.md carries): per case, the figures that moved, as
+ * "before -> after". `only` filters by a substring of the case name; cold loads, navigations and switches are separate tables.
+ */
+export function report({ stateDir, before, after, only }) {
+  const load = (label) => JSON.parse(readFileSync(join(stateDir, 'results', `${label}.json`), 'utf8'));
+  const b = load(before);
+  const a = load(after);
+  const byKey = (run) => new Map(run.rows.map((r) => [r.key, r]));
+  const bm = byKey(b);
+  const pair = (x, y, digits = 0) => {
+    const f = (v) => (v == null ? '-' : Number.isInteger(v) ? String(v) : v.toFixed(digits));
+    return x === y || (x == null && y == null) ? f(x) : `${f(x)} -> ${f(y)}`;
+  };
+  const out = [];
+  for (const kind of ['cold', 'nav', 'switch']) {
+    const rows = a.rows.filter((r) => r.key.split(' | ')[1] === kind && (!only || r.key.includes(only)));
+    if (!rows.length) continue;
+    out.push(`\n${kind === 'cold' ? 'Cold load' : kind === 'nav' ? 'Navigation (tap from a settled page)' : 'Switch (window or tab)'}\n`);
+    out.push('| case | content ms | CLS (raw) | long tasks / TBT ms | reads | waves | server ms |' + (kind === 'switch' ? ' flash |' : ''));
+    out.push('| --- | --- | --- | --- | --- | --- | --- |' + (kind === 'switch' ? ' --- |' : ''));
+    for (const r of rows) {
+      const o = bm.get(r.key);
+      if (!o) continue;
+      const [who, kindName, scenario] = r.key.split(' | ');
+      out.push(
+        `| ${who} ${scenario} | ${pair(o.content, r.content)} | ${pair(o.clsRaw, r.clsRaw, 3)} | ${pair(o.longCount, r.longCount)} / ${pair(o.tbt, r.tbt)} | ${pair(o.reads, r.reads)} | ${pair(o.waves, r.waves)} | ${pair(o.serverMs, r.serverMs)} |` +
+          (kind === 'switch' ? ` ${o.flash ? 'YES' : 'no'} -> ${r.flash ? 'YES' : 'no'} |` : ''),
+      );
+      void kindName;
+    }
+  }
+  console.log(out.join('\n'));
 }
