@@ -441,4 +441,3 @@ describe('journey: a shot entered, the connection cut, the screen left and reope
     expect(sentShots(1).map((s) => s.shotNumber)).toEqual([1, 2]);
   });
 });
-

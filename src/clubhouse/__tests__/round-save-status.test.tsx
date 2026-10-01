@@ -163,4 +163,3 @@ describe('CH-11901 before the server answers (owner rule 3, 2026-10-01)', () => 
     expect(document.querySelector('[data-ch-code="CH-11901"]')).toBeNull();
   });
 });
-
