@@ -69,14 +69,27 @@ function useToastHost(active: boolean): HTMLDialogElement | null {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
+  const timers = useRef(new Set<number>());
   const reduced = useChReducedMotion();
+  // A toast's dismiss timer must not fire after the provider unmounts (a route change, a test teardown).
+  useEffect(() => {
+    const live = timers.current;
+    return () => {
+      for (const t of live) window.clearTimeout(t);
+      live.clear();
+    };
+  }, []);
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const show = useCallback<ShowToast>(
     ({ title, tone = 'done', body, action, code }) => {
       const id = nextId.current++;
       setToasts((t) => [...t.slice(-2), { id, title, tone, body, action, code }]);
-      window.setTimeout(() => dismiss(id), DISMISS_MS[tone]);
+      const timer = window.setTimeout(() => {
+        timers.current.delete(timer);
+        dismiss(id);
+      }, DISMISS_MS[tone]);
+      timers.current.add(timer);
     },
     [dismiss],
   );
