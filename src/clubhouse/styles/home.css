@@ -484,6 +484,10 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    /* Between the coach hero (340px) and the player's (384px, with its two buttons): the loading route can't know the
+       role, and the old 273px dropped the page 67 to 111px when Home landed. Now it moves about 22px either way. */
+    box-sizing: border-box;
+    min-height: 362px;
     padding: 20px 18px 20px;
     border-radius: 0 0 28px 28px;
     background: linear-gradient(var(--ch-green-800), rgb(11 58 37 / 0) 72px),
