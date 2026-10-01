@@ -3,7 +3,6 @@
 import { AnimatePresence } from 'framer-motion';
 import { ChevronRight, Compass, Flag, Play, Target } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
@@ -15,7 +14,7 @@ import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { usePhoneStackHistory } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
-import { InlineNotice } from '../../../ui/Notices';
+import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
@@ -64,7 +63,7 @@ function Section({ id, title, aside, children, code }: { id: string; title: stri
   );
 }
 
-function Trend({ i, theme, themesFailed, onRetry }: { i: ChDeepInsight; theme: ChDiveTheme | undefined; themesFailed: boolean; onRetry: () => void }) {
+function Trend({ i, theme, themesFailed }: { i: ChDeepInsight; theme: ChDiveTheme | undefined; themesFailed: boolean }) {
   const strip = i.rounds.strip;
   const first = strip[0];
   const last = strip[strip.length - 1];
@@ -74,7 +73,7 @@ function Trend({ i, theme, themesFailed, onRetry }: { i: ChDeepInsight; theme: C
   const any = !!(i.movement || i.outcome || trend || strip.length > 0);
   return (
     <Section id={`${i.base.id}-trend`} title="How it has moved">
-      {themesFailed && <InlineNotice code="CH-13283" title="Your category trends didn’t load" body="The rest of this read is below. The trend for the category is missing for now. Try again in a moment." onRetry={onRetry} />}
+      {themesFailed && <RefreshNotice code="CH-13283" title="Your category trends didn’t load" body="The rest of this read is below. The trend for the category is missing for now. Try again in a moment." />}
       {any ? (
         <ul className="ch-hd-tr">
           {i.movement && (
@@ -120,13 +119,13 @@ function Trend({ i, theme, themesFailed, onRetry }: { i: ChDeepInsight; theme: C
   );
 }
 
-function Rounds({ i, failed, onRetry }: { i: ChDeepInsight; failed: boolean; onRetry: () => void }) {
+function Rounds({ i, failed }: { i: ChDeepInsight; failed: boolean }) {
   const { total, list } = i.rounds;
   const aside = total > 0 ? (list.length > 0 && total > list.length ? `Newest ${list.length} of ${total}` : `${total} ${total === 1 ? 'round' : 'rounds'}`) : undefined;
   return (
     <Section id={`${i.base.id}-rounds`} title="The rounds behind it" aside={aside}>
       {failed && total > 0 ? (
-        <InlineNotice code="CH-13281" title="The rounds behind this read didn’t load" body="The read itself is above and is not affected. Try again in a moment." onRetry={onRetry} />
+        <RefreshNotice code="CH-13281" title="The rounds behind this read didn’t load" body="The read itself is above and is not affected. Try again in a moment." />
       ) : list.length > 0 ? (
         <ol className="ch-hd-rounds">
           {list.map((r) => (
@@ -209,7 +208,7 @@ function Why({ i }: { i: ChDeepInsight }) {
   );
 }
 
-function Plan({ i, failed, onRetry }: { i: ChDeepInsight; failed: boolean; onRetry: () => void }) {
+function Plan({ i, failed }: { i: ChDeepInsight; failed: boolean }) {
   const href = developmentHref();
   const { focus, goal } = i.plan;
   const row = (kind: 'focus' | 'goal', icon: typeof Target, label: string, title: string, word: string, line: string | null, live: boolean) => {
@@ -232,7 +231,7 @@ function Plan({ i, failed, onRetry }: { i: ChDeepInsight; failed: boolean; onRet
   return (
     <Section id={`${i.base.id}-plan`} title="Where this goes">
       {failed ? (
-        <InlineNotice code="CH-13282" title="Your focus areas and goals didn’t load" body="Whether this read is part of one is missing for now. The read is not affected. Try again in a moment." onRetry={onRetry} />
+        <RefreshNotice code="CH-13282" title="Your focus areas and goals didn’t load" body="Whether this read is part of one is missing for now. The read is not affected. Try again in a moment." />
       ) : focus || goal ? (
         <ul className="ch-hd-plan">
           {focus && row('focus', Target, focus.fromThis ? 'Focus area made from this' : 'Focus area on the same stat', focus.title, focus.word, null, focus.live)}
@@ -253,7 +252,7 @@ function Plan({ i, failed, onRetry }: { i: ChDeepInsight; failed: boolean; onRet
 }
 
 /** One read in full. Re-mounted per insight (key), so each opens at its top. */
-function Dossier({ i, d, onRetry }: { i: ChDeepInsight; d: ChDeepDive; onRetry: () => void }) {
+function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
   const b = i.base;
   const tone: ChDiveTone = b.kind === 'strength' ? 'good' : 'warn';
   return (
@@ -289,8 +288,8 @@ function Dossier({ i, d, onRetry }: { i: ChDeepInsight; d: ChDeepDive; onRetry: 
         <Evidence ev={{ ...b.evidence, label: '' }} />
       </Section>
 
-      <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} onRetry={onRetry} />
-      <Rounds i={i} failed={d.roundsFailed} onRetry={onRetry} />
+      <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} />
+      <Rounds i={i} failed={d.roundsFailed} />
       <Why i={i} />
 
       {b.week && (
@@ -309,7 +308,7 @@ function Dossier({ i, d, onRetry }: { i: ChDeepInsight; d: ChDeepDive; onRetry: 
         </div>
       )}
 
-      <Plan i={i} failed={d.plansFailed} onRetry={onRetry} />
+      <Plan i={i} failed={d.plansFailed} />
     </article>
   );
 }
@@ -397,10 +396,8 @@ function Hero({ d }: { d: ChDeepDive }) {
  * Each part beside the insights (rounds, plans, category trends) says in place when it did not load; none takes the page down.
  */
 export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDive>; initialId?: string | null }) {
-  const router = useRouter();
   const phone = useChPhone();
   const reduced = useChReducedMotion();
-  const refresh = () => router.refresh();
   const startHref = coachHelmLinks.startRound();
   const dossier = useRef<HTMLDivElement>(null);
   const list = load.status === 'ready' ? load.data.list : [];
@@ -429,7 +426,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   if (load.status === 'failed') {
     return (
       <PlayerHelmFrame view="deep-dive" line={LINE}>
-        <InlineNotice code="CH-13280" title="Your insights didn’t load" body="Nothing is lost. Your insights are still saved; try again in a moment." onRetry={refresh} />
+        <RefreshNotice code="CH-13280" title="Your insights didn’t load" body="Nothing is lost. Your insights are still saved; try again in a moment." />
       </PlayerHelmFrame>
     );
   }
@@ -481,7 +478,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
                 <PhoneBar back={{ label: 'Deep dive', onBack: () => setPicked(null) }} title={open.base.category} titleId="ch-hd-screen-t" />
                 <div className="ch-hd-scroll">
                   <SectionBoundary surface="coachhelm.deep-dive.read" label="This read" code="CH-13204">
-                    <Dossier i={open} d={d} onRetry={refresh} />
+                    <Dossier i={open} d={d} />
                   </SectionBoundary>
                 </div>
               </PhoneScreen>
@@ -492,7 +489,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
     >
       <SectionBoundary surface="coachhelm.deep-dive" label="Your deep dive" code="CH-13204">
         {/* CH-13208: a read beside the insights failed (the Tour's values, the drills, which are Assigned, how current each is). */}
-        {d.missing && <BoardPartial missing={d.missing} what="page" onRetry={refresh} />}
+        {d.missing && <BoardPartial missing={d.missing} what="page" />}
         <Hero d={d} />
         <div className="ch-hd">
           <nav className="ch-hd-rail" aria-label="Your insights" data-ch-code="CH-13890">
@@ -500,7 +497,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
           </nav>
           {!phone && shown && (
             <div className="ch-hd-main" ref={dossier}>
-              <Dossier key={shown.base.id} i={shown} d={d} onRetry={refresh} />
+              <Dossier key={shown.base.id} i={shown} d={d} />
             </div>
           )}
         </div>

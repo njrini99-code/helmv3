@@ -427,7 +427,7 @@ describe('Ask, with a read failed', () => {
     expect(d.pulse?.missing).toEqual(['rounds']);
     expect(d.suggestions.map((s) => s.id)).toContain('brief');
     expect(d.suggestions.map((s) => s.id)).not.toContain('strokes');
-    render(wrap(<AskHome data={d} phone={false} heroComposer={null} onAsk={vi.fn()} onRetry={vi.fn()} />));
+    render(wrap(<AskHome data={d} phone={false} heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13322')).toBeNull();
     expect(code('CH-13325')).toBeNull();
     expect(code('CH-13226')?.textContent).toMatch(/may be incomplete/);
@@ -437,7 +437,7 @@ describe('Ask, with a read failed', () => {
     pulseRead.pulse.mockResolvedValue(pulseOf([], { failed: ['tasks'] }));
     const res = await loadAskCoachHelm();
     if (res.status !== 'ready') throw new Error('not ready');
-    render(wrap(<AskHome data={res.data} phone={false} heroComposer={null} onAsk={vi.fn()} onRetry={vi.fn()} />));
+    render(wrap(<AskHome data={res.data} phone={false} heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13325')).toBeNull();
     expect(code('CH-13226')?.textContent).toMatch(/didn’t fully load/);
   });
@@ -455,7 +455,7 @@ describe('Ask, with a read failed', () => {
     const res = await loadAskCoachHelm();
     if (res.status !== 'ready') throw new Error('not ready');
     expect(res.data.pulse).toBeNull();
-    render(wrap(<AskHome data={res.data} phone heroComposer={null} onAsk={vi.fn()} onRetry={vi.fn()} />));
+    render(wrap(<AskHome data={res.data} phone heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13223')?.textContent).toMatch(/didn’t load/);
     expect(code('CH-13322')).toBeNull();
   });
@@ -463,7 +463,7 @@ describe('Ask, with a read failed', () => {
   it('the phone with a pulse that loaded draws no notice', async () => {
     const res = await loadAskCoachHelm();
     if (res.status !== 'ready') throw new Error('not ready');
-    render(wrap(<AskHome data={res.data} phone heroComposer={null} onAsk={vi.fn()} onRetry={vi.fn()} />));
+    render(wrap(<AskHome data={res.data} phone heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13223')).toBeNull();
   });
 });

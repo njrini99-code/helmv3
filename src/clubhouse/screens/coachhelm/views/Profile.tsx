@@ -1,13 +1,12 @@
 'use client';
 
 import { ChevronDown, Dna, Lock, Play } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
-import { InlineNotice } from '../../../ui/Notices';
+import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { ReadMeter } from '../parts';
@@ -141,8 +140,6 @@ function Hero({ p }: { p: ChProfile }) {
  * one thing it asks for is more rounds.
  */
 export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
-  const router = useRouter();
-  const refresh = () => router.refresh();
   const startHref = coachHelmLinks.startRound();
 
   if (load.status === 'off') {
@@ -155,7 +152,7 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
   if (load.status === 'failed') {
     return (
       <PlayerHelmFrame view="profile" line={LINE}>
-        <InlineNotice code="CH-13260" title="Your game profile didn’t load" body="Nothing is lost. Your profile is still saved; try again in a moment." onRetry={refresh} />
+        <RefreshNotice code="CH-13260" title="Your game profile didn’t load" body="Nothing is lost. Your profile is still saved; try again in a moment." />
       </PlayerHelmFrame>
     );
   }

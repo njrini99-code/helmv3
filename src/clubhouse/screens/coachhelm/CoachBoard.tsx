@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Archive, Check, Flag, Sparkles, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned } from '../../data/coachhelm-shape';
@@ -13,7 +12,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
-import { InlineNotice } from '../../ui/Notices';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -38,15 +37,20 @@ export const coachBoardLinks = {
  */
 export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites; initialPlayer?: string }) {
   const phone = useChPhone();
-  const router = useRouter();
   const toast = useToast();
   const players = data.players.list;
-  // Roster's View insights opens on its player; a player with no insight on the board opens the most pressing one.
-  const [sel, setSel] = useState<string | null>(players.find((p) => p.id === initialPlayer)?.id ?? players[0]?.id ?? null);
+  // Roster's View insights opens on its player; a player with no insight on the board opens the most pressing one. The name is kept
+  // with the id so that a refresh that takes the player off the board is said, not answered with another player's card in silence.
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(() => {
+    const first = players.find((p) => p.id === initialPlayer) ?? players[0];
+    return first ? { id: first.id, name: first.name } : null;
+  });
+  // Who a write is in flight for (set inside the action, so a toast's Retry sets it too): only that player's card says "Assigning",
+  // "Dismissing" or "Undoing". The controls of every card wait meanwhile, because the one write in flight is the hook's.
+  const [acting, setActing] = useState<{ playerId: string; kind: 'assign' | 'dismiss' | 'undo' } | null>(null);
   // What this visit changed, over what the page loaded: an insight assigned (by its id) or dismissed.
   const [assigned, setAssigned] = useState<Record<string, ChHelmAssigned>>({});
   const [dismissed, setDismissed] = useState<Record<string, true>>({});
-  const refresh = () => router.refresh();
   // A switch to Ask moves the strip at once and dims the board (aria-busy) until Ask is ready.
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v]);
 
@@ -56,41 +60,56 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
     'coachhelm.assign',
     async (p: ChCoachPlayer) => {
       const t = p.top;
-      // The focus area is the player's to read: it is saved with the insight's own wording, not the board's rewrite of it for the coach.
-      const res = await writes.assign({ playerId: p.id, insightId: t.id, title: t.assignAs.title, description: t.assignAs.description, areaType: t.areaType, targetMetric: t.metric, currentValue: t.current });
-      if (normalise(res).success) {
-        setAssigned((m) => ({ ...m, [t.id]: 'proposed' }));
+      setActing({ playerId: p.id, kind: 'assign' });
+      try {
+        // The focus area is the player's to read: it is saved with the insight's own wording, not the board's rewrite of it for the coach.
+        const res = await writes.assign({ playerId: p.id, insightId: t.id, title: t.assignAs.title, description: t.assignAs.description, areaType: t.areaType, targetMetric: t.metric, currentValue: t.current });
+        if (normalise(res).success) {
+          setAssigned((m) => ({ ...m, [t.id]: 'proposed' }));
+          return res;
+        }
+        // The player already has an active focus on this metric: that is the outcome the coach wanted, not a failure.
+        if (res.error === ACTIVE_FOCUS_DUPLICATE_ERROR) {
+          setAssigned((m) => ({ ...m, [t.id]: 'active' }));
+          toast({ title: `${firstName(p.name)} already has a focus on this` });
+          return { success: true };
+        }
         return res;
+      } finally {
+        setActing(null);
       }
-      // The player already has an active focus on this metric: that is the outcome the coach wanted, not a failure.
-      if (res.error === ACTIVE_FOCUS_DUPLICATE_ERROR) {
-        setAssigned((m) => ({ ...m, [t.id]: 'active' }));
-        toast({ title: `${firstName(p.name)} already has a focus on this` });
-        return { success: true };
-      }
-      return res;
     },
     (p: ChCoachPlayer) => ({ done: '', failed: `Couldn’t assign the focus to ${firstName(p.name)}`, hint: 'Nothing was saved. Try again.', code: 'CH-13001' }),
   );
   const dismiss = useAction(
     'coachhelm.dismiss',
     async (p: ChCoachPlayer) => {
-      const res = await writes.dismiss(p.top.id);
-      if (normalise(res).success) setDismissed((d) => ({ ...d, [p.top.id]: true }));
-      return res;
+      setActing({ playerId: p.id, kind: 'dismiss' });
+      try {
+        const res = await writes.dismiss(p.top.id);
+        if (normalise(res).success) setDismissed((d) => ({ ...d, [p.top.id]: true }));
+        return res;
+      } finally {
+        setActing(null);
+      }
     },
     { done: '', failed: 'Couldn’t dismiss the insight', hint: 'It’s still on the board. Try again.', code: 'CH-13002' },
   );
   const undo = useAction(
     'coachhelm.undo',
     async (p: ChCoachPlayer) => {
-      const res = await writes.undo(p.top.id, p.top.lifecycle);
-      if (normalise(res).success)
-        setDismissed((d) => {
-          const { [p.top.id]: _gone, ...rest } = d;
-          return rest;
-        });
-      return res;
+      setActing({ playerId: p.id, kind: 'undo' });
+      try {
+        const res = await writes.undo(p.top.id, p.top.lifecycle);
+        if (normalise(res).success)
+          setDismissed((d) => {
+            const { [p.top.id]: _gone, ...rest } = d;
+            return rest;
+          });
+        return res;
+      } finally {
+        setActing(null);
+      }
     },
     { done: '', failed: 'Couldn’t undo the dismissal', hint: 'It’s still dismissed. Try again.', code: 'CH-13003' },
   );
@@ -100,7 +119,11 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   const open = players.map((p) => Math.max(0, p.count - (dismissed[p.top.id] && countsAsSignal(p) ? 1 : 0)));
   // The headline counts players, never the rows behind them: the board draws one card per player, so a count of signals is a count of cards it does not draw.
   const playersOpen = open.filter((n) => n > 0).length;
-  const cur = players.find((p) => p.id === sel) ?? players[0] ?? null;
+  const cur = players.find((p) => p.id === picked?.id) ?? players[0] ?? null;
+  // The player the coach had open is no longer on the board (a refresh took their signal away): the card is another player's, and says so.
+  const gone = picked && cur && picked.id !== cur.id ? picked : null;
+  // What is in flight is for this player's card only: another player's card shows its own button as it is, waiting.
+  const here = (kind: 'assign' | 'dismiss' | 'undo') => acting?.kind === kind && acting.playerId === cur?.id;
   // Assigned: from this visit, or a focus area the page found already made from the insight.
   const mine = cur ? (assigned[cur.top.id] ?? cur.top.assigned) : null;
   // A card that states no finding is not assigned or dismissed, and a read older than the newest round is not assigned (it is still dismissed if the coach wants it gone).
@@ -153,7 +176,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
         <section className="ch-hl-pulse" aria-labelledby="ch-hl-pulse-h">
           <h2 id="ch-hl-pulse-h">Program pulse</h2>
           {data.pulse.error ? (
-            <InlineNotice code="CH-13203" title="The program pulse didn’t load" body="Your players’ insights below are not affected. Try again in a moment." onRetry={refresh} />
+            <RefreshNotice code="CH-13203" title="The program pulse didn’t load" body="Your players’ insights below are not affected. Try again in a moment." />
           ) : data.pulse.rows.length === 0 && !pulseGaps ? (
             <p className="ch-hl-pulse__none" data-ch-code="CH-13309">
               Nothing is flagged in the pulse right now.
@@ -163,11 +186,10 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
               {data.pulse.rows.length > 0 && <PulseList rows={data.pulse.rows} />}
               {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
               {pulseGaps && (
-                <InlineNotice
+                <RefreshNotice
                   code="CH-13206"
                   title={data.pulse.rows.length === 0 ? 'The program pulse didn’t fully load' : 'The program pulse may be incomplete'}
                   body={`${pulseGaps} didn’t load, so anything made from ${pulseGapsCount === 1 ? 'it' : 'them'} is missing here and was not checked. What is listed was found. Try again in a moment.`}
-                  onRetry={refresh}
                 />
               )}
             </>
@@ -176,7 +198,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
       </SectionBoundary>
 
       {data.roster.error || data.players.error ? (
-        <InlineNotice code="CH-13202" title="Your players’ insights didn’t load" body="Nothing is lost. Every insight is still saved; try again in a moment." onRetry={refresh} />
+        <RefreshNotice code="CH-13202" title="Your players’ insights didn’t load" body="Nothing is lost. Every insight is still saved; try again in a moment." />
       ) : !cur ? (
         <EmptyState
           size="page"
@@ -194,7 +216,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
         />
       ) : (
         <>
-          {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} onRetry={refresh} />}
+          {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}
           <div className="ch-hl-cgrid">
             <SectionBoundary surface="coachhelm.players" label="Your players" code="CH-13204">
               <section className="ch-hl-plist" aria-labelledby="ch-hl-plist-h">
@@ -209,7 +231,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                       aria-pressed={on}
                       onClick={() => {
                         haptic('select');
-                        setSel(p.id);
+                        setPicked({ id: p.id, name: p.name });
                       }}
                     >
                       <Avatar name={p.name} size={phone ? 28 : 34} />
@@ -226,6 +248,11 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
             {/* CH-13805: the focus is a polite live region, so choosing another player is announced. */}
             <div className="ch-hl-cmain" aria-live="polite">
               <SectionBoundary surface="coachhelm.focus" label="This player’s focus" code="CH-13204">
+                {gone && (
+                  <p className="ch-hl-note" role="status" data-ch-code="CH-13908">
+                    {firstName(gone.name)} is no longer on the board, so this is {firstName(cur.name)}’s card.
+                  </p>
+                )}
                 {dismissed[cur.top.id] ? (
                   <div className="ch-hl-dis" role="status" data-ch-code="CH-13901">
                     <Icon icon={Archive} size={16} />
@@ -233,7 +260,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                       <b>Insight dismissed.</b> It no longer shows on your board or on {firstName(cur.name)}’s. Undo brings it back.
                     </span>
                     <Button size="sm" variant="ghost" disabled={busy} onClick={() => void undo.run(cur)}>
-                      {undo.pending ? <span data-ch-code="CH-13403">Undoing</span> : 'Undo'}
+                      {here('undo') ? <span data-ch-code="CH-13403">Undoing</span> : 'Undo'}
                     </Button>
                   </div>
                 ) : (
@@ -255,15 +282,14 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                             Assigned as {firstName(cur.name)}’s focus
                           </span>
                         ) : statusUnknown ? (
-                          <InlineNotice
+                          <RefreshNotice
                             code="CH-13207"
                             title="Assign as focus isn’t offered right now"
                             body={`${focusStatusSaid(data.missing, firstName(cur.name))} Dismiss still works. Try again in a moment.`}
-                            onRetry={refresh}
                           />
                         ) : stale ? null : (
                           <Button variant="primary" leftIcon={Flag} disabled={busy} onClick={() => void assign.run(cur)}>
-                            {assign.pending ? <span data-ch-code="CH-13403">Assigning</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
+                            {here('assign') ? <span data-ch-code="CH-13403">Assigning</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
                           </Button>
                         )}
                         <Button
@@ -276,7 +302,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                             void dismiss.run(cur);
                           }}
                         >
-                          {dismiss.pending ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
+                          {here('dismiss') ? <span data-ch-code="CH-13403">Dismissing</span> : 'Dismiss'}
                         </Button>
                         {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
                         {!mine && !stale && !statusUnknown && cur.top.declined && (

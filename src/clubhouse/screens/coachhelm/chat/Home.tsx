@@ -7,7 +7,7 @@ import type { ChAskData, ChAskFinding, ChAskSuggestion } from '../../../data/coa
 import { pulseGapsLabel } from '../../../data/coachhelm-shape';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
-import { InlineNotice } from '../../../ui/Notices';
+import { RefreshNotice } from '../../../ui/RefreshNotice';
 
 /** The Ask mark: the dark tile with the mint spark (mockup Main, PhoneHome). */
 export function AskMark() {
@@ -85,7 +85,7 @@ function FindingCard({ f, onAsk }: { f: ChAskFinding; onAsk: (text: string) => v
 }
 
 /** "Since you were last here": the program pulse's findings, each a question worth asking. Three failure-distinct states. */
-function Findings({ data, onAsk, onRetry }: { data: ChAskData; onAsk: (text: string) => void; onRetry: () => void }) {
+function Findings({ data, onAsk }: { data: ChAskData; onAsk: (text: string) => void }) {
   const pulse = data.pulse;
   return (
     <section className="ch-ask-find" aria-label="Since you were last here">
@@ -99,7 +99,7 @@ function Findings({ data, onAsk, onRetry }: { data: ChAskData; onAsk: (text: str
         )}
       </div>
       {!pulse ? (
-        <InlineNotice code="CH-13223" title="What’s new didn’t load" body="Asking still works. Your findings are not lost; try again in a moment." onRetry={onRetry} />
+        <RefreshNotice code="CH-13223" title="What’s new didn’t load" body="Asking still works. Your findings are not lost; try again in a moment." />
       ) : data.noRounds ? (
         <NothingYet phone={false} />
       ) : pulse.findings.length === 0 && !pulse.missing ? (
@@ -120,11 +120,10 @@ function Findings({ data, onAsk, onRetry }: { data: ChAskData; onAsk: (text: str
           )}
           {/* CH-13226: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
           {pulse.missing && (
-            <InlineNotice
+            <RefreshNotice
               code="CH-13226"
               title={pulse.findings.length === 0 ? 'What’s new didn’t fully load' : 'What’s new may be incomplete'}
               body={`${pulseGapsLabel(pulse.missing)} didn’t load, so anything made from ${pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked. Asking still works. Try again in a moment.`}
-              onRetry={onRetry}
             />
           )}
         </>
@@ -161,7 +160,7 @@ function Pills({ suggestions, onAsk }: { suggestions: ChAskSuggestion[]; onAsk: 
  * the nothing-to-report line when there are no rounds) and three shortcut cards; the composer is pinned by the screen, and
  * the findings are left to the desktop (the phone board draws none).
  */
-export function AskHome({ data, phone, heroComposer, onAsk, onRetry }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; onRetry: () => void }) {
+export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void }) {
   if (phone) {
     const cards = data.suggestions.filter((s) => s.id !== 'week').slice(0, 3);
     return (
@@ -169,7 +168,7 @@ export function AskHome({ data, phone, heroComposer, onAsk, onRetry }: { data: C
         <Greeting team={data.teamName} phone>
           {data.noRounds && <NothingYet phone />}
           {/* CH-13223: the phone draws no findings, but a pulse that did not load is still said, never drawn as a greeting with nothing under it. */}
-          {!data.pulse && <InlineNotice code="CH-13223" title="What’s new didn’t load" body="Asking still works. Your findings are not lost; try again in a moment." onRetry={onRetry} />}
+          {!data.pulse && <RefreshNotice code="CH-13223" title="What’s new didn’t load" body="Asking still works. Your findings are not lost; try again in a moment." />}
         </Greeting>
         {cards.length > 0 && (
           <ul className="ch-ask-cards" aria-label="Questions to start with">
@@ -199,7 +198,7 @@ export function AskHome({ data, phone, heroComposer, onAsk, onRetry }: { data: C
       <Greeting team={data.teamName} phone={false} />
       {heroComposer}
       <Pills suggestions={data.suggestions} onAsk={onAsk} />
-      <Findings data={data} onAsk={onAsk} onRetry={onRetry} />
+      <Findings data={data} onAsk={onAsk} />
     </div>
   );
 }

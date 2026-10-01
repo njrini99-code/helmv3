@@ -5,7 +5,7 @@ import { CalendarX, ChevronDown, ChevronRight, ChevronUp, ClipboardList, Flag, L
 import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChHelmGauge, type ChInsight, type ChPulseIcon, type ChPulseRow } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
-import { InlineNotice } from '../../ui/Notices';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 
 /**
  * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
@@ -216,14 +216,14 @@ export function PulseList({ rows }: { rows: ChPulseRow[] }) {
  * read is, the drill text, and where the page offers them, which cards already have a focus), so a gap is never read as "none",
  * "not assigned" or "up to date". `focus: false` leaves out the focus status, which the coach's board says at the card (CH-13207).
  */
-export function BoardPartial({ missing, what, focus = true, onRetry }: { missing: ChBoardMissing; what: 'board' | 'page'; focus?: boolean; onRetry: () => void }) {
+export function BoardPartial({ missing, what, focus = true }: { missing: ChBoardMissing; what: 'board' | 'page'; focus?: boolean }) {
   const parts: string[] = [];
   if (missing.tour) parts.push('Tour comparison unavailable, so a card may be drawn without it.');
   if (missing.newest) parts.push('Which reads are older than a newer round could not be checked, so a read and the counts may be out of date.');
   if (focus && (missing.assigned || missing.declined)) parts.push('Which reads already have a focus could not be checked.');
   if (missing.drills) parts.push('This week’s drill text is missing.');
   if (parts.length === 0) return null;
-  return <InlineNotice code="CH-13208" title={`Part of this ${what} didn’t load`} body={`${parts.join(' ')} Try again in a moment.`} onRetry={onRetry} />;
+  return <RefreshNotice code="CH-13208" title={`Part of this ${what} didn’t load`} body={`${parts.join(' ')} Try again in a moment.`} />;
 }
 
 /** The page's title block: the role chip, CoachHelm, one line. CH-13801: the h1 labels the page's main landmark (aria-labelledby), and each section below is a labelled region. */

@@ -1,7 +1,6 @@
 'use client';
 
 import { MessagesSquare, PanelLeftOpen, SquarePen } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { describeChatError } from '../../../data/coachhelm-chat-error';
@@ -81,7 +80,6 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
 export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial }) {
-  const router = useRouter();
   if (load.status === 'noRoster') {
     return (
       <AskFrame team={load.teamName}>
@@ -92,7 +90,7 @@ export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoa
   if (load.status === 'failed') {
     return (
       <AskFrame>
-        <AskInputsFailed onRetry={() => router.refresh()} />
+        <AskInputsFailed />
       </AskFrame>
     );
   }
@@ -101,7 +99,6 @@ export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoa
 }
 
 function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial }) {
-  const router = useRouter();
   const phone = useChPhone();
   // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
@@ -124,9 +121,24 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const [drawer, setDrawer] = useState(initial?.drawer ?? false);
   const [evidence, setEvidence] = useState<EvidenceFocus | null>(initial?.evidence ?? null);
   const lastSent = useRef('');
+  // A new chat's id arrives on the first response, after the send, and only this frame knows which send it is for. `epoch` moves each
+  // time the coach leaves a chat for a new one; `expecting` is the epoch of the send that is waiting for its chat's id (none for a send
+  // into a chat that already has one). An id that arrives for any other send is for a chat that is no longer open, and it must not move
+  // the address or the title: the last choice wins. `alive` is the same for a chat left by opening another (this frame is replaced).
+  const epoch = useRef(0);
+  const expecting = useRef<number | null>(null);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   /** CH-13922: a brand-new thread is in History at once, and the address names it, so a reload resumes. */
   const adopt = useCallback((id: string) => {
+    if (!alive.current || expecting.current !== epoch.current) return;
+    expecting.current = null;
     const name = titleFromQuestion(lastSent.current);
     setOpenId(id);
     setTitle((t) => t ?? name);
@@ -150,17 +162,23 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const ask = (text: string) => {
     if (chat.busy || pending || refuseOffline()) return;
     lastSent.current = text;
+    expecting.current = openId === null ? epoch.current : null;
     setGone(false);
     chat.send(text);
   };
   // The composer's own gate already refused offline and blocked sends.
   const send = (text: string) => {
     lastSent.current = text;
+    expecting.current = openId === null ? epoch.current : null;
     setGone(false);
     chat.send(text);
   };
 
   const newChat = () => {
+    // A reply still on its way belongs to the chat being left: stop it (silent, as Stop is), and an id that arrives for it later is not adopted.
+    if (chat.busy) chat.stop();
+    epoch.current += 1;
+    expecting.current = null;
     chat.newConversation();
     setOpenId(null);
     setTitle(null);
@@ -184,7 +202,6 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
     timezone: data.timezone,
     onNew: newChat,
     onOpen: chatSw.go,
-    onRetry: () => router.refresh(),
   };
 
   const composer = (variant: 'hero' | 'dock') => (
@@ -208,9 +225,9 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const body = gone ? (
     <AskUnavailable onNew={newChat} phone={phone} />
   ) : data.threadFailed ? (
-    <AskThreadFailed onRetry={() => router.refresh()} onNew={newChat} />
+    <AskThreadFailed onNew={newChat} />
   ) : showHome ? (
-    <AskHome data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} onRetry={() => router.refresh()} />
+    <AskHome data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} />
   ) : (
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread

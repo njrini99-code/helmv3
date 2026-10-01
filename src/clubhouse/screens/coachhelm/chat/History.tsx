@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import { filterConversations, groupConversations, type ChAskConversation } from '../../../data/coachhelm-chat-shape';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
-import { InlineNotice } from '../../../ui/Notices';
+import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SearchField } from '../../../ui/SearchField';
 import { COACHHELM_HREF } from './SubTabs';
 
@@ -25,8 +25,6 @@ export interface AskHistoryProps {
    * dims until the next one lands. A plain tap goes through it; a modified one (a new tab) is still the link.
    */
   onOpen?: (id: string) => void;
-  /** The list didn't load: Try again. */
-  onRetry: () => void;
 }
 
 /** The address of a saved conversation. */
@@ -38,12 +36,12 @@ export function conversationHref(id: string): string {
  * The chats: a search, then Today, This week and Earlier, each row a real link (so it opens in a new tab and the
  * open one is `aria-current`). A failed read is its own notice with Try again, never "No chats yet".
  */
-function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onOpen, onRetry }: AskHistoryProps) {
+function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onOpen }: AskHistoryProps) {
   const [q, setQ] = useState('');
   const groups = useMemo(() => groupConversations(filterConversations(conversations.list, q), nowIso, timezone), [conversations.list, q, nowIso, timezone]);
 
   if (conversations.error) {
-    return <InlineNotice code="CH-13222" title="Your chats didn’t load" body="Nothing is lost. Your past chats are still saved; try again in a moment." onRetry={onRetry} />;
+    return <RefreshNotice code="CH-13222" title="Your chats didn’t load" body="Nothing is lost. Your past chats are still saved; try again in a moment." />;
   }
   if (conversations.list.length === 0) {
     return (

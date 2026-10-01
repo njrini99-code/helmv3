@@ -19,6 +19,8 @@ const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFa
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+// The cohort lookup the loader reads beside the standing (CH-13272) goes to the service client; here it answers, and its failure is in coachhelm-failed-reads.test.
+vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 
 import { computeCounterfactual } from '@/lib/coachhelm/v3/counterfactual/compute';
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';

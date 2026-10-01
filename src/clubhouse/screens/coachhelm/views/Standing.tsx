@@ -1,11 +1,10 @@
 'use client';
 
 import { Play, Scale as ScaleIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { Button } from '../../../ui/Button';
-import { InlineNotice } from '../../../ui/Notices';
+import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { coachHelmLinks } from '../PlayerBoard';
@@ -143,8 +142,6 @@ function Hero({ s }: { s: ChStanding }) {
  * says why in place (a team too small, a Tour value that is not comparable); it is never drawn as a zero.
  */
 export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
-  const router = useRouter();
-  const refresh = () => router.refresh();
   const startHref = coachHelmLinks.startRound();
 
   if (load.status === 'off') {
@@ -157,7 +154,7 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
   if (load.status === 'failed') {
     return (
       <PlayerHelmFrame view="standing" line={LINE}>
-        <InlineNotice code="CH-13270" title="Your standing didn’t load" body="Nothing is lost. Your stats are still saved; try again in a moment." onRetry={refresh} />
+        <RefreshNotice code="CH-13270" title="Your standing didn’t load" body="Nothing is lost. Your stats are still saved; try again in a moment." />
       </PlayerHelmFrame>
     );
   }
@@ -166,7 +163,7 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
     <PlayerHelmFrame view="standing" line={LINE}>
       {s.state === 'empty' ? (
         <>
-          {s.baselineFailed && <InlineNotice code="CH-13271" title="Your scoring average didn’t load" body="Standing is empty for now, and projections need it. Try again in a moment." onRetry={refresh} />}
+          {s.baselineFailed && <RefreshNotice code="CH-13271" title="Your scoring average didn’t load" body="Standing is empty for now, and projections need it. Try again in a moment." />}
           <EmptyState
             code="CH-13370"
             icon={ScaleIcon}
@@ -183,9 +180,9 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
         </>
       ) : (
         <SectionBoundary surface="coachhelm.standing" label="Your standing" code="CH-13204">
-          {s.baselineFailed && <InlineNotice code="CH-13271" title="Your projections didn’t load" body="Your scoring average, which every projection starts from, didn’t load. The comparisons below are not affected. Try again in a moment." onRetry={refresh} />}
+          {s.baselineFailed && <RefreshNotice code="CH-13271" title="Your projections didn’t load" body="Your scoring average, which every projection starts from, didn’t load. The comparisons below are not affected. Try again in a moment." />}
           {/* CH-13272: the Tour the rows are against is the men's default because the cohort lookup failed; it is not stated as theirs. */}
-          {s.cohortFailed && <InlineNotice code="CH-13272" title="Your team’s Tour couldn’t be confirmed" body="The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." onRetry={refresh} />}
+          {s.cohortFailed && <RefreshNotice code="CH-13272" title="Your team’s Tour couldn’t be confirmed" body="The rows below are against the men’s Tour, the default, which may not be the one for your team. Your stats and your team’s are not affected. Try again in a moment." />}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
               <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds, and a comparison with your team needs 5 teammates with the stat.

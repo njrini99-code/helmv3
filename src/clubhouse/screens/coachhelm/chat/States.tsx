@@ -4,7 +4,7 @@ import { CircleAlert, Users } from 'lucide-react';
 import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
-import { InlineNotice } from '../../../ui/Notices';
+import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 
 /** Where Open roster goes, only when that screen is rebuilt (nav.rebuiltHref); never a dead button. */
@@ -34,24 +34,23 @@ export function AskNoRoster() {
 }
 
 /** The chat context did not load (no active team, a dropped read): no program to ask against, so no composer. */
-export function AskInputsFailed({ onRetry }: { onRetry: () => void }) {
+export function AskInputsFailed() {
   return (
     <div className="ch-ask-state">
-      <InlineNotice
+      <RefreshNotice
         code="CH-13221"
         title="Ask CoachHelm couldn’t load your program"
         body="Nothing is lost, but there is no program to ask about until this loads. Try again in a moment."
-        onRetry={onRetry}
       />
     </div>
   );
 }
 
 /** A conversation was found but its messages did not read. */
-export function AskThreadFailed({ onRetry, onNew }: { onRetry: () => void; onNew: () => void }) {
+export function AskThreadFailed({ onNew }: { onNew: () => void }) {
   return (
     <div className="ch-ask-state">
-      <InlineNotice code="CH-13224" title="That conversation didn’t load" body="Nothing is lost. The chat is still saved; try again in a moment." onRetry={onRetry} />
+      <RefreshNotice code="CH-13224" title="That conversation didn’t load" body="Nothing is lost. The chat is still saved; try again in a moment." />
       <p className="ch-ask-state__alt">
         Or{' '}
         <button type="button" className="ch-ask-state__link" onClick={onNew}>

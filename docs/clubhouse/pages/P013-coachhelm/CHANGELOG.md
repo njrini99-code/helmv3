@@ -49,31 +49,84 @@ Held items:     none
   server's, read each render; a chat started in this visit is kept beside it
   until the server's list holds it.
 - **Reads beside the top card** (`ChBoardMissing`, present only when one
-  failed). Each is a decision:
+  failed) are each a decision, in the table below and the notes after it.
 
-| Read | On failure the page shows | Why |
+| Read | On failure we show | Before |
 | --- | --- | --- |
-| Drills (`golf_drills`) | CH-13208 "This week's drill text is missing"; the drill's name and length stay | The drill is not dropped silently; nothing else depends on it |
-| Assigned (`golf_player_focus_areas`) | Coach: CH-13207, no Assign. Player and Deep dive: CH-13208 | "Nothing is assigned" is not what a failed read says; the server's duplicate guard is not a reason to offer it |
-| Declined (same table) | Coach: CH-13207, no Assign and no Propose again, no claim either way | Both were wrong: Assign offered as new, Propose again hidden |
-| Newest round (`golf_rounds`) | CH-13208 "may be out of date" over the board, and CH-13207 on the card (no Assign) | A clean board and the counts were drawn over reads that may be stale (CH-13906 withholds Assign for a stale read; an unknown one is held back the same way) |
-| Tour values / team (`golf_pga_standards`, `golf_teams`, the membership) | CH-13208 "Tour comparison unavailable" | Was "no comparison"; a strength may also read as a finding without it |
-| Deep dive team read (`playerTeam.error`) | CH-13208 on the page | Was ignored; the insights draw, the Tour is said to be missing |
-| Standing cohort (`loadPlayerCohort`) | CH-13272 above the rows | Fell back to the men's Tour as fact; the fallback stays for the generators, now marked `failed` |
+| Drills | CH-13208, drill text missing | a short card |
+| Assigned | coach CH-13207, no Assign | Assign offered |
+| Declined | coach CH-13207, no Assign | Propose again hid |
+| Newest round | CH-13208 and CH-13207 | a clean board |
+| Tour values | CH-13208, comparison gone | "no comparison" |
+| Deep dive team | CH-13208 on the page | ignored |
+| Standing cohort | CH-13272 over the rows | men's Tour, as fact |
 
-  `loadTourBenchmarks` (Stats, not this page's) logs a failed read and answers
-  the same empty map as a tour with no rows, so the Tour's values are read in
-  `coachhelm.ts` with their error. The Standing cohort is probed beside the
-  standing read (`loadPlayerStandingMap` resolves it inside and cannot say it
-  fell back, and `standing/loader.ts` is not this page's): the two lookups can
-  disagree on a transient failure, so it catches a failing lookup, not a proof
-  of the one the map used.
+- **Why, per read.** Drills: the name and length stay, the text is said to
+  be missing, and nothing else depends on it. Assigned and declined: "nothing
+  is assigned" is not what a failed read says, so neither Assign nor Propose
+  again is offered and neither claim is made (Dismiss stays: it depends on
+  neither); the player's board and the Deep dive have no Assign, so they say
+  it as CH-13208. Newest round: a clean board and the open-signal counts were
+  drawn over reads that may be stale; CH-13906 already withholds Assign for a
+  stale read, and an unknown one is held back the same way. Tour values or
+  the team they come from: the card keeps what it has, says the comparison is
+  unavailable, and a strength may read as a finding without it, which the
+  notice says.
+- **Tour read.** `loadTourBenchmarks` (Stats, not this page's) logs a failed
+  read and answers the same empty map as a tour with no rows, so the Tour's
+  values are read in `coachhelm.ts` with their error.
+- **Standing cohort.** It is probed beside the standing read
+  (`loadPlayerStandingMap` resolves it inside and cannot say it fell back, and
+  `standing/loader.ts` is not this page's): the two lookups can disagree on a
+  transient failure, so the probe catches a failing lookup and is not a proof
+  of the one the map used. The men's fallback stays for the generators and
+  the nightly job, now marked `failed`.
 - **Tests.** `coachhelm-failed-reads.test.tsx` fails each read through
   `supabase-fake` (the assigned read alone, the declined read alone, and so
   on) and asserts the failure copy, never the empty or zero copy, and never
   Assign; `program-pulse-failed-reads.test.ts`, `chat-roster-failed.test.ts`,
   `player-cohort-failed.test.ts` and `coachhelm-ask-races.test.tsx` (the retry)
   cover the library and the Ask frame.
+
+### Phase 2: pending scope and races
+
+- **Pending is one player's.** The write hooks are hook-wide (`useAction`'s
+  in-flight guard is one ref), so while Jonah's Assign ran, Eli's card read
+  "Assigning" too. The player a write is for is now set inside the action
+  (so a toast's Retry sets it too) and only that card says "Assigning",
+  "Dismissing" or "Undoing" (CH-13403). Another card, opened meanwhile, shows
+  its own button as it is, disabled: one write is in flight at a time, and a
+  tap on it would be dropped as busy. Proposal rows were already per row.
+  Changed by design: the CH-13403 catalog row says so; no assertion changed
+  (the existing tests check the card the write is for).
+- **Retries.** Every Try again on these pages is `RefreshNotice`
+  (`useRefresh`): it says "Trying again", is disabled while it runs and
+  ignores a second tap. No screen calls `router.refresh()` bare any more
+  (`coachhelm-retry.test.tsx` renders each failed state and retries it, and
+  greps the screens). The `onRetry` props that carried it through Proposals,
+  History, the Ask home and the Deep dive's parts are gone.
+- **New chat during a send.** New chat (all three entry points: the panel,
+  the phone's header, the thread) now stops a reply that is on its way first,
+  and the id that arrives late for the chat that was left is not adopted: the
+  frame keeps which send is waiting for its chat's id, and an id for any other
+  does not move the address, retitle the new chat or list anything. A chat
+  left by opening another is the same (the replaced frame ignores it).
+  Residual, in code this page does not own: the hook's own `conversationId`
+  can still take a late id after `newConversation()`, so a question asked in
+  the new chat would go to the abandoned one. The stop makes this window the
+  few microtasks between the header arriving and the click; it is not closed
+  from this side without editing `components/golf/coachhelm/**`.
+- **A name over another's card.** The coach board and the player board kept
+  the picked player or read by id and fell back to the first player or the
+  default focus when it left the data after a refresh, in silence. They keep
+  the name too, and say so (CH-13908, CH-13909).
+- **Rapid switching.** `view-switch-boundary.test.tsx` taps Board, Game
+  profile, Standing and Deep dive through the real tabs and `useViewSwitch`:
+  the tabs follow the last tap, the view on screen stays busy, an earlier
+  choice that lands late changes nothing, and a tap back to the view on screen
+  sends the page back to it.
+- **Left alone.** History is not team-scoped (a coach on two teams sees both
+  teams' chats): a documented product question, unchanged.
 
 ## 2026-10-01 — Page performance: reads in parallel, a view switch that keeps the view
 

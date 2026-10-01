@@ -38,6 +38,8 @@ import { PhoneChromeProvider } from '../shell/phone-chrome';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
 import { ASK_NOW, PREVIEW_ASK_DATA } from '../preview/fixtures-ask';
+import { ASK_MSGS_ANSWER } from '../preview/fixtures-ask-thread';
+import { COACHHELM_HREF } from '../screens/coachhelm/chat/SubTabs';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 
@@ -59,7 +61,7 @@ function fakeChat(state: { messages?: UIMessage[]; busy?: boolean } = {}) {
       ...calls,
     };
   }) as ChAskChat;
-  return { hook, calls, seen };
+  return { hook, calls, seen, state };
 }
 type Fake = ReturnType<typeof fakeChat>;
 
@@ -139,5 +141,83 @@ describe('History’s Try again', () => {
     view.rerenderWith(ready({ conversations: { list: [held, ...PREVIEW_ASK_DATA.conversations.list], error: false } }));
     expect(panel().queryAllByRole('link', { name: 'Why are we missing so many short putts lately?' })).toHaveLength(0);
     expect(panel().getAllByRole('link', { name: 'Short putts' })).toHaveLength(1);
+  });
+});
+
+describe('New chat while a reply is on its way', () => {
+  const sendFirst = async (view: ReturnType<typeof show>) => {
+    await userEvent.type(box(), 'Why are we missing so many short putts lately?{Enter}', { advanceTimers: () => {} });
+    view.chat.state.busy = true;
+    view.rerenderWith(ready());
+  };
+  const panel = () => within(screen.getByRole('complementary', { name: 'Chats' }));
+  const flush = () =>
+    act(async () => {
+      await Promise.resolve();
+    });
+
+  it('stops the reply first, then starts the new chat', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(ASK_NOW));
+    const view = show();
+    await sendFirst(view);
+    await userEvent.click(panel().getByRole('button', { name: 'New chat' }), { advanceTimers: () => {} });
+    expect(view.chat.calls.stop).toHaveBeenCalledTimes(1);
+    expect(view.chat.calls.newConversation).toHaveBeenCalledTimes(1);
+    expect(view.chat.calls.stop.mock.invocationCallOrder[0]).toBeLessThan(view.chat.calls.newConversation.mock.invocationCallOrder[0]!);
+  });
+
+  it('a New chat with no reply on its way does not stop anything', async () => {
+    const view = show();
+    await userEvent.click(panel().getByRole('button', { name: 'New chat' }));
+    expect(view.chat.calls.stop).not.toHaveBeenCalled();
+    expect(view.chat.calls.newConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it('the late id of the abandoned chat does not move the address to it, rename the new chat or list it (the last choice wins)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(ASK_NOW));
+    const view = show();
+    await sendFirst(view);
+    const late = view.chat.seen.options!.onConversationId!;
+    await userEvent.click(panel().getByRole('button', { name: 'New chat' }), { advanceTimers: () => {} });
+    expect(replaceState).toHaveBeenLastCalledWith(window.history.state, '', COACHHELM_HREF.ask);
+    replaceState.mockClear();
+    late('c-abandoned');
+    await flush();
+    expect(replaceState).not.toHaveBeenCalled();
+    expect(panel().queryByRole('link', { name: 'Why are we missing so many short putts lately?' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('New chat');
+  });
+
+  it('a chat started after the New chat is adopted as before: the new send is the one waiting for its id', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(ASK_NOW));
+    const view = show();
+    await sendFirst(view);
+    await userEvent.click(panel().getByRole('button', { name: 'New chat' }), { advanceTimers: () => {} });
+    view.chat.state.busy = false;
+    view.rerenderWith(ready());
+    await userEvent.type(box(), 'Who is trending up?{Enter}', { advanceTimers: () => {} });
+    await act(async () => {
+      view.chat.seen.options!.onConversationId?.('c-second');
+      await Promise.resolve();
+    });
+    expect(replaceState).toHaveBeenLastCalledWith(window.history.state, '', `${COACHHELM_HREF.ask}&c=c-second`);
+    expect(panel().getAllByRole('link', { name: 'Who is trending up?' })).toHaveLength(1);
+  });
+
+  it('an id that arrives after another chat was opened (this frame is replaced) does not move the address', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(ASK_NOW));
+    const view = show();
+    await userEvent.type(box(), 'Why are we missing so many short putts lately?{Enter}', { advanceTimers: () => {} });
+    const late = view.chat.seen.options!.onConversationId!;
+    replaceState.mockClear();
+    // The coach opened a saved chat in the meantime: its page replaces this one (the frame is keyed by the chat).
+    view.rerenderWith(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }));
+    late('c-abandoned');
+    await flush();
+    expect(replaceState).not.toHaveBeenCalled();
   });
 });
