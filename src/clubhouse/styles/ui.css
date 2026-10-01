@@ -443,21 +443,12 @@
   box-shadow: inset 0 1px 3px rgb(28 25 18 / 0.09), inset 0 0 0 1px rgb(28 25 18 / 0.05), 0 1px 0 rgb(255 255 255 / 0.7);
 }
 
-/* Popover panel (design system: overlays/PopoverPanel, strong glass) */
+/* Popover panel: an overlay over content, opaque (owner 2026-10-01: glass only on the floating navigation). */
 .ch-popover {
   padding: 5px;
   border-radius: 14px;
-  background: rgb(250 248 242 / 0.82);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+  background: #faf8f2;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 8px 16px -6px rgb(28 25 18 / 0.12), 0 24px 48px -16px rgb(28 25 18 / 0.28);
-}
-@media (prefers-reduced-transparency: reduce) {
-  .ch-popover {
-    background: #faf8f2;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 .ch-popover__label {
   padding: 8px 10px 6px;

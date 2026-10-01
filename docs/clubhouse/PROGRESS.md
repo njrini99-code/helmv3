@@ -1228,6 +1228,13 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-139 (answered 2026-10-01, owner, on the high-fidelity audit) Four calls,
+  each the recommended one. Reveals: crossfade only; the staggered page
+  reveal (D-64) is retired. Press: per component; buttons up to 240px
+  compress, rows, links, tabs and cards do not. Materials: flatten content;
+  cards are flat ivory with a hairline, glass only on the top bar and tab bar
+  with an opaque fallback, tactile depth kept on real controls. Phone type:
+  16 / 14 per text role through tokens below 820px.
 - Q-138 (open, 2026-10-01; built, reversible) CoachHelm's Program pulse card
   now holds the height of three rows while it loads (CH-13405), so nothing
   below it moves on desktop. Cost: a pulse of one or two items leaves room in

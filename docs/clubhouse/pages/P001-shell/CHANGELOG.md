@@ -3,6 +3,37 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+
+## 2026-10-01 — High-fidelity audit: no staggered reveal, honest press, flat cards, phone type
+
+Owner answers on the high-fidelity audit (PROGRESS Q-139).
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (owner decisions on the audit)
+Contract IDs:   none new (CH-1601, CH-1606 behaviour changed)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- **Reveals (audit F01).** The staggered first-paint reveal is gone; a page is
+  shown as soon as it is ready and the crossfade is its only entrance. The
+  RouteFrame guard that stopped the reveal replaying is gone with it. An
+  empty page fades in once instead of in steps.
+- **Press (audit F02).** Only `.ch-btn` (and `data-ch-press`) up to 240px
+  wide compress; rows, links, tabs and cards do not. A release springs back
+  from where the press got to, and a second press lets the first go.
+- **Materials (audit F04).** Cards (`--ch-sheet-*`) are flat ivory with a
+  hairline and one light lift; content wells are a flat tint. Glass stays on
+  the top bar and tab bar (20px, was 34px) with an opaque fallback when
+  backdrop-filter is missing or the OS asks for less transparency.
+  Popovers are opaque. Controls keep their tactile wells and raised pills.
+- **Phone type (audit F09).** Below 820px the type tokens are 16px reading,
+  14px secondary, 13-14px labels and 13px captions; tab labels 11.5px (were
+  10.5px). Literal sizes in page CSS move to the tokens page by page.
+- Not verified on a device; jsdom and the CSS checks only.
+
 ## 2026-10-01 — A team switch never shows the old team under the new name
 
 PAGE_PERFORMANCE.md rules 4 and 8.

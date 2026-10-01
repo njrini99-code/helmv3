@@ -486,20 +486,8 @@
   max-width: 460px;
   text-align: center;
 }
-.ch-empty-page__in > * {
-  animation: ch-reveal var(--ch-dur-reveal) var(--ch-ease) backwards;
-}
-.ch-empty-page__in > :nth-child(2) {
-  animation-delay: var(--ch-reveal-step);
-}
-.ch-empty-page__in > :nth-child(3) {
-  animation-delay: calc(var(--ch-reveal-step) * 2);
-}
-.ch-empty-page__in > :nth-child(4) {
-  animation-delay: calc(var(--ch-reveal-step) * 3);
-}
-.ch-empty-page__in > :nth-child(5) {
-  animation-delay: calc(var(--ch-reveal-step) * 4);
+.ch-empty-page__in {
+  animation: ch-skel-in var(--ch-dur-base) var(--ch-ease) backwards;
 }
 .ch-empty-page__art {
   position: relative;
@@ -1058,7 +1046,8 @@ button.ch-more__row[disabled] {
     border: 0;
     background: none;
     color: var(--ch-text-tertiary);
-    font: 500 10.5px/1 var(--ch-font-sans);
+    /* 11.5px: 10.5px was too small to read at arm's length (audit F09). */
+    font: 500 11.5px/1 var(--ch-font-sans);
     text-decoration: none;
     cursor: pointer;
     touch-action: manipulation;
@@ -1604,5 +1593,24 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-page) {
     animation: none !important;
     transform: none;
     opacity: 0.6;
+  }
+}
+
+/* The navigation glass, with an opaque fallback (owner 2026-10-01, audit F04): where backdrop-filter is missing, or the
+   OS asks for less transparency, the top bar and the tab bar are solid. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ch-topbar {
+    background: var(--ch-bg-page);
+  }
+  .ch-tabbar {
+    background: var(--ch-bg-page);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ch-topbar,
+  .ch-tabbar {
+    background: var(--ch-bg-page);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
