@@ -288,8 +288,11 @@ function Legs({ legs, tour, phone }: { legs: ChPlayerHome['legs']; tour: ChSgTou
         </div>
       )}
       {legs.cacheError && <RefreshNotice code="CH-2216" title="Some of your figures didn't load." body="Scores, greens and putts are right; scrambling is missing. The error has been reported." />}
+      {/* Figures that did not load are not "nothing to break down": the notice above is the whole answer then (CH-2216). */}
       {!any ? (
-        <EmptyState compact code="CH-2311" title="Nothing to break down yet." body="Fairways, greens, scrambling and putts fill in from rounds posted with those stats." />
+        legs.cacheError ? null : (
+          <EmptyState compact code="CH-2311" title="Nothing to break down yet." body="Fairways, greens, scrambling and putts fill in from rounds posted with those stats." />
+        )
       ) : (
         <div className="ch-ph-legs">
           {legs.rows.map((g) => (

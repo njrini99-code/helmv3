@@ -126,6 +126,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   roundsError: false,
   cacheError: false,
   puttsError: false,
+  longestError: false,
 };
 
 function jonahStats(): GolfStats {

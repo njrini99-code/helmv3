@@ -28,7 +28,7 @@ its own boundary, so a crash stays inside the tab.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-5201 | Rounds don't load | "Rounds didn't load." + "Posted rounds are safe…" Try again | `StatsPlayer`; logged `clubhouse.stats.rounds` | stats-player.test › CH-5201 |
+| CH-5201 | Rounds don't load | "Rounds didn't load." + "Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden." Try again. The hero reads "—" for scoring average, strokes gained and the season's rounds, the Rounds tab and the phone's header carry no count, no early-read note shows, and the Overview, Game detail and Rounds tabs draw no figure and no empty state (Development still shows) | `StatsPlayer`; logged `clubhouse.stats.rounds` | stats-player.test › CH-5201 |
 | CH-5202 | Shot-level detail doesn't load | Game detail reads "Shot-level detail didn't load." + "Scores and rounds above are correct…" Try again, never zeros | `StatsPlayer`; logged `clubhouse.stats.detailedStats` | stats-player.test › CH-5202 |
 | CH-5203 | Focus areas or goals don't load | "Some development items didn't load." Try again, above what did load | `Development`; logged | stats-player.test › CH-5203 |
 | CH-5204 | The overview crashes | "The overview couldn't be shown." + "The rest of the page is fine…" Try again; the tabs still work | `SectionBoundary stats.player.overview` | stats-player.test › CH-5204 |

@@ -473,8 +473,15 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
 
   it('CH-5201 CH-5202 CH-5203 failed reads: notices, never zeros', () => {
+    // Rounds that did not load hide every section that reads them (the game section included), so shot-level detail that failed
+    // beside them has no section to say so in: its own notice shows when the rounds did load.
     phone(player({ roundsError: true, statsError: true, stats: null, devError: true }));
-    for (const c of ['CH-5201', 'CH-5202', 'CH-5203']) expect(code(c)).not.toBeNull();
+    for (const c of ['CH-5201', 'CH-5203']) expect(code(c)).not.toBeNull();
+    expect(code('CH-5301')).toBeNull();
+    expect(code('CH-5202')).toBeNull();
+    cleanup();
+    phone(player({ statsError: true, stats: null }));
+    expect(code('CH-5202')).not.toBeNull();
     expect(code('CH-5301')).toBeNull();
   });
 
@@ -1075,6 +1082,84 @@ describe('Stats player · network', () => {
       online.mockRestore();
       window.matchMedia = real;
     }
+  });
+});
+
+/** What a failed read must never look like: a count, an average, an early-read note or an empty state made of the rounds that did not load. */
+const FALSE_ZEROS = /\b0 (countable )?rounds?\b|Last 0|No rounds|No shot-by-shot|Early read|Nothing to break down/;
+
+describe('Stats player · a failed read is never drawn as zero', () => {
+  beforeEach(async () => {
+    detailed.mockReset();
+    detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 0 });
+    getSpray.mockReset();
+    getSpray.mockResolvedValue(emptySpray());
+    // The real loader on a rounds read that fails: what the page is handed is what production hands it.
+    tables.current = profileTables({ golf_rounds: { error: { message: 'boom' } } });
+  });
+
+  it('CH-5201 51402 the desktop profile: dashes in the hero, no count, no early-read note, and each tab that reads rounds is empty of figures, with the one notice and Try again', async () => {
+    const user = userEvent.setup();
+    const profile = await loadAs('coach', OTHER, 'season');
+    expect(profile!.roundsError).toBe(true);
+    show(profile!);
+    const figs = [...document.querySelectorAll('.ch-pf-hero__figs > div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]);
+    expect(figs).toEqual([
+      ['Scoring avg', '—'],
+      ['Handicap', '3.9'],
+      ['SG / round', '—'],
+      ['Rounds', '—'],
+    ]);
+    expect(document.querySelector('.ch-pf-hero__figs')!.textContent).not.toMatch(FALSE_ZEROS);
+    // The Rounds tab carries no count (a "0" there would say the player has none).
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Game detail', 'Rounds', 'Development']);
+    expect(code('CH-5305')).toBeNull();
+    expect(code('CH-5308')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const tab of [/Overview/, /Game detail/, /Rounds/]) {
+      await openTab(user, tab);
+      expect(document.querySelector('main')!.textContent).not.toMatch(FALSE_ZEROS);
+      expect(document.querySelector('.ch-st-panel')!.textContent).toBe('');
+    }
+    // What does not read the rounds still shows.
+    await openTab(user, /Development/);
+    expect(document.querySelector('.ch-st-panel')!.textContent).not.toBe('');
+  });
+
+  it('CH-5201 51402 the phone profile: no round count under the name, no early-read note, no figure or empty section made of nothing', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const profile = await loadAs('coach', OTHER, 'season');
+      function Slot() {
+        const { setSlot } = usePhoneChromeState();
+        return <div ref={setSlot} />;
+      }
+      wrap(
+        <PhoneChromeProvider>
+          <Slot />
+          <StatsPlayer data={profile!} coachId="c1" />
+        </PhoneChromeProvider>,
+      );
+      expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 3.9 hcp');
+      expect(code('CH-5201')).not.toBeNull();
+      expect(code('CH-5305')).toBeNull();
+      expect(code('CH-5308')).toBeNull();
+      expect(document.querySelector('main')!.textContent).not.toMatch(FALSE_ZEROS);
+      expect(document.querySelector('.ch-stm-figs')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('a read that worked and found no round is still an empty answer: zero rounds, the early read and the empty sections are drawn', async () => {
+    tables.current = profileTables({ golf_rounds: { data: [] } });
+    const profile = await loadAs('coach', OTHER, 'season');
+    expect(profile!.roundsError).toBe(false);
+    show(profile!);
+    expect(document.querySelector('.ch-pf-hero__figs')!.textContent).toMatch(/0 rounds/);
+    expect(code('CH-5305')).not.toBeNull();
+    expect(code('CH-5201')).toBeNull();
   });
 });
 

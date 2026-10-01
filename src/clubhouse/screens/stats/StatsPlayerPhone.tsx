@@ -77,8 +77,10 @@ export function StatsPlayerPhone({
   // A filter that leaves no round says so in place of the figures (CH-5320), not as an early read of nothing.
   const filtered = isFiltered(data.filter);
   const emptyFilter = filtered && w.rounds === 0 && !data.roundsError;
-  const early = w.effRounds < 3 && !emptyFilter;
-  const noShots = !early && !emptyFilter && w.effSgRounds < 3;
+  // Rounds that did not load are not "0 rounds": every figure, count and early-read note drawn from them waits for the retry.
+  const failed = data.roundsError;
+  const early = !failed && w.effRounds < 3 && !emptyFilter;
+  const noShots = !failed && !early && !emptyFilter && w.effSgRounds < 3;
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
 
   const share = async () => {
@@ -122,7 +124,7 @@ export function StatsPlayerPhone({
         <span className="ch-spm-head__id">
           <h1>{data.name}</h1>
           <p className="ch-num">
-            {[data.classYear, `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'}`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
+            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'}`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
           </p>
         </span>
         {coach && messageHref && (
@@ -151,11 +153,11 @@ export function StatsPlayerPhone({
           Strokes gained needs three rounds posted with shots. {coach ? `${first} has` : 'You have'} {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
         </div>
       )}
-      {data.roundsError && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={onRetry} />}
+      {failed && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={onRetry} />}
 
       {emptyFilter && <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />}
 
-      {!emptyFilter && (
+      {!emptyFilter && !failed && (
         <>
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
         {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={onRetry} />}

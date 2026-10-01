@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -125,6 +125,33 @@ describe('Stats team · reads that fail', () => {
     wrap(data);
     await expectCode('CH-4201', /Team rounds didn't load/);
     expect(code('CH-4301')).toBeNull();
+    // A roster that did not load is not "0 active players".
+    expect(document.querySelector('.ch-st-head p')!.textContent).toBe('Varsity · countable rounds only');
+    expect(document.querySelector('.ch-st-head')!.textContent).not.toMatch(/\b0 active/);
+  });
+
+  it('CH-4211 the season’s longest putt does not load: Season bests says so beside the other bests, never "No season bests yet" and never a quiet gap', async () => {
+    const isLongest = (f: Array<[string, unknown[]]>) => f.some(([k]) => k === 'limit');
+    const day = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    tables.current = {
+      ...seasonTables(),
+      golf_rounds: { data: [{ id: 'r1', player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' }] },
+      golf_shots: (f) => (isLongest(f) ? { error: { message: 'boom' } } : { data: [{ round_id: 'r1', putt_distance_feet: 8, putt_made: true }] }),
+    };
+    const data = await load();
+    expect(data.longestError).toBe(true);
+    expect(data.roundsError).toBe(false);
+    wrap(data);
+    await expectCode('CH-4211', /The longest putt didn't load/);
+    expect(code('CH-4307')).toBeNull();
+    expect(screen.getByText('Low round')).toBeTruthy();
+    await userEvent.setup().click(within(code('CH-4211') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+    // When it loads there is no notice.
+    cleanup();
+    tables.current = seasonTables();
+    wrap(await load());
+    expect(code('CH-4211')).toBeNull();
   });
 
   it('CH-4202 round figures do not load: scoring stays, the rest say so', async () => {
@@ -382,10 +409,12 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
 
-  it('CH-4201 rounds do not load: the notice, never an empty team', () => {
-    wrap(stats({ roundsError: true }));
+  it('CH-4201 rounds do not load: the notice, never an empty team, and no count of active players', () => {
+    wrap(stats({ roundsError: true, activeCount: 0 }));
     expect(code('CH-4201')).not.toBeNull();
     expect(document.querySelector('.ch-stm-figs')).toBeNull();
+    expect(document.querySelector('.ch-stm-head')!.textContent).toMatch(/countable rounds/);
+    expect(document.querySelector('.ch-stm-head')!.textContent).not.toMatch(/active/);
   });
 
   it('CH-4301 no rounds in the window: offers the season', () => {

@@ -36,7 +36,15 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
           <div>
             <h1 className="ch-display">Team stats</h1>
             <p>
-              {data.teamName} &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'} &middot; countable rounds only
+              {data.teamName}
+              {/* A roster that did not load is not "0 active players". */}
+              {!data.roundsError && (
+                <>
+                  {' '}
+                  &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
+                </>
+              )}{' '}
+              &middot; countable rounds only
             </p>
           </div>
           {/* Never export a half-loaded window. */}
@@ -94,7 +102,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
                 <TeamPutting putting={data.putting} failed={data.puttsError} />
               </SectionBoundary>
               <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
-                <SeasonBests bests={data.bests} filter={data.filter} />
+                <SeasonBests bests={data.bests} filter={data.filter} longestError={data.longestError} />
               </SectionBoundary>
             </div>
           </>
@@ -166,7 +174,7 @@ function TeamPutting({ putting, failed }: { putting: ChTeamStats['putting']; fai
   );
 }
 
-function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: ChFilter }) {
+function SeasonBests({ bests, filter, longestError }: { bests: ChTeamStats['bests']; filter: ChFilter; longestError: boolean }) {
   const filtered = isFiltered(filter);
   return (
     <section className="ch-st-card">
@@ -177,7 +185,7 @@ function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: C
           <span data-ch-code={filtered ? 'CH-4317' : undefined}>{filtered ? 'Countable rounds since August · the filter does not apply here' : 'Countable rounds since August'}</span>
         </div>
       </div>
-      {bests.length === 0 ? (
+      {bests.length === 0 && !longestError ? (
         <EmptyState code="CH-4307" compact title="No season bests yet." body="Low round, most birdies and the rest appear once rounds are posted." />
       ) : (
         bests.map((b) => (
@@ -195,6 +203,8 @@ function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: C
           </div>
         ))
       )}
+      {/* A best that could not be read is said so, not left out: the line would read as "nobody holed a long putt" (CH-4211). */}
+      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn't load." body="The other bests are right. Try again; the error has been reported." />}
     </section>
   );
 }

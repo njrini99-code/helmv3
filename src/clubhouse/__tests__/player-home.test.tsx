@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -164,6 +164,18 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     show(home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, cacheError: true } }));
     expect(code('CH-2216')!.textContent).toMatch(/scrambling is missing/);
     expect(document.querySelectorAll('.ch-ph-leg')).toHaveLength(4);
+  });
+
+  it('CH-2216 CH-2311 the figures did not load and none of the four has a value: the notice alone, never "Nothing to break down yet"', () => {
+    const none = PREVIEW_PLAYER_HOME_EMPTY.legs!;
+    show(home({ legs: { ...none, cacheError: true } }));
+    expect(code('CH-2216')).not.toBeNull();
+    expect(code('CH-2311')).toBeNull();
+    cleanup();
+    // A read that worked and found nothing is the other answer.
+    show(home({ legs: { ...none, cacheError: false } }));
+    expect(code('CH-2216')).toBeNull();
+    expect(code('CH-2311')).not.toBeNull();
   });
 
   it('CH-2310 CH-2311 one round: the line waits for the second; nothing to break down says so', () => {

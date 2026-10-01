@@ -75,8 +75,10 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   // A filter that leaves no round says so in place of the tab's figures (CH-5320), not as an early read of nothing.
   const filtered = isFiltered(data.filter);
   const emptyFilter = filtered && w.rounds === 0 && !data.roundsError;
-  const early = w.effRounds < 3 && !emptyFilter;
-  const noShots = !early && !emptyFilter && w.effSgRounds < 3;
+  // Rounds that did not load are not "0 rounds": every figure, count and early-read note drawn from them waits for the retry (PAGE_PERFORMANCE rule 4).
+  const failed = data.roundsError;
+  const early = !failed && w.effRounds < 3 && !emptyFilter;
+  const noShots = !failed && !early && !emptyFilter && w.effSgRounds < 3;
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
   const first = data.firstName;
   const baseline = sgBaseline(data.tour);
@@ -112,11 +114,11 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const planHref = coach ? rebuiltHref(`/golf/dashboard/calendar?new=1&with=${data.id}`) : null;
 
   const heroFigs: Array<[string, string, string, string?, ReactNode?]> = [
-    ['Scoring avg', formatFixed(w.avg), coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
+    ['Scoring avg', failed ? NO_DATA : formatFixed(w.avg), failed ? 'Didn’t load' : coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
     ['Handicap', formatHcp(data.handicap), 'Index'],
     // The change's line is always there (a window with no change leaves it empty, `hold`), so the figures, the tabs and the page below do not move between windows.
-    ['SG / round', w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss', w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : <span aria-hidden="true" />],
-    ['Rounds', String(data.season.rounds), 'This season'],
+    ['SG / round', failed || w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, failed || w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss', !failed && w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : <span aria-hidden="true" />],
+    ['Rounds', failed ? NO_DATA : String(data.season.rounds), 'This season'],
   ];
   const pickTab = (t: Tab) => {
     if (t !== tab) {
@@ -128,7 +130,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const tabs: Array<[Tab, string, number?]> = [
     ['overview', 'Overview'],
     ['game', 'Game detail'],
-    ['rounds', 'Rounds', data.rounds.length],
+    ['rounds', 'Rounds', failed ? undefined : data.rounds.length],
     ['dev', 'Development'],
   ];
   const tabKeys = tabListKeys(
@@ -269,20 +271,20 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
         </div>
       )}
       {data.roundsError && (
-        <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={() => router.refresh()} />
+        <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
       )}
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="ch-st-panel">
         {emptyFilter && tab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
 
-        {tab === 'overview' && !emptyFilter && (
+        {tab === 'overview' && !emptyFilter && !failed && (
           <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
             {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
             <Overview data={data} coach={coach} />
           </SectionBoundary>
         )}
 
-        {tab === 'game' && !emptyFilter && (
+        {tab === 'game' && !emptyFilter && !failed && (
           <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
             {data.statsError ? (
               <InlineNotice
@@ -301,7 +303,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           </SectionBoundary>
         )}
 
-        {tab === 'rounds' && !emptyFilter && (
+        {tab === 'rounds' && !emptyFilter && !failed && (
           <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
             {data.rounds.length > 0 && (
               <div className="ch-st-grid2">

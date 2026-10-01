@@ -92,6 +92,8 @@ export interface ChTeamStats {
   roundsError: boolean;
   cacheError: boolean;
   puttsError: boolean;
+  /** The season's longest putt did not load: Season bests says so instead of leaving the line out (CH-4211). */
+  longestError: boolean;
 }
 
 function sgLegs(r: ChRound): Array<number | null> {
@@ -312,6 +314,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     roundsError: season.error || !!membersRes.error,
     cacheError: cache.error,
     puttsError: putts.error,
+    longestError: longest.error,
   };
 }
 

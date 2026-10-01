@@ -46,7 +46,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
     <div className="ch-stm">
       <header className="ch-stm-head">
         <span className="ch-num">
-          {data.teamName} · {data.activeCount} active · countable rounds
+          {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
         </span>
         <h1>Team stats</h1>
       </header>
