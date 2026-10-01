@@ -32,15 +32,15 @@ affects no customer until the flag is flipped.
 | --- | --- | --- |
 | Baseline | **Passed** | §1 |
 | Complete shell swap | **Open**: route gaps in §3; the owner decides build, alias or retire (after this audit) | route table §3 |
-| Round preservation | **Database contracts Passed**: CI pgTAP at `c0f1b17fe` (every migration applied, held included) passed `golf_round_lifecycle_contract` (direct writes cannot complete a round; completed history cannot be edited; only the atomic path completes), `golf_round_submit_identity` (a stale retry cannot retarget a round's type, qualifier or slot), `golf_qualifier_round_slot_integrity` (no duplicate active qualifier round) and `golf_atomic_snapshot_integrity`. Client fault paths are covered by fake-backed Clubhouse tests (`round-entry-*`). **Open**: F-02 (recovery unreachable with the flag on); F-14 fixed | F-02, F-14 |
-| Calendar | **Blocked / not exercised** at runtime (no isolated DB session run yet); source reviewed; deep link `?event=` wired | §3 notifications |
-| Stats and visuals | **Source reviewed**; parity register `pages/P005-stats-player/PARITY.md` (87 rows); formula fixtures not rerun at the train SHA | PARITY.md |
-| Qualifiers | **Open**: F-03 tie inconsistency, source-confirmed; the tie policy is an owner decision | F-03 |
-| Messages | **Passed**: two-session journey on the local stack, 7/7 (see the runtime journeys below); deep link `?conversation=` verified | §4 |
+| Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). **Open**: F-02 (recovery unreachable with the flag on), Q-119 (cross-device discard), Q-120 (held submit version check); device fault-injection on a real phone not run | F-02, R-1..R-12, Q-119, Q-120 |
+| Calendar | **Source-confirmed fixes, runtime not exercised**: 9 bugs fixed (`ac64ba366`, `696b49570`); write journeys on the Demo team pending (they notify the whole roster: check Demo members' email and push first). Open: CAL-05 (series across the clock change), Q-108 (fan-out to the whole roster), create idempotency (in progress) | §4 Calendar |
+| Stats and visuals | **Source-confirmed fixes**: F-34, C-14, C-15, C-16, C-24 (`98f7bb52e`); Home figures state their basis. Open: Q-111 (total-only rounds never count), Q-112 (comparison cohort) | §4 Stats |
+| Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Open: Q-104/Q-114 tie at the cut (name order now decides it everywhere), Q-115..Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
+| Messages | **Passed**: two-session journey on the local stack, 7/7; deep link verified. Night audit fixed failed-reaction silence, lost text on a failed send and the coach phone inbox shift (CLS 0.292, not re-measured) | §4 |
 | CoachHelm | **Open**: F-04 views not rebuilt | F-04 |
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
-| Phone/accessibility | **Blocked / not exercised**: needs the owner's iPhone pass on the preview | — |
-| Build/regression | Local `test:all`: 13 failures in 8 files, fixed (F-15..F-20). First CI run on #2110 added F-21..F-25, all fixed or owner-decided; `next build` exit 0 locally | §4 |
+| Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
+| Build/regression | `next build` exit 0 at `6acd57346` (8 GB heap, as CI). Targeted suites green per commit (rounds 2534 tests, qualifying 327, stats 490); full `test:all` and CI not run on the night branch yet | §4 |
 | Cutover/rollback | Release package in §6; rollback = flag off (Clubhouse) or redeploy `6ee77e98e` (owner) | §6 |
 | Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
 
@@ -243,6 +243,14 @@ quiet rerun.
   figures; season rounds used the stored total instead of the canonical one;
   "Where drives finish" summed to 160%; totals-only cache rows averaged as 0.
   Owner questions Q-111 (total-only rounds never count) and Q-112.
+- **Security review of R-5 (`6acd57346`).** High, fixed: the device-wide v1
+  queue survives sign-out, so player A's queued scorecard drained under
+  player B's session (A's round gone) would come back `round_missing` and be
+  re-created as B's round. The drain now submits only the signed-in player's
+  records. Low, open: the submit tells `round_missing` from the refusal for an
+  id the caller already holds (a one-bit existence check on unguessable ids).
+  Info, open: the discard tombstone list is one device-wide list capped at 50
+  with no expiry.
 - **Preview timing (provisional).** Most pages are ready in 2–3 s on the
   phone. The first Home after sign-in took 7.1 s. CLS is 0 everywhere except
   F-33.
