@@ -1,17 +1,10 @@
 'use client';
 
 import { createContext, createElement, useContext, useEffect, useSyncExternalStore, type ReactNode } from 'react';
+import { CH_PHONE_COOKIE } from './phone-cookie';
 
 /** The phone layout's width, the same breakpoint as `@media (max-width: 820px)` in the stylesheets. */
 export const CH_PHONE_QUERY = '(max-width: 820px)';
-
-/**
- * The cookie that tells the server which layout this device last drew, so a
- * cold load (sign-in landing, refresh, opening the app) renders the phone
- * structure from the first frame instead of a hidden desktop page until
- * hydration (swap audit F-36). Not personal data: "1" or "0".
- */
-export const CH_PHONE_COOKIE = 'ch_phone';
 
 function subscribe(onChange: () => void) {
   const mql = window.matchMedia(CH_PHONE_QUERY);
