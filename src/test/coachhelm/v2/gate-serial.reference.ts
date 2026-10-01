@@ -1,4 +1,9 @@
 /**
+ * FROZEN COPY of src/lib/coachhelm/v2/gate.ts as it was before the reads were batched (the serial version: the coach row, the
+ * settings, the staffed teams, then each team in turn). It is the reference `gate-batching.test.ts` compares the batched gate with:
+ * do not edit it to match a change, a difference is the finding. Delete it only with that test.
+ */
+/**
  * CoachHelm V2 Gate
  *
  * Controls access to CoachHelm features based on user and team settings.
@@ -9,21 +14,12 @@
  * rather than the prior behavior of treating transient errors as "enabled".
  * A missing row (data=null, error=null) still falls back to the enabled
  * default — only DB-level errors trigger the fail-closed path.
- *
- * Reads that do not depend on each other start together (perf, 2026-10-01): a
- * gate was four round trips for a coach (the coach row, their settings, their
- * staffed teams, then each team's settings in turn) and is two now (the row,
- * the settings and the staffed teams; then every team's settings in one read).
- * The answer is unchanged in every case, which `gate-batching.test.ts` checks
- * against a frozen copy of the serial version: a read that is not needed for
- * the answer (the settings of a coach whose row is missing, say) is started
- * anyway and its result, or its failure, is dropped unseen.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import type { CoachHelmSettings, CoachHelmStatus } from './types';
+import type { CoachHelmSettings, CoachHelmStatus } from '@/lib/coachhelm/v2/types';
 
 const LOOKUP_FAILED_REASON = 'Coach record lookup failed';
 const PLAYER_LOOKUP_FAILED_REASON = 'Player record lookup failed';
@@ -72,63 +68,34 @@ async function getCoachHelmCoachSettings(
 }
 
 /**
- * Starts a read now and marks it handled, so an early return on another read cannot leave a rejection nobody awaits. Awaiting it later
- * still throws what it threw, at the point the serial version would have thrown it.
- */
-function startedHandled<T>(make: () => PromiseLike<T>): Promise<T> {
-  let started: Promise<T>;
-  try {
-    started = Promise.resolve(make());
-  } catch (err) {
-    // Building a query that throws is the same as the read failing: it surfaces where the result is awaited, as the serial version's did.
-    started = Promise.reject(err);
-  }
-  started.catch(() => undefined);
-  return started;
-}
-
-/**
- * Gets CoachHelm settings for several teams in one read. A team with no row, a failed read, or (never, `team_id` is unique) more than
- * one row is simply absent from the map, which the caller reads as "enabled": what the single-team read did with `error || !data`
- * (`maybeSingle` fails on two rows). A failed read is therefore the same answer for every team it covered as it was for each team on
- * its own.
+ * Gets team CoachHelm settings
  */
 async function getTeamCoachHelmSettings(
-  teamIds: string[],
+  teamId: string,
   supabase: SupabaseClient,
-): Promise<Map<string, { enabled: boolean; disabledReason: string | null }>> {
-  const byTeam = new Map<string, { enabled: boolean; disabledReason: string | null }>();
+): Promise<{ enabled: boolean; disabledReason: string | null } | null> {
   try {
     const { data, error } = await supabase
       .from('golf_team_coachhelm_settings')
-      .select('team_id, enabled, disabled_reason, disabled_at')
-      .in('team_id', teamIds);
+      .select('enabled, disabled_reason, disabled_at')
+      .eq('team_id', teamId)
+      .maybeSingle();
 
-    if (error || !data) return byTeam;
+    if (error || !data) return null;
 
-    const seen = new Set<string>();
-    const duplicated = new Set<string>();
-    for (const row of data) {
-      if (seen.has(row.team_id)) duplicated.add(row.team_id);
-      seen.add(row.team_id);
-    }
-    for (const row of data) {
-      if (duplicated.has(row.team_id)) continue;
-      byTeam.set(row.team_id, {
-        // DB column is `boolean | null`; default null/undefined to true
-        // (callers already use `?? true` downstream — preserves runtime behavior).
-        enabled: row.enabled ?? true,
-        disabledReason: row.disabled_reason,
-      });
-    }
-    return byTeam;
+    return {
+      // DB column is `boolean | null`; default null/undefined to true
+      // (callers already use `?? true` downstream — preserves runtime behavior).
+      enabled: data.enabled ?? true,
+      disabledReason: data.disabled_reason,
+    };
   } catch (err) {
     await logServerError('gate.getTeamCoachHelmSettings threw', {
       action: 'gate.getTeamCoachHelmSettings',
       featureArea: 'coachhelm.gate',
-      metadata: { teamIds, error: String(err) },
+      metadata: { teamId, error: String(err) },
     });
-    return new Map();
+    return null;
   }
 }
 
@@ -158,13 +125,12 @@ export async function isCoachHelmEnabledForCoach(
 
   const supabase = (supabaseOverride ?? (createAdminClient())) as SupabaseClient;
 
-  // The coach's own reads do not depend on each other: the row says whether the others count, and they start with it.
-  const coachRead = startedHandled(() => supabase.from('golf_coaches').select('user_id, organization_id').eq('id', coachId).single());
-  const settingsRead = startedHandled(() => getCoachHelmCoachSettings(coachId, supabase));
-  const staffRead = startedHandled(() => supabase.from('golf_team_coach_staff').select('team_id').eq('coach_id', coachId));
-
   // Get coach record with team via organization
-  const { data: coach, error: coachError } = await coachRead;
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('user_id, organization_id')
+    .eq('id', coachId)
+    .single();
 
   if (coachError) {
     await logServerError('gate.isCoachHelmEnabledForCoach lookup failed', {
@@ -194,7 +160,7 @@ export async function isCoachHelmEnabledForCoach(
   }
 
   // Check coach-level settings
-  const coachSettings = await settingsRead;
+  const coachSettings = await getCoachHelmCoachSettings(coachId, supabase);
   const userEnabled = coachSettings?.enabled ?? true;
 
   if (!userEnabled) {
@@ -212,18 +178,20 @@ export async function isCoachHelmEnabledForCoach(
   // otherwise CoachHelm runs for the still-enabled team. Resolving via
   // golf_team_coach_staff avoids the old "pick first team in the org" bug
   // that silently misread the wrong team's settings in multi-team orgs.
-  const { data: staffedTeams } = await staffRead;
+  const { data: staffedTeams } = await supabase
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coachId);
 
   const teamIds = (staffedTeams ?? [])
     .map((s) => s.team_id)
     .filter((id): id is string => !!id);
 
   if (teamIds.length > 0) {
-    const settingsByTeam = await getTeamCoachHelmSettings(teamIds, supabase);
     let allDisabled = true;
     let firstDisabledReason: string | null = null;
     for (const teamId of teamIds) {
-      const teamSettings = settingsByTeam.get(teamId) ?? null;
+      const teamSettings = await getTeamCoachHelmSettings(teamId, supabase);
       const teamEnabled = teamSettings?.enabled ?? true;
       if (teamEnabled) {
         allDisabled = false;
@@ -276,13 +244,11 @@ export async function isCoachHelmEnabledForPlayer(
 
   const supabase = (supabaseOverride ?? (createAdminClient())) as SupabaseClient;
 
-  // The row says whether the memberships count; both start together.
-  const playerRead = startedHandled(() => supabase.from('golf_players').select('user_id').eq('id', playerId).single());
-  const membershipsRead = startedHandled(() =>
-    supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active'),
-  );
-
-  const { data: player, error: playerError } = await playerRead;
+  const { data: player, error: playerError } = await supabase
+    .from('golf_players')
+    .select('user_id')
+    .eq('id', playerId)
+    .single();
 
   if (playerError) {
     await logServerError('gate.isCoachHelmEnabledForPlayer lookup failed', {
@@ -313,18 +279,21 @@ export async function isCoachHelmEnabledForPlayer(
   // has CoachHelm disabled. Otherwise CoachHelm runs (the still-enabled team
   // governs). Previous code read player.team[0] — an arbitrary first
   // membership — which could read the wrong team's setting.
-  const { data: memberships } = await membershipsRead;
+  const { data: memberships } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .eq('status', 'active');
 
   const playerTeamIds = (memberships ?? [])
     .map((m) => m.team_id)
     .filter((id): id is string => !!id);
 
   if (playerTeamIds.length > 0) {
-    const settingsByTeam = await getTeamCoachHelmSettings(playerTeamIds, supabase);
     let allDisabled = true;
     let firstDisabledReason: string | null = null;
     for (const teamId of playerTeamIds) {
-      const teamSettings = settingsByTeam.get(teamId) ?? null;
+      const teamSettings = await getTeamCoachHelmSettings(teamId, supabase);
       const teamEnabled = teamSettings?.enabled ?? true;
       if (teamEnabled) {
         allDisabled = false;
