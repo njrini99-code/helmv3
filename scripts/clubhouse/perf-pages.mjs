@@ -291,16 +291,6 @@ async function step(page, readsFile, { target, click, wait }) {
   return { snap, trace: readTrace(readsFile, off, since) };
 }
 
-async function navTo(page, label) {
-  const link = page.locator(`#ch-sidebar a[href="${label}"], aside.ch-sidebar a[href="${label}"], nav.ch-tabbar a[href="${label}"]`).locator('visible=true').first();
-  if (await link.count()) return () => link.click();
-  // Phone: not one of the four tabs, so it is in the More sheet.
-  return async () => {
-    await page.getByRole('button', { name: /^More/ }).click();
-    await page.getByRole('dialog', { name: 'More' }).locator(`a[href="${label}"]`).click();
-  };
-}
-
 function summarise(runs) {
   const pick = (f) => median(runs.map(f));
   return {
