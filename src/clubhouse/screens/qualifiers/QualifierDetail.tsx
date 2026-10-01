@@ -25,6 +25,7 @@ import { StateBadge, StatusPill, ToPar } from './parts';
 import { useLiveStandings } from './live';
 import { Courses, Selections, StaleStandings } from './QualifierSections';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
+import { useBackToList } from './list-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
 import { useChPhone } from '../../lib/use-phone';
 import { LIVE_WRITES, type ChQWrites } from './writes';
@@ -50,6 +51,8 @@ export function QualifierDetail({
   live?: boolean;
 }) {
   const router = useRouter();
+  // Back goes to the list as it was left (its filter and search), and the list restores its scroll for the return.
+  const back = useBackToList();
   // A live refresh whose rounds or entries read fails would replace good standings with an error: draw the last good ones of this
   // qualifier instead, with the courses and cards that came with them, and say they may be out of date (owner rule 2). A first load
   // that fails is still the error.
@@ -138,6 +141,7 @@ export function QualifierDetail({
         <QualifierDetailPhone
           data={data}
           stale={stale}
+          back={back}
           status={status}
           onAskClose={() => {
             chTrail('qualifiers close ask');
@@ -154,8 +158,8 @@ export function QualifierDetail({
   return (
     <SecondaryProvider value={shown.source}>
     <main className="ch-qf ch-qf--detail">
-      <div className="ch-qf-back">
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={LIST}>
+      <div className="ch-qf-back" onClickCapture={back.markReturn}>
+        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={back.href}>
           Qualifiers
         </Button>
       </div>

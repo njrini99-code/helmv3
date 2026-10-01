@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { ArrowRight, Flag, Medal, Plus, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -15,11 +16,12 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { canvasScrollTop, clearReturn, listAddress, parseListQuery, rememberList, rememberScroll, returnScroll, scrollCanvasTo, type ListFilter } from './list-state';
 import { ctaLabel } from './model';
 import { Meta, StatusPill, ToPar } from './parts';
 import '../../styles/qualifiers.css';
 
-type Filter = 'all' | 'active' | 'concluded';
+type Filter = ListFilter;
 const isActive = (i: ChQListItem) => i.status !== 'completed';
 const LIST = '/golf/dashboard/qualifiers';
 const detailHref = (id: string) => `${LIST}/${id}`;
@@ -32,8 +34,36 @@ export function QualifiersList({ data }: { data: ChQList }) {
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
   const unread = data.listError || mineUnknown;
-  const [filter, setFilter] = useState<Filter>('all');
-  const [q, setQ] = useState('');
+  // The filter and the search are the address's (?filter=&q=): read when the list mounts, so they survive its own remount and a
+  // Back from a qualifier, and written back as they change (replace, never push).
+  const params = useSearchParams();
+  const [start] = useState(() => parseListQuery((name) => params?.get(name) ?? null));
+  const [filter, setFilter] = useState<Filter>(start.filter);
+  const [q, setQ] = useState(start.q);
+  useEffect(() => {
+    const address = listAddress(window.location.pathname, window.location.search, { filter, q });
+    rememberList(address);
+    if (address !== window.location.pathname + window.location.search) window.history.replaceState(null, '', address);
+  }, [filter, q]);
+  // Returning from a qualifier restores where the list was scrolled. The frame scrolls the canvas to the top once the new page is
+  // in (CH-1904), after this effect, so the restore waits for a frame that comes after it.
+  useEffect(() => {
+    const address = window.location.pathname + window.location.search;
+    const top = returnScroll(address);
+    if (top == null) return;
+    let first = 0;
+    let second = 0;
+    first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        clearReturn();
+        scrollCanvasTo(top);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, []);
 
   const act = data.items.filter(isActive);
   const con = data.items.filter((i) => !isActive(i));
@@ -63,7 +93,13 @@ export function QualifiersList({ data }: { data: ChQList }) {
       : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
 
   return (
-    <main className="ch-qf ch-qf--list">
+    <main
+      className="ch-qf ch-qf--list"
+      // Leaving for a qualifier (or anywhere a link goes): where the list was scrolled is kept for the way back.
+      onClickCapture={(e) => {
+        if ((e.target as Element).closest('a')) rememberScroll(window.location.pathname + window.location.search, canvasScrollTop());
+      }}
+    >
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
       <PhoneTop title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
       <header className="ch-qf-head">

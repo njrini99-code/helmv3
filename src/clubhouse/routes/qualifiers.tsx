@@ -7,6 +7,7 @@ import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
+import { BackToList } from '../screens/qualifiers/BackToList';
 import { RefreshNotice } from '../ui/RefreshNotice';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
@@ -90,11 +91,7 @@ function NotFound() {
         icon={SearchX}
         title="That qualifier isn’t on your team"
         body="It may have been deleted, or the link is from another team."
-        action={
-          <Button size="sm" href="/golf/dashboard/qualifiers">
-            Back to qualifiers
-          </Button>
-        }
+        action={<BackToList>Back to qualifiers</BackToList>}
       />
     </Frame>
   );

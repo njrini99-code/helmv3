@@ -38,6 +38,7 @@ const LIST = '/golf/dashboard/qualifiers';
 export function QualifierDetailPhone({
   data,
   stale,
+  back,
   status,
   onAskClose,
   onReopen,
@@ -46,6 +47,8 @@ export function QualifierDetailPhone({
   data: ChQDetailCore;
   /** The standings are the last good ones, because the latest read of them failed. */
   stale: boolean;
+  /** Where Back goes: the list as it was left, and the mark that tells it to restore its scroll. */
+  back: { href: string; markReturn: () => void };
   status: ChQStatus;
   onAskClose: () => void;
   /** Runs the reopen and answers once the server has: the sheet that asked stays up until then. */
@@ -70,7 +73,13 @@ export function QualifierDetailPhone({
     <main className="ch-qfm" aria-label={data.name}>
       <PhoneTop
         title="Qualifier"
-        back={{ label: 'Qualifiers', onBack: () => router.push(LIST) }}
+        back={{
+          label: 'Qualifiers',
+          onBack: () => {
+            back.markReturn();
+            router.push(back.href);
+          },
+        }}
         action={coach ? <PhoneIconAction icon={Ellipsis} label="Qualifier actions" onClick={() => setActions(true)} /> : undefined}
       />
       <header className="ch-qfm-head">

@@ -159,6 +159,8 @@ Offline, no write is sent: the shell's toast names what did not happen, the erro
 | --- | --- | --- | --- |
 | 90701 | CH-09903 | `THE_SQUAD_IS_CONFIRMED` | The squad is confirmed (Manage selections) |
 | 90702 | — | `WRITES_REFUSED_OFFLINE` | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
+| 90703 | CH-09904 | `THE_LISTS_FILTER_AND_SEARCH` | The list's filter and search |
+| 90704 | CH-09905 | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | Returning to the list from a qualifier |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 

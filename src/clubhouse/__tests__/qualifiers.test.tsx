@@ -17,6 +17,8 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
+  // The real hook reads the address, which is what the list's filter and search live in.
+  useSearchParams: () => new URLSearchParams(window.location.search),
   redirect: (to: string) => {
     throw new Error(`redirect:${to}`);
   },
@@ -140,6 +142,9 @@ beforeEach(() => {
   gate.on = true;
   tables.current = {};
   tables.gate = undefined;
+  // The list keeps its filter and scroll in the address and the session: every test starts from none.
+  window.sessionStorage.clear();
+  window.history.replaceState(null, '', '/');
 });
 
 describe('Qualifiers · the standings model', () => {
@@ -1032,6 +1037,209 @@ describe('Qualifiers · the courses and the cards stream behind the standings (o
     release.resolve();
     expect(await screen.findByRole('table', { name: /Round 1 scorecard/ })).toBeTruthy();
     expect(fact('Course')).toBe('CourseFinley GCPar 72');
+  });
+});
+
+describe('Qualifiers · the list keeps its filter, search and scroll for the way back (owner rule 8, 2026-10-01)', () => {
+  const LIST_URL = '/golf/dashboard/qualifiers';
+  const here = () => window.location.pathname + window.location.search;
+  const at = (url: string) => window.history.replaceState(null, '', url);
+  const pill = (name: RegExp) => screen.getByRole('button', { name }).getAttribute('aria-pressed');
+  /** The canvas the Clubhouse frame scrolls, which jsdom does not scroll: it says where it is and records where it is sent. */
+  const canvas = (top: number) => {
+    const el = document.createElement('div');
+    el.id = 'ch-canvas';
+    Object.defineProperty(el, 'scrollTop', { value: top, configurable: true });
+    el.scrollTo = vi.fn() as never;
+    document.body.appendChild(el);
+    return el;
+  };
+  afterEach(() => document.getElementById('ch-canvas')?.remove());
+
+  it('CH-09904 the list opens on the filter and the search its address carries, and rewrites the address as they change: replaced, never pushed', async () => {
+    const user = userEvent.setup();
+    at(`${LIST_URL}?filter=active&q=pine&state=empty`);
+    const replace = vi.spyOn(window.history, 'replaceState');
+    const push = vi.spyOn(window.history, 'pushState');
+    wrap(<QualifiersList data={list()} />);
+    expect(pill(/^Active/)).toBe('true');
+    expect((screen.getByLabelText('Search qualifiers') as HTMLInputElement).value).toBe('pine');
+    // Nothing changed yet, so the address was not touched.
+    expect(replace).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /^Concluded/ }));
+    expect(here()).toBe(`${LIST_URL}?filter=concluded&q=pine&state=empty`);
+    await user.clear(screen.getByLabelText('Search qualifiers'));
+    expect(here()).toBe(`${LIST_URL}?filter=concluded&state=empty`);
+    await user.click(screen.getByRole('button', { name: /^All/ }));
+    // The defaults leave the address as it came, and what else it carried (the preview’s state) is never dropped.
+    expect(here()).toBe(`${LIST_URL}?state=empty`);
+    expect(push).not.toHaveBeenCalled();
+    replace.mockRestore();
+    push.mockRestore();
+  });
+
+  it('CH-09904 the filter and the search survive the list’s own remount: they come from the address, not from a state that is gone', async () => {
+    const user = userEvent.setup();
+    at(LIST_URL);
+    const first = wrap(<QualifiersList data={list()} />);
+    await user.click(screen.getByRole('button', { name: /^Concluded/ }));
+    await user.type(screen.getByLabelText('Search qualifiers'), 'spring');
+    first.unmount();
+    const second = wrap(<QualifiersList data={list()} />);
+    expect(pill(/^Concluded/)).toBe('true');
+    expect((screen.getByLabelText('Search qualifiers') as HTMLInputElement).value).toBe('spring');
+    second.unmount();
+    // A filter nobody wrote (an edited address) is the default, not an error.
+    at(`${LIST_URL}?filter=nonsense`);
+    wrap(<QualifiersList data={list()} />);
+    expect(pill(/^All/)).toBe('true');
+  });
+
+  it('CH-09904 Back from a qualifier returns to the list as it was left: the desktop link, the phone’s top bar and the not-found page all carry its filter and search', async () => {
+    const user = userEvent.setup();
+    at(LIST_URL);
+    const list1 = wrap(<QualifiersList data={list()} />);
+    await user.click(screen.getByRole('button', { name: /^Active/ }));
+    await user.type(screen.getByLabelText('Search qualifiers'), 'pine');
+    list1.unmount();
+    at('/golf/dashboard/qualifiers/some-qualifier');
+    const detail1 = wrap(<QualifierDetail data={detail()} writes={fakeWrites()} live={false} />);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Qualifiers' }).getAttribute('href')).toBe(`${LIST_URL}?filter=active&q=pine`));
+    detail1.unmount();
+    // The not-found page of a qualifier that is not on the team goes the same way.
+    asCoachSession();
+    tables.current = { golf_qualifiers: { data: null } };
+    wrap(await ClubhouseQualifiersRoute({ view: 'detail', id: '10000000-0000-4000-8000-000000000009' }));
+    await waitFor(() => expect(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }).getAttribute('href')).toBe(`${LIST_URL}?filter=active&q=pine`));
+  });
+
+  it('CH-09904 a player’s own list is remembered as its own: Back returns to /my-qualifiers, not to the team’s list', async () => {
+    const user = userEvent.setup();
+    at('/golf/dashboard/my-qualifiers');
+    const mine = wrap(<QualifiersList data={list('player', 'mine')} />);
+    await user.click(screen.getByRole('button', { name: /^Active/ }));
+    mine.unmount();
+    wrap(<QualifierDetail data={detail('live', 'player')} writes={fakeWrites()} live={false} />);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Qualifiers' }).getAttribute('href')).toBe('/golf/dashboard/my-qualifiers?filter=active'));
+  });
+
+  it('CH-09904 with no list visited the Back is the plain list, and a remembered address that is not a list is never followed', async () => {
+    const plain = wrap(<QualifierDetail data={detail()} writes={fakeWrites()} live={false} />);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Qualifiers' }).getAttribute('href')).toBe(LIST_URL));
+    plain.unmount();
+    window.sessionStorage.setItem('ch.qf.list', 'https://example.com/steal');
+    wrap(<QualifierDetail data={detail()} writes={fakeWrites()} live={false} />);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Qualifiers' }).getAttribute('href')).toBe(LIST_URL));
+  });
+
+  it('CH-09904 the phone’s Back goes to the list as it was left', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const user = userEvent.setup();
+      window.sessionStorage.setItem('ch.qf.list', `${LIST_URL}?filter=concluded`);
+      render(
+        <LazyMotion features={domAnimation}>
+          <ToastProvider>
+            <PhoneChromeProvider>
+              <div className="ch-root" data-ui="clubhouse">
+                <SlotHostForBack />
+                <QualifierDetail data={detail()} writes={fakeWrites()} live={false} />
+              </div>
+            </PhoneChromeProvider>
+          </ToastProvider>
+        </LazyMotion>,
+      );
+      await user.click(within(screen.getByTestId('phone-top-back')).getByRole('button', { name: 'Back to Qualifiers' }));
+      expect(router.push).toHaveBeenCalledWith(`${LIST_URL}?filter=concluded`);
+      expect(window.sessionStorage.getItem('ch.qf.return')).toBe('1');
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  function SlotHostForBack() {
+    const { setSlot } = usePhoneChromeState();
+    return <div ref={setSlot} data-testid="phone-top-back" />;
+  }
+
+  it('CH-09905 leaving the list for a qualifier keeps where it was scrolled, and coming back restores it once, after the frame’s own scroll to the top', async () => {
+    const user = userEvent.setup();
+    at(`${LIST_URL}?filter=active`);
+    const el = canvas(480);
+    const first = wrap(<QualifiersList data={list()} />);
+    const link = document.querySelector('a.ch-qf-hero, a.ch-qf-card') as HTMLAnchorElement;
+    link.addEventListener('click', (e) => e.preventDefault());
+    await user.click(link);
+    expect(JSON.parse(window.sessionStorage.getItem('ch.qf.scroll')!)).toEqual({ address: `${LIST_URL}?filter=active`, top: 480 });
+    first.unmount();
+    // Coming back through a Back control: the mark is set, and the list scrolls itself once a frame has gone by.
+    window.sessionStorage.setItem('ch.qf.return', '1');
+    wrap(<QualifiersList data={list()} />);
+    expect(el.scrollTo).not.toHaveBeenCalled();
+    await waitFor(() => expect(el.scrollTo).toHaveBeenCalledWith({ top: 480 }));
+    expect(el.scrollTo).toHaveBeenCalledTimes(1);
+    // Honoured once: the next visit opens at the top.
+    expect(window.sessionStorage.getItem('ch.qf.return')).toBeNull();
+  });
+
+  it('CH-09905 a list that is not being returned to opens at the top, and so does one returned to at another filter', async () => {
+    // The frames come at once, so a restore that was going to happen has happened by the time the list is on screen.
+    vi.stubGlobal('requestAnimationFrame', (run: FrameRequestCallback) => {
+      run(0);
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    try {
+      const el = canvas(0);
+      window.sessionStorage.setItem('ch.qf.scroll', JSON.stringify({ address: `${LIST_URL}?filter=active`, top: 480 }));
+      at(`${LIST_URL}?filter=active`);
+      // A fresh visit (the sidebar, a link): no mark, no restore.
+      const fresh = wrap(<QualifiersList data={list()} />);
+      expect(el.scrollTo).not.toHaveBeenCalled();
+      fresh.unmount();
+      // A return to a different address than the one that was left.
+      window.sessionStorage.setItem('ch.qf.return', '1');
+      at(`${LIST_URL}?filter=concluded`);
+      const other = wrap(<QualifiersList data={list()} />);
+      expect(el.scrollTo).not.toHaveBeenCalled();
+      other.unmount();
+      // And the same list, returned to, does restore: the stubbed frames make this the control of the two above.
+      window.sessionStorage.setItem('ch.qf.return', '1');
+      at(`${LIST_URL}?filter=active`);
+      wrap(<QualifiersList data={list()} />);
+      expect(el.scrollTo).toHaveBeenCalledWith({ top: 480 });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('CH-09905 the browser’s own Back from a qualifier is a return too, and Back from the screen is marked before it leaves', async () => {
+    const user = userEvent.setup();
+    wrap(<QualifierDetail data={detail()} writes={fakeWrites()} live={false} />);
+    expect(window.sessionStorage.getItem('ch.qf.return')).toBeNull();
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(window.sessionStorage.getItem('ch.qf.return')).toBe('1');
+    window.sessionStorage.removeItem('ch.qf.return');
+    const back = screen.getByRole('link', { name: 'Qualifiers' });
+    back.addEventListener('click', (e) => e.preventDefault());
+    await user.click(back);
+    expect(window.sessionStorage.getItem('ch.qf.return')).toBe('1');
+  });
+
+  it('CH-09904 a session that cannot keep anything leaves the list working: the address still carries the filter, Back is the plain list', async () => {
+    const user = userEvent.setup();
+    const broken = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
+    try {
+      at(LIST_URL);
+      wrap(<QualifiersList data={list()} />);
+      await user.click(screen.getByRole('button', { name: /^Active/ }));
+      expect(here()).toBe(`${LIST_URL}?filter=active`);
+    } finally {
+      broken.mockRestore();
+    }
   });
 });
 
