@@ -88,7 +88,7 @@ export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true
   const b = data.board;
   const topScore = Math.max(0, data.squad - data.picks);
   const phone = useChPhone();
-  const reopenNow = () => void reopen.run();
+  const reopenNow = () => reopen.run();
 
   const closeConfirm = (
     <Modal
@@ -180,7 +180,7 @@ export function QualifierDetail({ data: fresh, writes = LIVE_WRITES, live = true
                 variant="ghost"
                 leftIcon={LockOpen}
                 disabled={reopen.pending}
-                onClick={reopenNow}
+                onClick={() => void reopenNow()}
               >
                 {reopen.pending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
               </Button>

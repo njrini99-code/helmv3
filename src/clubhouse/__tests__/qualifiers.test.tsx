@@ -1088,6 +1088,187 @@ describe('Qualifiers · create and edit', () => {
   });
 });
 
+describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01)', () => {
+  const deferred = <T,>() => {
+    let resolve: (v: T) => void = () => {};
+    let reject: (e: unknown) => void = () => {};
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+  type Tees = Array<{ id: string; name: string; par: number | null; yards: number | null; holes: number }>;
+  const cand = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({ playerId, name: playerId, rank, toPar: rank, total: 70 + rank, rounds: 2, onScore, pick: null, selected: false, tiedAtCut });
+
+  it('92102 two courses chosen one after the other: the tees of the last choice win, whichever answer comes back last', async () => {
+    const user = userEvent.setup();
+    const a = deferred<Tees>();
+    const b = deferred<Tees>();
+    const writes = fakeWrites({ tees: vi.fn((id: string) => (id === 'c-finley' ? a.promise : b.promise)) });
+    wrap(<QualifierForm data={previewCreateForm()} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: /Choose course for round 1/ }));
+    await user.click(await screen.findByRole('button', { name: /Finley GC/ }));
+    await user.click(screen.getByRole('button', { name: 'All courses' }));
+    await user.click(await screen.findByRole('button', { name: /Hope Valley CC/ }));
+    expect(writes.tees.mock.calls.map((c) => c[0])).toEqual(['c-finley', 'c-hope']);
+    await act(async () => b.resolve([{ id: 't-bravo', name: 'Bravo', par: 71, yards: 6500, holes: 18 }]));
+    expect(await screen.findByRole('button', { name: /Bravo/ })).toBeTruthy();
+    // The slower answer for the first course arrives after: it is not drawn under the second course.
+    await act(async () => a.resolve([{ id: 't-alpha', name: 'Alpha', par: 72, yards: 6800, holes: 18 }]));
+    expect(screen.queryByRole('button', { name: /Alpha/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Bravo/ })).toBeTruthy();
+  });
+
+  it('92102 CH-09210 a failed answer for a course that is no longer chosen says nothing under the one that is', async () => {
+    const user = userEvent.setup();
+    const a = deferred<Tees>();
+    const writes = fakeWrites({ tees: vi.fn((id: string) => (id === 'c-finley' ? a.promise : Promise.resolve(PREVIEW_TEES))) });
+    wrap(<QualifierForm data={previewCreateForm()} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: /Choose course for round 1/ }));
+    await user.click(await screen.findByRole('button', { name: /Finley GC/ }));
+    await user.click(screen.getByRole('button', { name: 'All courses' }));
+    await user.click(await screen.findByRole('button', { name: /Hope Valley CC/ }));
+    expect(await screen.findByRole('button', { name: /Blue/ })).toBeTruthy();
+    // The first course's read fails after the second one's tees are on screen: nothing is said under the course that is chosen.
+    await act(async () => a.reject(new Error('late failure')));
+    expect(code('CH-09210')).toBeNull();
+    expect(screen.getByRole('button', { name: /Blue/ })).toBeTruthy();
+  });
+
+  const selectionTree = (data: ChQSelectionData, writes: SelWrites) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <QualifierSelection data={data} writes={writes} />
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+  const badge = (name: string) => within(within(code('CH-09318') as HTMLElement).getByText(name, { selector: 'b' }).closest('li') as HTMLElement).getByText(/Tie at cut|Given the place/).textContent;
+
+  it('91301 a refresh that was started before a write landed cannot undo it on screen; once the server shows it the page follows the server again', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const at = (...candidates: ReturnType<typeof cand>[]): ChQSelectionData => ({ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates });
+    const writes = selWrites();
+    const { rerender } = render(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)), writes));
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    await screen.findByText('Cal takes the place at the cut');
+    expect(badge('Cal')).toBe('Given the place');
+    // The late read: it was started before the write and has not seen it.
+    rerender(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)), writes));
+    expect(badge('Cal')).toBe('Given the place');
+    expect(badge('Ben')).toBe('Tie at cut');
+    // The read that has seen it: the same on screen, and the edit is let go.
+    rerender(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, true, true)), writes));
+    expect(badge('Cal')).toBe('Given the place');
+    // Later the server changes (someone took it back): the page follows it, not the old edit.
+    rerender(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)), writes));
+    expect(badge('Cal')).toBe('Tie at cut');
+  });
+
+  it('91301 a pick that landed stays on screen over a stale read, until the server shows it', async () => {
+    const user = userEvent.setup();
+    const stale = previewSelection('picking');
+    const writes = selWrites();
+    const { rerender } = render(selectionTree(stale, writes));
+    await user.click(screen.getByRole('button', { name: 'Choose a player' }));
+    await user.click(screen.getByRole('radio', { name: /Eli Brandt/ }));
+    await user.type(screen.getByRole('textbox', { name: /^Reason/ }), 'Best short game on the team');
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    expect(await screen.findByText('1 of 1 chosen')).toBeTruthy();
+    rerender(selectionTree({ ...stale, candidates: stale.candidates.map((c) => ({ ...c })) }, writes));
+    expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
+    const picked = previewSelection('picked');
+    const saved = { ...picked, candidates: picked.candidates.map((c) => (c.pick ? { ...c, pick: { reasoning: 'Best short game on the team' } } : c)) };
+    rerender(selectionTree(saved, writes));
+    expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
+    // The server's own word from here on: a pick someone else removed is gone.
+    rerender(selectionTree({ ...saved, candidates: saved.candidates.map((c) => ({ ...c, pick: null })) }, writes));
+    expect(screen.getByText('0 of 1 chosen')).toBeTruthy();
+  });
+
+  it('91301 an edit the server never shows is let go at the second read, so the page ends on the server’s word', async () => {
+    const user = userEvent.setup();
+    const stale = previewSelection('picking');
+    const writes = selWrites();
+    const { rerender } = render(selectionTree(stale, writes));
+    await user.click(screen.getByRole('button', { name: 'Choose a player' }));
+    await user.click(screen.getByRole('radio', { name: /Eli Brandt/ }));
+    await user.type(screen.getByRole('textbox', { name: /^Reason/ }), 'Best short game on the team');
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    expect(await screen.findByText('1 of 1 chosen')).toBeTruthy();
+    // The first read since is the late one; the second is the write's own, and it is the server's word.
+    rerender(selectionTree({ ...stale, candidates: stale.candidates.map((c) => ({ ...c })) }, writes));
+    expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
+    rerender(selectionTree({ ...stale, candidates: stale.candidates.map((c) => ({ ...c })) }, writes));
+    expect(screen.getByText('0 of 1 chosen')).toBeTruthy();
+  });
+
+  it('CH-09408 CH-09010 giving a place waits on its own row only: the other level players stay available, and the places left count the one in flight', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const data: ChQSelectionData = { ...base, selectionState: 'closed', squad: 3, picks: 0, tie: { places: 2, chosen: 0 }, candidates: [cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true), cand('Dee', 2, false, true)] };
+    const cal = deferred<{ success: boolean }>();
+    const ben = deferred<{ success: boolean }>();
+    const writes = selWrites({ chooseTie: vi.fn((_id: string, playerId: string) => (playerId === 'Cal' ? cal.promise : ben.promise)) });
+    render(selectionTree(data, writes));
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    // Cal's row says it is saving; nobody else's does.
+    const calRow = screen.getByText('Cal', { selector: 'b' }).closest('li') as HTMLElement;
+    expect(within(calRow).getByText('Saving').getAttribute('data-ch-code')).toBe('CH-09408');
+    expect(document.querySelectorAll('li [data-ch-code="CH-09408"]')).toHaveLength(1);
+    expect((within(calRow).getByRole('button') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Give the place Ben' }) as HTMLButtonElement).disabled).toBe(false);
+    // A second give goes through while the first is in flight; with both counted the places are spoken for.
+    await user.click(screen.getByRole('button', { name: 'Give the place Ben' }));
+    expect(writes.chooseTie.mock.calls.map((c) => c[1])).toEqual(['Cal', 'Ben']);
+    expect((screen.getByRole('button', { name: 'Give the place Dee' }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => {
+      cal.resolve({ success: true });
+      ben.resolve({ success: true });
+    });
+    await screen.findByText('Ben takes the place at the cut');
+    expect(document.querySelectorAll('li [data-ch-code="CH-09408"]')).toHaveLength(0);
+    expect((screen.getByRole('button', { name: 'Take it back Cal' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  describe('on the phone', () => {
+    const real = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      window.matchMedia = real;
+    });
+
+    it('CH-09406 CH-09004 Reopen keeps its sheet up while the server answers, says Reopening on the control that stays, and closes the sheet only when it landed', async () => {
+      const user = userEvent.setup();
+      const answer = deferred<{ success: boolean; error?: string }>();
+      const writes = fakeWrites({ setStatus: vi.fn(() => answer.promise) });
+      const d = detail('completed');
+      wrap(<QualifierDetail data={d} writes={writes} live={false} />);
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+      const sheet = () => screen.getByRole('dialog', { name: d.name });
+      await user.click(within(await screen.findByRole('dialog', { name: d.name })).getByRole('button', { name: 'Reopen qualifier' }));
+      // In flight: the sheet is still there and its button says what it is doing.
+      const busy = within(sheet()).getByText('Reopening');
+      expect(busy.getAttribute('data-ch-code')).toBe('CH-09406');
+      expect((busy.closest('button') as HTMLButtonElement).disabled).toBe(true);
+      // Refused: the sheet stays, the button is back, the toast says so.
+      await act(async () => answer.resolve({ success: false, error: 'nope' }));
+      await expectCode('CH-09004', /Couldn’t reopen/);
+      expect((within(sheet()).getByRole('button', { name: 'Reopen qualifier' }) as HTMLButtonElement).disabled).toBe(false);
+      // Landed: the sheet closes.
+      writes.setStatus.mockImplementation(async () => ({ success: true }));
+      await user.click(within(sheet()).getByRole('button', { name: 'Reopen qualifier' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: d.name })).toBeNull());
+      expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Live');
+    });
+  });
+});
+
 describe('Qualifiers · loading', () => {
   it('CH-09401 CH-09402 CH-09403 each address has a skeleton in the page’s shape', () => {
     render(

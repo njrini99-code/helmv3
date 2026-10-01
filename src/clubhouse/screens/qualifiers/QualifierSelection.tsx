@@ -12,7 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
-import { normalise, useAction } from '../../lib/use-action';
+import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
@@ -41,9 +41,30 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const phone = useChPhone();
   const detailHref = `${LIST}/${data.id}`;
   const [state, setState] = useState(data.selectionState);
-  const [cands, setCands] = useState(data.candidates);
   useEffect(() => setState(data.selectionState), [data.selectionState]);
-  useEffect(() => setCands(data.candidates), [data.candidates]);
+  // What the coach changed here lands on top of the server's read until that read shows it, so a refresh that was started before the
+  // write settled (and so has not seen it) cannot undo it on screen. Once the server's candidate matches, or a second read has come in
+  // since (the first may be that late one; the write's own re-read is the second), the edit is dropped and the page follows the server
+  // again. Nothing is drawn for a write before it lands (91301).
+  const [edits, setEdits] = useState<Record<string, { patch: CandEdit; reads: number }>>({});
+  const edit = (playerId: string, patch: CandEdit) => setEdits((cur) => ({ ...cur, [playerId]: { patch: { ...cur[playerId]?.patch, ...patch }, reads: 0 } }));
+  useEffect(() => {
+    setEdits((cur) => {
+      const ids = Object.keys(cur);
+      if (!ids.length) return cur;
+      const next: typeof cur = {};
+      for (const id of ids) {
+        const server = data.candidates.find((c) => c.playerId === id);
+        const e = cur[id]!;
+        if (server && !agrees(server, e.patch) && e.reads + 1 < 2) next[id] = { patch: e.patch, reads: e.reads + 1 };
+      }
+      return next;
+    });
+  }, [data.candidates]);
+  const cands = useMemo(() => data.candidates.map((c) => (edits[c.playerId] ? { ...c, ...edits[c.playerId]!.patch } : c)), [data.candidates, edits]);
+  // Players whose place is being given, written but not answered: they count against the places left, so a second tap on another
+  // level player cannot overshoot while the first is in flight.
+  const [giving, setGiving] = useState<ReadonlySet<string>>(new Set());
 
   const [asking, setAsking] = useState<'start' | 'confirm' | null>(null);
   const [choosing, setChoosing] = useState<{ playerId: string | null } | null>(null);
@@ -59,6 +80,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const tied = stage < 2 ? cands.filter((c) => c.tiedAtCut && !c.pick).sort(byRank) : [];
   const tiePlaces = data.tie?.places ?? 0;
   const tieChosen = tied.filter((c) => c.onScore).length;
+  const tieFull = tieChosen + giving.size >= tiePlaces;
   const tieReady = tied.length === 0 || tieChosen === tiePlaces;
   const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick && !(stage < 2 && c.tiedAtCut)).sort(byRank);
   const unranked = cands.filter((c) => c.rank == null && !c.pick);
@@ -113,26 +135,27 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       code: 'CH-09008',
     },
   );
-  const chooseTie = useAction(
-    'qualifiers.chooseTie',
-    async (c: ChQCandidate, give: boolean) => {
+  // One row's write at a time is the row's own (TieRow has its own action): giving a place to one player does not freeze the others.
+  const chooseTie = async (c: ChQCandidate, give: boolean): Promise<ServerResult> => {
+    if (give) setGiving((cur) => new Set(cur).add(c.playerId));
+    try {
       const res = await writes.chooseTie(data.id, c.playerId, give);
-      if (normalise(res).success) setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, onScore: give } : x)));
+      if (normalise(res).success) edit(c.playerId, { onScore: give });
       return res;
-    },
-    (c, give) => ({
-      done: give ? `${c.name} takes the place at the cut` : `${c.name} is level at the cut again`,
-      failed: give ? `Couldn’t give ${c.name} the place` : `Couldn’t take the place back from ${c.name}`,
-      hint: 'Nothing changed. Try again.',
-      code: 'CH-09010',
-    }),
-  );
+    } finally {
+      setGiving((cur) => {
+        const next = new Set(cur);
+        next.delete(c.playerId);
+        return next;
+      });
+    }
+  };
   const remove = useAction(
     'qualifiers.removePick',
     async (c: ChQCandidate) => {
       const res = await writes.removePick(data.id, c.playerId);
       if (normalise(res).success) {
-        setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, pick: null } : x)));
+        edit(c.playerId, { pick: null });
         setRemoving(null);
         router.refresh();
       }
@@ -234,24 +257,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                 </div>
                 <ol className="ch-qf-list">
                   {tied.map((c) => (
-                    <li key={c.playerId}>
-                      <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
-                      <Avatar name={c.name} size={26} />
-                      <b>{c.name}</b>
-                      <Badge tone={c.onScore ? 'positive' : 'warning'}>{c.onScore ? 'Given the place' : 'Tie at cut'}</Badge>
-                      <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
-                      <ToPar value={c.toPar} />
-                      {stage === 1 && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={chooseTie.pending || (!c.onScore && tieChosen >= tiePlaces)}
-                          onClick={() => void chooseTie.run(c, !c.onScore)}
-                        >
-                          {c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
-                        </Button>
-                      )}
-                    </li>
+                    <TieRow key={c.playerId} c={c} stage={stage} full={tieFull} choose={chooseTie} />
                   ))}
                 </ol>
               </section>
@@ -433,7 +439,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         onClose={() => setChoosing(null)}
         save={(c, reasoning) => writes.setPick(data.id, c.playerId, reasoning)}
         onSaved={(c, reasoning) => {
-          setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, pick: { reasoning } } : x)));
+          edit(c.playerId, { pick: { reasoning } });
           setChoosing(null);
           router.refresh();
         }}
@@ -442,7 +448,41 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   );
 }
 
+/** What a landed write changed on one candidate, laid over the server's read until the read shows it. */
+type CandEdit = Partial<Pick<ChQCandidate, 'onScore' | 'pick'>>;
+const agrees = (c: ChQCandidate, e: CandEdit) =>
+  (e.onScore === undefined || c.onScore === e.onScore) && (e.pick === undefined || (e.pick === null ? c.pick === null : c.pick !== null && c.pick.reasoning === e.pick.reasoning));
+
 const byRank = (a: ChQCandidate, b: ChQCandidate) => (a.rank ?? 999) - (b.rank ?? 999) || a.name.localeCompare(b.name);
+
+/** A player level at the cut, with the one button that gives or takes back their place. The row owns its write, so only it waits. */
+function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2; full: boolean; choose: (c: ChQCandidate, give: boolean) => Promise<ServerResult> }) {
+  const act = useAction(
+    'qualifiers.chooseTie',
+    (give: boolean) => choose(c, give),
+    (give: boolean) => ({
+      done: give ? `${c.name} takes the place at the cut` : `${c.name} is level at the cut again`,
+      failed: give ? `Couldn’t give ${c.name} the place` : `Couldn’t take the place back from ${c.name}`,
+      hint: 'Nothing changed. Try again.',
+      code: 'CH-09010',
+    }),
+  );
+  return (
+    <li aria-busy={act.pending || undefined}>
+      <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
+      <Avatar name={c.name} size={26} />
+      <b>{c.name}</b>
+      <Badge tone={c.onScore ? 'positive' : 'warning'}>{c.onScore ? 'Given the place' : 'Tie at cut'}</Badge>
+      <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
+      <ToPar value={c.toPar} />
+      {stage === 1 && (
+        <Button size="sm" variant="ghost" disabled={act.pending || (!c.onScore && full)} onClick={() => void act.run(!c.onScore)}>
+          {act.pending ? <span data-ch-code="CH-09408">Saving</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
+        </Button>
+      )}
+    </li>
+  );
+}
 
 function Row({ c }: { c: ChQCandidate }) {
   return (

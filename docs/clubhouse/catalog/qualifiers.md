@@ -110,9 +110,9 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09403 | The form is loading | Its skeleton | `QualifierFormSkeleton` | qualifiers.test › CH-09403 |
 | CH-09404 | A create or save is in flight | The button reads "Creating" or "Saving" and is disabled | `QualifierForm` | qualifiers.test › CH-09404 |
 | CH-09405 | A close is in flight | "Closing", disabled | `QualifierDetail` | qualifiers.test › CH-09405 |
-| CH-09406 | A reopen is in flight | "Reopening", disabled | `QualifierDetail` | qualifiers.test › CH-09406 |
+| CH-09406 | A reopen is in flight | "Reopening", disabled. On the phone the Edit sheet stays up until the server answers and its Reopen button says it (a refusal leaves the sheet and the button as they were; a landed reopen closes it) | `QualifierDetail`, `QualifierDetailPhone` | qualifiers.test › CH-09406 |
 | CH-09407 | Courses or tees are loading in the picker | Skeleton rows | `CoursePicker` | qualifiers.test › CH-09407 |
-| CH-09408 | A selection write is in flight | The dialog's button reads "Starting", "Saving", "Removing" or "Confirming" and is disabled | `QualifierSelection` | qualifiers.test › CH-09408 |
+| CH-09408 | A selection write is in flight | The dialog's button reads "Starting", "Saving", "Removing" or "Confirming" and is disabled. Giving or taking back a place at a tied cut waits on that player's row only (its button reads "Saving"); the other level players stay available, and the places left count the give in flight | `QualifierSelection`, `TieRow` | qualifiers.test › CH-09408 |
 
 ## 095xx Confirm
 

@@ -47,7 +47,8 @@ export function QualifierDetailPhone({
   stale: boolean;
   status: ChQStatus;
   onAskClose: () => void;
-  onReopen: () => void;
+  /** Runs the reopen and answers once the server has: the sheet that asked stays up until then. */
+  onReopen: () => Promise<{ success: boolean }>;
   reopenPending: boolean;
 }) {
   const router = useRouter();
@@ -164,11 +165,14 @@ export function QualifierDetailPhone({
               leftIcon={LockOpen}
               disabled={reopenPending}
               onClick={() => {
-                setActions(false);
-                onReopen();
+                // The sheet stays up while the server answers, so the wait is shown on the button that asked; a refusal leaves it
+                // there to try again, and a landed reopen closes it (the sheet then offers Close, not Reopen).
+                void onReopen().then((res) => {
+                  if (res.success) setActions(false);
+                });
               }}
             >
-              Reopen qualifier
+              {reopenPending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
             </Button>
           )}
         </div>
