@@ -416,7 +416,7 @@ export async function measure(opts) {
         if (wants('geometry')) {
           const phone = viewport < 700;
           const pairs = role === 'coach'
-            ? [['home', 'stats-team', '/golf/dashboard', '/golf/dashboard/stats'], ['stats-team', 'stats-player', '/golf/dashboard/stats', `/golf/dashboard/stats?player=${playerId}`], ['stats-team', 'home', '/golf/dashboard/stats', '/golf/dashboard']]
+            ? [['home', 'stats-team', '/golf/dashboard', '/golf/dashboard/stats'], ['home', 'stats-player', '/golf/dashboard', `/golf/dashboard/stats?player=${playerId}`], ['stats-team', 'home', '/golf/dashboard/stats', '/golf/dashboard']]
             : [['home', 'stats-player', '/golf/dashboard', '/golf/dashboard/stats'], ['stats-player', 'home', '/golf/dashboard/stats', '/golf/dashboard']];
           for (const [from, to, fromPath, toPath] of pairs) {
             // `--only geometry,stats-team` narrows to a route; `--only geometry` is every route.
