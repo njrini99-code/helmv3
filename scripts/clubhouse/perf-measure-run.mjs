@@ -15,8 +15,24 @@
  *   timeline   for a switch: what the page showed, as it changed ("live", "busy" = live and aria-busy, "skeleton", "none")
  */
 import { chromium } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { loadavg } from 'node:os';
 import { join } from 'node:path';
+
+/** Load average and swap (macOS `vm.swapusage`): the conditions a run was taken in, so a timing is read against them. */
+function machineNow() {
+  let swapUsedMB = null;
+  let swapTotalMB = null;
+  try {
+    const text = execFileSync('sysctl', ['-n', 'vm.swapusage'], { encoding: 'utf8' });
+    swapTotalMB = Math.round(Number(/total = ([\d.]+)M/.exec(text)?.[1]));
+    swapUsedMB = Math.round(Number(/used = ([\d.]+)M/.exec(text)?.[1]));
+  } catch {
+    /* not macOS */
+  }
+  return { load: loadavg().map((x) => Math.round(x * 10) / 10), swapUsedMB, swapTotalMB };
+}
 
 const median = (xs) => {
   const v = xs.filter((x) => x != null && Number.isFinite(x)).sort((a, b) => a - b);
@@ -309,12 +325,20 @@ async function navTo(page, label) {
 
 function summarise(runs) {
   const pick = (f) => median(runs.map(f));
+  // The spread of the runs (min, max): on a shared machine a change smaller than it is noise.
+  const range = (f) => {
+    const v = runs.map(f).filter((x) => x != null && Number.isFinite(x));
+    return v.length ? [r1(Math.min(...v)), r1(Math.max(...v))] : null;
+  };
   return {
     n: runs.length,
     skeleton: r1(pick((r) => r.skeleton)),
     content: r1(pick((r) => r.content)),
+    contentRange: range((r) => r.content),
     fcp: r1(pick((r) => r.fcp)),
     lcp: r1(pick((r) => r.lcp)),
+    lcpRange: range((r) => r.lcp),
+    serverRange: range((r) => r.server.serverMs),
     cls: Math.max(...runs.map((r) => r.cls)),
     clsRaw: Math.max(...runs.map((r) => r.clsRaw)),
     longCount: pick((r) => r.long.count),
@@ -375,6 +399,8 @@ export async function measure(opts) {
   const res = await fetch(`${base}/golf/login`, { redirect: 'manual' }).catch(() => null);
   if (!res) throw new Error(`nothing is serving ${base}: run \`serve\` first`);
 
+  const machineAtStart = machineNow();
+  console.log(`machine at start: load ${machineAtStart.load.join(' / ')} (1, 5, 15 min), swap ${machineAtStart.swapUsedMB}/${machineAtStart.swapTotalMB} MB`);
   const browser = await chromium.launch({ headless: true });
   const people = { coach: seed.coach, player: seed.players[0] };
   const all = [];
@@ -531,7 +557,7 @@ export async function measure(opts) {
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
   const rows = [...groups].map(([k, runs]) => ({ key: k, ...summarise(runs) }));
-  const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: '4x CPU (CDP)', rows, runs: all, geometry: geo };
+  const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: '4x CPU (CDP)', machineAtStart, machineAtEnd: machineNow(), rows, runs: all, geometry: geo };
   const file = join(stateDir, 'results', `${label}.json`);
   writeFileSync(file, JSON.stringify(out, null, 2));
   const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | TBT ms | INP ms | reads | read ms | waves | server ms | doc KB | JS KB | flash |';
@@ -556,6 +582,20 @@ export function report({ stateDir, before, after, only, beforeGeometry, afterGeo
   const load = (label) => JSON.parse(readFileSync(join(stateDir, 'results', `${label}.json`), 'utf8'));
   const b = load(before);
   const a = load(after);
+  // A run saved before the spread was recorded: take it from its runs.
+  for (const run of [a, b]) {
+    for (const row of run.rows) {
+      if (row.contentRange !== undefined) continue;
+      const mine = run.runs.filter((r) => r.kind !== 'problems' && `${r.role} ${r.viewport} | ${r.kind} | ${r.scenario}` === row.key);
+      const range = (f) => {
+        const v = mine.map(f).filter((x) => x != null && Number.isFinite(x));
+        return v.length ? [r1(Math.min(...v)), r1(Math.max(...v))] : null;
+      };
+      row.contentRange = range((r) => r.content);
+      row.lcpRange = range((r) => r.lcp);
+      row.serverRange = range((r) => r.server.serverMs);
+    }
+  }
   // Geometry is its own pass (`measure --only geometry`), saved under its own label.
   const geometryOf = (run, label) => (label ? load(label).geometry : run.geometry);
   const bGeo = geometryOf(b, beforeGeometry);
@@ -566,7 +606,11 @@ export function report({ stateDir, before, after, only, beforeGeometry, afterGeo
     const f = (v) => (v == null ? '-' : Number.isInteger(v) ? String(v) : v.toFixed(digits));
     return x === y || (x == null && y == null) ? f(x) : `${f(x)} -> ${f(y)}`;
   };
-  const out = [];
+  // A timing with the spread of its runs: "310 (270-340)". Only a change larger than the spreads means anything on a shared machine.
+  const spread = (r, key, rangeKey) => (r[rangeKey] ? `${pair(r[key], r[key])} (${r[rangeKey][0]}-${r[rangeKey][1]})` : pair(r[key], r[key]));
+  const timing = (o, r, key, rangeKey) => `${spread(o, key, rangeKey)} -> ${spread(r, key, rangeKey)}`;
+  const mach = (run) => (run.machineAtStart ? `load ${run.machineAtStart.load[0]}, swap ${run.machineAtStart.swapUsedMB}/${run.machineAtStart.swapTotalMB} MB` : 'not recorded');
+  const out = [`Machine at the start of each run: before ${mach(b)}; after ${mach(a)}.`];
   for (const kind of ['cold', 'nav', 'switch']) {
     const rows = a.rows.filter((r) => r.key.split(' | ')[1] === kind && (!only || r.key.includes(only)));
     if (!rows.length) continue;
@@ -578,7 +622,7 @@ export function report({ stateDir, before, after, only, beforeGeometry, afterGeo
       if (!o) continue;
       const [who, kindName, scenario] = r.key.split(' | ');
       out.push(
-        `| ${who} ${scenario} | ${kind === 'cold' ? `${pair(o.lcp, r.lcp)} | ` : ''}${pair(o.content, r.content)} | ${pair(o.clsRaw, r.clsRaw, 3)} | ${pair(o.longCount, r.longCount)} / ${pair(o.tbt, r.tbt)} | ${pair(o.inp, r.inp)} | ${pair(o.reads, r.reads)} | ${pair(o.waves, r.waves)} | ${pair(o.serverMs, r.serverMs)} |` +
+        `| ${who} ${scenario} | ${kind === 'cold' ? `${timing(o, r, 'lcp', 'lcpRange')} | ` : ''}${timing(o, r, 'content', 'contentRange')} | ${pair(o.clsRaw, r.clsRaw, 3)} | ${pair(o.longCount, r.longCount)} / ${pair(o.tbt, r.tbt)} | ${pair(o.inp, r.inp)} | ${pair(o.reads, r.reads)} | ${pair(o.waves, r.waves)} | ${timing(o, r, 'serverMs', 'serverRange')} |` +
           (kind === 'switch' ? ` ${o.flash ? 'YES' : 'no'} -> ${r.flash ? 'YES' : 'no'} |` : ''),
       );
       void kindName;
