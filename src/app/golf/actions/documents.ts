@@ -194,13 +194,9 @@ async function getDocumentsImpl(teamId: string): Promise<{ data: GolfDocument[] 
 
     let query = supabase
       .from('golf_documents')
-      .select(`
-        *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        )
-      `)
+      // No uploader embed: golf_documents.uploaded_by references auth.users, which PostgREST cannot embed, so
+      // `uploader:uploaded_by(...)` failed every list read (PGRST200, swap audit F-52). Resolved below instead.
+      .select('*')
       .eq('team_id', teamId)
       .order('updated_at', { ascending: false });
 
@@ -214,7 +210,9 @@ async function getDocumentsImpl(teamId: string): Promise<{ data: GolfDocument[] 
 
     if (error) throw error;
 
-    return { data: data as GolfDocument[], error: null };
+    const rows = (data ?? []) as GolfDocument[];
+    const uploaders = await resolveUploaders(supabase, rows.map((d) => d.uploaded_by));
+    return { data: rows.map((d) => ({ ...d, uploader: d.uploaded_by ? uploaders.get(d.uploaded_by) : undefined })), error: null };
   } catch (error) {
     await logServerError(
       `Unexpected error in getDocuments: ${describeError(error)}`,
@@ -261,31 +259,25 @@ async function getDocumentImpl(documentId: string): Promise<{ data: GolfDocument
 
     const { data, error } = await (supabase as any)
       .from('golf_documents')
+      // Uploaders are resolved after the read: neither uploaded_by can be embedded (F-52, see resolveUploaders).
       .select(`
         *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        ),
-        versions:golf_document_versions(
-          *,
-          uploader:uploaded_by(
-            full_name,
-            email
-          )
-        )
+        versions:golf_document_versions(*)
       `)
       .eq('id', documentId)
       .single();
 
     if (error) throw error;
 
+    const versions = (data?.versions ?? []) as DocumentVersionRow[];
     // Sort versions by version number descending
-    if (data?.versions) {
-      (data.versions as DocumentVersion[]).sort((a: DocumentVersion, b: DocumentVersion) => b.version_number - a.version_number);
-    }
-
-    return { data: data as GolfDocument, error: null };
+    versions.sort((a, b) => b.version_number - a.version_number);
+    const uploaders = await resolveUploaders(supabase, [data?.uploaded_by, ...versions.map((v) => v.uploaded_by)]);
+    const who = (id: string | null | undefined) => (id ? uploaders.get(id) : undefined);
+    return {
+      data: { ...data, uploader: who(data?.uploaded_by), versions: versions.map((v) => ({ ...v, uploader: who(v.uploaded_by) })) } as GolfDocument,
+      error: null,
+    };
   } catch (error) {
     await logServerError(
       `Unexpected error in getDocument: ${describeError(error)}`,
@@ -1052,18 +1044,14 @@ async function compareVersionsImpl(
 
     const { data: versionsData, error } = await supabase
       .from('golf_document_versions' as any)
-      .select(`
-        *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        )
-      `)
+      .select('*') // no uploader embed: uploaded_by has no foreign key (F-52, resolveUploaders)
       .eq('document_id', documentId)
       .in('version_number', [version1, version2]);
 
     if (error) throw error;
-    const versions = versionsData as unknown as DocumentVersionRow[] | null;
+    const rawVersions = versionsData as unknown as DocumentVersionRow[] | null;
+    const uploaders = await resolveUploaders(supabase, (rawVersions ?? []).map((v) => v.uploaded_by));
+    const versions = rawVersions?.map((v) => ({ ...v, uploader: v.uploaded_by ? uploaders.get(v.uploaded_by) : undefined })) ?? null;
     if (!versions || versions.length !== 2) {
       throw new Error('Could not find both versions');
     }
