@@ -19,7 +19,7 @@ export async function ClubhouseSignInRoute() {
 
 export async function WelcomeLoader() {
   const load = await loadWelcome();
-  // A session the auth server has ruled invalid: back to sign in, as the current page does.
+  // CH-15903: a session the auth server has ruled invalid goes back to sign in, as the current page does.
   if (load.kind === 'signedOut') redirect('/golf/login');
   return <Welcome data={load.data} />;
 }

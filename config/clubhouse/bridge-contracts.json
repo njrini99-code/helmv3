@@ -15341,7 +15341,7 @@
     "name": "WHERE_A_SIGN_IN_GOES",
     "chCode": "CH-15902",
     "meaning": "Where a sign-in goes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15352,7 +15352,7 @@
     "name": "THE_WELCOME_IS_OPENED_WITH_A_SESSION",
     "chCode": "CH-15903",
     "meaning": "The welcome is opened with a session the auth server has ruled invalid",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15374,7 +15374,7 @@
     "name": "THE_PERSON_CAME_FROM_AN_INVITE_LINK",
     "chCode": "CH-15901",
     "meaning": "The person came from an invite link or a demo link",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15385,7 +15385,7 @@
     "name": "THE_APP_UPDATED_BETWEEN_LOAD_AND_SIGN",
     "chCode": "CH-15906",
     "meaning": "The app updated between load and sign in (a stale bundle: a server action answers with something Next cannot parse)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15396,7 +15396,7 @@
     "name": "FIRST_PAINT_THEN_A_SIGN_IN_LANDING",
     "chCode": "CH-15601",
     "meaning": "First paint, then a sign-in landing",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15407,7 +15407,7 @@
     "name": "THE_WELCOME_DRAWS",
     "chCode": "CH-15602",
     "meaning": "The welcome draws",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15418,7 +15418,7 @@
     "name": "THE_WELCOMES_SCENE_PLAYS",
     "chCode": "CH-15603",
     "meaning": "The welcome's scene plays",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15429,7 +15429,7 @@
     "name": "CONTINUE_IS_PRESSED",
     "chCode": "CH-15604",
     "meaning": "Continue is pressed (or Return)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15440,7 +15440,7 @@
     "name": "REDUCED_MOTION_OR_SETTINGS_PREFERENCES_ANIMATIONS_OFF",
     "chCode": "CH-15605",
     "meaning": "Reduced motion, or Settings > Preferences > Animations off",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15451,7 +15451,7 @@
     "name": "THE_TAB_IS_HIDDEN",
     "chCode": "CH-15606",
     "meaning": "The tab is hidden",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15462,7 +15462,7 @@
     "name": "SIGN_IN_IS_TAPPED",
     "chCode": "CH-15701",
     "meaning": "Sign in is tapped",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15473,7 +15473,7 @@
     "name": "A_SIGN_IN_LANDS",
     "chCode": "CH-15702",
     "meaning": "A sign-in lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15484,7 +15484,7 @@
     "name": "A_WARNING_TONED_REFUSAL",
     "chCode": "CH-15703",
     "meaning": "A warning-toned refusal (an empty field, an unverified email, a rate limit)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15495,7 +15495,7 @@
     "name": "A_DANGER_TONED_REFUSAL",
     "chCode": "CH-15704",
     "meaning": "A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15506,7 +15506,7 @@
     "name": "CONTINUE_ON_THE_WELCOME",
     "chCode": "CH-15705",
     "meaning": "Continue on the welcome",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15528,7 +15528,7 @@
     "name": "A_REFUSED_SIGN_IN_IS_READ_OUT",
     "chCode": "CH-15802",
     "meaning": "A refused sign-in is read out as it appears (`role=\"alert\"` for danger and warning) and focus moves to the first invalid field; both fields name the notice in `aria-describedby`",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15561,7 +15561,7 @@
     "name": "THE_PASSWORD_EYE_IS_A_NAMED_PRESSED",
     "chCode": "CH-15805",
     "meaning": "The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15583,7 +15583,7 @@
     "name": "THE_WINDOW_IS_820PX_WIDE_OR_LESS",
     "chCode": "CH-15909",
     "meaning": "The window is 820px wide or less (a phone)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15594,7 +15594,7 @@
     "name": "THE_KEYBOARD",
     "chCode": "CH-15910",
     "meaning": "The keyboard",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15605,7 +15605,7 @@
     "name": "EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE",
     "chCode": "CH-15907",
     "meaning": "Either screen loads, on a slow phone or a fast desktop",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -15616,7 +15616,7 @@
     "name": "A_READ_FAILS_OR_THE_COURSE_CRASHES",
     "chCode": "CH-15908",
     "meaning": "A read fails, or the course crashes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   }
 ]

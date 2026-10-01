@@ -110,6 +110,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   const proceed = useCallback(() => {
     if (started.current) return;
     started.current = true;
+    // CH-15604, CH-15705: Continue (or Return) commits once and folds the course into the canvas.
     haptic('commit');
     setLeaving(true);
     stage.begin(fold ? 'fold' : 'fade');

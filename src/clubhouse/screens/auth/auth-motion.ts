@@ -24,6 +24,7 @@ type Bezier = readonly [number, number, number, number];
 const OUT: Bezier = [0.2, 0.8, 0.2, 1];
 const SMOOTH: Bezier = [0.32, 0.72, 0, 1];
 
+/** CH-15601 first paint and the sign-in landing, CH-15602 the welcome drawing, CH-15603 its scene; CH-15605 reduced motion is a millisecond. */
 export const WELCOME_AT = { scrim: 0.2, mark: 0.3, date: 0.5, line1: 0.64, name: 1.05, card: 2.25, items: 2.55, itemStep: 0.14, hint: 2.8 } as const;
 export const WELCOME_TAKES = { scrim: 1.4, mark: 0.7, date: 0.7, line1: 1.0, name: 1.1, card: 0.9, item: 0.6, hint: 0.7, leave: 0.42 } as const;
 

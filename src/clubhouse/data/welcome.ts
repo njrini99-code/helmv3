@@ -41,6 +41,7 @@ export async function loadWelcome(): Promise<WelcomeLoad> {
     getUnifiedNotifications({ limit: 20 }).catch(() => null),
   ]);
 
+  // CH-15908: a failed read is logged and said on the card, never drawn as nothing new.
   if (coach.error) chLogServer(SURFACE, 'welcome.coach', coach.error, AREA);
   if (player.error) chLogServer(SURFACE, 'welcome.player', player.error, AREA);
   if (account.error) chLogServer(SURFACE, 'welcome.account', account.error, AREA);
