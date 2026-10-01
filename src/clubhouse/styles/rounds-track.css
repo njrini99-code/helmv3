@@ -829,6 +829,16 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-note--flat {
   margin: 12px 18px 0;
 }
+/* "Saving hole N" holds its place from the tap (so the list under it never shifts) but shows only once the wait passes one base beat (260ms): a
+   hole that saves at once never flashes a status the player has no time to read (perf, 2026-10-01). */
+@keyframes ch-rt-saving-in {
+  from {
+    opacity: 0;
+  }
+}
+.ch-rt-note.is-saving {
+  animation: ch-rt-saving-in var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-base) backwards;
+}
 .ch-rt-confirm {
   display: flex;
   flex-wrap: wrap;
