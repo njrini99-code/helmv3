@@ -3,6 +3,50 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Page performance: two round trips for a player, three for a coach, a hero that holds its shape
+
+```text
+PR/commit:      agent/swap-audit (09870b6d6, 26cf82b2c, 2b3e64862)
+Design package: none (no new element)
+Contract IDs:   none new (CH-5402, CH-5403 behaviour unchanged)
+Actions:        none changed; `getDetailedStats` and `getSprayChartData` run in the stats context (below)
+Data impact:    none; same figures, same reads, in fewer round trips (`loadPlayerProfile`)
+Held items:     none
+```
+
+- **Issue.** The profile read in three round trips plus a chain inside the
+  shot-level actions (each of `getDetailedStats` and `getSprayChartData` asked
+  the auth server who is signed in and then checked access to the player: two
+  sign-in reads and two access checks for one answer), and its shot reads paged
+  a thousand rows at a time in sequence. Choosing a window moved the page: the
+  hero's strokes gained figure gained a change line (27 px) in Last 10 and lost
+  it in Season. The route skeleton's hero was 34 px short.
+- **Fix.** The player, team, membership, rounds, focus areas, goals and the
+  access check start together; the shot-level reads begin once membership is
+  confirmed (a player not on the team reads no shot and gets the not-found
+  page). A player's profile is two round trips and a coach's three (the third
+  is a small read of the teammates' round figures for the comparison column,
+  which nothing waits on). The two actions run in the page's own stats context,
+  built only from the request's signed-in user and `verifyPlayerAccess` for
+  this player; a degraded session, a denied or failed check, or no user leaves
+  each action to check for itself, as before. The shot reads page four at a
+  time. The strokes gained figure keeps its change line in every window (empty
+  when there is no change), and the skeleton's hero has it too. The phone
+  skeleton is in the loaded order (header, window and filter row, figures) and
+  as tall as the loaded blocks.
+- **Not done, on purpose.** No cross-request cache and no prefetch of other
+  windows. The phone's strokes gained caption drops its change chip when a
+  window has no change (F-54), so the strip is 78 px instead of 125 and the page
+  moves; held blank it would undo F-54's "its own short line" (owner decision).
+  A window with a different amount of data (one round, no shots, no earlier
+  window) has panels of different heights by content, and an early-read note
+  appears above them; those are not held.
+- **Checked.** `stats-reads.test.ts` (waves for a player and a coach, no access,
+  a degraded session, a profile not on the team reads no shots, a failed
+  teammates read), `stats-player.test.tsx`, `stats-parity.test.tsx`,
+  `stats-geometry.test.tsx`; measured with `npm run clubhouse:perf`
+  (PROGRESS.md, "Page performance (2026-10-01)").
+
 ## 2026-10-01 — Phone to the board; smooth window changes (F-54, F-55)
 
 ```text

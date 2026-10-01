@@ -185,7 +185,7 @@ export function weekWindow(today: string): { weekStart: string; weekEnd: string;
 /**
  * The widest window any timezone's `weekWindow` can be at `now`, so the events can be asked for before the zone is known. A zone's local date
  * is at most a day from the UTC date, so its week starts no earlier than 7 days before the UTC date and its window ends no later than 9
- * days after it: eight days back and ten forward hold every one (home-window.test.ts walks every zone offset).
+ * days after it: eight days back and ten forward hold every one (home-reads.test.ts walks every zone offset).
  */
 export function wideEventWindow(now: Date): { from: string; to: string } {
   const utcToday = ymd(now, 'UTC');

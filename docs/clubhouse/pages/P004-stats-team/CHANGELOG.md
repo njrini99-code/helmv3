@@ -2,6 +2,50 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Page performance: fewer round trips, a page that keeps its shape across windows
+
+```text
+PR/commit:      agent/swap-audit (09870b6d6, 26cf82b2c, 2b3e64862)
+Design package: none (no new element; the held cards and the caption line add a little height in some windows)
+Contract IDs:   none new (CH-4402, CH-4401 behaviour unchanged)
+Actions:        none
+Data impact:    none; same figures, same reads, in fewer round trips (`loadTeamStats`, `loadLongestPutt`)
+Held items:     none
+```
+
+- **Issue.** (1) The loader read in three round trips, but the shot reads paged
+  a thousand rows at a time one after another, and the season's longest putt
+  read every putt of the season to find one. (2) Choosing a window moved the
+  page: the figure cards were 213, 183 or 172 px tall, the hole-coverage line
+  came and went, and the trend plot was 302 px tall, or 263 when fewer players
+  had rounds in the window. (3) The route skeleton's cards were 179 px and its
+  trend card 313 px against 213 and 419 loaded, so the page moved when it
+  landed.
+- **Fix.** The round figures, the window's putts and the longest putt are read
+  together after the rounds, and a long read asks for four pages at once after
+  the first (`fetchAllRowsTogether`, same contract). The longest putt is one row
+  from the database (made, 0 to 120 ft, the longest), asked in chunks of 200
+  rounds and compared across them. The cards hold the height of their fullest
+  layout in every window (the change chip with its words wrapped under it, the
+  strokes gained note on two lines; two across, the narrow layout), the caption
+  line is always there (empty when no note is shared), and the trend plot is as
+  tall as the team's players whichever have rounds, the empty window included.
+  On the phone the empty trend keeps its chart frame and the putting reading
+  holds two lines. The skeleton draws the same heights, the caption line and
+  the trend card's head, plot and note. Tapping a player row shows the page's
+  hairline while the profile loads (`LinkPending`).
+- **Not done, on purpose.** Nothing is cached across requests, users or teams,
+  and other windows are not prefetched: a window is a heavy server render and
+  a stale figure is worse than a 250 ms wait. The phone's figure strip still
+  drops its change line in a window with no earlier window (F-43), so the page
+  below moves 16 px between Last 10 and Season; that is an owner decision (the
+  line held blank undoes F-43's "no empty band").
+- **Checked.** `stats-team-reads.test.ts` (waves; the longest putt is one row,
+  chunks of 200 across 450 rounds; a failed longest-putt read leaves the best
+  out), `paging.test.ts`, `stats-geometry.test.tsx`, `stats-team.test.tsx` 47/47;
+  measured with `npm run clubhouse:perf` (PROGRESS.md, "Page performance
+  (2026-10-01)").
+
 ## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
 
 ```text

@@ -2,6 +2,42 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Page performance: Home reads in fewer round trips, and its skeleton is the page's height
+
+```text
+PR/commit:      agent/swap-audit (7dd8bb3d2, 19a20054b)
+Design package: none (no visual change once loaded)
+Contract IDs:   none new (CH-2401 behaviour unchanged)
+Actions:        none
+Data impact:    none; same figures, same reads, in fewer round trips (`loadCoachHome`, `loadPlayerHome`)
+Held items:     none
+```
+
+- **Issue.** The coach's Home read in four round trips, five when the week's
+  events have replies to read: the team's timezone, then the roster, the chat
+  and the week's events, then the replies, then the season's rounds (which
+  waited for the whole week), then the newest rounds' holes. The player's took
+  three. The route skeleton's head was 69 px against 189 loaded (it had no
+  sentence and no actions), its sheet 209 against 423, so the leaderboard
+  landed 334 px lower than it was drawn.
+- **Fix.** The timezone, the roster, the chat and the week's events start
+  together (the events are asked for over one window wide enough for any
+  timezone and cut to the week in code); the replies start as soon as the
+  events are back and the season's rounds as soon as the roster's ids are, so a
+  coach's Home is three round trips and a player's two (`home-reads.test.ts`
+  pins both, and that the events are read once). The
+  skeleton's head is its four lines (date, greeting, two-line sentence, the two
+  actions) and its sheet panes the loaded height. A tap on the leaderboard or
+  the next-event card shows the page's hairline while the page loads
+  (`LinkPending`).
+- **Not done, on purpose.** Nothing is cached across requests or users. The
+  phone's skeleton blocks were not re-measured (its landmarks differ from the
+  loaded phone page's classes).
+- **Checked.** `home-reads.test.ts`, `home.test.tsx`, `player-home.test.tsx`,
+  `player-home-phone.test.tsx`, `stats-geometry.test.tsx` (the skeleton's head);
+  measured with `npm run clubhouse:perf` (PROGRESS.md, "Page performance
+  (2026-10-01)").
+
 ## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
 
 ```text
