@@ -170,18 +170,35 @@ export async function getRecruits(): Promise<ActionResult<Recruit[]>> {
   return observedGetRecruits();
 }
 
-async function createRecruitImpl(input: RecruitInput): Promise<ActionResult<{ id: string }>> {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * `opts.requestId` makes the create safe to repeat. The Clubhouse page makes one id per Add and keeps it across a
+ * Retry, and the row is inserted with that id as its primary key: a repeat after a lost reply hits the key instead
+ * of adding the prospect twice, and the existing row is returned as the answer, but only once it is read back as
+ * this coach's own, on this team, with this name. An id that belongs to anything else is refused, never reported as
+ * saved. Without a requestId (the current page) the create behaves as it always has.
+ */
+async function createRecruitImpl(
+  input: RecruitInput,
+  opts?: { requestId?: string },
+): Promise<ActionResult<{ id: string }>> {
   if (!input.first_name?.trim()) {
     return { success: false, error: 'First name is required' };
   }
   const validationError = validateRecruitInput(input);
   if (validationError) return { success: false, error: validationError };
+  const requestId = opts?.requestId;
+  if (requestId !== undefined && !UUID_RE.test(requestId)) {
+    return { success: false, error: 'Request id must be a UUID' };
+  }
 
   try {
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error };
 
     const row = {
+      ...(requestId ? { id: requestId } : {}),
       team_id: ctx.teamId,
       created_by: ctx.coachId,
       first_name: input.first_name.trim(),
@@ -200,6 +217,29 @@ async function createRecruitImpl(input: RecruitInput): Promise<ActionResult<{ id
       .insert(row)
       .select('id')
       .single();
+
+    if (error && requestId && error.code === '23505') {
+      // The id is taken. Saved only if it is this same prospect, added earlier by this coach on this team: RLS hides any
+      // other team's row from this read, so a colliding id from elsewhere comes back empty and is refused.
+      // A failed read falls through to the insert's own error below: the retry is
+      // refused rather than guessed to be a duplicate.
+      const { data: existing, error: existingError } = await (ctx.supabase as any)
+        .from('golf_recruits')
+        .select('id, team_id, created_by, first_name, last_name')
+        .eq('id', requestId)
+        .maybeSingle();
+      if (
+        !existingError &&
+        existing &&
+        existing.team_id === ctx.teamId &&
+        existing.created_by === ctx.coachId &&
+        existing.first_name === row.first_name &&
+        (existing.last_name ?? null) === row.last_name
+      ) {
+        revalidatePath('/golf/dashboard/recruiting');
+        return { success: true, data: { id: existing.id } };
+      }
+    }
 
     if (error) {
       await logServerError(`createRecruit failed: ${error.message}`, {
@@ -227,8 +267,11 @@ const observedCreateRecruit = withAdminObserved(
   createRecruitImpl,
 );
 
-export async function createRecruit(input: RecruitInput): Promise<ActionResult<{ id: string }>> {
-  return observedCreateRecruit(input);
+export async function createRecruit(
+  input: RecruitInput,
+  opts?: { requestId?: string },
+): Promise<ActionResult<{ id: string }>> {
+  return observedCreateRecruit(input, opts);
 }
 
 async function updateRecruitImpl(

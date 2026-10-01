@@ -1,0 +1,160 @@
+{
+  "id": "P004",
+  "name": "Stats (team)",
+  "slug": "stats-team",
+  "bridgeNamespace": 4,
+  "routes": [
+    "/golf/dashboard/stats",
+    "/golf/dashboard/stats/team"
+  ],
+  "roles": [
+    "coach"
+  ],
+  "semanticFeatures": [
+    "stats_analytics"
+  ],
+  "progressRow": "Stats (team)",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "complete",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/Coach - Stats.html",
+      "design/handoff/Stats.html",
+      "design/handoff/stats.jsx"
+    ],
+    "phone": [
+      "design/handoff/Coach - Stats - Mobile.html",
+      "design/handoff/m-stats.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/stats",
+    "loader": "src/clubhouse/data/stats-team.ts",
+    "route": "src/clubhouse/routes/stats.tsx",
+    "styles": "src/clubhouse/styles/stats.css",
+    "tests": [
+      "src/clubhouse/__tests__/stats-team.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/stats-team.md",
+  "checklist": "docs/clubhouse/screens/stats-team.md",
+  "phoneSpec": "docs/clubhouse/phone/stats-team.md",
+  "actions": [
+    {
+      "id": "ACT-P004-CHANGE-WINDOW",
+      "label": "Change the window (Last 10, Season, Qualifiers)",
+      "component": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#StatsTeamFrame",
+      "handler": "go",
+      "service": "src/clubhouse/data/stats-team.ts#loadTeamStats",
+      "data": [
+        "golf_teams",
+        "golf_team_members",
+        "golf_players",
+        "golf_rounds",
+        "golf_round_stats_cache",
+        "golf_shots",
+        "golf_pga_standards"
+      ],
+      "bridge": {
+        "address": 40102,
+        "loading": 40301,
+        "offline": 40701,
+        "slow": 40702
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-team.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P004-SHOW-SEASON",
+      "label": "Show the season from an empty window",
+      "component": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#ShowSeason",
+      "handler": "go",
+      "service": "src/clubhouse/data/stats-team.ts#loadTeamStats",
+      "data": [
+        "golf_teams",
+        "golf_team_members",
+        "golf_players",
+        "golf_rounds",
+        "golf_round_stats_cache",
+        "golf_shots",
+        "golf_pga_standards"
+      ],
+      "bridge": {
+        "empty": 40401,
+        "loading": 40301,
+        "offline": 40701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-team.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P004-EXPORT",
+      "label": "Export the player grid as a CSV",
+      "component": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#TeamHeadActions",
+      "handler": "exportCsv",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "validation": 40501,
+        "success": 40901,
+        "failure": 40601
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-team.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P004-OPEN-PLAYER",
+      "label": "Open a player's profile",
+      "component": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#LegGrid",
+      "handler": "teamPlayerHref",
+      "service": "src/clubhouse/data/stats-player.ts#loadPlayerProfile",
+      "data": [
+        "golf_players",
+        "golf_team_members"
+      ],
+      "bridge": {
+        "permission": 40802
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-team.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P004-RETRY-READ",
+      "label": "Try again on a failed read",
+      "component": "src/clubhouse/screens/stats/StatsTeamIslands.tsx#RetryNotice",
+      "handler": "router.refresh",
+      "service": "src/clubhouse/data/stats-team.ts#loadTeamStats",
+      "data": [
+        "golf_teams",
+        "golf_team_members",
+        "golf_players",
+        "golf_rounds",
+        "golf_round_stats_cache",
+        "golf_shots",
+        "golf_pga_standards"
+      ],
+      "bridge": {
+        "recovery": 41401,
+        "rounds": 40602,
+        "figures": 40603,
+        "putts": 40604
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-team.test.tsx"
+      ]
+    }
+  ],
+  "held": []
+}

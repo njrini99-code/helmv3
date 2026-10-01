@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Clubhouse Bridge Contract",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "id",
+      "page",
+      "category",
+      "item",
+      "name",
+      "meaning",
+      "status"
+    ],
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "string",
+        "pattern": "^P[0-9]{3}$"
+      },
+      "category": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 25
+      },
+      "item": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9
+      },
+      "name": {
+        "type": "string",
+        "pattern": "^[A-Z0-9_]+$"
+      },
+      "meaning": {
+        "type": "string",
+        "minLength": 1
+      },
+      "status": {
+        "enum": [
+          "reserved",
+          "implemented",
+          "deprecated"
+        ]
+      },
+      "severity": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "recoverable": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "relatedAction": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "tests": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "additionalProperties": true
+  }
+}

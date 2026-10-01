@@ -32,7 +32,7 @@ const list: Msg[] = [
   { id: 'm3', content: 'third', edited_at: null },
 ];
 
-describe('applyRealtimeMessageUpdate — read receipts must not churn the list', () => {
+describe('applyRealtimeMessageUpdate (P007 70301) — read receipts must not churn the list', () => {
   it('returns the SAME array when nothing rendered changed (the read-receipt case)', () => {
     // Exactly what a `read = true` flip delivers: same content, same edited_at.
     const next = applyRealtimeMessageUpdate(list, {

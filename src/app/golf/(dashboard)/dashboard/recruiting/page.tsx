@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { Metadata } from 'next';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseRecruitingRoute } from '@/clubhouse/routes/recruiting';
 import { getRecruits } from '@/app/golf/actions/recruiting';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Button, EmptyState } from '@/components/fairway';
@@ -26,6 +28,10 @@ export default async function RecruitingPage() {
     // Players don't get to see the prospect list; bounce them to their hub.
     redirect('/golf/dashboard');
   }
+
+  // Clubhouse Recruiting (golf_clubhouse_ui): coaches only, with its own route, loader and screen. A player never gets here:
+  // the redirect above sends them Home, and RLS on golf_recruits and golf_recruit_documents is the lock behind it.
+  if (isClubhouseFor('coach')) return <ClubhouseRecruitingRoute />;
 
   const result = await getRecruits();
 

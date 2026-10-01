@@ -397,3 +397,22 @@ keeps its date separate from the return-to-today action.
   schedule, not a header CTA.
 - Not yet done (Phase C): desktop context rail (Spine & Stage),
   event-to-detail continuity, physical-device / dark / large-text checks.
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, `/golf/dashboard/calendar` renders the Clubhouse Calendar (`src/clubhouse/routes/calendar.tsx`)
+for coaches and players instead of `FairwayCalendar`. Contract differences:
+
+- Loader: `src/clubhouse/data/calendar.ts` reads the anchor's month window (padded two weeks back, six ahead), not ±3 months. Times resolve in the team timezone server-side; all-day rows keep their stored date. Attendance (`golf_event_attendance`) is chunked and paginated.
+- State is URL-driven: `?view=day|week|month|agenda&date=YYYY-MM-DD&event=<id>`.
+- Writes reuse the existing actions unchanged (`createGolfEvent`, `updateGolfEvent`, `deleteGolfEvent`, `createRecurringEvent`, `editRecurringEvent`, `deleteRecurringEvent`, `respondToEvent`, `markAttendance`, `getAttendanceReport`, `getCalendarFeeds`, `createCalendarFeed`), passing the team zone's offset for the event date as `timezoneOffset`.
+- Players never see a teammate's class, matching `attributeClassEvents`. Overlaps shown to coaches are computed from the loaded events and classes, not the conflict inbox.
+- `?new=1` opens the event editor once (Home's "New event"); the param is dropped from the URL after it opens.
+- `?new=1&with=<playerId>` (Roster's Plan 1:1, D-52; `golf_players.id`, coaches only):
+  - The editor opens as a **meeting** with **only that player invited**.
+  - If the Calendar doesn't list that player (not an active member of the team), nobody is invited: the id is dropped, never widened to the whole team, so a stale link can't notify everyone.
+  - Plain `?new=1` still invites every active player.
+  - `with` leaves the URL together with `new`.
+  - The seed is `EditorSeed.type` / `EditorSeed.invite` (`src/clubhouse/screens/calendar/editor.tsx`), passed through `ClubhouseCalendarRoute({ withPlayer })` and `Calendar({ initialWith })`.
+  - Tests: `src/clubhouse/__tests__/calendar.test.tsx` › "Calendar · seeds from other pages" (commit 88a36e2d4).
+- Checklist and decisions: `docs/clubhouse/screens/calendar.md`, `docs/clubhouse/PROGRESS.md` (D-8 to D-12).

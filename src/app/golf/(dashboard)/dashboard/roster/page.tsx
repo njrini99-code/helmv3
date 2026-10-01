@@ -3,6 +3,8 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseRosterRoute } from '@/clubhouse/routes/roster';
 import Link from 'next/link';
 import { AlertCircle, Users } from 'lucide-react';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -82,6 +84,10 @@ export default async function GolfRosterPage() {
   if (!session) redirect('/golf/login');
 
   const { coach, player } = session;
+
+  // Clubhouse Roster (golf_clubhouse_ui): coaches only, with its own route, loader and screen.
+  if (coach && isClubhouseFor('coach')) return <ClubhouseRosterRoute />;
+
   const supabase = await createClient();
 
   if (!coach) {

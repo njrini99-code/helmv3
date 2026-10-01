@@ -9,6 +9,8 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { formatDateOnlyFull } from '@/lib/golf/date-only';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayRoundDetail } from '@/components/fairway/pages/rounds/FairwayRoundDetail';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseRoundReviewRoute } from '@/clubhouse/routes/round-review';
 
 export async function generateMetadata({
   params,
@@ -93,6 +95,8 @@ export default async function RoundDetailPage({
   if (!session) redirect('/golf/login');
 
   const { coach, player } = session;
+  // Clubhouse round review (golf_clubhouse_ui), for the player and their coaches.
+  if ((coach && isClubhouseFor('coach')) || (player && isClubhouseFor('player'))) return <ClubhouseRoundReviewRoute id={id} />;
   const supabase = await createClient();
 
   // Fetch round with player avatar

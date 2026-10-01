@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Change stage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Instrument Sans',system-ui,sans-serif;background:#f4f2ea;color:#1c1b18;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,textarea{font-family:inherit}
+textarea::placeholder,input::placeholder{color:#6b6860}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #7d7a72; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden">
+<div role="dialog" aria-label="Stage for Mason Reilly" style="box-sizing: border-box; background: #f4f2ea; border-radius: 24px 24px 0 0; padding: 8px 12px 40px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -8px 30px rgb(0 0 0 / 0.18)">
+<span aria-hidden="true" style="width: 36px; height: 5px; border-radius: 3px; background: #c9c2b1; align-self: center"></span>
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px 0 8px"><b style="font-size: 17px; font-weight: 600">Stage</b><a href="PhoneDetail.dc.html" style="height: 44px; display: flex; align-items: center; font-size: 16px; font-weight: 600; color: #155a39">Done</a></div>
+<div role="radiogroup" aria-label="Stage" style="background: #fdfcf8; border-radius: 16px; box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07); overflow: hidden"><button type="button" role="radio" aria-checked="false" style="all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 18px"><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; text-align: left"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 7px; background: #efece3; color: #55524b; font-size: 13px; font-weight: 600">Watched</span><span style="font-size: 13px; color: #6b6860; padding-left: 2px">Tracking from a distance</span></span></button><div style="height: 1px; margin-left: 16px; background: rgb(28 25 18 / 0.07)"></div><button type="button" role="radio" aria-checked="false" style="all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 18px"><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; text-align: left"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 7px; background: #eef5f0; color: #155a39; font-size: 13px; font-weight: 600">Recruiting</span><span style="font-size: 13px; color: #6b6860; padding-left: 2px">Actively engaged</span></span></button><div style="height: 1px; margin-left: 16px; background: rgb(28 25 18 / 0.07)"></div><button type="button" role="radio" aria-checked="true" style="all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 18px"><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; text-align: left"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 7px; background: #cfe6d7; color: #0b3a25; font-size: 13px; font-weight: 600">Offered</span><span style="font-size: 13px; color: #6b6860; padding-left: 2px">Offer extended</span></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#155a39" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button><div style="height: 1px; margin-left: 16px; background: rgb(28 25 18 / 0.07)"></div><button type="button" role="radio" aria-checked="false" style="all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 18px"><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; text-align: left"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 7px; background: #0b3a25; color: #9fe0b6; font-size: 13px; font-weight: 600">Committed</span><span style="font-size: 13px; color: #6b6860; padding-left: 2px">Locked in</span></span></button></div>
+<p style="margin: 0; padding: 0 8px; font-size: 13px; line-height: 1.4; color: #6b6860">Saves as soon as you pick. Players never see this.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+/*
+ * Clubhouse base: the scope root, element resets inside it, and the depth
+ * classes. Every selector is either the scope root or a `.ch-` class, so
+ * this file cannot style anything outside the Clubhouse tree.
+ */
+.ch-root {
+  min-height: 100dvh;
+  background: var(--ch-frame);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  letter-spacing: -0.003em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-root *,
+.ch-root *::before,
+.ch-root *::after {
+  box-sizing: border-box;
+}
+/* Controls answer a quick second tap (a score stepper, a toggle) instead of iOS reading it as a
+   double-tap zoom; pinch zoom still works everywhere. Long-press doesn't pop the link preview. */
+.ch-root button,
+.ch-root a,
+.ch-root [role='button'],
+.ch-root [role='tab'],
+.ch-root [role='switch'],
+.ch-root label,
+.ch-root select,
+.ch-root summary {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+.ch-root ::selection {
+  background: var(--ch-green-100);
+  color: var(--ch-ink-900);
+}
+.ch-root :focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  /* The app's global Tailwind focus ring (globals.css) is not Clubhouse's. */
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+}
+/* Text fields draw their own focus (green ring, underline, or the wrapper's
+   focus-within), so the ring above would double it. */
+.ch-root :is(.ch-input, .ch-textarea, .ch-ed__title, .ch-search input, .ch-select select, .ch-ms-comp__field textarea):focus-visible {
+  outline: none;
+}
+.ch-root h1,
+.ch-root h2,
+.ch-root h3,
+.ch-root p {
+  margin: 0;
+}
+
+.ch-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.ch-display {
+  font-weight: 600;
+  letter-spacing: -0.034em;
+  font-variation-settings: 'wdth' 88;
+}
+.ch-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Depth vocabulary */
+.ch-well {
+  background: var(--ch-well-bg);
+  box-shadow: var(--ch-well-shadow);
+  border-radius: 12px;
+}
+.ch-well-soft {
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  border-radius: 12px;
+}
+.ch-raised {
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-raised-shadow);
+  border-radius: 9px;
+}
+.ch-sheet {
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-sheet-shadow);
+  border-radius: 16px;
+}
+
+/* First-paint reveal (D-64, v2 GH.reveal): a page's sections rise 10px into
+   place, 55ms apart, at most 10 steps. It runs once per page mount, so a
+   refresh with new data never replays it. This is the one allowed stagger
+   (clubhouse:check). Skeletons are excluded. */
+@keyframes ch-reveal {
+  from {
+    opacity: 0;
+    translate: 0 var(--ch-reveal-rise);
+  }
+}
+.ch-reveal > :not([aria-busy='true']) > * {
+  animation: ch-reveal var(--ch-dur-reveal) var(--ch-ease) backwards;
+  animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 9);
+}
+.ch-reveal > :not([aria-busy='true']) > :nth-child(1) { animation-delay: var(--ch-reveal-offset); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(2) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step)); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(3) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 2); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(4) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 3); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(5) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 4); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(6) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 5); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(7) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 6); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(8) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 7); }
+.ch-reveal > :not([aria-busy='true']) > :nth-child(9) { animation-delay: calc(var(--ch-reveal-offset) + var(--ch-reveal-step) * 8); }
+
+/* Route skeletons (every one is a main[aria-busy]): nothing for the first
+   150ms, so a fast load never flashes one, then a fade in over base. */
+@keyframes ch-skel-in {
+  from {
+    opacity: 0;
+  }
+}
+[data-ui='clubhouse'] main[aria-busy='true'] {
+  animation: ch-skel-in var(--ch-dur-base) var(--ch-ease) var(--ch-skel-delay) backwards;
+}
+
+/* Animations off (Settings) and reduced motion: no reveal, no skeleton delay. */
+[data-ui='clubhouse'][data-motion='off'] .ch-reveal > * > *,
+[data-motion='off'] [data-ui='clubhouse'] .ch-reveal > * > *,
+[data-ui='clubhouse'][data-motion='off'] main[aria-busy='true'] {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-reveal > * > *,
+  [data-ui='clubhouse'] main[aria-busy='true'] {
+    animation: none !important;
+  }
+  .ch-root *,
+  .ch-root *::before,
+  .ch-root *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    /* A looping animation at 1ms would strobe: run it once and stop. */
+    animation-iteration-count: 1 !important;
+  }
+}

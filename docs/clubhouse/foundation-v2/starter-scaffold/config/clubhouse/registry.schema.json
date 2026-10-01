@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Clubhouse Page Manifest",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "route",
+    "bridgeNamespace",
+    "roles",
+    "semanticFeatures",
+    "status",
+    "docs"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^P[0-9]{3}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "route": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "bridgeNamespace": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "coach",
+          "player",
+          "admin"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "semanticFeatures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "type": "object",
+      "required": [
+        "design",
+        "implementation",
+        "contract",
+        "bridge",
+        "data",
+        "verification",
+        "docs"
+      ],
+      "properties": {
+        "design": {
+          "enum": [
+            "not_started",
+            "draft",
+            "review",
+            "approved",
+            "superseded"
+          ]
+        },
+        "implementation": {
+          "enum": [
+            "not_started",
+            "ready",
+            "in_progress",
+            "blocked",
+            "verifying",
+            "complete"
+          ]
+        },
+        "contract": {
+          "enum": [
+            "not_started",
+            "partial",
+            "complete"
+          ]
+        },
+        "bridge": {
+          "enum": [
+            "not_required",
+            "reserved",
+            "partial",
+            "complete"
+          ]
+        },
+        "data": {
+          "enum": [
+            "not_required",
+            "existing",
+            "plan_required",
+            "held",
+            "ready"
+          ]
+        },
+        "verification": {
+          "enum": [
+            "not_started",
+            "partial",
+            "passing",
+            "failing"
+          ]
+        },
+        "docs": {
+          "enum": [
+            "missing",
+            "stale",
+            "current"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "implementationRoot": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "designPackage": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hooks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dataResources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "contractIds": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "uniqueItems": true
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "docs": {
+      "type": "object",
+      "required": [
+        "page",
+        "design",
+        "contract",
+        "wiring",
+        "verify",
+        "changelog"
+      ],
+      "properties": {
+        "page": {
+          "type": "string"
+        },
+        "design": {
+          "type": "string"
+        },
+        "contract": {
+          "type": "string"
+        },
+        "wiring": {
+          "type": "string"
+        },
+        "verify": {
+          "type": "string"
+        },
+        "changelog": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

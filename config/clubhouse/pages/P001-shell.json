@@ -1,0 +1,171 @@
+{
+  "id": "P001",
+  "name": "Shell",
+  "slug": "shell",
+  "bridgeNamespace": 1,
+  "routes": [],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "ios_native_shell",
+    "team_communications"
+  ],
+  "progressRow": "Foundation",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "complete",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "v2 (design/handoff/VERSIONS.md); v1 files where records cite them",
+    "desktop": [
+      "design/handoff/sidebar.css",
+      "design/handoff/depth.css",
+      "design/handoff/gh-nav.js",
+      "design/handoff/gh-states.jsx",
+      "design/handoff/gh-polish.css"
+    ],
+    "phone": [
+      "design/handoff/m-shell.jsx",
+      "design/handoff/m.css",
+      "design/handoff/mobile/m-shell.jsx"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/shell",
+    "loader": "src/clubhouse/data/shell.ts",
+    "route": null,
+    "styles": "src/clubhouse/styles/shell.css",
+    "tests": [
+      "src/clubhouse/__tests__/shell.test.tsx",
+      "src/clubhouse/__tests__/native.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/shell.md",
+  "checklist": "docs/clubhouse/screens/foundation.md",
+  "phoneSpec": "docs/clubhouse/phone/foundation.md",
+  "actions": [
+    {
+      "id": "ACT-P001-OPEN-BELL",
+      "label": "Open the notifications bell",
+      "component": "src/clubhouse/shell/Bell.tsx#Bell",
+      "handler": "setOpen",
+      "service": "src/app/golf/actions/unified-notifications.ts#getUnifiedNotifications",
+      "data": [
+        "golf notifications (unified feed)"
+      ],
+      "bridge": {
+        "loading": 10201,
+        "refresh": 10301,
+        "empty": 10402,
+        "failure": 10602
+      },
+      "tests": [
+        "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P001-FILTER-BELL",
+      "label": "Filter the bell by kind",
+      "component": "src/clubhouse/shell/Bell.tsx#filterMenu",
+      "handler": "setFilter",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "empty": 10403
+      },
+      "tests": [
+        "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P001-OPEN-NOTIFICATION",
+      "label": "Open a notification",
+      "component": "src/clubhouse/shell/Bell.tsx#openItem",
+      "handler": "openItem",
+      "service": "src/app/golf/actions/unified-notifications.ts#markNotificationRead",
+      "data": [
+        "golf notifications (unified feed)"
+      ],
+      "bridge": {
+        "optimistic": 11301
+      },
+      "tests": [
+        "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P001-MARK-ALL-READ",
+      "label": "Mark all notifications read",
+      "component": "src/clubhouse/shell/Bell.tsx#markAllButton",
+      "handler": "markAll.run",
+      "service": "src/app/golf/actions/unified-notifications.ts#markAllNotificationsRead",
+      "data": [
+        "golf notifications (unified feed)"
+      ],
+      "bridge": {
+        "success": 10901,
+        "failure": 10601,
+        "optimistic": 11301,
+        "retry": 11402,
+        "offline": 10703
+      },
+      "tests": [
+        "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P001-NAVIGATE",
+      "label": "Go to a page (sidebar, tab bar, More)",
+      "component": "src/clubhouse/shell/Sidebar.tsx",
+      "handler": "next/link",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "core": 10102,
+        "top": 10101,
+        "notRebuilt": 10401,
+        "permission": 10802
+      },
+      "tests": [
+        "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P001-OPEN-MORE",
+      "label": "Open More on the phone",
+      "component": "src/clubhouse/shell/TabBar.tsx",
+      "handler": "setMoreOpen",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "layout": 11901
+      },
+      "tests": [
+        "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P001-ROUTE-RETRY",
+      "label": "Try again on a crashed page",
+      "component": "src/clubhouse/ui/Notices.tsx#RouteErrorView",
+      "handler": "onRetry",
+      "service": "src/components/errors/RouteErrorBoundary.tsx#handleRetry",
+      "data": [],
+      "bridge": {
+        "retry": 11401,
+        "crashed": 10607
+      },
+      "tests": [
+        "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    }
+  ],
+  "held": []
+}

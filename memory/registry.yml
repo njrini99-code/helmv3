@@ -431,6 +431,9 @@ features:
         - src/components/fairway/pages/rounds/**
         - src/components/fairway/pages/rounds-new/**
         - src/components/fairway/pages/rounds-recover/**
+        # The shot screen's logic, shared by the Fairway and Clubhouse
+        # renderers; mapped by name like the other golf hooks.
+        - src/hooks/golf/use-shot-tracking.ts
         - src/components/fairway/pages/rounds-tracking/**
       api:
         - src/app/api/golf/rounds/**
@@ -577,19 +580,27 @@ features:
       components:
         - src/components/fairway/pages/qualifiers/**
         - src/components/fairway/pages/my-qualifiers/**
+        - src/clubhouse/screens/qualifiers/**
+        - src/clubhouse/data/qualifiers.ts
+        - src/clubhouse/routes/qualifiers.tsx
       api:
       actions:
         - src/app/golf/actions/golf.ts
         - src/app/golf/actions/v3/qualifying.ts
         - src/app/golf/actions/qualifier-progress.ts
+        - src/app/golf/actions/qualifier-setup.ts
       services:
         - src/lib/coachhelm/v3/qualifying/**
+        - src/lib/golf/qualifier-selection-reasons.ts
       db:
         - supabase/migrations/*qualifier*.sql
         - supabase/migrations/*qualifying*.sql
       tests:
         - e2e/golf-qualifier.spec.ts
         - src/test/coachhelm/v3/qualifying.test.ts
+        - src/app/golf/actions/__tests__/qualifier-setup.test.ts
+        - src/clubhouse/__tests__/qualifiers.test.tsx
+        - supabase/tests/rls/golf_qualifier_db_hardening.sql
     integrations:
       - supabase
       - coachhelm_ai
@@ -793,8 +804,15 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/calendar/**
+        # A player's classes go on the team calendar (syncClassToCalendar); the
+        # route was unmapped, so `knowledge:map` resolved it to no feature.
+        - src/app/golf/(dashboard)/dashboard/classes/**
+        - src/clubhouse/routes/classes.tsx
       components:
         - src/components/golf/calendar/**
+        - src/clubhouse/screens/classes/**
+        - src/clubhouse/data/classes.ts
+        - src/clubhouse/data/classes-shape.ts
         # The SHIPPED calendar UI is the Fairway tree (event editor, detail
         # drawer, month/week/agenda views); only the older golf/calendar tree
         # was mapped, so `knowledge:map` resolved the live components to NO
@@ -847,6 +865,7 @@ features:
       tests:
         - src/test/lib/calendar/**
         - src/test/api/calendar/**
+        - src/clubhouse/__tests__/classes.test.tsx
     integrations:
       - supabase
       - notifications
@@ -1169,7 +1188,10 @@ features:
         - src/lib/golf/nav-registry.ts
       db:
         - supabase/migrations/*task*.sql
-        - supabase/migrations/*document*.sql
+        # Team documents only: `*document*` also matched recruiting's recruit_documents files.
+        - supabase/migrations/*golf_document*.sql
+        - supabase/migrations/*baseball_documents*.sql
+        - supabase/migrations/*documents_storage*.sql
         - supabase/migrations/*travel*.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
@@ -1271,16 +1293,25 @@ features:
         - src/app/golf/(dashboard)/dashboard/recruiting/**
       components:
         - src/components/fairway/pages/recruiting/**
+        - src/clubhouse/screens/recruiting/**
+        - src/clubhouse/data/recruiting.ts
+        - src/clubhouse/data/recruiting-shape.ts
+        - src/clubhouse/routes/recruiting.tsx
       api: []
       actions:
         - src/app/golf/actions/recruiting.ts
         - src/app/golf/actions/recruit-documents.ts
         - src/app/golf/actions/recruit-documents-categories.ts
+        - src/app/golf/actions/recruit-documents-limits.ts
       services: []
       db:
         - supabase/migrations/*golf_recruits*.sql
         - supabase/migrations/*recruit_documents*.sql
-      tests: []
+      tests:
+        - src/clubhouse/__tests__/recruiting.test.tsx
+        - src/clubhouse/__tests__/recruiting-upload.test.tsx
+        - src/test/golf/actions/recruit-document-upload.test.ts
+        - src/test/golf/actions/recruiting-create.test.ts
     integrations:
       - supabase
       - team_access_control

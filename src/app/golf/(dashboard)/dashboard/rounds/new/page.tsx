@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import NewRoundClient from './new-round-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { FeatureUnavailable } from '@/components/fairway';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseNewRoundRoute } from '@/clubhouse/routes/round-new';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -29,6 +31,9 @@ export default async function NewRoundPage() {
       />
     );
   }
+
+  // Clubhouse round entry (golf_clubhouse_ui): setup, then the round, over the same new-round engine.
+  if (isClubhouseFor('player')) return <ClubhouseNewRoundRoute playerId={player.id} />;
 
   // Note: unfinished / in-progress rounds are surfaced on the /rounds page
   // (UnfinishedRoundsSection), not gated here — the New Round page deliberately

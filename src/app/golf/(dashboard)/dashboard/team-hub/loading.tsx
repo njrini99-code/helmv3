@@ -1,5 +1,12 @@
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton, Surface } from '@/components/fairway';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { HubSkeleton } from '@/clubhouse/screens/hub/HubSkeleton';
+
+/** Inside the Clubhouse shell (golf_clubhouse_ui) the Clubhouse skeleton; everywhere else the Fairway one below. */
+export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<HubSkeleton />} fallback={<FairwayTeamHubLoading />} />;
+}
 
 /**
  * Route-level loading fallback for the player Team Hub (redesign-only route).
@@ -22,7 +29,7 @@ import { Skeleton, Surface } from '@/components/fairway';
  *                    (color dot + class name, days · time on a line below).
  *   - Teammates     (`md:col-span-2`, L407-441) — header + a 6-avatar stack.
  */
-export default function Loading() {
+function FairwayTeamHubLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div

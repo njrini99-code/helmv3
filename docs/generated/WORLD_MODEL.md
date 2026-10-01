@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 66 routes, 45 components, 30 apis, 91 actions, 104 services, 65 tests, 134 tables, 164 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 986 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 29 features, 68 routes, 56 components, 30 apis, 93 actions, 105 services, 73 tests, 134 tables, 165 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1010 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -102,7 +102,7 @@ Calendar And Events · active · criticality high · owner product
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** none
-- **Test surfaces:** 2
+- **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
 
 ### `coach_intelligence_triage`
@@ -221,8 +221,8 @@ Qualifiers · active · criticality high · owner product
 
 - **Relations:** 1 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** `golf_qualifier_round_courses`
-- **RPCs:** none
-- **Test surfaces:** 2
+- **RPCs:** `golf_qualifier_selection_reasons`
+- **Test surfaces:** 5
 - **Sentry/admin_events signals:** `my_qualifiers`, `qualifiers`
 
 ### `recruiting`
@@ -232,7 +232,7 @@ Recruiting HQ · active · criticality medium · owner product
 - **Relations:** 0 doc/structurally-evidenced, 3 import-graph-only (weak)
 - **Tables:** `golf_recruit_documents`
 - **RPCs:** none
-- **Test surfaces:** 0
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `recruiting_prospect_tracking`
 
 ### `roster_team`
@@ -300,7 +300,7 @@ Team Communications · active · criticality high · owner product
 Team Operations · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
-- **Tables:** `golf_recruit_documents`
+- **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** `coach_dashboard`, `documents`, `task_management`, `travel`

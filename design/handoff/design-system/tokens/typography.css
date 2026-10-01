@@ -1,0 +1,37 @@
+:root{
+--font-sans:"Instrument Sans",ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;
+--font-display:"Instrument Sans",ui-sans-serif,-apple-system,system-ui,sans-serif;
+--font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+
+/* Display — page titles and hero figures. Semi-condensed, tight. */
+--type-display-xl:600 56px/1 var(--font-display);
+--type-display-l:600 36px/1.08 var(--font-display);
+--type-display-m:600 28px/1.14 var(--font-display);
+--type-display-s:600 22px/1.2 var(--font-display);
+--tracking-display:-0.032em; /* @kind font */
+--width-display:88; /* @kind font */
+--width-figure:92; /* @kind font */
+
+/* UI */
+--type-title:600 15px/1.35 var(--font-sans);
+--type-body-l:400 16px/1.55 var(--font-sans);
+--type-body:400 14px/1.5 var(--font-sans);
+--type-body-s:400 13px/1.45 var(--font-sans);
+--type-label:500 13.5px/1.3 var(--font-sans);
+--type-label-s:500 12.5px/1.3 var(--font-sans);
+--type-caption:400 12.5px/1.4 var(--font-sans);
+--type-overline:500 11.5px/1.2 var(--font-sans);
+--tracking-tight:-0.012em; /* @kind font */
+--tracking-overline:0.04em; /* @kind font */
+
+/* Figures */
+--type-figure-xl:500 64px/0.95 var(--font-display);
+--type-figure-l:500 40px/1 var(--font-display);
+--type-figure-m:600 28px/1 var(--font-display);
+--type-figure-s:600 17px/1.1 var(--font-sans);
+--type-mono:500 12px/1.3 var(--font-mono);
+
+--weight-regular:400; /* @kind font */
+--weight-medium:500; /* @kind font */
+--weight-semibold:600; /* @kind font */
+}

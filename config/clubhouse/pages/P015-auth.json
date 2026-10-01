@@ -1,0 +1,136 @@
+{
+  "id": "P015",
+  "name": "Auth",
+  "slug": "auth",
+  "bridgeNamespace": 15,
+  "area": "auth",
+  "routes": [
+    "/golf/login",
+    "/golf/welcome"
+  ],
+  "roles": [],
+  "semanticFeatures": [
+    "auth_onboarding_join"
+  ],
+  "progressRow": "Auth",
+  "status": {
+    "design": "approved",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "owner handoff design/handoff/auth (sign in, welcome, sign up, onboarding), decisions Q-96 (2026-09-30)",
+    "desktop": [
+      "design/handoff/auth/Sign in.html",
+      "design/handoff/auth/Sign in - Times of day.html",
+      "design/handoff/auth/Sign up.html"
+    ],
+    "phone": [
+      "design/handoff/auth/Sign in - Mobile.html",
+      "design/handoff/auth/Sign up - Mobile.html"
+    ]
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/auth",
+    "loader": "src/clubhouse/data/welcome.ts",
+    "route": "src/clubhouse/routes/auth.tsx",
+    "styles": "src/clubhouse/styles/auth.css",
+    "tests": [
+      "src/clubhouse/__tests__/auth.test.tsx",
+      "src/clubhouse/__tests__/auth-logic.test.ts",
+      "src/clubhouse/__tests__/auth-server.test.tsx",
+      "src/clubhouse/__tests__/auth-scene.test.tsx"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/auth.md",
+  "checklist": "docs/clubhouse/screens/auth.md",
+  "phoneSpec": "docs/clubhouse/phone/auth.md",
+  "actions": [
+    {
+      "id": "ACT-P015-SIGN-IN",
+      "label": "Sign in with email and password",
+      "component": "src/clubhouse/screens/auth/SignInForm.tsx#SignInForm",
+      "handler": "handleSubmit",
+      "service": "src/app/golf/actions/auth.ts#loginAction",
+      "data": [
+        "users",
+        "golf_coaches",
+        "golf_players",
+        "golf_team_coach_staff"
+      ],
+      "bridge": {
+        "validation": 150501,
+        "pending": 150301,
+        "failure": 150601,
+        "unverified": 150602,
+        "rateLimit": 150603,
+        "staleBundle": 150604,
+        "unexpected": 150605,
+        "serverWords": 150606,
+        "network": 150701,
+        "destination": 150801,
+        "kept": 151201,
+        "retry": 151401,
+        "announced": 151802,
+        "haptic": 151701,
+        "landed": 151702
+      },
+      "tests": [
+        "src/clubhouse/__tests__/auth.test.tsx",
+        "src/clubhouse/__tests__/auth-logic.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P015-WELCOME",
+      "label": "Read who is signed in and what is new",
+      "component": "src/clubhouse/routes/auth.tsx#WelcomeLoader",
+      "handler": "loadWelcome",
+      "service": "src/clubhouse/data/welcome.ts#loadWelcome",
+      "data": [
+        "users",
+        "golf_coaches",
+        "golf_players",
+        "notifications",
+        "golf_calendar_notifications"
+      ],
+      "bridge": {
+        "loading": 150201,
+        "caughtUp": 150401,
+        "firstVisit": 150402,
+        "noName": 150403,
+        "failure": 150607,
+        "permission": 150802,
+        "announced": 151803,
+        "logged": 152301
+      },
+      "tests": [
+        "src/clubhouse/__tests__/auth.test.tsx",
+        "src/clubhouse/__tests__/auth-logic.test.ts",
+        "src/clubhouse/__tests__/auth-server.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P015-CONTINUE",
+      "label": "Continue from the welcome to the app",
+      "component": "src/clubhouse/screens/auth/Welcome.tsx#Welcome",
+      "handler": "proceed",
+      "service": "src/clubhouse/data/welcome-shape.ts#welcomeDestination",
+      "data": [],
+      "bridge": {
+        "handOff": 151604,
+        "reducedMotion": 151605,
+        "haptic": 151705,
+        "keyboard": 152001
+      },
+      "tests": [
+        "src/clubhouse/__tests__/auth.test.tsx",
+        "src/clubhouse/__tests__/auth-logic.test.ts"
+      ]
+    }
+  ],
+  "held": []
+}

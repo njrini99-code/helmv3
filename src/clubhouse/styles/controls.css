@@ -1,0 +1,721 @@
+/* Clubhouse controls: segmented, pills, search, fields, menu, modal. */
+
+/* Segmented: recessed well with a raised, pressed chip that slides. */
+.ch-seg {
+  display: inline-flex;
+  gap: 3px;
+  padding: 4px;
+}
+.ch-seg--sm {
+  padding: 3px;
+  border-radius: 11px;
+}
+.ch-seg__b {
+  position: relative;
+  height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6f6a5f;
+  font: 500 13px/1 var(--ch-font-sans);
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-seg--sm .ch-seg__b {
+  height: 26px;
+  padding: 0 11px;
+  font-size: 12.5px;
+}
+.ch-seg__b:hover {
+  color: var(--ch-text-primary);
+}
+.ch-seg__b.is-on {
+  color: var(--ch-green-700);
+  font-weight: 600;
+  text-shadow: none;
+}
+.ch-seg__b:focus-visible {
+  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline-offset: 1px;
+}
+.ch-seg__pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-raised-shadow);
+}
+.ch-seg__l {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Pills */
+.ch-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ch-pill {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ch-text-secondary);
+  font: 500 13px/30px var(--ch-font-sans);
+  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
+    background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-pill:hover {
+  color: var(--ch-text-primary);
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-pill[aria-pressed='true'] {
+  background: #edf4ef;
+  color: var(--ch-green-700);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.28);
+}
+
+/* Search */
+.ch-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 8px 0 12px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-ivory-25);
+  color: var(--ch-text-tertiary);
+  box-shadow: inset 0 0 0 1px var(--ch-border-control);
+  cursor: text;
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-search:focus-within {
+  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.62), 0 0 0 4px rgb(28 25 18 / 0.07);
+}
+.ch-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ch-text-primary);
+  font: 400 13.5px/1 var(--ch-font-sans);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.ch-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.ch-search input::placeholder {
+  color: var(--ch-ink-400);
+}
+.ch-search__x {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ch-text-tertiary);
+  cursor: pointer;
+}
+.ch-search__x:hover {
+  background: rgb(28 25 18 / 0.06);
+}
+
+/* Fields */
+.ch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ch-field__label {
+  font: 500 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-field__help {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-field__help.is-error {
+  color: var(--ch-danger-600);
+}
+.ch-input,
+.ch-textarea {
+  width: 100%;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  outline: 0;
+  background: var(--ch-ivory-25);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  box-shadow: 0 0 0 1px var(--ch-border-control), 0 1px 2px rgb(28 25 18 / 0.04);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-input {
+  height: 38px;
+}
+.ch-textarea {
+  min-height: 64px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.ch-input:hover,
+.ch-textarea:hover {
+  box-shadow: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.04);
+}
+.ch-input:focus,
+.ch-textarea:focus {
+  /* Design system: forms, green accents (default). */
+  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
+}
+.ch-input[aria-invalid='true'],
+.ch-textarea[aria-invalid='true'] {
+  box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(176 58 46 / 0.1);
+}
+/* Read-only fields sit in the inset well: visibly not for typing. */
+.ch-input[readonly]:not(:focus),
+.ch-textarea[readonly] {
+  background: var(--ch-bg-subtle);
+  color: var(--ch-text-secondary);
+  box-shadow: 0 0 0 1px var(--ch-border-hairline);
+  cursor: default;
+}
+.ch-input::placeholder,
+.ch-textarea::placeholder {
+  color: var(--ch-ink-400);
+}
+
+/* Menu */
+.ch-menu {
+  /* Surface, radius, glass and shadow come from .ch-popover (design system PopoverPanel). */
+  position: fixed;
+  z-index: var(--ch-z-overlay);
+  transform-origin: top right;
+}
+.ch-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ch-text-primary);
+  font: 500 13.5px/1 var(--ch-font-sans);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ch-menu__item svg {
+  color: var(--ch-green-600);
+}
+.ch-menu__item:hover,
+.ch-menu__item:focus-visible {
+  outline: none;
+  background: #ece8de;
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+}
+.ch-menu__item.is-danger,
+.ch-menu__item.is-danger svg {
+  color: var(--ch-danger-600);
+}
+.ch-menu__item[aria-checked='true'] {
+  font-weight: 600;
+}
+.ch-menu__sep {
+  height: 1px;
+  margin: 5px 6px;
+  background: rgb(28 25 18 / 0.08);
+}
+
+/* Modal on the native dialog top layer */
+.ch-modal {
+  width: min(calc(100% - 32px), var(--ch-modal-w, 520px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--ch-text-primary);
+}
+.ch-modal::backdrop {
+  background: rgb(20 20 18 / 0.32);
+  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+}
+.ch-modal__panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+  border-radius: var(--ch-radius-xl);
+  background: #faf8f2;
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.8), 0 8px 16px -6px rgb(28 25 18 / 0.1),
+    0 32px 64px -20px rgb(28 25 18 / 0.32);
+  animation: ch-pop var(--ch-dur-base) var(--ch-ease);
+}
+.ch-modal__grab {
+  display: none;
+}
+.ch-modal__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 16px 6px 22px;
+}
+.ch-modal__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--ch-green-700);
+}
+.ch-modal__titles {
+  flex: 1;
+  min-width: 0;
+}
+.ch-modal__titles h2 {
+  margin: 0;
+  font: 600 17px/1.3 var(--ch-font-sans);
+  letter-spacing: -0.018em;
+}
+.ch-modal__titles p {
+  margin: 3px 0 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-modal__body {
+  padding: 14px 22px 20px;
+  overflow: auto;
+}
+.ch-modal__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px 12px 22px;
+  border-top: 1px solid rgb(28 25 18 / 0.08);
+  background: #efece3;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+.ch-btn--danger {
+  color: #fff;
+  background: linear-gradient(180deg, #c0463a, #a5352a);
+  box-shadow: 0 0 0 1px #8e2c22, inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
+}
+@keyframes ch-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes ch-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ch-rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (max-width: 820px) {
+  .ch-modal {
+    width: 100%;
+    max-height: 92dvh;
+    margin: auto 0 0;
+  }
+  .ch-modal__panel {
+    max-height: 92dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-radius: 20px 20px 0 0;
+    animation: ch-rise var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-modal__grab {
+    display: block;
+    width: 36px;
+    height: 5px;
+    margin: 8px auto 0;
+    border-radius: 3px;
+    background: var(--ch-ivory-300);
+  }
+  .ch-modal__head {
+    padding-top: 12px;
+  }
+  /* The sheet follows the finger from its grab and header (CH-1611). */
+  .ch-modal__grab,
+  .ch-modal__head {
+    touch-action: none;
+  }
+  /* With reduced motion the sheet fades instead of rising, and doesn't drag. */
+  @media (prefers-reduced-motion: reduce) {
+    .ch-modal__panel {
+      animation-name: ch-fade;
+    }
+  }
+  /* Owner, 2026-09-30: small controls are drawn bigger on the phone. Segments are at least 44 wide and
+     36 tall (34 for the small ones), pills 36 tall; the hit area below still reaches 44 around them. */
+  .ch-root .ch-seg .ch-seg__b {
+    min-width: 44px;
+    height: 36px;
+  }
+  .ch-root .ch-seg--sm .ch-seg__b {
+    height: 34px;
+  }
+  .ch-root .ch-pill {
+    height: 36px;
+    line-height: 36px;
+  }
+  /* Every control's hit area reaches 44 x 44 on the phone without changing how it is drawn (a 26px
+     segment, a 30px small button, a 36px pill). Zero specificity, so a page's own hit area wins. */
+  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x) {
+    position: relative;
+  }
+  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x)::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+  /* A menu's rows are 44px tall on the phone (the rows touch, so a hit area around them would overlap). */
+  .ch-menu__item {
+    height: 44px;
+  }
+  /* The keyboard never resizes the WebView: an open sheet sits on top of the keyboard, shrinks to the
+     space left above it, and scrolls its body, so the focused field and the footer's Save stay visible. */
+  body.keyboard-open .ch-modal {
+    margin-bottom: var(--keyboard-height, 0px);
+    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
+  }
+  body.keyboard-open .ch-modal__panel {
+    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
+    padding-bottom: 0;
+  }
+  .ch-modal__foot .ch-btn {
+    flex: 1;
+    height: 44px;
+  }
+  /* A 44px target around the 30px close. */
+  .ch-modal__head .ch-iconbtn::before {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
+}
+
+/* Person picker rows (Calendar people filter, Messages new message) */
+.ch-pp__row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-pp__row:hover {
+  background: rgb(28 25 18 / 0.045);
+}
+.ch-pp__row:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-pp__row[aria-pressed='true'],
+.ch-pp__row[aria-selected='true'] {
+  background: var(--ch-green-50);
+}
+.ch-pp__row > svg {
+  color: var(--ch-green-700);
+}
+.ch-pp__all {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ch-green-600);
+  color: var(--ch-text-on-accent);
+}
+.ch-pp__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-pp__name b {
+  font: 500 13.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-pp__row[aria-pressed='true'] .ch-pp__name b,
+.ch-pp__row[aria-selected='true'] .ch-pp__name b {
+  font-weight: 600;
+  color: var(--ch-green-800);
+}
+.ch-pp__name span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-pp__box {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+  color: var(--ch-text-on-accent);
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-pp__box.is-on {
+  background: var(--ch-green-600);
+  box-shadow: none;
+}
+.ch-pp__empty {
+  padding: 14px 10px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+}
+
+/* Switch (handoff forms/Switch: recessed track, raised thumb, green when on) */
+.ch-switch {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  font: var(--ch-type-body);
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-switch input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+.ch-switch__track {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 23px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #cfc9bb, #ddd8cc);
+  box-shadow: inset 0 2px 4px rgb(28 25 18 / 0.3), inset 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 0 #fff;
+  transition: background var(--ch-dur-base) var(--ch-ease);
+}
+.ch-switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff 0%, #f4f1ea 70%, #e9e5db 100%);
+  box-shadow: 0 1px 1px rgb(28 25 18 / 0.25), 0 2px 5px -1px rgb(28 25 18 / 0.35), inset 0 -1px 0 rgb(28 25 18 / 0.08), inset 0 1px 0 #fff;
+  transition: transform var(--ch-dur-base) var(--ch-ease-spring);
+}
+.ch-switch input:checked + .ch-switch__track {
+  background: linear-gradient(180deg, #0f4a2f, #1a6542);
+  box-shadow: inset 0 2px 5px rgb(4 30 18 / 0.55), inset 0 0 0 1px rgb(4 30 18 / 0.25), 0 1px 0 #fff;
+}
+.ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
+  transform: translateX(17px);
+}
+.ch-switch input:focus-visible + .ch-switch__track {
+  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline-offset: 2px;
+}
+.ch-switch.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.ch-switch.is-busy {
+  cursor: progress;
+}
+
+/* Select */
+.ch-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+}
+.ch-select select {
+  width: 100%;
+  height: 38px;
+  padding: 0 34px 0 12px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  outline: 0;
+  appearance: none;
+  background: var(--ch-ivory-25);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  box-shadow: 0 0 0 1px var(--ch-border-control), 0 1px 2px rgb(28 25 18 / 0.04);
+  cursor: pointer;
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-select select:hover {
+  box-shadow: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.04);
+}
+.ch-select select:focus-visible {
+  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
+}
+.ch-select > svg {
+  position: absolute;
+  right: 12px;
+  color: var(--ch-green-600);
+  pointer-events: none;
+}
+.ch-select.is-disabled {
+  opacity: 0.55;
+}
+
+/* Slider */
+.ch-slider {
+  display: grid;
+  gap: 6px;
+}
+.ch-slider__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ch-slider__l {
+  font: 500 14px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-slider__v {
+  font: 600 14px/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
+.ch-slider__d {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+  text-wrap: pretty;
+}
+.ch-slider input {
+  width: 100%;
+  height: 22px;
+  margin: 4px 0 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.ch-slider input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), #ddd8cc var(--ch-fill));
+  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.25);
+}
+.ch-slider input::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), #ddd8cc var(--ch-fill));
+  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.25);
+}
+.ch-slider input::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border-radius: 50%;
+  appearance: none;
+  background: linear-gradient(180deg, #fff 0%, #f4f1ea 70%, #e9e5db 100%);
+  box-shadow: 0 1px 1px rgb(28 25 18 / 0.25), 0 2px 5px -1px rgb(28 25 18 / 0.35), inset 0 1px 0 #fff;
+}
+.ch-slider input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff 0%, #f4f1ea 70%, #e9e5db 100%);
+  box-shadow: 0 1px 1px rgb(28 25 18 / 0.25), 0 2px 5px -1px rgb(28 25 18 / 0.35);
+}
+.ch-slider input:focus-visible {
+  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.ch-slider.is-disabled {
+  opacity: 0.5;
+}
+.ch-slider__ends {
+  display: flex;
+  justify-content: space-between;
+  font: 400 11.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+
+/* Checkbox (ui/Checkbox): a native input under the design system's box. */
+.ch-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.ch-check.is-disabled {
+  cursor: default;
+}
+.ch-check__input {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.ch-check__box {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+  color: var(--ch-text-on-accent);
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-check__box.is-on {
+  background: var(--ch-green-600);
+  box-shadow: none;
+}
+.ch-check.is-disabled .ch-check__box {
+  opacity: 0.55;
+}
+.ch-check__input:focus-visible + .ch-check__box {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-check__input[aria-invalid='true'] + .ch-check__box {
+  box-shadow: inset 0 0 0 1.5px var(--ch-danger-600);
+}

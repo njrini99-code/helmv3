@@ -353,6 +353,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/message-attachments.ts': 'ALL',
+      'src/app/golf/actions/message-mute.ts': 'ALL',
       'src/app/actions/messages.ts': [
         'sendGolfMessage',
         'createGolfConversation',

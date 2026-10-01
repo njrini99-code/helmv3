@@ -1132,7 +1132,7 @@ export function calculateHoleStatsFromShots(
   // UNIT HONESTY: an earlier author suspected converting the off-green finish (stored
   // in YARDS, distance_unit_after='yards') through normalizeToFeet (×3) was an
   // inflation bug, and hard-coded miss proximity to null. It is not — the live write
-  // path (resolveDistanceAfterShot in FairwayShotTracking.tsx) deterministically tags
+  // path (resolveDistanceAfterShot in src/hooks/golf/use-shot-tracking.ts) deterministically tags
   // 'feet' only for a hole/green finish and 'yards' for every other result; verified
   // against production golf_shots (2026-07-21): ~99% of off-green approach finishes
   // carry the correct 'yards' tag with sane yardages (~25-65 yd avg, i.e. ~75-195 ft —
