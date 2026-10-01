@@ -20,9 +20,11 @@ import '../styles/rounds.css';
 export async function ClubhouseRoundReviewRoute({ id }: { id: string }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
-  const team = await resolveClubhouseTeam(session);
-  const viewer: ChReviewViewer | null = session.player && !session.coach ? { role: 'player', playerId: session.player.id, teamId: team?.role === 'player' ? team.teamId : null } : team?.role === 'coach' ? { role: 'coach', teamId: team.teamId } : null;
-  const result = viewer ? await loadRoundReview(id, viewer) : ({ kind: 'notFound' } as const);
+  // The round is read while the team resolves (the team only says who is looking, not which round), so the review pays one read, not two in a row.
+  const viewerRead = resolveClubhouseTeam(session).then((team): ChReviewViewer | null =>
+    session.player && !session.coach ? { role: 'player', playerId: session.player.id, teamId: team?.role === 'player' ? team.teamId : null } : team?.role === 'coach' ? { role: 'coach', teamId: team.teamId } : null,
+  );
+  const [viewer, result] = await Promise.all([viewerRead, loadRoundReview(id, viewerRead)]);
 
   if (result.kind === 'inProgress') redirect(`/golf/dashboard/rounds/continue/${id}`);
   if (result.kind === 'error') return <ReviewLoadFailed />;

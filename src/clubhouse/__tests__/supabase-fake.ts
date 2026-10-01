@@ -11,19 +11,27 @@
 export type ChFakeAnswer = { data?: unknown; error?: unknown; count?: number | null };
 export type ChFakeTables = Record<string, ChFakeAnswer | ((filters: Array<[string, unknown[]]>) => ChFakeAnswer)>;
 
-function query(table: string, tables: { current: ChFakeTables }) {
+/**
+ * A test that is about the ORDER of reads (which have started before any answers) sets `gate`: it is called when a read is
+ * sent (`started`, with the table) and the read answers only once the promise it returns settles. Left unset, every read
+ * answers at once, as before.
+ */
+export type ChFakeHandle = { current: ChFakeTables; gate?: (table: string) => Promise<void> | void };
+
+function query(table: string, tables: ChFakeHandle) {
   const filters: Array<[string, unknown[]]> = [];
   const answer = () => {
     const a = tables.current[table];
     const res = typeof a === 'function' ? a(filters) : a;
     return { data: null, error: null, count: null, ...res };
   };
+  const send = () => (tables.gate ? Promise.resolve(tables.gate(table)).then(answer) : Promise.resolve(answer()));
   const chain: object = new Proxy(
     {},
     {
       get(_, key: string) {
-        if (key === 'then') return (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => Promise.resolve(answer()).then(ok, bad);
-        if (key === 'maybeSingle' || key === 'single') return () => Promise.resolve(answer());
+        if (key === 'then') return (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => send().then(ok, bad);
+        if (key === 'maybeSingle' || key === 'single') return () => send();
         return (...args: unknown[]) => {
           filters.push([key, args]);
           return chain;
@@ -34,13 +42,13 @@ function query(table: string, tables: { current: ChFakeTables }) {
   return chain;
 }
 
-function rpc(name: string, args: unknown, tables: { current: ChFakeTables }) {
+function rpc(name: string, args: unknown, tables: ChFakeHandle) {
   const a = tables.current[`rpc:${name}`];
   if (!a) return Promise.resolve({ data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } });
   const res = typeof a === 'function' ? a([['args', [args]]]) : a;
   return Promise.resolve({ data: null, error: null, ...res });
 }
 
-export function fakeServer(tables: { current: ChFakeTables }) {
+export function fakeServer(tables: ChFakeHandle) {
   return { createClient: async () => ({ from: (table: string) => query(table, tables), rpc: (name: string, args: unknown) => rpc(name, args, tables) }) };
 }

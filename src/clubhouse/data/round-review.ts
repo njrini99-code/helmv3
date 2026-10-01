@@ -33,9 +33,16 @@ const SHOT_COLUMNS =
 
 const log = (what: string, err: unknown) => chLogServer('rounds.review', what, err);
 
-export async function loadRoundReview(roundId: string, viewer: ChReviewViewer): Promise<ChRoundReviewResult> {
+/**
+ * `viewerIn` may still be on its way (the route resolves the team while this reads the round): the round is read by its id, so it
+ * is read beside the viewer, and judged against them once both are in. A null viewer is "not here", as before; the round read
+ * beside it is the viewer's own RLS read and is dropped unlooked-at.
+ */
+export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer | null | Promise<ChReviewViewer | null>): Promise<ChRoundReviewResult> {
   const supabase = await createClient();
-  const { data: round, error } = await supabase.from('golf_rounds').select(ROUND_COLUMNS).eq('id', roundId).maybeSingle();
+  const [viewer, roundRes] = await Promise.all([viewerIn, supabase.from('golf_rounds').select(ROUND_COLUMNS).eq('id', roundId).maybeSingle()]);
+  if (!viewer) return { kind: 'notFound' };
+  const { data: round, error } = roundRes;
   if (error) {
     log('round', error);
     return { kind: 'error' };

@@ -231,6 +231,39 @@ async function readRounds(supabase: Supabase, qualifierIds: string[], surface: s
   return { rows, error: false };
 }
 
+type TeeInfo = { tee_name: string; total_par: number | null };
+
+/** The tees the assigned courses name. A failed read is logged and flagged, never read as "no tee". */
+async function readTees(supabase: Supabase, courseRows: ReadonlyArray<{ tee_id: string | null }>): Promise<{ tees: Map<string, TeeInfo>; teesError: boolean }> {
+  const teeIds = [...new Set(courseRows.map((c) => c.tee_id).filter((t): t is string => !!t))];
+  if (!teeIds.length) return { tees: new Map(), teesError: false };
+  const teeRes = await supabase.from('golf_course_tees').select('id, tee_name, total_par').in('id', teeIds);
+  if (teeRes.error) {
+    chLogServer('qualifiers', 'tees', teeRes.error, 'qualifiers');
+    return { tees: new Map(), teesError: true };
+  }
+  return { tees: new Map((teeRes.data ?? []).map((t) => [t.id, { tee_name: t.tee_name, total_par: t.total_par }])), teesError: false };
+}
+
+/** The hole-by-hole cards of these rounds, by round (sorted by hole). A failed read is logged and flagged; the chunks read so far stay. */
+async function readScorecards(supabase: Supabase, roundIds: string[]): Promise<{ holes: Record<string, ChQHole[]>; holesError: boolean }> {
+  const holes: Record<string, ChQHole[]> = {};
+  let holesError = false;
+  for (const chunk of chunkIds(roundIds)) {
+    const { data, error } = await fetchAllRowsResult<{ round_id: string; hole_number: number; par: number; score: number | null }>((from, to) =>
+      supabase.from('golf_holes').select('round_id, hole_number, par, score').in('round_id', chunk).order('id', { ascending: true }).range(from, to),
+    );
+    if (error) {
+      chLogServer('qualifiers', 'holes', error, 'qualifiers');
+      holesError = true;
+      break;
+    }
+    for (const h of data ?? []) (holes[h.round_id] ??= []).push({ n: h.hole_number, par: h.par, score: h.score });
+  }
+  for (const list of Object.values(holes)) list.sort((a, b) => a.n - b.n);
+  return { holes, holesError };
+}
+
 /** The team's qualifiers, newest first. `mine` keeps only the ones the player is entered in. */
 export async function loadQualifierList(input: { role: Role; teamId: string; playerId: string | null; mode: 'all' | 'mine' }): Promise<ChQList> {
   const supabase = await createClient();
@@ -343,22 +376,14 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   // Without the reasons the squad still shows; only the coach's notes are missing.
   if (reasonsRes.error) chLogServer('qualifiers', 'reasons', reasonsRes.error, 'qualifiers');
 
-  // Tee pars for the assigned courses (D-33: par per round from the tee, else from the rounds).
   const courseRows = (coursesRes.data ?? []) as Array<{ round_number: number; course_name: string | null; tee_id: string | null }>;
-  const teeIds = [...new Set(courseRows.map((c) => c.tee_id).filter((t): t is string => !!t))];
-  let tees = new Map<string, { tee_name: string; total_par: number | null }>();
-  let teesError = false;
-  if (teeIds.length) {
-    const teeRes = await supabase.from('golf_course_tees').select('id, tee_name, total_par').in('id', teeIds);
-    if (teeRes.error) {
-      chLogServer('qualifiers', 'tees', teeRes.error, 'qualifiers');
-      teesError = true;
-    } else {
-      tees = new Map((teeRes.data ?? []).map((t) => [t.id, { tee_name: t.tee_name, total_par: t.total_par }]));
-    }
-  }
-
   const qRounds = rounds.rows.map(roundOf);
+  // Scorecards: a coach opens every round; a player only their own (D-33).
+  const openable = qRounds.filter((r) => input.role === 'coach' || r.playerId === input.playerId).map((r) => r.id);
+  // The tees (par per round from the tee, else from the rounds: D-33) hang off the courses and the scorecards off the rounds, which
+  // are already in, so the two are read together, not one after the other.
+  const [{ tees, teesError }, { holes, holesError }] = await Promise.all([readTees(supabase, courseRows), readScorecards(supabase, openable)]);
+
   const entrants = entries.rows.filter((e) => e.player).map((e) => entrantOf(e.player as PlayerCols, now));
   const nameOf = new Map(entrants.map((e) => [e.playerId, e.name]));
   const selections: Array<ChQSelection & { name: string }> | null =
@@ -376,23 +401,6 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     entries.error || rounds.error
       ? null
       : buildBoard({ entrants, rounds: qRounds, squad: q.selection_slots_total, picks: q.selection_slots_coach_pick, status, selectionState, selections });
-
-  // Scorecards: a coach opens every round; a player only their own (D-33).
-  const openable = qRounds.filter((r) => input.role === 'coach' || r.playerId === input.playerId).map((r) => r.id);
-  const holes: Record<string, ChQHole[]> = {};
-  let holesError = false;
-  for (const chunk of chunkIds(openable)) {
-    const { data, error } = await fetchAllRowsResult<{ round_id: string; hole_number: number; par: number; score: number | null }>((from, to) =>
-      supabase.from('golf_holes').select('round_id, hole_number, par, score').in('round_id', chunk).order('id', { ascending: true }).range(from, to),
-    );
-    if (error) {
-      chLogServer('qualifiers', 'holes', error, 'qualifiers');
-      holesError = true;
-      break;
-    }
-    for (const h of data ?? []) (holes[h.round_id] ??= []).push({ n: h.hole_number, par: h.par, score: h.score });
-  }
-  for (const list of Object.values(holes)) list.sort((a, b) => a.n - b.n);
 
   const byNumber = new Map(courseRows.map((c) => [c.round_number, c]));
   const pars = roundPars({
@@ -464,16 +472,16 @@ const EMPTY_FORM: ChQFormValues = {
 export async function loadQualifierForm(input: { teamId: string; qualifierId: string | null }): Promise<ChQFormData | null> {
   const supabase = await createClient();
   const now = new Date();
-  const rosterRes = await supabase
-    .from('golf_team_members')
-    .select('player:golf_players(id, first_name, last_name, graduation_year)')
-    .eq('team_id', input.teamId)
-    .eq('status', 'active');
+  // The roster is the team's, and the qualifier is read by its id: neither waits on the other.
+  const [rosterRes, qRes] = await Promise.all([
+    supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
+    input.qualifierId ? supabase.from('golf_qualifiers').select(`${Q_COLUMNS}, team_id`).eq('id', input.qualifierId).maybeSingle() : Promise.resolve(null),
+  ]);
   if (rosterRes.error) chLogServer('qualifiers', 'roster', rosterRes.error, 'qualifiers');
   const roster = ((rosterRes.data ?? []) as Array<{ player: PlayerCols | null }>).map((m) => m.player).filter((p): p is PlayerCols => !!p);
   const byLast = (a: { name: string }, b: { name: string }) => (a.name.split(' ').slice(-1)[0] ?? '').localeCompare(b.name.split(' ').slice(-1)[0] ?? '') || a.name.localeCompare(b.name);
 
-  if (!input.qualifierId) {
+  if (!input.qualifierId || !qRes) {
     const players = roster.map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now), locked: false as const, inactive: false })).sort(byLast);
     return {
       mode: 'create',
@@ -489,7 +497,6 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
     };
   }
 
-  const qRes = await supabase.from('golf_qualifiers').select(`${Q_COLUMNS}, team_id`).eq('id', input.qualifierId).maybeSingle();
   if (qRes.error) {
     chLogServer('qualifiers', 'qualifier', qRes.error, 'qualifiers');
     throw new Error('Clubhouse: the qualifier read failed');
@@ -510,16 +517,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   if (placedRes.error) chLogServer('qualifiers', 'placed', placedRes.error, 'qualifiers');
   if (coursesRes.error) chLogServer('qualifiers', 'roundCourses', coursesRes.error, 'qualifiers');
   const courseRows = (coursesRes.data ?? []) as Array<{ round_number: number; course_id: string | null; course_name: string | null; tee_id: string | null }>;
-  const teeIds = [...new Set(courseRows.map((c) => c.tee_id).filter((t): t is string => !!t))];
-  let tees = new Map<string, { tee_name: string; total_par: number | null }>();
-  let teesError = false;
-  if (teeIds.length) {
-    const teeRes = await supabase.from('golf_course_tees').select('id, tee_name, total_par').in('id', teeIds);
-    if (teeRes.error) {
-      chLogServer('qualifiers', 'tees', teeRes.error, 'qualifiers');
-      teesError = true;
-    } else tees = new Map((teeRes.data ?? []).map((t) => [t.id, { tee_name: t.tee_name, total_par: t.total_par }]));
-  }
+  const { tees, teesError } = await readTees(supabase, courseRows);
 
   const used = (usedRes.data ?? []) as Array<{ player_id: string; qualifier_round_number: number | null }>;
   const roundIds = new Set(used.map((u) => u.player_id));
