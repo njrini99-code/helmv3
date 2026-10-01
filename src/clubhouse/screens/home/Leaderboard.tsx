@@ -5,7 +5,7 @@ import { QUIET_DAYS } from './model';
 import type { ChCoachHome, ChLeaderRow } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
-import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { FormLine } from '../../ui/FormLine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
@@ -46,7 +46,7 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
         role="cell"
         data-ch-code={p.sgPerRound == null ? 'CH-2306' : undefined}
         className={
-          'r ch-num ch-h-lb__sg' + (p.sgPerRound == null ? ' is-early' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')
+          'r ch-num ch-h-lb__sg' + (p.sgPerRound == null ? ' is-early' : ' ' + changeTone(p.sgPerRound, false)).trimEnd()
         }
         title={p.sgPerRound == null ? 'Strokes gained appears after three rounds' : undefined}
       >

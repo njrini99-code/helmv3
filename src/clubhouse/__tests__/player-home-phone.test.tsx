@@ -18,7 +18,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: 
 
 import type { ChPlayerHome } from '../data/player-home';
 import { PlayerHome } from '../screens/home/PlayerHome';
-import { axisLabelIndexes, changeTone, scoreTicks } from '../screens/home/PlayerGame';
+import { changeTone } from '../lib/format';
+import { axisLabelIndexes, scoreTicks } from '../screens/home/PlayerGame';
 import { PhoneChromeProvider } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
@@ -90,14 +91,29 @@ describe('the chart axis', () => {
 });
 
 describe('the scoring average change', () => {
-  it('is green when the average fell, amber when it rose, and plain when it rounds to zero', () => {
-    expect(changeTone(-0.8)).toBe('is-gain');
-    expect(changeTone(1.4)).toBe('is-loss');
-    expect(changeTone(0.04)).toBe('');
-    expect(changeTone(-0.049)).toBe('');
-    expect(changeTone(null)).toBe('');
+  it('is green when it moved the good way, amber when the other, and plain when it rounds to zero as shown', () => {
+    expect(changeTone(-0.8, true)).toBe('is-gain');
+    expect(changeTone(1.4, true)).toBe('is-loss');
+    expect(changeTone(0.04, true)).toBe('');
+    expect(changeTone(-0.049, true)).toBe('');
+    expect(changeTone(null, true)).toBe('');
     // Where more is better the same change reads the other way.
     expect(changeTone(2, false)).toBe('is-gain');
+    expect(changeTone(-0.05, false)).toBe('is-loss');
+    // Greens move in whole points: 0.4 shows as "0", 0.5 as "+1".
+    expect(changeTone(0.4, false, 0)).toBe('');
+    expect(changeTone(0.5, false, 0)).toBe('is-gain');
+    expect(changeTone(0, false)).toBe('');
+  });
+
+  it('keeps a strokes gained that shows as "0.0" plain, in the figure, the pill and the latest round', () => {
+    const rows = PREVIEW_PLAYER_HOME.legs!.rows.map((l, i) => (i === 0 ? { ...l, sg: 0.01 } : l));
+    show({ sgPerRound: 0.02, legs: { ...PREVIEW_PLAYER_HOME.legs!, rows } });
+    const sg = [...document.querySelectorAll('.ch-ph-figs dd:not(.ch-ph-figs__m)')][1]!;
+    expect(sg.textContent).toBe('0.0');
+    expect(sg.className).not.toMatch(/is-gain|is-loss/);
+    expect(document.querySelector('.ch-ph-leg__sg')!.className).toContain('is-flat');
+    expect(document.querySelectorAll('.ch-ph-leg__sg.is-flat')).toHaveLength(1);
   });
 
   it('colours the figure, not its caption (the board: "−0.8 vs previous 10" stays grey)', () => {

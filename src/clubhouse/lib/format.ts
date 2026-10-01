@@ -16,6 +16,15 @@ export function formatSigned(value: number | null | undefined, digits = 1): stri
   return (rounded > 0 ? '+' : MINUS) + Math.abs(rounded).toFixed(digits);
 }
 
+/**
+ * The tone of a change or a signed figure: green when it moved the good way, amber when the other (D-42), and none when it
+ * rounds to zero at the `digits` it is shown with. "0.0" is no change, so it is never painted amber or green (F-54).
+ */
+export function changeTone(value: number | null | undefined, lowerIsBetter: boolean, digits = 1): '' | 'is-gain' | 'is-loss' {
+  if (value == null || Number.isNaN(value) || Math.abs(value) < 0.5 * 10 ** -digits) return '';
+  return value < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
+}
+
 export function formatFixed(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
   return value.toFixed(digits);

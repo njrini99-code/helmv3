@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { Nine } from '../../ui/Nine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
@@ -180,7 +180,7 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
             </div>
             <div>
               <dt>SG</dt>
-              <dd className={'ch-num' + (r.sg == null ? '' : r.sg >= 0 ? ' is-gain' : ' is-loss')}>{formatSigned(r.sg)}</dd>
+              <dd className={'ch-num ' + changeTone(r.sg, false)}>{formatSigned(r.sg)}</dd>
             </div>
           </dl>
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}

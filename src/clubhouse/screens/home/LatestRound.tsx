@@ -14,7 +14,7 @@ import { EmptyState } from '../../ui/States';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { chSwap } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 
 function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
@@ -153,7 +153,7 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
                   </span>
                   <span>
                     <em>SG</em>
-                    <b className={r.sg == null ? undefined : r.sg >= 0 ? 'is-gain' : 'is-loss'}>{formatSigned(r.sg)}</b>
+                    <b className={changeTone(r.sg, false) || undefined}>{formatSigned(r.sg)}</b>
                   </span>
                 </div>
                 {roundHref(r.id, mine ? 'player' : 'coach') ? (

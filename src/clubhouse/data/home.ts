@@ -116,7 +116,7 @@ export interface ChTeamForm {
   avg: number;
   /** Against each player's previous ten; null when no player has three rounds before their newest ten. */
   delta: number | null;
-  /** A five-round moving average, oldest to newest, for the line. */
+  /** The team's average on each of its last ten round days (the rounds the average rests on), oldest to newest, for the line. */
   line: number[];
   /** Countable rounds of either length in the team-local Monday-to-Sunday week: a count on its own basis, not the figures'. */
   roundsThisWeek: number;
@@ -494,8 +494,8 @@ const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 't
  * player's newest ten 18-hole rounds (in any season, Q-122), pooled, against each player's ten before them
  * (`roundsInFilter` / `previousInFilter`, as `loadTeamStats` reads them). Scoring is a per-round mean over every
  * round, a total-only one included; putts are a per-round mean and greens pool the holes (never a mean of percentages),
- * both over the rounds with their holes (Q-123). The line is a five-round moving average over the same rounds, oldest
- * to newest. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
+ * both over the rounds with their holes (Q-123). The line is the team's average on each of its last ten round days
+ * (as Stats' scoring trend draws it), oldest to newest: one point a day, not one a round. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
  * rounds says so. Exported for the tests.
  */
 export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | null {
@@ -524,8 +524,12 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   const putts = weightedMean(last, puttsOf);
   const prevPutts = comparable ? weightedMean(prev, puttsOf) : null;
   const byDate = (a: ChRound, b: ChRound) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id));
-  const window = [...prev, ...last].sort(byDate).map((r) => r.total_score as number);
-  const line = window.length >= 5 ? window.slice(4).map((_, i) => mean(window.slice(i, i + 5)) as number) : window;
+  const byDay = new Map<string, number[]>();
+  for (const r of [...last].sort(byDate)) {
+    const d = r.round_date.slice(0, 10);
+    byDay.set(d, [...(byDay.get(d) ?? []), r.total_score as number]);
+  }
+  const line = [...byDay.values()].slice(-10).map((scores) => mean(scores) as number);
   const dates = last.map((r) => r.round_date.slice(0, 10)).sort();
   return {
     avg,

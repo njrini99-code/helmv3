@@ -1475,6 +1475,11 @@
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
 }
+/* Rounds to zero ("0.0"): no gain and no loss, so neither green nor amber. */
+.ch-ph-leg__sg.is-flat {
+  background: rgb(28 25 18 / 0.06);
+  color: var(--ch-text-secondary);
+}
 .ch-ph-leg__v {
   display: flex;
   align-items: flex-end;

@@ -310,7 +310,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
     // Putts up 0.3 is worse.
     expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
-    expect(screen.getByRole('img', { name: /Team scoring, a five-round average/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Team scoring, the team's average on each of its last \d+ round days/ })).toBeTruthy();
   });
 
   it('CH-2701 20103 21703 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
@@ -450,9 +450,27 @@ describe('Home · the team’s form (teamForm)', () => {
     expect(Math.round(f.gir.delta!)).toBe(17);
     expect(f.putts.delta).toBe(-2);
     expect(f.roundsThisWeek).toBe(3);
-    // Oldest to newest, a five-round moving average.
-    expect(f.line[0]).toBe(74);
-    expect(f.line[f.line.length - 1]).toBe(72);
+    // One point a day: the team's average on each of the last ten round days the average rests on, oldest to newest.
+    expect(f.line).toEqual(Array(10).fill(72));
+  });
+  it('draws the line as the team’s average on each round day, the last ten days, not a point a round', () => {
+    // Three players on each of twelve days: thirty-six rounds, but one point a day, and each player's newest ten reach back to day 2.
+    const rounds: ChRound[] = [];
+    for (let d = 0; d < 12; d++) ['a', 'b', 'c'].forEach((p, i) => rounds.push(r(70 + d + i, 10, 30, { player: p, back: 11 - d })));
+    const full = rounds.sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id < b.id ? 1 : -1));
+    const f = teamForm(full, 0)!;
+    expect(f.line).toHaveLength(10);
+    // Day d's three scores are 70+d, 71+d and 72+d: a mean of 71+d. Days 2 to 11.
+    expect(f.line).toEqual([73, 74, 75, 76, 77, 78, 79, 80, 81, 82]);
+    // Rounds on one day average into one point.
+    expect(teamForm([r(70, 10, 30, { player: 'a', date: day(0) }), r(74, 10, 30, { player: 'b', date: day(0) }), r(71, 10, 30, { player: 'a', date: day(1) })].sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!.line).toEqual([71, 72]);
+  });
+  it('colours a change that rounds to zero as shown plain: "0.0" is neither a gain nor a loss (F-54)', () => {
+    const p = PREVIEW_HOME.phone;
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...p, form: { ...p.form!, delta: 0.03, gir: { pct: 61, delta: 0.4 }, putts: { avg: 30.4, delta: -0.04 } } } }} now={PREVIEW_HOME_NOW} />);
+    const form = document.querySelector('.ch-hm-form')!;
+    expect(form.querySelector('.ch-hm-delta')!.className).not.toMatch(/is-gain|is-loss/);
+    expect(form.querySelectorAll('dd.is-gain, dd.is-loss')).toHaveLength(0);
   });
   it('makes no comparison with fewer than three rounds before (the Stats rule), and nothing with no rounds', () => {
     expect(teamForm(newestFirst(12, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBeNull();

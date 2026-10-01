@@ -2,6 +2,26 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — The coach's team line is a day a point; a change of "0.0" is plain on both Homes
+
+```text
+PR/commit:      agent/swap-audit
+Data impact:    none
+```
+
+- **Issue.** The coach phone's team scoring line drew a five-round moving
+  average over every round in the window (about seventy points) and read as
+  noise. A change that rounds to zero ("0.0" putts) was painted amber, and a
+  strokes gained of "0.0" green, on both Homes.
+- **Fix.** `teamForm` draws the team's average on each of its last ten round
+  days (as Stats' scoring trend does), so the line has at most ten points. One
+  `changeTone` (`lib/format`) paints a change or a signed figure green or amber
+  only when it does not round to zero at the places it is shown with; the coach
+  strip, the player's scoring figures, the leg pills (a plain pill at "0.0"),
+  the latest round's SG and the desktop leaderboard and latest round use it.
+- **Checked.** home.test (the daily line, the zero tones) and
+  player-home-phone.test; the real coach Home at 390px.
+
 ## 2026-10-01 — The player's phone to the board: spacing, the scoring card, Today
 
 ```text

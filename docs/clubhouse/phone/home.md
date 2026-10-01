@@ -14,7 +14,7 @@ The boards: practice day, competition day, quiet day, no events, and a round's s
 | Up next card: type, countdown, title, time and place, who is going | `UpNext` → Calendar at that event (`?date=&event=`) | `data.phone.next`: the first team event not over yet, today or later in the loaded window; replies from `golf_event_attendance` |
 | No events (board 04): what the card holds, quick types, Add event | `NoEvents` (CH-2309) | quick types open the editor on that type (`?new=1&type=`) |
 | Today: a timeline with past, now and clash marks | `Today` → each row opens its event | `data.phone.today`; a clash is two of today's timed events overlapping |
-| Team scoring card: average, change, line, Rounds, GIR, Putts | `Form` | `data.phone.form` (`teamForm`): the last ten 18-hole rounds against the ten before; the line is a five-round moving average; Rounds counts this week's rounds |
+| Team scoring card: average, change, line, Rounds, GIR, Putts | `Form` | `data.phone.form` (`teamForm`): the last ten 18-hole rounds against the ten before; the line is the team's average on each of its last ten round days (as Stats' trend); Rounds counts this week's rounds |
 | This week strip, competition days dark, the next competition's note | `WeekStrip` → Calendar's day view | `data.week.days`, `data.phone.weekNote` |
 | Latest rounds → a round's sheet: figures, Out and In, Message, recap | `Rounds`, `RoundSheet` | `data.latestRounds` |
 

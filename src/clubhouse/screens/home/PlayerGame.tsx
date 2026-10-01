@@ -7,7 +7,7 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
-import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { formatHcp } from '../roster/format';
 
@@ -31,12 +31,6 @@ export function PlayerGame({ data, phone = false }: { data: ChPlayerHome; phone?
   );
 }
 
-/** A change in the scoring average: green when it fell (lower is better), amber when it rose, plain when it rounds to zero. */
-export function changeTone(delta: number | null, lowerIsBetter = true): '' | 'is-gain' | 'is-loss' {
-  if (delta == null || Math.abs(delta) < 0.05) return '';
-  return delta < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
-}
-
 /** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
 function commonPar(points: ChScoringPoint[]): number | null {
   const pars = points.map((p) => p.par).filter((v): v is number => v != null);
@@ -53,8 +47,8 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
   const delta = mean != null && prevMean != null ? mean - prevMean : null;
   const under = shown.filter((p) => p.par != null && p.score < p.par).length;
   const figs: Array<[string, string, string, string]> = [
-    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, changeTone(delta)],
-    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, data.sgPerRound == null ? '' : data.sgPerRound >= 0 ? 'is-gain' : 'is-loss'],
+    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, changeTone(delta, true)],
+    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
     ['Under par', shown.length ? `${under} of ${shown.length}` : NO_DATA, 'Rounds in this window', ''],
   ];
@@ -320,7 +314,7 @@ function Leg({ g }: { g: ChPlayerLeg }) {
         </span>
         <b id={`ch-ph-leg-${g.key}`}>{g.label}</b>
         {g.sg != null && (
-          <span className={'ch-ph-leg__sg ch-num ' + (g.sg >= 0 ? 'is-gain' : 'is-loss')}>
+          <span className={'ch-ph-leg__sg ch-num ' + (changeTone(g.sg, false) || 'is-flat')}>
             {formatSigned(g.sg)}
             <span className="ch-sr-only"> strokes gained a round this season</span>
           </span>
