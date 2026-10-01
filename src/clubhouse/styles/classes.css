@@ -1274,3 +1274,91 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Phone, from the owner's iPhone brief (2026-10-01): the term is one quiet line, the overlaps a row that leads to them,
+   today's classes come first, and on a card the class name leads while the course code is metadata. */
+.ch-cl-tb.is-compact {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+}
+/* On the green card: ivory, never the page's secondary ink. */
+.ch-cl-tb__one {
+  margin: 0;
+  font: 500 14px/20px var(--ch-font-sans);
+  color: var(--ch-ivory-100);
+}
+.ch-cl-tb.is-compact .ch-cl-tb__over {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-cl-tb.is-compact .ch-cl-tb__over span {
+  max-width: none;
+  font: 500 14px/20px var(--ch-font-sans);
+}
+.ch-cl-tb.is-compact .ch-cl-tb__over b {
+  font-size: 14px;
+  line-height: 20px;
+}
+.ch-cl-today h2 {
+  margin: 4px 0 8px;
+  font: 600 19px/25px var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-cl-today ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-cl-today__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 2px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1px solid var(--ch-border-subtle);
+  border-left: 4px solid var(--ch-cl-tf);
+  border-radius: 14px;
+  background: var(--ch-bg-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-cl-today__t {
+  grid-row: span 2;
+  font: 600 14px/20px var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-cl-today__n {
+  min-width: 0;
+  font: 600 16px/22px var(--ch-font-sans);
+  overflow-wrap: anywhere;
+}
+.ch-cl-today__m {
+  min-width: 0;
+  font: 400 13px/18px var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+@container chcl (max-width: 640px) {
+  .ch-cl-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  /* The overlaps come before the deck: something to act on beats the schedule itself. */
+  .ch-cl-grid > :last-child {
+    order: -1;
+  }
+  .ch-cl-card__code {
+    font-size: 15px;
+    letter-spacing: 0;
+    color: var(--ch-text-secondary);
+  }
+}

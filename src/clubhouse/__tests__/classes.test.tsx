@@ -1171,6 +1171,46 @@ describe('Classes, on the phone', () => {
     await user.click(headerButton('Add class'));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
   });
+
+  function phoneView(data: ChClassesPage) {
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <ClassesView data={data} writes={fakeWrites()} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+  }
+
+  it('iPhone brief: one "Classes" heading, the term in one line, today (or the next class day) before the deck', () => {
+    phoneView(PREVIEW_CLASSES);
+    expect(screen.getAllByRole('heading', { level: 1, name: 'Classes' })).toHaveLength(1);
+    expect(screen.getByRole('main', { name: 'Classes' })).toBeTruthy();
+    // The compact overview: no credit bar and no term line on the phone.
+    expect(document.querySelector('.ch-cl-tb.is-compact .ch-cl-tb__one')).not.toBeNull();
+    expect(document.querySelector('.ch-cl-tb__line')).toBeNull();
+    const today = document.querySelector('.ch-cl-today')!;
+    expect(today).not.toBeNull();
+    expect(today.compareDocumentPosition(document.querySelector('.ch-cl-deck')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('CH-12308 with no class today the list names the next day that has one, and its classes open', async () => {
+    const user = userEvent.setup();
+    // A Sunday in the preview term: nothing meets.
+    const sunday = { ...PREVIEW_CLASSES, todayIso: '2026-10-18' };
+    phoneView(sunday);
+    await waitFor(() => expect(code('CH-12308')).not.toBeNull());
+    expect(code('CH-12308')!.textContent).toMatch(/No classes today · next/);
+    const rows = within(code('CH-12308') as HTMLElement).getAllByRole('button');
+    expect(rows.length).toBeGreaterThan(0);
+    await user.click(rows[0]!);
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -11978,6 +11978,17 @@
     ]
   },
   {
+    "id": 120408,
+    "page": "P012",
+    "category": 4,
+    "item": 8,
+    "name": "PHONE_NO_CLASS_MEETS_TODAY",
+    "chCode": "CH-12308",
+    "meaning": "Phone: no class meets today",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 120501,
     "page": "P012",
     "category": 5,

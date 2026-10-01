@@ -68,6 +68,7 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 | CH-12304 | A class with times but no days | "Add the days this class meets." and a flag "No meeting days, not on your calendar" (a class with no days has no meetings to put on the calendar) | `ClassCard` | classes.test › CH-12303 CH-12304 |
 | CH-12305 | A player on no team | "You aren't on a team yet" + "Your classes go on your team's calendar so your coach can plan around them. Join a team, then add your classes." + Open team settings | `ClassesNoTeam` (server component) | classes.test › CH-12305 |
 | CH-12307 | An import where every class is already on the schedule | "Nothing new to import" · "Already on your schedule" + "That class is already on your schedule, so nothing was imported. Remove the existing entry first to import again." Nothing is synced. A skipped class the page has never seen (an earlier attempt saved it and its answer was lost) is not a repeat: it joins the page and is synced like a new one | `ImportedView` | classes.test › CH-12307 |
+| CH-12308 | Phone: no class meets today | Above the deck: "No classes today · next Tuesday, Oct 6" and that day's classes (time, name, room · code), each opening its class; with none in the next week, "No classes this week" | `TodayClasses` | classes.test › CH-12308 |
 
 ## 124xx Loading
 
