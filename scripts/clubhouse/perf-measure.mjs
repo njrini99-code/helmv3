@@ -8,7 +8,8 @@
  *   node scripts/clubhouse/perf-measure.mjs build [--ref HEAD]                 export a committed ref, `npm run build` it against the local stack (~10 minutes)
  *   node scripts/clubhouse/perf-measure.mjs serve [--port 3200]                 `next start`, detached, with the read tracer preloaded
  *   node scripts/clubhouse/perf-measure.mjs measure [--label before] [--runs 3] [--only home,stats] [--role coach,player] [--viewport 1280,390]
- *   node scripts/clubhouse/perf-measure.mjs report --before before --after after [--only home]   two saved runs side by side, as markdown
+ *   node scripts/clubhouse/perf-measure.mjs report --before before --after after [--only home] [--before-geometry <label> --after-geometry <label>]
+ *                                                                               two saved runs side by side, as markdown (geometry runs are their own `measure --only geometry`)
  *   node scripts/clubhouse/perf-measure.mjs stop                               stop the server
  *   node scripts/clubhouse/perf-measure.mjs remove                             delete the seeded team and its users (checked)
  *   node scripts/clubhouse/perf-measure.mjs status
@@ -275,7 +276,15 @@ try {
   else if (cmd === 'serve') await cmdServe(a);
   else if (cmd === 'stop') cmdStop();
   else if (cmd === 'status') cmdStatus();
-  else if (cmd === 'report') report({ stateDir: STATE_DIR, before: String(a.before ?? 'before'), after: String(a.after ?? 'after'), only: typeof a.only === 'string' ? a.only : undefined });
+  else if (cmd === 'report')
+    report({
+      stateDir: STATE_DIR,
+      before: String(a.before ?? 'before'),
+      after: String(a.after ?? 'after'),
+      only: typeof a.only === 'string' ? a.only : undefined,
+      beforeGeometry: typeof a['before-geometry'] === 'string' ? a['before-geometry'] : undefined,
+      afterGeometry: typeof a['after-geometry'] === 'string' ? a['after-geometry'] : undefined,
+    });
   else if (cmd === 'measure') {
     localStack();
     await measure({ ...a, stateDir: STATE_DIR, readsFile: READS_FILE, seed: readSeed(), port: Number(a.port ?? 3200), root: ROOT });

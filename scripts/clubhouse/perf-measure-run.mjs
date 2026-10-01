@@ -30,7 +30,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** Installed before any page script runs. Plain function: Playwright serialises it. */
 function probe() {
   if (window.__perf) return;
-  const P = (window.__perf = { t0: 0, target: null, startPath: '', shifts: [], long: [], tl: [], skelAt: null, contentAt: null, lcp: null, fcp: null, clickAt: null, armed: false });
+  const P = (window.__perf = { t0: 0, target: null, startPath: '', shifts: [], long: [], events: [], tl: [], skelAt: null, contentAt: null, lcp: null, fcp: null, clickAt: null, armed: false });
   const watch = (type, fn) => {
     try {
       new PerformanceObserver((l) => l.getEntries().forEach(fn)).observe({ type, buffered: true });
@@ -50,6 +50,12 @@ function probe() {
     P.shifts.push([e.startTime, e.value, e.hadRecentInput, (e.sources || []).slice(0, 3).map((src) => ({ el: describe(src.node), from: box(src.previousRect), to: box(src.currentRect) }))]),
   );
   watch('longtask', (e) => P.long.push([e.startTime, e.duration]));
+  // Interactions (taps, keys): from the input to the next paint. INP is the longest of a run's.
+  try {
+    new PerformanceObserver((l) => l.getEntries().forEach((e) => e.interactionId && P.events.push([e.startTime, e.duration, e.name]))).observe({ type: 'event', buffered: true, durationThreshold: 16 });
+  } catch {
+    /* unsupported entry type */
+  }
   watch('largest-contentful-paint', (e) => (P.lcp = e.startTime));
   watch('paint', (e) => {
     if (e.name === 'first-contentful-paint') P.fcp = e.startTime;
@@ -180,6 +186,7 @@ async function snapshot(page) {
       contentAt: P.contentAt,
       shifts: P.shifts,
       long: P.long,
+      events: P.events,
       tl: P.tl,
       lcp: P.lcp,
       fcp: P.fcp,
@@ -213,6 +220,13 @@ function figures(snap, trace, cold) {
     shiftCount: shifts.length,
     shifts: shifts.map(([t, v, input, src]) => ({ t: r1(t - t0), v: Math.round(v * 10000) / 10000, input, src })),
     long: { count: long.length, ms: r1(long.reduce((a, [, d]) => a + d, 0)), max: r1(Math.max(0, ...long.map(([, d]) => d))), tbt: r1(long.reduce((a, [, d]) => a + Math.max(0, d - 50), 0)) },
+    // The tap's own duration to the next paint (null on a cold load, or when the tap took under 16 ms).
+    inp: cold
+      ? null
+      : (() => {
+          const ev = (snap.events ?? []).filter(([t]) => t >= t0 - 1);
+          return ev.length ? r1(Math.max(...ev.map(([, d]) => d))) : null;
+        })(),
     timeline: tl,
     server: summariseTrace(trace),
     heading: snap.heading,
@@ -305,6 +319,7 @@ function summarise(runs) {
     clsRaw: Math.max(...runs.map((r) => r.clsRaw)),
     longCount: pick((r) => r.long.count),
     tbt: r1(pick((r) => r.long.tbt)),
+    inp: r1(pick((r) => r.inp)),
     reads: pick((r) => r.server.reads),
     readMs: r1(pick((r) => r.server.readMs)),
     waves: pick((r) => r.server.waves),
@@ -518,10 +533,10 @@ export async function measure(opts) {
   const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: '4x CPU (CDP)', rows, runs: all, geometry: geo };
   const file = join(stateDir, 'results', `${label}.json`);
   writeFileSync(file, JSON.stringify(out, null, 2));
-  const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | TBT ms | reads | read ms | waves | server ms | doc KB | JS KB | flash |';
+  const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | TBT ms | INP ms | reads | read ms | waves | server ms | doc KB | JS KB | flash |';
   console.log(head);
   console.log(head.replace(/[^|]/g, '-'));
-  for (const r of rows) console.log(`| ${r.key} | ${r.skeleton ?? '-'} | ${r.content ?? '-'} | ${r.lcp ?? '-'} | ${r.cls} | ${r.clsRaw} | ${r.longCount} | ${r.tbt} | ${r.reads} | ${r.readMs} | ${r.waves} | ${r.serverMs} | ${r.docKB ?? '-'} | ${r.jsKB ?? '-'} | ${r.flash ? 'YES' : ''} |`);
+  for (const r of rows) console.log(`| ${r.key} | ${r.skeleton ?? '-'} | ${r.content ?? '-'} | ${r.lcp ?? '-'} | ${r.cls} | ${r.clsRaw} | ${r.longCount} | ${r.tbt} | ${r.inp ?? '-'} | ${r.reads} | ${r.readMs} | ${r.waves} | ${r.serverMs} | ${r.docKB ?? '-'} | ${r.jsKB ?? '-'} | ${r.flash ? 'YES' : ''} |`);
   if (geo.length) {
     console.log('\nSkeleton geometry against the loaded page (top / height in px from the page top; delta = loaded - skeleton)\n');
     console.log('| case | landmark | skeleton | loaded | top delta | height delta |');
@@ -536,10 +551,14 @@ export async function measure(opts) {
  * A before and an after run side by side, as markdown (what docs/clubhouse/PROGRESS.md carries): per case, the figures that moved, as
  * "before -> after". `only` filters by a substring of the case name; cold loads, navigations and switches are separate tables.
  */
-export function report({ stateDir, before, after, only }) {
+export function report({ stateDir, before, after, only, beforeGeometry, afterGeometry }) {
   const load = (label) => JSON.parse(readFileSync(join(stateDir, 'results', `${label}.json`), 'utf8'));
   const b = load(before);
   const a = load(after);
+  // Geometry is its own pass (`measure --only geometry`), saved under its own label.
+  const geometryOf = (run, label) => (label ? load(label).geometry : run.geometry);
+  const bGeo = geometryOf(b, beforeGeometry);
+  const aGeo = geometryOf(a, afterGeometry);
   const byKey = (run) => new Map(run.rows.map((r) => [r.key, r]));
   const bm = byKey(b);
   const pair = (x, y, digits = 0) => {
@@ -551,17 +570,29 @@ export function report({ stateDir, before, after, only }) {
     const rows = a.rows.filter((r) => r.key.split(' | ')[1] === kind && (!only || r.key.includes(only)));
     if (!rows.length) continue;
     out.push(`\n${kind === 'cold' ? 'Cold load' : kind === 'nav' ? 'Navigation (tap from a settled page)' : 'Switch (window or tab)'}\n`);
-    out.push('| case | content ms | CLS (raw) | long tasks / TBT ms | reads | waves | server ms |' + (kind === 'switch' ? ' flash |' : ''));
-    out.push('| --- | --- | --- | --- | --- | --- | --- |' + (kind === 'switch' ? ' --- |' : ''));
+    out.push(`| case | ${kind === 'cold' ? 'LCP ms | ' : ''}content ms | CLS (raw) | long tasks / TBT ms | INP ms | reads | waves | server ms |` + (kind === 'switch' ? ' flash |' : ''));
+    out.push(`| --- | ${kind === 'cold' ? '--- | ' : ''}--- | --- | --- | --- | --- | --- | --- |` + (kind === 'switch' ? ' --- |' : ''));
     for (const r of rows) {
       const o = bm.get(r.key);
       if (!o) continue;
       const [who, kindName, scenario] = r.key.split(' | ');
       out.push(
-        `| ${who} ${scenario} | ${pair(o.content, r.content)} | ${pair(o.clsRaw, r.clsRaw, 3)} | ${pair(o.longCount, r.longCount)} / ${pair(o.tbt, r.tbt)} | ${pair(o.reads, r.reads)} | ${pair(o.waves, r.waves)} | ${pair(o.serverMs, r.serverMs)} |` +
+        `| ${who} ${scenario} | ${kind === 'cold' ? `${pair(o.lcp, r.lcp)} | ` : ''}${pair(o.content, r.content)} | ${pair(o.clsRaw, r.clsRaw, 3)} | ${pair(o.longCount, r.longCount)} / ${pair(o.tbt, r.tbt)} | ${pair(o.inp, r.inp)} | ${pair(o.reads, r.reads)} | ${pair(o.waves, r.waves)} | ${pair(o.serverMs, r.serverMs)} |` +
           (kind === 'switch' ? ` ${o.flash ? 'YES' : 'no'} -> ${r.flash ? 'YES' : 'no'} |` : ''),
       );
       void kindName;
+    }
+  }
+  // Skeleton geometry (rule 5): the loaded page's landmark minus the skeleton's, before -> after (0 is a skeleton that is the page's geometry).
+  if (aGeo?.length && bGeo?.length) {
+    out.push('\nSkeleton geometry: how far each landmark moves when the page lands (px; top / height)\n');
+    out.push('| case | landmark | before | after |');
+    out.push('| --- | --- | --- | --- |');
+    const delta = (l) => (l?.skeleton && l?.loaded ? `${l.loaded[0] - l.skeleton[0]} / ${l.loaded[1] - l.skeleton[1]}` : '-');
+    for (const g of aGeo) {
+      const og = bGeo.find((x) => x.role === g.role && x.viewport === g.viewport && x.scenario === g.scenario);
+      if (!og || (only && !g.scenario.includes(only))) continue;
+      for (const l of g.landmarks) out.push(`| ${g.role} ${g.viewport} ${g.scenario} | ${l.sel} | ${delta(og.landmarks.find((x) => x.sel === l.sel))} | ${delta(l)} |`);
     }
   }
   console.log(out.join('\n'));
