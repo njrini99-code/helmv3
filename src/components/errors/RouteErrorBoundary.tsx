@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { startTransition, useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   logError,
@@ -152,17 +153,24 @@ export function RouteErrorBoundary({
     }
   }, [isChunk, isStaleAction, error]);
 
+  const router = useRouter();
   const handleRetry = useCallback(async () => {
     setIsRetrying(true);
     // Small delay before retry
     await new Promise(resolve => setTimeout(resolve, 1000));
     setRetryCount(prev => prev + 1);
     try {
-      reset();
+      // Re-read the route on the server, then clear the boundary, in one transition: what Next's own `retry` does.
+      // `reset()` alone redraws the payload that failed, so a server-thrown read never got another try (PAGE_PERFORMANCE.md
+      // rule 4: a first-load error offers a retry that retries).
+      startTransition(() => {
+        router.refresh();
+        reset();
+      });
     } finally {
       setIsRetrying(false);
     }
-  }, [reset]);
+  }, [reset, router]);
 
   useEffect(() => {
     // Log error to monitoring service
@@ -399,6 +407,12 @@ export function CompactRouteErrorBoundary({
       digest: error.digest,
     }, 'medium');
   }, [error, route, component]);
+  const router = useRouter();
+  // Re-read on the server, then clear the boundary (Next's own `retry`); `reset()` alone redraws the failed payload.
+  const retry = () => startTransition(() => {
+    router.refresh();
+    reset();
+  });
 
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center font-fw-sans">
@@ -442,7 +456,7 @@ export function CompactRouteErrorBoundary({
         <Button variant="secondary" onClick={() => window.location.reload()}>
           Refresh Page
         </Button>
-        <Button variant="primary" onClick={reset}>
+        <Button variant="primary" onClick={retry}>
           Try Again
         </Button>
       </div>
