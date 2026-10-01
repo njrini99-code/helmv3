@@ -2,6 +2,23 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Phone to the board; smooth window changes (F-54, F-55)
+
+```text
+PR/commit:      agent/swap-audit
+Contract IDs:   CH-4402 (behaviour refined, row unchanged)
+Data impact:    none
+```
+
+- **Fix.** Changing the window no longer flashes twice and jumps: a live page
+  that goes busy keeps its content (the skeleton fade-in applied to it too), and
+  the first-paint reveal plays once per page instead of again when the busy
+  state ends. The window switch moves on the tap; only the figures dim, and the
+  header and switch stay crisp.
+- **Fix (phone).** The board's figure strip, panel titles, green notes and bar
+  colours; captions no longer drawn at figure size; a change that rounds to zero
+  is neutral.
+
 ## 2026-09-30 — Last 10 across seasons; total-only rounds count (Q-122, Q-123)
 
 ```text

@@ -1006,7 +1006,7 @@ describe('Stats player · network', () => {
     }
   });
 
-  it('CH-5402 while the new window loads the page is marked busy, and it stays the last 10 rounds until the server answers', async () => {
+  it('CH-5402 while the new window loads the page is marked busy: the switch moves on the tap, the figures stay the last 10 rounds until the server answers', async () => {
     const user = userEvent.setup();
     router.push.mockImplementation(() => new Promise(() => {}));
     try {
@@ -1015,7 +1015,9 @@ describe('Stats player · network', () => {
       await user.click(screen.getByRole('radio', { name: 'Season' }));
       await waitFor(() => expect(document.querySelector('.ch-st')!.getAttribute('aria-busy')).toBe('true'));
       expect(code('CH-5402')).not.toBeNull();
-      expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
+      // F-55: the switch answers the tap at once; what is still the last 10 rounds is the figures, dimmed under it.
+      expect(screen.getByRole('radio', { name: 'Season' }).getAttribute('aria-checked')).toBe('true');
+      expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('false');
     } finally {
       router.push.mockReset();
     }

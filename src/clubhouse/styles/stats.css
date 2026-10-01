@@ -15,8 +15,22 @@
   gap: 18px;
   min-width: 0;
 }
+.ch-st {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
 .ch-st[aria-busy='true'] {
   opacity: 0.6;
+}
+/* The phone keeps its header and the window switch crisp while the figures below wait (F-55): the switch has
+   already moved, so only what is changing dims, and it eases rather than snapping. */
+.ch-st.is-phone[aria-busy='true'] {
+  opacity: 1;
+}
+.ch-st.is-phone .ch-stm > * {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-st.is-phone[aria-busy='true'] .ch-stm > :not(.ch-stm-head):not(.ch-spm-head):not(.ch-stm-controls) {
+  opacity: 0.55;
 }
 .ch-st-head {
   padding-bottom: 22px;
@@ -2595,5 +2609,19 @@ a.ch-lg__r:focus-visible {
   }
   .ch-gd.is-phone .ch-gx-more > summary {
     padding: 0 16px;
+  }
+}
+
+/* The SG figure's caption: the baseline, then the change on its own short line (F-54). */
+@media (max-width: 820px) {
+  .ch-stm-figs dd.ch-stm-sgsub {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .ch-stm-figs dd.ch-stm-sgsub .ch-sgchg {
+    display: inline-flex;
+    gap: 4px;
+    white-space: nowrap;
   }
 }

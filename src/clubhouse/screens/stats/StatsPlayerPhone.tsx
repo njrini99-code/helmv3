@@ -20,7 +20,7 @@ import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/forma
 import { sgBaseline } from '../../lib/sg';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
-import { SgBars } from './charts';
+import { SgBars, SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -47,6 +47,7 @@ export function StatsPlayerPhone({
   initialTab,
   playerHref,
   messageHref,
+  windowShown,
   onWindow,
   onFilter,
   onBackToTeam,
@@ -58,6 +59,8 @@ export function StatsPlayerPhone({
   /** This page's own address (player and window), for Share. */
   playerHref: string;
   messageHref: string | null;
+  /** The window the switch shows: the one being loaded once tapped (F-55). */
+  windowShown?: ChWindow;
   onWindow: (w: ChWindow) => void;
   /** Any change of the round filter: the page's offline refusal, slow notice, then the new address. */
   onFilter: (next: ChFilter) => void;
@@ -130,7 +133,7 @@ export function StatsPlayerPhone({
       </header>
 
       <div className="ch-stm-controls">
-        <WindowSwitch value={data.window} onChange={onWindow} custom={hasRange(data.filter)} />
+        <WindowSwitch value={windowShown ?? data.window} onChange={onWindow} custom={hasRange(data.filter)} />
         {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone />}
       </div>
 
@@ -219,8 +222,10 @@ function Figures({ data }: { data: ChPlayerProfile }) {
       <div>
         <dt>SG / round</dt>
         <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound)}</dd>
-        <dd className={'ch-num' + (d == null || Math.abs(d) < 0.05 ? '' : d > 0 ? ' ch-gain' : ' ch-loss')} data-ch-code={w.sgPerRound != null && d == null ? 'CH-5310' : undefined}>
-          {w.sgPerRound == null ? 'After three rounds' : d != null ? `${formatSigned(d)} vs before` : sgBaseline(data.tour).vs}
+        {/* The baseline is always named (ST-16); the change chip only when there is a change. "No earlier rounds" was filler. */}
+        <dd className="ch-stm-sgsub">
+          {w.sgPerRound == null ? 'After three rounds' : sgBaseline(data.tour).vs}
+          {w.sgPerRound != null && d != null && <SgChangeChip change={data.sgChange} code="CH-5310" />}
         </dd>
       </div>
       <div>

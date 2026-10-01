@@ -43,12 +43,17 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
-const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void }>({ filter: filterFor(), go: () => {} });
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChWindow }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
 
 /** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
 export function useGoWindow() {
   const { filter, go } = useContext(GoFilter);
   return (w: ChWindow) => go(withWindow(filter, w));
+}
+
+/** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
+export function useShownWindow(): ChWindow {
+  return useContext(GoFilter).shown;
 }
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
@@ -81,7 +86,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     start(() => router.push(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoFilter.Provider value={{ filter: current, go }}>
+    <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
       <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
@@ -113,7 +118,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
   };
   return (
     <div className="ch-st-head__act">
-      <WindowSwitch value={filter.window} onChange={go} custom={hasRange(filter)} />
+      <WindowSwitch value={useShownWindow()} onChange={go} custom={hasRange(filter)} />
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
         <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)}>

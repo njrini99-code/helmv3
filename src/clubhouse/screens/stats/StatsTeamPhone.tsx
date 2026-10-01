@@ -16,7 +16,7 @@ import { sgBaseline } from '../../lib/sg';
 import { SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
-import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow } from './StatsTeamIslands';
+import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow, useShownWindow } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
@@ -35,6 +35,7 @@ type Sort = 'avg' | 'sg';
  */
 export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const go = useGoWindow();
+  const shown = useShownWindow();
   const noRounds = !data.roundsError && data.roundCount === 0;
   // D-71's first-run page is for no round of either length: a team with only 9-hole rounds gets CH-4301 and the CH-4319 hint instead.
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
@@ -50,7 +51,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       </header>
       {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
       <div className="ch-stm-controls">
-        <WindowSwitch value={data.window} onChange={go} custom={hasRange(data.filter)} />
+        <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
         {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
       </div>
       {data.roundsError && <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />}

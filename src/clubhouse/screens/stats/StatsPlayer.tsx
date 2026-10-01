@@ -147,6 +147,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           initialTab={initialTab}
           playerHref={href(data.id, data.filter)}
           messageHref={messageHref}
+          windowShown={(loading ?? data.filter).window}
           onWindow={changeWindow}
           onFilter={changeFilter}
           onBackToTeam={() => go(null, data.filter)}
@@ -247,7 +248,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
             </button>
           ))}
         </div>
-        <WindowSwitch value={data.window} onChange={changeWindow} custom={hasRange(data.filter)} />
+        {/* The switch moves on the tap: the window being loaded, not the one whose figures are still showing (F-55). */}
+        <WindowSwitch value={(loading ?? data.filter).window} onChange={changeWindow} custom={hasRange(data.filter)} />
       </div>
 
       {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}
