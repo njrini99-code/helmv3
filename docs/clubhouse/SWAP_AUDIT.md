@@ -36,7 +36,7 @@ affects no customer until the flag is flipped.
 | Calendar | **Blocked / not exercised** at runtime (no isolated DB session run yet); source reviewed; deep link `?event=` wired | §3 notifications |
 | Stats and visuals | **Source reviewed**; parity register `pages/P005-stats-player/PARITY.md` (87 rows); formula fixtures not rerun at the train SHA | PARITY.md |
 | Qualifiers | **Open**: F-03 tie inconsistency, source-confirmed; the tie policy is an owner decision | F-03 |
-| Messages | Deep link `?conversation=` verified in source and by `messages.test.tsx`; two-session realtime **not exercised** | §3 |
+| Messages | **Passed**: two-session journey on the local stack, 7/7 (see the runtime journeys below); deep link `?conversation=` verified | §4 |
 | CoachHelm | **Open**: F-04 views not rebuilt | F-04 |
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
 | Phone/accessibility | **Blocked / not exercised**: needs the owner's iPhone pass on the preview | — |
@@ -130,6 +130,28 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 | F-24 | P2 (CI) | Reproduced (#2110) | Markdown lint up about 13.6k across Clubhouse docs, 11.6k of it long table lines. | Blank-line rules auto-fixed; the owner approved a one-time `markdown:ratchet --update` (Q-107) |
 | F-25 | P3 (CI) | Reproduced (#2110) | Calendar test 10703 loops every write scenario and passed the 5s default on CI. | 20s timeout on that test, assertions unchanged |
 | F-26 | P3 (CI) | Reproduced (CodeQL on #2110) | `scripts/clubhouse/registry.mjs` escaped `\|` in table cells without escaping `\\` first (`js/incomplete-sanitization`, two sites). | **Fixed** `1db53f553`; no generated doc changed; registry tests 15/15 |
+
+### Later findings and runtime journeys (2026-09-30, evening)
+
+- **F-27 (P2, Reproduced on CI #2110, fixed `4116e3a58`).** A toast's dismiss
+  timer outlived its provider and called setState after unmount (CI: "window is
+  not defined" after `roster.test.tsx`). The provider now clears its timers on
+  unmount. Test: `toast-timers.test.tsx`.
+- **Messages, two signed-in sessions (Passed, local stack, train `42330584c`).**
+  Local Supabase with every migration replayed (held included); a synthetic
+  coach and two players; dev server pointed at `127.0.0.1:54321`, with email,
+  push, Sentry, Stripe and the AI key blanked. 7 of 7 checks passed:
+  - the coach starts a direct thread and sees the sent message;
+  - the message is stored and readable by the recipient under RLS;
+  - the other teammate cannot read it (RLS, 0 rows);
+  - the recipient sees it in Clubhouse Messages and replies;
+  - the coach receives the reply live, without a reload (Realtime);
+  - the reply persists across a reload;
+  - the other teammate does not see the thread in the UI.
+- **Calendar, two sessions: Blocked / not exercised yet.** The laptop guard
+  stopped the run when swap reached 12 GB and free disk fell to 14 GB (dev
+  server, Chromium and Docker together). The stack was stopped; the seeded data
+  is kept for a rerun.
 
 ## 5. Schema compatibility (flag-off deploy with no migration applied)
 
