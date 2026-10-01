@@ -7,8 +7,9 @@
  * implementation files are the manifest's implementation.root (a directory or a
  * file), loader, route and styles, and an action's component file that only this page names.
  * Tests (`__tests__`, `*.test.*`, `*.spec.*`) never trigger it. When no base can be
- * resolved (a shallow clone, no remote) the gate is skipped and says so; CI's
- * checkouts use fetch-depth 0, so it can enforce there.
+ * resolved (a shallow clone, no remote) the gate is skipped and says so. No CI job
+ * runs clubhouse:check today, so it is enforced locally, before work is reported
+ * done; ci.yml checks out with fetch-depth 0, so a CI job could resolve the base.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -24,7 +25,8 @@ const componentFiles = (m) => [...new Set((m.actions ?? []).map((a) => a.compone
  * The paths a page owns (tests excluded): implementation.root, loader, route and
  * styles, plus an action's component file that lies outside them when no other
  * page's actions name it. A shared piece (src/clubhouse/ui/Notices.tsx serves
- * five pages) belongs to none; its change is recorded in docs/clubhouse/CHANGELOG.md.
+ * five pages) belongs to none. A root, loader, route or styles path that two
+ * manifests share (stats: P004 and P005) counts for both.
  */
 export function implementationPaths(m, manifests = [m]) {
   const impl = m.implementation ?? {};
