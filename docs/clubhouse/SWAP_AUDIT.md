@@ -32,7 +32,7 @@ affects no customer until the flag is flipped.
 | --- | --- | --- |
 | Baseline | **Passed** | §1 |
 | Complete shell swap | **Open**: route gaps in §3; the owner decides build, alias or retire (after this audit) | route table §3 |
-| Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). **Open**: F-02 (recovery unreachable with the flag on), Q-119 (cross-device discard), Q-120 (held submit version check); device fault-injection on a real phone not run | F-02, R-1..R-12, Q-119, Q-120 |
+| Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). F-02 (recovery unreachable with the flag on) is fixed (`4d5f3f565`; source and unit tests, not run on a phone). **Open**: Q-119 (cross-device discard), Q-120 (held submit version check); device fault-injection on a real phone not run | F-02, R-1..R-12, Q-119, Q-120 |
 | Calendar | **Source-confirmed fixes, runtime not exercised**: 9 bugs fixed (`ac64ba366`, `696b49570`); write journeys on the Demo team pending (they notify the whole roster: check Demo members' email and push first). Open: CAL-05 (series across the clock change), Q-108 (fan-out to the whole roster), create idempotency (in progress) | §4 Calendar |
 | Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). SG and Qualifiers reconciled (§4); stale stored SG on 7 rounds waits on the recompute. Open: Q-112 (comparison cohort) | §4 §10 Stats gate |
 | Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Open: Q-104/Q-114 tie at the cut (name order now decides it everywhere), Q-115..Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
@@ -58,7 +58,8 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   `new`, `[id]`, `[id]/edit`, `[id]/selection`), `team-hub`, `settings` (plus
   `notifications`, `coaching-intelligence`), `rounds/[uuid]`.
 - **Player:** `/golf/dashboard`, `coachhelm`, `calendar`, `team-hub`,
-  `messages`, `rounds`, `rounds/new`, `rounds/[uuid]`, `rounds/continue/[uuid]`,
+  `messages`, `rounds`, `rounds/new`, `rounds/recover` (F-02), `rounds/[uuid]`,
+  `rounds/continue/[uuid]`,
   `classes`, `stats`, `qualifiers`, `my-qualifiers`, `settings` (plus both
   sub-pages).
 - **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
@@ -76,7 +77,6 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
 
 | Route | Role | Today (flag on) | Suggested destination |
 | --- | --- | --- | --- |
-| `/rounds/recover` | player | NotRebuilt | **Build** (P0, F-02): a Clubhouse recover screen over `lib/offline/indexed-db` + `shot-storage` + `round-missing-recovery` |
 | `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | NotRebuilt | Alias to `coachhelm` (`?player=` kept) |
 | `coachhelm?view=development\|profile\|standing\|deep-dive`; `/my-development`, `/my-game-profile`, `/my-standing` | player | NotRebuilt (F-04) | Alias: development and deep dive go to `coachhelm`; profile and standing go to `stats`. Or build |
 | `/players/[id]`, `/players/[id]/game`, `/game/print`, `/genome`; `/coachhelm/genome/[id]` | coach | NotRebuilt | Alias to `stats?player=<id>` |
@@ -112,7 +112,7 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 | ID | Sev | Label | Finding | Disposition |
 | --- | --- | --- | --- | --- |
 | F-01 | Blocker (flag on) | Source-confirmed | NotRebuilt for supported routes (§3). | Owner picks build, alias or retire per row, after the audit |
-| F-02 | P0 (flag on) | Source-confirmed | With the flag on, a player cannot reach round recovery. `NewRound`/`ContinueRound` send the engine's `recover` destination to `/rounds` (`ENGINE_ROUTES`). `RoundsLibrary` reads server rounds only (in-progress `limit(20)`) and never reads `getPendingRounds`, `getFailedRounds` or `getRoundRecoverySnapshots`. A round saved only on the device can be neither seen nor restored in Clubhouse. | Open: build the recover screen (the §3 row). Stop condition for a player flag flip |
+| F-02 | P0 (flag on) | Source-confirmed | With the flag on, a player cannot reach round recovery. `NewRound`/`ContinueRound` send the engine's `recover` destination to `/rounds` (`ENGINE_ROUTES`). `RoundsLibrary` reads server rounds only (in-progress `limit(20)`) and never reads `getPendingRounds`, `getFailedRounds` or `getRoundRecoverySnapshots`. A round saved only on the device can be neither seen nor restored in Clubhouse. | **Fixed** `4d5f3f565`: `/rounds/recover` is rebuilt for a player (`screens/rounds/recover/`). The engines' recover route is it (`entry/routes.ts`, `?from=submit`). It lists only the signed-in player's device rounds (recovery journal, failed-submit queue, old database, emergency save; one card per round) and offers Restore (Fairway's recovery, ported), Retry sync (`getSyncEngine().retryFailed`) and Discard after a question (the Library's discard, then every device copy and the tombstone). Tests `rounds-recover.test`, `rounds-recover-ports.test`. A discard guard for a queue row with no round id is in `f6002eaab`. Not run on a phone or against a real failed submit. The Library does not link to the screen (a player reaches it from a failed submit, as on Fairway). Fairway's scan logic is duplicated, not shared, until Fairway is retired |
 | F-03 | P1 | Source-confirmed | Leaderboard `buildBoard` (`screens/qualifiers/model.ts`) shares positions on equal to-par and total, orders ties by rounds played then name, and sets the automatic slots by that order. Selection `rankCandidates` (`lib/coachhelm/v3/qualifying/loader.ts`) assigns unique ranks in input order after to-par and total, and `classifySlots` uses them. A tie across the last automatic slot can put a different player in by each view. | Owner decision (Q-104). Oracle test to be written with the chosen rule |
 | F-04 | P1 | Source-confirmed | `routes/coachhelm.tsx` `VIEWS_NOT_REBUILT`: development, profile, standing, deep-dive. | Owner decision (§3) |
 | F-05 | P0 gate | Documented, not reverified | Authenticated writes on the candidate, fault injection and the iPhone pass have not run. | Preview pass by the owner (§6); local-Supabase journeys still to do |

@@ -110,7 +110,13 @@ The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and `rounds-course.js
 
 ## Recovery: the device's rounds
 
-`/golf/dashboard/rounds/recover` (swap audit F-02), built in `src/clubhouse/screens/rounds/recover/`. There is no owner board: it is Fairway's recovery flow (`FairwayRecoverRound`) drawn with the library's pieces, so the grammar is the library's. It is where the engines send a submit that could not reach the server (`?from=submit`), and it reads only the device: the recovery journal and the failed-submit queue in IndexedDB, the old `golf_offline_db`, and the emergency save in localStorage.
+`/golf/dashboard/rounds/recover` (swap audit F-02), built in
+`src/clubhouse/screens/rounds/recover/`. There is no owner board: it is
+Fairway's recovery flow (`FairwayRecoverRound`) drawn with the library's
+pieces, so the grammar is the library's. It is where the engines send a submit
+that could not reach the server (`?from=submit`), and it reads only the
+device: the recovery journal and the failed-submit queue in IndexedDB, the old
+`golf_offline_db`, and the emergency save in localStorage.
 
 | Piece | Read | Write |
 | --- | --- | --- |
@@ -120,9 +126,23 @@ The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and `rounds-course.js
 | Retry sync (queue rounds only) | The queue | `getSyncEngine().retryFailed()`, then the device is read again |
 | Discard, after a question | none | `deleteInProgressRound` when the server holds the round (the Library's discard), then every device copy, and the mark the round screens and the queue's drain honour |
 
-- The top bar is a pushed screen's: "Recover", with "‹ Rounds". The page keeps its own header. On the desktop the way back is a button in the header (and the empty page's own action).
-- Below 820px the page is one column with the Library's padding, the actions are 44px, Restore takes the card's width and Retry sync and Discard share the row under it.
-- The discard question is a Modal, a bottom sheet on the phone. It says what goes, and that a round already submitted is not touched.
-- States: loading CH-11408 (the route) and CH-11409 (reading the device), the device can't be read CH-11212, nothing to recover CH-11314, opened from a failed submit CH-11911. Restore, Retry sync and Discard fail with CH-11017, CH-11018 and CH-11019, and Discard asks first (CH-11520). Full list: `docs/clubhouse/catalog/rounds.md`.
-- A round restored from here opens the shot screen with the device copy offered back (CH-11512), as Fairway's does.
-- Not built: a link from the Library. A player reaches this screen from a failed submit, or by its address, as on Fairway.
+- The top bar is a pushed screen's: "Recover", with "‹ Rounds". The page keeps
+  its own header. On the desktop the way back is a button in the header (and
+  the empty page's own action).
+- Below 820px the page is one column with the Library's padding, the actions
+  are 44px, Restore takes the card's width and Retry sync and Discard share
+  the row under it.
+- The discard question is a Modal, a bottom sheet on the phone. It says what
+  goes, and that a round already submitted is not touched.
+- A queued round with no round id (a finished round that never reached the
+  server) does not own the emergency save under the null key: that key is the
+  current new-round draft, so Discard and Restore leave it alone.
+- States: loading CH-11408 (the route) and CH-11409 (reading the device), the
+  device can't be read CH-11212, nothing to recover CH-11314, opened from a
+  failed submit CH-11911. Restore, Retry sync and Discard fail with CH-11017,
+  CH-11018 and CH-11019, and Discard asks first (CH-11520). Full list:
+  `docs/clubhouse/catalog/rounds.md`.
+- A round restored from here opens the shot screen with the device copy
+  offered back (CH-11512), as Fairway's does.
+- Not built: a link from the Library. A player reaches this screen from a
+  failed submit, or by its address, as on Fairway.
