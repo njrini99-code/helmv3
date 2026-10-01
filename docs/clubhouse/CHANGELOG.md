@@ -2,6 +2,15 @@
 
 Every Clubhouse change with the issue it fixed, newest first. Each page's own changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-01 (CI on PR #2111)
+
+| Page | Issue | Fix |
+| --- | --- | --- |
+| Roster | **Lint ratchet up by one (`react-hooks/exhaustive-deps`, 59 to 60).** The effect that restores the saved view called `setView` with an empty dependency list. | `setView` is listed. It is `useChSessionState`'s `useState` setter, so its identity never changes and the effect still runs once: no behaviour change, the warning count is back to baseline. |
+| Dashboard layout (Fairway and Clubhouse) | **Two layout tests failed: `dashboard-layout-onboarding-retry.test.ts`.** `0dfa3ee47` moved the coach's team lookup to `dashboard-request-cache.ts`, which calls the three-way `resolveCoachActiveTeam`; the test's `resolve-team` mock only had `resolveCoachActiveTeamId`, so the layout threw. The test read the throw as "still waiting", which is why it looked like a timing failure. | The mock adds `resolveCoachActiveTeam` returning `{ status: 'ok', teamId: 'team-1' }`, the same team the old mock pinned. Assertions unchanged; 5 of 5 pass. Found by catching the rejected render, not by loosening the wait. |
+| E2E seed | **Review Gate ast-grep `helmv3-no-service-role-key`.** `e2e/helpers/clubhouse-local-seed.ts` read `SUPABASE_SERVICE_ROLE_KEY` from the environment directly. | It reads through `tryGetSecretKey()` (`src/lib/supabase/keys.mjs`), the repo's one sanctioned reader. The helper still refuses any URL that isn't localhost, so the key can only ever reach a local stack. |
+| Perf harness | **CodeQL `js/file-system-race` (two) and `js/http-to-file-access` (one)** in local-only scripts. | `perf-measure.mjs`: the seed file is created exclusively (`flag: 'wx'`), so two runs can't both write it; the production-reference scan reads size and contents from one open file descriptor, so the file checked is the file read. `perf-fetch-trace.cjs` writing request timings to a file is the script's purpose (local stack only, opt-in by `HELM_PERF_TRACE_FILE`); that alert is dismissed as won't-fix, the same as `scripts/schema.mjs`. |
+
 ## 2026-09-30
 
 | Page | Issue | Fix |

@@ -58,6 +58,8 @@ vi.mock('@/components/golf/theme/ThemeApplier', () => ({
 // retry branch.
 vi.mock('@/lib/golf/resolve-team', () => ({
   resolveCoachActiveTeamId: vi.fn(async () => 'team-1'),
+  // The layout now resolves through dashboard-request-cache, which calls the three-way resolver (0dfa3ee47).
+  resolveCoachActiveTeam: vi.fn(async () => ({ status: 'ok', teamId: 'team-1' })),
   getCoachTeamSwitchContext: vi.fn(async () => ({
     teams: [{ id: 'team-1', name: 'Demo University', gender: 'mens' }],
     isHeadCoach: false,

@@ -3,6 +3,27 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — The saved-view effect lists its setter (CI lint ratchet)
+
+```text
+PR/commit:      agent/swap-audit (PR #2111 CI fix)
+Design package: none
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- **Issue.** CI's lint ratchet failed by one `react-hooks/exhaustive-deps`
+  warning: the effect in `Roster.tsx` that restores the faces/list view from
+  local storage called `setView` but had an empty dependency list.
+- **Fix.** `[setView]`. `setView` is the `useState` setter that
+  `useChSessionState` returns, and React keeps a setter's identity stable, so
+  the effect still runs once on mount. Nothing a coach sees changes, so there's
+  no screenshot.
+- **Checked.** eslint on the file is clean; the warning total is back to the
+  baseline of 59.
+
 ## 2026-10-01 — The player's Roster, read-only (owner, Q-130)
 
 ```text

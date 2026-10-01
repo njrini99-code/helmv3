@@ -20,7 +20,7 @@
  * See e2e/README.md ("Clubhouse perf harness") for what is measured and how to read it.
  */
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, openSync, rmSync, readdirSync, statSync, symlinkSync, realpathSync, lstatSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, openSync, fstatSync, closeSync, rmSync, readdirSync, statSync, symlinkSync, realpathSync, lstatSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -129,11 +129,12 @@ function serverPid() {
 
 async function cmdSeed(a) {
   ensureDir();
+  // Checked again, atomically, by the exclusive create below (CodeQL js/file-system-race); this early check only avoids seeding for nothing.
   if (existsSync(SEED_FILE)) throw new Error(`a seed already exists (${SEED_FILE}); \`remove\` it first`);
   Object.assign(process.env, localEnv());
   const mod = await loadSeedModule();
   const team = await mod.seedClubhouseTeam({ players: a.players ? Number(a.players) : undefined, roundsPerPlayer: a.rounds ? Number(a.rounds) : undefined });
-  writeFileSync(SEED_FILE, JSON.stringify(team, null, 2), { mode: 0o600 });
+  writeFileSync(SEED_FILE, JSON.stringify(team, null, 2), { mode: 0o600, flag: 'wx' });
   console.log(`seeded team ${team.teamName} (${team.teamId}): ${JSON.stringify(team.counts)}`);
   console.log(`coach ${team.coach.email}; player ${team.players[0].email}`);
 }
@@ -158,9 +159,18 @@ function productionRefsIn(dir) {
   const walk = (d) => {
     for (const name of readdirSync(d)) {
       const p = join(d, name);
-      const s = statSync(p);
-      if (s.isDirectory()) walk(p);
-      else if (/\.(js|json|html|rsc|txt|map)$/.test(name) && s.size < 20_000_000 && readFileSync(p, 'utf8').includes(PRODUCTION_REF)) hits.push(p);
+      if (statSync(p).isDirectory()) {
+        walk(p);
+        continue;
+      }
+      if (!/\.(js|json|html|rsc|txt|map)$/.test(name)) continue;
+      // Size and contents come from one open file, so the file checked is the file read (CodeQL js/file-system-race).
+      const fd = openSync(p, 'r');
+      try {
+        if (fstatSync(fd).size < 20_000_000 && readFileSync(fd, 'utf8').includes(PRODUCTION_REF)) hits.push(p);
+      } finally {
+        closeSync(fd);
+      }
     }
   };
   if (existsSync(dir)) walk(dir);

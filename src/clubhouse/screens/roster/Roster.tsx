@@ -90,7 +90,8 @@ export function Roster({ data }: { data: ChRoster }) {
     } catch {
       /* private mode: the default view is fine */
     }
-  }, []);
+    // setView is useChSessionState's useState setter (stable), so this still runs once.
+  }, [setView]);
   const changeView = (v: View) => {
     setView(v);
     try {
