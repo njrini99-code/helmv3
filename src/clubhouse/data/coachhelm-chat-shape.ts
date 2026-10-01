@@ -44,9 +44,12 @@ export function findingCategory(id: string): string {
   return CATEGORY_BY_PREFIX.find(([prefix]) => id.startsWith(prefix))?.[1] ?? 'Program';
 }
 
-/** The pulse's items as findings: at most `limit`, each link kept only when `rebuilt` gives its screen back. */
+/**
+ * The pulse's items as findings: at most `limit`, each link kept only when `rebuilt` gives its screen back. The "N open signals across M
+ * players" item is left out, as it is from the board's pulse: it counts every active row, which the board never draws (CH13-4).
+ */
 export function pulseToFindings(items: readonly PulseItem[], rebuilt: (href: string) => string | null, limit = 3): ChAskFinding[] {
-  return items.slice(0, limit).map((item) => {
+  return items.filter((item) => item.id !== 'signals-open').slice(0, limit).map((item) => {
     const href = item.action ? rebuilt(item.action.href) : null;
     return {
       id: item.id,

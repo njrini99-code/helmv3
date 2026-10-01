@@ -113,6 +113,11 @@ export interface ChInsight {
   /** The coach already acknowledged it (`golf_coach_insights.status`), so it is not a fresh Priority. */
   acknowledged: boolean;
   title: string;
+  /**
+   * What a focus area made from this insight is saved with: the insight's own title, and its first sentence in the player's voice.
+   * The focus area is the player's to read, so it never carries the coach's board's rewrite of the text ("Jonah is making").
+   */
+  assignAs: { title: string; description: string };
   /** The first sentence of the insight's own text. */
   lede: string;
   /** The rest of the text ("Why we think this"); null when there is none. */

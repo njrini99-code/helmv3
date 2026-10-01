@@ -267,6 +267,7 @@ export function toChInsight(
   const staleDay = staleSince(ins, extra.newestRound ?? null);
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
   const { lede, why } = splitContent(withoutCollegeAverage(ins.content));
+  const claim = lede || ev.diagnosis?.symptom?.trim() || '';
   return {
     id: ins.id,
     playerId: ins.player_id,
@@ -277,7 +278,8 @@ export function toChInsight(
     stale,
     acknowledged: ins.status === 'acknowledged',
     title: say(ins.title),
-    lede: say(lede || ev.diagnosis?.symptom?.trim() || ''),
+    assignAs: { title: ins.title, description: speak(claim, { role: 'player' }) || ins.title },
+    lede: say(claim),
     why: why ? say(why) : null,
     // A note has no number of its own: the par card's value is one of three standings under a title for all of them.
     value: kind === 'note' ? '' : ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),

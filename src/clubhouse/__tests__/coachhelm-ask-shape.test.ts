@@ -113,6 +113,11 @@ describe('pulseToFindings', () => {
     expect(out[2]).toMatchObject({ category: 'Focus areas', ask: null });
     expect(findingCategory('something-new')).toBe('Program');
   });
+
+  it('CH13-4 leaves the pulse’s "open signals across players" item out, as the board’s pulse does: it counts rows the board never draws', () => {
+    const items = [item({ id: 'signals-open', headline: '77 open signals across 7 players' }), item({ id: 'rsvp-1' }), item({ id: 'tasks-overdue' })];
+    expect(pulseToFindings(items, () => null).map((f) => f.id)).toEqual(['rsvp-1', 'tasks-overdue']);
+  });
 });
 
 describe('the composer steps', () => {
