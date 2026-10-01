@@ -219,7 +219,7 @@ function Legs({ data }: { data: ChTeamStats }) {
   const losing = known.filter((x) => x.v < -0.05);
   if (!known.length)
     return (
-      <section className="ch-stm-panel" aria-labelledby="ch-stm-legs">
+      <section className="ch-stm-panel ch-stm-panel--bars" aria-labelledby="ch-stm-legs">
         <div className="ch-stm-panel__h">
           <h2 id="ch-stm-legs">Strokes gained by leg</h2>
         </div>

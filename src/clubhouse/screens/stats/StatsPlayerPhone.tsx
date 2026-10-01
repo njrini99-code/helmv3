@@ -250,7 +250,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
   const known = legs.filter((l): l is { label: string; value: number } => l.value != null);
   if (!known.length && w.sgPerRound == null)
     return (
-      <section className="ch-stm-panel" aria-labelledby="ch-spm-sg">
+      <section className="ch-stm-panel ch-stm-panel--bars" aria-labelledby="ch-spm-sg">
         <div className="ch-stm-panel__h">
           <h2 id="ch-spm-sg">Strokes gained</h2>
         </div>
@@ -293,9 +293,11 @@ function Trend({ data }: { data: ChPlayerProfile }) {
       </div>
       {/* A line needs two rounds; with one the panel says what there is instead of vanishing. */}
       {rounds.length === 1 ? (
-        <p className="ch-stm-note">
-          One round so far: <span className="ch-num">{rounds[0]!.score}</span> on {rounds[0]!.date}. The trend draws from the second.
-        </p>
+        <div className="ch-stm-chart-hold">
+          <p className="ch-stm-note">
+            One round so far: <span className="ch-num">{rounds[0]!.score}</span> on {rounds[0]!.date}. The trend draws from the second.
+          </p>
+        </div>
       ) : (
         <ScoreLine
           values={rounds.map((r) => r.score)}

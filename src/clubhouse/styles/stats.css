@@ -1756,6 +1756,10 @@ a.ch-lg__r:focus-visible {
     aspect-ratio: 340 / 120;
     text-align: center;
   }
+  /* A panel of bars (strokes gained by leg: four legs and the total, then a line) with nothing to draw is as tall as the one with bars (250px). */
+  .ch-stm-panel--bars {
+    min-height: 250px;
+  }
   /* The putting reading is one line or two; its panel holds two. */
   .ch-stm-putt + .ch-stm-note {
     min-height: calc(2 * 1.45 * 13px);

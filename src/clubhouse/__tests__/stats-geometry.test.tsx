@@ -87,6 +87,43 @@ describe('Team stats hold their geometry across windows', () => {
   });
 });
 
+describe('The phone holds its panels across windows', () => {
+  const phone = (run: () => void) => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      run();
+    } finally {
+      window.matchMedia = real;
+    }
+  };
+
+  it('Team stats: a window with no trend keeps the chart\'s frame and the reading\'s line; one with no strokes gained keeps the bars\' height', () => {
+    phone(() => {
+      const { container } = render(shell(<StatsTeam data={team({ days: [], legTotals: [null, null, null, null] })} />));
+      const trend = container.querySelector('section[aria-labelledby="ch-stm-trend"]')!;
+      expect(trend.querySelector('.ch-stm-chart-hold')!.textContent).toMatch(/The trend draws once the team has rounds on a second day/);
+      expect(trend.querySelector('.ch-stm-note[aria-hidden="true"]')).not.toBeNull();
+      expect(container.querySelector('section[aria-labelledby="ch-stm-legs"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
+    });
+    expect(css).toMatch(/\.ch-stm-chart-hold\s*{[^}]*aspect-ratio: 340 \/ 120/);
+    expect(css).toMatch(/\.ch-stm-panel--bars\s*{\s*min-height: 250px/);
+  });
+
+  it('a profile: one round keeps the trend\'s frame, and no strokes gained keeps the bars\' height', () => {
+    phone(() => {
+      const one = player({ rounds: PREVIEW_PLAYER.rounds.slice(0, 1) });
+      const { container } = render(shell(<StatsPlayer data={one} coachId="c1" />));
+      expect(container.querySelector('section[aria-labelledby="ch-spm-trend"] .ch-stm-chart-hold')!.textContent).toMatch(/One round so far/);
+    });
+    phone(() => {
+      const noSg = player({ win: { ...PREVIEW_PLAYER.win, sgPerRound: null, sgLegs: { tee: null, approach: null, around: null, putting: null } } });
+      const { container } = render(shell(<StatsPlayer data={noSg} coachId="c1" />));
+      expect(container.querySelector('section[aria-labelledby="ch-spm-sg"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
+    });
+  });
+});
+
 describe('A profile holds its hero across windows', () => {
   it('the strokes gained figure keeps its change line when the window has no change to show', () => {
     const noChange = player({ sgChange: { delta: null, context: '' } });
