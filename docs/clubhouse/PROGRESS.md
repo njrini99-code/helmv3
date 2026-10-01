@@ -466,6 +466,13 @@ From the owner's phone shell and Messages design (2026-09-29; `phone/foundation.
   assistants, current staff), the distance unit picker row and the Team Hub
   trip menu (Edit, Delete). They reuse the approved phone grammar. Recommended:
   review on a phone and keep. Kept: built as described.
+- Q-134 (open, 2026-10-01; code fixed, data unchanged) Stored qualifier entry
+  aggregates disagree with the rounds on 28 of 132 production entries (one
+  live: 2 rounds stored, 3 played). Selection now ranks from the rounds
+  (`802bcfbad`), but other readers of the aggregate (the legacy leaderboard)
+  still see it. Recommended: recompute every entry's aggregate from its rounds
+  once (a production write) and find the write path that skipped
+  `updateQualifierEntryStats`. Kept: data as is.
 - Q-127 (open, 2026-10-01; nothing changed) The Demo team carries QA
   leftovers that look real in Clubhouse: eleven unfinished rounds for the
   demo player not flagged as tests ("Progress Test Course", "QA Hell Enum

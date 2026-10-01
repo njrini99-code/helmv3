@@ -19335,6 +19335,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/qualifying.ts",
           "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/qualifying/loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         }
       ]
     },

@@ -34,7 +34,7 @@ affects no customer until the flag is flipped.
 | Complete shell swap | **Open**: route gaps in §3; the owner decides build, alias or retire (after this audit) | route table §3 |
 | Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). **Open**: F-02 (recovery unreachable with the flag on), Q-119 (cross-device discard), Q-120 (held submit version check); device fault-injection on a real phone not run | F-02, R-1..R-12, Q-119, Q-120 |
 | Calendar | **Source-confirmed fixes, runtime not exercised**: 9 bugs fixed (`ac64ba366`, `696b49570`); write journeys on the Demo team pending (they notify the whole roster: check Demo members' email and push first). Open: CAL-05 (series across the clock change), Q-108 (fan-out to the whole roster), create idempotency (in progress) | §4 Calendar |
-| Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). Not reconciled: SG (needs the Tour model), Qualifiers window. Open: Q-112 (comparison cohort) | §4 §10 Stats gate |
+| Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). SG and Qualifiers reconciled (§4); stale stored SG on 7 rounds waits on the recompute. Open: Q-112 (comparison cohort) | §4 §10 Stats gate |
 | Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Open: Q-104/Q-114 tie at the cut (name order now decides it everywhere), Q-115..Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
 | Messages | **Passed**: two-session journey on the local stack, 7/7; deep link verified. Night audit fixed failed-reaction silence, lost text on a failed send and the coach phone inbox shift (CLS 0.292, not re-measured) | §4 |
 | CoachHelm | **Audited**, no P0; owner: Q-124..Q-126, Q-76 | §4 §13 |
@@ -343,6 +343,22 @@ quiet rerun.
   Open, owner: Q-131 (no canary), Q-132 (the nightly lost-round detector has
   read 14 since 28 Sep, so a new loss looks the same). Production delivery of
   Clubhouse events is unverified while the flag is off (preview: 20 events).
+- **§10/§11 reconciliation, Qualifiers and SG (2026-10-01, production,
+  Demo team).** Qualifiers: the one scored qualifier matches the SQL oracle
+  for all 7 entrants (rounds, total, to-par, position, automatic slots); no
+  ties exist, so F-03 is not exercised. Defect found and fixed (`802bcfbad`):
+  the selection workspace and confirm ranked from the entry's stored
+  aggregate, which is stale on a live qualifier on another team (3 rounds
+  played, 2 stored); they now rank from the rounds, as the board does. Across
+  production 28 of 132 entries disagree with their rounds (mostly legacy
+  0/null and seed data; Q-134). Latent, no data hits them: a round with a
+  total but no to-par would count as even, and two rounds in one round slot
+  are not deduplicated. SG: every Clubhouse figure is the mean of the stored
+  per-round columns over the window's hole-scored rounds and matches the
+  oracle for all 7 players and the team row (-5.6 vs Tour, 56 rounds). Seven
+  Demo rounds hold stale stored SG (five predate penalty charging), which
+  moves Dylan, Jackson and the team total at one decimal; they change on the
+  owner's recompute (Q-89), not in code. Caption "vs Tour" is correct.
 - **CI on PR #2111 (fixed `55bb26a51`).** The layout test lacked the F-36
   cookie mock, the held migration's HELD.md row lacked its date and its
   registry owner, and four test reads were unchecked.
