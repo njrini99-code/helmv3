@@ -238,6 +238,16 @@ through the local database (`SUPABASE_DB_URL`, default the stack's port
    `PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test
    e2e/clubhouse-round.spec.ts --project=chromium`
 
+## Clubhouse team switch, local stack only (2026-10-01)
+
+`e2e/clubhouse-team-switch.spec.ts` seeds two teams, staffs the first team's
+head coach on the second, and switches teams on Roster. The refresh payload is
+held for three seconds. While it is held, the old team's page must be faded
+(opacity 0) and take no taps. Once it lands, the new team's roster must be on
+screen (PAGE_PERFORMANCE.md rule 8). It has the same local-only guard and
+cleanup as the round spec. Run it the same way, against `next dev --webpack`
+on the local stack.
+
 ## Clubhouse perf harness, local stack only (2026-10-01)
 
 Measures what a coach and a player feel on a Clubhouse route: how soon the
@@ -297,9 +307,24 @@ wide; the median of `--runs`, signed in once per role):
 - `switch`: on a settled Stats page, the window switch (Season, Qualifiers,
   Last 10) and the profile tabs. `flash` is YES if any frame showed a skeleton
   or nothing instead of the page (dimmed, aria-busy content is the pattern).
+- `geometry` (`--only geometry[,route]`): the destination's data is held back
+  1.5 s, so the route skeleton is on screen and still; the top and height of
+  each landmark (header, filter row, figure cards, trend card, hero, ...) is
+  read in the skeleton frame and again in the loaded page. A skeleton swapping
+  for a page replaces nodes, so layout shift never sees it; this table does
+  (rule 5 of `docs/clubhouse/PAGE_PERFORMANCE.md`). The two frames share class
+  names, so one selector per landmark finds it in both (`LANDMARKS` in
+  `scripts/clubhouse/perf-measure-run.mjs`).
 - `CLS` counts the way the spec does (shifts within 500 ms of a click do not
   count); `CLS raw` counts every shift, which is the number that matters for a
-  clicked navigation or switch. Keep both at 0.
+  clicked navigation or switch. Keep both at 0. A switch's raw shifts name what
+  moved (`shifts[].src`, the element and where it was and went) in the saved
+  JSON. The spec figure is 0 only because the server answers inside the
+  forgiven 500 ms; a slow phone's switch counts every shift.
+- The phone viewport carries the `ch_phone` layout cookie a returning phone has
+  (F-36); `--first-visit` leaves it out (the one-time desktop-to-phone swap).
+  `report --before <label> --after <label>` prints two saved runs side by
+  side as the markdown tables PROGRESS.md carries.
 - `reads`, `read ms`, `waves`: the Supabase calls the route's own requests
   made (not prefetches), their summed duration, and how many serial rounds
   they took (a wave starts when no earlier read is still running). The trace
