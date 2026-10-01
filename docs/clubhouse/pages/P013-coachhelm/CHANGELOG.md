@@ -128,6 +128,46 @@ Held items:     none
 - **Left alone.** History is not team-scoped (a coach on two teams sees both
   teams' chats): a documented product question, unchanged.
 
+### Phase 3: the board and the top card first, the pulse streams
+
+- **The pulse.** It was a chain of seven reads that only the pulse card used,
+  yet the loader awaited it before it answered, and before every early return.
+  `loadCoachCoachHelm` now hands it over still on its way
+  (`ChCoachHelmData.pulse` is a `ChPulse` or a `Promise<ChPulseResult>`: `ok`
+  with the pulse, or `failed`; it never rejects, `handled`, and a read that
+  threw is logged and drawn as the pulse not loading, CH-13203).
+  `CoachBoard` reads it with `use()` in the card's own `<Suspense>`; the board
+  waits for seven reads in a row (the gate, then four) instead of ten
+  (`coachhelm-reads.test`). The early returns (a roster or players that did
+  not read) hand it over too, so a failure notice no longer waits for it.
+- **A card that holds its place** (CH-13405). The slot under "Program pulse"
+  keeps the height of three rows, whether the skeleton, the rows or a notice
+  are in it, so nothing below moves when the pulse lands: zero shift for the
+  desktop's six items in two columns. Cost, for the owner: a pulse of one or
+  two items sits in a card with room under it, and a phone's single column
+  past three rows grows the card, which is the one case that shifts.
+  Moving the card under the top card would end the shift for good; it is a
+  change to the board's order and is not done here.
+- **Never a false empty while it loads.** The skeleton is not "Nothing is
+  flagged"; that line (CH-13309) is only for a pulse whose reads all landed.
+- **Exposure.** The delivery actions (`getTopInsightsForPlayers`,
+  `getInsightsForPlayer`) record what they return as shown. The pulse was
+  never one of them and starts after the gate as before. A render test counts
+  calls: once per render, after the gate answered, none for a board that is
+  off, and the pulse landing adds none (`coachhelm-streaming.test`).
+- **Not done, and why.** Player Proposals: its read is in the same wave as the
+  top card's other reads (drills, assigned, newest round), so streaming it
+  saves no depth, and it draws above the focus card, so a late arrival would
+  push the card down. Ask: the pulse feeds the new-chat page's greeting, the
+  pills, the coverage line and the findings, and the chats list is one wave
+  beside the thread; splitting them would reshape `ChAskData` and its
+  fixtures for no depth won, so it is left as it is.
+- **Assertions changed by design.** `coachhelm-reads.test`: the board's depth
+  10 became 7 (the pulse is no longer waited for) and the pulse's hops are
+  excluded from the count; `coachhelm.test` reads the pulse the loader hands
+  over by awaiting it (`pulseLanded`) in three assertions (the same rows and
+  flags as before).
+
 ## 2026-10-01 — Page performance: reads in parallel, a view switch that keeps the view
 
 Owner, 2026-10-01: "Everything page transition and load needs to be extremely

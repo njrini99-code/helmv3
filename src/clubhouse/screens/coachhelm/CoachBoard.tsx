@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, use, useState } from 'react';
 import { Archive, Check, Flag, Sparkles, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned } from '../../data/coachhelm-shape';
+import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -14,7 +14,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { EmptyState } from '../../ui/States';
+import { EmptyState, Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
 import { BoardPartial, FocusCard, Head, PulseList } from './parts';
@@ -133,8 +133,6 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
   const statusUnknown = !mine && !!(data.missing?.assigned || data.missing?.declined || data.missing?.newest);
   const rosterHref = coachBoardLinks.roster();
-  const pulseGapsCount = data.pulse.missing?.length ?? 0;
-  const pulseGaps = data.pulse.missing && pulseGapsCount > 0 ? pulseGapsLabel(data.pulse.missing) : null;
 
   const body = data.off ? (
     <EmptyState
@@ -175,25 +173,9 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
       <SectionBoundary surface="coachhelm.pulse" label="The program pulse" code="CH-13204">
         <section className="ch-hl-pulse" aria-labelledby="ch-hl-pulse-h">
           <h2 id="ch-hl-pulse-h">Program pulse</h2>
-          {data.pulse.error ? (
-            <RefreshNotice code="CH-13203" title="The program pulse didn’t load" body="Your players’ insights below are not affected. Try again in a moment." />
-          ) : data.pulse.rows.length === 0 && !pulseGaps ? (
-            <p className="ch-hl-pulse__none" data-ch-code="CH-13309">
-              Nothing is flagged in the pulse right now.
-            </p>
-          ) : (
-            <>
-              {data.pulse.rows.length > 0 && <PulseList rows={data.pulse.rows} />}
-              {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
-              {pulseGaps && (
-                <RefreshNotice
-                  code="CH-13206"
-                  title={data.pulse.rows.length === 0 ? 'The program pulse didn’t fully load' : 'The program pulse may be incomplete'}
-                  body={`${pulseGaps} didn’t load, so anything made from ${pulseGapsCount === 1 ? 'it' : 'them'} is missing here and was not checked. What is listed was found. Try again in a moment.`}
-                />
-              )}
-            </>
-          )}
+          {/* The pulse is the longest read on the page and nothing else uses it, so the board does not wait for it (CH-13405): its card
+              holds its place at a reserved height, and the rows land in it. */}
+          <div className="ch-hl-pulse__slot">{isPulseLater(data.pulse) ? <Suspense fallback={<PulseSkeleton />}><PulseFromRead read={data.pulse} /></Suspense> : <PulseBody pulse={data.pulse} />}</div>
         </section>
       </SectionBoundary>
 
@@ -342,6 +324,60 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
       {!phone && tabs}
       {body}
     </main>
+  );
+}
+
+const isPulseLater = (p: ChCoachHelmData['pulse']): p is Promise<ChPulseResult> => typeof (p as { then?: unknown }).then === 'function';
+
+/** A pulse that could not be read is the pulse not loading, as a result that says so (the loader's read never rejects). */
+const PULSE_NOT_LOADED: ChPulse = { rows: [], error: true };
+
+/** The pulse's rows, or what stands in for them: its own notice when it did not load, or when a read it is made from failed (never "nothing is flagged"). */
+function PulseBody({ pulse }: { pulse: ChPulse }) {
+  const gaps = pulse.missing && pulse.missing.length > 0 ? pulseGapsLabel(pulse.missing) : null;
+  if (pulse.error) return <RefreshNotice code="CH-13203" title="The program pulse didn’t load" body="Your players’ insights below are not affected. Try again in a moment." />;
+  if (pulse.rows.length === 0 && !gaps) {
+    return (
+      <p className="ch-hl-pulse__none" data-ch-code="CH-13309">
+        Nothing is flagged in the pulse right now.
+      </p>
+    );
+  }
+  return (
+    <>
+      {pulse.rows.length > 0 && <PulseList rows={pulse.rows} />}
+      {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
+      {gaps && pulse.missing && (
+        <RefreshNotice
+          code="CH-13206"
+          title={pulse.rows.length === 0 ? 'The program pulse didn’t fully load' : 'The program pulse may be incomplete'}
+          body={`${gaps} didn’t load, so anything made from ${pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked. What is listed was found. Try again in a moment.`}
+        />
+      )}
+    </>
+  );
+}
+
+/** The pulse read the loader handed over still on its way; this suspends until it lands, inside the card's own Suspense. */
+function PulseFromRead({ read }: { read: Promise<ChPulseResult> }) {
+  const res = use(read);
+  return <PulseBody pulse={res.status === 'ok' ? res.pulse : PULSE_NOT_LOADED} />;
+}
+
+/** CH-13405: the pulse's rows on their way, in the card's reserved place (the slot holds its height whether the rows are here or not). */
+function PulseSkeleton() {
+  return (
+    <div className="ch-hl-pulse__sk" aria-busy="true" aria-label="Loading the program pulse" data-ch-code="CH-13405">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="ch-hl-pulse__skrow">
+          <Skeleton width={30} height={30} radius={10} />
+          <span>
+            <Skeleton width="58%" height={12} />
+            <Skeleton width="82%" height={10} />
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 

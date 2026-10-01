@@ -81,15 +81,30 @@ describe('the coach’s board reads', () => {
     };
   }
 
-  it('the pulse and the Tour read beside the roster, so the board is as deep as the pulse (the gate, then seven), not the gate, the roster and then the pulse', async () => {
+  it('the pulse and the Tour read beside the roster, and the board does not wait for the pulse: it is as deep as the roster’s own chain (the gate, then four), not the pulse’s seven', async () => {
     const waves = readWaves();
     arrange(waves);
     const { result, waves: depth } = await waves.run(loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' }));
+    // The pulse is handed over still on its way: not awaited here, because it only lands as the waves are released.
+    expect(typeof (result.pulse as { then?: unknown }).then).toBe('function');
     expect(result.players.list).toHaveLength(2);
-    // The pulse starts in the wave after the gate, with the roster, not after it. (Before: 3 + 1 + 1 + 7 + 1 = 13 waves.)
+    // The pulse starts in the wave after the gate, with the roster, not after it.
     expect(depth.find((w) => w.includes('pulse1'))).toEqual(expect.arrayContaining(['golf_team_members', 'golf_teams']));
     expect(depth.findIndex((w) => w.includes('pulse1'))).toBe(depth.findIndex((w) => w.includes('gate3')) + 1);
-    expect(depth).toHaveLength(10);
+    // What the board waits for is everything but the pulse: 3 + 1 + 1 + 1 + 1 = 7 waves. (Before the pulse streamed: 10; before the
+    // pulse started beside the roster: 13.) The pulse's own hops go on past the loader's answer, which is the point.
+    const board = depth.map((w) => w.filter((n) => !n.startsWith('pulse'))).filter((w) => w.length > 0);
+    expect(board).toHaveLength(7);
+  });
+
+  it('the loader answers while the pulse is still on its way: the players and the top cards are not held for it (CH-13405)', async () => {
+    const waves = readWaves();
+    arrange(waves);
+    pulseRead.read.mockImplementation(() => new Promise(() => {}));
+    const { result } = await waves.run(loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' }));
+    expect(result.players.list).toHaveLength(2);
+    const settled = await Promise.race([Promise.resolve(result.pulse).then(() => 'pulse'), new Promise((r) => setTimeout(() => r('still on its way'), 20))]);
+    expect(settled).toBe('still on its way');
   });
 
   it('nothing is read before the gate has answered, and a board that is off reads nothing else (the delivery action records what it returns as shown)', async () => {

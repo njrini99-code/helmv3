@@ -4,6 +4,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { pulseLanded } from './coachhelm-pulse';
 import { resolved } from './route-view';
 
 /** CoachHelm (P013): every numbered state in docs/clubhouse/catalog/coachhelm.md, found by its number. */
@@ -1538,7 +1539,7 @@ describe('CoachHelm loaders', () => {
         ['Jonah Okafor', 2, 'in-slope'],
       ]);
       expect(d.withoutSignals).toBe(0);
-      expect(d.pulse.rows.map((r) => r.id)).toEqual(['movement-decline']);
+      expect((await pulseLanded(d)).rows.map((r) => r.id)).toEqual(['movement-decline']);
     });
 
     it('a focus area already made from the top insight, and the drill’s description, come with it', async () => {
@@ -1631,7 +1632,7 @@ describe('CoachHelm loaders', () => {
       tables.current = { ...tables.current, golf_team_members: { error: { message: 'boom' } } };
       const d = await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
       expect(d.roster).toEqual({ count: 0, error: true });
-      expect(d.pulse.error).toBe(false);
+      expect((await pulseLanded(d)).error).toBe(false);
       expect(logServer).toHaveBeenCalledWith('coachhelm', 'roster', expect.anything(), 'coachhelm');
       tables.current = { ...tables.current, golf_team_members: members, golf_players: { error: { message: 'boom' } } };
       expect((await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' })).roster.error).toBe(true);
@@ -1647,7 +1648,7 @@ describe('CoachHelm loaders', () => {
     it('CH-13203 a pulse that could not be read is its own failure', async () => {
       vi.mocked(getCoachProgramPulse).mockResolvedValue(null);
       const d = await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
-      expect(d.pulse).toEqual({ rows: [], error: true });
+      expect(await pulseLanded(d)).toEqual({ rows: [], error: true });
       expect(d.players.error).toBe(false);
     });
 

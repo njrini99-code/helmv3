@@ -534,6 +534,31 @@
   font: 400 14px/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
+/*
+ * The pulse streams in beside the top card (CH-13405), so its card holds its place: the slot keeps the height of three rows (the
+ * desktop's six items in two columns), whether the rows, a notice or the skeleton are in it, and nothing below moves when they land. A
+ * pulse of more rows than that (the phone's single column past three) grows the card, which is the one case that shifts.
+ */
+.ch-hl-pulse__slot {
+  min-height: 197px;
+}
+.ch-hl-pulse__sk {
+  display: flex;
+  flex-direction: column;
+}
+.ch-hl-pulse__skrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 65px;
+  border-top: 1px solid rgb(28 25 18 / 0.07);
+}
+.ch-hl-pulse__skrow > span {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .ch-hl-pulse .ch-notice {
   margin-bottom: 12px;
 }

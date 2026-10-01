@@ -10,7 +10,7 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
 import { isNote, isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
-import { boardMissing, firstName, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChTourBaseline } from './coachhelm-shape';
+import { boardMissing, firstName, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
 import { tourForGender } from './stats-common';
 
 export type * from './coachhelm-shape';
@@ -411,19 +411,21 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
 
   const gate = await loadCoachHelmGate(input.coachId);
   // The pulse is the program's, not the gate's: it still reads, so the board never says "nothing flagged" unread.
-  if (gate.status === 'failed') return { ...none, roster: { count: 0, error: true }, pulse: await pulseOf() };
+  if (gate.status === 'failed') return { ...none, roster: { count: 0, error: true }, pulse: pulseLater() };
   if (gate.status === 'off') return emptyCoachHelm(gate.off);
 
   // The gate is open, so the reads that need nothing from the roster start now and run beside it: the pulse (the longest chain on
-  // this page) and the team's Tour. Nothing that records an insight as shown (`topInsights`) starts before the gate is known, and an
-  // early return below may never await these two, so each is marked handled up front.
-  const pulseRead = handled(pulseOf());
+  // this page) and the team's Tour. Nothing that records an insight as shown (`topInsights`) starts before the gate is known. The
+  // pulse is never awaited here: only the board's pulse card draws it, so the board hands it over still on its way and the top card
+  // does not wait for it (it is a promise that cannot reject, so an early return below leaves nothing unhandled). The Tour is
+  // awaited with the cards it grades, so an early return may never await it and it is marked handled up front.
+  const pulse = pulseLater();
   const tourRead = handled(coachTour(supabase, input.teamId));
 
   const members = await supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active');
   if (members.error) {
     log('roster', members.error);
-    return { ...none, roster: { count: 0, error: true }, pulse: await pulseRead };
+    return { ...none, roster: { count: 0, error: true }, pulse };
   }
   const memberIds = (members.data ?? []).map((m) => m.player_id);
   const people = memberIds.length
@@ -431,7 +433,7 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null }>, error: null };
   if (people.error) {
     log('players', people.error);
-    return { ...none, roster: { count: 0, error: true }, pulse: await pulseRead };
+    return { ...none, roster: { count: 0, error: true }, pulse };
   }
   const roster = (people.data ?? []).map((p) => ({ id: p.id, name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || NO_NAME }));
   const ids = roster.map((p) => p.id);
@@ -444,10 +446,10 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   const top = [...heads.values()].map((l) => l[0]).filter((i): i is EvidenceInsight => !!i);
   // The heads came back empty though the visible read found insights: the delivery action swallowed a failure.
   const playersFailed = visible.error || (visible.rows.length > 0 && top.length === 0);
-  if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse: await pulseRead, players: { list: [], error: true }, withoutSignals: 0 };
+  if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: [], error: true }, withoutSignals: 0 };
 
-  // The pulse and the Tour are not waited for until here: nothing the next reads need comes from either, so they finish beside them.
-  const [drills, assigned, declined, newest, tourResult, pulse] = await Promise.all([
+  // The Tour is not waited for until here: nothing the next reads need comes from it, so it finishes beside them.
+  const [drills, assigned, declined, newest, tourResult] = await Promise.all([
     drillTextByInsight(supabase, top),
     assignedByInsight(
       supabase,
@@ -459,7 +461,6 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     ),
     newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...top])),
     tourRead,
-    pulseRead,
   ]);
   const tour = tourResult.baseline;
   // Open signals: a player's current findings. A strength, a card that states no finding and a read older than the player's
@@ -514,9 +515,26 @@ export function handled<T>(read: Promise<T>): Promise<T> {
  * state too: the rows are what was found (an item made from a failed read is left out, never drawn as "no player has a round"),
  * and `missing` names what is not in them, so an empty pulse is never "nothing is flagged" over a read that did not land.
  */
-async function pulseOf(): Promise<ChCoachHelmData['pulse']> {
+async function pulseOf(): Promise<ChPulse> {
   const pulse = await getCoachProgramPulse();
   if (!pulse) return { rows: [], error: true };
   const missing = pulseMissing(pulse.failed);
   return { rows: pulseRows(pulseItemsThatStand(pulse.items, pulse.failed)), error: false, ...(missing.length > 0 ? { missing } : {}) };
+}
+
+/**
+ * The pulse as a read the board can draw later: started now, marked handled, and never rejecting, so the loader hands it to the
+ * board without waiting for it and an early return leaves nothing unhandled. A pulse that threw is `failed`, which the board draws
+ * as the pulse not loading (CH-13203), logged here.
+ */
+function pulseLater(): Promise<ChPulseResult> {
+  return handled(
+    pulseOf().then(
+      (pulse): ChPulseResult => ({ status: 'ok', pulse }),
+      (err: unknown): ChPulseResult => {
+        log('pulse', err);
+        return { status: 'failed' };
+      },
+    ),
+  );
 }

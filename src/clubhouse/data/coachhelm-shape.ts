@@ -242,13 +242,27 @@ export function pulseItemsThatStand<T extends Pick<PulseItem, 'id'>>(items: read
   return items.filter((i) => !(PULSE_ITEM_NEEDS.find(([re]) => re.test(i.id))?.[1] ?? []).some((src) => failed.includes(src)));
 }
 
+/** The program pulse as the board draws it. `missing`: a read it is made from failed, so the rows are what was found and the board never says "nothing is flagged". */
+export interface ChPulse {
+  rows: ChPulseRow[];
+  error: boolean;
+  missing?: ChPulseMissing[];
+}
+
+/**
+ * What the pulse's own read answers (it never rejects: `handled`, and a read that threw is `failed`, which the board draws as the
+ * pulse not loading). The pulse is the longest chain on the page (a program-wide read of seven) and only the board's own pulse card
+ * uses it, so the loader hands it over still on its way and the board draws it in its own Suspense beside the top card.
+ */
+export type ChPulseResult = { status: 'ok'; pulse: ChPulse } | { status: 'failed' };
+
 export interface ChCoachHelmData {
   /** CoachHelm is turned off for this coach or team. Nothing else is read. */
   off: { by: 'user' | 'team' | 'global'; reason: string | null } | null;
   /** The team's active players. `error`: the roster read failed, never an empty team. */
   roster: { count: number; error: boolean };
-  /** `missing`: a read the pulse is made from failed, so the rows are what was found and the board never says "nothing is flagged". */
-  pulse: { rows: ChPulseRow[]; error: boolean; missing?: ChPulseMissing[] };
+  /** The loader answers the pulse still on its way (a promise, drawn in its own Suspense); a value is what the previews and tests hand the board. */
+  pulse: ChPulse | Promise<ChPulseResult>;
   /** Players with at least one signal, most pressing first. */
   players: { list: ChCoachPlayer[]; error: boolean };
   /** Roster players with no insight yet. */

@@ -32,10 +32,11 @@ vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadP
 
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
+import { pulseLanded } from './coachhelm-pulse';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
-import { pulseItemsThatStand, pulseMissing, type ChCoachHelmData, type ChPlayerHelm } from '../data/coachhelm-shape';
+import { pulseItemsThatStand, pulseMissing, type ChCoachHelmData, type ChPlayerHelm, type ChPulse } from '../data/coachhelm-shape';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
@@ -97,7 +98,12 @@ describe('the coach’s board, with a read beside the top card failed', () => {
     golf_rounds: { data: [countable(jonah.id, '2026-09-30')] },
   });
   type ChFakeTablesLike = typeof tables.current;
-  const load = () => loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
+  // The loader hands the pulse over still on its way (CH-13405); these tests are about what the board says, so it is handed the one that landed.
+  type Landed = Omit<ChCoachHelmData, 'pulse'> & { pulse: ChPulse };
+  const load = async (): Promise<Landed> => {
+    const d = await loadCoachCoachHelm({ coachId: 'c1', teamId: 't1' });
+    return { ...d, pulse: await pulseLanded(d) };
+  };
   const show = (d: ChCoachHelmData) => render(wrap(<CoachBoard data={d} />));
 
   beforeEach(() => {
