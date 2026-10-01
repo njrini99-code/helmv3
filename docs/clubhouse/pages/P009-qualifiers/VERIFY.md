@@ -102,7 +102,11 @@ Text scaling:   not checked.
 
 ```text
 Layout shift:      not measured
-Request waterfall: none after first paint except a live qualifier's re-read and the course picker (tested: 92101, 92102)
+Request waterfall: none after first paint except a live qualifier's re-read and the course picker (tested: 92101, 92102).
+                   Server depth (qualifiers-reads.test, 2026-10-01): the detail reads the qualifier, then its entries,
+                   rounds, round courses and squad together, then the tees and the scorecards together (it was four
+                   passes, the tees before the scorecards); the edit form reads the roster beside the qualifier, then its
+                   parts, then the tees (it was four, the roster first); the list is two.
 Large list:        the list reads up to 1,000 qualifiers and chunks its entry and round reads; not measured with a large team
 Animation:         v2 tokens only
 Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)

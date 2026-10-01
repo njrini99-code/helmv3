@@ -15,19 +15,24 @@ Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          (/golf/dashboard/stats?tab=dev), before the session is
                          read; no session -> nothing; session.coach ->
                          resolveClubhouseTeam, and no team (or not a coach team)
-                         -> the no-team page (CH-13308), else (?view=ask the Ask
-                         sub-tab) loadCoachCoachHelm -> CoachBoard;
-                         session.player -> ?view=profile|standing|deep-dive ->
-                         playerDrill(drill, session.player.id): the gate is
-                         resolved first (loadPlayerHelmGate: off -> the board's
-                         own page CH-13304, a lookup that failed -> the view's
-                         did-not-load, never "off"), then the view's own keyed
-                         <Suspense> (its skeleton as the fallback) around an
-                         async component that calls the view's one loader; any
-                         other ?view= (insights, nothing, anything else) ->
-                         loadPlayerCoachHelm -> PlayerBoard (no team needed:
-                         without one there is no tour and nothing proposed). A
-                         view's address never chooses whose data it reads: the
+                         -> the no-team page (CH-13308), else ONE <Suspense>,
+                         not keyed by view, around an async CoachHelmView
+                         (?view=ask the Ask sub-tab: loadCoachHelmGate, then
+                         loadAskCoachHelm -> Ask; else loadCoachCoachHelm ->
+                         CoachBoard), its fallback the skeleton of the view the
+                         address names;
+                         session.player -> likewise ONE <Suspense> around an
+                         async PlayerHelmView: ?view=profile|standing|deep-dive
+                         -> the gate first (loadPlayerHelmGate: off -> the
+                         board's own page CH-13304, a lookup that failed -> the
+                         view's did-not-load, never "off"), then the view's one
+                         loader; any other ?view= (insights, nothing, anything
+                         else) -> loadPlayerCoachHelm -> PlayerBoard (no team
+                         needed: without one there is no tour and nothing
+                         proposed). The boundary is the same one for every view
+                         (perf, 2026-10-01): a switch keeps the view on screen,
+                         dimmed, and swaps once; the skeleton is for a hard load.
+                         A view's address never chooses whose data it reads: the
                          player id is the session's. ?insight=<id> (Deep dive
                          only) is a name to open, passed to the screen and
                          checked against the player's own list.
@@ -59,10 +64,18 @@ Skeleton:                src/clubhouse/screens/coachhelm/CoachHelmSkeleton.tsx
                          (CH-13401 player, CH-13402 coach), from
                          coachhelm/loading.tsx through ClubhouseSwitch and
                          CoachHelmRouteSkeleton (the role from the golf user
-                         context). A view's own skeleton is its Suspense
+                         context). A view's own skeleton is the page's Suspense
                          fallback (views/Skeletons.tsx: CH-13460 profile,
-                         CH-13470 standing, CH-13480 deep dive), because
-                         coachhelm/loading.tsx cannot read ?view=
+                         CH-13470 standing, CH-13480 deep dive; Ask's is
+                         chat/AskSkeleton.tsx), because coachhelm/loading.tsx
+                         cannot read ?view=. Every skeleton draws the view
+                         strip's place and height (38px desktop, 44px phone).
+View switch:             screens/coachhelm/use-view-switch.ts (useViewSwitch),
+                         owned by each page that draws the strip (CoachBoard,
+                         Ask, PlayerBoard, views/Frame): the strip moves on the
+                         tap, the page is aria-busy and dimmed
+                         (coachhelm.css, coachhelm-ask.css) until the next view
+                         lands.
 Route error:             src/app/golf/(dashboard)/dashboard/coachhelm/error.tsx
                          (the shared RouteErrorBoundary)
 ```

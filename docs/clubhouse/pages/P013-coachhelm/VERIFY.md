@@ -148,7 +148,12 @@ Text scaling:   not checked.
 ```text
 Layout shift:      not measured
 Request waterfall: none on the client; the server loaders read in rounds
-                   (132101)
+                   (132101). Serial depth (coachhelm-reads.test): the coach's
+                   board 13 waves before 2026-10-01, 10 after (the gate's three,
+                   then the pulse's seven, which now runs beside the roster); the
+                   Deep dive 10, then 5 (its longest chain, the category reads).
+                   The CoachHelm gate itself is three to four reads in a row
+                   (shared with Fairway, not changed here)
 Large list:        not measured (the visible-insights and rounds reads paginate;
                    a coach's board loads one top insight per player, a player's
                    feed at most 30)

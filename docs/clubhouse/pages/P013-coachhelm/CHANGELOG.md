@@ -3,6 +3,59 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Page performance: reads in parallel, a view switch that keeps the view
+
+Owner, 2026-10-01: "Everything page transition and load needs to be extremely
+smooth and accurate." Standard: `docs/clubhouse/PAGE_PERFORMANCE.md`.
+
+```text
+PR/commit:      agent/swap-audit: 81ce79e83 (reads), ae0e78355 (view switch
+                and route), plus the skeleton strip and these docs
+Design package: none
+Contract IDs:   none changed (no state added or removed)
+Data impact:    none; no write, no cache, no new read
+Held items:     none
+```
+
+- **Reads.** The coach's board went from 13 serial waves to 10
+  (`coachhelm-reads.test`, each wave a round trip): once the gate has answered,
+  the program pulse (a chain of seven) and the team's Tour start beside the
+  roster and are waited for last, and the follow-up reads do not wait for
+  them. The Deep dive went from 10 to 5: the team, the plans and the category
+  reads start with the feed instead of after it.
+- **Never early.** The delivery actions record every insight they return as
+  shown, so the feed and the top insights are still read once, after the gate,
+  and a board that is off reads nothing else (both pinned).
+- **One Suspense.** Board, Ask, Game profile, Standing and Deep dive are one
+  async view inside one `<Suspense>` that is not keyed by view. The old key
+  drew the next view's skeleton over the view on screen, after waiting for the
+  CoachHelm gate to show even that. Now a switch keeps the view on screen,
+  dimmed and not tappable, and replaces it once; the skeleton is for a hard
+  load, and is the one the address names (the route's `loading.tsx` cannot see
+  `?view=`). The gate is read inside the boundary.
+- **The strip.** The tap moves it at once (`useViewSwitch`, the F-55 pattern:
+  `useTransition`, the target held until the server answers, `aria-busy` on
+  the page) and the header stays crisp. The route skeletons now draw the
+  strip's place and height (38px desktop, 44px phone); before, it arrived with
+  the page and pushed everything under it down.
+- **Not cached, not prefetched.** A server cache here cannot be shown
+  correct: the delivery actions write as they read, the reads go through the
+  signed-in user's own session, the standing is rewritten by a nightly job
+  that has no tag to invalidate, and the writes that change a board (Assign,
+  Dismiss, a regenerated insight, a round submit) are spread over both UIs.
+  Prefetching a view would run those loaders and count insights nobody saw, so
+  the strip prefetches nothing: Next's own prefetch stops at the loading
+  boundary, which this page is already inside.
+- **Left, for a decision.** (1) The CoachHelm gate is three to four reads in a
+  row (`lib/coachhelm/v2/gate.ts`, shared with Fairway), a third of the
+  board's remaining depth; it can read the coach and their settings together
+  and every team's settings in one query, with the same answers. (2) The pulse
+  could stream behind its own boundary, but its height is one line or up to
+  three rows, so a skeleton cannot match it and the board below would move;
+  that needs a reserved height or a new place on the page. (3) Ask reads the
+  pulse (twelve reads in a row) only to draw its new-chat page, and "New chat"
+  after opening a thread needs it, so it cannot simply be skipped.
+
 ## 2026-10-01 — Assign starts from the player's value; a decline shows; only drawn cards count
 
 Swap audit CH13-22, CH13-23, CH13-21 and CH13-8.

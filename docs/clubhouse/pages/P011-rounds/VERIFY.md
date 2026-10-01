@@ -174,10 +174,12 @@ Text scaling:   not checked.
 
 ```text
 Layout shift:      not measured
-Request waterfall: none on the client. The library loader reads in up to four passes, one after the other: the team's time
-                   zone (when there is a team), the posted rounds (paged), the in-progress rounds, then their holes (112101).
-                   The in-progress query does not depend on the posted list (only the ready-to-submit check does), so it
-                   could start earlier; not changed.
+Request waterfall: none on the client. The library loader reads in two passes (rounds-reads.test, 2026-10-01; it was
+                   four): the team's time zone, the posted rounds (paged) and the in-progress rounds start together, then
+                   the in-progress rounds' holes (112101). The route resolves the team beside them, not before. A round's
+                   review reads the round while the team resolves, then its holes, shots, tee and team together. The
+                   continue page (shared with Fairway) reads the round, then its holes, shots and course yardages, then the
+                   putt and approach details, which wait on the shot ids; not changed.
 Large list:        the book draws every posted round (a paged read, no windowing); not measured
 Animation:         the shell's tokens only
 Notes:             first-load JS and LCP (CH-1954) are open

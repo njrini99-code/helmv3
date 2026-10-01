@@ -3,6 +3,39 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Page performance: the detail and the form read in fewer passes
+
+Owner, 2026-10-01: "Everything page transition and load needs to be extremely
+smooth and accurate." Standard: `docs/clubhouse/PAGE_PERFORMANCE.md`.
+
+```text
+PR/commit:      agent/swap-audit: b4842d7de
+Design package: none
+Contract IDs:   none changed
+Data impact:    none; no write, no cache, no new read
+Held items:     none
+```
+
+- **Detail.** The qualifier detail went from four serial waves to three
+  (`qualifiers-reads.test`): the qualifier, then its entries, rounds, round
+  courses and squad together, then the tees and the scorecards together. The
+  tees used to be read before the scorecards, one after the other.
+- **Form.** Editing went from four to three: the roster is read beside the
+  qualifier instead of before it. Creating is one read, as it was; the list is
+  two, as it was.
+- **Left.** The qualifier is still read before its parts, not beside them: a
+  read of another team's qualifier would start three reads that are then
+  thrown away, which is not worth one round trip. Manage selections reads the
+  qualifier's team and then the workspace for the same reason (a missing
+  qualifier and a failed read are told apart by the first). The scorecards
+  could stream behind their own boundary, but their read is no longer the
+  longest on the page; revisit with measured numbers.
+- **Switching and prefetching.** The list, the detail and Manage selections
+  have no client-side view switch (filters and search are on the page's own
+  data), and every link into them is a `<Link>`, so Next prefetches each one up
+  to its `loading.tsx`. A fuller prefetch is not used: it would show a
+  qualifier's standings up to five minutes old after a round is submitted.
+
 ## 2026-10-01 — A tie at the cut waits for the coach (Q-114)
 
 ```text

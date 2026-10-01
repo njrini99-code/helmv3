@@ -4,6 +4,92 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.
 
+## 2026-10-01 — Page performance: the library and the review, and why the next hole still waits
+
+Owner, 2026-10-01: "Everything page transition and load needs to be extremely
+smooth and accurate." Standard: `docs/clubhouse/PAGE_PERFORMANCE.md`.
+
+```text
+PR/commit:      agent/swap-audit: b4842d7de (reads), 8e305ae26 (the saving
+                note); the round engines are not changed
+Design package: none
+Contract IDs:   none changed
+Data impact:    none; no write, no cache, no new read
+Held items:     none
+```
+
+- **Library.** Four serial waves became two (`rounds-reads.test`): the team's
+  time zone, the posted rounds and the in-progress card start together, then
+  that card's holes. The route resolves the team beside them, not before. The
+  completed list reaches the cards only for the "already submitted" check.
+- **Review.** The round is read while the team resolves (the team says who is
+  looking, not which round), then its holes, shots, tee and team in one wave.
+  A viewer with no standing is still "this round isn't here"; the round read
+  that ran beside it is that viewer's own RLS read and is dropped unseen.
+- **Saving a hole.** "Saving hole N" holds its row from the tap (so nothing
+  moves) and shows only once the wait passes a base beat (260ms): a hole that
+  saves at once no longer flashes a status.
+- **Switching and prefetching.** The library's search and grouping are on the
+  page's own data, so they are instant; every row and card is a `<Link>`, so
+  Next prefetches the review and the continue page up to their `loading.tsx`.
+  No fuller prefetch or cache: a review changes when a round is edited, and the
+  edit has no way to clear a client cache.
+- **Not changed: the continue page** (`rounds/continue/[id]/page.tsx`, shared
+  with Fairway) reads the round, then its holes, shots and course yardages,
+  then the putt and approach details, which need the shot ids. Embedding the
+  details in the shots read would save one wave, but it is the loader both UIs
+  trust with a saved scorecard, so it is left for its own change.
+
+### Why "Complete hole" still waits for the server
+
+Question: can the engine move on to the next hole while the hole's save
+finishes in the background? Decision: not without a change to both engines and
+the shared shot hook that cannot be shown safe from the existing tests, so it
+is not done. The evidence, in the order a change would meet it:
+
+- **What is already safe.** The hole is on the device before any network call
+  (`emergencySave` in `handleHoleComplete`), and every save sends the whole
+  scorecard (`buildPartialRoundData` reads `completedHoleStatsRef`), so a slow
+  or failed save of hole N is carried by the next successful one. The next
+  hole's pill is already enabled while hole N saves (the screen sets the score
+  locally at the tap, `TrackStrip` allows the frontier), so a player is never
+  locked in; the engine's own comments (B8) expect it.
+- **The engine says to wait.** `persistCompletedHole` opens with "keep the
+  player on the hole until this complete snapshot is acknowledged", and
+  `handleHoleComplete` moves on (`setCurrentHoleIndex`, the finish prompt,
+  `activeProgressHoleRef`, clearing `pendingHoleCheckpointRef`) only after the
+  acknowledgement, in `use-new-round-session.ts` and `use-continue-round-
+  session.ts`. Moving on at the tap would have to replace each of those.
+- **A save in flight is not single-flight.** Between attempts the checkpoint
+  loop drops `serverSaveInProgressRef` and sleeps 250ms times the attempt. A
+  shot on hole N+1 in that gap sends its own save. With the round's id that is
+  safe (every attempt reads the live lock token), but a round that was started
+  offline has no id until a save lands, and two saves then both create:
+  a second in-progress round. An advance needs one queue across holes, which
+  does not exist.
+- **One slot for the failure.** `pendingHoleCheckpointRef` holds one hole's
+  retry intent and the next `handleHoleComplete` overwrites it. A `hole_invalid`
+  answer (a hole the server refuses, which no retry fixes) must send the player
+  back to hole N; Retry lives in hole N's review, and the shot hook clears the
+  failed status when the hole changes, so a failure on an earlier hole would be
+  seen only as a banner.
+- **The finish prompt.** `allHolesScored` is decided after the acknowledgement;
+  advancing early must still hold the finish and the submit until every hole is
+  acknowledged, or the submit races a checkpoint still in flight for the
+  round's lock token.
+- **Tests.** The guard order is pinned by source-text tests
+  (`new-round-client.discard-race.test`, `continue-round-client.*`) and by the
+  35 preservation tests; a change needs its own fault-injection tests (offline
+  start, slow save, `hole_invalid`, discard during a save, restore) in both
+  engines and in Fairway, which shares them.
+- **What it would take.** A per-round save queue (one in flight, the next
+  coalesced), a list of unsynced holes in place of the single slot, a status
+  that says "on this device" for hole N while the player is on hole N+1 (the
+  CH-11901 chip already separates device from saved), a failure path that
+  returns to the hole, and the finish held until the queue drains. That is a
+  design of its own, with the owner's rule 12 (active rounds are durable) as
+  its test; it is recommended after the owner has seen the numbers on a phone.
+
 ## 2026-10-01 — Round recovery (swap audit F-02)
 
 ```text

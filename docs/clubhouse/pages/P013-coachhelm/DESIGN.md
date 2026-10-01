@@ -206,9 +206,12 @@ LPGA Tour for a women's team) when the cascade had no team average to anchor on,
 and says which. A movement is in the stat's own unit (points for a share), never
 a percent of a percentage.
 
-**States.** Skeleton at the page's final height (a view's own, drawn by its own
-Suspense because `coachhelm/loading.tsx` cannot read `?view=`), first run, early
-or partial read, failed read, off, and the data states above.
+**States.** Skeleton at the page's final height (a view's own, drawn by the
+page's one Suspense on a hard load, because `coachhelm/loading.tsx` cannot read
+`?view=`), first run, early or partial read, failed read, off, and the data
+states above. **Switching view** (Board, Ask, Game profile, Standing, Deep dive)
+draws no skeleton: the strip moves on the tap, the view on screen stays, dimmed
+and not tappable, and is replaced once by the next one.
 
 **Phone (DRAFT).** The owner's phone boards
 (`docs/clubhouse/phone/coachhelm.md`) cover the board only; these layouts are
