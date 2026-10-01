@@ -16,6 +16,7 @@ import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { TabBar } from './TabBar';
 import { RouteFrame } from './RouteFrame';
+import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
 import { ClubhouseMarker } from './context';
 import { CrumbProvider } from './crumbs';
@@ -47,6 +48,7 @@ export function ClubhouseFrame({
   children: ReactNode;
 }) {
   const role = userData.role;
+  const teamSwitch = teamSwitchFor(userData);
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
   const { showAnimations } = useAppearancePreferences();
@@ -68,16 +70,17 @@ export function ClubhouseFrame({
                   Skip to content
                 </a>
                 <div className="ch-app">
-                  <Sidebar userData={userData} shell={shell} pathname={pathname} />
+                  <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
                   <div className="ch-canvas" id="ch-canvas">
                     <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} />
                     <OfflineBanner />
-                    <RouteFrame routeKey={pathname}>
+                    {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
+                    <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
                       {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
                     </RouteFrame>
                   </div>
                 </div>
-                <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} />
+                <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
               </CrumbProvider>
             </ToastProvider>
           </FrameRoot>

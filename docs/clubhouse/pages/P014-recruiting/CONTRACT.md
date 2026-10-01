@@ -70,7 +70,7 @@ First run and filtered are distinct, and a failed read is never drawn as empty. 
 | 140405 | CH-14305 | `A_PROSPECT_WITH_NO_DOCUMENTS` | A prospect with no documents |
 | 140406 | CH-14306 | `A_COACH_ON_NO_TEAM_THE_PAGE` | A coach on no team the page can resolve |
 
-From the shell (P001): 10401 CH-1301, 10402 CH-1302, 10403 CH-1303, 10404 CH-1304.
+From the shell (P001): 10401 CH-1301, 10402 CH-1302, 10403 CH-1303, 10404 CH-1304, 10405 CH-1305.
 
 ## 05 — Validation
 
@@ -110,7 +110,7 @@ Every write goes through `useAction`, which reports it (Sentry, under `recruitin
 | 140609 | CH-14202 | `A_PROSPECTS_DOCUMENTS_DONT_LOAD` | A prospect's documents don't load |
 | 140610 | CH-14203 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003.
 
 ## 07 — Network / offline
 
@@ -237,7 +237,7 @@ v2 grammar (D-70): selection when a stage is picked as the filter or as a prospe
 | 141702 | CH-14702 | `DELETE_PROSPECT_IS_TAPPED` | Delete prospect is tapped |
 | 141703 | CH-14703 | `STORAGE_TURNS_A_FILE_DOWN` | Storage turns a file down (CH-14107, CH-14108) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -253,7 +253,7 @@ The pipeline is one group named "Filter by stage", each stage a toggle named "Of
 | 141804 | CH-14804 | `A_SAVE_IS_REFUSED` | A save is refused |
 | 141805 | CH-14805 | `EMAIL_AND_CALL` | Email and Call |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

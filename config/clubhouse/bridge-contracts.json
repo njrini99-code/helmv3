@@ -92,6 +92,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10405,
+    "page": "P001",
+    "category": 4,
+    "item": 5,
+    "name": "A_COACH_WITH_ONE_TEAM_A_COACH",
+    "chCode": "CH-1305",
+    "meaning": "A coach with one team, a coach who cannot switch (an assistant on several teams), or a player",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10601,
     "page": "P001",
     "category": 6,
@@ -198,6 +209,17 @@
     "name": "SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET",
     "chCode": "CH-1002",
     "meaning": "Signing out from the phone's More sheet fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10611,
+    "page": "P001",
+    "category": 6,
+    "item": 11,
+    "name": "SWITCHING_TEAM_FAILS",
+    "chCode": "CH-1003",
+    "meaning": "Switching team fails (a head coach on more than one team)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -522,6 +544,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11707,
+    "page": "P001",
+    "category": 17,
+    "item": 7,
+    "name": "PICKING_ANOTHER_TEAM_IN_THE_SWITCHER",
+    "chCode": "CH-1707",
+    "meaning": "Picking another team in the switcher",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11801,
     "page": "P001",
     "category": 18,
@@ -650,6 +683,28 @@
     "name": "A_TOAST_RAISED_WHILE_A_DIALOG_OR",
     "chCode": "CH-1812",
     "meaning": "A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11813,
+    "page": "P001",
+    "category": 18,
+    "item": 13,
+    "name": "ON_A_DESKTOP_A_HEAD_COACH_ON",
+    "chCode": "CH-1813",
+    "meaning": "On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11814,
+    "page": "P001",
+    "category": 18,
+    "item": 14,
+    "name": "ON_THE_PHONE_THE_SAME_COACH_SEES",
+    "chCode": "CH-1814",
+    "meaning": "On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

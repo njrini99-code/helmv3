@@ -64,6 +64,13 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
 - **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
   tabs; `roster/[id]` goes to `stats?player=`; `rounds/[id]/review` goes to
   `rounds/[id]`; `coachhelm/chat` goes to `coachhelm?view=ask` (coach).
+- **Not a route, the team switcher (built 2026-10-01, Q-130):** a head coach on
+  two or more teams (`canSwitchTeams`, the gate `setActiveTeam` enforces)
+  switches from the sidebar's team line (desktop) or the More sheet's Team list
+  (phone). It calls `setActiveTeam`, then `router.refresh()`, and the page
+  remounts for the new team. A coach on one team, an assistant on several, and a
+  player see the team as a plain label. Catalog CH-1003, CH-1305, CH-1813,
+  CH-1814; `team-switch.test.tsx`.
 
 ### Not rebuilt with the flag on (owner decides after this audit)
 

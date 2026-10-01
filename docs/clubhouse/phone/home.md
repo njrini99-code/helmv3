@@ -22,7 +22,7 @@ The boards: practice day, competition day, quiet day, no events, and a round's s
 
 - **No leaderboard on the phone.** The board has none; desktop keeps it.
 - **"Needs you" rail.** `m-home.jsx` defines it but `HomeM` never draws it, so it isn't built.
-- **Team chevron.** The board's team button has a chevron (a team switcher). A coach has one team in Clubhouse, so the team is a label, not a dead control.
+- **Team chevron.** The board's team button has a chevron (a team switcher). The hero bar's team stays a label, not a dead control: a head coach on two or more teams switches from the More sheet's Team list (CH-1814).
 - **Workout chip.** There is no workout event type; the fourth quick type is Meeting.
 - **Round recap.** No single-round review is rebuilt; the sheet's primary is Player stats.
 - **"First tee 8:42" for competitions.** The card shows the event's own time range for every type.

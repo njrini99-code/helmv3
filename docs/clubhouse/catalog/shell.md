@@ -17,6 +17,7 @@ D-40 to D-43).
 | --- | --- | --- | --- | --- |
 | CH-1001 | "Mark all read" in the bell fails | "Couldn't mark your notifications read", Retry; the unread dots come back. On success: "All notifications marked read" | `useAction('shell.markAllRead')` in `Bell` | shell.test › CH-1001 |
 | CH-1002 | Signing out from the phone's More sheet fails | "Couldn't sign out" + "You are still signed in. Try again." Retry; error haptic | `TabBar` → `chSignOut` (lib/sign-out.ts, shared with Settings) | shell.test › CH-1002 |
+| CH-1003 | Switching team fails (a head coach on more than one team) | "Couldn't switch to UNCW Women's Golf" + why when the server said ("Only a head coach staffed on more than one team can switch.", "You aren't staffed on that team.", "Your session ended. Sign in again.") with no Retry, or "You're still on UNCW Men's Golf. Try again." with Retry when it was the network; error haptic. The team on screen goes back to the one they were on | `useTeamSwitch` → `useAction('shell.switchTeam')` over `setActiveTeam` | team-switch.test › CH-1003 |
 
 ## 12xx Didn't load
 
@@ -39,6 +40,7 @@ D-40 to D-43).
 | CH-1302 | The bell has nothing | "You're all caught up." + what shows up here | `Bell` | shell.test › CH-1302 |
 | CH-1303 | The bell's filter has nothing | "Nothing of this kind." + Show all | `Bell` | shell.test › CH-1303 |
 | CH-1304 | Nothing is scheduled | No next-event card in the sidebar; with an event it shows "2 of 3 confirmed" and a bar | `Sidebar`, `NextEventCard` | shell.test › CH-1304 |
+| CH-1305 | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player | The team name under GolfHelm is a plain label: no chevrons, no button, no team list in the phone More sheet | `Sidebar`, `teamSwitchFor` (the gate is `canSwitchTeams` and two or more teams, the rule `setActiveTeam` enforces) | team-switch.test › CH-1305 |
 
 ## 14xx Loading
 
@@ -73,6 +75,7 @@ D-40 to D-43).
 | CH-1704 | Opening More; swiping the sheet away | A tick; a medium tap as the sheet settles shut (D-70) | `TabBar`, `useSheetDrag` | shell.test › CH-1611 (the swipe); preview (the tick) |
 | CH-1705 | Opening the bell, a notification, or a menu item | A selection tick | `Bell`, `Menu` | preview |
 | CH-1706 | The connection drops | The OS warning pattern | `OfflineBanner` | shell.test › CH-1901 |
+| CH-1707 | Picking another team in the switcher | A selection tick; nothing more when it lands (the new team is the confirmation), the error pattern when it fails | `BrandTeamSwitch`, `MoreTeamSwitch`, `useAction` | team-switch.test › CH-1813 |
 
 ## 18xx Accessibility
 
@@ -90,6 +93,8 @@ D-40 to D-43).
 | CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |
 | CH-1811 | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up | `Bell` (`aria-modal`, `data-state="open"`) | shell.test › CH-1811 |
 | CH-1812 | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page | `ToastProvider` follows the open dialog (`useToastHost`) | shell.test › CH-1812 |
+| CH-1813 | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team | `BrandTeamSwitch` (`aria-haspopup="listbox"`, `role="listbox"`/`option`), `useTeamSwitch` → `setActiveTeam` + `router.refresh()` | team-switch.test › CH-1813 |
+| CH-1814 | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason | `MoreTeamSwitch` in `TabBar` | team-switch.test › CH-1814 |
 
 ## 19xx Network and UX
 

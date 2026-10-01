@@ -51,6 +51,7 @@ A page not rebuilt yet (10401), an empty bell (10402), a bell filter with nothin
 | 10402 | CH-1302 | `THE_BELL_HAS_NOTHING` | The bell has nothing |
 | 10403 | CH-1303 | `THE_BELLS_FILTER_HAS_NOTHING` | The bell's filter has nothing |
 | 10404 | CH-1304 | `NOTHING_IS_SCHEDULED` | Nothing is scheduled |
+| 10405 | CH-1305 | `A_COACH_WITH_ONE_TEAM_A_COACH` | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
 
 ## 05 — Validation
 
@@ -74,6 +75,7 @@ Mark all read fails (10601); the bell's list doesn't load (10602); the five rout
 | 10608 | CH-1207 | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | The sidebar's next event doesn't load |
 | 10609 | CH-1208 | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | The Roster badge's join requests don't load |
 | 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's More sheet fails |
+| 10611 | CH-1003 | `SWITCHING_TEAM_FAILS` | Switching team fails (a head coach on more than one team) |
 
 ## 07 — Network / offline
 
@@ -181,6 +183,7 @@ v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, th
 | 11704 | CH-1704 | `OPENING_MORE_SWIPING_THE_SHEET_AWAY` | Opening More; swiping the sheet away |
 | 11705 | CH-1705 | `OPENING_THE_BELL_A_NOTIFICATION_OR_A` | Opening the bell, a notification, or a menu item |
 | 11706 | CH-1706 | `THE_CONNECTION_DROPS` | The connection drops |
+| 11707 | CH-1707 | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | Picking another team in the switcher |
 
 ## 18 — Accessibility
 
@@ -202,6 +205,8 @@ Skip to content, the modal More sheet, the current page and named landmarks, ann
 | 11810 | CH-1810 | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
 | 11811 | CH-1811 | `ON_THE_PHONE_THE_BELL_OPENS_AS` | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up |
 | 11812 | CH-1812 | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
+| 11813 | CH-1813 | `ON_A_DESKTOP_A_HEAD_COACH_ON` | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
+| 11814 | CH-1814 | `ON_THE_PHONE_THE_SAME_COACH_SEES` | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
 
 ## 19 — Responsive layout
 
