@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, useTransition } from 'react';
 import { setActiveTeam } from '@/app/golf/actions/team-switcher';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { normalizeTeamGender, teamGenderLabel } from '@/lib/golf/team-theme';
@@ -48,10 +48,15 @@ const REFUSED: Record<string, string> = {
  * staffed on that team), then `router.refresh()` so every screen reads for the new team. The new team shows at once
  * and goes back if the switch fails. The failure is a toast (CH-1003); a success says nothing more than the new team.
  * The follow-up (the refresh, `onSwitched`) is inside the action, so the toast's Retry finishes the job as well.
+ *
+ * Between the tap and the new team's payload, the old team's page fades out and takes no taps (`data-ch-switching`
+ * on `.ch-root`, shell.css): its figures never sit under the new team's name (PAGE_PERFORMANCE.md rule 8). The
+ * refresh runs in a transition, so the mark lifts in the same commit that draws the new team's page.
  */
 export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: () => void) {
   const router = useRouter();
   const [picked, setPicked] = useState<string | null>(null);
+  const [refreshing, startRefresh] = useTransition();
   // The refresh brought the server's own answer: it replaces the one shown meanwhile.
   useEffect(() => setPicked(null), [activeId]);
   const shownId = picked ?? activeId;
@@ -67,7 +72,7 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
           setPicked(null);
           return { success: false, error: REFUSED[res.reason] };
         }
-        router.refresh();
+        startRefresh(() => router.refresh());
         onSwitched?.();
         return { success: true };
       } catch (err) {
@@ -85,6 +90,21 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
       result.success ? { ...copy, quiet: true } : result.error ? { ...copy, hint: result.error, retry: false } : copy,
   );
 
+  const switching = action.pending || refreshing;
+  // A layout effect, so the mark lifts inside the commit the page crossfade snapshots: the new page is never captured
+  // faded.
+  useLayoutEffect(() => {
+    if (!switching) return;
+    const root = document.querySelector<HTMLElement>('.ch-root');
+    const content = document.getElementById('ch-content');
+    root?.setAttribute('data-ch-switching', '');
+    content?.setAttribute('aria-busy', 'true');
+    return () => {
+      root?.removeAttribute('data-ch-switching');
+      content?.removeAttribute('aria-busy');
+    };
+  }, [switching]);
+
   const pick = useCallback(
     (teamId: string) => {
       // A second tap while one switch is in flight is dropped by the action itself.
@@ -93,5 +113,5 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
     [action, shownId],
   );
 
-  return { shownId, pending: action.pending, pick };
+  return { shownId, pending: switching, pick };
 }

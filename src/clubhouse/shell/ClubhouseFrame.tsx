@@ -63,7 +63,7 @@ export function ClubhouseFrame({
         <PhoneChromeProvider>
           {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
           <FrameRoot motionOff={!showAnimations}>
-            <ToastProvider>
+            <ToastProvider scope={userData.teamId ?? ''}>
               <CrumbProvider>
                 {/* The first Tab on any page: jump past the navigation to the page itself. */}
                 <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">

@@ -3,6 +3,31 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — A team switch never shows the old team under the new name
+
+PAGE_PERFORMANCE.md rules 4 and 8.
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   none new (CH-1003, CH-1813, CH-1814 unchanged)
+Actions:        setActiveTeam (unchanged)
+Data impact:    none
+Held items:     none
+```
+
+- **Switching mark.** The new team's name still shows on the tap. Until the
+  new team's page commits, the old page fades out and takes no taps:
+  `.ch-root[data-ch-switching]`, with `#ch-content` aria-busy. The refresh
+  runs in a transition, so the mark lifts in the commit that draws the new
+  page. A refused or failed switch lifts it too.
+- **Toasts are team-scoped.** `ToastProvider scope` is the team. A switch
+  clears the stack, so an old team's Undo or Retry cannot act from the new
+  team's page.
+- **Failed team read.** A coach whose team could not be read gets the route
+  error with a retry. It never shows "not on a team yet" and never the default
+  team (`resolveCoachActiveTeam`).
+
 ## 2026-10-01 — Page changes crossfade; a nav tap shows at once
 
 Owner, 2026-10-01: "Everything page transition and load needs to be extremely

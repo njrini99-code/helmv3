@@ -146,6 +146,38 @@ describe('Team switcher · desktop', () => {
     expect(document.querySelector('[role="alert"]')).toBeNull();
   });
 
+  it('while a switch is in flight the old team\'s page is marked switching (faded, no taps), and the mark lifts once it lands', async () => {
+    const user = userEvent.setup();
+    let answer!: (r: { success: boolean }) => void;
+    setActiveTeam.mockReturnValue(new Promise((r) => (answer = r)));
+    wrap(
+      <>
+        {sidebar(head())}
+        <div id="ch-content">Men&apos;s roster</div>
+      </>,
+    );
+    const root = document.querySelector('.ch-root')!;
+    await user.click(trigger());
+    await user.click(await screen.findByRole('option', { name: WOMEN.name }));
+    // The new name is on the button at once; the old team's page is not shown under it.
+    await waitFor(() => expect(root.hasAttribute('data-ch-switching')).toBe(true));
+    expect(document.getElementById('ch-content')!.getAttribute('aria-busy')).toBe('true');
+    answer({ success: true });
+    await waitFor(() => expect(root.hasAttribute('data-ch-switching')).toBe(false));
+    expect(document.getElementById('ch-content')!.hasAttribute('aria-busy')).toBe(false);
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('a refused switch lifts the switching mark too', async () => {
+    const user = userEvent.setup();
+    setActiveTeam.mockResolvedValue({ success: false, reason: 'unauthorized' });
+    wrap(sidebar(head()));
+    await user.click(trigger());
+    await user.click(await screen.findByRole('option', { name: WOMEN.name }));
+    await expectCode('CH-1003');
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-ch-switching')).toBe(false);
+  });
+
   it('picking the team you are already on does nothing', async () => {
     const user = userEvent.setup();
     wrap(sidebar(head()));

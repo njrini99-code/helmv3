@@ -65,9 +65,20 @@ function useToastHost(active: boolean): HTMLDialogElement | null {
   return host;
 }
 
-/** Ink toasts bottom-right (above the tab bar on phones): confirmations 4s, errors 8s. */
-export function ToastProvider({ children }: { children: ReactNode }) {
+/**
+ * Ink toasts bottom-right (above the tab bar on phones): confirmations 4s, errors 8s.
+ *
+ * `scope` is whose work the toasts are about (the shell passes the team). When it changes, the stack clears: an old
+ * team's confirmation, Undo or Retry never sits over, or acts from, the new team's page (PAGE_PERFORMANCE.md rule 8).
+ */
+export function ToastProvider({ children, scope = '' }: { children: ReactNode; scope?: string }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [shownScope, setShownScope] = useState(scope);
+  if (scope !== shownScope) {
+    // Cleared in the same render that draws the new scope, so not one frame shows the old stack.
+    setShownScope(scope);
+    setToasts([]);
+  }
   const nextId = useRef(1);
   const timers = useRef(new Set<number>());
   const reduced = useChReducedMotion();

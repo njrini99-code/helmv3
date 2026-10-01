@@ -115,6 +115,21 @@
 .ch-brand--switch[aria-busy='true'] {
   cursor: progress;
 }
+/* A team switch in flight: the old team's page fades out and takes no taps until the new team's page commits
+   (team-switch.ts). The fade runs only into this state; the new page arrives through the page crossfade. */
+.ch-root[data-ch-switching] #ch-content {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ch-dur-vt-out) var(--ch-ease-vt-out);
+}
+.ch-root[data-motion='off'][data-ch-switching] #ch-content {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-root[data-ch-switching] #ch-content {
+    transition: none;
+  }
+}
 .ch-brand__team--switch {
   display: inline-flex;
   align-items: center;
