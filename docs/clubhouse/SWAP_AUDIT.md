@@ -128,7 +128,7 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 | F-05 | P0 gate | Documented, not reverified | Authenticated writes on the candidate, fault injection and the iPhone pass have not run. | Preview pass by the owner (§6); local-Supabase journeys still to do |
 | F-06 | P0 gate | Source-confirmed | `e2e/golf-round.spec.ts` drives Fairway controls against the configured DB. | Not certifying Clubhouse; a Clubhouse e2e is still needed |
 | F-07 | P1 | Source-confirmed | Held numeric migrations (countable cache, test-round exclusion, putting, SG) change derived figures. | Stay held. The train does not depend on them (§5) |
-| F-08 | P1 | Risk to test | The coach CoachHelm loader shows one top insight a player; counts can exceed the reachable items. | Not reverified tonight |
+| F-08 | P1 | Risk to test | The coach CoachHelm loader shows one top insight a player; counts can exceed the reachable items. | **Fixed** `2e95b68ff` (CH13-4): the header counts players with an open signal, never the rows behind them; tests `coachhelm.test` › CH13-4, `coachhelm-audit.test` › CH13-4 |
 | F-09 | P2 | Documented | P013 WIRING described bugs already fixed in code. | Code is the evidence; WIRING to be reconciled |
 | F-10 | P1 | Source-confirmed | The train changes shared code (round engine #2104, stats engine #2109, security #2108, `formatToPar`). | The flag-off slice runs in `test:all` (green after F-15..F-20) |
 | F-11 | P1 | Documented | Attachment hardening SQL is not written (`held/data/message-attachments-hardening.md`: HELD). | **Written, held** `076e5acff`: `20261001130000` revokes `anon` and hides a deleted message's files (2 of 14 rows today). The owner applies it |
