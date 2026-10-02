@@ -14,7 +14,8 @@
 | Code | [stats](../../../../src/clubhouse/screens/stats) · [stats-team.ts](../../../../src/clubhouse/data/stats-team.ts) · [stats.tsx](../../../../src/clubhouse/routes/stats.tsx) · [stats.css](../../../../src/clubhouse/styles/stats.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Stats (team)" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P004`, which opens `.helm/screenshots/clubhouse/P004-stats-team/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 Team performance for the coach: the trend first, then strokes gained by leg, and which players gain or lose them. One player's own numbers are P005 (Stats, player).

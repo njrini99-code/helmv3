@@ -40,7 +40,9 @@ export function renderRelatedBlock({ m, audits, exists }) {
   out += row('Held plans', (m.held ?? []).filter(exists).map((p) => link(from, p)));
   out += row('Audits', named);
   out += row('Tracker', [`${link(from, 'docs/clubhouse/PROGRESS.md', 'PROGRESS.md')}, row "${cell(m.progressRow ?? m.name)}"`]);
-  out += row('Screenshots', [`${link(from, `${pageDir(m)}/VERIFY.md#screenshots`, 'VERIFY.md, Screenshots')}`]);
+  out += row('Screenshot log', [`${link(from, `${pageDir(m)}/VERIFY.md#screenshots`, 'VERIFY.md, Screenshots')}`]);
+  // Code, not a link: the gallery is local and gitignored, so a link to it would fail the link check.
+  out += row('Screenshots', [`\`npm run clubhouse:shots -- gallery --page ${m.id}\`, which opens \`.helm/screenshots/clubhouse/${m.id}-${m.slug}/GALLERY.html\` (local)`]);
   return `${out}${RELATED_END}`;
 }
 

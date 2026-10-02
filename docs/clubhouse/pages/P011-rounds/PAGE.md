@@ -14,7 +14,8 @@
 | Code | [rounds](../../../../src/clubhouse/screens/rounds) · [rounds.ts](../../../../src/clubhouse/data/rounds.ts) · [rounds.tsx](../../../../src/clubhouse/routes/rounds.tsx) · [rounds.css](../../../../src/clubhouse/styles/rounds.css) |
 | Audits | [ROUNDS_PLAN](../../ROUNDS_PLAN.md) · [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Rounds" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P011`, which opens `.helm/screenshots/clubhouse/P011-rounds/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 One page for a player's rounds: the library (the round in progress, the season's scoring and every posted

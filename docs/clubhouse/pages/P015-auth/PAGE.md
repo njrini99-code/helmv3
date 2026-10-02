@@ -14,7 +14,8 @@
 | Code | [auth](../../../../src/clubhouse/screens/auth) · [welcome.ts](../../../../src/clubhouse/data/welcome.ts) · [auth.tsx](../../../../src/clubhouse/routes/auth.tsx) · [auth.css](../../../../src/clubhouse/styles/auth.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Auth" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P015`, which opens `.helm/screenshots/clubhouse/P015-auth/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 The entrance to GolfHelm, drawn for someone with no role yet: sign in, then a welcome that says who is here and what

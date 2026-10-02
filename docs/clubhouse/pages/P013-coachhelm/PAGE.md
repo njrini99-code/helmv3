@@ -14,7 +14,8 @@
 | Code | [coachhelm](../../../../src/clubhouse/screens/coachhelm) · [coachhelm.ts](../../../../src/clubhouse/data/coachhelm.ts) · [coachhelm.tsx](../../../../src/clubhouse/routes/coachhelm.tsx) · [coachhelm.css](../../../../src/clubhouse/styles/coachhelm.css) |
 | Audits | [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "CoachHelm" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P013`, which opens `.helm/screenshots/clubhouse/P013-coachhelm/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 One page where CoachHelm's read of the rounds a team posts reaches the

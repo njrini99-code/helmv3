@@ -14,7 +14,8 @@
 | Code | [calendar](../../../../src/clubhouse/screens/calendar) · [calendar.ts](../../../../src/clubhouse/data/calendar.ts) · [calendar.tsx](../../../../src/clubhouse/routes/calendar.tsx) · [calendar.css](../../../../src/clubhouse/styles/calendar.css) |
 | Audits | [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Calendar" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P006`, which opens `.helm/screenshots/clubhouse/P006-calendar/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 The team's schedule for a coach, and a player's view of it. Coaches plan and take attendance; players

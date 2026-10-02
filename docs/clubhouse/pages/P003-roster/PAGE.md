@@ -15,7 +15,8 @@
 | Held plans | [roster-availability.md](../../held/data/roster-availability.md) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Roster" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P003`, which opens `.helm/screenshots/clubhouse/P003-roster/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 The team list: who is on the team, how each player is scoring, who needs a look,

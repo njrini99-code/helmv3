@@ -14,7 +14,8 @@
 | Code | [classes](../../../../src/clubhouse/screens/classes) · [classes.ts](../../../../src/clubhouse/data/classes.ts) · [classes.tsx](../../../../src/clubhouse/routes/classes.tsx) · [classes.css](../../../../src/clubhouse/styles/classes.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Classes" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P012`, which opens `.helm/screenshots/clubhouse/P012-classes/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 A player's class schedule by term, put on the team calendar so a coach can plan practice and travel

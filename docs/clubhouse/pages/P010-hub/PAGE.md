@@ -15,7 +15,8 @@
 | Held plans | [document-policy-scoping.md](../../held/data/document-policy-scoping.md) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Team Hub" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P010`, which opens `.helm/screenshots/clubhouse/P010-hub/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 One page for the team's news, logistics and paperwork: a coach posts, plans trips, assigns tasks and

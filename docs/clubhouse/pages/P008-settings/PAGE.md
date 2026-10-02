@@ -14,7 +14,8 @@
 | Code | [settings](../../../../src/clubhouse/screens/settings) · [settings.ts](../../../../src/clubhouse/data/settings.ts) · [settings.tsx](../../../../src/clubhouse/routes/settings.tsx) · [settings.css](../../../../src/clubhouse/styles/settings.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Settings" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P008`, which opens `.helm/screenshots/clubhouse/P008-settings/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 One page for both roles: an account, notification, team and CoachHelm control room with a section rail.

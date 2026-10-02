@@ -24,16 +24,20 @@
  *                                (a no-op success when there is no store, as in CI); warns, never fails, about
  *                                Clubhouse captures left in the scratch dirs (SCRATCH_DIRS) instead of the store
  *   clubhouse:shots -- index     writes INDEX.md in the store, grouped by page
+ *   clubhouse:shots -- gallery [--page P007] [--no-open]
+ *       writes a local HTML gallery per page (<store>/<P###-slug>/GALLERY.html, before and after side by side, filters by role
+ *       and viewport) and <store>/GALLERY.html; opens it from a terminal. record and import regenerate their page's gallery
  *   clubhouse:shots -- log --page P007 [--write]
  *       prints (or, with --write, appends to the page's VERIFY.md "Screenshots" table) one row per recorded file
  *       that the table does not list yet; each row is read from the manifest, nothing is made up
  */
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { constants as fsConstants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { loadManifests } from './changelog-gate.mjs';
+import { renderGallery, renderIndex, sortShots } from './gallery.mjs';
 
 export const STORE = '.helm/screenshots/clubhouse';
 export const ROLES = ['coach', 'player', 'none'];
@@ -98,7 +102,8 @@ export function checkStore({ files, pages, manifests = {} }) {
   const shots = new Set();
   for (const file of files) {
     const seg = file.split('/');
-    if (seg[0].startsWith('.') || seg[seg.length - 1].startsWith('.') || file === 'INDEX.md') continue;
+    // The generated files: INDEX.md and GALLERY.html at the store's root, GALLERY.html in a page directory.
+    if (seg[0].startsWith('.') || seg[seg.length - 1].startsWith('.') || file === 'INDEX.md' || (seg[seg.length - 1] === 'GALLERY.html' && seg.length <= 2)) continue;
     if (seg.length !== 3) {
       violations.push(`${file}: misfiled; expected <P###-slug>/<YYYY-MM-DD>/<file>`);
       continue;
@@ -264,26 +269,30 @@ const cmdName = (opts, root) => console.log(shotPath(opts, root, today()));
 function cmdImport(file, opts, root) {
   if (!file) fail('import needs the loose capture file');
   const src = resolve(file);
-  if (!existsSync(src)) fail(`${file} does not exist`);
   if (!/\.png$/i.test(src)) fail(`${basename(src)} is not a PNG; the convention is .png, so capture it again as PNG`);
   const routes = loadManifests(root).find((m) => m.id === opts.page)?.routes ?? [];
   const route = opts.route ?? (routes.length === 1 ? routes[0] : undefined);
   if (!route) fail(`${opts.page} has ${routes.length} routes; pass --route`);
-  const mtime = statSync(src).mtime;
-  const dest = shotPath(opts, root, `${mtime.getFullYear()}-${String(mtime.getMonth() + 1).padStart(2, '0')}-${String(mtime.getDate()).padStart(2, '0')}`);
-  if (existsSync(dest)) fail(`${dest} already exists; not overwriting`);
+  let mtime;
   try {
-    renameSync(src, dest);
+    mtime = statSync(src).mtime;
   } catch {
-    copyFileSync(src, dest);
-    unlinkSync(src);
+    fail(`${file} does not exist`);
   }
+  const dest = shotPath(opts, root, `${mtime.getFullYear()}-${String(mtime.getMonth() + 1).padStart(2, '0')}-${String(mtime.getDate()).padStart(2, '0')}`);
+  // An exclusive copy, then the original goes: nothing is overwritten and no path is checked before it is used.
+  try {
+    copyFileSync(src, dest, fsConstants.COPYFILE_EXCL);
+  } catch (e) {
+    fail(e.code === 'EEXIST' ? `${dest} already exists; not overwriting` : `cannot copy ${file}: ${e.message}`);
+  }
+  unlinkSync(src);
   recordShot(dest, { ...opts, route }, root);
   console.log(`imported ${basename(src)} -> ${dest}`);
 }
 
 /** Appends a screenshot's manifest entry (`extra` fields are kept as given); exits 1 on a bad name, path or route. */
-export function recordShot(file, opts, root, extra = {}) {
+export function recordShot(file, opts, root, extra = {}, { gallery = true } = {}) {
   if (!file) fail('record needs the screenshot file');
   const abs = resolve(file);
   // One stat, read once: no exists-check before the stat that uses it (CodeQL js/file-system-race).
@@ -323,15 +332,14 @@ export function recordShot(file, opts, root, extra = {}) {
   };
   const manifest = join(dirname(abs), 'manifest.json');
   let entries = [];
-  if (existsSync(manifest)) {
-    try {
-      entries = JSON.parse(readFileSync(manifest, 'utf8'));
-    } catch {
-      fail(`${manifest} is not valid JSON`);
-    }
+  try {
+    entries = JSON.parse(readFileSync(manifest, 'utf8'));
     if (!Array.isArray(entries)) fail(`${manifest} is not an array`);
+  } catch (e) {
+    if (e.code !== 'ENOENT') fail(`${manifest} is not valid JSON`);
   }
   writeFileSync(manifest, JSON.stringify([...entries.filter((e) => e.file !== entry.file), entry], null, 2) + '\n');
+  if (gallery) regenerateGallery(root, f.page);
   console.log(`recorded ${entry.file}`);
 }
 
@@ -388,6 +396,72 @@ function cmdLog(opts, root) {
   console.log(`${verify}: ${rows.length} row(s) added`);
 }
 
+/** A page's recorded shots (newest first), each with the `date` of its directory; entries whose file is gone are left out. */
+export function pageShots(root, pageId) {
+  const pages = loadPages(root);
+  const dir = join(storeDir(root), pageDir(pages, pageId));
+  const shots = [];
+  let days = [];
+  try {
+    days = readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && validDate(d.name)).map((d) => d.name);
+  } catch {
+    return shots;
+  }
+  for (const day of days) {
+    let entries = [];
+    let present = new Set();
+    try {
+      present = new Set(readdirSync(join(dir, day)));
+      entries = JSON.parse(readFileSync(join(dir, day, 'manifest.json'), 'utf8'));
+    } catch {
+      continue;
+    }
+    if (Array.isArray(entries)) for (const e of entries) if (e.file && present.has(e.file)) shots.push({ ...e, date: day });
+  }
+  return sortShots(shots);
+}
+
+/** Writes the page's GALLERY.html and the store's top-level one; returns the page gallery's path. Never throws for a missing store. */
+export function writeGallery(root, pageId) {
+  const pages = loadPages(root);
+  const store = storeDir(root);
+  const slug = pages.get(pageId);
+  if (!slug) return null;
+  const shots = pageShots(root, pageId);
+  mkdirSync(join(store, pageDir(pages, pageId)), { recursive: true });
+  const file = join(store, pageDir(pages, pageId), 'GALLERY.html');
+  writeFileSync(file, renderGallery({ page: pageId, slug, shots }));
+  const index = [];
+  for (const [id, sl] of [...pages].sort(([a], [b]) => a.localeCompare(b))) {
+    const list = id === pageId ? shots : pageShots(root, id);
+    if (list.length) index.push({ page: id, slug: sl, count: list.length, latest: list[0].date });
+  }
+  writeFileSync(join(store, 'GALLERY.html'), renderIndex(index));
+  return file;
+}
+
+/** record and import keep the gallery current; a failure here must never fail a capture. */
+function regenerateGallery(root, pageId) {
+  try {
+    writeGallery(root, pageId);
+  } catch {
+    // the gallery is a convenience; the manifest is the record
+  }
+}
+
+function cmdGallery(opts, root) {
+  const pages = loadPages(root);
+  const store = storeDir(root);
+  if (!existsSync(store)) fail(`no screenshot store at ${store}`);
+  const ids = opts.page ? [opts.page] : readdirSync(store).map((n) => /^(P\d{3})-/.exec(n)?.[1]).filter((id) => id && pages.has(id));
+  if (opts.page && !pages.has(opts.page)) fail(`page "${opts.page}" is not in config/clubhouse/pages`);
+  const written = ids.map((id) => writeGallery(root, id)).filter(Boolean);
+  const target = opts.page ? written[0] : join(store, 'GALLERY.html');
+  if (!target) fail('no screenshots to show');
+  console.log(`wrote ${written.length} gallery page(s); open ${target}`);
+  if (!opts['no-open'] && process.stdout.isTTY && process.platform === 'darwin') execFileSync('open', [target]);
+}
+
 function cmdIndex(root) {
   const dir = storeDir(root);
   if (!existsSync(dir)) fail(`no screenshot store at ${dir}`);
@@ -400,7 +474,7 @@ function cmdIndex(root) {
   }
   const out = ['# Clubhouse screenshots (local, gitignored)', '', `Generated ${new Date().toISOString()} by \`npm run clubhouse:shots -- index\`.`];
   for (const page of [...byPage.keys()].sort()) {
-    out.push('', `## ${page}`, '', '| Date | Surface | Role | Viewport | State | Phase | Commit | Route | Note | File |', '|---|---|---|---|---|---|---|---|---|---|');
+    out.push('', `## ${page}`, '', '| Date | Surface | Role | Viewport | State | Phase | Commit | Route | Note | File |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
     for (const { date, name, p, entry } of byPage.get(page).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name))) {
       const cell = (x) => String(x ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
       out.push(`| ${date} | ${cell(p?.surface)} | ${cell(p?.role)} | ${cell(p?.viewport)} | ${cell(p?.state)} | ${cell(p?.phase)} | ${cell(p?.sha7)} | ${cell(entry?.route)} | ${cell(entry?.note)} | ${name} |`);
@@ -415,7 +489,7 @@ function main() {
   const { values, positionals } = parseArgs({
     args: rest,
     allowPositionals: true,
-    options: { ...Object.fromEntries(['page', 'surface', 'role', 'viewport', 'state', 'phase', 'sha', 'date', 'route', 'fixture', 'browser', 'note'].map((k) => [k, { type: 'string' }])), write: { type: 'boolean' } },
+    options: { ...Object.fromEntries(['page', 'surface', 'role', 'viewport', 'state', 'phase', 'sha', 'date', 'route', 'fixture', 'browser', 'note'].map((k) => [k, { type: 'string' }])), write: { type: 'boolean' }, 'no-open': { type: 'boolean' } },
   });
   const root = rootDir();
   if (cmd === 'name') cmdName(values, root);
@@ -423,8 +497,9 @@ function main() {
   else if (cmd === 'import') cmdImport(positionals[0], values, root);
   else if (cmd === 'check') cmdCheck(root);
   else if (cmd === 'index') cmdIndex(root);
+  else if (cmd === 'gallery') cmdGallery(values, root);
   else if (cmd === 'log') cmdLog(values, root);
-  else fail('usage: clubhouse:shots -- <name|record|import|check|index|log> (see the header of scripts/clubhouse/shots.mjs)');
+  else fail('usage: clubhouse:shots -- <name|record|import|check|index|gallery|log> (see the header of scripts/clubhouse/shots.mjs)');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -25,7 +25,7 @@ test('rejects fields that would break the name', () => {
 
 test('check: a well-filed store is clean, with a warning for a shot with no manifest entry', () => {
   const dir = 'P007-messages/2026-10-01';
-  const ok = checkStore({ files: [`${dir}/${NAME}`, `${dir}/manifest.json`, 'INDEX.md'], pages, manifests: { [dir]: [{ file: NAME }] } });
+  const ok = checkStore({ files: [`${dir}/${NAME}`, `${dir}/manifest.json`, 'INDEX.md', 'GALLERY.html', 'P007-messages/GALLERY.html'], pages, manifests: { [dir]: [{ file: NAME }] } });
   assert.deepEqual(ok, { violations: [], warnings: [] });
   const bare = checkStore({ files: [`${dir}/${NAME}`], pages });
   assert.equal(bare.violations.length, 0);
@@ -48,7 +48,7 @@ test('check: reports unlabeled, misfiled, unknown-page, bad-date and bad-manifes
   assert.ok(v.some((x) => /manifest\.json: is not valid JSON/.test(x)));
 });
 
-const log = (rows) => `# P007 - Verification\n\n## Screenshots\n\nPointer.\n\n| Label | Phase | Commit | What it shows |\n|---|---|---|---|\n${rows}\n## Open verification gaps\n\n- none\n`;
+const log = (rows) => `# P007 - Verification\n\n## Screenshots\n\nPointer.\n\n| Label | Phase | Commit | What it shows |\n| --- | --- | --- | --- |\n${rows}\n## Open verification gaps\n\n- none\n`;
 
 test('VERIFY log: needs the section; an empty table is valid; rows must be convention files of the page', () => {
   assert.match(checkScreenshotLog('# P007\n\n## Performance\n', 'v.md', 'P007')[0], /no "## Screenshots" section/);
@@ -84,9 +84,17 @@ test('import moves a loose capture into the store under its label, records it, a
   const entries = JSON.parse(readFileSync(join(store, 'P007-messages/2026-10-01/manifest.json'), 'utf8'));
   assert.equal(entries[0].route, '/golf/dashboard/messages');
   assert.equal(entries[0].phase, 'after');
-  assert.equal(run('check').status, 0);
+  const gallery = readFileSync(join(store, 'P007-messages/GALLERY.html'), 'utf8');
+  assert.ok(gallery.includes('src="2026-10-01/P007__thread__coach__390__keyboard-open__after__abc1234.png"'), 'import regenerates the page gallery');
+  assert.ok(readFileSync(join(store, 'GALLERY.html'), 'utf8').includes('href="P007-messages/GALLERY.html"'), 'and the index');
+  assert.equal(run('check').status, 0, 'generated galleries are not unlabeled files');
   writeFileSync(join(store, 'P007-messages/2026-10-01/stray.png'), 'x');
   assert.equal(run('check').status, 1);
+  rmSync(join(store, 'P007-messages/2026-10-01/stray.png'));
+  rmSync(join(store, 'P007-messages/GALLERY.html'));
+  const again = run('gallery', '--page', 'P007', '--no-open');
+  assert.equal(again.status, 0, again.stderr);
+  assert.ok(existsSync(join(store, 'P007-messages/GALLERY.html')), 'the gallery command rebuilds it');
 });
 
 test('log: rows come from manifest entries, skip labels already listed, and append to the end of the table', () => {

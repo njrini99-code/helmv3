@@ -14,7 +14,8 @@
 | Code | [stats](../../../../src/clubhouse/screens/stats) · [stats-player.ts](../../../../src/clubhouse/data/stats-player.ts) · [stats.tsx](../../../../src/clubhouse/routes/stats.tsx) · [stats.css](../../../../src/clubhouse/styles/stats.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Stats (player)" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P005`, which opens `.helm/screenshots/clubhouse/P005-stats-player/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 One player, read like a head pro would: who they are, four numbers, then the game in five sections with a sentence each. A coach opens any player on their team; a player opens only their own, as "My stats". The team's numbers are P004 (Stats, team).

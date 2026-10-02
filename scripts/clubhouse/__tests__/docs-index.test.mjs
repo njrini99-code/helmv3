@@ -20,6 +20,8 @@ test('Related block: inserted under the title, relative links, only what exists,
   assert.ok(!out.includes('Phone spec'), 'a missing phone spec is not linked');
   assert.ok(out.includes('[DEPTH_AUDIT](../../DEPTH_AUDIT.md)'));
   assert.ok(!out.includes('ROUNDS_PLAN'), 'another page\'s audit is not listed');
+  assert.ok(out.includes('| Screenshots | `npm run clubhouse:shots -- gallery --page P007`, which opens `.helm/screenshots/clubhouse/P007-messages/GALLERY.html` (local) |'), 'the gallery is named as code, not linked');
+  assert.ok(!out.includes('](.helm'), 'a gitignored file is never a markdown link');
   assert.ok(out.endsWith('Intro.\n'));
 });
 

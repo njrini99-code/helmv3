@@ -15,7 +15,8 @@
 | Held plans | [qualifier-squad-and-entrants.md](../../held/features/qualifier-squad-and-entrants.md) · [qualifier-db-hardening.md](../../held/data/qualifier-db-hardening.md) |
 | Audits | [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Qualifiers" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P009`, which opens `.helm/screenshots/clubhouse/P009-qualifiers/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 Four screens on one page: the list (a player's own list is `/my-qualifiers`), one qualifier, the create and edit form,

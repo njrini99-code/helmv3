@@ -15,7 +15,8 @@
 | Held plans | [conversation-files.md](../../held/features/conversation-files.md) · [message-attachments-hardening.md](../../held/data/message-attachments-hardening.md) |
 | Audits | [DEPTH_AUDIT](../../DEPTH_AUDIT.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Messages" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P007`, which opens `.helm/screenshots/clubhouse/P007-messages/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 The gold-standard page (D-62): the other pages copy this folder's shape.

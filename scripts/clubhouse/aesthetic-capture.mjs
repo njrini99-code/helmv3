@@ -17,7 +17,7 @@ import { chromium } from '@playwright/test';
 import { parseArgs } from 'node:util';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { recordShot, shotPath } from './shots.mjs';
+import { recordShot, shotPath, writeGallery } from './shots.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const today = () => {
@@ -183,7 +183,7 @@ async function main() {
         const file = shotPath({ page: fam.page, surface: shot.surface, role: shot.role, viewport: String(width), state: shot.state, phase: o.phase, sha: o.sha }, ROOT, today());
         await page.screenshot({ path: file });
         const geo = await page.evaluate(geometry);
-        recordShot(file, { route: fam.route, fixture: `${typeof shot.url === 'function' ? shot.url(width) : shot.url} (synthetic preview fixture)`, browser: version, note: `${o.family}; local dev server ${base}` }, ROOT, { geometry: geo });
+        recordShot(file, { route: fam.route, fixture: `${typeof shot.url === 'function' ? shot.url(width) : shot.url} (synthetic preview fixture)`, browser: version, note: `${o.family}; local dev server ${base}` }, ROOT, { geometry: geo }, { gallery: false });
         report.push({ width, surface: shot.surface, role: shot.role, state: shot.state, ...geo });
       }
       await ctx.close();
@@ -191,6 +191,7 @@ async function main() {
   } finally {
     await browser.close();
   }
+  writeGallery(ROOT, fam.page);
   for (const r of report) {
     const flags = [r.overflowX && 'OVERFLOW-X', r.clipped.length && `clipped ${r.clipped.join(',')}`, r.offscreen.length && `offscreen ${r.offscreen.join(',')}`, r.smallTargets.length && `targets<44: ${r.smallTargets.join('; ')}`, r.initialsCovered.length && `initials under next coin: ${r.initialsCovered.join(',')}`].filter(Boolean);
     console.log(`${r.width} ${r.surface}/${r.role}/${r.state}: ${flags.join('; ') || 'no overflow, clipping or off-screen'}${r.truncated ? ` (${r.truncated} ellipsized)` : ''}`);

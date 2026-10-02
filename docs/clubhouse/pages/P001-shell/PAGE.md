@@ -14,7 +14,8 @@
 | Code | [shell](../../../../src/clubhouse/shell) · [shell.ts](../../../../src/clubhouse/data/shell.ts) · [shell.css](../../../../src/clubhouse/styles/shell.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Foundation" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P001`, which opens `.helm/screenshots/clubhouse/P001-shell/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 The frame every Clubhouse page sits in. It is not a page anyone opens, and it

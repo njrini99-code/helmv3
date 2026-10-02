@@ -15,7 +15,8 @@
 | Held plans | [recruit-documents-film.md](../../held/data/recruit-documents-film.md) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Recruiting" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P014`, which opens `.helm/screenshots/clubhouse/P014-recruiting/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 One screen on one route: a coach's tracker of the high-school golfers they are following, from first look to

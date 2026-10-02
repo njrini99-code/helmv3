@@ -14,7 +14,8 @@
 | Code | [home](../../../../src/clubhouse/screens/home) · [home.ts](../../../../src/clubhouse/data/home.ts) · [home.css](../../../../src/clubhouse/styles/home.css) |
 | Audits | [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Home" |
-| Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
+| Screenshots | `npm run clubhouse:shots -- gallery --page P002`, which opens `.helm/screenshots/clubhouse/P002-home/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
 The first screen of both roles: the coach's morning view of the program, and the player's own day. One address, two pages.
