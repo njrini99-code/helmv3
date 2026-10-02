@@ -331,6 +331,29 @@ clean pass (budget 200); one tap read 208 ms in the loaded one. Nothing
 reached production: a production build of a committed ref against the local
 stack, a seeded team.
 
+## Where we left off (2026-10-01 night: CI green push, audits, docs rule)
+
+PR #2111 (`agent/swap-audit`) carries everything below; the flag stays off in
+production and no migration was applied.
+
+- **Aesthetic audit** done in Chromium at 375/390/430/1440
+  (`AESTHETIC_AUDIT.md`): shot tracking's phone gutters, Messages unread rows
+  and contrast, Home coins and scorecard spacing, Calendar title wrap, CoachHelm
+  leading, an app-wide 4.5:1 contrast sweep. Owner: Q-147 built, Q-152 kept;
+  Q-148 to Q-151 open.
+- **Docs and screenshots rule** (`.claude/rules/clubhouse.md`): labeled
+  screenshots in `.helm/screenshots/clubhouse/` (`npm run clubhouse:shots`,
+  local galleries), VERIFY.md `## Screenshots` logs, generated Related blocks
+  and `AUDITS.md`, a link check, and the changelog gate (page or cross-page
+  CHANGELOG in the same change), which CI now runs in Static checks.
+- **Q-146** built: the CoachHelm gate fails closed on any failed read.
+- **CI fixes** for #2111 (lint ratchet, a layout test mock, Review Gate key
+  read, CodeQL, markdown tables): `CHANGELOG.md` 2026-10-01.
+- **Not done:** the first UI-audit pass was stopped; its unverified e2e specs
+  (shot save/reload, axe on Messages) are parked on `agent/ui-audit-pass1-wip`,
+  and round restore after a reload is still not tested end to end. No real
+  iPhone, Safari or VoiceOver pass.
+
 ## Where we left off (2026-09-30 evening: swap audit and release train)
 
 The owner's swap audit is in `SWAP_AUDIT.md` (baselines, scorecard, role × route
