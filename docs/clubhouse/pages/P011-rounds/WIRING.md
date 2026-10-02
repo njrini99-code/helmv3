@@ -74,6 +74,34 @@ Logic:                   src/hooks/golf/use-shot-tracking.ts useShotTracking(pro
 Dev preview:             /clubhouse-preview/track -> PreviewTracking.tsx (the stand-in round screen)
 ```
 
+## Failed reads and page states (2026-10-01)
+
+A read that failed reaches the screen as a flag, never as an empty or a zero,
+and the screen draws a notice for that part with a retry.
+
+- Library loader (`rounds.ts`): `rounds.error`, `unfinished.error`; per card
+  `holesError` (the strip says nothing, CH-11214) and `submitUnchecked` (every
+  hole scored but the posted rounds unread: no Submit, CH-11215); and
+  `rounds.unscored`, the completed rounds with no score at all, which no row
+  can draw (CH-11315).
+- Library screen: `useLastGood` (key: the player) keeps the last library that
+  landed in full while a refresh fails (CH-11213); `useRefresh` is every
+  retry, and "Updating" shows while one runs (CH-11410); the search and the
+  grouping are `useChSessionState`; the cards come from the page's data, and
+  a discard is a list of ids to leave out.
+- Review loader (`round-review.ts`): `holesError`, `shotsError`, `teeError`,
+  `playerError`, `tourError`; a missing total is `score: null`, never 0;
+  `coachView` says a coach is looking (a name that failed to load is null too).
+- Back from a round (CH-11912): `RoundRow` notes the review it opens
+  (`return-state.ts`, `sessionStorage`); the review's Back steps back in
+  history when it was noted (RouteFrame restores the scroll on a popstate),
+  and goes to `/golf/dashboard/rounds` otherwise or for a coach.
+- Continue page: a failed round read, a failed holes or shots read, and a
+  failed course-hole read that leaves a hole with no yardage all throw (the
+  route boundary's retry). Only a round that is not there is `notFound()`.
+- Setup (`RoundSetup.loadHoles`): each tee choice, and a course typed in by
+  hand, bumps a sequence; an answer that is not the latest is dropped.
+
 ## End-to-end graph
 
 ```text
@@ -98,6 +126,8 @@ Contract outcomes: CONTRACT.md (Bridge IDs 11ccii, catalog CH-11xxx)
 Bridge: recorded, not wired (D-68)
 ↓
 Tests: src/clubhouse/__tests__/rounds.test.tsx, round-review.test.tsx, round-setup.test.tsx, round-tracking.test.tsx,
+       rounds-library-states.test.tsx, rounds-return-state.test.tsx,
+       rounds-setup-race.test.tsx, rounds-continue-loader.test.tsx,
        src/lib/golf/__tests__/shot-entry-rules.test.ts
 ```
 
@@ -138,7 +168,7 @@ a Retry in round entry runs it against the round as it is now (111404).
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
 | ACT-P011-DISCARD | The trash button on the round card and on each "more unfinished" row, then Discard round in the question | `askDiscard` (warning haptic first, CH-11701) -> `confirmDiscard` -> `discard.run` | `discardRound` -> `writes.discard` -> `deleteInProgressRound`, then `clearEmergencySave` | golf_rounds (holes and shots cascade), the device's emergency copy | question 111101 · done 110901 · refused 110601 · waits for the server 111301 · Retry 111401 · server gate 110804 (read, not run) |
-| ACT-P011-TRY-AGAIN | Try again on a failed-read notice: the library's posted rounds and in-progress check, the review's card, shots and round | `refresh` -> `router.refresh` | the server route, read again | (every read) | notices 110602 · 110603 · 110605 · 110606 · 110607 · recovery 111402 |
+| ACT-P011-TRY-AGAIN | Try again on a failed-read notice: the library's posted rounds and in-progress check, the review's card, shots and round | `refresh` (`useRefresh`: `router.refresh` in a transition; a second tap while it runs does nothing) | the server route, read again | (every read) | notices 110602 · 110603 · 110605 · 110606 · 110607 · recovery 111402 |
 
 | ACT-P011-START | Start round in setup | `start.run(form)` (useAction `rounds.start`) -> `ports.start(form)` -> `latest.current.start(toStartForm(form))` | the new-round engine's `start(form)` (`use-new-round-session.ts`); its refusals come back as `startRefusal` states | golf_rounds, the player's saved courses | refused CH-11007 · Retry 111404 · blocked 110510 · offline 10703 · conflict CH-11514 · qualifier open CH-11907 · closed CH-11014 · unverified CH-11015 · duplicate CH-11016 |
 | ACT-P011-SAVE-FOR-LATER | Save for later in the Exit sheet and the closed-qualifier sheet | `save.run` (useAction `rounds.saveForLater`) -> `handleSaveForLater` / `handleSubmitSaveAndExit` | `savePartialRound` | golf_rounds, golf_holes, golf_shots, the device's emergency copy | failed CH-11010 · Retry 111404 · offline 10703 |
@@ -265,9 +295,12 @@ approved (Q-72f).
 - A Clubhouse player can now review, discard, start and continue rounds (`/rounds/new` and `/rounds/continue/[id]`
   are in the shell's rebuilt list for a player, so New round, Start a round, Continue and Submit draw everywhere they
   link: the library, Home, CoachHelm). A coach's are still not drawn. Flag off, all of it stays Fairway's.
-- `/rounds/recover` is still Fairway's and is not rebuilt. A Clubhouse player is never linked to it: a submit that
-  could not reach the server leaves the round on the device and opens Rounds, where Continue offers the device copy
-  (CH-11905, CH-11512). Proposed to the owner as a question; the lead numbers it in the tracker.
+- `/rounds/recover` is rebuilt for a player (swap audit F-02; it was Fairway's until then). A submit that could not
+  reach the server leaves the round on the device and opens it, `?from=submit` (CH-11905, CH-11911, `ENGINE_ROUTES` in
+  `entry/routes.ts`), where Restore, Retry sync and Discard work on the rounds the device holds (CH-11017 to CH-11019,
+  CH-11520). The Library does not link to it. Fairway's recovery is ported, not moved: `FairwayRecoverRound`'s tests
+  pin its source, so the two share the lower layers (`round-missing-recovery`, the emergency save, the stores) and
+  not the scan, which is duplicated until Fairway is retired.
 - Continue's page skips the Fairway round-type editor and its qualifier reads for a Clubhouse player, so a
   round's type cannot be retyped mid-round there; Change to practice on a closed qualifier is the one retype
   (also proposed as a question).

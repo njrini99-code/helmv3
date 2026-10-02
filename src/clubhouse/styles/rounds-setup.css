@@ -393,7 +393,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rsu-opt:disabled {
   cursor: default;
@@ -715,7 +715,7 @@
   overflow: hidden;
   border-radius: 14px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-rsu-crs {
   all: unset;
@@ -835,9 +835,7 @@
   padding: 14px 16px;
   border-radius: 14px;
   background: var(--ch-ivory-0);
-  box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.08),
-    0 1px 2px rgb(28 25 18 / 0.05);
+  box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rsu-tee:hover:not(:disabled) {
@@ -1049,5 +1047,19 @@
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
+  }
+}
+
+/* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
+   under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+@media (max-width: 820px) {
+  .ch-rsu-qual__b em,
+  .ch-rsu-hc__sum dt,
+  .ch-rsu-yds em,
+  .ch-rsu-crs__r,
+  .ch-rsu-tee__y em,
+  .ch-rsu-tee__f em {
+    font-size: 12px;
   }
 }

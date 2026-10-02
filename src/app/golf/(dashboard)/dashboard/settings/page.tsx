@@ -7,7 +7,7 @@ import { ClubhouseSettingsRoute } from '@/clubhouse/routes/settings';
 export default async function GolfSettingsPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   // Clubhouse Settings (golf_clubhouse_ui): coaches and players, same tables and actions.
   const session = await getGolfSessionProfile();
-  if (isClubhouseFor(session?.coach ? 'coach' : session?.player ? 'player' : null)) {
+  if ((await isClubhouseFor(session?.coach ? 'coach' : session?.player ? 'player' : null))) {
     const { section } = await searchParams;
     return <ClubhouseSettingsRoute section={section} />;
   }

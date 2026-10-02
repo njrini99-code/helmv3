@@ -370,7 +370,7 @@ async function getGolfConversationFilesImpl(conversationId: string): Promise<{
     }
 
     const session = await getGolfSessionProfile();
-    if (!isClubhouseFor(session?.role)) {
+    if (!(await isClubhouseFor(session?.role))) {
       return { error: 'Not available' };
     }
 

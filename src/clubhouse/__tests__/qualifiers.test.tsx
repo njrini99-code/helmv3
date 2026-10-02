@@ -1,9 +1,9 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { render, renderHook, screen, waitFor, within, act } from '@testing-library/react';
+import { cleanup, render, renderHook, screen, waitFor, within, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { ReactElement, ReactNode } from 'react';
+import { StrictMode, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 /**
@@ -14,7 +14,9 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vite
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
+// The shell frame (RouteFrame) reads the animation preference, kept on the device.
+vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: true, updatePreferences: vi.fn() }) }));
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
   redirect: (to: string) => {
@@ -23,7 +25,7 @@ vi.mock('next/navigation', () => ({
 }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
-const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
+const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables, gate: undefined as ((t: string) => Promise<void> | void) | undefined }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 // The browser client the live standings use: the test hands out the channel and reads back what was asked of it.
 const realtime = vi.hoisted(() => ({ channel: vi.fn(), removeChannel: vi.fn() }));
@@ -46,15 +48,19 @@ vi.mock('@/app/golf/actions/course-library', () => ({ getCourseDetail: vi.fn(), 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import QualifierSelectionPage from '@/app/golf/(dashboard)/dashboard/qualifiers/[id]/selection/page';
 import { advanceSelectionState, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
-import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection, type ChQDetail, type ChQFormData, type ChQList, type ChQSelectionData } from '../data/qualifiers';
+import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection, type ChQDetail, type ChQDetailCore, type ChQDetailLoad, type ChQDetailSecondary, type ChQFormData, type ChQList, type ChQSelectionData } from '../data/qualifiers';
 import { chReport, chTrail } from '../lib/track';
 import { ClubhouseQualifiersRoute } from '../routes/qualifiers';
 import { resolveClubhouseTeam } from '../routes/team';
+import { markAppRunning, RouteScope } from '../lib/session-state';
+import { RouteFrame } from '../shell/RouteFrame';
+import { noteOpenedFromList } from '../screens/qualifiers/return-state';
 import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
+import { FAILED_SECONDARY, fulfilled, settled } from '../screens/qualifiers/streamed';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
-import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
+import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
 import { buildBoard, roundPars, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
@@ -95,6 +101,14 @@ const fail = async () => ({ success: false, error: 'nope' });
 const never = () => new Promise<never>(() => {});
 const detail = (name: keyof typeof DETAIL_INDEX = 'live', role: 'coach' | 'player' = 'coach', over: Partial<ChQDetail> = {}): ChQDetail => ({ ...previewDetail(DETAIL_INDEX[name]!, role), ...over });
 const list = (role: 'coach' | 'player' = 'coach', mode: 'all' | 'mine' = 'all', over: Partial<ChQList> = {}): ChQList => ({ ...previewList(role, mode), ...over });
+/**
+ * What the route does with the loader's result: the standings as `data`, the courses and cards beside them. They are awaited and handed
+ * over already kept (a page whose courses are still coming suspends, and the streaming tests below are the ones that render that).
+ */
+const streamedPage = async (d: ChQDetailLoad) => {
+  const { secondary, ...core } = d;
+  return <QualifierDetail data={core} secondary={fulfilled(await secondary)} writes={fakeWrites()} live={false} />;
+};
 
 /** The selection writes, all succeeding unless a test says otherwise. */
 type SelWrites = { [K in keyof ChQSelectionWrites]: Mock<ChQSelectionWrites[K]> };
@@ -104,6 +118,7 @@ const selWrites = (over: Partial<Record<keyof ChQSelectionWrites, Mock>> = {}): 
     advance: vi.fn<ChQSelectionWrites['advance']>(ok),
     setPick: vi.fn<ChQSelectionWrites['setPick']>(ok),
     removePick: vi.fn<ChQSelectionWrites['removePick']>(ok),
+    chooseTie: vi.fn<ChQSelectionWrites['chooseTie']>(ok),
     confirm: vi.fn<ChQSelectionWrites['confirm']>(ok),
     ...over,
   }) as SelWrites;
@@ -117,6 +132,7 @@ const asCoachSession = () => {
 beforeEach(() => {
   hapticSpy.mockClear();
   router.push.mockClear();
+  router.replace.mockClear();
   router.refresh.mockClear();
   router.back.mockClear();
   logServer.mockClear();
@@ -128,6 +144,9 @@ beforeEach(() => {
   vi.mocked(resolveClubhouseTeam).mockReset();
   gate.on = true;
   tables.current = {};
+  tables.gate = undefined;
+  // The list's filter and search and the Back notes live in this tab's session: every test starts from none.
+  window.sessionStorage.clear();
 });
 
 describe('Qualifiers · the standings model', () => {
@@ -159,13 +178,46 @@ describe('Qualifiers · the standings model', () => {
       ['d', 4, false],
       ['e', 5, false],
     ]);
-    // Two qualify on score (3 places, 1 pick); the next two are on the bubble; the rest are out.
-    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'qualifying', 'bubble', 'bubble', null]);
+    // Two places on score (3 places, 1 pick). B and C are level at the second place, so they share a tie at the cut
+    // until the coach chooses (Q-114); D is on the bubble; the rest are out.
+    expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', 'bubble', null]);
     expect(b.submitted).toBe(6);
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
     const b = buildBoard({ entrants: [e('a')], rounds: [rd('a', 1, 72, 0), rd('a', 2, 38, 2, 9)], squad: 5, picks: 1, status: 'in_progress', selectionState: 'open', selections: null });
     expect(b.rows[0]).toMatchObject({ avg: 72, shortRounds: 1, total: 110, toPar: 2, played: 2 });
+  });
+  it('a total without a to-par is unknown, not even; a second round in one round slot counts once (§11.2, §11.3)', () => {
+    const b = buildBoard({
+      entrants: ['a', 'b'].map(e),
+      rounds: [rd('a', 1, 75, 3), { ...rd('a', 2, 76, 0), toPar: null }, rd('b', 1, 72, 0), { ...rd('b', 1, 80, 8), id: 'b1-dup' }],
+      squad: 2,
+      picks: 0,
+      status: 'in_progress',
+      selectionState: 'scoring',
+      selections: null,
+    });
+    expect(b.rows.find((r) => r.playerId === 'a')).toMatchObject({ played: 1, total: 75, toPar: 3 });
+    expect(b.rows.find((r) => r.playerId === 'b')).toMatchObject({ played: 1, total: 72, toPar: 0 });
+  });
+  it('a completed round with no total is unknown, not a free even round (§11.2)', () => {
+    const blank: ChQRound = { ...rd('a', 2, 0, 0), total: null, toPar: null };
+    const b = buildBoard({
+      entrants: ['a', 'b', 'c'].map(e),
+      rounds: [rd('a', 1, 75, 3), blank, rd('b', 1, 74, 2), { ...rd('c', 1, 0, 0), total: null, toPar: null }],
+      squad: 3,
+      picks: 0,
+      status: 'in_progress',
+      selectionState: 'scoring',
+      selections: null,
+    });
+    expect(b.rows.map((r) => [r.playerId, r.played, r.total, r.toPar])).toEqual([
+      ['b', 1, 74, 2],
+      ['a', 1, 75, 3],
+    ]);
+    // A player whose only round has no score is unranked, never ahead of real scores on a zero.
+    expect(b.unscored.map((r) => r.playerId)).toEqual(['c']);
+    expect(b.submitted).toBe(2);
   });
   it('a confirmed squad replaces the cut-line states', () => {
     const b = buildBoard({
@@ -274,10 +326,10 @@ describe('Qualifiers · the loader', () => {
       golf_holes: holesFor,
     };
     const asPlayer = (await loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p2', qualifierId: 'q1' }))!;
-    expect(Object.keys(asPlayer.holes)).toEqual(['r2']);
+    expect(Object.keys((await asPlayer.secondary).holes)).toEqual(['r2']);
     expect(asPlayer.selections).toEqual([{ playerId: 'p2', type: 'coach_pick', reasoning: null, name: 'Bea X' }]);
     const asCoach = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
-    expect(Object.keys(asCoach.holes).sort()).toEqual(['r1', 'r2']);
+    expect(Object.keys((await asCoach.secondary).holes).sort()).toEqual(['r1', 'r2']);
     expect(asCoach.selections![0]!.reasoning).toBe('Course history');
     // Once D-35's migration is applied the column is refused and the coach-gated reader answers.
     tables.current = {
@@ -296,13 +348,17 @@ describe('Qualifiers · the loader', () => {
     tables.current = { golf_qualifiers: { data: { ...Q, team_id: 'other' } } };
     expect(await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' })).toBeNull();
     expect(await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' })).toBeNull();
+    // A test qualifier is hidden from the list, so a link to one is not found either.
+    tables.current = { golf_qualifiers: { data: { ...Q, team_id: 't1', is_test: true } } };
+    expect(await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' })).toBeNull();
+    expect(await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' })).toBeNull();
   });
 
   it('CH-09203 CH-09204 the field is never shown without its scores', async () => {
     tables.current = { golf_qualifiers: { data: Q }, golf_qualifier_entries: { data: entries }, golf_rounds: { error: { message: 'boom' } }, golf_qualifier_round_courses: { data: [] } };
     const scores = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
     expect(scores.board).toBeNull();
-    const { unmount } = wrap(<QualifierDetail data={scores} writes={fakeWrites()} live={false} />);
+    const { unmount } = wrap(await streamedPage(scores));
     await expectCode('CH-09204', /Scores didn’t load/);
     unmount();
     wrap(<QualifierDetail data={detail('live', 'coach', { entriesError: true, board: null })} writes={fakeWrites()} live={false} />);
@@ -341,7 +397,9 @@ describe('Qualifiers · the loader', () => {
           },
         ]),
       ) as never;
-      await load();
+      const loaded = (await load()) as { secondary?: Promise<unknown> } | null;
+      // The courses and the cards stream behind the standings: the reads are counted once they have all been made.
+      await loaded?.secondary;
       return { ...counts };
     };
     const open = { ...Q, selection_state: 'open' };
@@ -390,6 +448,112 @@ describe('Qualifiers · the loader', () => {
     expect(form.players.find((p) => p.id === 'p1')).toMatchObject({ locked: 'squad', inactive: false });
     expect(form.players.find((p) => p.id === 'p3')?.locked).toBe(false);
     expect(form.initial.playerIds.sort()).toEqual(['p1', 'p2']);
+  });
+});
+
+describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-01)', () => {
+  const Q = { id: 'q1', team_id: 't1', name: 'Pinehurst qualifier', description: null, status: 'in_progress', start_date: '2026-09-22', end_date: '2026-10-01', entry_deadline: null, course_name: 'Finley GC', rules: null, num_rounds: 2, selection_slots_total: 3, selection_slots_coach_pick: 1, selection_state: 'selected', is_test: false };
+  const player = (id: string, first: string) => ({ id, first_name: first, last_name: 'X', graduation_year: null });
+  const entries = [
+    { qualifier_id: 'q1', player_id: 'p1', player: player('p1', 'Ann') },
+    { qualifier_id: 'q1', player_id: 'p2', player: player('p2', 'Bea') },
+  ];
+  const rounds = [{ id: 'r1', qualifier_id: 'q1', player_id: 'p1', qualifier_round_number: 1, total_score: 70, score_to_par: -2, round_date: '2026-09-22', course_name: 'Finley GC', holes_played: 18 }];
+  const miss = { error: { message: 'boom' } };
+
+  it('CH-09222 /my-qualifiers: a failed entries read is a notice with Try again, never "You aren’t entered in any qualifiers", and never a count of zero', async () => {
+    const user = userEvent.setup();
+    tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: miss, golf_rounds: { data: rounds } };
+    const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'mine' });
+    expect(data).toMatchObject({ entriesError: true, items: [] });
+    wrap(<QualifiersList data={data} />);
+    await expectCode('CH-09222', /Your qualifiers didn’t load/);
+    expect(code('CH-09306')).toBeNull();
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09222') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-09306 a player really entered in nothing still reads the empty copy, once the entries read answered', async () => {
+    tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: [] }, golf_rounds: { data: [] } };
+    const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'mine' });
+    expect(data.entriesError).toBe(false);
+    wrap(<QualifiersList data={data} />);
+    expect(code('CH-09306')).not.toBeNull();
+    expect(code('CH-09222')).toBeNull();
+  });
+
+  it('CH-09202 the hero says nothing about where you stand when the standings did not load: not "You aren’t entered", not "no rounds in yet"', async () => {
+    const standing = async (failed: 'golf_qualifier_entries' | 'golf_rounds') => {
+      tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds }, [failed]: miss };
+      const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'all' });
+      const view = wrap(<QualifiersList data={data} />);
+      await expectCode('CH-09202');
+      const hero = document.querySelector('.ch-qf-hero')!;
+      expect(hero.querySelector('.ch-qf-mine')).toBeNull();
+      expect(document.querySelector('.ch-qf-mine')).toBeNull();
+      view.unmount();
+    };
+    await standing('golf_qualifier_entries');
+    await standing('golf_rounds');
+  });
+
+  it('CH-09221 the coach’s pick notes that do not load are named, never presented as "no notes"; the squad stays', async () => {
+    const user = userEvent.setup();
+    tables.current = {
+      golf_qualifiers: { data: Q },
+      golf_qualifier_entries: { data: entries },
+      golf_rounds: { data: rounds },
+      golf_qualifier_round_courses: { data: [] },
+      golf_holes: { data: [] },
+      golf_qualifier_selections: (filters) => {
+        const cols = String(filters.find(([k]) => k === 'select')?.[1][0] ?? '');
+        return cols.includes('coach_reasoning') ? miss : { data: [{ player_id: 'p2', selection_type: 'coach_pick' }] };
+      },
+    };
+    const data = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
+    expect(data.reasonsError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'reasons', expect.anything(), 'qualifiers');
+    wrap(await streamedPage(data));
+    await expectCode('CH-09221', /Pick notes didn’t load/);
+    expect(within(code('CH-09221')!.closest('section') as HTMLElement).getByText('Bea X')).toBeTruthy();
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09221') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // A player never asks for the notes, so never sees the notice either.
+    tables.current = { ...tables.current, golf_qualifier_selections: { data: [{ player_id: 'p2', selection_type: 'coach_pick' }] } };
+    const asPlayer = (await loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p1', qualifierId: 'q1' }))!;
+    expect(asPlayer.reasonsError).toBe(false);
+  });
+
+  it('CH-09207 a confirmed squad whose entries did not load is the squad’s notice, never a row of "A player"', async () => {
+    tables.current = {
+      golf_qualifiers: { data: Q },
+      golf_qualifier_entries: miss,
+      golf_rounds: { data: rounds },
+      golf_qualifier_round_courses: { data: [] },
+      golf_holes: { data: [] },
+      golf_qualifier_selections: { data: [{ player_id: 'p1', selection_type: 'top_score' }, { player_id: 'p2', selection_type: 'coach_pick' }] },
+      'rpc:golf_qualifier_selection_reasons': { data: [] },
+    };
+    const data = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
+    expect(data).toMatchObject({ entriesError: true, selections: null, selectionsError: false });
+    wrap(await streamedPage(data));
+    await expectCode('CH-09207', /names come with the field/);
+    expect(screen.queryByText('A player')).toBeNull();
+    expect(code('CH-09203')).not.toBeNull();
+  });
+
+  it('CH-09208 no "0 of 0 active players entered" while the roster failed; the count is back when it loads', () => {
+    const f = previewCreateForm();
+    const view = wrap(<QualifierForm data={{ ...f, players: [], playersError: true }} writes={fakeWrites()} />);
+    const head = () => [...document.querySelectorAll('.ch-qf-fs__h')].find((h) => h.querySelector('h2')!.textContent === 'Players')!.textContent;
+    expect(head()).not.toMatch(/\d+ of \d+/);
+    expect(code('CH-09208')).not.toBeNull();
+    view.unmount();
+    wrap(<QualifierForm data={f} writes={fakeWrites()} />);
+    expect(head()).toMatch(/\d+ of \d+ active players entered/);
   });
 });
 
@@ -653,6 +817,769 @@ describe('Qualifiers · one qualifier', () => {
   });
 });
 
+describe('Qualifiers · a refresh that fails keeps the standings it had (owner rule 2, 2026-10-01)', () => {
+  const tree = (data: ChQDetail) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <QualifierDetail data={data} writes={fakeWrites()} live={false} />
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+  /** What the loader hands back when the rounds read fails on a refresh: no board, and no cards either. */
+  const failedRead = (d: ChQDetail): ChQDetail => ({ ...d, board: null, roundsError: true, holes: {}, holesError: true });
+  const leaderboard = () => screen.queryByRole('table', { name: 'Leaderboard' });
+
+  it('CH-09220 a failed refresh keeps the last good standings and says they may be out of date; a recovered one clears it; a first load that fails is still the error', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    const { rerender } = render(tree(d));
+    expect(leaderboard()).not.toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    rerender(tree(failedRead(d)));
+    expect(leaderboard()).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' })).toBeTruthy();
+    await expectCode('CH-09220', /These standings may be out of date/);
+    expect(code('CH-09204')).toBeNull();
+    // Try again re-reads the page, once.
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09220') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // The read lands: the new standings, no notice.
+    rerender(tree({ ...d, board: { ...d.board!, submitted: 14 } }));
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09803')!.textContent).toBe('Standings updated. 14 rounds submitted.');
+  });
+
+  it('CH-09220 CH-09204 a different qualifier never inherits the old board, and a failed first load stays an error', () => {
+    const live = detail();
+    const { rerender, unmount } = render(tree(live));
+    rerender(tree(failedRead(detail('completed'))));
+    expect(leaderboard()).toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09204')).not.toBeNull();
+    unmount();
+    render(tree(failedRead(live)));
+    expect(leaderboard()).toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09204')).not.toBeNull();
+  });
+
+  it('CH-09220 CH-09304 a failed refresh over a good board with no round in yet says so: "awaiting first round" is never shown as current under a read that failed', async () => {
+    const user = userEvent.setup();
+    const d = detail('upcoming');
+    const { rerender } = render(tree(d));
+    expect(code('CH-09304')).not.toBeNull();
+    expect(code('CH-09220')).toBeNull();
+    rerender(tree(failedRead(d)));
+    // The last good board was empty: it stays, with the notice that it may be out of date, and the failure is not the error either.
+    await expectCode('CH-09220', /These standings may be out of date/);
+    expect(code('CH-09304')).not.toBeNull();
+    expect(code('CH-09204')).toBeNull();
+    router.refresh.mockClear();
+    await user.click(within(code('CH-09220') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // The read lands, still with no round in: no notice.
+    rerender(tree(d));
+    expect(code('CH-09220')).toBeNull();
+    expect(code('CH-09304')).not.toBeNull();
+  });
+
+  it('CH-09220 CH-09304 the same on the phone: an empty last-good board keeps the notice', () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const d = detail('upcoming');
+      const { rerender } = render(tree(d));
+      expect(code('CH-09304')).not.toBeNull();
+      rerender(tree(failedRead(d)));
+      expect(code('CH-09220')).not.toBeNull();
+      expect(code('CH-09304')).not.toBeNull();
+      expect(code('CH-09204')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('CH-09220 the same on the phone: the cards of the last good standings stay, with the notice', () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const d = detail();
+      const { rerender } = render(tree(d));
+      const rows = document.querySelectorAll('.ch-qfm-lb__row').length;
+      expect(rows).toBeGreaterThan(3);
+      rerender(tree(failedRead(d)));
+      expect(document.querySelectorAll('.ch-qfm-lb__row')).toHaveLength(rows);
+      expect(code('CH-09220')).not.toBeNull();
+      expect(code('CH-09204')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+});
+
+describe('Qualifiers · the courses and the cards stream behind the standings (owner rule 6, 2026-10-01)', () => {
+  const deferred = <T,>() => {
+    let resolve: (v: T) => void = () => {};
+    let reject: (e: unknown) => void = () => {};
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+  /** A whole detail, split the way the loader splits it: the standings and facts, and the part that streams. */
+  const split = (d: ChQDetail) => {
+    const { holes, holesError, roundCourses, par, coursesError, ...core } = d;
+    return { core, secondary: { holes, holesError, roundCourses, par, coursesError } satisfies ChQDetailSecondary };
+  };
+  const page = (core: ChQDetailCore, secondary: PromiseLike<ChQDetailSecondary>) => <QualifierDetail data={core} secondary={secondary} writes={fakeWrites()} live={false} />;
+  /** A page whose courses are still on their way suspends while it renders, so it is rendered where React may wait: in an awaited act. */
+  const pending = async (node: ReactElement) => {
+    let view: ReturnType<typeof wrap> | undefined;
+    await act(async () => {
+      view = wrap(node);
+    });
+    return view!;
+  };
+  const tree = (node: ReactNode) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          {node}
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+  const fact = (k: string) => [...document.querySelectorAll('.ch-qf-facts > div')].find((f) => f.querySelector('dt')!.textContent === k)!.textContent;
+  const streaming = () => document.querySelectorAll('[data-ch-code="CH-09410"]');
+
+  it('CH-09410 the standings, facts and squad are on screen while the courses and cards are still coming, each streamed place held at its final size; no empty copy stands in for them', async () => {
+    const user = userEvent.setup();
+    const { core, secondary } = split(detail());
+    const later = deferred<ChQDetailSecondary>();
+    await pending(page(core, later.promise));
+    // The page's own: leaderboard rows, the facts that need no tees, the head of every section.
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' })).toBeTruthy();
+    expect(fact('Entrants')).toBe('Entrants8players');
+    expect(fact('Course')).toBe('CourseFinley GC');
+    expect(document.querySelector('.ch-qf-facts__sub .ch-skel')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Course per round' })).toBeTruthy();
+    // The courses are rows on the list's own classes, one per round; the tray's cards are heads over a card-sized block.
+    const rows = document.querySelectorAll('ol[data-ch-code="CH-09410"] > li');
+    expect(rows).toHaveLength(core.numRounds);
+    await user.click(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' }));
+    const heads = [...document.querySelectorAll('.ch-qf-tray .ch-qf-sc__h b')].map((b) => b.textContent);
+    expect(heads).toEqual(['Round 1', 'Round 2']);
+    expect(screen.queryByRole('table', { name: /Round \d scorecard/ })).toBeNull();
+    for (const empty of ['CH-09308', 'CH-09205', 'CH-09206', 'CH-09304']) expect([empty, code(empty)]).toEqual([empty, null]);
+    expect(streaming().length).toBeGreaterThan(1);
+    // It lands: the cards, the courses and the par take their places, and the placeholders are gone.
+    await act(async () => later.resolve(secondary));
+    expect(await screen.findAllByRole('table', { name: /Round \d scorecard/ })).toHaveLength(2);
+    expect(fact('Course')).toBe('CourseFinley GCPar by round');
+    expect(streaming()).toHaveLength(0);
+    expect(document.querySelector('.ch-qf-facts__sub .ch-skel')).toBeNull();
+  });
+
+  it('CH-09206 CH-09205 a streamed part that did not load is the section’s notice, not an empty list and not "no card"', async () => {
+    const user = userEvent.setup();
+    const { core, secondary } = split(detail());
+    wrap(page(core, fulfilled({ ...secondary, holes: {}, holesError: true, roundCourses: [], par: null, coursesError: true })));
+    await expectCode('CH-09206', /The round courses didn’t load/);
+    await user.click(screen.getByRole('button', { name: 'Show Jonah Okafor’s scorecards' }));
+    await expectCode('CH-09205', /Scorecards didn’t load/);
+    expect(code('CH-09308')).toBeNull();
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+  });
+
+  it('CH-09206 a stream that is cut off before the courses arrive is the same notice, and the leaderboard is not replaced by a crash', async () => {
+    const { core } = split(detail());
+    const cut = deferred<ChQDetailSecondary>();
+    await pending(page(core, cut.promise));
+    await act(async () => cut.reject(new Error('stream aborted')));
+    await expectCode('CH-09206', /The round courses didn’t load/);
+    expect(code('CH-09212')).toBeNull();
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+  });
+
+  it('CH-09410 a render that is not a transition, with new standings and a part that has not landed: the standings update at once and only the streamed places hold a placeholder (router.refresh is a transition and keeps the whole old page until the new part lands, which this does not prove)', async () => {
+    const { core, secondary } = split(detail());
+    const { rerender } = render(tree(page(core, fulfilled(secondary))));
+    expect(screen.getAllByText('Finley GC', { selector: 'b' })).not.toHaveLength(0);
+    expect(streaming()).toHaveLength(0);
+    const again = deferred<ChQDetailSecondary>();
+    await act(async () => rerender(tree(page({ ...core, board: { ...core.board!, submitted: 14 } }, again.promise))));
+    // The standings are the new ones at once and never blank; the streamed places wait.
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    expect(code('CH-09803')!.textContent).toBe('Standings updated. 14 rounds submitted.');
+    expect(code('CH-09204')).toBeNull();
+    expect(streaming().length).toBeGreaterThan(0);
+    await act(async () => again.resolve(secondary));
+    await waitFor(() => expect(streaming()).toHaveLength(0));
+    expect(fact('Course')).toBe('CourseFinley GCPar by round');
+  });
+
+  it('CH-09410 on the phone the sheet of a round has its head and total at once and the nines when they land', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const user = userEvent.setup();
+      const { core, secondary } = split(detail());
+      const later = deferred<ChQDetailSecondary>();
+      await pending(page(core, later.promise));
+      await user.click(screen.getByRole('button', { name: /^Sofia Alvarez, 1/ }));
+      const dialog = await screen.findByRole('dialog', { name: 'Sofia Alvarez' });
+      expect(within(dialog).getByText('Finley GC', { exact: false })).toBeTruthy();
+      expect(within(dialog).queryByRole('table')).toBeNull();
+      expect(code('CH-09308')).toBeNull();
+      await act(async () => later.resolve(secondary));
+      expect(await within(dialog).findByRole('table', { name: /Round 2, front nine/ })).toBeTruthy();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('92101 the route sends the standings without waiting for the courses and cards: the page renders while their reads are still open, then fills in', async () => {
+    const user = userEvent.setup();
+    asCoachSession();
+    realtime.channel.mockReturnValue({ on() { return this; }, subscribe() { return this; } });
+    const release = deferred<void>();
+    const reads: string[] = [];
+    tables.gate = async (table) => {
+      reads.push(table);
+      if (table === 'golf_holes' || table === 'golf_course_tees') await release.promise;
+    };
+    const Q1 = '10000000-0000-4000-8000-000000000001';
+    tables.current = {
+      golf_qualifiers: { data: { id: Q1, team_id: 't1', name: 'Pinehurst qualifier', description: null, status: 'in_progress', start_date: '2026-09-22', end_date: null, entry_deadline: null, course_name: 'Finley GC', rules: null, num_rounds: 1, selection_slots_total: 3, selection_slots_coach_pick: 1, selection_state: 'closed', is_test: false } },
+      golf_qualifier_entries: { data: [{ qualifier_id: Q1, player_id: 'p1', player: { id: 'p1', first_name: 'Ann', last_name: 'X', graduation_year: null } }] },
+      golf_rounds: { data: [{ id: 'r1', qualifier_id: Q1, player_id: 'p1', qualifier_round_number: 1, total_score: 70, score_to_par: -2, round_date: '2026-09-22', course_name: 'Finley GC', holes_played: 18 }] },
+      golf_qualifier_round_courses: { data: [{ round_number: 1, course_name: 'Finley GC', tee_id: 'tee1' }] },
+      golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
+      golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
+    };
+    const el = (await ClubhouseQualifiersRoute({ view: 'detail', id: Q1 })) as ReactElement<{ data: Record<string, unknown>; secondary: Promise<unknown> }>;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // The route came back with the cards' read still open.
+    expect(reads).toEqual(expect.arrayContaining(['golf_course_tees', 'golf_holes']));
+    expect(el.props.data).not.toHaveProperty('holes');
+    expect(el.props.secondary).toBeInstanceOf(Promise);
+    await pending(el);
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Show Ann X’s scorecards' }));
+    expect(screen.queryByRole('table', { name: /Round 1 scorecard/ })).toBeNull();
+    release.resolve();
+    expect(await screen.findByRole('table', { name: /Round 1 scorecard/ })).toBeTruthy();
+    expect(fact('Course')).toBe('CourseFinley GCPar 72');
+  });
+});
+
+describe('Qualifiers · the list comes back as it was left, and Back is a real Back (owner rule 8, 2026-10-01)', () => {
+  const LIST_URL = '/golf/dashboard/qualifiers';
+  const TEAM_LIST = `${LIST_URL}\u0000t1`;
+  const FROM_LIST = 'ch:qualifiers:from-list';
+  const FROM_DETAIL = 'ch:qualifiers:from-detail';
+  const scoped = (scope: string, node: ReactNode) => <RouteScope value={scope}>{node}</RouteScope>;
+  const pill = (name: RegExp) => screen.getByRole('button', { name }).getAttribute('aria-pressed');
+  const searchBox = () => screen.getByLabelText('Search qualifiers') as HTMLInputElement;
+  /** What a Back note says, read straight from this tab's session. */
+  const kept = (key: string) => {
+    const note = JSON.parse(window.sessionStorage.getItem(key) ?? 'null') as { id: string; at: number; listBelow?: boolean } | null;
+    if (!note) return null;
+    // Every note says when the click was made, so a stale one can be ignored.
+    expect(typeof note.at).toBe('number');
+    const { at: _at, ...rest } = note;
+    return rest;
+  };
+  /** A note as a click leaves it, `ago` milliseconds back. */
+  const plant = (key: string, note: { id: string; listBelow?: boolean }, ago = 0) => window.sessionStorage.setItem(key, JSON.stringify({ ...note, at: Date.now() - ago }));
+  /** A link click that stays in the test: jsdom does not navigate, and the handlers under test run before the default. */
+  const keepHere = (link: Element) => link.addEventListener('click', (e) => e.preventDefault());
+  const backLink = (name = 'Qualifiers') => screen.getByRole('link', { name });
+  const asPhone = () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    return () => {
+      window.matchMedia = real;
+    };
+  };
+  function SlotHost() {
+    const { setSlot } = usePhoneChromeState();
+    return <div ref={setSlot} data-testid="phone-top-back" />;
+  }
+  const phoneTree = (node: ReactNode) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <PhoneChromeProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <SlotHost />
+            {node}
+          </div>
+        </PhoneChromeProvider>
+      </ToastProvider>
+    </LazyMotion>
+  );
+  const phoneBack = (name: string) => within(screen.getByTestId('phone-top-back')).getByRole('button', { name });
+  const openQualifier = (d: ChQDetail = detail()) => <QualifierDetail data={d} writes={fakeWrites()} live={false} />;
+
+  beforeEach(() => markAppRunning());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+    document.getElementById('ch-canvas')?.remove();
+  });
+
+  it('CH-09904 the filter and the search come back when the list is opened again in the same tab and team, and nowhere else', async () => {
+    const user = userEvent.setup();
+    const first = wrap(scoped(TEAM_LIST, <QualifiersList data={list()} />));
+    await user.click(screen.getByRole('button', { name: /^Concluded/ }));
+    await user.type(searchBox(), 'spring');
+    first.unmount();
+
+    // Back from a qualifier, the sidebar, a tab: the same page and team.
+    const again = wrap(scoped(TEAM_LIST, <QualifiersList data={list()} />));
+    expect(pill(/^Concluded/)).toBe('true');
+    expect(searchBox().value).toBe('spring');
+    again.unmount();
+
+    // Another team, and a player's own list, open on the defaults.
+    const other = wrap(scoped(`${LIST_URL}\u0000t2`, <QualifiersList data={list()} />));
+    expect(pill(/^All/)).toBe('true');
+    expect(searchBox().value).toBe('');
+    other.unmount();
+    wrap(scoped(`/golf/dashboard/my-qualifiers\u0000t1`, <QualifiersList data={list('player', 'mine')} />));
+    expect(pill(/^All/)).toBe('true');
+    expect(searchBox().value).toBe('');
+  });
+
+  it('CH-09904 a filter that was cleared is not kept: the next visit opens on the whole list', async () => {
+    const user = userEvent.setup();
+    const first = wrap(scoped(TEAM_LIST, <QualifiersList data={list()} />));
+    await user.type(searchBox(), 'zzz-nothing-matches');
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    first.unmount();
+    wrap(scoped(TEAM_LIST, <QualifiersList data={list()} />));
+    expect(searchBox().value).toBe('');
+    expect(pill(/^All/)).toBe('true');
+    expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('CH-09904 the list keeps nothing in its address and nothing of its own: no history write, no scroll or return note', async () => {
+    const user = userEvent.setup();
+    const replace = vi.spyOn(window.history, 'replaceState');
+    const push = vi.spyOn(window.history, 'pushState');
+    const before = window.location.href;
+    wrap(scoped(TEAM_LIST, <QualifiersList data={list()} />));
+    await user.click(screen.getByRole('button', { name: /^Active/ }));
+    await user.type(searchBox(), 'pine');
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    expect(replace).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(before);
+    // Only the shell's own keys (this page and team's filter and search): no note until a link is followed.
+    expect(Object.keys(window.sessionStorage).filter((k) => !k.startsWith('ch:screen:'))).toEqual([]);
+  });
+
+  it('CH-09904 opening a qualifier from the list leaves a note for that qualifier only, and a new-tab click leaves none', async () => {
+    const user = userEvent.setup();
+    wrap(scoped(TEAM_LIST, <QualifiersList data={list()} />));
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('a.ch-qf-hero, a.ch-qf-card')];
+    expect(links.length).toBeGreaterThan(1);
+    links.forEach(keepHere);
+    const idOf = (a: HTMLAnchorElement) => a.getAttribute('href')!.split('/').pop()!;
+    await user.keyboard('{Control>}');
+    await user.click(links[0]!);
+    await user.keyboard('{/Control}');
+    expect(kept(FROM_LIST)).toBeNull();
+    await user.click(links[1]!);
+    expect(kept(FROM_LIST)).toEqual({ id: idOf(links[1]!).toLowerCase() });
+  });
+
+  it('CH-09904 the qualifier’s Back steps back in history when the list opened it, and pushes nothing', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    noteOpenedFromList(d.id);
+    wrap(openQualifier(d));
+    // The qualifier read the note as it mounted, and spent it.
+    expect(kept(FROM_LIST)).toBeNull();
+    expect(backLink().getAttribute('href')).toBe(LIST_URL);
+    await user.click(backLink());
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('CH-09904 a second tap on Back is the first one’s: it never steps back twice and skips the list', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    noteOpenedFromList(d.id);
+    wrap(openQualifier(d));
+    await user.dblClick(backLink());
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('CH-09904 the note survives strict mode’s second run of the mount effect: Back still steps back in development', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    noteOpenedFromList(d.id);
+    render(
+      <StrictMode>
+        <LazyMotion features={domAnimation}>
+          <ToastProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              {openQualifier(d)}
+            </div>
+          </ToastProvider>
+        </LazyMotion>
+      </StrictMode>,
+    );
+    await user.click(backLink());
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-09904 with no note (a deep link, a fresh tab, Home), a note for another qualifier, a new-tab click or a blocked store, Back is the list’s address', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    const plain = wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+    plain.unmount();
+
+    // The note names another qualifier: it is not this one's, and it is left for its own.
+    noteOpenedFromList('some-other-qualifier');
+    const other = wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+    expect(kept(FROM_LIST)).toEqual({ id: 'some-other-qualifier' });
+    other.unmount();
+
+    window.sessionStorage.clear();
+    noteOpenedFromList(d.id);
+    const modified = wrap(openQualifier(d));
+    keepHere(backLink());
+    fireEvent.click(backLink(), { ctrlKey: true });
+    fireEvent.click(backLink(), { metaKey: true });
+    expect(router.back).not.toHaveBeenCalled();
+    modified.unmount();
+
+    window.sessionStorage.clear();
+    noteOpenedFromList(d.id);
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  it('CH-09904 a later page for the same qualifier that the list did not open (a save’s replace, Confirm squad, a Forward) goes to the address: the note was spent by the first', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    noteOpenedFromList(d.id);
+    const first = wrap(openQualifier(d));
+    first.unmount();
+    wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  it('CH-09904 a note older than ten seconds is not a click being followed: the page it was for never opened, so the next visit goes to the address and the note is dropped', async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    plant(FROM_LIST, { id: d.id.toLowerCase() }, 11_000);
+    const first = wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem(FROM_LIST)).toBeNull();
+    first.unmount();
+
+    // The same for Manage selections, and a note from before the timestamp existed.
+    const sel = previewSelection('picking');
+    plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: true }, 11_000);
+    const second = wrap(<QualifierSelection data={sel} writes={selWrites()} />);
+    keepHere(backLink('Qualifier'));
+    await user.click(backLink('Qualifier'));
+    expect(router.back).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem(FROM_DETAIL)).toBeNull();
+    second.unmount();
+    window.sessionStorage.setItem(FROM_LIST, JSON.stringify({ id: d.id.toLowerCase() }));
+    wrap(openQualifier(d));
+    keepHere(backLink());
+    await user.click(backLink());
+    expect(router.back).not.toHaveBeenCalled();
+
+    // A fresh note still steps back (the control of the above).
+    window.sessionStorage.clear();
+    plant(FROM_LIST, { id: d.id.toLowerCase() }, 9_000);
+    cleanup();
+    wrap(openQualifier(d));
+    await user.click(backLink());
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-09904 the phone’s top bar goes back the same way: a step back when the list opened the qualifier, the list’s address otherwise', async () => {
+    const restore = asPhone();
+    try {
+      const user = userEvent.setup();
+      const d = detail();
+      noteOpenedFromList(d.id);
+      const first = render(phoneTree(openQualifier(d)));
+      await user.click(phoneBack('Back to Qualifiers'));
+      expect(router.back).toHaveBeenCalledTimes(1);
+      expect(router.push).not.toHaveBeenCalled();
+      first.unmount();
+
+      render(phoneTree(openQualifier(d)));
+      await user.click(phoneBack('Back to Qualifiers'));
+      expect(router.push).toHaveBeenCalledWith(LIST_URL);
+      expect(router.back).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+    }
+  });
+
+  it('CH-09310 the not-found page of a qualifier the list opened steps back to the list; any other not-found goes to the list’s address', async () => {
+    const user = userEvent.setup();
+    const id = '10000000-0000-4000-8000-000000000009';
+    asCoachSession();
+    tables.current = { golf_qualifiers: { data: null } };
+    noteOpenedFromList(id);
+    const stepped = wrap(await ClubhouseQualifiersRoute({ view: 'detail', id }));
+    const back = within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' });
+    expect(back.getAttribute('href')).toBe(LIST_URL);
+    await user.click(back);
+    expect(router.back).toHaveBeenCalledTimes(1);
+    stepped.unmount();
+
+    // The edit address for the same id is not the page the list opened: Back is the list's address.
+    noteOpenedFromList(id);
+    const edit = wrap(await ClubhouseQualifiersRoute({ view: 'edit', id }));
+    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    expect(router.back).toHaveBeenCalledTimes(1);
+    edit.unmount();
+
+    // And so is a detail address nobody opened from the list.
+    window.sessionStorage.clear();
+    wrap(await ClubhouseQualifiersRoute({ view: 'detail', id }));
+    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-09905 the Manage selections link leaves a note for its Back, saying whether the list opened the qualifier; a new-tab click leaves none', async () => {
+    const user = userEvent.setup();
+    const d = detail('live', 'coach');
+    const plain = wrap(openQualifier(d));
+    const manage = screen.getByRole('link', { name: 'Manage selections' });
+    keepHere(manage);
+    fireEvent.click(manage, { ctrlKey: true });
+    expect(kept(FROM_DETAIL)).toBeNull();
+    await user.click(manage);
+    expect(kept(FROM_DETAIL)).toEqual({ id: d.id.toLowerCase(), listBelow: false });
+    plain.unmount();
+
+    window.sessionStorage.clear();
+    noteOpenedFromList(d.id);
+    wrap(openQualifier(d));
+    const again = screen.getByRole('link', { name: 'Manage selections' });
+    keepHere(again);
+    await user.click(again);
+    expect(kept(FROM_DETAIL)).toEqual({ id: d.id.toLowerCase(), listBelow: true });
+  });
+
+  it('CH-09905 on a phone the Manage selections link leaves the note too', async () => {
+    const restore = asPhone();
+    try {
+      const user = userEvent.setup();
+      const d = detail('live', 'coach');
+      noteOpenedFromList(d.id);
+      render(phoneTree(openQualifier(d)));
+      const manage = screen.getByRole('link', { name: 'Manage selections' });
+      keepHere(manage);
+      await user.click(manage);
+      expect(kept(FROM_DETAIL)).toEqual({ id: d.id.toLowerCase(), listBelow: true });
+    } finally {
+      restore();
+    }
+  });
+
+  it('CH-09905 Manage selections steps back to the qualifier when the qualifier opened it, and the qualifier’s Back is still a step back to the list', async () => {
+    const user = userEvent.setup();
+    const sel = previewSelection('picking');
+    // The list opened the qualifier, and the qualifier's link opened Manage selections.
+    plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: true });
+    const page = wrap(<QualifierSelection data={sel} writes={selWrites()} />);
+    expect(kept(FROM_DETAIL)).toBeNull();
+    await user.click(screen.getByRole('link', { name: 'Qualifier' }));
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.push).not.toHaveBeenCalled();
+    page.unmount();
+
+    // The qualifier comes back as a new page, and the list's note was handed back to it.
+    expect(kept(FROM_LIST)).toEqual({ id: sel.id.toLowerCase() });
+    wrap(openQualifier({ ...detail('live', 'coach'), id: sel.id }));
+    await user.click(backLink());
+    expect(router.back).toHaveBeenCalledTimes(2);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('CH-09905 Manage selections opened from a qualifier the list did not open steps back to it, and hands nothing to the list', async () => {
+    const user = userEvent.setup();
+    const sel = previewSelection('picking');
+    plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: false });
+    wrap(<QualifierSelection data={sel} writes={selWrites()} />);
+    await user.click(screen.getByRole('link', { name: 'Qualifier' }));
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(kept(FROM_LIST)).toBeNull();
+  });
+
+  it('CH-09905 Manage selections with no note, on a desktop or a phone, goes to the qualifier’s address', async () => {
+    const user = userEvent.setup();
+    const sel = previewSelection('picking');
+    const desk = wrap(<QualifierSelection data={sel} writes={selWrites()} />);
+    expect(backLink('Qualifier').getAttribute('href')).toBe(`${LIST_URL}/${sel.id}`);
+    keepHere(backLink('Qualifier'));
+    await user.click(backLink('Qualifier'));
+    expect(router.back).not.toHaveBeenCalled();
+    desk.unmount();
+
+    const restore = asPhone();
+    try {
+      plant(FROM_DETAIL, { id: sel.id.toLowerCase(), listBelow: false });
+      const stepped = render(phoneTree(<QualifierSelection data={sel} writes={selWrites()} />));
+      await user.click(phoneBack('Back to Qualifier'));
+      expect(router.back).toHaveBeenCalledTimes(1);
+      stepped.unmount();
+      render(phoneTree(<QualifierSelection data={sel} writes={selWrites()} />));
+      await user.click(phoneBack('Back to Qualifier'));
+      expect(router.push).toHaveBeenCalledWith(`${LIST_URL}/${sel.id}`);
+      expect(router.back).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+    }
+  });
+
+  it('CH-09905 inside the shell frame the filter and the place come back together on Back, and the list scrolls nothing itself', async () => {
+    const user = userEvent.setup();
+    const canvas = document.createElement('div');
+    canvas.id = 'ch-canvas';
+    canvas.scrollTo = vi.fn((opts?: ScrollToOptions | number) => {
+      if (typeof opts === 'object' && opts.top != null) canvas.scrollTop = opts.top;
+    }) as typeof canvas.scrollTo;
+    document.body.appendChild(canvas);
+    window.scrollTo = vi.fn() as typeof window.scrollTo;
+    const page = (key: string, node: ReactNode) => <RouteFrame routeKey={key}>{node}</RouteFrame>;
+    const d = detail();
+    const DETAIL = `${LIST_URL}/${d.id}\u0000t1`;
+    const tree = (node: ReactNode) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            {node}
+          </div>
+        </ToastProvider>
+      </LazyMotion>
+    );
+
+    const view = render(tree(page('/golf/dashboard\u0000t1', <main>home</main>)), { container: canvas });
+    view.rerender(tree(page(TEAM_LIST, <QualifiersList data={list()} />)));
+    await user.click(screen.getByRole('button', { name: /^Active/ }));
+    await user.type(searchBox(), 'pine');
+    canvas.scrollTop = 520;
+    canvas.dispatchEvent(new Event('scroll'));
+    const link = document.querySelector('a.ch-qf-hero, a.ch-qf-card') as HTMLAnchorElement;
+    keepHere(link);
+    await user.click(link);
+
+    // The qualifier opens at the top (a new page), the filter and the place are kept.
+    view.rerender(tree(page(DETAIL, <QualifierDetail data={{ ...d, id: link.getAttribute('href')!.split('/').pop()! }} writes={fakeWrites()} live={false} />)));
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+
+    // Back: a step back in history (a popstate), then the list again, restored once by the frame, with its filter and search.
+    await user.click(backLink());
+    expect(router.back).toHaveBeenCalledTimes(1);
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    const sends = (canvas.scrollTo as Mock).mock.calls.length;
+    view.rerender(tree(page(TEAM_LIST, <QualifiersList data={list()} />)));
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520 });
+    expect(pill(/^Active/)).toBe('true');
+    expect(searchBox().value).toBe('pine');
+    // One restore, the frame's: it settled on the first try (the canvas reached 520), and the list sent nothing of its own.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect((canvas.scrollTo as Mock).mock.calls.length).toBe(sends + 1);
+  });
+});
+
+describe('Qualifiers · review fixes (2026-10-01)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('CH-09408 a re-read that already shows a landed write leaves no edit behind to mask the next real change', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const cand = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({ playerId, name: playerId, rank, toPar: rank, total: 70 + rank, rounds: 2, onScore, pick: null, selected: false, tiedAtCut });
+    const at = (...candidates: ReturnType<typeof cand>[]): ChQSelectionData => ({ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates });
+    let settle: (v: { success: boolean }) => void = () => {};
+    const writes = selWrites({ chooseTie: vi.fn(() => new Promise<{ success: boolean }>((resolve) => (settle = resolve))) });
+    const tree = (data: ChQSelectionData) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <QualifierSelection data={data} writes={writes} />
+          </div>
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const badge = (name: string) => within(within(code('CH-09318') as HTMLElement).getByText(name, { selector: 'b' }).closest('li') as HTMLElement).getByText(/Tie at cut|Given the place/).textContent;
+    const { rerender } = render(tree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true))));
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    // The page is re-read and already carries the place before the write's own answer comes back.
+    rerender(tree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, true, true))));
+    await act(async () => settle({ success: true }));
+    await screen.findByText('Cal takes the place at the cut');
+    // The next read the server changes: it is shown at once, not held back by an edit that was never needed.
+    rerender(tree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true))));
+    expect(badge('Cal')).toBe('Tie at cut');
+  });
+
+  it('CH-09408 a change the server already shows clears the older opposite edit for that player, so a take-back is not masked by the give before it', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const cand = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({ playerId, name: playerId, rank, toPar: rank, total: 70 + rank, rounds: 2, onScore, pick: null, selected: false, tiedAtCut });
+    const data: ChQSelectionData = { ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates: [cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)] };
+    const writes = selWrites();
+    wrap(<QualifierSelection data={data} writes={writes} />);
+    const badge = () => within(within(code('CH-09318') as HTMLElement).getByText('Cal', { selector: 'b' }).closest('li') as HTMLElement).getByText(/Tie at cut|Given the place/).textContent;
+    // The give lands and the page has not been re-read: the edit holds Cal's place on screen.
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    await user.click(await screen.findByRole('button', { name: 'Take it back Cal' }));
+    // The take-back lands. The server never showed the give, so it already agrees with the take-back: no edit is left holding the give.
+    await waitFor(() => expect(writes.chooseTie).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(badge()).toBe('Tie at cut'));
+    expect(screen.getByRole('button', { name: 'Give the place Cal' })).toBeTruthy();
+  });
+
+  it('CH-09206 a rejected chunk of the stream is the failed part at once', async () => {
+    const rejected = Object.assign(Promise.reject(new Error('cut')), { status: 'rejected' as const });
+    rejected.catch(() => {});
+    expect(await settled(rejected)).toEqual(FAILED_SECONDARY);
+    expect((settled(rejected) as { status?: string }).status).toBe('fulfilled');
+  });
+});
+
 describe('Qualifiers · create and edit', () => {
   const form = (over: Partial<ChQFormData> = {}) => ({ ...previewCreateForm(), ...over });
 
@@ -686,7 +1613,9 @@ describe('Qualifiers · create and edit', () => {
     expect(writes.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Conference qualifier', numRounds: 3, selectionSlotsTotal: 5, selectionSlotsCoachPick: 1, playerIds: expect.any(Array) }));
     writes.create.mockImplementation(async () => ({ success: true, data: { qualifierId: 'q-new' } }));
     await user.click(screen.getByRole('button', { name: 'Create qualifier' }));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new'));
+    // Back from the new qualifier does not return to a form whose Create would make a second one.
+    expect(router.push).not.toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new');
   });
 
   it('CH-09404 a create in flight reads Creating and cannot be sent twice', async () => {
@@ -877,6 +1806,187 @@ describe('Qualifiers · create and edit', () => {
   });
 });
 
+describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01)', () => {
+  const deferred = <T,>() => {
+    let resolve: (v: T) => void = () => {};
+    let reject: (e: unknown) => void = () => {};
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+  type Tees = Array<{ id: string; name: string; par: number | null; yards: number | null; holes: number }>;
+  const cand = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({ playerId, name: playerId, rank, toPar: rank, total: 70 + rank, rounds: 2, onScore, pick: null, selected: false, tiedAtCut });
+
+  it('92102 two courses chosen one after the other: the tees of the last choice win, whichever answer comes back last', async () => {
+    const user = userEvent.setup();
+    const a = deferred<Tees>();
+    const b = deferred<Tees>();
+    const writes = fakeWrites({ tees: vi.fn((id: string) => (id === 'c-finley' ? a.promise : b.promise)) });
+    wrap(<QualifierForm data={previewCreateForm()} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: /Choose course for round 1/ }));
+    await user.click(await screen.findByRole('button', { name: /Finley GC/ }));
+    await user.click(screen.getByRole('button', { name: 'All courses' }));
+    await user.click(await screen.findByRole('button', { name: /Hope Valley CC/ }));
+    expect(writes.tees.mock.calls.map((c) => c[0])).toEqual(['c-finley', 'c-hope']);
+    await act(async () => b.resolve([{ id: 't-bravo', name: 'Bravo', par: 71, yards: 6500, holes: 18 }]));
+    expect(await screen.findByRole('button', { name: /Bravo/ })).toBeTruthy();
+    // The slower answer for the first course arrives after: it is not drawn under the second course.
+    await act(async () => a.resolve([{ id: 't-alpha', name: 'Alpha', par: 72, yards: 6800, holes: 18 }]));
+    expect(screen.queryByRole('button', { name: /Alpha/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Bravo/ })).toBeTruthy();
+  });
+
+  it('92102 CH-09210 a failed answer for a course that is no longer chosen says nothing under the one that is', async () => {
+    const user = userEvent.setup();
+    const a = deferred<Tees>();
+    const writes = fakeWrites({ tees: vi.fn((id: string) => (id === 'c-finley' ? a.promise : Promise.resolve(PREVIEW_TEES))) });
+    wrap(<QualifierForm data={previewCreateForm()} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: /Choose course for round 1/ }));
+    await user.click(await screen.findByRole('button', { name: /Finley GC/ }));
+    await user.click(screen.getByRole('button', { name: 'All courses' }));
+    await user.click(await screen.findByRole('button', { name: /Hope Valley CC/ }));
+    expect(await screen.findByRole('button', { name: /Blue/ })).toBeTruthy();
+    // The first course's read fails after the second one's tees are on screen: nothing is said under the course that is chosen.
+    await act(async () => a.reject(new Error('late failure')));
+    expect(code('CH-09210')).toBeNull();
+    expect(screen.getByRole('button', { name: /Blue/ })).toBeTruthy();
+  });
+
+  const selectionTree = (data: ChQSelectionData, writes: SelWrites) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <QualifierSelection data={data} writes={writes} />
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+  const badge = (name: string) => within(within(code('CH-09318') as HTMLElement).getByText(name, { selector: 'b' }).closest('li') as HTMLElement).getByText(/Tie at cut|Given the place/).textContent;
+
+  it('91301 a refresh that was started before a write landed cannot undo it on screen; once the server shows it the page follows the server again', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const at = (...candidates: ReturnType<typeof cand>[]): ChQSelectionData => ({ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates });
+    const writes = selWrites();
+    const { rerender } = render(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)), writes));
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    await screen.findByText('Cal takes the place at the cut');
+    expect(badge('Cal')).toBe('Given the place');
+    // The late read: it was started before the write and has not seen it.
+    rerender(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)), writes));
+    expect(badge('Cal')).toBe('Given the place');
+    expect(badge('Ben')).toBe('Tie at cut');
+    // The read that has seen it: the same on screen, and the edit is let go.
+    rerender(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, true, true)), writes));
+    expect(badge('Cal')).toBe('Given the place');
+    // Later the server changes (someone took it back): the page follows it, not the old edit.
+    rerender(selectionTree(at(cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true)), writes));
+    expect(badge('Cal')).toBe('Tie at cut');
+  });
+
+  it('91301 a pick that landed stays on screen over a stale read, until the server shows it', async () => {
+    const user = userEvent.setup();
+    const stale = previewSelection('picking');
+    const writes = selWrites();
+    const { rerender } = render(selectionTree(stale, writes));
+    await user.click(screen.getByRole('button', { name: 'Choose a player' }));
+    await user.click(screen.getByRole('radio', { name: /Eli Brandt/ }));
+    await user.type(screen.getByRole('textbox', { name: /^Reason/ }), 'Best short game on the team');
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    expect(await screen.findByText('1 of 1 chosen')).toBeTruthy();
+    rerender(selectionTree({ ...stale, candidates: stale.candidates.map((c) => ({ ...c })) }, writes));
+    expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
+    const picked = previewSelection('picked');
+    const saved = { ...picked, candidates: picked.candidates.map((c) => (c.pick ? { ...c, pick: { reasoning: 'Best short game on the team' } } : c)) };
+    rerender(selectionTree(saved, writes));
+    expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
+    // The server's own word from here on: a pick someone else removed is gone.
+    rerender(selectionTree({ ...saved, candidates: saved.candidates.map((c) => ({ ...c, pick: null })) }, writes));
+    expect(screen.getByText('0 of 1 chosen')).toBeTruthy();
+  });
+
+  it('91301 an edit the server never shows is let go at the second read, so the page ends on the server’s word', async () => {
+    const user = userEvent.setup();
+    const stale = previewSelection('picking');
+    const writes = selWrites();
+    const { rerender } = render(selectionTree(stale, writes));
+    await user.click(screen.getByRole('button', { name: 'Choose a player' }));
+    await user.click(screen.getByRole('radio', { name: /Eli Brandt/ }));
+    await user.type(screen.getByRole('textbox', { name: /^Reason/ }), 'Best short game on the team');
+    await user.click(screen.getByRole('button', { name: 'Save pick' }));
+    expect(await screen.findByText('1 of 1 chosen')).toBeTruthy();
+    // The first read since is the late one; the second is the write's own, and it is the server's word.
+    rerender(selectionTree({ ...stale, candidates: stale.candidates.map((c) => ({ ...c })) }, writes));
+    expect(screen.getByText('1 of 1 chosen')).toBeTruthy();
+    rerender(selectionTree({ ...stale, candidates: stale.candidates.map((c) => ({ ...c })) }, writes));
+    expect(screen.getByText('0 of 1 chosen')).toBeTruthy();
+  });
+
+  it('CH-09408 CH-09010 giving a place waits on its own row only: the other level players stay available, and the places left count the one in flight', async () => {
+    const user = userEvent.setup();
+    const base = previewSelection('picking');
+    const data: ChQSelectionData = { ...base, selectionState: 'closed', squad: 3, picks: 0, tie: { places: 2, chosen: 0 }, candidates: [cand('Ann', 1, true), cand('Ben', 2, false, true), cand('Cal', 2, false, true), cand('Dee', 2, false, true)] };
+    const cal = deferred<{ success: boolean }>();
+    const ben = deferred<{ success: boolean }>();
+    const writes = selWrites({ chooseTie: vi.fn((_id: string, playerId: string) => (playerId === 'Cal' ? cal.promise : ben.promise)) });
+    render(selectionTree(data, writes));
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    // Cal's row says it is saving; nobody else's does.
+    const calRow = screen.getByText('Cal', { selector: 'b' }).closest('li') as HTMLElement;
+    expect(within(calRow).getByText('Saving').getAttribute('data-ch-code')).toBe('CH-09408');
+    expect(document.querySelectorAll('li [data-ch-code="CH-09408"]')).toHaveLength(1);
+    expect((within(calRow).getByRole('button') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Give the place Ben' }) as HTMLButtonElement).disabled).toBe(false);
+    // A second give goes through while the first is in flight; with both counted the places are spoken for.
+    await user.click(screen.getByRole('button', { name: 'Give the place Ben' }));
+    expect(writes.chooseTie.mock.calls.map((c) => c[1])).toEqual(['Cal', 'Ben']);
+    expect((screen.getByRole('button', { name: 'Give the place Dee' }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => {
+      cal.resolve({ success: true });
+      ben.resolve({ success: true });
+    });
+    await screen.findByText('Ben takes the place at the cut');
+    expect(document.querySelectorAll('li [data-ch-code="CH-09408"]')).toHaveLength(0);
+    expect((screen.getByRole('button', { name: 'Take it back Cal' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  describe('on the phone', () => {
+    const real = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      window.matchMedia = real;
+    });
+
+    it('CH-09406 CH-09004 Reopen keeps its sheet up while the server answers, says Reopening on the control that stays, and closes the sheet only when it landed', async () => {
+      const user = userEvent.setup();
+      const answer = deferred<{ success: boolean; error?: string }>();
+      const writes = fakeWrites({ setStatus: vi.fn(() => answer.promise) });
+      const d = detail('completed');
+      wrap(<QualifierDetail data={d} writes={writes} live={false} />);
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+      const sheet = () => screen.getByRole('dialog', { name: d.name });
+      await user.click(within(await screen.findByRole('dialog', { name: d.name })).getByRole('button', { name: 'Reopen qualifier' }));
+      // In flight: the sheet is still there and its button says what it is doing.
+      const busy = within(sheet()).getByText('Reopening');
+      expect(busy.getAttribute('data-ch-code')).toBe('CH-09406');
+      expect((busy.closest('button') as HTMLButtonElement).disabled).toBe(true);
+      // Refused: the sheet stays, the button is back, the toast says so.
+      await act(async () => answer.resolve({ success: false, error: 'nope' }));
+      await expectCode('CH-09004', /Couldn’t reopen/);
+      expect((within(sheet()).getByRole('button', { name: 'Reopen qualifier' }) as HTMLButtonElement).disabled).toBe(false);
+      // Landed: the sheet closes.
+      writes.setStatus.mockImplementation(async () => ({ success: true }));
+      await user.click(within(sheet()).getByRole('button', { name: 'Reopen qualifier' }));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: d.name })).toBeNull());
+      expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Live');
+    });
+  });
+});
+
 describe('Qualifiers · loading', () => {
   it('CH-09401 CH-09402 CH-09403 each address has a skeleton in the page’s shape', () => {
     render(
@@ -889,6 +1999,24 @@ describe('Qualifiers · loading', () => {
     expect(code('CH-09401')!.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-09402')!.getAttribute('aria-label')).toBe('Loading the qualifier');
     expect(code('CH-09403')!.getAttribute('aria-label')).toBe('Loading the qualifier form');
+  });
+});
+
+describe('Qualifiers · Manage selections loads in its own shape (2026-10-01)', () => {
+  it('CH-09409 its skeleton is the page’s shape, on the page’s own classes: head, three steps, the note, the lists and the picks, not the qualifier’s facts and leaderboard', () => {
+    render(<QualifierSelectionSkeleton />);
+    const sk = code('CH-09409') as HTMLElement;
+    expect(sk.getAttribute('aria-busy')).toBe('true');
+    expect(sk.getAttribute('aria-label')).toBe('Loading Manage selections');
+    expect(sk.classList.contains('ch-qfs')).toBe(true);
+    expect(sk.querySelectorAll('.ch-qfs-steps > li')).toHaveLength(3);
+    expect(sk.querySelector('.ch-qf-note')).not.toBeNull();
+    expect(sk.querySelectorAll('.ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    expect(sk.querySelector('.ch-qf-facts')).toBeNull();
+    // The route's loading file draws it, not the qualifier's skeleton.
+    const loading = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/qualifiers/[id]/selection/loading.tsx'), 'utf8');
+    expect(loading).toContain('QualifierSelectionSkeleton');
+    expect(loading).not.toContain('QualifierDetailSkeleton');
   });
 });
 
@@ -914,6 +2042,87 @@ describe('Qualifiers · Manage selections', () => {
     expect(steps().map((s) => s.getAttribute('aria-current'))).toEqual([null, 'step', null]);
     expect(screen.getByText('Choose a player and say why')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Confirm squad' })).toBeTruthy();
+  });
+
+  it('CH-09318 Q-114 a tie at the cut waits for the coach: confirm stays off until the place is given, and can be taken back', async () => {
+    const base = previewSelection('picking');
+    const c = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({
+      playerId,
+      name: playerId,
+      rank,
+      toPar: rank,
+      total: 70 + rank,
+      rounds: 2,
+      onScore,
+      pick: null,
+      selected: false,
+      tiedAtCut,
+    });
+    const writes = selWrites();
+    wrap(
+      <QualifierSelection
+        data={{ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates: [c('Ann', 1, true), c('Ben', 2, false, true), c('Cal', 2, false, true)] }}
+        writes={writes}
+      />,
+    );
+    const confirmBtn = () => screen.getByRole('button', { name: 'Confirm squad' }) as HTMLButtonElement;
+    expect(code('CH-09318')).toBeTruthy();
+    expect(confirmBtn().disabled).toBe(true);
+    expect(screen.getByText(/Give 1 more place to confirm the squad/)).toBeTruthy();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    expect(writes.chooseTie).toHaveBeenCalledWith(base.id, 'Cal', true);
+    await screen.findByText('Cal takes the place at the cut');
+    expect(confirmBtn().disabled).toBe(false);
+    // The one place is given, so Ben's button waits; Cal's can be taken back.
+    expect((screen.getByRole('button', { name: 'Give the place Ben' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Take it back Cal' }));
+    expect(writes.chooseTie).toHaveBeenLastCalledWith(base.id, 'Cal', false);
+  });
+
+  it('CH-09010 giving a place at a tied cut that fails says so, and confirm stays off', async () => {
+    const base = previewSelection('picking');
+    const c = (playerId: string, rank: number, onScore: boolean, tiedAtCut = false) => ({
+      playerId,
+      name: playerId,
+      rank,
+      toPar: rank,
+      total: 70 + rank,
+      rounds: 2,
+      onScore,
+      pick: null,
+      selected: false,
+      tiedAtCut,
+    });
+    const writes = selWrites();
+    vi.mocked(writes.chooseTie).mockResolvedValue({ success: false, error: 'boom' });
+    wrap(
+      <QualifierSelection
+        data={{ ...base, selectionState: 'closed', squad: 2, picks: 0, tie: { places: 1, chosen: 0 }, candidates: [c('Ann', 1, true), c('Ben', 2, false, true), c('Cal', 2, false, true)] }}
+        writes={writes}
+      />,
+    );
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Give the place Cal' }));
+    await screen.findByText('Couldn’t give Cal the place');
+    expect((screen.getByRole('button', { name: 'Confirm squad' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('§11.3 a field smaller than the squad confirms once every player who can be picked is picked', () => {
+    const base = previewSelection('picking');
+    const c = (playerId: string, rank: number, onScore: boolean, pick: string | null) => ({
+      playerId,
+      name: playerId,
+      rank,
+      toPar: rank,
+      total: 70 + rank,
+      rounds: 1,
+      onScore,
+      pick: pick ? { reasoning: pick } : null,
+      selected: false,
+    });
+    // Squad 3 with 2 picks, two entrants: one on score, the other already picked. No one is left to pick.
+    wrap(<QualifierSelection data={{ ...base, selectionState: 'closed', squad: 3, picks: 2, candidates: [c('Ann', 1, true, null), c('Ben', 2, false, 'Grit')] }} writes={selWrites()} />);
+    expect((screen.getByRole('button', { name: 'Confirm squad' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('CH-09503 CH-09703 CH-09005 starting asks first with the warning tap, steps to closed one step at a time, and a refusal says so', async () => {
@@ -1093,7 +2302,9 @@ describe('Qualifiers · Manage selections', () => {
     // A write that lands passes through and leaves no trail.
     vi.mocked(chTrail).mockClear();
     vi.mocked(confirmQualifierSelection).mockResolvedValueOnce({ ok: true });
-    expect(await LIVE_SELECTION_WRITES.confirm('q')).toEqual({ success: true });
+    expect(await LIVE_SELECTION_WRITES.confirm('q')).toEqual({ success: true, data: { notified: true } });
+    vi.mocked(confirmQualifierSelection).mockResolvedValueOnce({ ok: true, notified: false });
+    expect(await LIVE_SELECTION_WRITES.confirm('q')).toEqual({ success: true, data: { notified: false } });
     expect(chTrail).not.toHaveBeenCalled();
     // On the screen, with the live writes: the coach reads the words in the failure toast.
     const user = userEvent.setup();
@@ -1110,6 +2321,15 @@ describe('Qualifiers · Manage selections', () => {
     expect(logServer).toHaveBeenCalledWith('qualifiers', 'selection', expect.anything(), 'qualifiers');
     tables.current = { golf_qualifiers: { data: { id: 'q1', team_id: 'other' } } };
     expect((await loadQualifierSelection({ teamId: 't1', qualifierId: 'q1' })).kind).toBe('missing');
+  });
+
+  it('CH-09218 the page that cannot read the selections never says "nothing has changed": it also follows a pick or a confirm that was saved', async () => {
+    asCoachSession();
+    tables.current = { golf_qualifiers: { error: { message: 'boom' } } };
+    wrap((await ClubhouseQualifiersRoute({ view: 'selection', id: '10000000-0000-4000-8000-000000000001' })) as never);
+    const notice = code('CH-09218') as HTMLElement;
+    expect(notice.textContent).not.toMatch(/nothing has changed/i);
+    expect(notice.textContent).toMatch(/already saved is still saved/);
   });
 });
 
@@ -1522,6 +2742,8 @@ describe('Qualifiers · every write', () => {
     failed: string;
     /** Where the page goes once it lands, or null when it stays put. */
     goes: string | null;
+    /** How it gets there: a form that has done its job is replaced (Back does not return to it), a step on is pushed. */
+    via?: 'replace';
     /** Whether the server is asked to read the page again once it lands. */
     reads: boolean;
     /** What the screen shows once it has landed. */
@@ -1533,6 +2755,12 @@ describe('Qualifiers · every write', () => {
   };
   const detailHref = `/golf/dashboard/qualifiers/${previewSelection().id}`;
   const press = async (user: User, name: string | RegExp) => user.click(screen.getByRole('button', { name }));
+  const navigated = (sc: Scenario) => (sc.via === 'replace' ? router.replace : router.push);
+  const clearNav = () => {
+    router.push.mockClear();
+    router.replace.mockClear();
+    router.refresh.mockClear();
+  };
   const scenarios: Scenario[] = [
     {
       name: 'create',
@@ -1542,6 +2770,7 @@ describe('Qualifiers · every write', () => {
       done: 'Qualifier created · 7 players entered',
       failed: 'Couldn’t create the qualifier',
       goes: '/golf/dashboard/qualifiers/q-new',
+      via: 'replace',
       reads: false,
       landed: () => {},
     },
@@ -1553,6 +2782,7 @@ describe('Qualifiers · every write', () => {
       done: 'Qualifier saved',
       failed: 'Couldn’t save the qualifier',
       goes: `/golf/dashboard/qualifiers/${previewEditForm().id}`,
+      via: 'replace',
       reads: true,
       landed: () => expect(code('CH-09902')).toBeNull(),
     },
@@ -1645,7 +2875,7 @@ describe('Qualifiers · every write', () => {
         await press(user, 'Confirm squad');
         await user.click(inDialog('CH-09505', 'Confirm squad'));
       },
-      done: 'Squad confirmed · 5 players told',
+      done: 'Squad confirmed · 5 players',
       failed: 'Couldn’t confirm the squad',
       goes: detailHref,
       reads: true,
@@ -1662,6 +2892,14 @@ describe('Qualifiers · every write', () => {
   }
   const refuse = (write: Mock) => write.mockImplementation(async () => ({ success: false, error: 'nope' }));
 
+  it('CH-09009 a squad confirmed while telling the players failed says so (Q-116)', async () => {
+    const sc = scenarios.find((x) => x.name === 'confirm the squad')!;
+    const { view } = await drive(sc, (write) => write.mockImplementation(async () => ({ success: true, data: { notified: false } })));
+    await screen.findByText('The players weren’t all told');
+    expect(screen.getByText('Squad confirmed · 5 players')).toBeTruthy();
+    view.unmount();
+  });
+
   it('90901 every write that lands says what landed in a toast and fires the success haptic', async () => {
     for (const sc of scenarios) {
       hapticSpy.mockClear();
@@ -1674,44 +2912,42 @@ describe('Qualifiers · every write', () => {
 
   it('90902 a create, a save and a confirm move on to the qualifier; every other write leaves the coach where they are', async () => {
     for (const sc of scenarios) {
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const { view } = await drive(sc);
-      await waitFor(() => expect(sc.goes ? router.push : router.refresh).toHaveBeenCalled());
-      expect([sc.name, router.push.mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
+      await waitFor(() => expect(sc.goes ? navigated(sc) : router.refresh).toHaveBeenCalled());
+      expect([sc.name, navigated(sc).mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
+      // A create and a save replace the form, so Back from the qualifier does not return to it; the other write that moves on is a step forward.
+      if (sc.via === 'replace') expect([sc.name, router.push.mock.calls.length]).toEqual([sc.name, 0]);
       view.unmount();
     }
   });
 
   it('91501 a write that lands has the server read the page again (a create opens the new qualifier instead), and one that fails re-reads nothing', async () => {
     for (const sc of scenarios) {
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const landed = await drive(sc);
-      await waitFor(() => expect(sc.reads ? router.refresh : router.push).toHaveBeenCalled());
+      await waitFor(() => expect(sc.reads ? router.refresh : navigated(sc)).toHaveBeenCalled());
       expect([sc.name, router.refresh.mock.calls.length > 0]).toEqual([sc.name, sc.reads]);
       landed.view.unmount();
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const refused = await drive(sc, refuse);
       await screen.findByText(sc.failed);
-      expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length]).toEqual([sc.name, 0, 0]);
+      expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
       refused.view.unmount();
     }
   });
 
   it('91401 Retry in a failure toast runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
     for (const sc of scenarios) {
-      router.push.mockClear();
-      router.refresh.mockClear();
+      clearNav();
       const { c, view } = await drive(sc, (write) => write.mockResolvedValueOnce({ success: false, error: 'nope' }));
       await screen.findByText(sc.failed);
       await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);
       await screen.findByText(sc.done);
-      await waitFor(() => expect(sc.goes ? router.push : router.refresh).toHaveBeenCalled());
-      expect([sc.name, router.push.mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
+      await waitFor(() => expect(sc.goes ? navigated(sc) : router.refresh).toHaveBeenCalled());
+      expect([sc.name, navigated(sc).mock.calls.map(([to]) => to)]).toEqual([sc.name, sc.goes ? [sc.goes] : []]);
       await waitFor(sc.landed);
       view.unmount();
     }
@@ -1722,12 +2958,11 @@ describe('Qualifiers · every write', () => {
     try {
       for (const sc of scenarios) {
         hapticSpy.mockClear();
-        router.push.mockClear();
-        router.refresh.mockClear();
+        clearNav();
         const { c, view } = await drive(sc);
         await expectCode('CH-1903', new RegExp(`^${sc.failed}: you're offline`));
         expect([sc.name, sc.write(c).mock.calls.length, hapticSpy.mock.calls.some(([kind]) => kind === 'error')]).toEqual([sc.name, 0, true]);
-        expect([sc.name, router.push.mock.calls.length, router.refresh.mock.calls.length]).toEqual([sc.name, 0, 0]);
+        expect([sc.name, router.push.mock.calls.length, router.replace.mock.calls.length, router.refresh.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
         view.unmount();
       }
     } finally {
@@ -1867,7 +3102,7 @@ describe('Qualifiers · what is reported', () => {
     const Q = { id: 'q1', team_id: 't1', name: 'Pinehurst qualifier', description: null, status: 'in_progress', start_date: '2026-09-22', end_date: null, entry_deadline: null, course_name: null, rules: null, num_rounds: 1, selection_slots_total: 3, selection_slots_coach_pick: 1, selection_state: 'open', is_test: false };
     tables.current = { golf_qualifiers: { data: Q }, golf_qualifier_entries: { error: { message: 'e' } }, golf_rounds: { error: { message: 'r' } }, golf_qualifier_round_courses: { error: { message: 'c' } } };
     const data = await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' });
-    expect([data!.entriesError, data!.roundsError, data!.coursesError]).toEqual([true, true, true]);
+    expect([data!.entriesError, data!.roundsError, (await data!.secondary).coursesError]).toEqual([true, true, true]);
     for (const read of ['entries', 'rounds', 'roundCourses']) expect(logServer).toHaveBeenCalledWith('qualifiers', read, expect.anything(), 'qualifiers');
     tables.current = { golf_team_members: { error: { message: 'm' }, data: [{ player: player('p1') }] } };
     expect((await loadQualifierForm({ teamId: 't1', qualifierId: null }))!.playersError).toBe(true);

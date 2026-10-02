@@ -3,11 +3,12 @@
 import { useMemo } from 'react';
 import type { ChDevice, ChResult, ChSettingsData, ChSettingsSection, ChSettingsWrites } from '../screens/settings/model';
 import { SettingsView } from '../screens/settings/SettingsView';
-import { coachData, failedRead as failed, playerData } from './fixtures-settings';
+import { coachData, failedRead as failed, playerData, PREVIEW_PENDING_COACHES, PREVIEW_STAFF, PREVIEW_STAFF_AS_ASSISTANT } from './fixtures-settings';
 
 /**
  * Settings with the handoff's people and fake writes, for the dev preview.
  *   ?state= player | noteam | failed | partial | assistant | failwrites
+ *   (assistant: the viewer is not the head coach, so Team has no requests or invites; failed: Team's staff reads fail)
  *   &section= account | notifications | team | golf | coachhelm | preferences
  */
 const wait = <T,>(v: T, ms = 450) => new Promise<T>((r) => setTimeout(() => r(v), ms));
@@ -54,6 +55,13 @@ export function PreviewSettings({ state, section }: { state?: string; section?: 
       signOut: async () => {},
       cleanupAfterDelete: async () => {},
       refresh: () => {},
+      staff: {
+        list: () => wait(state === 'failed' ? { success: false, error: 'preview' } : { success: true, data: state === 'assistant' ? PREVIEW_STAFF_AS_ASSISTANT : PREVIEW_STAFF }),
+        pending: () => wait(state === 'assistant' ? { success: false, error: 'Only a head coach of this team can do that.' } : state === 'failed' ? { success: false, error: 'preview' } : { success: true, data: PREVIEW_PENDING_COACHES }),
+        invite: (role) => wait(state === 'failwrites' ? { success: false, error: 'Only a head coach of this team can invite staff.' } : { success: true, data: { token: 'preview-token', code: 'STAFF7QX', role, hours: 72 } }),
+        approve: r,
+        decline: r,
+      },
     };
   }, [state]);
 

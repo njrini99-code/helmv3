@@ -29,9 +29,9 @@ on the first hole over par again. A test covers 110101 to 110114.
 | 110102 | — | `REVIEW_READY` | A round's review at /golf/dashboard/rounds/[id] opens for the player who played it and for a coach of their team: the hero (day, date and type, the course, tee swatch, yards, rating and slope, then the score and its to par), the figures (Front 9, Back 9 on an 18-hole round, Putts, Fairways, Greens), the scorecard as two captioned nines, the hole card with the shots of the picked hole, the scoring distribution, and the round recap and the player's notes when there are any. It opens on the first hole over par, else the first hole. Back goes to Rounds for a player and, for a coach, to that player's rounds on Stats with the player's name (D-53); a coach's kicker names the player and the notes are labelled with the player's first name ("Jonah's notes" in the preview). |
 | 110103 | — | `SETUP_READY` | A new round's setup (at /golf/dashboard/rounds/new, over the new-round engine; also the dev preview) opens on the green band with its steps (Course, Scorecard, Track), the course card ("Choose a course", Browse courses), an open qualifier when there is one, Round details (type, date, holes), the scorecard's place held ("Your scorecard appears here once you pick a course and tees.") and the dock, whose Start round is off and names why ("Choose a course to start"). Picking tees reads that tee's holes and fills the scorecard; a hole changed for this round is counted and marked ("1 hole edited for this round"), edits never leave this round, and the dock then reads "Course · Tee · N holes · Par P". |
 | 110104 | — | `TRACKING_READY` | The shot screen (inside the round screen at /rounds/new and /rounds/continue/[id]) opens on the hole it is given: the top bar with Exit and Scorecard, the hole strip, the hole hero (hole number, par, yards, "Shot N" and the distance to the pin), the hole map and the shot log, and the shot entry, whose Next shot is off with the one thing missing named above it. Every rule and write is useShotTracking, the hook the Fairway screen runs; the round screen around it owns Exit, the scorecard, Round complete and Submit. |
-| 110105 | — | `UNBUILT_TARGETS_ARE_NOT_DRAWN` | A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds, and /rounds/recover stays Fairway's, so nothing links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library. |
+| 110105 | — | `UNBUILT_TARGETS_ARE_NOT_DRAWN` | A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library. |
 | 110106 | — | `UNFINISHED_ROUNDS_ARE_LISTED` | The newest unfinished round fills the card; every other one is listed under "N more unfinished rounds" with Discard, Continue or Submit. A round whose every hole has a score reads "Ready to submit" (the card says "Submit round"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one. |
-| 110107 | — | `NOT_COUNTED_ROUNDS_STILL_LIST` | A posted round that does not count (isCountableRound) is still listed, with a "Not counted" pill, and sets no season figure. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats). |
+| 110107 | — | `NOT_COUNTED_ROUNDS_STILL_LIST` | A posted round that does not count (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123) is still listed, with a "Not counted" pill, and sets no season figure. A round posted as a total only counts toward the season average, to par and best score, and has no greens or putts to add. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats). |
 | 110108 | — | `SEARCH_AND_GROUP_THE_BOOK` | The book is searched by course (client side, any part of the name, ignoring case) and grouped by month, newest first, or by course, in the order of each course's newest round; each group shows its round count, its average over its 18-hole rounds and its low. A search with no match says so (CH-11303) and keeps the tools where they are. |
 | 110109 | — | `A_ROUND_STILL_BEING_PLAYED_GOES_TO_BE_CONTINUED` | Opening a round that is still in progress at /rounds/[id] redirects to /rounds/continue/[id], as the legacy page does. A Clubhouse player lands on the rebuilt Continue screen, which draws the round the page loaded over the continue engine. |
 | 110110 | — | `START_HANDS_THE_WHOLE_FORM_TO_THE_ROUND_SCREEN` | Start round hands the round screen's port one form: the course and tee ids (or the course typed by hand), the round type, the date, 9 or 18 holes and which nine, every hole's par and yardage as edited, the qualifier and the round it counts as, and whether to save a typed course. It goes through useAction; the round opens (onStarted) only when the port answers with the new round's id, and that follow-up is inside the action, so a Retry opens it too (111401). The port is the round screen's: the new-round engine's start(form) (setup-reads#toStartForm), which checks the form, the hole rules and, for a qualifier round, the server's answer before it starts, and then runs the round under that form. Each refusal has its own state: the conflict dialog (CH-11514), a qualifier round in progress that opens (CH-11907), a toast with no Retry (CH-11014), with Retry (CH-11007, CH-11015) or with Start anyway (CH-11016). |
@@ -60,6 +60,9 @@ course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405),
 | 110206 | — | `REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON` | A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405. |
 | 110207 | CH-11406 | `A_ROUNDS_REVIEW_IS_LOADING` | A round's review is loading |
 | 110208 | CH-11407 | `ROUND_ENTRY_IS_ON_ITS_WAY_THE` | Round entry is on its way: the address's own loading, and, on /rounds/new, the beat before the device's day and the player's qualifiers are read |
+| 110209 | CH-11408 | `ROUND_RECOVERY_ROUTE_LOADING` | Round recovery route loading |
+| 110210 | CH-11409 | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | Reading the device for saved rounds |
+| 110211 | CH-11410 | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | The Rounds library is refreshing (a Try again is running) with the page on screen |
 
 ## 03 — Background loading / refresh
 
@@ -94,6 +97,8 @@ empty (110413). A test covers 110413.
 | 110412 | CH-11312 | `QUALIFIER_CHOSEN_BUT_NONE_IS_OPEN` | Qualifier chosen, but none is open |
 | 110413 | — | `FIRST_RUN_ONLY_WHEN_EVERY_READ_ANSWERED` | The first-run page ("No rounds yet", CH-11301) shows only when the posted-rounds read and the in-progress read both answered and both were empty: a failed list read shows its own notice (CH-11201) and a failed in-progress check its own (CH-11202), never the first-run page. |
 | 110414 | CH-11313 | `A_ROUND_WITH_NO_STROKES_GAINED` | A round with no strokes gained (posted without shots) |
+| 110415 | CH-11314 | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | Nothing on this device to recover |
+| 110416 | CH-11315 | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | Completed rounds with no score at all (no total and no nines) |
 
 ## 05 — Validation
 
@@ -164,6 +169,15 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110626 | CH-11014 | `STARTING_A_QUALIFIER_ROUND_THAT_IS_NO` | Starting a qualifier round that is no longer open to the player (played already, or past the qualifier's rounds) |
 | 110627 | CH-11015 | `THE_QUALIFIERS_NEXT_ROUND_COULDNT_BE_CHECKED` | The qualifier's next round couldn't be checked before starting (offline, signed out, not entered) |
 | 110628 | CH-11016 | `STARTING_A_ROUND_ON_A_COURSE_AND` | Starting a round on a course and day that already has a completed round |
+| 110629 | CH-11017 | `RESTORING_A_SAVED_ROUND_FAILS` | Restoring a saved round fails (Recover) |
+| 110630 | CH-11018 | `RETRY_SYNC_FAILS` | Retry sync fails (Recover) |
+| 110631 | CH-11019 | `DISCARDING_A_SAVED_ROUND_FAILS` | Discarding a saved round fails (Recover) |
+| 110632 | CH-11212 | `THIS_DEVICES_SAVED_ROUNDS_CANT_BE_READ` | This device's saved rounds can't be read (every store failed and nothing was found) |
+| 110633 | CH-11214 | `THE_IN_PROGRESS_CARDS_HOLES_DONT_LOAD` | The in-progress card's holes don't load (the read of the round's scored holes failed) |
+| 110634 | CH-11215 | `A_FINISHED_IN_PROGRESS_ROUND_WHILE_THE` | A finished in-progress round (every hole scored) while the posted rounds didn't load, so "already posted" can't be ruled out |
+| 110635 | CH-11216 | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
+| 110636 | CH-11217 | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
+| 110637 | CH-11213 | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
 
 ## 07 — Network / offline
 
@@ -188,6 +202,8 @@ did not load, with Try again (CH-11208 to CH-11210).
 | 110709 | CH-11908 | `ANY_OTHER_NOTE_AN_ENGINE_RAISES` | Any other note an engine raises (an error outside an action, or a wording this screen doesn't know) |
 | 110710 | CH-11909 | `THE_SUBMIT_HAS_TAKEN_OVER_15_SECONDS` | The submit has taken over 15 seconds |
 | 110711 | CH-11910 | `EVERY_HOLE_IS_IN_BUT_THE_FINISH` | Every hole is in but the finish sheet was closed |
+| 110712 | CH-11911 | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | Opened from a submit that couldn't reach the server (`?from=submit`) |
+| 110713 | CH-11912 | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | Back from a round to the library |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -213,7 +229,7 @@ keeps the legacy message. `/rounds/recover` is not rebuilt, so nothing links to 
 | 110804 | — | `DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION` | Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Read in this pass, not run: no test here forces a refusal; the action is the legacy library's, unchanged. |
 | 110805 | — | `A_CLOSED_QUALIFIER_CANT_BE_CHOSEN` | A qualifier with no round the player can still enter is listed but cannot be chosen, and its row says why; only one with a round open is offered above Round details (closed means closed, D-31). Choosing the Qualifier type with none open says "No qualifier is open for you right now" (CH-11312), and a qualifiers read that failed says so (CH-11211). |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -270,6 +286,7 @@ also holds sheets that are not destructive (Penalty, Exit, Scorecard, Round comp
 | 111117 | CH-11517 | `DISCARD_ROUND_ON_THAT_SHEET` | Discard round on that sheet |
 | 111118 | CH-11518 | `A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND` | A saved qualifier round with no round number (it predates the durable number) is finished and submitted |
 | 111119 | CH-11519 | `THE_SAME_AND_NO_ROUND_IS_LEFT` | The same, and no round is left to choose |
+| 111120 | CH-11520 | `DISCARD_ON_A_SAVED_ROUND` | Discard on a saved round (Recover) |
 
 ## 12 — State preservation
 
@@ -367,7 +384,7 @@ without it (CH-11707); success and error come from the shell for every write.
 | 111708 | CH-11708 | `THE_SECOND_TAP_OF_A_DISCARD_IN` | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
 | 111709 | CH-11709 | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -394,7 +411,7 @@ the choices, the distance box and the hole map are named in words (CH-11805 to C
 | 111810 | — | `THE_SCORECARD_SCROLLS_IN_A_FOCUSABLE_REGION` | The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, "Scorecard"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; no vitest test asserts the region. |
 | 111811 | — | `FIGURES_ARE_DEFINITION_LISTS` | The season and review figures are description lists in which a term is followed by its value and then its sub-line as a second description (label, figure, then "avg · +1.9 to par" or "+1"), never a bare span inside the list (axe definition-list). |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

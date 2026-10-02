@@ -16,12 +16,14 @@ export async function ClubhouseRoundsRoute() {
   const session = await getGolfSessionProfile();
   if (!session?.player) return null;
   // The team only sets the time zone for "today", so a failed membership read costs that, not the page: the rounds are the player's own.
-  let teamId: string | null = null;
-  try {
-    teamId = (await resolveClubhouseTeam(session))?.teamId ?? null;
-  } catch (err) {
-    chLogServer('rounds', 'team', err);
-  }
+  // It is read beside the rounds, not before them (the library awaits it only for the clock).
+  const teamId = resolveClubhouseTeam(session).then(
+    (team) => team?.teamId ?? null,
+    (err: unknown) => {
+      chLogServer('rounds', 'team', err);
+      return null;
+    },
+  );
   const data = await loadRoundsLibrary({ playerId: session.player.id, teamId });
   return <RoundsLibrary data={data} playerId={session.player.id} />;
 }

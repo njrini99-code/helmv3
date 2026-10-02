@@ -44,7 +44,8 @@
     "styles": "src/clubhouse/styles/shell.css",
     "tests": [
       "src/clubhouse/__tests__/shell.test.tsx",
-      "src/clubhouse/__tests__/native.test.tsx"
+      "src/clubhouse/__tests__/native.test.tsx",
+      "src/clubhouse/__tests__/team-switch.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/shell.md",
@@ -118,6 +119,30 @@
       },
       "tests": [
         "src/clubhouse/__tests__/shell.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P001-SWITCH-TEAM",
+      "label": "Switch the active team (a head coach on more than one team)",
+      "component": "src/clubhouse/shell/TeamSwitch.tsx#BrandTeamSwitch",
+      "handler": "useTeamSwitch.pick (useAction shell.switchTeam)",
+      "service": "src/app/golf/actions/team-switcher.ts#setActiveTeam",
+      "data": [
+        "golf_team_coach_staff",
+        "golf_teams",
+        "golf_active_team cookie"
+      ],
+      "bridge": {
+        "core": 10103,
+        "permission": 10803,
+        "plain": 10405,
+        "failure": 10611,
+        "haptic": 11707,
+        "accessibility": 11813,
+        "phone": 11814
+      },
+      "tests": [
+        "src/clubhouse/__tests__/team-switch.test.tsx"
       ]
     },
     {

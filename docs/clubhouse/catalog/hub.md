@@ -24,10 +24,11 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10006 | Saving a trip fails | "Couldn't save Seahawk" + "What you entered is still here." Done: "Seahawk is on Travel" | `useAction('hub.planTrip')` → `createGolfTravelItinerary` | hub.test › CH-10006 |
 | CH-10007 | Assigning a task fails | "Couldn't assign Book physicals" + "What you entered is still here." Done: "Book physicals assigned to the team" (or "to 3 players") | `useAction('hub.assignTask')` → `createTask` | hub.test › CH-10007 |
 | CH-10008 | Uploading a file fails | "Couldn't upload Local rules.pdf" + "Check the file is under 50 MB and try again." Each file says so on its own. Done: "Local rules.pdf shared with the team" | `useAction('hub.uploadDocument')` → `uploadGolfDocument`, `createGolfDocument` | hub.test › CH-10008 |
-| CH-10009 | Deleting a post, task or file fails | "Couldn't delete NCAA hours log" + Retry; it stays. Done: "Deleted NCAA hours log" | `useAction('hub.delete')` → `deleteAnnouncement`, `deleteTask`, `deleteGolfDocument` | hub.test › CH-10009 |
+| CH-10009 | Deleting a post, task, file or trip fails | "Couldn't delete NCAA hours log" + Retry; it stays. Done: "Deleted NCAA hours log" | `useAction('hub.delete')` → `deleteAnnouncement`, `deleteTask`, `deleteGolfDocument`, `deleteGolfTravelItinerary` | hub.test › CH-10009, hub-trip-manage.test › CH-10009 |
 | CH-10011 | Unticking a done task fails | "Couldn't reopen Sign travel waiver" + Retry; it stays done. Done: "Sign travel waiver is open again" | `useAction('hub.uncompleteTask')` → `uncompleteTask` | hub.test › CH-10011 |
 | CH-10010 | Saving an edit to an announcement fails | "Couldn't save the announcement" + "Your changes are still here. Try again in a moment." (the server's reason when it gave one, for example "Message is required.") The sheet stays open with the words; the card is unchanged. Done: "Saved "Bus leaves at 6"" | `useAction('hub.editAnnouncement')` → `updateAnnouncement` | hub.test › CH-10010 |
 | CH-10012 | A post goes out but its files don't attach | "Posted "Waiver" without its files" + "The files didn't attach, so players see the post with no files. They can still open them in Documents." An error toast (8s, read as an alert) with no Retry, since a Retry would post it again; the sheet has closed and the page read again. Error haptic, no success haptic, and no "Posted" toast beside it. Clean posts say Posted as before | `useAction('hub.postAnnouncement')` (`refine` hands the outcome over) + its own toast from `ComposeSheet` ← `createEnrichedAnnouncement` (`attachmentsError` beside the id, `success` stays true) | hub.test › CH-10012 |
+| CH-10013 | Saving an edit to a trip fails | "Couldn't update Seahawk" + the server's reason, or "What you entered is still here." Retry; the sheet stays open with what was typed. Done: "Seahawk updated", the sheet closes and the page reads again | `useAction('hub.editTrip')` (`TripEditSheet`) → `updateGolfTravelItinerary` | hub-trip-manage.test › CH-10013 |
 
 ## 101xx Validation
 
@@ -35,10 +36,10 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | --- | --- | --- | --- | --- |
 | CH-10101 | Posting or saving an edit with a headline under three characters | "Give it a headline, at least three characters." Warning haptic; nothing is sent | `ComposeSheet` | hub.test › CH-10101 |
 | CH-10102 | Posting to chosen players with none chosen | "Choose at least one player, or send it to the whole team." | `ComposeSheet` | hub.test › CH-10102 |
-| CH-10103 | A trip with a name under three characters | "Name the trip, at least three characters." | `TripSheet` | hub.test › CH-10103 |
-| CH-10104 | A trip with no destination | "Where is the team going?" | `TripSheet` | hub.test › CH-10104 |
-| CH-10105 | A trip with no departure day | "Pick the day the team leaves." | `TripSheet` | hub.test › CH-10105 |
-| CH-10106 | A return before the departure | "The return can't be before the departure." | `TripSheet` | hub.test › CH-10106 |
+| CH-10103 | A trip with a name under three characters | "Name the trip, at least three characters." | `TripSheet`, `TripEditSheet` | hub.test › CH-10103, hub-trip-manage.test › CH-10103 |
+| CH-10104 | A trip with no destination | "Where is the team going?" | `TripSheet`, `TripEditSheet` | hub.test › CH-10104, hub-trip-manage.test › CH-10104 |
+| CH-10105 | A trip with no departure day | "Pick the day the team leaves." | `TripSheet`, `TripEditSheet` | hub.test › CH-10105, hub-trip-manage.test › CH-10105 |
+| CH-10106 | A return before the departure | "The return can't be before the departure." | `TripSheet`, `TripEditSheet` | hub.test › CH-10106, hub-trip-manage.test › CH-10106 |
 | CH-10107 | A task with a name under three characters | "Name the task, at least three characters." | `AssignSheet` | hub.test › CH-10107 |
 | CH-10108 | A task for nobody | "Choose at least one player." | `AssignSheet` | hub.test › CH-10108 |
 | CH-10109 | Posting or saving an edit with no message (the server requires one) | "Add a message." Warning haptic; nothing is sent | `ComposeSheet` | hub.test › CH-10109 |
@@ -100,6 +101,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10501 | Deleting an announcement | "Delete this announcement?" + "Players stop seeing it, and its acknowledgements go with it." Keep it / Delete. Warning haptic | `ConfirmDelete` | hub.test › CH-10501 |
 | CH-10502 | Deleting a task | "Delete this task?" + "It leaves every player's list, done or not." | `ConfirmDelete` | hub.test › CH-10502 |
 | CH-10503 | Deleting a file | "Delete this file?" + "Players can no longer open it. This can't be undone." | `ConfirmDelete` | hub.test › CH-10503 |
+| CH-10504 | Deleting a trip | "Delete this trip?" + "Players stop seeing the itinerary. Its expenses and budgets are deleted with it, and the calendar event stays. This can't be undone." Keep it / Delete. Warning haptic | `ConfirmDelete` | hub-trip-manage.test › CH-10504 |
 
 ## 107xx Haptics
 

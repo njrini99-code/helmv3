@@ -5,15 +5,14 @@
     "entries": []
   },
   "migration_overlaps": {
-    "total": 7,
+    "total": 6,
     "entries": [
       "admin_platform matches 50% of admin_incidents's own migration files (1/2)",
       "admin_platform matches 94% of crm_outreach's own migration files (16/17)",
       "baseball_core matches 50% of settings_preferences's own migration files (6/12)",
       "baseball_core matches 58% of team_access_control's own migration files (7/12)",
       "calendar_events matches 89% of player_hub's own migration files (16/18)",
-      "player_hub matches 84% of calendar_events's own migration files (16/19)",
-      "team_operations matches 100% of recruiting's own migration files (1/1)"
+      "player_hub matches 84% of calendar_events's own migration files (16/19)"
     ]
   },
   "unowned_migrations": {

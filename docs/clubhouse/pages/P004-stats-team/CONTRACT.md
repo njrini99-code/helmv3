@@ -8,12 +8,22 @@ Status: DEFINED
 
 Team stats opens for the coach's own team on the last 10 rounds per player, with the figures, the trend, the legs and grid, putting and season bests already in the server's first render (40101). The address picks the window: ?window=season or ?window=qualifiers, anything else is Last 10 (40102). The old address /golf/dashboard/stats/team renders the same page in place with the default window, so it ignores ?window= and ?player= (read from the page, not tested).
 
+Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
+
+- Last 10 is each player's ten newest countable rounds in any season, read
+  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  Season and Qualifiers are this season only.
+- A round posted as a total only (18 holes, no nines, no holes) counts in the
+  scoring figures, and in no hole-level one (greens, putts, scrambling,
+  birdies, strokes gained, the legs, putting). A hole-level card whose round
+  count is fewer than the window's says "Hole stats from X of Y rounds".
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
 | 40102 | — | `WINDOW_FROM_THE_ADDRESS` | ?window=season or ?window=qualifiers opens that window and anything else opens Last 10; changing the switch writes the window back to /golf/dashboard/stats (Last 10 is the bare address) without moving the scroll. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -95,6 +105,7 @@ Each failed read is handled on its own. The rounds or roster (40602), the round 
 | 40609 | CH-4208 | `SEASON_BESTS_CRASH` | Season bests crash |
 | 40610 | CH-4209 | `D1_BENCHMARKS_DONT_LOAD` | Tour benchmarks don't load |
 | 40611 | CH-4210 | `THE_TEAMS_OWN_DETAILS_DONT_LOAD` | The team's own details (name, men's or women's) don't load |
+| 40612 | CH-4211 | `THE_SEASONS_LONGEST_PUTT_DOESNT_LOAD` | The season's longest putt doesn't load (the one-row read of Season bests) |
 
 ## 07 — Network / offline
 
@@ -106,6 +117,7 @@ Changing the window while offline is refused before anything is requested: the s
 | --- | --- | --- | --- |
 | 40701 | CH-4901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, or Show the season) or the round filter while offline |
 | 40702 | CH-4902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
+| 40703 | CH-4903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -120,7 +132,7 @@ Team stats is a coach's page (40801). On /golf/dashboard/stats a player is never
 | 40801 | — | `COACH_ONLY_TEAM_STATS` | Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team is a coach's route in the Clubhouse frame (the Fairway page sends a player back to /stats). |
 | 40802 | — | `TEAM_IS_THE_COACHS_OWN` | The team is always the one resolveClubhouseTeam gives the signed-in coach, never one named in the address: the loader reads that team's row, its active roster (golf_team_members by team_id, status active) and only those players' rounds; a coach with no team gets the no-team state and nothing is read. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -194,7 +206,7 @@ Team stats' own haptics (41701 to 41703) on the v2 grammar (D-70): a selection t
 | 41703 | CH-4703 | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | Sorting the phone's players by Avg or SG |
 | 41704 | CH-4704 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -211,7 +223,7 @@ Team stats' own (41801 to 41805): the trend chart has a written summary and its 
 | 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 | 41806 | CH-4806 | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

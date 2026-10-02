@@ -277,9 +277,22 @@ describe('createGolfEvent RSVP config', () => {
 
     await runAfterCallbacks();
 
-    // Both team-1 players notified in-app + via email after the response.
-    expect(tables.golf_calendar_notifications).toHaveLength(2);
-    expect(sendEmailNotification).toHaveBeenCalledTimes(2);
+    // Q-108 (owner, 2026-10-01): an event with no invitees notifies nobody; it used to tell every active player.
+    expect(tables.golf_calendar_notifications).toHaveLength(0);
+    expect(sendEmailNotification).not.toHaveBeenCalled();
+  });
+
+  it('Q-108 only the invited players are told, in-app and by email', async () => {
+    const tables = seedAs('u-coach', withUuidPlayers(baseTables()));
+    tables.golf_event_attendance = [];
+
+    const result = await createGolfEvent({ title: 'Practice', eventType: 'practice', startDate: '2099-07-01', attendeeIds: [P1] });
+    expect(result.success).toBe(true);
+    await runAfterCallbacks();
+
+    const told = (tables.golf_calendar_notifications as Array<{ user_id: string }>).map((n) => n.user_id);
+    expect([...new Set(told)]).toEqual(['u-p1']);
+    expect(sendEmailNotification).toHaveBeenCalledTimes(1);
   });
 });
 

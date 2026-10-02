@@ -13,18 +13,12 @@ import { reasonText } from './labels';
 import { InProgressConflictDialog } from './InProgressConflictDialog';
 import { useRoundPorts } from './ports';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
+import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
 import { loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
 
 const LIBRARY = '/golf/dashboard/rounds';
 
-/**
- * Where the engine sends the player: the defaults are the Fairway screens' own routes, and the only one this screen
- * names is the recovery flow. `/rounds/recover` is Fairway's and has no Clubhouse screen, so a submit that couldn't
- * reach the server (its round is saved on the device) lands on Rounds instead, where the round waits to be continued
- * and submitted again (Continue offers the device copy back). A proposed Q in PROGRESS.md.
- */
-const ENGINE_ROUTES = { recover: LIBRARY };
 const LOG_SOURCE = { component: 'ClubhouseNewRound', route: `${LIBRARY}/new` };
 const ROUTES: RoundRuntimeRoutes = { library: LIBRARY, review: (roundId) => `${LIBRARY}/${roundId}` };
 

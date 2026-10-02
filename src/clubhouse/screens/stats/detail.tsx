@@ -25,13 +25,27 @@ export const RULE_WINDOW: Record<ChWindow, string> = {
   qualifiers: 'Qualifier rounds',
 };
 
-/** A panel of Game detail (a titled block in the two-column body). */
-export function Panel({ title, note, wide, children }: { title: string; note?: string; wide?: boolean; children: ReactNode }) {
+/**
+ * The method behind a figure, kept off the default scan path: one closed disclosure with a name that says what is inside. The phone
+ * shows a short line where a screen shows the whole paragraph, and this holds the rest.
+ */
+export function How({ children }: { children: ReactNode }) {
+  return (
+    <details className="ch-gm-how">
+      <summary>How this is measured</summary>
+      <p>{children}</p>
+    </details>
+  );
+}
+
+/** A panel of Game detail (a titled block in the two-column body). `how`: the method, behind "How this is measured" (the phone's, where `note` is the one short line). */
+export function Panel({ title, note, how, wide, children }: { title: string; note?: string; how?: string; wide?: boolean; children: ReactNode }) {
   return (
     <div className={'ch-gm-p' + (wide ? ' is-wide' : '')}>
       <div className="ch-gm-p__t">{title}</div>
       {children}
       {note && <p className="ch-gm-p__n">{note}</p>}
+      {how && <How>{how}</How>}
     </div>
   );
 }
@@ -45,9 +59,14 @@ export function Empty({ code, children }: { code: string; children: ReactNode })
   );
 }
 
-/** The window and the rounds a section counts, in one line under its figures. */
-export function Rule({ children }: { children: ReactNode }) {
-  return <p className="ch-gx-rule">{children}</p>;
+/** The window and the rounds a section counts, in one line under its figures. `how`: on the phone, the longer account behind "How this is measured". */
+export function Rule({ children, how }: { children: ReactNode; how?: string }) {
+  return (
+    <>
+      <p className="ch-gx-rule">{children}</p>
+      {how && <How>{how}</How>}
+    </>
+  );
 }
 
 /** "More detail": a native disclosure (keyboard and screen reader for free), open on the desktop and closed on the phone. */

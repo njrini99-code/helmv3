@@ -1523,10 +1523,15 @@ export async function dismissInsight(insightId: string) {
  * from its optimistic snapshot — defaults to 'detected', a visible state, so the
  * row reappears in the canonical V3 feed). Same auth + ownership boundary as the
  * forward actions. Additive — no existing action's contract changes.
+ *
+ * CH13-14: undoing a DISMISSAL (`undoing: 'dismiss'`) keeps an earlier
+ * acknowledgement — dismiss never clears `acknowledged_at`, so the row goes
+ * back to 'acknowledged' with its stamp, not to 'active'.
  */
 async function reactivateInsightImpl(
   insightId: string,
   priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
+  undoing: 'acknowledge' | 'dismiss' = 'acknowledge',
 ) {
   const supabase = await createClient();
 
@@ -1545,12 +1550,31 @@ async function reactivateInsightImpl(
     // leave it 'archived'/'tentative' (the visibility filter would hide it).
     const lifecycle = priorLifecycleState ?? 'detected';
 
+    let restore: { status: 'active' | 'acknowledged'; acknowledged_at?: null } = { status: 'active', acknowledged_at: null };
+    if (undoing === 'dismiss') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: prior, error: priorError } = await (supabase as any)
+        .from('golf_coach_insights')
+        .select('acknowledged_at')
+        .eq('id', insightId)
+        .eq('team_id', access.teamId)
+        .maybeSingle();
+      if (priorError) {
+        await logServerError(`reactivateInsight failed: ${priorError.message}`, {
+          action: 'reactivateInsight',
+          featureArea: 'insights',
+          extra: { insightId, errorCode: priorError.code },
+        });
+        return { success: false, error: 'Operation failed. Please try again.' };
+      }
+      restore = prior?.acknowledged_at ? { status: 'acknowledged' } : { status: 'active' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('golf_coach_insights')
       .update({
-        status: 'active',
-        acknowledged_at: null,
+        ...restore,
         dismissed: false,
         dismissed_at: null,
         lifecycle_state: lifecycle,
@@ -1596,8 +1620,9 @@ const observedReactivateInsight = withAdminObserved(
 export async function reactivateInsight(
   insightId: string,
   priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
+  undoing: 'acknowledge' | 'dismiss' = 'acknowledge',
 ) {
-  return observedReactivateInsight(insightId, priorLifecycleState);
+  return observedReactivateInsight(insightId, priorLifecycleState, undoing);
 }
 
 // ============================================================================

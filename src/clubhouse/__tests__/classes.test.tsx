@@ -502,7 +502,7 @@ describe('Classes loader', () => {
     expect(d.week.dates[0]).toBe('2026-10-12');
   });
 
-  it('CH-12201 a failed classes read is an error, logged, never an empty schedule', async () => {
+  it('122101 CH-12201 a failed classes read is an error, logged, never an empty schedule', async () => {
     tables.current = { golf_team_settings: { data: null }, golf_player_classes: { error: { message: 'boom' } }, golf_events: { data: [] } };
     const d = await loadClasses({ playerId: 'p1', teamId: 't1' });
     expect(d.classes).toEqual({ list: [], error: true });
@@ -510,7 +510,7 @@ describe('Classes loader', () => {
     expect(d.week.error).toBe(false);
   });
 
-  it('CH-12202 a failed events read is its own error: the classes load, and no overlap is claimed', async () => {
+  it('122101 CH-12202 a failed events read is its own error: the classes load, and no overlap is claimed', async () => {
     tables.current = { golf_team_settings: { data: null }, golf_player_classes: { data: PREVIEW_CLASS_ROWS }, golf_events: { error: { message: 'boom' } } };
     const d = await loadClasses({ playerId: 'p1', teamId: 't1' });
     expect(d.week).toMatchObject({ error: true, events: [] });
@@ -527,7 +527,7 @@ describe('Classes route and page', () => {
       </LazyMotion>,
     );
 
-  it('is for players: a coach session renders nothing here', async () => {
+  it('120801 is for players: a coach session renders nothing here', async () => {
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1' }, player: null };
     expect(await ClubhouseClassesRoute()).toBeNull();
   });
@@ -994,7 +994,7 @@ describe('Classes, states', () => {
     expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
   });
 
-  it('120407 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and offers no add or import', async () => {
+  it('120407 121403 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and offers no add or import', async () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_FAILED);
     await expectCode('CH-12201', /Your classes didn't load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
@@ -1148,7 +1148,7 @@ describe('Classes, on the phone', () => {
     return <div ref={setSlot} data-testid="phone-top" />;
   }
 
-  it('draws the phone bar with the way back to More, and the same classes and actions', async () => {
+  it('121901 draws the phone bar with the way back to More, and the same classes and actions', async () => {
     const user = userEvent.setup();
     render(
       <LazyMotion features={domAnimation}>
@@ -1170,6 +1170,46 @@ describe('Classes, on the phone', () => {
     expect(names()).toHaveLength(5);
     await user.click(headerButton('Add class'));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
+  });
+
+  function phoneView(data: ChClassesPage) {
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <ClassesView data={data} writes={fakeWrites()} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+  }
+
+  it('iPhone brief: one "Classes" heading, the term in one line, today (or the next class day) before the deck', () => {
+    phoneView(PREVIEW_CLASSES);
+    expect(screen.getAllByRole('heading', { level: 1, name: 'Classes' })).toHaveLength(1);
+    expect(screen.getByRole('main', { name: 'Classes' })).toBeTruthy();
+    // The compact overview: no credit bar and no term line on the phone.
+    expect(document.querySelector('.ch-cl-tb.is-compact .ch-cl-tb__one')).not.toBeNull();
+    expect(document.querySelector('.ch-cl-tb__line')).toBeNull();
+    const today = document.querySelector('.ch-cl-today')!;
+    expect(today).not.toBeNull();
+    expect(today.compareDocumentPosition(document.querySelector('.ch-cl-deck')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('CH-12308 with no class today the list names the next day that has one, and its classes open', async () => {
+    const user = userEvent.setup();
+    // A Sunday in the preview term: nothing meets.
+    const sunday = { ...PREVIEW_CLASSES, todayIso: '2026-10-18' };
+    phoneView(sunday);
+    await waitFor(() => expect(code('CH-12308')).not.toBeNull());
+    expect(code('CH-12308')!.textContent).toMatch(/No classes today · next/);
+    const rows = within(code('CH-12308') as HTMLElement).getAllByRole('button');
+    expect(rows.length).toBeGreaterThan(0);
+    await user.click(rows[0]!);
+    expect(await screen.findByRole('dialog')).toBeTruthy();
   });
 });
 
@@ -1370,7 +1410,7 @@ describe('Classes, add and edit', () => {
 });
 
 describe('Classes, writes that fail', () => {
-  it('121201 CH-12001 a save that fails says so in the sheet, keeps what was typed, sends nothing to the calendar, and Retry saves it', async () => {
+  it('121201 121401 CH-12001 a save that fails says so in the sheet, keeps what was typed, sends nothing to the calendar, and Retry saves it', async () => {
     const user = userEvent.setup();
     const base = fakeWrites();
     // A reason no one should read: the hint takes its place.
@@ -1509,7 +1549,7 @@ describe('Classes, writes that fail', () => {
     expect(document.querySelector('.ch-cl-tb__over')!.textContent).toBe('1overlap with the team this week');
   });
 
-  it('CH-12003 a remove that fails keeps the class and the question, says so, and Retry removes it', async () => {
+  it('121401 CH-12003 a remove that fails keeps the class and the question, says so, and Retry removes it', async () => {
     const user = userEvent.setup();
     const remove = failing({ success: false, error: "Couldn't take this class off your calendar: events locked. The class was kept so you can try again." }, () => Promise.resolve({ success: true }));
     show(PREVIEW_CLASSES, { remove });
@@ -2000,7 +2040,7 @@ describe('Classes, offline and slow', () => {
     vi.useRealTimers();
   });
 
-  it('CH-1903 a write while offline is refused with what was being done, sends nothing, and Retry works once back online', async () => {
+  it('120703 CH-1903 a write while offline is refused with what was being done, sends nothing, and Retry works once back online', async () => {
     const user = userEvent.setup();
     const w = show();
     await user.click(card(/^STAT 201/));
@@ -2018,7 +2058,7 @@ describe('Classes, offline and slow', () => {
     await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
   });
 
-  it('CH-1903 removing while offline is refused too, and the class stays', async () => {
+  it('120703 CH-1903 removing while offline is refused too, and the class stays', async () => {
     const user = userEvent.setup();
     const w = show();
     await user.click(card(/^STAT 201/));

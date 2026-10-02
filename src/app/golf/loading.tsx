@@ -1,5 +1,8 @@
 import { FairwayShellSkeleton } from '@/components/fairway/app-shell/FairwayShellSkeleton';
 import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/FairwayDashboardSkeleton';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { ClubhouseShellSkeleton } from '@/clubhouse/shell/ShellSkeleton';
+import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 
 /**
  * Loading UI for EVERYTHING under /golf that has no closer boundary.
@@ -25,6 +28,15 @@ import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/F
  * internal-only.
  */
 export default function GolfLoading() {
+  // With Clubhouse on, the cold entry paints Clubhouse's frame, never Fairway's (swap audit F-30). The role is not
+  // known above the dashboard layout; the flag is environment-wide and every dashboard role is coach or player.
+  if (isFlagEnabled('golf_clubhouse_ui')) {
+    return (
+      <ClubhouseShellSkeleton>
+        <HomeSkeleton />
+      </ClubhouseShellSkeleton>
+    );
+  }
   return (
     <FairwayShellSkeleton>
       <FairwayDashboardSkeleton />

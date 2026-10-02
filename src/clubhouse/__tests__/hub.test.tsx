@@ -73,6 +73,8 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
     assignTask: vi.fn(ok),
     deleteTask: vi.fn(ok),
     planTrip: vi.fn(ok),
+    editTrip: vi.fn(ok),
+    deleteTrip: vi.fn(ok),
     uploadDocument: vi.fn(ok),
     deleteDocument: vi.fn(ok),
     ...over,
@@ -534,6 +536,26 @@ describe('Team Hub · coach', () => {
     expect(screen.getByText('NCAA hours log')).toBeTruthy();
   });
 
+  // The trip's own checks (the payload, the dates and times, what the loader gives Edit) are in hub-trip-manage.test.tsx.
+  it('CH-10504 CH-10009 CH-10013 deleting a trip asks first; a refusal keeps it; a refused edit keeps the sheet', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_COACH, writes({ deleteTrip: refuse(), editTrip: refuse() }), 'travel');
+    await user.click(screen.getByRole('button', { name: 'More for Seahawk Intercollegiate' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete trip' }));
+    await expectCode('CH-10504', /expenses and budgets are deleted with it/);
+    expect(w.deleteTrip).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await expectCode('CH-10009', /Couldn’t delete Seahawk Intercollegiate/);
+    expect(screen.getByText('Seahawk Intercollegiate')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Keep it' }));
+    await user.click(screen.getByRole('button', { name: 'More for Seahawk Intercollegiate' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Edit trip' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Edit trip' })).getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-10013', /Couldn’t update Seahawk Intercollegiate/);
+    expect(w.editTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'sea', departDate: '2026-11-14', departTime: '11:00', returnDate: '2026-11-16' }));
+    expect(screen.getByRole('dialog', { name: 'Edit trip' })).toBeTruthy();
+  });
+
   it('CH-10305 a coach with nothing posted: New announcement and Plan a trip', async () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH_EMPTY);
@@ -584,6 +606,62 @@ describe('Team Hub · the loader', () => {
     expect(data.announcements.error).toBe(false);
     expect(data.players).toEqual([]);
     expect(logServer).toHaveBeenCalledWith('hub', 'playerSummary', expect.anything());
+  });
+
+  it('C-19 a player’s failed invite read leaves a trip unknown (—), never “Not traveling”', async () => {
+    base();
+    const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+    tables.current = { golf_teams: team, golf_team_members: { data: [] }, golf_events: { data: [] }, golf_event_attendance: { error: { message: 'attendance down' } } };
+    actions.summary.mockResolvedValue({
+      events: [],
+      trips: [{ id: 'tr1', event_id: 'e2', event_name: 'Seahawk', destination: 'Wilmington', departure_date: soon.slice(0, 10), return_date: soon.slice(0, 10), transportation_type: 'bus' }],
+      tasks: [],
+      announcements: [],
+      announcementsLoadError: false,
+    });
+    const data = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
+    expect(data.trips.rows[0]!.mine).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('hub', 'tripInvites', expect.anything());
+  });
+
+  it('C-20 capped reads: tasks keep the latest due and show soonest first, trip events leave out practices and meetings, and each says how many there are', async () => {
+    base();
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    const asked: Record<string, Array<[string, unknown[]]>> = {};
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { data: [] },
+      golf_events: (filters) => {
+        asked[filters.some(([k]) => k === 'not') ? 'tripEvents' : 'events'] = filters;
+        return { data: [], count: 0 };
+      },
+      golf_travel_itineraries: { data: [] },
+      golf_event_attendance: { data: [] },
+      golf_tasks: (filters) => {
+        asked.tasks = filters;
+        return {
+          data: [
+            { id: 'k3', title: 'Undated', description: null, due_date: null, category: null, status: 'pending' },
+            { id: 'k2', title: 'Later', description: null, due_date: '2026-10-20', category: null, status: 'pending' },
+            { id: 'k1', title: 'Sooner', description: null, due_date: '2026-10-02', category: null, status: 'pending' },
+          ],
+          count: 140,
+        };
+      },
+      golf_task_assignments: { data: [] },
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.tasks.rows.map((t) => t.id)).toEqual(['k1', 'k2', 'k3']);
+    expect(data.tasks.total).toBe(140);
+    expect(asked.tasks).toContainEqual(['order', ['due_date', { ascending: false, nullsFirst: true }]]);
+    expect(asked.tripEvents).toContainEqual(['not', ['event_type', 'in', '(class,practice,meeting)']]);
+    expect(data.tripEvents.total).toBe(0);
+  });
+
+  it('C-20 a capped task list says so', () => {
+    const rows = PREVIEW_HUB_COACH.tasks.rows;
+    show({ ...PREVIEW_HUB_COACH, tasks: { rows, error: false, total: rows.length + 40 } }, writes(), 'tasks');
+    expect(screen.getByText(`Showing the ${rows.length} latest due of ${rows.length + 40} tasks.`)).toBeTruthy();
   });
 
   it('102101 a coach: reply counts, travelers from the trip’s event, task completion, each read once for every event and task together', async () => {
@@ -1153,6 +1231,11 @@ describe('Team Hub · what is sent to a player', () => {
     const player = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
     expect(player.announcements.rows[0]).toMatchObject({ needAck: true, acked: false, ackCount: 0, recipients: 0 });
     expect(player.rsvps.rows[0]).toMatchObject({ eventId: 'e1', mine: 'pending', counts: null });
+    // F-53: the summary has no all_day; the event read supplies it, so an all-day event never reads "12:00 AM".
+    expect(player.rsvps.rows[0]?.meta).not.toMatch(/All day/);
+    tables.current = { ...tables.current, golf_events: { data: [{ id: 'e1', status: null, cancelled_at: null, all_day: true, start_time: soon, rsvp_deadline: null }] } };
+    const allDay = await loadTeamHub({ role: 'player', teamId: 't1', userId: 'u1', playerId: 'p1' });
+    expect(allDay.rsvps.rows[0]?.meta).toBe('All day · Carolina Inn');
     expect(player.trips.rows[0]).toMatchObject({ mine: true, travelers: null, travelerCount: null });
     expect(player.tasks.rows[0]).toMatchObject({ done: null });
     expect(player.players).toEqual([]);
@@ -1356,6 +1439,20 @@ describe('Team Hub · phone', () => {
     // The tabs, their panel and the coach's one primary action are all there.
     expect(screen.getAllByRole('tab')).toHaveLength(5);
     expect(screen.getByRole('button', { name: 'New announcement' })).toBeTruthy();
+  });
+
+  it('101901 the coach’s reply line on a phone names only the counts there (the board’s "4 going · 1 no reply"); desktop spells out all four', () => {
+    show(PREVIEW_HUB_COACH);
+    expect(screen.getByText('4 going · 1 maybe · 1 no reply')).toBeTruthy();
+    expect(screen.queryByText('4 going · 1 maybe · 0 can’t · 1 no reply')).toBeNull();
+    cleanup();
+    show({ ...PREVIEW_HUB_COACH, rsvps: { ...PREVIEW_HUB_COACH.rsvps, rows: PREVIEW_HUB_COACH.rsvps.rows.map((r) => ({ ...r, counts: { going: 0, maybe: 0, no: 0, none: 0 } })) } });
+    expect(screen.getAllByText('No one invited yet').length).toBeGreaterThan(0);
+  });
+
+  it('F-53 an event no one is invited to draws no empty reply bar', () => {
+    show({ ...PREVIEW_HUB_COACH, rsvps: { ...PREVIEW_HUB_COACH.rsvps, rows: PREVIEW_HUB_COACH.rsvps.rows.map((r) => ({ ...r, counts: { going: 0, maybe: 0, no: 0, none: 0 } })) } });
+    expect(document.querySelectorAll('.ch-hb-rsvp__bar')).toHaveLength(0);
   });
 });
 

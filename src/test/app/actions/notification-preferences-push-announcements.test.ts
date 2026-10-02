@@ -17,7 +17,8 @@ vi.mock('@/lib/supabase/server', () => ({
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { notification_preferences: stored }, error: null }) }) }),
       update: (row: unknown) => {
         update(row);
-        return { eq: async () => ({ error: null }) };
+        // The action asks for the written row back (`.select('id')`) to tell a save from a zero-row no-op.
+        return { eq: () => ({ select: async () => ({ data: [{ id: 'u1' }], error: null }) }) };
       },
     }),
   }),

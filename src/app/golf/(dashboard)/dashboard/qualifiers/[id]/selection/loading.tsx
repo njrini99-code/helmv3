@@ -1,7 +1,7 @@
 import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
-import { QualifierDetailSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
+import { QualifierSelectionSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 
-/** Inside Clubhouse, the qualifier skeleton; outside it this address only redirects, so nothing is drawn. */
+/** Inside Clubhouse, Manage selections' own skeleton; outside it this address only redirects, so nothing is drawn. */
 export default function QualifierSelectionLoading() {
-  return <ClubhouseSwitch clubhouse={<QualifierDetailSkeleton />} fallback={null} />;
+  return <ClubhouseSwitch clubhouse={<QualifierSelectionSkeleton />} fallback={null} />;
 }

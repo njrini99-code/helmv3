@@ -135,6 +135,7 @@ export const PREVIEW_HOME: ChCoachHome = {
       delta: -0.9,
       line: [74.6, 74.4, 74.5, 74.1, 74.0, 73.9, 74.0, 73.7, 73.6, 73.5, 73.6, 73.4],
       roundsThisWeek: 11,
+      basis: { rounds: 30, from: '2026-09-02', to: '2026-10-13', girRounds: 30, puttsRounds: 30 },
       gir: { pct: 61, delta: 3 },
       putts: { avg: 30.4, delta: 0.3 },
     },

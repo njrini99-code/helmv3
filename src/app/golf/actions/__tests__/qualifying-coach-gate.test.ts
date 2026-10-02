@@ -17,7 +17,8 @@ const service = vi.hoisted(() => ({
   transition: vi.fn(async () => ({ ok: true })),
   setPick: vi.fn(async () => ({ ok: true })),
   removePick: vi.fn(async () => ({ ok: true })),
-  confirm: vi.fn(async () => ({ ok: true })),
+  // Q-116: confirm says whether the players were told.
+  confirm: vi.fn(async () => ({ ok: true, data: { notified: true } })),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(async () => fake) }));
@@ -94,7 +95,7 @@ describe('Manage selections: who may call the actions', () => {
 
   it('90810 a coach of the team reaches the service, and only then', async () => {
     for (const [name, call, write] of actions) {
-      expect([name, await call()]).toEqual([name, { ok: true }]);
+      expect([name, await call()]).toEqual([name, expect.objectContaining({ ok: true })]);
       expect([name, write.mock.calls.length]).toEqual([name, 1]);
     }
   });

@@ -43,6 +43,8 @@ const a = vi.hoisted(() => ({
   editRecurringEvent: vi.fn(),
   getCalendarFeeds: vi.fn(),
   createCalendarFeed: vi.fn(),
+  regenerateCalendarFeed: vi.fn(),
+  deleteCalendarFeed: vi.fn(),
   getEventDocuments: vi.fn(),
   attachDocumentToEvent: vi.fn(),
   detachDocumentFromEvent: vi.fn(),
@@ -59,7 +61,7 @@ vi.mock('@/app/golf/actions/golf', () => ({
   deleteCoachBlockedTime: a.deleteCoachBlockedTime,
 }));
 vi.mock('@/app/golf/actions/recurring-events', () => ({ createRecurringEvent: a.createRecurringEvent, deleteRecurringEvent: a.deleteRecurringEvent, editRecurringEvent: a.editRecurringEvent }));
-vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCalendarFeeds, createCalendarFeed: a.createCalendarFeed }));
+vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCalendarFeeds, createCalendarFeed: a.createCalendarFeed, regenerateCalendarFeed: a.regenerateCalendarFeed, deleteCalendarFeed: a.deleteCalendarFeed }));
 vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getEventDocuments, attachDocumentToEvent: a.attachDocumentToEvent, detachDocumentFromEvent: a.detachDocumentFromEvent }));
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.markAttendance }));
@@ -148,6 +150,75 @@ describe('Calendar · saves that fail', () => {
     expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Short game');
     expect((screen.getByPlaceholderText('Practice green, Finley GC') as HTMLInputElement).value).toBe('Range bay 2');
     expect(document.querySelector('dialog[open]')).not.toBeNull();
+  });
+
+  // C-17: no request id meant a Retry, or a second Publish, after a reply lost AFTER the server stored the event
+  // published it twice and invited and notified everyone twice.
+  it('C-17 a Retry or a second Publish of the same event sends the same request id; changing the event sends a new one', async () => {
+    const user = userEvent.setup();
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    a.createGolfEvent.mockImplementation(fail);
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await expectCode('CH-6001', /Couldn't publish Short game/);
+    // Pressing Publish again, then the toast's Retry: the same event, so the same id.
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(2));
+    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    await user.click(retries[retries.length - 1]!);
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(3));
+    const ids = () => a.createGolfEvent.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
+    expect(ids()[0]).toMatch(UUID);
+    expect(ids()[1]).toBe(ids()[0]);
+    expect(ids()[2]).toBe(ids()[0]);
+    // Different contents are a different event.
+    await user.type(screen.getByRole('textbox', { name: 'Event title' }), ' drills');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(4));
+    expect(ids()[3]).toMatch(UUID);
+    expect(ids()[3]).not.toBe(ids()[0]);
+  });
+
+  it('C-17 a repeating event sends a request id too, and keeps it across a Retry', async () => {
+    const user = userEvent.setup();
+    a.createRecurringEvent.mockImplementation(fail);
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Lifting');
+    await user.click(screen.getByRole('radio', { name: 'Weekly' }));
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createRecurringEvent).toHaveBeenCalledTimes(1));
+    await expectCode('CH-6001', /Couldn't publish Lifting/);
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createRecurringEvent).toHaveBeenCalledTimes(2));
+    const sent = a.createRecurringEvent.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
+    expect(sent[0]).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(sent[1]).toBe(sent[0]);
+    expect(a.createGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('C-17 a published event whose invitations did not go out says so, and does not claim players were notified', async () => {
+    const user = userEvent.setup();
+    a.createGolfEvent.mockResolvedValue({ success: true, data: { eventId: 'new-1', invitationsError: "The event was created, but its invitations didn't all go out." } });
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Published · Short game · invitations didn't go out/);
+    expect(alert.textContent).toMatch(/invite them again/);
+    expect(screen.queryByText(/players notified/)).toBeNull();
+  });
+
+  it('C-17 a clean publish still says players were notified', async () => {
+    const user = userEvent.setup();
+    a.createGolfEvent.mockResolvedValue({ success: true, data: { eventId: 'new-1' } });
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
+    await screen.findByText(/Published · Short game · players notified/);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('CH-6102 an end before the start is refused', async () => {
@@ -244,6 +315,28 @@ describe('Calendar · saves that fail', () => {
     await user.click(within(code('CH-6206') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await user.click((await screen.findAllByRole('button', { name: 'Create link' }))[0]!);
     await expectCode('CH-6003', /Couldn't create the calendar link/);
+  });
+
+  // The links' own checks (what is sent, what shows after, a player's one link) are in calendar-feed-manage.test.tsx.
+  it('CH-6504 CH-6013 CH-6505 CH-6014 replacing or removing a calendar link asks first and says the old one stops; a refusal is a toast', async () => {
+    const user = userEvent.setup();
+    a.getCalendarFeeds.mockResolvedValue({ success: true, data: [{ id: 'f1', name: 'Team', type: 'team', url: 'https://x/feed.ics' }] });
+    a.regenerateCalendarFeed.mockImplementation(fail);
+    a.deleteCalendarFeed.mockImplementation(fail);
+    wrap(cal());
+    await user.click(screen.getByRole('button', { name: /More/ }));
+    await user.click(await screen.findByRole('menuitem', { name: /Add to calendar app/ }));
+    await user.click(await screen.findByRole('button', { name: 'New link' }));
+    await expectCode('CH-6504', /current link stops working right away/);
+    expect(a.regenerateCalendarFeed).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Make a new link' }));
+    await expectCode('CH-6013', /Couldn't make a new Team schedule link/);
+    expect(a.regenerateCalendarFeed).toHaveBeenCalledWith('team');
+    await user.click(await screen.findByRole('button', { name: 'Remove' }));
+    await expectCode('CH-6505', /link stops working right away/);
+    await user.click(screen.getByRole('button', { name: 'Remove link' }));
+    await expectCode('CH-6014', /Couldn't remove the Team schedule link/);
+    expect(a.deleteCalendarFeed).toHaveBeenCalledWith('team');
   });
 
   it('CH-6004 copying a calendar link fails', async () => {
@@ -354,6 +447,15 @@ describe('Calendar · saves that fail', () => {
     expect(screen.getByRole('radio', { name: 'Going' }).getAttribute('aria-checked')).toBe('false');
   });
 
+  it('CH-6010 a player reply lost on the network (the send throws) goes back too, never left showing as sent', async () => {
+    const user = userEvent.setup();
+    a.respondToEvent.mockRejectedValueOnce(new Error('Failed to fetch'));
+    wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
+    await user.click(await screen.findByRole('radio', { name: 'Going' }));
+    await expectCode('CH-6010', /Couldn't send your reply for Round review/);
+    expect(screen.getByRole('radio', { name: 'Going' }).getAttribute('aria-checked')).toBe('false');
+  });
+
   it('CH-6011 CH-6209 CH-6405 attendance: loading, failing to load, failing to save', async () => {
     const user = userEvent.setup();
     a.getAttendanceReport.mockImplementationOnce(never);
@@ -444,6 +546,16 @@ describe('Calendar · reads that fail', () => {
     expect(code('CH-6202')!.textContent).toMatch(/Your busy time didn't load/);
     expect(code('CH-6203')!.textContent).toMatch(/Class schedules didn't load/);
     expect(code('CH-6212')!.textContent).toMatch(/Times are shown in Eastern time/);
+  });
+
+  it('CH-6213 the roster does not load: the page says so, and the editor never claims an empty roster or "0 of 0"', async () => {
+    const user = userEvent.setup();
+    wrap(cal({ people: [], membersError: true }));
+    expect(code('CH-6213')!.textContent).toMatch(/The roster didn't load/);
+    await user.click(screen.getByRole('button', { name: /New event/ }));
+    await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-6213"]').length).toBe(2));
+    expect(screen.queryByText(/No active players on the roster yet/)).toBeNull();
+    expect(screen.queryByText(/Invite · 0 of 0/)).toBeNull();
   });
 
   it('CH-6204 CH-6205 replies do not load: a notice with Try again, in the summary and on the event', async () => {
@@ -572,6 +684,26 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
+  });
+
+  it('61901 Day: once the day is behind us the now line closes the agenda, and with events still to come it sits before them', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 11:30 PM Wed 14 October in New York: every event is over.
+      vi.setSystemTime(new Date('2026-10-15T03:30:00Z'));
+      const { unmount } = wrap(cal());
+      const lines = screen.getAllByRole('separator', { name: /^Now,/ });
+      expect(lines).toHaveLength(1);
+      expect(document.querySelector('.ch-calm-agenda')!.lastElementChild!.contains(lines[0]!)).toBe(true);
+      unmount();
+      // 2:40 PM: the line sits before the first event still to start.
+      vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
+      wrap(cal());
+      const mid = screen.getByRole('separator', { name: /^Now,/ });
+      expect(mid.nextElementSibling!.getAttribute('aria-label')).toMatch(/^Short-game block/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('61901 an event opens the detail panel in a sheet, with its responses', async () => {
@@ -1258,6 +1390,10 @@ describe('Calendar · moving around', () => {
     expect(router.push).not.toHaveBeenCalled();
     await next();
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/calendar?date=2026-12-02', { scroll: false });
+    // A second tap before that week lands steps on from it (last choice wins), and the page still labels the week it shows.
+    await next();
+    expect(router.push).toHaveBeenLastCalledWith('/golf/dashboard/calendar?date=2026-12-09', { scroll: false });
+    expect(title()).toBe('Nov 22 – 28');
     replace.mockRestore();
   });
 

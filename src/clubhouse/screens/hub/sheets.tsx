@@ -25,7 +25,7 @@ import type { ChHubWrites, ChTripInput } from './writes';
  * the job the same way the first press would have.
  */
 
-function Field({ label, error, errorCode, children, id }: { label: string; error?: string | null; errorCode?: string; children: ReactNode; id: string }) {
+export function Field({ label, error, errorCode, children, id }: { label: string; error?: string | null; errorCode?: string; children: ReactNode; id: string }) {
   return (
     <div className="ch-field">
       <label className="ch-field__label" htmlFor={id}>
@@ -383,7 +383,7 @@ export function ComposeSheet({
   );
 }
 
-const TRANSPORTS: Array<[ChTripInput['transport'], string]> = [
+export const TRANSPORTS: Array<[ChTripInput['transport'], string]> = [
   ['bus', 'Bus'],
   ['van', 'Van'],
   ['flight', 'Flight'],
@@ -587,6 +587,12 @@ export function TripSheet({
                 <span>A trip on its own; the whole team sees it</span>
               </button>
             </div>
+            {!events.error && events.total != null && events.total > events.rows.length && (
+              // C-20: the list is capped at the soonest; later events are still in Calendar.
+              <span className="ch-field__help">
+                Showing the next {events.rows.length} of {events.total} events in the next four months.
+              </span>
+            )}
             {!events.error && events.rows.length === 0 && (
               <span className="ch-field__help" data-ch-code="CH-10312">
                 No upcoming events in the next four months. Add the tournament in Calendar to choose its travelers here.

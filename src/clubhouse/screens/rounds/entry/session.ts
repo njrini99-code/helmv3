@@ -34,7 +34,7 @@ export interface ChRoundSession {
   activeShotNumber: number;
   onHoleComplete: (holeIndex: number, stats: HoleStats) => Promise<boolean>;
   onHoleStatsUpdate: (holeIndex: number, stats: HoleStats | null) => void;
-  onSaveShot: (shot: ShotRecord) => void;
+  onSaveShot: (shot: ShotRecord) => boolean | void;
   onAutoSave: (shots: ShotRecord[], holeIndex: number) => Promise<void>;
   autoSaveDisabled: boolean;
 
@@ -68,6 +68,11 @@ export interface ChRoundSession {
 
   recovery: ChRecovery;
   restoreRecovery: () => Promise<unknown> | void;
+  /**
+   * Bumped when a device copy is restored in place (the continue engine). The tracker re-reads its shots only when
+   * the hole changes, so it is keyed by this to pick up restored shots on the same hole.
+   */
+  restoreEpoch?: number;
   discardRecovery: () => void;
   closeRecovery: () => void;
 }

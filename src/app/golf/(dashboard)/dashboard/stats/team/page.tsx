@@ -112,7 +112,7 @@ export default async function TeamStatsPage() {
   // Clubhouse: the old Team stats address opens the rebuilt Team stats in place
   // (a redirect() from a conditional branch is what crashed /stats, see the
   // note in ../page.tsx). Players never reach this page.
-  if (isClubhouseFor('coach')) return <ClubhouseStatsRoute />;
+  if ((await isClubhouseFor('coach'))) return <ClubhouseStatsRoute />;
 
   const supabase = await createClient();
 

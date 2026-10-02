@@ -3,6 +3,277 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Owner rules for page states (P009)
+
+Owner, 2026-10-01: never an empty or a zero for a failed or unfinished read;
+loading, refreshing, empty, failed, stale and pending are different states;
+the last choice wins; qualifier context and standings first, the breakdowns
+stream; Back restores the list's filters and scroll. Standard:
+`docs/clubhouse/PAGE_PERFORMANCE.md`. Rule 8 was first built here with its own
+address and scroll code, then moved onto the shell's mechanism (the lead's
+direction, same day): see "Filter, search and Back" below.
+
+```text
+PR/commit:      agent/swap-audit: cb1739fe9, 6dcbae1ff, dadc1f8e2, 112afa945,
+                75df19425, 8d9d48f86, 43d50e341, 461d7cb1f (the rule 8 rework,
+                adds screens/qualifiers/return-state.ts), and the review fixes
+                commit after it
+Design package: none (no new visual; placeholders reuse the page's classes)
+Contract IDs:   CH-09220, CH-09221, CH-09222, CH-09409, CH-09410, CH-09904,
+                CH-09905 (new); CH-09202, CH-09205, CH-09206, CH-09207,
+                CH-09208, CH-09306, CH-09406, CH-09408 (reworded)
+Actions:        none new; the tie row has its own action (qualifiers.chooseTie)
+Data impact:    none: no write, no cache, no new table, no 'use server' file.
+                The detail's reads are the same; the courses, tees and
+                scorecards no longer hold up the first paint
+Held items:     none
+```
+
+- **False empties (rule 1).** `/my-qualifiers` says its entries failed
+  (CH-09222, with Try again) instead of "You aren't entered in any
+  qualifiers", and its head carries no "0 active · 0 concluded". The hero says
+  nothing about where a player stands when the standings did not load (it said
+  "You aren't entered" or "no rounds in yet"). The coach's pick notes that
+  did not load are named (CH-09221) instead of reading as "no notes". A
+  confirmed squad whose entries did not load is the squad's notice (CH-09207),
+  not a row of "A player". The form carries no "0 of 0 active players
+  entered" while the roster failed. Every Try again on these pages goes
+  through `useRefresh` ("Trying again", a second tap ignored).
+- **Refresh failed, old data kept (rule 2).** A live `router.refresh` whose
+  entries or rounds read fails keeps the last good standings of the same
+  qualifier, with the courses and cards that came with them, and says "These
+  standings may be out of date" with Try again (CH-09220), on desktop and phone
+  (`useLastGood`). A recovered read clears it, another qualifier never
+  inherits the rows, and a first load that fails is still CH-09203 or CH-09204.
+- **Races (rule 4).** The course picker drops a slower answer for an earlier
+  course, so the tees under a course's name are that course's. Manage
+  selections no longer copies candidates from props into state: a landed write
+  is laid over the server's read until the read shows it, or a second read has
+  come in, so a refresh started before the write cannot undo it. Giving a place
+  at a tied cut waits on that player's row only (its own action and "Saving"),
+  and counts the give in flight against the places left. On the phone, Reopen
+  keeps its sheet up while the server answers and says "Reopening" there.
+- **Small.** Manage selections has its own skeleton (CH-09409): it drew the
+  qualifier's facts and leaderboard. Creating or saving a qualifier replaces
+  the form instead of pushing it, so Back from the qualifier does not return
+  to a spent form (a Create there would make a second qualifier).
+- **Streaming (rule 6).** `loadQualifierDetail` returns the core (the
+  qualifier, its entries, rounds, squad and pick notes: what the standings,
+  facts and squad need) after two waves, and `secondary`, a promise that never
+  rejects: the round courses with their tees and pars, and the scorecards. The
+  tees start when the round courses are in and the scorecards when the rounds
+  are, not after the whole core; the privacy filter on scorecards is the same
+  expression as before. The route passes the core as `data` and the promise as
+  `secondary`; the Par fact, Course per round, an opened row's cards, the
+  phone's round sheet and the round-by-round column titles read it through
+  `Streamed` (`use()` inside its own `Suspense`) with a placeholder of the
+  final size (CH-09410). A failed read, or a stream cut off in the browser, is
+  that section's own notice (CH-09205, CH-09206), never an empty. This
+  supersedes the earlier "left" note about the scorecards. A live refresh
+  (`router.refresh`) is a transition, so the page on screen stays whole until
+  the new render, streamed part included, has landed: the placeholders are the
+  first load's and are never drawn over standings. The unit test renders new
+  standings with a part that has not landed, which a transition would not
+  show, so it does not prove the production behavior. No keyed Suspense or
+  `useDeferredValue` was added: a new round paired with an old holes map would
+  draw a false "No hole-by-hole card".
+- **Filter, search and Back (rule 8).** The list's filter and search use the
+  shell's `useChSessionState` (this tab, per page and team, never restored
+  while the page hydrates), so they come back when the list is opened again,
+  and not for another team or for /my-qualifiers (CH-09904). Nothing is
+  written to the address, and the list keeps no scroll of its own: RouteFrame
+  records each page's scroll per page and team and restores it on Back or
+  Forward (CH-09905). What these screens add is a real Back. A qualifier
+  opened from the list leaves a note in `sessionStorage`
+  (`screens/qualifiers/return-state.ts`, the pattern of the Rounds library).
+  The qualifier reads the note once, as it mounts, and spends it; its Back
+  (desktop link, phone top bar, the not-found page) then steps back in
+  history, otherwise it goes to the list's address. Manage selections does the
+  same toward the qualifier (its link leaves the note) and hands the list's
+  note back to the qualifier as it steps back, so the qualifier's Back is
+  still a step to the list. A note is written by a plain click only, and a
+  second tap on Back within a second is the first one's, so it cannot step
+  back twice past the list.
+- **Second review (same day).** An independent read of all the commits found
+  two things to fix and some to tidy, each checked against the code first.
+  (1) A failed refresh over a good board with no round in yet drew "Awaiting
+  first round" with no notice, before the stale notice was reached: both
+  screens now draw CH-09220 above it. (2) The Manage selections workspace
+  loader (`lib/coachhelm/v3/qualifying/loader.ts`, shared with the Fairway
+  workspace page and the tie and confirm writes) did not read the picks or the
+  reasons error. A failed picks read came back as "nobody is selected", so
+  `chooseTiePlace` counted `tie.chosen` as 0 and could give a place twice, and
+  `confirmSelection` could rewrite a coach's pick as a top-score place. A
+  failed qualifier, picks, reasons or rounds read now returns null. The callers
+  were checked: the Fairway page shows not-found (as it already did for a
+  failed qualifier or rounds read), the Clubhouse loader answers CH-09218, and
+  both writes answer "workspace not loadable" and write nothing. (3) CH-09218's
+  copy no longer says "Nothing has changed": the page also follows a pick or a
+  confirm that was saved. (4) A Back note carries the time of the click and is
+  ignored and dropped after ten seconds, so a navigation that never opened its
+  page cannot send a later visit back. (5) Tidy: `return-state.ts` is marked
+  `'use client'` (it exports a hook); a change the server already shows now
+  clears an older opposite edit of the same fields in Manage selections, so a
+  take-back is not masked by the give before it.
+  Decision, left as it was: the detail's "last good" test (`board` loaded)
+  ignores the picks and the notes reads, so a refresh whose picks read fails
+  shows the squad card's own notice (CH-09207) rather than a stale squad. That
+  notice is honest and the standings, which the stale rule protects, are
+  unaffected.
+- **Review.** An independent read of the first six commits found the phone
+  scroll, a return mark that never expired, the unguarded per-key history
+  writes and an edit that could linger over a server change. The first three
+  went away with the rework above, which removed the list's own address
+  writes, scroll keep and restore, and return mark; the edit fix stays
+  (`43d50e341`).
+- **Checked.** `qualifiers.test.tsx`, `qualifiers-reads.test.ts` and
+  `qualifiers-hydration.test.tsx`, 181 cases, and
+  `src/test/coachhelm/v3` (the loader's failed reads and the writes behind it,
+  1456 cases in the folder). The tests for the tees race, the
+  selection overlay, the tie row, the phone sheet and the Back notes were each
+  seen to fail with their fix taken out (the filter and the search as plain
+  state, the note and its plain-click guard, the step back, a note matching
+  any qualifier, a note that is not spent, the double tap, the hand back to the
+  list, strict mode's second run, the list scrolling or writing the address
+  itself; the second review's fixes the same way).
+- **Test assertions changed by design.** The detail loader's holes, courses
+  and logs are read from `await result.secondary` (90806, 92101, 92301); the
+  detail depth test in `qualifiers-reads.test` now asserts two waves for the
+  core and that the tees and scorecards do not delay it; the create, save,
+  retry and offline write scenarios assert `router.replace` for create and save
+  (and that `push` is not called), `push` stays for confirm. The rework removed
+  the tests of the list's own mechanism (the address, the scroll keep and
+  restore, the return mark, the remembered list address) and added tests for
+  the shell's: the filter and search coming back for the same team and not
+  another, the Back notes, and the list inside RouteFrame. The streaming
+  refresh test was only retitled to say what it shows (new standings and a part
+  that has not landed), not changed.
+- **Left.** (1) Rule 2's "updating mark" on a live refresh is not drawn: a
+  refresh is a transition, so the page stays whole until the new render lands
+  and then changes in one commit; a unit test cannot see a transition's
+  pending state, so a badge for it would be untested. (2) A refresh therefore
+  commits when its courses and cards have streamed in too (as before the
+  split, but now only the refresh waits, not the first paint). (3) The Back
+  note is spent at the qualifier's first mount, so any later page for the same
+  qualifier that the list did not open (the edit form's save, Confirm squad, a
+  Forward, a reopen from Home) goes to the list's address, a new visit: the
+  filter and search come back, the place does not. The note is a hint, not a
+  look at the history: it cannot see that the entry before the qualifier is
+  the list, only that the list's click was followed by this qualifier opening.
+  The sidebar's link to the list keeps the filter through session state. (4)
+  Saving an edit replaces the form with the qualifier it was opened from, so
+  the browser's own Back from there reads the same qualifier once (the Back
+  control goes to the list's address). (5) Confirming a squad still pushes the
+  qualifier, so the browser's own Back lands on the confirmed Manage
+  selections page (the Back control goes to the list's address). (6) Not seen
+  in a browser: the frame's scroll restore under the real view transition, the
+  step back in the App Router, the streamed placeholders' final sizes (no
+  layout shift measured), and the phone sheet. No `next build` was run (no
+  `'use server'` file changed); a Flight promise prop into `use()` is
+  exercised only through unit tests.
+
+## 2026-10-01 — Page performance: the detail and the form read in fewer passes
+
+Owner, 2026-10-01: "Everything page transition and load needs to be extremely
+smooth and accurate." Standard: `docs/clubhouse/PAGE_PERFORMANCE.md`.
+
+```text
+PR/commit:      agent/swap-audit: b4842d7de
+Design package: none
+Contract IDs:   none changed
+Data impact:    none; no write, no cache, no new read
+Held items:     none
+```
+
+- **Detail.** The qualifier detail went from four serial waves to three
+  (`qualifiers-reads.test`): the qualifier, then its entries, rounds, round
+  courses and squad together, then the tees and the scorecards together. The
+  tees used to be read before the scorecards, one after the other.
+- **Form.** Editing went from four to three: the roster is read beside the
+  qualifier instead of before it. Creating is one read, as it was; the list is
+  two, as it was.
+- **Left.** The qualifier is still read before its parts, not beside them: a
+  read of another team's qualifier would start three reads that are then
+  thrown away, which is not worth one round trip. Manage selections reads the
+  qualifier's team and then the workspace for the same reason (a missing
+  qualifier and a failed read are told apart by the first). The scorecards
+  could stream behind their own boundary, but their read is no longer the
+  longest on the page; revisit with measured numbers.
+- **Switching and prefetching.** The list, the detail and Manage selections
+  have no client-side view switch (filters and search are on the page's own
+  data), and every link into them is a `<Link>`, so Next prefetches each one up
+  to its `loading.tsx`. A fuller prefetch is not used: it would show a
+  qualifier's standings up to five minutes old after a round is submitted.
+
+## 2026-10-01 — A tie at the cut waits for the coach (Q-114)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (a panel in the Manage selections grammar;
+                Fairway gets a Give place button)
+Contract IDs:   CH-09010, CH-09318 (new)
+Actions:        qualifiers.chooseTie → chooseQualifierTiePlace (new);
+                confirm refuses an unsettled tie
+Data impact:    a place given at the cut is a top_score selection written
+                before confirm; no schema change
+Held items:     none
+```
+
+- **Issue.** Players level on to par and strokes at the last place on score
+  were split by name order on the board, in selection and at confirm.
+- **Fix.** Everyone level with the last place and the next player is "Tie at
+  cut". The players clearly above keep their places; the coach gives the
+  places left (and can take one back) before confirming, and confirm waits
+  until they are all given. The board shows "Tie at cut"; Fairway's workspace
+  gets the same Give place button so a tie never blocks it.
+- **Checked.** `qualifying.test.ts` (the board and workspace agree, clean
+  cuts are not ties); `selection-guards.test.ts` (confirm waits, places only
+  to tied players, never beyond, taken back); `qualifiers.test.tsx` 109/109.
+
+## 2026-10-01 — Picks need a scored round; an honest confirm toast (Q-115, Q-116)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   CH-09009 (new); CH-09008 done copy now "Squad confirmed · N
+                players"
+Actions:        qualifiers.confirmSquad (unchanged call); setCoachPick refuses a
+                player with no scored round
+Data impact:    none; confirm returns whether the players were told
+Held items:     none
+```
+
+- **Q-115.** The server refuses a coach pick for an entrant with no scored
+  round (completed, not a test, with a total), as the pick sheet offers.
+- **Q-116.** The confirm toast reads "Squad confirmed · N players"; when
+  telling the players fails, an error toast says so (CH-09009).
+- **Checked.** `qualifiers.test.tsx` 108/108; `selection-guards.test.ts` 7/7.
+
+## 2026-10-01 — Selection ranks from the rounds, as the board does; the board's unknown-round rules; test qualifiers stay hidden (swap audit §11 reconciliation, Q-134)
+
+```text
+PR/commit:      agent/swap-audit (#2111): 802bcfbad, f55938c4b, 2e6c15651
+Design package: none (no visual change)
+Contract IDs:   none new
+Actions:        none
+Data impact:    loadQualifyingWorkspace reads the qualifier's completed,
+                non-test rounds; updateQualifierEntryStats skips test rounds.
+                Production: 30 entry aggregates rewritten from their rounds
+                (owner-approved; 0 of 136 now disagree)
+Held items:     none
+```
+
+- **Issue.** The board ranked from rounds and selection (and confirm) from
+  the entry's stored aggregate, which was stale on a live qualifier (3 rounds
+  played, 2 stored), so the two could rank a player differently.
+- **Fix.** Selection and confirm rank from the same rounds as the board. Both
+  treat a round with a total but no to-par as unknown (not even), count a
+  second round in one round slot once, and a link to a test qualifier (detail
+  or edit) is not found, as in the list.
+- **Checked.** The SQL oracle matched the board on all 7 Demo entrants;
+  `qualifiers.test.tsx` 107/107; `qualifying-loader-rounds.test.ts` (3 fail
+  on the old loader); qualifying suites 143/143.
+
 ## 2026-09-30 — Manage selections has its own error and loading states (swap audit F-18)
 
 ```text

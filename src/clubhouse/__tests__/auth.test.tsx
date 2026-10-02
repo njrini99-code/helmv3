@@ -44,7 +44,7 @@ import { Welcome } from '../screens/auth/Welcome';
 import { WelcomeStage } from '../screens/auth/WelcomeStage';
 import { FixedClock } from '../screens/auth/use-hour';
 import { GolfScene } from '../screens/auth/GolfScene';
-import { HANDOFF_MS, OPENING_MS } from '../screens/auth/auth-motion';
+import { HANDOFF_MS, OPENING_MS, WELCOME_PHONE_AUTO_MS } from '../screens/auth/auth-motion';
 
 let reduced = false;
 const setMedia = (opts: { reduced?: boolean; phone?: boolean } = {}) => {
@@ -221,7 +221,6 @@ describe('the sign-in screen', () => {
     const { container } = render(<SignIn signIn={login} />);
     await fill(user);
     await user.click(submit());
-    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
     await waitFor(() => expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('opening'));
     expect(hapticSpy).toHaveBeenCalledWith('success');
     // The form is out of reach (and of the screen reader) while the course takes the frame.
@@ -230,6 +229,8 @@ describe('the sign-in screen', () => {
     expect(panel.hasAttribute('inert')).toBe(true);
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/golf/welcome?next=%2Fgolf%2Fdashboard'), { timeout: OPENING_MS + 2000 });
     expect(router.push).toHaveBeenCalledTimes(1);
+    // F-29: refreshing /golf/login with the new session redirected to /golf/dashboard before the welcome.
+    expect(router.refresh).not.toHaveBeenCalled();
   });
 
   it('CH-15902 goes straight to onboarding, with the invite code, when the person has no profile yet', async () => {
@@ -539,13 +540,37 @@ describe('the welcome', () => {
     expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
   });
 
-  it('waits for Continue: it never advances on its own', () => {
+  it('waits for Continue on desktop: it never advances on its own', () => {
     vi.useFakeTimers();
     const { ui, navigate } = welcome();
     render(ui);
     act(() => void vi.advanceTimersByTime(60_000));
     expect(navigate).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('Q-137 on a phone it carries on by itself once the greeting has landed, with the fold, and only once', () => {
+    // The welcome arms on the first frame, so frames are faked too.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'Date'] });
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: /max-width/.test(q) })) as typeof window.matchMedia;
+    try {
+      at('/golf/welcome?next=%2Fgolf%2Fdashboard%2Froster');
+      const { ui, navigate } = welcome();
+      const { container } = render(ui);
+      act(() => void vi.advanceTimersByTime(16));
+      // No Return hint on a phone.
+      expect(container.querySelector('.ch-au-wl-hint')).toBeNull();
+      act(() => void vi.advanceTimersByTime(WELCOME_PHONE_AUTO_MS - 2));
+      expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).not.toBe('leaving');
+      act(() => void vi.advanceTimersByTime(20));
+      expect(container.querySelector('.ch-au-photo')?.hasAttribute('data-fold')).toBe(true);
+      act(() => void vi.advanceTimersByTime(HANDOFF_MS.navigate + 60_000));
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith('/golf/dashboard/roster');
+    } finally {
+      window.matchMedia = real;
+    }
   });
 
   it('CH-15604 CH-15705 Continue buzzes once, folds the course into the canvas, then goes to the destination, once', () => {

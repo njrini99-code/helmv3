@@ -24,6 +24,7 @@ import {
 } from './model';
 import { SAVE_COPY, useInvite } from './hooks';
 import { Card, Field, ReadFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction } from './parts';
+import { StaffCards } from './Staff';
 
 export function TeamSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.teamId) {
@@ -37,6 +38,7 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
     <>
       {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
       {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
+      <StaffCards coachId={data.coachId} writes={writes} />
       {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
       {data.reminders?.error ? <ReadFailed what="Event reminders" code="CH-8208" onRetry={writes.refresh} /> : data.reminders && <RemindersCard reminders={data.reminders.value} writes={writes} />}
     </>

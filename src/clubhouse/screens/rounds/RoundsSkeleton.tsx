@@ -1,5 +1,6 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/rounds.css';
+import '../../styles/rounds-recover.css';
 
 /** Route loading for Rounds: the header, the round card beside the season, then a month of rounds, in place. */
 export function RoundsSkeleton() {
@@ -53,6 +54,28 @@ export function RoundEntrySkeleton() {
         <Skeleton width="100%" height={260} radius={20} />
       </div>
       <Skeleton width="100%" height={64} radius={16} />
+    </main>
+  );
+}
+
+/** Route loading for round recovery (CH-11408): the header and two saved rounds, in place. */
+export function RoundRecoverSkeleton() {
+  return (
+    <main className="ch-rcv" aria-busy="true" aria-label="Loading saved rounds" data-ch-code="CH-11408">
+      <header className="ch-rcv-h">
+        <div>
+          <Skeleton width={150} height={13} />
+          <div style={{ height: 10 }} />
+          <Skeleton width={260} height={36} radius={10} />
+        </div>
+      </header>
+      <ul className="ch-rcv-list" aria-hidden="true">
+        {[0, 1].map((i) => (
+          <li key={i}>
+            <Skeleton width="100%" height={140} radius={16} />
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }

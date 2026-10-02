@@ -977,6 +977,33 @@ describe('editRecurringEvent — series extension', () => {
 // ===========================================================================
 
 describe('createRecurringEvent', () => {
+  it('CAL-05 a weekly 3 PM series across the 1 Nov clock change stays at 3 PM local with the zone given', async () => {
+    seed('u-coach', {
+      golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+      golf_events: [],
+    });
+    // Chicago: CDT (UTC-5) until 1 Nov 2026, then CST (UTC-6). The client's single offset is the root's (300).
+    const result = await createRecurringEvent({
+      title: 'Practice',
+      eventType: 'practice',
+      startDate: '2026-10-22',
+      startTime: '15:00',
+      endTime: '17:00',
+      recurrenceRule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=3',
+      timezoneOffset: 300,
+      timeZone: 'America/Chicago',
+    });
+    expect(result.success).toBe(true);
+    const starts = events()
+      .map((row) => new Date(String(row.start_time)).toISOString())
+      .sort();
+    expect(starts).toEqual(['2026-10-22T20:00:00.000Z', '2026-10-29T20:00:00.000Z', '2026-11-05T21:00:00.000Z']);
+    const ends = events()
+      .map((row) => new Date(String(row.end_time)).toISOString())
+      .sort();
+    expect(ends[2]).toBe('2026-11-05T23:00:00.000Z');
+  });
+
   it('creates a root + children series with parent links', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LinkPending } from './LinkPending';
 import { AnimatePresence, m } from 'framer-motion';
 import { ChevronRight, LayoutGrid, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -18,6 +19,8 @@ import type { ChShellData } from '../data/shell';
 import { activeNavItem, phoneTabsFor, type ChRole } from './nav';
 import { usePhoneChromeState } from './phone-chrome';
 import { badgeCount } from './Sidebar';
+import { MoreTeamSwitch } from './TeamSwitch';
+import type { ChTeamSwitch } from './team-switch';
 
 /**
  * Phone navigation (owner design, D-40): the ivory glass tab bar, four
@@ -29,7 +32,20 @@ import { badgeCount } from './Sidebar';
  * opens Settings), the rest of the app with the next event under Calendar,
  * then Settings, Help and Sign out.
  */
-export function TabBar({ pathname, shell, role, user }: { pathname: string; shell: ChShellData; role: ChRole; user?: { name: string; teamName?: string | null } }) {
+export function TabBar({
+  pathname,
+  shell,
+  role,
+  user,
+  teamSwitch = null,
+}: {
+  pathname: string;
+  shell: ChShellData;
+  role: ChRole;
+  user?: { name: string; teamName?: string | null };
+  /** The coach's teams when they can switch among them: the More sheet lists them under who they are. */
+  teamSwitch?: ChTeamSwitch | null;
+}) {
   const toast = useToast();
   const [leaving, setLeaving] = useState(false);
   const signOut = async () => {
@@ -85,7 +101,8 @@ export function TabBar({ pathname, shell, role, user }: { pathname: string; shel
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
-      trigger?.focus({ preventScroll: true });
+      // Back on More without a ring after a tap (F-46); a keyboard user still lands on it.
+      trigger?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     };
   }, [moreOpen]);
 
@@ -100,6 +117,7 @@ export function TabBar({ pathname, shell, role, user }: { pathname: string; shel
               key={t.id}
               href={t.href}
               className="ch-tab"
+              // CH-1803: the current tab is marked; CH-1701: changing tabs ticks, tapping the current one does not.
               aria-current={active ? 'page' : undefined}
               onClick={() => !active && haptic('select')}
             >
@@ -113,6 +131,7 @@ export function TabBar({ pathname, shell, role, user }: { pathname: string; shel
               </span>
               <span className="ch-tab__label">{t.label}</span>
               {count != null && <span className="ch-sr-only">, {count} new</span>}
+              <LinkPending />
             </Link>
           );
         })}
@@ -125,6 +144,7 @@ export function TabBar({ pathname, shell, role, user }: { pathname: string; shel
           aria-controls="ch-more"
           aria-label={moreCount != null ? `More, ${moreCount} unread ${moreCount === 1 ? 'message' : 'messages'}` : 'More'}
           onClick={() => {
+            // CH-1704: the tick as More opens (the swipe-shut tap is useSheetDrag's); CH-1602: the sheet rises over its scrim.
             haptic('select');
             setMoreOpen((o) => !o);
           }}
@@ -186,6 +206,7 @@ export function TabBar({ pathname, shell, role, user }: { pathname: string; shel
                   <Icon icon={ChevronRight} size={16} />
                 </Link>
               )}
+              {teamSwitch && <MoreTeamSwitch model={teamSwitch} onSwitched={closeMore} />}
               <div className="ch-more__list">
                 {rest.map((i) => {
                   const count = 'badge' in i && i.badge ? badgeCount(i, badges, shell) : null;

@@ -15,9 +15,16 @@ export interface PlayerCohort {
   gender: CohortGender;
   /** Division tier when known; null this phase (golf_teams has no division col). */
   level: string | null;
+  /**
+   * Set only when the lookup failed and `gender` is the men's default standing in for an answer that was not read. Absent
+   * otherwise, so every caller that only reads `gender` (the generators, the cron) is unchanged; a page that would say the
+   * cohort as fact checks it.
+   */
+  failed?: true;
 }
 
 const DEFAULT_COHORT: PlayerCohort = { gender: 'mens', level: null };
+const FAILED_COHORT: PlayerCohort = { gender: 'mens', level: null, failed: true };
 
 function cohortFromRows(rows: Array<{ golf_teams: { gender: string | null } | null }>): PlayerCohort {
   if (rows.length === 0) return DEFAULT_COHORT;
@@ -93,13 +100,13 @@ export async function loadPlayerCohort(playerId: string): Promise<PlayerCohort> 
       .select('golf_teams(gender)')
       .eq('player_id', playerId)
       .eq('status', 'active');
-    if (error || !data) return DEFAULT_COHORT;
+    if (error || !data) return FAILED_COHORT;
     return cohortFromRows(data as Array<{ golf_teams: { gender: string | null } | null }>);
   } catch (err) {
     await logServerError(
       `loadPlayerCohort failed for player=${playerId}: ${describeError(err)}`,
       { action: 'v3.counterfactual.loadPlayerCohort' },
     );
-    return DEFAULT_COHORT;
+    return FAILED_COHORT;
   }
 }

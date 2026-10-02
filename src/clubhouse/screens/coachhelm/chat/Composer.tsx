@@ -18,6 +18,7 @@ import { Icon } from '../../../ui/Icon';
 import { Menu } from '../../../ui/Menu';
 import { Modal } from '../../../ui/Modal';
 import { useToast } from '../../../ui/Toast';
+import { useAskDraft } from './drafts';
 
 /** The text box grows with its text and stops here; past it the box scrolls (a taller one hides the answer it is about). */
 const MAX_HEIGHT = 168;
@@ -66,6 +67,8 @@ export interface AskComposerProps {
   autoFocus?: boolean;
   /** A new chat (no messages yet): the box invites a first question, whatever its shape (the phone's new chat is the one-row box). */
   fresh?: boolean;
+  /** Who and which chat the unsent text belongs to ("coach:chat"), so it comes back when the coach returns to this page; none, none kept. */
+  draftKey?: string | null;
 }
 
 /**
@@ -80,11 +83,11 @@ export interface AskComposerProps {
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false }: AskComposerProps) {
+export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
-  const [value, setValue] = useState('');
+  const [value, setValue] = useAskDraft(draftKey);
   const [range, setRange] = useState<ChAskRange | null>(null);
   const [active, setActive] = useState(0);
   const [dismissed, setDismissed] = useState(false);
@@ -116,7 +119,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
       setRange((r) => r ?? back.range);
     }
     wasFailed.current = failed;
-  }, [failed]);
+  }, [failed, setValue]);
 
   const query = mentionQuery(value);
   const pickerOpen = !phone && query !== null && !dismissed;

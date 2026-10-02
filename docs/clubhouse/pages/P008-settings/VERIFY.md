@@ -125,6 +125,13 @@ Animation:         v2 tokens only
 Notes:             first-load JS and LCP are open (CH-1954)
 ```
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+
 ## Open verification gaps
 
 - Owner review of the built desktop screen; the browser pass of the phone at 390px (every screen and sheet against the

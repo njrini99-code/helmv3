@@ -22,6 +22,7 @@ import { SAVE_COPY, useInvite } from '../hooks';
 import { ReadFailed, useInstantSave, useSaveAction } from '../parts';
 import { TEES } from '../Team';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
+import { StaffPhone } from './StaffPhone';
 import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow } from './ui';
 
 /**
@@ -46,6 +47,7 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
   return (
     <>
       {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} /> : data.joinCode && <InvitePhone code={data.joinCode.value} writes={writes} />}
+      <StaffPhone coachId={data.coachId} writes={writes} />
       {data.team?.error && <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} />}
       {(team || scoring.s) && <DetailsPhone team={team} scoring={scoring} writes={writes} />}
       {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} /> : scoring.s && <ScoringPhone scoring={scoring} />}

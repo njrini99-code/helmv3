@@ -127,6 +127,17 @@ export interface GolfSessionProfile {
 }
 
 /**
+ * The signed-in user (and whether the answer is the degraded, cookie-only one), read once per request. The golf session profile reads it,
+ * and a caller that needs the full user object as well (Clubhouse Stats' shared context for the stats actions) shares this answer instead
+ * of asking the auth server again.
+ */
+export const getGolfAuthUser = cache(async () => {
+  const supabase = await createClient();
+  // Transient-tolerant (same rationale as getSessionProfile above).
+  return getUserResilient(supabase);
+});
+
+/**
  * React.cache()-wrapped golf session profile fetch.
  *
  * Deduplicates the getUser() + golf_coaches + golf_players queries across all
@@ -139,11 +150,9 @@ export interface GolfSessionProfile {
  *   if (!session) redirect('/golf/login');
  */
 export const getGolfSessionProfile = cache(async (): Promise<GolfSessionProfile | null> => {
-  const supabase = await createClient();
-
-  // Transient-tolerant (same rationale as getSessionProfile above).
-  const { user } = await getUserResilient(supabase);
+  const { user } = await getGolfAuthUser();
   if (!user) return null;
+  const supabase = await createClient();
 
   // Single-trip: coach + player in parallel
   const [coachResult, playerResult] = await Promise.all([

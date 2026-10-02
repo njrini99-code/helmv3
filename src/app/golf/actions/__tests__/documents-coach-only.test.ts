@@ -69,6 +69,10 @@ function chain(result: () => Result, single?: () => Result) {
 let role: 'coach' | 'player' | 'outsider';
 let deletedRows: Array<{ id: string }>;
 let isPublic: boolean;
+/** When set, the version read (which names the files to purge) fails. */
+let versionsError: unknown;
+/** What happened, in order: the row delete and the storage purge. */
+let order: string[];
 let documentsChain: ReturnType<typeof chain>;
 const removeMock = vi.fn();
 const uploadMock = vi.fn();
@@ -78,8 +82,13 @@ beforeEach(() => {
   role = 'coach';
   deletedRows = [{ id: DOC_ID }];
   isPublic = false;
+  versionsError = null;
+  order = [];
   getUserMock.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
-  removeMock.mockResolvedValue({ error: null });
+  removeMock.mockImplementation(async () => {
+    order.push('storage.remove');
+    return { error: null };
+  });
   uploadMock.mockResolvedValue({ error: null });
   storageFromMock.mockImplementation(() => ({
     remove: removeMock,
@@ -89,7 +98,10 @@ beforeEach(() => {
   validateCoachTeamAccessMock.mockImplementation(async () => role === 'coach');
 
   documentsChain = chain(
-    () => ({ data: deletedRows, error: null }),
+    () => {
+      order.push('row.delete');
+      return { data: deletedRows, error: null };
+    },
     () => ({ data: { team_id: TEAM_ID, file_url: 'https://storage.example/x', is_public: isPublic }, error: null }),
   );
   fromMock.mockImplementation((table: string) => {
@@ -112,7 +124,7 @@ beforeEach(() => {
           () => ({ data: role === 'player' ? { id: 'member-1' } : null, error: null }),
         );
       case 'golf_document_versions':
-        return chain(() => ({ data: [{ storage_path: `golf-documents/${TEAM_ID}/v1.pdf` }], error: null }));
+        return chain(() => ({ data: versionsError ? null : [{ storage_path: `golf-documents/${TEAM_ID}/v1.pdf` }], error: versionsError ?? null }));
       default:
         return chain(() => ({ data: null, error: null }));
     }
@@ -171,6 +183,34 @@ describe('deleteGolfDocument / deleteDocument: coach-only (Q-74)', () => {
 
     expect(res.success).toBe(false);
     expect(res.error).toMatch(/not found or not permitted/i);
+  });
+
+  // C-22: storage used to be purged BEFORE the row delete, so a delete that matched nothing (or failed) left a listed
+  // document whose every file was already gone.
+  it('purges storage only AFTER the row is gone, never before', async () => {
+    const res = await deleteGolfDocument(DOC_ID);
+
+    expect(res.success).toBe(true);
+    expect(order).toEqual(['row.delete', 'storage.remove']);
+  });
+
+  it('leaves the files alone when the delete matched no row', async () => {
+    deletedRows = [];
+
+    const res = await deleteGolfDocument(DOC_ID);
+
+    expect(res.success).toBe(false);
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
+  it('stops before deleting anything when the version read fails, so no file is orphaned', async () => {
+    versionsError = { code: '57014', message: 'statement timeout' };
+
+    const res = await deleteGolfDocument(DOC_ID);
+
+    expect(res.success).toBe(false);
+    expect(order).toEqual([]);
+    expect(removeMock).not.toHaveBeenCalled();
   });
 
   it('rejects a signed-out caller', async () => {

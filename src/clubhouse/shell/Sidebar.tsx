@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LinkPending } from "./LinkPending";
 import type { GolfUserData } from "@/contexts/golf-user-context";
 import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import { Avatar } from "../ui/Avatar";
@@ -8,6 +9,8 @@ import { Icon } from "../ui/Icon";
 import type { ChShellData } from "../data/shell";
 import { activeNavItem, CH_NAV_SECTIONS, navFor, type ChNavItem } from "./nav";
 import { NextEventCard } from "./NextEventCard";
+import { BrandTeamSwitch } from "./TeamSwitch";
+import type { ChTeamSwitch } from "./team-switch";
 
 export function badgeCount(
   item: ChNavItem,
@@ -30,10 +33,13 @@ export function Sidebar({
   userData,
   shell,
   pathname,
+  teamSwitch = null,
 }: {
   userData: GolfUserData;
   shell: ChShellData;
   pathname: string;
+  /** The coach's teams when they can switch among them; the team line is a plain label without it. */
+  teamSwitch?: ChTeamSwitch | null;
 }) {
   const badges = useNotificationBadges();
   const nav = navFor(userData.role);
@@ -42,20 +48,26 @@ export function Sidebar({
 
   return (
     <aside className="ch-sidebar" aria-label="Sidebar">
-      <div className="ch-brand">
-        <img
-          src="/helm-main-logo-transparent-white-trim.png"
-          alt=""
-          width={32}
-          height={32}
-        />
-        <div className="ch-brand__txt">
-          <span className="ch-brand__word">GolfHelm</span>
-          {userData.teamName && (
-            <span className="ch-brand__team">{userData.teamName}</span>
-          )}
+      {teamSwitch ? (
+        <BrandTeamSwitch model={teamSwitch} teamName={userData.teamName ?? null} />
+      ) : (
+        <div className="ch-brand">
+          <img
+            src="/helm-main-logo-transparent-white-trim.png"
+            alt=""
+            width={32}
+            height={32}
+          />
+          <div className="ch-brand__txt">
+            <span className="ch-brand__word">GolfHelm</span>
+            {userData.teamName && (
+              <span className="ch-brand__team" data-ch-code="CH-1305">
+                {userData.teamName}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <nav className="ch-nav" aria-label="Main">
         {sections.map((section) => {
@@ -78,6 +90,7 @@ export function Sidebar({
                     {count != null && (
                       <span className="ch-navitem__count ch-num">{count}</span>
                     )}
+                    <LinkPending />
                   </Link>
                 );
               })}

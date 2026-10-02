@@ -5,15 +5,21 @@ import { loadWelcome } from '../data/welcome';
 import { SignIn } from '../screens/auth/SignIn';
 import { Welcome } from '../screens/auth/Welcome';
 import { WelcomeStage } from '../screens/auth/WelcomeStage';
+import { ChPhoneHintProvider } from '../lib/use-phone';
+import { phoneHint } from '../lib/phone-hint';
 
 /** /golf/login in Clubhouse. The form is in the server HTML: the URL is read in the browser (`useQueryParam`), so nothing here waits on a Suspense boundary. */
-export function ClubhouseSignInRoute() {
-  return <SignIn />;
+export async function ClubhouseSignInRoute() {
+  return (
+    <ChPhoneHintProvider phone={await phoneHint()}>
+      <SignIn />
+    </ChPhoneHintProvider>
+  );
 }
 
 export async function WelcomeLoader() {
   const load = await loadWelcome();
-  // A session the auth server has ruled invalid: back to sign in, as the current page does.
+  // CH-15903: a session the auth server has ruled invalid goes back to sign in, as the current page does.
   if (load.kind === 'signedOut') redirect('/golf/login');
   return <Welcome data={load.data} />;
 }
@@ -24,12 +30,14 @@ export async function WelcomeLoader() {
  * sign-in never shows an empty page, and the greeting streams in over a course
  * that has already started moving.
  */
-export function ClubhouseWelcomeRoute() {
+export async function ClubhouseWelcomeRoute() {
   return (
-    <WelcomeStage>
-      <Suspense fallback={null}>
-        <WelcomeLoader />
-      </Suspense>
-    </WelcomeStage>
+    <ChPhoneHintProvider phone={await phoneHint()}>
+      <WelcomeStage>
+        <Suspense fallback={null}>
+          <WelcomeLoader />
+        </Suspense>
+      </WelcomeStage>
+    </ChPhoneHintProvider>
   );
 }

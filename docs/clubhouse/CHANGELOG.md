@@ -2,10 +2,54 @@
 
 Every Clubhouse change with the issue it fixed, newest first. Each page's own changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-01 (aesthetic audit)
+
+| Page | Issue | Fix |
+| --- | --- | --- |
+| All phone pages | **Secondary and tertiary text read as one gray (aesthetic audit M-L1).** Tertiary was raised to hold 4.5:1 on the darker page and sat 1.1 contrast points under secondary. | `tokens.css` phone block: `--ch-ink-600` is `#46433d` (9.3 against 6.3). Q-147. |
+| All pages | **Search, input and textarea placeholders measured 2.8:1 on the phone page (M-L3).** | `controls.css`: they use `--ch-text-tertiary`. Q-147. |
+| All phone pages | **A 30px coin drew its initials at 10.2px (M-T1).** | `ui.css`: the phone's 12px floor, with a 42% rule for a coin too small for it. Q-147. |
+| Messages | **Unread rows barely differed from read ones (M-L2).** | Unread name 700, unread preview `--ch-ink-700`. |
+| Home | **Stacked coins hid their initials (H-1); the latest round's stats floated 171px to 234px below its scorecard (H-2).** | Overlap 4px; the footer follows the scorecard. |
+| Rounds | **The shot screen kept desktop gutters on a phone (S-1): a container query on its own container never ran.** | `.ch-rt-q` is the container; the phone's 12px padding applies and the strip bleeds. |
+| Calendar | **Events sharing a column showed "Sh..." (C-1); audience coins hid their initials (C-2).** | Shared blocks wrap their title and keep the start time; overlap 5px. |
+| CoachHelm | **A two-line metric label ran at line-height 1.0 (CH-1).** | 1.3. |
+| Segmented controls, Home, Calendar, Rounds | **Contrast sweep (X-1 to X-4): unselected segmented labels 4.1:1, Home weekday labels 4.1:1, class and busy event times 3.6:1 and 4.0:1, the shot strip's par labels 3.8:1 and its option notes 3.2:1.** | Secondary ink on the segmented label and the weekday label; the event time keeps its color; the strip labels 0.66 and the option notes tertiary. Past-event fade: Q-152. |
+| Qualifiers | Audited, no defect found. | None. |
+
+Findings, evidence and the owner questions (Q-148 to Q-152) are in `AESTHETIC_AUDIT.md`.
+
+## 2026-10-01 (shared pieces, backfilled from the history)
+
+The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `lib` or `styles` that no page owns) to this log. These changed on the branch with no entry or sha here; each row is read from its commit.
+
+| Shared piece | Issue | Fix |
+| --- | --- | --- |
+| `styles/*` (page phone blocks), Home links | **Phone text under 12px, wide chart axis text, and Home's links under 44px (audit F09, Q-141).** `0595983ff` | A 12px floor in each stylesheet's phone block; chart axis text readable; the links hit at 44px. |
+| `lib/format.ts`, `styles/home.css` | **A change that rounds to zero read as a gain or loss on Home.** `21d75dfdf` | It is plain on both Homes. |
+| `lib/session-state.ts` | **Kept screen state drew over a streamed part while it hydrated (Qualifiers review S1).** `c331f404a` | It draws the default until the part hydrates. |
+| `lib/use-action.ts`, `lib/motion.ts`, `lib/press.ts`, `lib/reduced-motion.ts`, `lib/track.ts`, `ui/States.tsx`, `ui/Toast.tsx` | **Contract codes (P001, P007) named at their implementation.** `9cd0c284d`, `a5701f290` | Comments and tags only; no behavior. |
+
+## 2026-10-01 (CI on PR #2111)
+
+| Page | Issue | Fix |
+| --- | --- | --- |
+| Roster | **Lint ratchet up by one (`react-hooks/exhaustive-deps`, 59 to 60).** The effect that restores the saved view called `setView` with an empty dependency list. | `setView` is listed. It is `useChSessionState`'s `useState` setter, so its identity never changes and the effect still runs once: no behaviour change, the warning count is back to baseline. |
+| Dashboard layout (Fairway and Clubhouse) | **Two layout tests failed: `dashboard-layout-onboarding-retry.test.ts`.** `0dfa3ee47` moved the coach's team lookup to `dashboard-request-cache.ts`, which calls the three-way `resolveCoachActiveTeam`; the test's `resolve-team` mock only had `resolveCoachActiveTeamId`, so the layout threw. The test read the throw as "still waiting", which is why it looked like a timing failure. | The mock adds `resolveCoachActiveTeam` returning `{ status: 'ok', teamId: 'team-1' }`, the same team the old mock pinned. Assertions unchanged; 5 of 5 pass. Found by catching the rejected render, not by loosening the wait. |
+| E2E seed | **Review Gate ast-grep `helmv3-no-service-role-key`.** `e2e/helpers/clubhouse-local-seed.ts` read `SUPABASE_SERVICE_ROLE_KEY` from the environment directly. | It reads through `tryGetSecretKey()` (`src/lib/supabase/keys.mjs`), the repo's one sanctioned reader. The helper still refuses any URL that isn't localhost, so the key can only ever reach a local stack. |
+| Perf harness | **CodeQL `js/file-system-race` (two) and `js/http-to-file-access` (one)** in local-only scripts. | `perf-measure.mjs`: the seed file is created exclusively (`flag: 'wx'`), so two runs can't both write it; the production-reference scan reads size and contents from one open file descriptor, so the file checked is the file read. `perf-fetch-trace.cjs` writing request timings to a file is the script's purpose (local stack only, opt-in by `HELM_PERF_TRACE_FILE`); that alert is dismissed as won't-fix, the same as `scripts/schema.mjs`. |
+| Page docs (all 15) | **Markdown lint up by 32 (MD060, table column style).** The new `## Screenshots` table in every VERIFY.md and the template used a `\|---\|---\|` divider row, which the "compact" table style rejects (two violations a table). | The divider is `\| --- \| --- \|`, as in every other Clubhouse table; MD060 is back to the baseline. The rule wasn't relaxed and the baseline wasn't raised. |
+| Perf harness | **CodeQL still flagged `js/file-system-race` twice after the first fix.** An `existsSync` before the exclusive create still read as a check-then-act, and the scan still `stat`ed a path before opening it. | The seed file is claimed first with an exclusive open (a second run fails before seeding anything; a failed seed removes the claim), and the scan takes each entry's type from the directory listing, so no path is stat'ed and then opened. |
+| Docs tooling | **CodeQL on the new docs scripts (four alerts).** `shots.mjs` escaped `\|` in table cells without escaping `\\` first (the same bug as F-26) and checked a screenshot exists before stat-ing it; `changelog-gate.mjs` and `docs-index.mjs` used alternations whose anchors bound to one branch only. | Cells escape backslashes first; the screenshot is stat-ed once and that result is reused; "is a test file" and "is an audit or plan doc" are plain checks (`includes`, `endsWith`) with no ambiguous anchors. Same answers; the 58 script tests pass. |
+| Home (test) | **`player-home-phone.test.tsx` failed on CI shard 3.** It pinned the player-only `opacity: 1` override for past rows, which Q-152 (`b359c0414`, owner kept) made unnecessary: no past row is dimmed on either Home now. | The test asserts the same contract in its new form: no `.is-past` row rule sets an opacity, and the time steps back through the shared rule. 19 of 19 pass. |
+| Docs tooling | **CodeQL `js/file-system-race` at `shots.mjs` `log`.** VERIFY.md and each manifest were checked for existence, then read and written. | One `readIfPresent` read (null on ENOENT) replaces each check-then-read. |
+
 ## 2026-09-30
 
 | Page | Issue | Fix |
 | --- | --- | --- |
+| Stats | **Last 10 ended at 1 Aug (Q-122).** | Reads across seasons. |
+| Stats, Home | **Total-only rounds counted nowhere (Q-123).** | Scores only. |
 | Team Hub | **Large teams' RSVP and task counts were cut at 1000 rows (swap audit F-21).** The attendance and task-assignment reads asked PostgREST for 2000 and 5000 rows; it returns at most 1000, silently. | Both reads page through every row (`fetchAllRowsResult`, ordered by id). Test `hub-paged-reads.test.ts`. |
 | Held migrations | **Lint and migration safety (F-22).** The availability constraint was added without `NOT VALID`; the document policy migration opened its own transaction inside the migration tool's; four files raised SQL lint by 182. | `NOT VALID` on the new column's constraint, no nested `begin`/`commit`, layout reformatted (squawk 0 issues, SQL lint back to baseline). Still held. |
 | Rounds | **Queued rounds waited for a round screen (swap audit F-14).** Only the Fairway shell started the offline sync engine, so with Clubhouse on a round, hole or shot saved offline synced only while a round screen was open. | `shell/OfflineSync.tsx` starts the engine for the whole session (interval, reconnect, service-worker requests) and feeds the offline store; no UI. Test `offline-sync.test.tsx`. |

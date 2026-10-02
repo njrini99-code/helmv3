@@ -8,7 +8,7 @@ Held features and data plans (D-61), by page. Nothing here is applied or active 
 | --- | --- | --- | --- |
 | P003 Roster | `docs/clubhouse/held/data/roster-availability.md` | HELD | supabase/migrations/20260929120000_golf_team_members_availability.sql |
 | P007 Messages | `docs/clubhouse/held/features/conversation-files.md` | HELD | — |
-| P007 Messages | `docs/clubhouse/held/data/message-attachments-hardening.md` | HELD | none written |
+| P007 Messages | `docs/clubhouse/held/data/message-attachments-hardening.md` | HELD | supabase/migrations/20261001130000_golf_attachments_revoke_anon_hide_deleted.sql |
 | P009 Qualifiers | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | HELD | — |
 | P009 Qualifiers | `docs/clubhouse/held/data/qualifier-db-hardening.md` | HELD | supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql |
 | P010 Team Hub | `docs/clubhouse/held/data/document-policy-scoping.md` | HELD | supabase/migrations/20260930160000_golf_document_policy_scoping.sql |

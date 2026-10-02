@@ -17,15 +17,17 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
+import { useChSessionState } from '../../lib/session-state';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale, sgTint } from '../../lib/sg';
-import { changeWords, WindowSwitch } from './WindowSwitch';
+import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { teamPlayerHref } from './links';
+import { LinkPending } from '../../shell/LinkPending';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -43,12 +45,17 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
-const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void }>({ filter: filterFor(), go: () => {} });
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChWindow }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
 
 /** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
 export function useGoWindow() {
   const { filter, go } = useContext(GoFilter);
   return (w: ChWindow) => go(withWindow(filter, w));
+}
+
+/** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
+export function useShownWindow(): ChWindow {
+  return useContext(GoFilter).shown;
 }
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
@@ -61,6 +68,10 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   // The filter being loaded; cleared when the server answers with a new address.
   const [loading, setLoading] = useState<ChFilter | null>(null);
   useEffect(() => setLoading(null), [here]);
+  // A choice back to what is already on screen (a quick Season, Qualifiers, Season) has nothing left to wait for: its slow notice ends with the tap.
+  useEffect(() => {
+    if (loading && statsHref('/golf/dashboard/stats', loading) === here) setLoading(null);
+  }, [loading, here]);
   useEffect(() => {
     if (!loading) return;
     // CH-4902: a slow window or filter change says so once instead of dimming forever.
@@ -81,11 +92,13 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     start(() => router.push(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoFilter.Provider value={{ filter: current, go }}>
+    <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
       <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
       </main>
+      {/* CH-4903: the figures on screen are dimmed until the new ones land; this says which ones they are. */}
+      <UpdatingNote from={current} to={loading} code="CH-4903" />
     </GoFilter.Provider>
   );
 }
@@ -113,7 +126,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
   };
   return (
     <div className="ch-st-head__act">
-      <WindowSwitch value={filter.window} onChange={go} custom={hasRange(filter)} />
+      <WindowSwitch value={useShownWindow()} onChange={go} custom={hasRange(filter)} />
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
         <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)}>
@@ -155,7 +168,8 @@ export function RetryNotice({ code, title, body }: { code: string; title: string
 /** The trend, the leg cards and the grid: one island, because they share the focused player and the chosen leg. */
 export function TeamCharts({ data }: { data: ChTeamCharts }) {
   const [focus, setFocus] = useState<string | null>(null);
-  const [leg, setLeg] = useState<ChLeg>('Approach');
+  // The chosen leg and lens come back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1).
+  const [leg, setLeg] = useChSessionState<ChLeg>('team-leg', 'Approach');
   return (
     <>
       <SectionBoundary surface="stats.team.trend" label="The trend chart" code="CH-4205">
@@ -191,7 +205,7 @@ function LegTrends({ legWeeks, legTotals, leg, setLeg }: { legWeeks: ChTeamStats
 }
 
 function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: string | null; setFocus: (id: string | null) => void }) {
-  const [lens, setLens] = useState<Lens>('sg');
+  const [lens, setLens] = useChSessionState<Lens>('team-lens', 'sg');
   const isSg = lens === 'sg';
   const n = data.weeks.length;
   const team = isSg ? data.team.sg : data.team.score;
@@ -295,9 +309,12 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
         </div>
       </div>
       {n === 0 || !all.length ? (
-        <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
+        // The empty window keeps the plot's height (the team's players set it), so the page below stays where it was.
+        <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: data.players.length }}>
+          <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
+        </div>
       ) : (
-        <div className="ch-sgt__plot">
+        <div className="ch-sgt__plot" style={{ ['--ch-ends' as string]: data.players.length }}>
           <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
             {ticks.map((t) => (
               <g key={t}>
@@ -492,6 +509,7 @@ function LegGrid({
                   </>
                 )}
               </span>
+              <LinkPending />
             </Link>
           ))}
         </div>

@@ -93,6 +93,7 @@ export function Field({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className={'ch-field' + (span === 2 ? ' ch-set-span2' : '')}>
+      {/* CH-8807: every field has a label, and its help or error is read with it; CH-8804: the error is an alert. */}
       <label htmlFor={id} className="ch-field__label">
         {label}
       </label>
@@ -138,6 +139,7 @@ export function SaveBar({
   }, [savedAt]);
   return (
     <>
+      {/* CH-8602: "Unsaved changes" becomes "Saved" with a check that settles after 1.8s; CH-8803: it is announced. */}
       <span className="ch-set-status" aria-live="polite" data-ch-code={pending ? 'CH-8402' : undefined}>
         <AnimatePresence mode="wait" initial={false}>
           {invalid && dirty ? (
@@ -364,7 +366,10 @@ export function useInstantSave(surface: string) {
   return { run, pending };
 }
 
-/** A settings switch: while its save is in flight it carries CH-8403 (holds its position, can't flip again). */
+/**
+ * A settings switch: while its save is in flight it carries CH-8403 (holds its position, can't flip again). CH-8603: the
+ * thumb slides with a small spring; CH-8802: it has a name a screen reader reads.
+ */
 export function SettingSwitch(props: React.ComponentProps<typeof Switch>) {
   return <Switch {...props} busyCode="CH-8403" />;
 }

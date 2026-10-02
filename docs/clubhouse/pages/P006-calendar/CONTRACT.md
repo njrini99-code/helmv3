@@ -26,7 +26,7 @@ Calendar opens on the week that holds today, with the team's events on a grid an
 | 60103 | — | `SEEDS_FROM_OTHER_PAGES` | ?new=1 opens New event once for a coach and drops itself from the address; &with=<player> makes it a meeting with only that player invited (a player the Calendar does not list invites nobody, never the team); &type= picks the new event's type from those a coach can create and ignores anything else. |
 | 60104 | — | `TIMES_ARE_THE_TEAMS_ZONE` | Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour, one that runs past midnight ends at 24, and an all-day event keeps its stored dates, one entry for each day of a span. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -91,7 +91,7 @@ Checked before anything is sent, with the warning haptic. An event needs a title
 
 Status: DEFINED
 
-Every change has its own toast naming what failed and what to do (60601 to 60612), and every section that fails to load has its own notice with Try again (60613 to 60621, 60624). A crash stays in its section: the calendar view (60622) and the detail panel (60623) each sit in a SectionBoundary. A write that goes through the shell's save hook gets Retry, which sends the same write again and finishes the job (61401). Three failures have no Retry because there is nothing to send again: copying a link (60604, 60612) and an Undo that fails (60609); removing a file has none either, and its toast says to try again in a moment (60608). A server refusal written for a person is shown as the toast's reason (a reply's lock: the deadline passed, the event started or was cancelled); one written for a developer is replaced by the toast's own hint. Open, not fixed: a create whose answer is lost on the way back may have landed, and Retry then creates it a second time (no write here carries an idempotency key).
+Every change has its own toast naming what failed and what to do (60601 to 60612), and every section that fails to load has its own notice with Try again (60613 to 60621, 60624). A crash stays in its section: the calendar view (60622) and the detail panel (60623) each sit in a SectionBoundary. A write that goes through the shell's save hook gets Retry, which sends the same write again and finishes the job (61401). Three failures have no Retry because there is nothing to send again: copying a link (60604, 60612) and an Undo that fails (60609); removing a file has none either, and its toast says to try again in a moment (60608). Making a new calendar-app link has no Retry either (60626): the server deletes the old link before it makes the new one, so a failure can leave either state, and the links are read again so the row shows what exists. Removing a link has one (60627). A server refusal written for a person is shown as the toast's reason (a reply's lock: the deadline passed, the event started or was cancelled); one written for a developer is replaced by the toast's own hint. Open, not fixed: a create whose answer is lost on the way back may have landed, and Retry then creates it a second time (no write here carries an idempotency key).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -119,8 +119,11 @@ Every change has its own toast naming what failed and what to do (60601 to 60612
 | 60622 | CH-6210 | `THE_CALENDAR_VIEW_CRASHES` | The calendar view crashes |
 | 60623 | CH-6211 | `THE_DETAIL_PANEL_CRASHES` | The detail panel crashes |
 | 60624 | CH-6212 | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | The team's timezone doesn't load |
+| 60625 | CH-6213 | `THE_ROSTER_DOESNT_LOAD` | The roster doesn't load |
+| 60626 | CH-6013 | `MAKING_A_NEW_CALENDAR_APP_LINK_FAILS` | Making a new calendar-app link fails |
+| 60627 | CH-6014 | `REMOVING_A_CALENDAR_APP_LINK_FAILS` | Removing a calendar-app link fails |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003.
 
 ## 07 — Network / offline
 
@@ -161,7 +164,7 @@ Open, not this page's to fix. The baseline migration's `golf_event_attendance_se
 | 60807 | — | `REPLY_IS_FOR_INVITED_PLAYERS` | A player is offered the reply (Going, Maybe, Can't make it) only on an event whose invite list they are on that has not started and is not cancelled; once it starts the panel says replies are closed. |
 | 60808 | — | `BUSY_TIME_IS_THE_COACHS_OWN` | Busy time is read only for a coach and only their own rows (coach_id is the signed-in coach), and is never read for a player. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -196,6 +199,8 @@ Cancelling an event asks first (61101) and says what happens. One event is a sof
 | --- | --- | --- | --- |
 | 61101 | CH-6501 | `CANCEL_EVENT` | Cancel event (event menu) |
 | 61102 | CH-6502 | `REMOVE_BUSY_TIME` | Remove busy time |
+| 61103 | CH-6504 | `NEW_LINK` | New link (a calendar-app link) |
+| 61104 | CH-6505 | `REMOVE` | Remove (a calendar-app link) |
 
 ## 12 — State preservation
 
@@ -271,7 +276,7 @@ Calendar's own haptics (61701 to 61703) on the v2 grammar (D-70): selection for 
 | 61702 | CH-6702 | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | `A_LINK_IS_COPIED` | A link is copied |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -286,7 +291,7 @@ Calendar's own (61801 to 61804): each event is a button named with its title and
 | 61803 | CH-6803 | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

@@ -7,7 +7,7 @@ export default async function GolfMessagesPage() {
   // Clubhouse Messages (golf_clubhouse_ui): coaches and players, on the same
   // realtime hooks and server actions as the Fairway inbox.
   const session = await getGolfSessionProfile();
-  if (isClubhouseFor(session?.coach ? 'coach' : session?.player ? 'player' : null)) {
+  if ((await isClubhouseFor(session?.coach ? 'coach' : session?.player ? 'player' : null))) {
     return <ClubhouseMessagesRoute />;
   }
   return <FairwayMessages />;

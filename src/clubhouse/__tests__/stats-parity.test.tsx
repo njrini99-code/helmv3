@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -31,6 +34,7 @@ import type { ChRound } from '../data/season';
 import { loadPlayerProfile, type ChPlayerProfile } from '../data/stats-player';
 import { openingDelta, perRoundSeries, personalBests, pressureGap, toughestHoles, windowCompare, type ChHoleRow } from '../data/stats-figures';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
+import { FairwayStrip } from '../screens/stats/charts';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
@@ -197,6 +201,21 @@ describe('this window against the one before', () => {
   });
 });
 
+// Swap audit C-16: the strip set the fairway share of all tee shots beside left and right as shares of the misses only
+// (63% fairway with 20% left and 17% right of something else). Every zone is now a share of the same tee shots.
+describe('where drives finish (C-16)', () => {
+  it('C-16 left, fairway, right and the misses with no side, each of the same tee shots, adding up to the whole', () => {
+    // 20 tee shots: 10 fairways, 6 left, 2 right, 2 missed with no side logged.
+    render(<FairwayStrip opportunities={20} hit={10} left={6} right={2} />);
+    const zones = [...document.querySelectorAll('.ch-fws__z')].map((z) => z.textContent);
+    expect(zones).toEqual(['30%Left', '50%Fairway', '10%Right', '10%Other']);
+    expect(document.querySelector('.ch-fws__cap')!.textContent).toBe('Miss biasLeft by 20 pts');
+    cleanup();
+    render(<FairwayStrip opportunities={4} hit={2} left={1} right={1} />);
+    expect([...document.querySelectorAll('.ch-fws__z')].map((z) => z.textContent)).toEqual(['25%Left', '50%Fairway', '25%Right']);
+  });
+});
+
 describe('the pressure gap', () => {
   const mk = (type: string, n: number, toPar: number, from: number) => Array.from({ length: n }, (_, i) => round(`${type}${from + i}`, `2026-09-${String(10 + from + i).padStart(2, '0')}`, { round_type: type, score_to_par: toPar }));
   it('tournament and qualifier rounds against practice, in strokes to par; a legacy "qualifying" counts as a qualifier, an unknown type as practice', () => {
@@ -334,7 +353,8 @@ describe('the profile’s extra figures', () => {
   });
 
   it('the bests, the series and the comparison come from the window’s own rounds: this window against the 10 before it, and none for the season', async () => {
-    const older = Array.from({ length: 4 }, (_, i) => rRow(`o${i}`, 10 + i, { total_score: 80 }));
+    // An 80 on its holes too: the season read takes the total from the nines (C-15).
+    const older = Array.from({ length: 4 }, (_, i) => rRow(`o${i}`, 10 + i, { total_score: 80, front_nine: 40, back_nine: 40 }));
     tables.current = loaderTables([...ten, ...older]);
     const p = (await load())!;
     expect(p.extra.bests.score!.value).toBe(74);
@@ -809,5 +829,126 @@ describe('the early read', () => {
     await openTab(/Rounds/);
     expect(code('CH-5313')).not.toBeNull();
     expect(tile(document.querySelector('[aria-labelledby="rx-bests"]')!, 'Best score').querySelector('dd')!.textContent).toBe('72');
+  });
+});
+
+/* ─── Game detail on the phone: the approach section (iPhone brief, 2026-10-01) ─── */
+
+/** A screen, not a phone: nothing matches. */
+const wide = () => {
+  window.matchMedia = ((q: string) => ({ matches: false, media: q, onchange: null, addListener: () => {}, removeListener: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false })) as typeof window.matchMedia;
+};
+
+describe('Game detail on the phone · the approach section', () => {
+  phoneWidth();
+  const st = PREVIEW_PLAYER.stats!;
+  const chip = (name: string) => userEvent.setup().click(screen.getByRole('button', { name }));
+  const fill = (row: Element) => row.querySelector('.ch-brow__bar i') as HTMLElement | null;
+
+  it('the seven bands are rows (band, bar, exact value): no shots reads "No shots", never 0%, and a 100% bar fills its track', async () => {
+    showPhone(player({ stats: { ...st, girPct50_75: 100, girPct75_100: null, girPct100_125: 0 } }));
+    await chip('Approach');
+    const p = panel('Greens hit by distance');
+    const rows = [...p.querySelectorAll('li.ch-brow')];
+    expect(rows.map((r) => r.querySelector('.ch-brow__b')!.textContent)).toEqual(['50–75', '75–100', '100–125', '125–150', '150–175', '175–200', '200+']);
+    expect(rows[0]!.querySelector('.ch-brow__v')!.textContent).toBe('100%');
+    expect(fill(rows[0]!)!.style.width).toBe('100%');
+    expect(rows[1]!.querySelector('.ch-brow__v')!.textContent).toBe('No shots');
+    expect(fill(rows[1]!)).toBeNull();
+    expect(rows[2]!.querySelector('.ch-brow__v')!.textContent).toBe('0%');
+    expect(fill(rows[2]!)!.style.width).toBe('0%');
+    // A phone draws no column chart for the same bands.
+    expect(p.querySelector('.ch-lad')).toBeNull();
+    expect(within(p).getByRole('list', { name: 'Yards to the pin' })).toBeTruthy();
+  });
+
+  it('a screen keeps the column chart for the same bands', async () => {
+    wide();
+    showPlayer(player());
+    await openTab(/Game detail/);
+    const p = panel('Greens hit by distance');
+    expect(p.querySelector('.ch-lad')).not.toBeNull();
+    expect(p.querySelector('.ch-brows')).toBeNull();
+  });
+
+  it('CH-5316 a band under the Tour floor says how many shots and what it needs, in its own row', async () => {
+    showPhone(player());
+    await chip('Approach');
+    const p = panel('Proximity against the Tour');
+    const rows = [...p.querySelectorAll('li.ch-brow')];
+    expect(rows.map((r) => r.textContent)).toEqual(['50–12526′55 shots', '125–17540′72 shots', '175+Needs 107 shots']);
+    expect(code('CH-5316')).toBe(p.querySelector('.ch-brows'));
+    // The line under the chart is a screen's; the rows say it on a phone.
+    expect(p.querySelector('p.ch-gm-p__empty')).toBeNull();
+  });
+
+  it('a panel’s note is one short line and its method sits behind "How this is measured", closed; a screen keeps the whole paragraph', async () => {
+    showPhone(player());
+    await chip('Approach');
+    const p = panel('Proximity against the Tour');
+    expect(p.querySelector('.ch-gm-p__n')!.textContent).toBe('Shorter is better. The tick is the Tour.');
+    const how = p.querySelector('details.ch-gm-how') as HTMLDetailsElement;
+    expect(how.open).toBe(false);
+    expect(how.querySelector('summary')!.textContent).toBe('How this is measured');
+    expect(how.querySelector('p')!.textContent).toMatch(/lay-ups left out.*A range needs 10 shots\./);
+    // The long italic paragraph is nowhere in the default scan path.
+    expect([...section('approach').querySelectorAll('.ch-gm-p__n')].filter((n) => !n.closest('details.ch-gx-more')).every((n) => (n.textContent ?? '').length <= 80)).toBe(true);
+    cleanup();
+    wide();
+    showPlayer(player());
+    await openTab(/Game detail/);
+    expect(document.querySelector('.ch-gm-how')).toBeNull();
+    expect(panel('Proximity against the Tour').querySelector('.ch-gm-p__n')!.textContent).toMatch(/A range needs 10 shots\./);
+  });
+
+  it('the sample line is honest: Last 10 with three rounds behind it says three qualify, not that ten were read', async () => {
+    showPhone(player({ window: 'last10', win: { ...PREVIEW_PLAYER.win, rounds: 3 } }));
+    await chip('Approach');
+    const rule = section('approach').querySelector('.ch-gx-rule')!;
+    expect(rule.textContent).toBe('Last 10 rounds · 3 rounds qualify, 18 holes only');
+    // The longer account, with what is left out, is one tap away.
+    expect(section('approach').querySelector('details.ch-gm-how p')!.textContent).toMatch(/Last 10 rounds · 3 rounds, 18 holes only \(9-hole rounds are left out\)\. Every approach, whether the green is hit or missed\./);
+    cleanup();
+    showPhone(player({ window: 'last10', win: { ...PREVIEW_PLAYER.win, rounds: 10 } }));
+    await chip('Approach');
+    expect(section('approach').querySelector('.ch-gx-rule')!.textContent).toBe('Last 10 rounds · 10 rounds, 18 holes only');
+    cleanup();
+    showPhone(player({ window: 'season', win: { ...PREVIEW_PLAYER.win, rounds: 3 } }));
+    await chip('Approach');
+    expect(section('approach').querySelector('.ch-gx-rule')!.textContent).toBe('This season · 3 rounds, 18 holes only');
+  });
+
+  it('a player reading their own stats reads "You hit" and a coach "Jonah hits", on a phone and on a screen', async () => {
+    showPhone(player({ viewer: 'player' }));
+    await chip('Approach');
+    expect(section('approach').querySelector('.ch-gm__t p')!.textContent).toMatch(/^You hit \d+% of greens/);
+    cleanup();
+    showPhone(player());
+    await chip('Approach');
+    expect(section('approach').querySelector('.ch-gm__t p')!.textContent).toMatch(/^Jonah hits \d+% of greens/);
+    cleanup();
+    wide();
+    showPlayer(player({ viewer: 'player' }), null);
+    await openTab(/Game detail/);
+    expect(section('approach').querySelector('.ch-gm__t p')!.textContent).toMatch(/^You hit \d+% of greens/);
+  });
+
+  it('a figure with nothing behind it says why, in a few words, never a bare dash', async () => {
+    showPhone(bare());
+    await chip('Approach');
+    expect([...section('approach').querySelectorAll('.ch-gm__figs dd.ch-gm__none')].map((d) => d.textContent)).toEqual(['No approach shots', 'No finish distances', 'No missed greens', 'No rough approaches']);
+    expect([...section('approach').querySelectorAll('.ch-gm__figs dd')].some((d) => d.textContent === '—')).toBe(false);
+    await chip('Putting');
+    expect([...section('putting').querySelectorAll('.ch-gm__figs dd.ch-gm__none')].map((d) => d.textContent)).toEqual(['No putts tracked', 'No putts tracked', 'No putts tracked', 'No putts tracked']);
+    expect([...section('putting').querySelectorAll('.ch-gm__figs dd')].some((d) => d.textContent === '—')).toBe(false);
+  });
+
+  it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px in secondary ink, and nothing floors them back to 12px', () => {
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../styles/stats.css'), 'utf8');
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd:not\(\.ch-gm__sub\) \{\s*font: 600 28px\/32px/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 13\.5px\/19px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 13px\/18px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    const floor = css.slice(css.indexOf('Phone text floor'));
+    expect(floor).not.toMatch(/\.ch-gd\.is-phone \.ch-gm__figs d[td]/);
   });
 });

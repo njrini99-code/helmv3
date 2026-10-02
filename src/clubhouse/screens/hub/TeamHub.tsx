@@ -3,7 +3,7 @@
 import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
-import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChRsvp, ChTeamHub } from '../../data/hub';
+import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -14,35 +14,18 @@ import { chTrail } from '../../lib/track';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
+import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
+import { TripEditSheet } from './trip-edit';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import '../../styles/hub.css';
 
-export type ChHubTab = 'home' | 'ann' | 'travel' | 'docs' | 'tasks';
-const TABS: Record<ChTeamHub['role'], Array<[ChHubTab, string]>> = {
-  player: [
-    ['home', 'Home'],
-    ['ann', 'Announcements'],
-    ['travel', 'Travel'],
-    ['docs', 'Documents'],
-  ],
-  coach: [
-    ['home', 'Home'],
-    ['ann', 'Announcements'],
-    ['travel', 'Travel'],
-    ['docs', 'Documents'],
-    ['tasks', 'Tasks'],
-  ],
-};
+// The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
+export { parseHubTab, type ChHubTab } from '../../lib/hub-tabs';
 
-/** `?tab=` for a deep link: a known tab for the role, else Home. */
-export function parseHubTab(v: string | undefined, role: ChTeamHub['role']): ChHubTab {
-  return TABS[role].find(([k]) => k === v)?.[0] ?? 'home';
-}
-
-type Pending = { kind: 'ann'; a: ChHubAnnouncement } | { kind: 'task'; t: ChHubTask } | { kind: 'file'; f: ChHubFile } | null;
+type Pending = { kind: 'ann'; a: ChHubAnnouncement } | { kind: 'task'; t: ChHubTask } | { kind: 'file'; f: ChHubFile } | { kind: 'trip'; t: ChHubTrip } | null;
 
 const withId = (id: string) => (s: Set<string>) => new Set(s).add(id);
 const withoutId = (id: string) => (s: Set<string>) => {
@@ -93,6 +76,8 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const [editing, setEditing] = useState<ChHubAnnouncement | null>(null);
   const [edited, setEdited] = useState(() => new Map<string, ChAnnouncementEdit>());
   const [tripOpen, setTripOpen] = useState(false);
+  // The trip open in the edit sheet.
+  const [editingTrip, setEditingTrip] = useState<ChHubTrip | null>(null);
   const [assign, setAssign] = useState(false);
   const [confirm, setConfirm] = useState<Pending>(null);
   const [opening, setOpening] = useState<string | null>(null);
@@ -168,7 +153,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     (t) => ({ done: `${t.title} is open again`, failed: `Couldn't reopen ${t.title}`, code: 'CH-10011' }),
   );
   // The next trip whose travelers are known: the "<trip> travelers" audience in New announcement.
-  const travelTrip = data.trips.rows.find((t) => t.upcoming && t.travelerIds && t.travelerIds.length > 0);
+  // A trip deleted this visit leaves at once; the page's read follows.
+  const tripRows = useMemo(() => data.trips.rows.filter((t) => !gone.has(t.id)), [data.trips.rows, gone]);
+  const travelTrip = tripRows.find((t) => t.upcoming && t.travelerIds && t.travelerIds.length > 0);
   const travelAudience = travelTrip?.travelerIds ? { label: `${travelTrip.name} travelers`, ids: travelTrip.travelerIds } : undefined;
   const taskDone = (t: ChHubTask) => (t.status === 'completed' || done.has(t.id)) && !undone.has(t.id);
   const open = useAction(
@@ -210,16 +197,22 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const remove = useAction(
     'hub.delete',
     async (p: NonNullable<Pending>) => {
-      const res = await (p.kind === 'ann' ? writes.deleteAnnouncement(p.a.id) : p.kind === 'task' ? writes.deleteTask(p.t.id) : writes.deleteDocument(p.f.id));
+      const res = await (p.kind === 'ann'
+        ? writes.deleteAnnouncement(p.a.id)
+        : p.kind === 'task'
+          ? writes.deleteTask(p.t.id)
+          : p.kind === 'trip'
+            ? writes.deleteTrip(p.t.id)
+            : writes.deleteDocument(p.f.id));
       if (normalise(res).success) {
-        setGone(withId(p.kind === 'ann' ? p.a.id : p.kind === 'task' ? p.t.id : p.f.id));
+        setGone(withId(p.kind === 'ann' ? p.a.id : p.kind === 'task' || p.kind === 'trip' ? p.t.id : p.f.id));
         setConfirm(null);
         refresh();
       }
       return res;
     },
     (p) => {
-      const name = p.kind === 'ann' ? `"${p.a.title}"` : p.kind === 'task' ? p.t.title : p.f.title;
+      const name = p.kind === 'ann' ? `"${p.a.title}"` : p.kind === 'task' ? p.t.title : p.kind === 'trip' ? p.t.name : p.f.title;
       return { done: `Deleted ${name}`, failed: `Couldn’t delete ${name}`, code: 'CH-10009' };
     },
   );
@@ -249,6 +242,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     setConfirm(p);
   };
 
+  // A coach's Edit and Delete on a trip.
+  const tripActions = coach ? { onEdit: setEditingTrip, onDelete: (t: ChHubTrip) => askDelete({ kind: 'trip', t }) } : {};
+
   const anns = useMemo(
     () => data.announcements.rows.filter((a) => !gone.has(a.id)).map((a) => (edited.has(a.id) ? { ...a, ...edited.get(a.id) } : a)),
     [data.announcements.rows, gone, edited],
@@ -258,7 +254,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const isAcked = (a: ChHubAnnouncement) => a.acked || acked.has(a.id);
   // The Home card: the newest post still waiting on this player, else the newest (no pinned posts yet, Q-70).
   const featured = anns.find((a) => !coach && a.needAck && !isAcked(a)) ?? anns[0] ?? null;
-  const upcoming = data.trips.rows.filter((t) => t.upcoming);
+  const upcoming = tripRows.filter((t) => t.upcoming);
   const nextTrip = upcoming[0] ?? null;
   // The page is empty only when every read answered and every one was empty: a failed read (updates included) shows its
   // own notice, and an update to read is something to show.
@@ -269,7 +265,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     !data.documents.error &&
     !data.updates.error &&
     !anns.length &&
-    !data.trips.rows.length &&
+    !tripRows.length &&
     !tasks.rows.length &&
     !docs.folders.length &&
     !data.updates.rows.length;
@@ -282,7 +278,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     setTab(t);
   };
   const tabKeys = tabListKeys(
-    TABS[data.role].map(([k]) => k),
+    HUB_TABS[data.role].map(([k]) => k),
     tab,
     pick,
     (k) => `ch-hb-tab-${k}`,
@@ -316,7 +312,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
       {/* CH-10801: real tabs, each controlling its panel. */}
       <div className="ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
-        {TABS[data.role].map(([k, l]) => (
+        {HUB_TABS[data.role].map(([k, l]) => (
           <button
             key={k}
             type="button"
@@ -367,7 +363,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             <div className="ch-hb-home">
               <div className="ch-hb-col">
                 <SectionBoundary surface="hub.rsvps" label="RSVPs" code="CH-10205">
-                  <Rsvps role={data.role} data={data.rsvps} replies={replies} onReply={onReply} />
+                  <Rsvps role={data.role} data={data.rsvps} replies={replies} onReply={onReply} compact={phone} />
                 </SectionBoundary>
                 <SectionBoundary surface="hub.announcement" label="The latest announcement" code="CH-10205">
                   {data.announcements.error ? (
@@ -380,7 +376,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                   {data.trips.error ? (
                     <RefreshNotice code="CH-10207" title="Travel didn't load." body="Trips are safe. Try again; the error has been reported." />
                   ) : nextTrip ? (
-                    <TripPass t={nextTrip} role={data.role} />
+                    <TripPass t={nextTrip} role={data.role} {...tripActions} />
                   ) : null}
                 </SectionBoundary>
               </div>
@@ -424,17 +420,17 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
               )}
               {data.trips.error ? (
                 <RefreshNotice code="CH-10207" title="Travel didn't load." body="Trips are safe. Try again; the error has been reported." />
-              ) : !data.trips.rows.length ? (
+              ) : !tripRows.length ? (
                 <div className="ch-hb-card">
                   <EmptyState compact code="CH-10308" icon={Plane} title="No trips planned." body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 </div>
               ) : (
                 <>
-                  {nextTrip && <TripPass t={nextTrip} big role={data.role} />}
-                  {data.trips.rows
+                  {nextTrip && <TripPass t={nextTrip} big role={data.role} {...tripActions} />}
+                  {tripRows
                     .filter((t) => t !== nextTrip)
                     .map((t) => (
-                      <TripPass key={t.id} t={t} role={data.role} />
+                      <TripPass key={t.id} t={t} later role={data.role} {...tripActions} />
                     ))}
                 </>
               )}
@@ -471,18 +467,21 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             edit={{ announcement: editing, write: writes.editAnnouncement, onSaved: (id, change) => setEdited((m) => new Map(m).set(id, change)) }}
           />
           <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} events={data.tripEvents} players={data.players} playersError={data.playersError} write={writes.planTrip} writeTravelers={writes.setTravelers} readClasses={writes.travelerClasses} onDone={refresh} />
+          <TripEditSheet trip={editingTrip} onClose={() => setEditingTrip(null)} write={writes.editTrip} onDone={refresh} />
           <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} />
           <ConfirmDelete
             open={!!confirm}
-            what={confirm?.kind === 'ann' ? 'this announcement' : confirm?.kind === 'task' ? 'this task' : 'this file'}
+            what={confirm?.kind === 'ann' ? 'this announcement' : confirm?.kind === 'task' ? 'this task' : confirm?.kind === 'trip' ? 'this trip' : 'this file'}
             body={
               confirm?.kind === 'ann'
                 ? 'Players stop seeing it, and its acknowledgements go with it.'
                 : confirm?.kind === 'task'
                   ? 'It leaves every player’s list, done or not.'
-                  : 'Players can no longer open it. This can’t be undone.'
+                  : confirm?.kind === 'trip'
+                    ? 'Players stop seeing the itinerary. Its expenses and budgets are deleted with it, and the calendar event stays. This can’t be undone.'
+                    : 'Players can no longer open it. This can’t be undone.'
             }
-            code={confirm?.kind === 'ann' ? 'CH-10501' : confirm?.kind === 'task' ? 'CH-10502' : 'CH-10503'}
+            code={confirm?.kind === 'ann' ? 'CH-10501' : confirm?.kind === 'task' ? 'CH-10502' : confirm?.kind === 'trip' ? 'CH-10504' : 'CH-10503'}
             pending={remove.pending}
             onCancel={() => setConfirm(null)}
             onConfirm={onConfirmDelete}

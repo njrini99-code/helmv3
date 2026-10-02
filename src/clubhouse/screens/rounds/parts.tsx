@@ -25,6 +25,17 @@ export function TypePill({ type }: { type: ChRoundType | null }) {
   return type ? <span className={`ch-rd-pill is-${type}`}>{TYPE_LABEL[type]}</span> : null;
 }
 
+/** The strip with no scores drawn: the hole numbers, faint (the idle card, and a card whose holes didn't load: it says nothing about what is scored). */
+function GhostStrip({ holes }: { holes: number }) {
+  return (
+    <div className={'ch-rd-strip is-ghost' + (holes === 9 ? ' is-nine' : '')} aria-hidden="true">
+      {Array.from({ length: holes }, (_, i) => (
+        <span key={i}>{i + 1}</span>
+      ))}
+    </div>
+  );
+}
+
 /** The in-progress card's hole strip: scored holes marked against par, the next hole ringed. CH-11802: hidden from screen readers; the card says it in words. */
 function Strip({ holes, played, next }: { holes: number; played: ChUnfinishedRound['played']; next: number | null }) {
   const byHole = new Map(played.map((h) => [h.n, h]));
@@ -57,24 +68,30 @@ export function UnfinishedCard({
   error,
   todayIso,
   last,
+  listFailed = false,
   continueHref,
   startHref,
   onRetry,
+  retrying = false,
   onDiscard,
 }: {
   round: ChUnfinishedRound | null;
   error: boolean;
   todayIso: string;
   last: ChLibraryRound | null;
+  /** The posted rounds didn't load: `last` is unknown, not "none", so the idle card says nothing about the last round. */
+  listFailed?: boolean;
   continueHref: string | null;
   startHref: string | null;
   onRetry: () => void;
+  /** The retry is in flight (`useRefresh().refreshing`). */
+  retrying?: boolean;
   onDiscard: (r: ChUnfinishedRound) => void;
 }) {
   if (error) {
     return (
       <div className="ch-rd-unf is-idle">
-        <InlineNotice code="CH-11202" title="Couldn't check for a round in progress" body="Any round you started is still saved. Try again in a moment." onRetry={onRetry} />
+        <InlineNotice code="CH-11202" title="Couldn't check for a round in progress" body="Any round you started is still saved. Try again in a moment." onRetry={onRetry} retrying={retrying} />
       </div>
     );
   }
@@ -89,18 +106,14 @@ export function UnfinishedCard({
         </div>
         <b className="ch-rd-unf__c">Ready when you are.</b>
         <span className="ch-rd-unf__m">Start a round and track every shot. It saves as you go, so you can pick it back up here.</span>
-        <div className="ch-rd-strip is-ghost" aria-hidden="true">
-          {Array.from({ length: 18 }, (_, i) => (
-            <span key={i}>{i + 1}</span>
-          ))}
-        </div>
+        <GhostStrip holes={18} />
         <div className="ch-rd-unf__f">
           <span>
             {last ? (
               <>
                 Last round <b>{shortDay(last.date)}</b> · {last.course}
               </>
-            ) : (
+            ) : listFailed ? null : (
               'No rounds posted yet'
             )}
           </span>
@@ -129,10 +142,20 @@ export function UnfinishedCard({
       </div>
       <b className="ch-rd-unf__c">{round.course}</b>
       <span className="ch-rd-unf__m">{[round.tee, round.type ? TYPE_LABEL[round.type] : null, `${round.holes} holes`].filter(Boolean).join(' · ')}</span>
-      <Strip holes={round.holes} played={round.played} next={round.nextHole} />
+      {round.holesError ? <GhostStrip holes={round.holes} /> : <Strip holes={round.holes} played={round.played} next={round.nextHole} />}
+      {round.holesError && <InlineNotice code="CH-11214" title="This round's scores didn't load" body="The round is saved. Try again to see how far you are." onRetry={onRetry} retrying={retrying} />}
+      {round.submitUnchecked && (
+        <InlineNotice
+          code="CH-11215"
+          title="Couldn't check whether this round was already posted"
+          body="Every hole is scored, but your posted rounds didn't load, so Submit isn't offered here yet. Try again."
+          onRetry={onRetry}
+          retrying={retrying}
+        />
+      )}
       <div className="ch-rd-unf__f">
         <span>
-          {thru ? (
+          {round.holesError ? null : thru ? (
             <>
               <b className="ch-num">{formatToPar(round.toParThru)}</b> through {thru}
             </>
@@ -203,12 +226,17 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
             <text x={cx} y={base - (d >= 0 ? h : 0) - 6} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
               {x.score}
             </text>
-            <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
-              {dateOf(x.date).getUTCDate()}
-            </text>
-            <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
-              {fmt({ month: 'short' }).format(dateOf(x.date))}
-            </text>
+            {/* A day is labelled once, under the first of its rounds: "2 Aug 2 Aug 2 Aug" said nothing (F-57). */}
+            {(i === 0 || rounds[i - 1]!.date.slice(0, 10) !== x.date.slice(0, 10)) && (
+              <>
+                <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
+                  {dateOf(x.date).getUTCDate()}
+                </text>
+                <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
+                  {fmt({ month: 'short' }).format(dateOf(x.date))}
+                </text>
+              </>
+            )}
           </g>
         );
       })}
@@ -306,7 +334,7 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * One round in the book (rounds-flow.jsx `rf-sc`): date, course and tee, Out · In · Tot, the three meters, to par.
  * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap.
  */
-export function RoundRow({ r, href }: { r: ChLibraryRound; href: string | null }) {
+export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void }) {
   const under = r.toPar != null && r.toPar < 0;
   const body = (
     <>
@@ -360,7 +388,16 @@ export function RoundRow({ r, href }: { r: ChLibraryRound; href: string | null }
   );
   const label = `${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`;
   return href ? (
-    <Link href={href} className={'ch-rd-sc' + (under ? ' is-under' : '')} aria-label={label} onClick={() => haptic('select')}>
+    <Link
+      href={href}
+      className={'ch-rd-sc' + (under ? ' is-under' : '')}
+      aria-label={label}
+      onClick={(e) => {
+        haptic('select');
+        // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.
+        if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) onOpen?.();
+      }}
+    >
       {body}
     </Link>
   ) : (

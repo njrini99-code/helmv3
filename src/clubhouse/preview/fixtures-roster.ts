@@ -1,5 +1,6 @@
 /** Roster preview fixture: design/handoff/roster-data.js, shaped as loadRoster output. */
 import type { ChRoster, ChRosterPlayer } from '../data/roster';
+import type { ChPlayerRoster } from '../data/roster-player';
 
 type Raw = [id: string, name: string, cls: string, grad: number, home: string, status: 'active' | 'inactive', avg: number, hcp: number, rounds: number, sg: number | null, trend: number[], focus: number, goals: number, last: Array<[string, string, number, number]>, attention: ChRosterPlayer['attention'], jersey: string | null];
 
@@ -66,3 +67,14 @@ export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
   // What loadRoster returns when rounds fail: no season figures, no attention chips, counts unknown.
   players: PREVIEW_ROSTER.players.map((p) => ({ ...p, rounds: 0, avg: null, sgPerRound: null, trend: [], form: 'early' as const, recent: [], attention: null, focusAreas: null, goals: null })),
 };
+
+/** The player's Roster (Theo's): the active players only, as loadPlayerRoster returns them (name, class, handicap). */
+export const PREVIEW_PLAYER_ROSTER: ChPlayerRoster = {
+  teamName: PREVIEW_ROSTER.teamName,
+  season: PREVIEW_ROSTER.season,
+  teamError: false,
+  playersError: false,
+  players: PREVIEW_ROSTER.players.filter((p) => p.status === 'active').map((p) => ({ id: p.id, name: p.name, classYear: p.classYear, gradYear: p.gradYear, handicap: p.handicap, isYou: p.id === 'theo' })),
+};
+export const PREVIEW_PLAYER_ROSTER_EMPTY: ChPlayerRoster = { ...PREVIEW_PLAYER_ROSTER, players: [] };
+export const PREVIEW_PLAYER_ROSTER_FAILED: ChPlayerRoster = { ...PREVIEW_PLAYER_ROSTER, playersError: true, players: [] };

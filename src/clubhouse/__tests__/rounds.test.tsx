@@ -15,7 +15,7 @@ vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 vi.mock('@/app/golf/actions/golf', () => ({ deleteInProgressRound: vi.fn() }));
-vi.mock('@/lib/utils/emergency-save', () => ({ clearEmergencySave: vi.fn() }));
+vi.mock('@/lib/utils/emergency-save', () => ({ clearEmergencySave: vi.fn(), markRoundDiscarded: vi.fn() }));
 const session = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(session.current) }));
 const teamOf = vi.hoisted(() => ({ current: null as unknown }));
@@ -279,6 +279,125 @@ describe('112401 Rounds library, on screen', () => {
   });
 });
 
+/**
+ * Owner rules (2026-10-01), rule 1: no zero or empty copy beside a failed or unread read; a retry that lands shows what it read.
+ */
+describe('Rounds library: never a false empty or a wrong figure', () => {
+  const lib = (data: ChRoundsLibrary) => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <RoundsLibrary data={data} playerId="p1" writes={{ discard: vi.fn(() => Promise.resolve({ success: true })) }} />
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+
+  it('CH-11201 a failed list with no round in progress: the idle card does not say "No rounds posted yet" or name a last round', async () => {
+    show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [], error: false } });
+    await expectCode('CH-11201', /Your rounds didn't load/);
+    // The card is the verified empty of the in-progress read (nothing in progress); what it says about posted rounds is nothing.
+    expect(code('CH-11304')).not.toBeNull();
+    expect(screen.queryByText('No rounds posted yet')).toBeNull();
+    expect(screen.queryByText(/Last round/)).toBeNull();
+    expect(screen.queryByText('No rounds yet')).toBeNull();
+  });
+
+  it('CH-11214 a card whose holes did not load says so, with Try again, and never "no holes scored yet"', async () => {
+    const user = userEvent.setup();
+    const unread = { ...PREVIEW_UNFINISHED, played: [], toParThru: null, readyToSubmit: false, holesError: true };
+    show({ ...PREVIEW_ROUNDS, unfinished: { list: [unread], error: false } });
+    await expectCode('CH-11214', /This round's scores didn't load/);
+    expect(screen.queryByText('Set up, no holes scored yet')).toBeNull();
+    // The strip draws numbers only: nothing is marked scored, and the next hole is not claimed.
+    const strip = document.querySelector('.ch-rd-unf .ch-rd-strip')!;
+    expect(strip.className).toContain('is-ghost');
+    expect(strip.querySelector('.is-next')).toBeNull();
+    await user.click(within(code('CH-11214') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    // The saved current hole still says where to go on.
+    expect(screen.getByRole('link', { name: /Continue at hole 4/ })).toBeTruthy();
+  });
+
+  it('CH-11214 the more-unfinished list says a round’s scores did not load, not "not started"', () => {
+    const unread = (id: string, over: Partial<typeof PREVIEW_UNFINISHED> = {}) => ({ ...PREVIEW_UNFINISHED, id, played: [], toParThru: null, holesError: true, ...over });
+    show({ ...PREVIEW_ROUNDS, unfinished: { list: [unread('a0000000-0000-4000-8000-000000000041'), unread('a0000000-0000-4000-8000-000000000042', { course: 'Hope Valley CC' })], error: false } });
+    const more = screen.getByRole('region', { name: '1 more unfinished round' });
+    expect(within(more).getByText(/scores didn’t load/)).toBeTruthy();
+    expect(within(more).queryByText(/not started/)).toBeNull();
+  });
+
+  it('CH-11215 a finished round whose "already posted" check could not run is not offered Submit', async () => {
+    const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
+    const finished = { ...PREVIEW_UNFINISHED, played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
+    show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [finished], error: false } });
+    await expectCode('CH-11215', /Couldn't check whether this round was already posted/);
+    expect(screen.queryByRole('link', { name: /Submit/ })).toBeNull();
+    expect(screen.queryByText('Ready to submit')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Continue' })).toBeTruthy();
+  });
+
+  it('CH-11215 a finished round in the more-unfinished list says its posted check failed, and is Continue, never Submit', () => {
+    const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
+    const finished = { ...PREVIEW_UNFINISHED, id: 'a0000000-0000-4000-8000-000000000043', course: 'Governors Club', played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
+    show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [PREVIEW_UNFINISHED, finished], error: false } });
+    const more = screen.getByRole('region', { name: '1 more unfinished round' });
+    expect(within(more).getByText(/through 18 · couldn’t check if posted/)).toBeTruthy();
+    expect(within(more).queryByRole('link', { name: 'Submit' })).toBeNull();
+    expect(within(more).getByRole('link', { name: 'Continue' })).toBeTruthy();
+  });
+
+  it('a Try again that lands shows the in-progress card it read (the cards are not seeded once from the first render)', () => {
+    const { rerender } = render(lib({ ...PREVIEW_ROUNDS_IDLE, unfinished: { list: [], error: true } }));
+    expect(code('CH-11202')).not.toBeNull();
+    rerender(lib(PREVIEW_ROUNDS));
+    expect(screen.getByText('In progress')).toBeTruthy();
+    expect(code('CH-11202')).toBeNull();
+    expect(screen.queryByText('No round in progress')).toBeNull();
+    expect(screen.getByRole('link', { name: /Continue at hole 4/ })).toBeTruthy();
+  });
+
+  it('a Try again that lands on a failed list shows the rounds, not the first-run page', () => {
+    const { rerender } = render(lib({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [], error: false } }));
+    expect(code('CH-11201')).not.toBeNull();
+    rerender(lib(PREVIEW_ROUNDS_IDLE));
+    expect(code('CH-11201')).toBeNull();
+    expect(code('CH-11301')).toBeNull();
+    expect(screen.getByRole('searchbox')).toBeTruthy();
+    expect(screen.getAllByRole('link').filter((l) => /^Sep 26, Finley GC/.test(l.getAttribute('aria-label') ?? ''))).toHaveLength(1);
+  });
+
+  it('a discarded card stays out of a refreshed page that still lists it, and a new card still comes in', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(lib(PREVIEW_ROUNDS));
+    await user.click(screen.getByRole('button', { name: 'Discard the round at Finley GC' }));
+    await user.click(await screen.findByRole('button', { name: 'Discard round' }));
+    await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
+    rerender(lib({ ...PREVIEW_ROUNDS, unfinished: { list: [PREVIEW_UNFINISHED, { ...PREVIEW_UNFINISHED, id: 'a0000000-0000-4000-8000-000000000099', course: 'Hope Valley CC' }], error: false } }));
+    expect(screen.getByText('In progress')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Discard the round at Hope Valley CC' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Discard the round at Finley GC' })).toBeNull();
+  });
+
+  it('CH-11315 posted rounds with no score at all are said, never hidden: not the first-run page, and the count is stated', async () => {
+    show({ ...PREVIEW_ROUNDS_EMPTY, rounds: { list: [], error: false, unscored: 2 } });
+    await expectCode('CH-11315', /2 posted rounds have no score recorded, so they aren’t listed here/);
+    expect(code('CH-11301')).toBeNull();
+    expect(screen.queryByText('No rounds yet')).toBeNull();
+  });
+
+  it('CH-11315 one unscored round beside the listed ones says "1 posted round"', async () => {
+    show({ ...PREVIEW_ROUNDS_IDLE, rounds: { ...PREVIEW_ROUNDS_IDLE.rounds, unscored: 1 } });
+    await expectCode('CH-11315', /^1 posted round has no score recorded, so it isn’t listed here\.$/);
+    expect(screen.getByRole('searchbox')).toBeTruthy();
+  });
+
+  it('a failed list never says how many rounds are unscored (it knows of none)', () => {
+    show({ ...PREVIEW_ROUNDS_FAILED, rounds: { list: [], error: true, unscored: 3 } });
+    expect(code('CH-11315')).toBeNull();
+  });
+});
+
 describe('Discarding an unfinished round', () => {
   it('110901 CH-11701 CH-11501 the warning comes first, then the question; Discard round deletes it and the idle card takes its place', async () => {
     const user = userEvent.setup();
@@ -411,6 +530,40 @@ describe('Rounds loader', () => {
     const d = await loadRoundsLibrary({ playerId: 'p1', teamId: null });
     expect(d.unfinished.list[0]).toMatchObject({ played: [], nextHole: 4, readyToSubmit: false });
     expect(logServer).toHaveBeenCalledWith('rounds', 'unfinished-holes', expect.anything());
+  });
+
+  it('CH-11214 a failed hole read is carried to the card as a flag, so the card never reads "no holes scored"; a good read carries none', async () => {
+    tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { data: [] } : { data: [inProgress] }), golf_holes: { error: { message: 'boom' } } };
+    expect((await loadRoundsLibrary({ playerId: 'p1', teamId: null })).unfinished.list[0]).toMatchObject({ holesError: true, submitUnchecked: false });
+    tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { data: [] } : { data: [inProgress] }), golf_holes: { data: [] } };
+    expect((await loadRoundsLibrary({ playerId: 'p1', teamId: null })).unfinished.list[0]).toMatchObject({ holesError: false, played: [] });
+  });
+
+  it('CH-11215 a failed completed list cannot rule out a duplicate: a finished card is not ready to submit, and says its check failed', async () => {
+    const all = Array.from({ length: 18 }, (_, i) => ({ round_id: 'u1', hole_number: i + 1, par: 4, score: 4 }));
+    tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { error: { message: 'boom' } } : { data: [inProgress] }), golf_holes: { data: all } };
+    const d = await loadRoundsLibrary({ playerId: 'p1', teamId: null });
+    expect(d.rounds.error).toBe(true);
+    expect(d.unfinished.list[0]).toMatchObject({ readyToSubmit: false, submitUnchecked: true, nextHole: null });
+    // An unfinished card is not "submit unchecked" when it is not finished.
+    tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { error: { message: 'boom' } } : { data: [inProgress] }), golf_holes: { data: all.slice(0, 3) } };
+    expect((await loadRoundsLibrary({ playerId: 'p1', teamId: null })).unfinished.list[0]).toMatchObject({ readyToSubmit: false, submitUnchecked: false });
+  });
+
+  it('CH-11315 a completed round with no score at all is counted as left out, not dropped silently; it sets no figure', async () => {
+    tables.current = {
+      golf_rounds: (f) =>
+        status(f) === 'completed'
+          ? { data: [completedRow(), completedRow({ id: 'blank', total_score: null, front_nine: null, back_nine: null, score_to_par: null }), completedRow({ id: 'blank2', total_score: null, front_nine: null, back_nine: null })] }
+          : { data: [] },
+    };
+    const d = await loadRoundsLibrary({ playerId: 'p1', teamId: null });
+    expect(d.rounds.list.map((r) => r.id)).toEqual(['a0000000-0000-4000-8000-000000000001']);
+    expect(d.rounds.unscored).toBe(2);
+    expect(d.season.rounds).toBe(1);
+    // Nothing unscored: no key at all (the shape other tests compare whole).
+    tables.current = { golf_rounds: (f) => (status(f) === 'completed' ? { data: [completedRow()] } : { data: [] }) };
+    expect('unscored' in (await loadRoundsLibrary({ playerId: 'p1', teamId: null })).rounds).toBe(false);
   });
 
   it('110619 CH-11202 a failed in-progress read is its own error', async () => {

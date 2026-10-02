@@ -318,6 +318,170 @@ describe('Round review loader', () => {
   });
 });
 
+/**
+ * Owner rules (2026-10-01), rule 1: a missing total is never "0 strokes"; a supporting read that failed is said, with a retry,
+ * instead of the page quietly drawing different content (a coach seeing "Player", a missing yardage, a dropped baseline).
+ */
+describe('Round review: never a wrong figure or a silent difference', () => {
+  type Filters = Array<[string, unknown[]]>;
+  const eq = (f: Filters, col: string) => f.find(([k, a]) => k === 'eq' && a[0] === col)?.[1][1];
+  const round = (over: Record<string, unknown> = {}) => ({ ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'completed', tee_id: 't1', is_test: false, ...over });
+  const base = (over: Record<string, unknown> = {}) => ({
+    golf_rounds: { data: round(over) },
+    golf_team_members: (f: Filters) => ({ data: eq(f, 'player_id') === 'p1' && eq(f, 'team_id') === 'team1' ? [{ id: 'm1' }] : [] }),
+    golf_holes: { data: PREVIEW_REVIEW_HOLES },
+    golf_shots: { data: PREVIEW_REVIEW_SHOTS },
+    golf_course_tees: { data: { total_yards: 6984 } },
+    golf_players: { data: { first_name: 'Jonah', last_name: 'Okafor' } },
+    golf_teams: { data: { gender: 'mens' } },
+  });
+  const heroScore = () => document.querySelector('.ch-rv-hero__s b')!.textContent;
+
+  it('110102 a round with no total shows an em dash and "Score not recorded", never 0 strokes', async () => {
+    tables.current = base({ total_score: null, front_nine: null, back_nine: null, score_to_par: null });
+    const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
+    expect(r.kind === 'ok' && r.review.score).toBeNull();
+    if (r.kind !== 'ok') return;
+    show(r.review);
+    expect(heroScore()).toBe('—');
+    const hero = within(screen.getByRole('banner'));
+    expect(hero.getByText('Score not recorded')).toBeTruthy();
+    expect(hero.queryByText('Strokes')).toBeNull();
+    expect(hero.queryByText('0')).toBeNull();
+  });
+
+  it('110102 a round with a total still shows it as before (the em dash is only for no total)', () => {
+    show(PREVIEW_REVIEW);
+    expect(heroScore()).toBe('74');
+    expect(screen.getByText('Strokes')).toBeTruthy();
+  });
+
+  it('CH-11216 a failed tee read says the tee’s yardage is missing, with Try again; the scores stay', async () => {
+    const user = userEvent.setup();
+    tables.current = { ...base(), golf_course_tees: { error: { message: 'down' } } };
+    const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
+    expect(r.kind === 'ok' && [r.review.teeError, r.review.teeFacts]).toEqual([true, '73.1 / 133']);
+    if (r.kind !== 'ok') return;
+    show(r.review);
+    await expectCode('CH-11216', /Some details of this round didn't load.*The tee’s yardage is missing; the scores are right/);
+    expect(heroScore()).toBe('74');
+    await user.click(within(code('CH-11216') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-11216 a good tee read says nothing; a round with no tee on file says nothing either (that is not a failure)', async () => {
+    tables.current = base({ tee_id: null });
+    const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
+    expect(r.kind === 'ok' && r.review.teeError).toBeFalsy();
+    if (r.kind !== 'ok') return;
+    show(r.review);
+    expect(code('CH-11216')).toBeNull();
+  });
+
+  it('CH-11216 a coach whose read of the player’s name failed sees no invented "Player": a notice, Back still goes to Stats, the notes are "The player’s"', async () => {
+    tables.current = { ...base(), golf_players: { error: { message: 'down' } } };
+    const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'coach', teamId: 'team1' });
+    expect(r.kind === 'ok' && [r.review.playerName, r.review.coachView, r.review.playerError]).toEqual([null, true, true]);
+    if (r.kind !== 'ok') return;
+    show(r.review);
+    await expectCode('CH-11216', /The player’s name is missing/);
+    expect(within(screen.getByRole('banner')).getByText('Wed Oct 14 · Practice')).toBeTruthy();
+    expect(screen.queryByText(/Player ·/)).toBeNull();
+    expect(screen.getByRole('link', { name: /Stats/ }).getAttribute('href')).toBe('/golf/dashboard/stats?player=p1&tab=rounds');
+    expect(screen.getByRole('heading', { name: 'The player’s notes' })).toBeTruthy();
+  });
+
+  it('CH-11216 a coach whose player read worked but found no player row gets the same notice, never an invented "Player"; a player’s own round never does', async () => {
+    tables.current = { ...base(), golf_players: { data: null } };
+    const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'coach', teamId: 'team1' });
+    expect(r.kind === 'ok' && [r.review.playerName, r.review.coachView, r.review.playerError]).toEqual([null, true, true]);
+    if (r.kind !== 'ok') return;
+    const { unmount } = show(r.review);
+    await expectCode('CH-11216', /The player’s name is missing/);
+    expect(screen.queryByText(/Player ·/)).toBeNull();
+    expect(screen.getByRole('link', { name: /Stats/ }).getAttribute('href')).toBe('/golf/dashboard/stats?player=p1&tab=rounds');
+    unmount();
+
+    tables.current = { ...base(), golf_players: { data: null } };
+    const own = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
+    expect(own.kind === 'ok' && [own.review.playerName, own.review.coachView, own.review.playerError]).toEqual([null, false, undefined]);
+  });
+
+  it('CH-11216 both missing at once are said in one notice', () => {
+    show({ ...PREVIEW_REVIEW_COACH, playerName: null, coachView: true, teeError: true, playerError: true });
+    expect(code('CH-11216')!.textContent).toMatch(/The tee’s yardage and the player’s name are missing/);
+  });
+
+  it('CH-11217 a failed team read says which baseline is unknown, with Try again; a player with no team gets no notice (no team is not a failure)', async () => {
+    const user = userEvent.setup();
+    tables.current = { ...base(), golf_teams: { error: { message: 'down' } } };
+    const failed = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
+    expect(failed.kind === 'ok' && [failed.review.tour, failed.review.tourError]).toEqual([null, true]);
+    if (failed.kind !== 'ok') return;
+    const { unmount } = show(failed.review);
+    await expectCode('CH-11217', /Which Tour this is measured against didn't load/);
+    await user.click(within(code('CH-11217') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    unmount();
+
+    tables.current = base();
+    const none = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: null });
+    expect(none.kind === 'ok' && none.review.tourError).toBeFalsy();
+    if (none.kind !== 'ok') return;
+    show(none.review);
+    expect(code('CH-11217')).toBeNull();
+  });
+
+  it('CH-11217 a round with no strokes gained draws no baseline notice (it claims no baseline)', () => {
+    show({ ...PREVIEW_REVIEW, strokesGained: null, tourError: true });
+    expect(code('CH-11217')).toBeNull();
+    expect(code('CH-11313')).not.toBeNull();
+  });
+
+  it('a Try again that lands on the scorecard opens it on the first hole over par, not on the hole 1 an empty card defaulted to', () => {
+    const { rerender } = render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <RoundReview review={PREVIEW_REVIEW_NO_HOLES} />
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    expect(code('CH-11204')).not.toBeNull();
+    rerender(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <RoundReview review={PREVIEW_REVIEW} />
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    expect(code('CH-11204')).toBeNull();
+    expect(holeTitle()).toBe('Hole 2 · Par 5 · 518 yds');
+  });
+
+  it('a hole the player picked stays picked when the page refreshes under them', async () => {
+    const user = userEvent.setup();
+    const ui = (r: ChRoundReview) => (
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <RoundReview review={r} />
+        </ToastProvider>
+      </LazyMotion>
+    );
+    const { rerender } = render(ui(PREVIEW_REVIEW));
+    await user.click(screen.getByRole('button', { name: 'Hole 5' }));
+    rerender(ui({ ...PREVIEW_REVIEW }));
+    expect(holeTitle()).toMatch(/^Hole 5 /);
+  });
+
+  it('CH-11206 the failed-round page retries through the shared refresh', async () => {
+    const user = userEvent.setup();
+    const { ReviewLoadFailed } = await import('../screens/rounds/ReviewLoadFailed');
+    render(<ReviewLoadFailed />);
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('Round review route', () => {
   it('CH-11307 a player on someone else’s round gets "This round isn’t here" and a way back to their rounds', async () => {
     session.current = { userId: 'u2', coach: null, player: { id: 'p2' } };

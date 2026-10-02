@@ -18,7 +18,10 @@ export type * from './round-review-shape';
  * `inProgress`: the round is still being played; the page sends it to be
  * continued, as the legacy page does. `error`: the round itself didn't load.
  * The holes and the shots each carry their own error, so a failed shot read
- * still shows the card.
+ * still shows the card; the tee, the coach's read of the player's name and the
+ * team (the strokes gained baseline) carry theirs too (`teeError`,
+ * `playerError`, `tourError`), so the page says what is missing instead of
+ * drawing different content (a coach sees "Player", the yardage is just gone).
  */
 
 /** A player's `teamId` names the strokes gained baseline (a women's team is measured on the women's Tour curve); without it no baseline is claimed. */
@@ -33,9 +36,16 @@ const SHOT_COLUMNS =
 
 const log = (what: string, err: unknown) => chLogServer('rounds.review', what, err);
 
-export async function loadRoundReview(roundId: string, viewer: ChReviewViewer): Promise<ChRoundReviewResult> {
+/**
+ * `viewerIn` may still be on its way (the route resolves the team while this reads the round): the round is read by its id, so it
+ * is read beside the viewer, and judged against them once both are in. A null viewer is "not here", as before; the round read
+ * beside it is the viewer's own RLS read and is dropped unlooked-at.
+ */
+export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer | null | Promise<ChReviewViewer | null>): Promise<ChRoundReviewResult> {
   const supabase = await createClient();
-  const { data: round, error } = await supabase.from('golf_rounds').select(ROUND_COLUMNS).eq('id', roundId).maybeSingle();
+  const [viewer, roundRes] = await Promise.all([viewerIn, supabase.from('golf_rounds').select(ROUND_COLUMNS).eq('id', roundId).maybeSingle()]);
+  if (!viewer) return { kind: 'notFound' };
+  const { data: round, error } = roundRes;
   if (error) {
     log('round', error);
     return { kind: 'error' };
@@ -80,10 +90,16 @@ export async function loadRoundReview(roundId: string, viewer: ChReviewViewer): 
       holes,
       holesError: !!holesRes.error,
       shotsError: !!shotsRes.error,
-      playerName: playerRes.data ? fullName(playerRes.data) : viewer.role === 'coach' ? 'Player' : null,
+      // No name is a gap the page says (`playerError`), never an invented "Player": a read that failed, and a coach's read that
+      // found no player row, are both that.
+      playerName: playerRes.data ? fullName(playerRes.data) : null,
+      coachView: viewer.role === 'coach',
       teeYards: teeRes.data?.total_yards ?? null,
-      // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210).
+      // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210); a read that failed says so.
       tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
+      teeError: !!teeRes.error,
+      playerError: !!playerRes.error || (viewer.role === 'coach' && !playerRes.data),
+      tourError: !!teamRes.error,
     }),
   };
 }

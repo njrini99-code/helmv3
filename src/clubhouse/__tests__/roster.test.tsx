@@ -39,7 +39,6 @@ import { Roster } from '../screens/roster/Roster';
 import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
 import { NOTE_MAX } from '../screens/roster/RosterPeek';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
-import { isRebuilt, rebuiltHref } from '../shell/nav';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
@@ -198,7 +197,7 @@ describe('Roster · saves that fail', () => {
 });
 
 describe('Roster · validation', () => {
-  it('CH-3101 a note near the 2,000 limit counts down, politely', async () => {
+  it('CH-3101 CH-3804 a note near the 2,000 limit counts down, politely', async () => {
     const user = userEvent.setup();
     const long = 'x'.repeat(NOTE_MAX - 150);
     wrap(roster({ players: [{ ...theo, coachNote: long }, ...PREVIEW_ROSTER.players.slice(1)] }));
@@ -476,6 +475,12 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(await screen.findByText('FINLEY-26')).toBeTruthy();
     // An icon action that isn't a primary button is silent (D-70).
     expect(hapticSpy).not.toHaveBeenCalledWith('press');
+  });
+
+  it('CH-3301 no players yet on the phone: Invite players first and Copy team code second, as the board draws it', () => {
+    phone(roster({ players: [], requests: [] }));
+    const el = code('CH-3301') as HTMLElement;
+    expect(within(el).getAllByRole('button').map((b) => b.textContent)).toEqual(['Invite players', 'Copy team code']);
   });
 
   it('30101 CH-3701 the phone opens on the list: active players by average, then Inactive; SG and Name (by last name, D-59) re-sort with a tick', async () => {
@@ -767,19 +772,21 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     delete (navigator as { share?: unknown }).share;
   });
 
-  it('30801 only a coach reaches the roster: a player session gets nothing and no read is made; a coach gets the loader for their own team', async () => {
+  it("30801 the coach's roster is a coach's: no session gets nothing and no read is made; a player is handed their own read-only roster, never the coach's; a coach gets the loader for their own team", async () => {
     const read = vi.fn(() => ({ data: null }));
     tables.current = { golf_teams: read, golf_team_members: read };
-    vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: null, player: { id: 'p1' } } as never);
-    expect(await ClubhouseRosterRoute()).toBeNull();
     vi.mocked(getGolfSessionProfile).mockResolvedValue(null);
     expect(await ClubhouseRosterRoute()).toBeNull();
     expect(resolveClubhouseTeam).not.toHaveBeenCalled();
     expect(read).not.toHaveBeenCalled();
-    // In the Clubhouse frame a player on this address gets the not-rebuilt notice (10802), never the page.
-    expect(isRebuilt('/golf/dashboard/roster', 'coach')).toBe(true);
-    expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(false);
-    expect(rebuiltHref('/golf/dashboard/roster', 'player')).toBeNull();
+    // A player gets the player roster (30804), not the coach's screen: the coach's loader and its notes are never asked.
+    vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: null, player: { id: 'p1' } } as never);
+    vi.mocked(resolveClubhouseTeam).mockResolvedValue({ role: 'player', teamId: 't1', playerId: 'p1' });
+    tables.current = { golf_teams: { data: { name: 'Varsity', season: null } }, golf_team_members: { data: [] } };
+    const mine = (await ClubhouseRosterRoute()) as React.ReactElement;
+    expect(mine.type).not.toBe(Roster);
+    expect(actions.requests).not.toHaveBeenCalled();
+    vi.mocked(resolveClubhouseTeam).mockReset();
     // A coach: the loader gets their active team and their own id.
     vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
     vi.mocked(resolveClubhouseTeam).mockResolvedValue({ role: 'coach', teamId: 't1', coachId: 'c1' });
@@ -1048,11 +1055,12 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     quiet.mockRestore();
   });
 
-  it('32401 this file names every Roster catalog code it forces, in a test title', () => {
+  it("32401 this file and the player roster's file name every Roster catalog code they force, in a test title", () => {
     const self = fileURLToPath(import.meta.url);
     const catalog = readFileSync(resolve(dirname(self), '../../../docs/clubhouse/catalog/roster.md'), 'utf8');
-    const titles = readFileSync(self, 'utf8')
-      .split('\n')
+    // The player's roster (CH-3210, CH-3211, CH-3307, CH-3308) is tested in its own file.
+    const titles = [self, resolve(dirname(self), 'roster-player.test.tsx')]
+      .flatMap((file) => readFileSync(file, 'utf8').split('\n'))
       .filter((line) => /^\s*(it|describe)\(/.test(line))
       .join('\n');
     const forced = catalog

@@ -14,6 +14,7 @@ import type { Database } from '@/lib/types/database';
 import {
   canTransition,
   canConfirmSelection,
+  pickableCount,
 } from './state-machine';
 import { loadQualifyingWorkspace } from './loader';
 import type { QualifierSelectionState } from './types';
@@ -48,12 +49,23 @@ export async function transitionSelectionState(
   if (!canTransition(cur.selection_state as QualifierSelectionState, target)) {
     return { ok: false, error: `illegal transition ${cur.selection_state} → ${target}` };
   }
+  // 'selected' means a squad was written and the players told: only
+  // confirmSelection reaches it. A bare step left qualifiers 'selected'
+  // with no selection rows.
+  if (target === 'selected') {
+    return { ok: false, error: `illegal transition ${cur.selection_state} → selected: confirm the squad instead` };
+  }
 
-  const { error: writeErr } = await supabase
+  // Compare-and-set on the state read above, so two coaches stepping at
+  // once can't both pass the check.
+  const { data: moved, error: writeErr } = await supabase
     .from('golf_qualifiers')
     .update({ selection_state: target })
-    .eq('id', qualifier_id);
+    .eq('id', qualifier_id)
+    .eq('selection_state', cur.selection_state)
+    .select('id');
   if (writeErr) return { ok: false, error: writeErr.message };
+  if (!moved?.length) return { ok: false, error: `illegal transition: the state moved on from ${cur.selection_state}` };
 
   return { ok: true, data: undefined };
 }
@@ -88,6 +100,35 @@ export async function setCoachPick(
   if (!['closed', 'selected'].includes(q.selection_state)) {
     return { ok: false, error: `coach picks locked in state ${q.selection_state}` };
   }
+
+  // A pick is a place in this qualifier's squad, so it goes to one of its
+  // entrants; the action's roster check alone let a team player who never
+  // entered take a place. Fails closed like the ceiling read below.
+  const { data: entry, error: entryError } = await supabase
+    .from('golf_qualifier_entries')
+    .select('player_id')
+    .eq('qualifier_id', args.qualifier_id)
+    .eq('player_id', args.player_id)
+    .maybeSingle();
+  if (entryError) {
+    return { ok: false, error: 'could not verify the player is entered; please try again' };
+  }
+  if (!entry) return { ok: false, error: 'player is not entered in this qualifier' };
+
+  // Q-115 (owner, 2026-10-01): a pick goes to a player with a scored round, as the Clubhouse pick sheet offers it.
+  // The same round set the board and the workspace rank from: completed, not a test, with a total.
+  const { count: scored, error: scoredError } = await supabase
+    .from('golf_rounds')
+    .select('id', { count: 'exact', head: true })
+    .eq('qualifier_id', args.qualifier_id)
+    .eq('player_id', args.player_id)
+    .eq('status', 'completed')
+    .eq('is_test', false)
+    .not('total_score', 'is', null);
+  if (scoredError) {
+    return { ok: false, error: 'could not verify the player has a scored round; please try again' };
+  }
+  if (!scored) return { ok: false, error: 'player has no scored round in this qualifier' };
 
   // Enforce the slot ceiling before inserting another coach_pick.
   const { data: existing, error: existingError } = await supabase
@@ -130,6 +171,53 @@ export async function setCoachPick(
 }
 
 /**
+ * Q-114: give one of the places at a tied cut to a level player (a top_score
+ * selection before confirm), or take it back. Only while selection is closed,
+ * only for a player tied at the cut, and never more than the places the tie
+ * leaves. The coach's reasoning is not asked: the player is level on score.
+ */
+export async function chooseTiePlace(
+  supabase: Sb,
+  args: { qualifier_id: string; player_id: string; user_id: string; give: boolean },
+): Promise<ServiceResult> {
+  const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
+  if (!workspace) return { ok: false, error: 'workspace not loadable' };
+  if (workspace.selection_state !== 'closed') {
+    return { ok: false, error: `places at the cut locked in state ${workspace.selection_state}` };
+  }
+  const tie = workspace.tie_at_cut;
+  const cand = workspace.candidates.find((c) => c.player_id === args.player_id);
+  if (!tie || !cand?.tied_at_cut) return { ok: false, error: 'player is not tied at the cut' };
+
+  if (args.give) {
+    if (cand.is_top_score_slot) return { ok: true, data: undefined };
+    if (tie.chosen >= tie.places) return { ok: false, error: `all ${tie.places} places at the cut are chosen` };
+    const { error } = await supabase.from('golf_qualifier_selections').upsert(
+      {
+        qualifier_id: args.qualifier_id,
+        player_id: args.player_id,
+        selection_type: 'top_score',
+        coach_reasoning: null,
+        selected_by_user_id: args.user_id,
+        selected_at: new Date().toISOString(),
+      },
+      { onConflict: 'qualifier_id,player_id' },
+    );
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, data: undefined };
+  }
+
+  const { error } = await supabase
+    .from('golf_qualifier_selections')
+    .delete()
+    .eq('qualifier_id', args.qualifier_id)
+    .eq('player_id', args.player_id)
+    .eq('selection_type', 'top_score');
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: undefined };
+}
+
+/**
  * Remove a coach-pick. Only works on coach_pick rows; top_score rows
  * are auto-managed by confirmSelection and never deleted via this path.
  */
@@ -158,7 +246,7 @@ export async function removeCoachPick(
 export async function confirmSelection(
   supabase: Sb,
   args: { qualifier_id: string; user_id: string },
-): Promise<ServiceResult> {
+): Promise<ServiceResult<{ notified: boolean }>> {
   const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
   if (!workspace) return { ok: false, error: 'workspace not loadable' };
 
@@ -171,6 +259,7 @@ export async function confirmSelection(
       state: workspace.selection_state,
       slots_coach_pick: workspace.selection_slots_coach_pick,
       coach_pick_selections: coachPickSelections.map((s) => ({ reasoning: s.coach_reasoning })),
+      available_for_pick: pickableCount(workspace.candidates),
     })
   ) {
     return {
@@ -179,10 +268,20 @@ export async function confirmSelection(
     };
   }
 
-  const top_n =
-    workspace.selection_slots_total - workspace.selection_slots_coach_pick;
+  // Q-114: level players at the last place on score wait for the coach, never name order.
+  const tie = workspace.tie_at_cut;
+  if (tie && tie.chosen !== tie.places) {
+    return {
+      ok: false,
+      error: `cannot confirm: tie at the cut, choose ${tie.places} of the level players (${tie.chosen} chosen)`,
+    };
+  }
+
+  // The places on score are the loader's (shared order, picks excluded).
+  // A coach's pick is never rewritten as top_score: the upsert below would
+  // replace the pick and drop its reasoning.
   const topScoreRows = workspace.candidates
-    .filter((c) => c.is_top_score_slot && c.leaderboard_rank !== null && c.leaderboard_rank <= top_n)
+    .filter((c) => c.is_top_score_slot && c.leaderboard_rank !== null && c.selection?.selection_type !== 'coach_pick')
     .map((c) => ({
       qualifier_id: workspace.qualifier_id,
       player_id: c.player_id,
@@ -208,11 +307,18 @@ export async function confirmSelection(
     if (insErr) return { ok: false, error: insErr.message };
   }
 
-  const { error: stateErr } = await supabase
+  // Compare-and-set: only the confirmation that moves 'closed' to
+  // 'selected' goes on to brief the coach and tell the players, so a
+  // repeated or concurrent confirm can't notify twice. The rows above are
+  // an idempotent upsert, so a losing call wrote the same squad.
+  const { data: flipped, error: stateErr } = await supabase
     .from('golf_qualifiers')
     .update({ selection_state: 'selected' })
-    .eq('id', args.qualifier_id);
+    .eq('id', args.qualifier_id)
+    .eq('selection_state', 'closed')
+    .select('id');
   if (stateErr) return { ok: false, error: stateErr.message };
+  if (!flipped?.length) return { ok: false, error: 'illegal transition: the squad was already confirmed' };
 
   // Re-read after the writes: `workspace` is the pre-confirm snapshot and
   // carries no top_score rows yet, so a brief composed from it listed no
@@ -243,14 +349,17 @@ export async function confirmSelection(
   // Players never learned the outcome before this — only the coach's own
   // chat got the travel brief. Best-effort, same reasoning as above: never
   // let a notify failure undo a selection that already committed.
+  // Q-116: the coach is told when it fails, rather than a toast claiming everyone was told.
+  let notified = true;
   try {
     await notifyPlayersOfSelectionOutcome(supabase, committed);
   } catch (err) {
+    notified = false;
     await logServerError(
       `player selection-outcome notify failed for qualifier ${args.qualifier_id}: ${describeError(err)}`,
       { action: 'v3.qualifying.confirmSelection.notifyPlayers' },
     );
   }
 
-  return { ok: true, data: undefined };
+  return { ok: true, data: { notified } };
 }

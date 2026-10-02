@@ -60,6 +60,8 @@ function EventBlock({
   flagged,
   people,
   onSelect,
+  from,
+  to,
 }: {
   e: ChCalEvent;
   lane: number;
@@ -68,20 +70,26 @@ function EventBlock({
   flagged: boolean;
   people: Map<string, ChCalPerson>;
   onSelect: (id: string) => void;
+  /** The grid's first and last hour. */
+  from: number;
+  to: number;
 }) {
-  const start = Math.max(e.start!, CAL_START);
-  const end = Math.min(e.end!, CAL_END);
-  const top = (start - CAL_START) * CAL_HH;
+  const start = Math.max(e.start!, from);
+  const end = Math.min(e.end!, to);
+  const top = (start - from) * CAL_HH;
   const h = Math.max((end - start) * CAL_HH - 2, 20);
   const short = h < 40;
   const w = 100 / lanes;
+  /** Side by side with another event: a share of one column, 29px of text at three lanes. */
+  const shared = lanes > 1;
   const title = eventTitle(e, people);
-  const meta = short ? fmtHour(e.start!, false) : rangeLabel(e) + (h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : '');
+  const meta = short || shared ? fmtHour(e.start!, false) : rangeLabel(e) + (h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : '');
   return (
     <button
       type="button"
       data-print-visible
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${sel ? ' is-sel' : ''}`}
+      // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
+      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${sel ? ' is-sel' : ''}`}
       style={{ top, height: h, left: `calc(${w * lane}% + 3px)`, width: `calc(${w}% - ${lanes > 1 ? 4 : 6}px)` }}
       aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}`}
       aria-pressed={sel}
@@ -120,13 +128,18 @@ export function TimeGrid({
   onSelect: (id: string) => void;
   onDay: (date: string) => void;
 }) {
-  const hours = Array.from({ length: CAL_END - CAL_START }, (_, i) => CAL_START + i);
+  // 6 AM to 9 PM, widened to the hour around anything earlier or later on the days shown, so a 5 AM bus or a 9:30 PM
+  // meeting is on the grid instead of dropped from it (CAL-07).
+  const timed = events.filter((e) => !e.allDay && e.start != null && e.end != null && dates.includes(e.date));
+  const from = Math.max(0, Math.min(CAL_START, ...timed.map((e) => Math.floor(e.start!))));
+  const to = Math.min(24, Math.max(CAL_END, ...timed.map((e) => Math.ceil(e.end!))));
+  const hours = Array.from({ length: to - from }, (_, i) => from + i);
   const nowLabel = fmtHour(now.hour, false);
-  const nowVisible = now.hour >= CAL_START && now.hour <= CAL_END;
+  const nowVisible = now.hour >= from && now.hour <= to;
   return (
     <div
       className="ch-wk ch-cal-surface"
-      style={{ ['--ch-cols' as string]: dates.length, ['--ch-hours' as string]: CAL_END - CAL_START, ['--ch-hh' as string]: `${CAL_HH}px` }}
+      style={{ ['--ch-cols' as string]: dates.length, ['--ch-hours' as string]: to - from, ['--ch-hh' as string]: `${CAL_HH}px` }}
     >
       <div className="ch-wk__head">
         <div />
@@ -176,22 +189,22 @@ export function TimeGrid({
         <div className="ch-wk__rail" aria-hidden="true">
           {hours.map(
             (h) =>
-              h > CAL_START && (
-                <span key={h} style={{ top: (h - CAL_START) * CAL_HH }}>
+              h > from && (
+                <span key={h} style={{ top: (h - from) * CAL_HH }}>
                   {((h + 11) % 12) + 1} {h < 12 ? 'AM' : 'PM'}
                 </span>
               ),
           )}
         </div>
         {dates.map((d) => {
-          const laid = layoutLanes(events.filter((e) => !e.allDay && e.date === d && e.end! > CAL_START && e.start! < CAL_END));
+          const laid = layoutLanes(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null));
           return (
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : '')}>
               {laid.map((l) => (
-                <EventBlock key={l.e.id} e={l.e} lane={l.lane} lanes={l.lanes} sel={selId === l.e.id} flagged={flagged.has(l.e.id)} people={people} onSelect={onSelect} />
+                <EventBlock key={l.e.id} e={l.e} lane={l.lane} lanes={l.lanes} sel={selId === l.e.id} flagged={flagged.has(l.e.id)} people={people} onSelect={onSelect} from={from} to={to} />
               ))}
               {d === now.date && nowVisible && (
-                <div className="ch-wk__now" style={{ top: (now.hour - CAL_START) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
+                <div className="ch-wk__now" /* CH-6603: the current time, a line across today */ style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
                   <span className="ch-wk__nowlbl">{nowLabel}</span>
                 </div>
               )}

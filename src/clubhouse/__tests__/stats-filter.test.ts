@@ -183,7 +183,7 @@ describe('stats filter · which rounds', () => {
     expect(ids(got)[9]).toBe(uuid(20));
   });
 
-  it('puts the season as the start of every window, but a custom range reaches past it', () => {
+  it('puts the season as the start of Season and Qualifiers, but Last 10 and a custom range reach past it', () => {
     const xs: ChFilterRow[] = [
       { id: uuid(1), date: '2026-09-20', kind: 'tournament', course: 'A', holes: 18 },
       { id: uuid(2), date: '2026-08-01', kind: 'tournament', course: 'A', holes: 18 },
@@ -191,8 +191,8 @@ describe('stats filter · which rounds', () => {
       { id: uuid(4), date: '2026-04-10', kind: 'practice', course: 'A', holes: 18 },
     ];
     expect(ids(pick(filterFor('season'), xs))).toEqual([uuid(1), uuid(2)]);
-    // Last 10 is this season's ten, not the ten newest ever.
-    expect(ids(pick(filterFor('last10'), xs))).toEqual([uuid(1), uuid(2)]);
+    // Q-122: Last 10 is the ten newest rounds in any season (the legacy app's rule), not this season's ten.
+    expect(ids(pick(filterFor('last10'), xs))).toEqual([uuid(1), uuid(2), uuid(3), uuid(4)]);
     expect(ids(pick(withRange(filterFor(), '2026-04-01', '2026-07-31'), xs))).toEqual([uuid(3), uuid(4)]);
     // An open start reads everything up to the end; an open end, everything from the start (both ends are inclusive).
     expect(ids(pick(withRange(filterFor(), null, '2026-08-01'), xs))).toEqual([uuid(2), uuid(3), uuid(4)]);
@@ -249,6 +249,24 @@ describe('stats filter · the previous ten', () => {
     expect(prev!.every((r) => r.kind === 'tournament')).toBe(true);
     // The newest ten tournaments end at r20; the previous ten start at r22.
     expect(ids(prev!)[0]).toBe(uuid(22));
+  });
+
+  it('Q-122: reaches back across seasons, as the newest ten does; Season stays inside this season', () => {
+    // 24 rounds, newest first: the newest 4 are this season (Sep 17-20), the other 20 are the season before (Jun 9-28).
+    const xs: ChFilterRow[] = Array.from({ length: 24 }, (_, i) => ({
+      id: uuid(i + 1),
+      date: i < 4 ? `2026-09-${20 - i}` : `2026-06-${28 - (i - 4)}`,
+      kind: 'tournament' as const,
+      course: 'A',
+      holes: 18,
+    }));
+    const last10 = filterFor('last10');
+    expect(ids(pick(last10, xs))).toEqual(Array.from({ length: 10 }, (_, i) => uuid(i + 1)));
+    expect(ids(previousRounds(xs, last10, SEASON, (r) => r)!)).toEqual(Array.from({ length: 10 }, (_, i) => uuid(i + 11)));
+    expect(earlierCount(xs, last10, SEASON, (r) => r)).toBe(14);
+    // Season is this season only, and has no previous ten.
+    expect(ids(pick(filterFor('season'), xs))).toEqual([uuid(1), uuid(2), uuid(3), uuid(4)]);
+    expect(previousRounds(xs, filterFor('season'), SEASON, (r) => r)).toBeNull();
   });
 
   it('needs three rounds, and a range, picked rounds or another window has none', () => {

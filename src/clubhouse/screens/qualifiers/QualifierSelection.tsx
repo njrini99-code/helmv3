@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, ChevronLeft, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQCandidate, ChQSelectionData } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
@@ -11,13 +11,15 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { normalise, useAction } from '../../lib/use-action';
+import { useToast } from '../../ui/Toast';
+import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { plural } from './model';
 import { ToPar } from './parts';
+import { useStepBack } from './return-state';
 import { LIVE_SELECTION_WRITES, startSelecting, type ChQSelectionWrites } from './writes';
 import '../../styles/qualifiers.css';
 
@@ -36,12 +38,59 @@ const STAGES = ['Standings', 'Coach’s picks', 'Squad confirmed'] as const;
  */
 export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { data: ChQSelectionData; writes?: ChQSelectionWrites }) {
   const router = useRouter();
+  const toast = useToast();
   const phone = useChPhone();
   const detailHref = `${LIST}/${data.id}`;
+  // Back is a step back in history when the qualifier's Manage selections link opened this page (the qualifier returns where it was
+  // left), and the qualifier's address otherwise (return-state.ts).
+  const back = useStepBack('detail', data.id, detailHref);
   const [state, setState] = useState(data.selectionState);
-  const [cands, setCands] = useState(data.candidates);
   useEffect(() => setState(data.selectionState), [data.selectionState]);
-  useEffect(() => setCands(data.candidates), [data.candidates]);
+  // What the coach changed here lands on top of the server's read until that read shows it, so a refresh that was started before the
+  // write settled (and so has not seen it) cannot undo it on screen. Once the server's candidate matches, or a second read has come in
+  // since (the first may be that late one; the write's own re-read is the second), the edit is dropped and the page follows the server
+  // again. Nothing is drawn for a write before it lands (91301).
+  const [edits, setEdits] = useState<Record<string, { patch: CandEdit; reads: number }>>({});
+  const served = useRef(data.candidates);
+  useEffect(() => {
+    served.current = data.candidates;
+  }, [data.candidates]);
+  const edit = (playerId: string, patch: CandEdit) => {
+    // A re-read that already carries the write (it can land before the write's own answer does) leaves nothing to lay over it.
+    const server = served.current.find((c) => c.playerId === playerId);
+    if (server && agrees(server, patch)) {
+      // ...and an older edit of the same fields (the opposite change, which the server never showed) must not keep masking it.
+      setEdits((cur) => {
+        const older = cur[playerId];
+        if (!older) return cur;
+        const rest: CandEdit = { ...older.patch };
+        for (const field of Object.keys(patch) as Array<keyof CandEdit>) delete rest[field];
+        const next = { ...cur };
+        if (Object.keys(rest).length) next[playerId] = { patch: rest, reads: older.reads };
+        else delete next[playerId];
+        return next;
+      });
+      return;
+    }
+    setEdits((cur) => ({ ...cur, [playerId]: { patch: { ...cur[playerId]?.patch, ...patch }, reads: 0 } }));
+  };
+  useEffect(() => {
+    setEdits((cur) => {
+      const ids = Object.keys(cur);
+      if (!ids.length) return cur;
+      const next: typeof cur = {};
+      for (const id of ids) {
+        const server = data.candidates.find((c) => c.playerId === id);
+        const e = cur[id]!;
+        if (server && !agrees(server, e.patch) && e.reads + 1 < 2) next[id] = { patch: e.patch, reads: e.reads + 1 };
+      }
+      return next;
+    });
+  }, [data.candidates]);
+  const cands = useMemo(() => data.candidates.map((c) => (edits[c.playerId] ? { ...c, ...edits[c.playerId]!.patch } : c)), [data.candidates, edits]);
+  // Players whose place is being given, written but not answered: they count against the places left, so a second tap on another
+  // level player cannot overshoot while the first is in flight.
+  const [giving, setGiving] = useState<ReadonlySet<string>>(new Set());
 
   const [asking, setAsking] = useState<'start' | 'confirm' | null>(null);
   const [choosing, setChoosing] = useState<{ playerId: string | null } | null>(null);
@@ -53,11 +102,20 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   // A pick is never also counted on score.
   const onScore = cands.filter((c) => !c.pick && (stage === 2 ? c.selected : c.onScore)).sort(byRank);
   const picks = cands.filter((c) => c.pick);
-  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick).sort(byRank);
+  // Q-114: players level at the last place on score. The coach gives the places left; name order never does.
+  const tied = stage < 2 ? cands.filter((c) => c.tiedAtCut && !c.pick).sort(byRank) : [];
+  const tiePlaces = data.tie?.places ?? 0;
+  const tieChosen = tied.filter((c) => c.onScore).length;
+  const tieFull = tieChosen + giving.size >= tiePlaces;
+  const tieReady = tied.length === 0 || tieChosen === tiePlaces;
+  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick && !(stage < 2 && c.tiedAtCut)).sort(byRank);
   const unranked = cands.filter((c) => c.rank == null && !c.pick);
-  const picksReady = picks.length === data.picks && picks.every((p) => (p.pick?.reasoning ?? '').trim().length > 0);
+  // A field smaller than the squad has fewer players to pick than pick places; the server needs only those
+  // (canConfirmSelection), so the empty places don't hold up the confirmation.
+  const picksNeeded = Math.min(data.picks, eligible.length + picks.length);
+  const picksReady = picks.length === picksNeeded && picks.every((p) => (p.pick?.reasoning ?? '').trim().length > 0);
   const nobody = onScore.length + picks.length === 0;
-  const canConfirm = state === 'closed' && picksReady && !nobody;
+  const canConfirm = state === 'closed' && picksReady && tieReady && !nobody;
 
   // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
   // (which runs the action again) finishes the job too: the step moves on, the question closes, the page re-reads.
@@ -83,7 +141,12 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
     'qualifiers.confirmSquad',
     async () => {
       const res = await writes.confirm(data.id);
-      if (normalise(res).success) {
+      const landed = normalise(res);
+      if (landed.success) {
+        // Q-116: telling the players is best effort; say so when it failed rather than claiming they were told.
+        if (landed.data?.notified === false) {
+          toast({ title: 'The players weren’t all told', tone: 'error', body: 'The squad is confirmed. Let the entrants know yourself.', code: 'CH-09009' });
+        }
         setState('selected');
         setAsking(null);
         router.push(detailHref);
@@ -92,18 +155,33 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       return res;
     },
     {
-      done: `Squad confirmed · ${plural(onScore.length + picks.length, 'player')} told`,
+      done: `Squad confirmed · ${plural(onScore.length + picks.length, 'player')}`,
       failed: 'Couldn’t confirm the squad',
       hint: 'Nothing was confirmed and nobody was told. Try again.',
       code: 'CH-09008',
     },
   );
+  // One row's write at a time is the row's own (TieRow has its own action): giving a place to one player does not freeze the others.
+  const chooseTie = async (c: ChQCandidate, give: boolean): Promise<ServerResult> => {
+    if (give) setGiving((cur) => new Set(cur).add(c.playerId));
+    try {
+      const res = await writes.chooseTie(data.id, c.playerId, give);
+      if (normalise(res).success) edit(c.playerId, { onScore: give });
+      return res;
+    } finally {
+      setGiving((cur) => {
+        const next = new Set(cur);
+        next.delete(c.playerId);
+        return next;
+      });
+    }
+  };
   const remove = useAction(
     'qualifiers.removePick',
     async (c: ChQCandidate) => {
       const res = await writes.removePick(data.id, c.playerId);
       if (normalise(res).success) {
-        setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, pick: null } : x)));
+        edit(c.playerId, { pick: null });
         setRemoving(null);
         router.refresh();
       }
@@ -136,8 +214,8 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
 
   return (
     <main className="ch-qf ch-qfs">
-      {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: () => router.push(detailHref) }} />}
-      <div className="ch-qf-back">
+      {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
+      <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
         <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={detailHref}>
           Qualifier
         </Button>
@@ -162,7 +240,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         ))}
       </ol>
 
-      <StageNote stage={stage} topN={topN} picks={data.picks} picksReady={picksReady} nobody={nobody} />
+      <StageNote stage={stage} topN={topN} picks={picksNeeded} picksReady={picksReady} nobody={nobody} tie={tied.length && !tieReady ? tiePlaces - tieChosen : 0} />
 
       <SectionBoundary surface="qualifiers.selection" label="Selections" code="CH-09219">
         <div className="ch-qf-body">
@@ -192,6 +270,24 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                 />
               )}
             </section>
+
+            {tied.length > 0 && (
+              <section className="ch-qf-panel" aria-labelledby="ch-qfs-tie" data-ch-code="CH-09318">
+                <div className="ch-qf-panel__head">
+                  <div>
+                    <h2 id="ch-qfs-tie">Tie at the cut</h2>
+                    <p className="ch-num">
+                      {plural(tied.length, 'player')} level for {plural(tiePlaces, 'place')} · {tieChosen} given
+                    </p>
+                  </div>
+                </div>
+                <ol className="ch-qf-list">
+                  {tied.map((c) => (
+                    <TieRow key={c.playerId} c={c} stage={stage} full={tieFull} choose={chooseTie} />
+                  ))}
+                </ol>
+              </section>
+            )}
 
             {stage < 2 && (eligible.length > 0 || unranked.length > 0) && (
               <section className="ch-qf-panel" aria-labelledby="ch-qfs-rest">
@@ -369,7 +465,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         onClose={() => setChoosing(null)}
         save={(c, reasoning) => writes.setPick(data.id, c.playerId, reasoning)}
         onSaved={(c, reasoning) => {
-          setCands((cur) => cur.map((x) => (x.playerId === c.playerId ? { ...x, pick: { reasoning } } : x)));
+          edit(c.playerId, { pick: { reasoning } });
           setChoosing(null);
           router.refresh();
         }}
@@ -378,7 +474,41 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   );
 }
 
+/** What a landed write changed on one candidate, laid over the server's read until the read shows it. */
+type CandEdit = Partial<Pick<ChQCandidate, 'onScore' | 'pick'>>;
+const agrees = (c: ChQCandidate, e: CandEdit) =>
+  (e.onScore === undefined || c.onScore === e.onScore) && (e.pick === undefined || (e.pick === null ? c.pick === null : c.pick !== null && c.pick.reasoning === e.pick.reasoning));
+
 const byRank = (a: ChQCandidate, b: ChQCandidate) => (a.rank ?? 999) - (b.rank ?? 999) || a.name.localeCompare(b.name);
+
+/** A player level at the cut, with the one button that gives or takes back their place. The row owns its write, so only it waits. */
+function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2; full: boolean; choose: (c: ChQCandidate, give: boolean) => Promise<ServerResult> }) {
+  const act = useAction(
+    'qualifiers.chooseTie',
+    (give: boolean) => choose(c, give),
+    (give: boolean) => ({
+      done: give ? `${c.name} takes the place at the cut` : `${c.name} is level at the cut again`,
+      failed: give ? `Couldn’t give ${c.name} the place` : `Couldn’t take the place back from ${c.name}`,
+      hint: 'Nothing changed. Try again.',
+      code: 'CH-09010',
+    }),
+  );
+  return (
+    <li aria-busy={act.pending || undefined}>
+      <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
+      <Avatar name={c.name} size={26} />
+      <b>{c.name}</b>
+      <Badge tone={c.onScore ? 'positive' : 'warning'}>{c.onScore ? 'Given the place' : 'Tie at cut'}</Badge>
+      <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
+      <ToPar value={c.toPar} />
+      {stage === 1 && (
+        <Button size="sm" variant="ghost" disabled={act.pending || (!c.onScore && full)} onClick={() => void act.run(!c.onScore)}>
+          {act.pending ? <span data-ch-code="CH-09408">Saving</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
+        </Button>
+      )}
+    </li>
+  );
+}
 
 function Row({ c }: { c: ChQCandidate }) {
   return (
@@ -393,9 +523,11 @@ function Row({ c }: { c: ChQCandidate }) {
   );
 }
 
-function StageNote({ stage, topN, picks, picksReady, nobody }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean }) {
+function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean; tie?: number }) {
   const text =
-    stage === 0
+    stage === 1 && tie > 0
+      ? `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`
+      : stage === 0
       ? `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`
       : stage === 1
         ? nobody

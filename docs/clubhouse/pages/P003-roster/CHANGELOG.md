@@ -1,6 +1,59 @@
 # P003 — Roster: changelog
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
+
+## 2026-10-01 — The saved-view effect lists its setter (CI lint ratchet)
+
+```text
+PR/commit:      agent/swap-audit (PR #2111 CI fix)
+Design package: none
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- **Issue.** CI's lint ratchet failed by one `react-hooks/exhaustive-deps`
+  warning: the effect in `Roster.tsx` that restores the faces/list view from
+  local storage called `setView` but had an empty dependency list.
+- **Fix.** `[setView]`. `setView` is the `useState` setter that
+  `useChSessionState` returns, and React keeps a setter's identity stable, so
+  the effect still runs once on mount. Nothing a coach sees changes, so there's
+  no screenshot.
+- **Checked.** eslint on the file is clean; the warning total is back to the
+  baseline of 59.
+
+## 2026-10-01 — The player's Roster, read-only (owner, Q-130)
+
+```text
+PR/commit:      agent/swap-audit: 0672d5738
+Design package: design/handoff/ (v2): Coach - Roster.html and Coach - Roster - Mobile.html, as the owner asked
+                ("the same thing as coach except they can't click"); no player board exists
+Contract IDs:   30804, 30805, 30806, 30617, 30618, 30407, 30408, 31807 (catalog CH-3210, CH-3211, CH-3307, CH-3308,
+                CH-3807); 30801's meaning updated
+Actions:        ACT-P003-PLAYER-VIEW, ACT-P003-PLAYER-TRY-AGAIN
+Data impact:    none (two RLS-scoped reads, golf_teams and the team's active golf_team_members with golf_players, on
+                tables a player already reads; no schema change)
+Held items:     none
+```
+
+- **Issue.** With Clubhouse on, a player on `/roster` got the not-rebuilt notice.
+- **Fix.** A player gets the coach's layout as plain text (`TeamRoster`,
+  `TeamRosterPhone`): name, class year and handicap of the active members, no
+  scores, notes, requests, invite, export or player panel, and no card or row is a link
+  or a button (CH-3807). A separate loader (`data/roster-player.ts`) reads only
+  the team's name and season and the active members. `/roster/[id]` goes to the list
+  for a player. Roster is a sidebar entry under Team for a player and a row in the
+  phone More sheet. Catalog CH-3210, CH-3211, CH-3307, CH-3308, CH-3807; contracts
+  30804 to 30806; 30801's meaning now says the coach's roster is a coach's.
+- **Checked.** roster-player.test 19/19, with the loader's selects, tables and
+  filters asserted and 2 of 2 mutations caught (an extra column, a button around a
+  name); five existing assertions that a player gets NotRebuilt on `/roster`, or
+  that the player sidebar has no Team section, were changed on purpose; the
+  Clubhouse suite 2515/2515; `clubhouse:check` clean; a browser pass at 1280 and
+  390 (cards, list, phone rows). Not exercised: a signed-in player against the
+  database (the loader is tested over a fake client).
 
 ## 2026-09-30 — Schedule 1:1 on desktop (Clickables gap 4); View insights in the row menu (Clickables gap 16)
 

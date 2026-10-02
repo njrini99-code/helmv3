@@ -1,6 +1,6 @@
 import 'server-only';
 import type { GolfSessionProfile } from '@/lib/auth/session';
-import { getActivePlayerTeamMembership, resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
+import { getActivePlayerTeamMembership, resolveCoachActiveTeamForRequest } from '@/lib/golf/dashboard-request-cache';
 import { chLogServer } from '../lib/track-server';
 
 /**
@@ -11,8 +11,13 @@ export async function resolveClubhouseTeam(
   session: GolfSessionProfile,
 ): Promise<{ role: 'coach'; teamId: string; coachId: string } | { role: 'player'; teamId: string; playerId: string } | null> {
   if (session.coach) {
-    const teamId = await resolveCoachActiveTeamIdForRequest(session.coach.organization_id ?? null, session.coach.id);
-    return teamId ? { role: 'coach', teamId, coachId: session.coach.id } : null;
+    const team = await resolveCoachActiveTeamForRequest(session.coach.organization_id ?? null, session.coach.id);
+    // A read that failed is never "not on a team yet" and never a guessed team: the route error view retries.
+    if (team.status === 'failed') {
+      chLogServer('route', 'coachTeam', new Error('team resolution read failed'), 'teams');
+      throw new Error('Clubhouse: the coach team resolution read failed');
+    }
+    return team.status === 'ok' ? { role: 'coach', teamId: team.teamId, coachId: session.coach.id } : null;
   }
   if (session.player) {
     const { data, error } = await getActivePlayerTeamMembership(session.player.id);

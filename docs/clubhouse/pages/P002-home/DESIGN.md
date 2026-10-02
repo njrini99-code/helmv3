@@ -66,13 +66,44 @@ Coach: a 1280px canvas holds the header, then one lit sheet in two columns (the 
 
 Approved specs `docs/clubhouse/phone/home.md` (coach) and `docs/clubhouse/phone/home-player.md` (player), from the owner's v2 boards. The top bar turns green (`usePhoneHero`) over a hero holding the date, the greeting, the brief and Up next. At 820px and below the phone Home takes over from the desktop page; it is never the desktop shrunk (21901).
 
+The player's phone follows `Player - Home - Mobile.html` (`m-player-home.jsx`,
+`m-player-home.css`), not the coach's. Today is a small label inside This
+week, with no Calendar link (the week's days open it): the row under way reads
+Now, with none under way the next one reads Next, and a row that has passed
+keeps its ink with only its time stepping back. Scoring and By part of the
+game each have their title and one-line meta above their card; Scoring's card
+opens on the full-width Last 5 / Last 10 / Last 20 picker (always all three),
+then the line, the four figures (26px, green when the average fell or strokes
+gained is at or above zero, amber when worse, plain when it rounds to zero;
+the grey line under each only states the change), and the italic note. The
+chart's dates are labelled once per day (a run of one date is labelled where
+it starts) and its score axis keeps to about six whole-stroke ticks; a round
+is marked under par against its own par, and the par line is drawn only when
+every round in the window was played to the same par. The hero's greeting,
+brief and Up next sit apart by margins that carry more than one selector,
+because base.css zeroes every heading's and paragraph's margin and a one-class rule
+lost that tie (the brief hugged Up next).
+
 ## Accessibility
 
 Named regions and headings, every day of the week read as words, the leaderboard and both nines as tables, the pager announcing its position, the scorecard a focusable named region on the phone, and the countdown a timer heard once (CH-2801 to CH-2806, 21807).
 
 ## Data assumptions
 
-Only data the app has. Not shown because no source exists: the prototype's weather and "Week 7 of 12" (golf teams have no season dates), the coach phone's "Needs you" rail (defined in `m-home.jsx` and never drawn by it), a team switcher (one team per coach), a Workout event type (the fourth quick type is Meeting), and a single-round recap (the round's card links to the player's stats instead). For the player: shot-level notes (driver carry, proximity) need shot data Home does not read, Tour marks exist for Approach only (`golf_pga_standards` has greens in regulation among the four), and "the best on the team" would compare the player with teammates, so it is left out.
+Only data the app has. Not shown because no source exists: the prototype's weather and "Week 7 of 12" (golf teams have no season dates), the coach phone's "Needs you" rail (defined in `m-home.jsx` and never drawn by it), a team switcher (one team per coach), a Workout event type (the fourth quick type is Meeting), and a single-round recap (the round's card links to the player's stats instead). For the player: the Handicap figure's "down from +0.2 in Aug" (no handicap history is stored, so it says Index), shot-level notes (driver carry, proximity) need shot data Home does not read, Tour marks exist for Approach only (`golf_pga_standards` has greens in regulation among the four), and "the best on the team" would compare the player with teammates, so it is left out.
+
+Which rounds Home counts (owner, 2026-09-30, Q-122 and Q-123). A round
+posted as a total only (18 holes, no nines, no holes) counts in the scores:
+the leaderboard's rounds, average, to par and trend, the player's brief ("Your
+last three rounds average...") and scoring chart, and the team form's average.
+It counts in no hole-level figure: strokes gained, the team form's greens and
+putts, and the player's four leg figures, which read the newest rounds with
+their holes and say how many ("in the last 3 rounds"). The coach's team form is
+Stats' Last 10, so it reads each player's ten newest rounds in any season
+(`lastTenFloor`); the leaderboard and the latest rounds stay this season.
+Player Home reads the same way: its scoring card (Last 5, 10 and 20), its leg
+figures and its brief are the player's newest rounds in any season, and its
+strokes gained ("Season, per round") stays the season's.
 
 ## Existing backend capabilities used
 

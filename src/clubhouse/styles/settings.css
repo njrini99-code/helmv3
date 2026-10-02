@@ -193,6 +193,10 @@
 .ch-set-row__c > .ch-select {
   width: 240px;
 }
+/* Two buttons on one row (Decline and Approve). */
+.ch-set-row__c > .ch-btn + .ch-btn {
+  margin-left: 8px;
+}
 .ch-set-row.is-dim .ch-set-row__l {
   color: var(--ch-text-secondary);
 }
@@ -665,7 +669,7 @@
     border: 0;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), 0 1px 2px rgb(28 25 18 / 0.04);
+    box-shadow: var(--ch-elevation-reading);
     color: inherit;
     font: inherit;
     text-align: left;
@@ -748,7 +752,7 @@
     overflow: hidden;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-setm-note {
     margin: 8px 16px 0;
@@ -1080,6 +1084,11 @@
   .ch-setm-invite .ch-setm-link {
     margin-left: -4px;
   }
+  .ch-setm-invite__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 16px;
+  }
   .ch-setm-pill {
     position: relative;
     flex: none;
@@ -1107,7 +1116,7 @@
     border: 0;
     border-radius: 16px;
     background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline);
+    box-shadow: var(--ch-elevation-reading);
     font: 500 16px/1 var(--ch-font-sans);
     cursor: pointer;
     touch-action: manipulation;

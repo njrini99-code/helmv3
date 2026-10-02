@@ -1,19 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useRefresh } from '../lib/use-refresh';
 import { InlineNotice } from './Notices';
 
 /** A section-level failed read, with Try again re-running the server render. */
 export function RefreshNotice({ title, body, code }: { title: string; body: string; code: string }) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  return (
-    <InlineNotice
-      code={code}
-      title={pending ? 'Trying again' : title}
-      body={body}
-      onRetry={pending ? undefined : () => start(() => router.refresh())}
-    />
-  );
+  const { refresh, refreshing } = useRefresh();
+  return <InlineNotice code={code} title={title} body={body} onRetry={refresh} retrying={refreshing} />;
 }

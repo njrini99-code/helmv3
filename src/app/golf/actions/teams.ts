@@ -1298,7 +1298,7 @@ async function acceptJoinRequestImpl(
 
   if (existingMembership) {
     // Update request to rejected since they're already on a team
-    await fromUntyped(supabase, 'golf_team_join_requests')
+    const { error: autoRejectError } = await fromUntyped(supabase, 'golf_team_join_requests')
       .update({
         status: 'rejected',
         rejection_reason: 'Player is already on another team',
@@ -1306,6 +1306,15 @@ async function acceptJoinRequestImpl(
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', requestId);
+    if (autoRejectError) {
+      // The coach still gets the refusal below; the request would otherwise sit
+      // pending with nothing to say why.
+      await logServerError(
+        `[acceptJoinRequest] could not close request ${requestId} for a player already on a team: ${describeError(autoRejectError)}`,
+        { action: 'teams.acceptJoinRequest', featureArea: 'teams' },
+        'warning',
+      );
+    }
 
     return { success: false, error: 'Player has already joined another team' };
   }
@@ -1323,17 +1332,30 @@ async function acceptJoinRequestImpl(
     return { success: false, error: 'Failed to add player to team' };
   }
 
-  // Update request status
-  const { error: updateError } = await fromUntyped(supabase, 'golf_team_join_requests')
+  // Update request status. `.select('id')` because an UPDATE that RLS or a
+  // concurrent decision filters to zero rows is not an error: the request used
+  // to stay 'pending' while the player was already on the roster, and the coach
+  // was told the approval worked. By now the player IS on the team, so say that
+  // instead of a bare failure the coach would answer by approving again.
+  const { data: approvedRows, error: updateError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .update({
       status: 'approved',
       reviewed_by: coach.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq('id', requestId);
+    .eq('id', requestId)
+    .select('id');
 
-  if (updateError) {
-    return { success: false, error: 'Failed to update request status' };
+  if (updateError || !Array.isArray(approvedRows) || approvedRows.length === 0) {
+    await logServerError(
+      `[acceptJoinRequest] player ${request.player_id} was added to team ${request.team_id} but request ${requestId} could not be marked approved: ${describeError(updateError ?? 'no row matched')}`,
+      { action: 'teams.acceptJoinRequest', featureArea: 'teams' },
+    );
+    revalidatePath('/golf/dashboard/roster');
+    return {
+      success: false,
+      error: "The player was added to the team, but the request couldn't be marked approved. Refresh to see the roster.",
+    };
   }
 
   // Notify player of approval

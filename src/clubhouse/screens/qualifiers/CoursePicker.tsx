@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, MapPin } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
@@ -45,13 +45,19 @@ export function CoursePicker({
   const [tees, setTees] = useState<ChQTeeOption[] | null>(null);
   const [teesFailed, setTeesFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Which course's tees are being asked for: a slower answer for an earlier choice is dropped, so the tees under a
+  // course's name are always that course's (owner rule 4: the last choice wins).
+  const teesFor = useRef(0);
 
   useEffect(() => {
     if (!open) {
+      teesFor.current++;
       setQ('');
       setCourse(null);
       setTees(null);
       setCourses(null);
+      setCoursesFailed(false);
+      setTeesFailed(false);
     }
   }, [open]);
 
@@ -76,14 +82,17 @@ export function CoursePicker({
 
   const loadTees = useCallback(
     (c: ChQCourseOption) => {
+      const mine = ++teesFor.current;
       setTees(null);
       setTeesFailed(false);
       writes
         .tees(c.id)
-        .then(setTees)
+        .then((list) => {
+          if (mine === teesFor.current) setTees(list);
+        })
         .catch((err: unknown) => {
           chReport(err, { surface: 'qualifiers.picker', action: 'tees', severity: 'low' });
-          setTeesFailed(true);
+          if (mine === teesFor.current) setTeesFailed(true);
         });
     },
     [writes],
@@ -130,7 +139,16 @@ export function CoursePicker({
         ) : (
           <>
             <div>
-              <Button size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={() => setCourse(null)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                leftIcon={ChevronLeft}
+                onClick={() => {
+                  // Back to the list: whatever the tees read was going to say belongs to a choice that is no longer on screen.
+                  teesFor.current++;
+                  setCourse(null);
+                }}
+              >
                 All courses
               </Button>
             </div>

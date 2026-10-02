@@ -102,6 +102,7 @@ export function GolfScene({ hour, crop = 'wide', camera = 'rest', play = false, 
       for (const s of svgs()) (stop ? s.pauseAnimations : s.unpauseAnimations)?.call(s);
     };
     sync();
+    // CH-15606: a hidden tab holds every loop still; they start again when it is back.
     document.addEventListener('visibilitychange', sync);
     return () => document.removeEventListener('visibilitychange', sync);
   }, [reduced]);

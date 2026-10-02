@@ -2,6 +2,151 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Aesthetic audit: the stacked coins clear their initials, the latest round's stats follow its scorecard
+
+```text
+PR/commit:      agent/swap-audit (#2111): 4e01c43d8
+Design package: none (owner's aesthetic audit guide, 2026-10-01)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; visual only
+Held items:     none
+```
+
+- **Issue.** (1) The phone's avatar stack overlapped 7px, so the last stroke of
+  four coach initials ran under the next coin (measured 1.6 to 3.3px; "TM" read
+  "TN"). (2) The latest round's stats row was pinned to the sheet's bottom,
+  171px (coach) and 234px (player) under the scorecard at 1440x1000, 38% and 46%
+  of the column, because the week beside it runs longer.
+- **Fix.** `home.css`: the stack overlaps 4px; `.ch-h-round__foot` has
+  `margin-top: 4px` instead of `auto`.
+- **Not done, on purpose.** The space under the stats is still there (it moved
+  to the bottom of the sheet); filling it is new content. The conflict triangle
+  on the timeline is icon-only (Q-150). The "Latest round" move is design
+  judgment and one rule to revert.
+- **Contrast pass (`d4367ee`).** The week strip's weekday labels measured 4.1:1
+  (UX360 sampled 3.7:1): `.ch-h-day__d` uses secondary ink. The segmented Last 5
+  and Last 20 labels take the shared fix below.
+- **Verification.** Before and after at 375, 390, 430 and 1440, coach and
+  player; the geometry report shows "initials under next coin: TM, SA, AL, JO"
+  before and none after. Not tested: a real iPhone.
+
+## 2026-10-01 — Page performance: Home reads in fewer round trips, and its skeleton is the page's height
+
+```text
+PR/commit:      agent/swap-audit (7dd8bb3d2, 19a20054b)
+Design package: none (no visual change once loaded)
+Contract IDs:   none new (CH-2401 behaviour unchanged)
+Actions:        none
+Data impact:    none; same figures, same reads, in fewer round trips (`loadCoachHome`, `loadPlayerHome`)
+Held items:     none
+```
+
+- **Issue.** The coach's Home read in four round trips, five when the week's
+  events have replies to read: the team's timezone, then the roster, the chat
+  and the week's events, then the replies, then the season's rounds (which
+  waited for the whole week), then the newest rounds' holes. The player's took
+  three. The route skeleton's head was 69 px against 189 loaded (it had no
+  sentence and no actions), its sheet 209 against 423, so the leaderboard
+  landed 334 px lower than it was drawn.
+- **Fix.** The timezone, the roster, the chat and the week's events start
+  together (the events are asked for over one window wide enough for any
+  timezone and cut to the week in code); the replies start as soon as the
+  events are back and the season's rounds as soon as the roster's ids are, so a
+  coach's Home is three round trips and a player's two (`home-reads.test.ts`
+  pins both, and that the events are read once). The skeleton's head is its
+  four lines (date, greeting, two-line sentence, the two actions), its sheet
+  panes the loaded height and the leaderboard's heading its two lines and
+  button: measured against the loaded page, the head, the sheet and the
+  leaderboard's top land within 1 px (the head was 120 px short and the
+  leaderboard landed 362 px lower than drawn). A tap on the leaderboard or the
+  next-event card shows the page's hairline while the page loads
+  (`LinkPending`).
+- **Not done, on purpose.** Nothing is cached across requests or users. The
+  route skeleton serves both roles and draws the coach's sheet, so a player's
+  loaded sheet is 128 px taller than it. The phone's skeleton hero is 22 px
+  (coach) or 36 px (player) taller than the loaded one (the lead's design,
+  measured, not changed). A tap into Home shows its page no earlier than about
+  350 ms whatever the server time, because React holds a Suspense reveal
+  until 300 ms after the skeleton committed; that is the shell's
+  (PROGRESS.md, "Stats and home").
+- **Checked.** `home-reads.test.ts`, `home.test.tsx`, `player-home.test.tsx`,
+  `player-home-phone.test.tsx`, `stats-geometry.test.tsx` (the skeleton's head);
+  measured with `npm run clubhouse:perf` (PROGRESS.md, "Page performance
+  (2026-10-01)": cold server time 172 to 148 ms coach, 129 to 116 player at
+  1280 on build `082214d1d`, inside the player's spread; 6 to 4 and 6 to 5
+  round trips on a cold load on `169f17833`).
+
+## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (no visual change)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; `teamForm` (scoring, greens, putts)
+Held items:     none
+```
+
+- **Issue.** The team's change pooled every player's newest ten against the
+  previous ten of only the players who had one, so a player with no earlier
+  rounds moved the trend by joining.
+- **Fix.** Each change compares the window's rounds of the players who also
+  have a previous ten against that ten; the figure itself still reads the
+  whole window (owner, 2026-10-01).
+- **Checked.** `home.test.tsx` (the §10-1 case now reads 0, not +3.3).
+
+## 2026-10-01 — The coach's team line is a day a point; a change of "0.0" is plain on both Homes
+
+```text
+PR/commit:      agent/swap-audit
+Data impact:    none
+```
+
+- **Issue.** The coach phone's team scoring line drew a five-round moving
+  average over every round in the window (about seventy points) and read as
+  noise. A change that rounds to zero ("0.0" putts) was painted amber, and a
+  strokes gained of "0.0" green, on both Homes.
+- **Fix.** `teamForm` draws the team's average on each of its last ten round
+  days (as Stats' scoring trend does), so the line has at most ten points. One
+  `changeTone` (`lib/format`) paints a change or a signed figure green or amber
+  only when it does not round to zero at the places it is shown with; the coach
+  strip, the player's scoring figures, the leg pills (a plain pill at "0.0"),
+  the latest round's SG and the desktop leaderboard and latest round use it.
+- **Checked.** home.test (the daily line, the zero tones) and
+  player-home-phone.test; the real coach Home at 390px.
+
+## 2026-10-01 — The player's phone to the board: spacing, the scoring card, Today
+
+```text
+PR/commit:      agent/swap-audit
+Data impact:    none
+```
+
+- **Issue.** The owner: the phone looked the same, with plain numbers and no
+  spacing. The hero's brief sat hard against Up next and the greeting against
+  the date: base.css zeroes every heading's and paragraph's margin, a
+  one-class rule loses that, and a two-selector rule only ties it, so the
+  order the stylesheets loaded in decided. Scoring and the parts of the game
+  carried the desktop's in-card 20px title and caption, the window picker was
+  a small desktop chip whose own labels were greyed by the caption rule, Today
+  was a full section with a Calendar link and dimmed rows, the chart repeated
+  one date under rounds posted on the same day, crammed ten ticks into the
+  axis, and marked no round under par when the window mixed pars.
+- **Fix.** Margins now carry enough specificity to win in any order. Scoring
+  and By part of the game have their 17px title and one-line meta above the
+  card; the card opens on the full-width Last 5 / 10 / 20 picker (all three,
+  as the board does), then the line, the four 26px figures (11.5px captions,
+  italic green note). Today is a label inside This week with Now / Next on
+  the row and past rows in full ink. The chart labels each date once,
+  keeps about six whole-stroke ticks, and marks a round against its own par.
+  Up next reads "Up next · Qualifier" and a competition day draws a flag.
+  The latest round's figures take the board's ruled strip.
+- **Checked.** player-home-phone.test (18 cases: the axis and tick helpers, the
+  change tones, the picker, Today's marks, the margin rules), player-home.test
+  and the clubhouse suite; the preview route and the demo player compared
+  with the board at 390px, section by section.
+
 ## 2026-09-30 — The Tour is the only benchmark (Q-88): no D1 anywhere
 
 ```text

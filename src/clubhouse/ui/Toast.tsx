@@ -65,9 +65,20 @@ function useToastHost(active: boolean): HTMLDialogElement | null {
   return host;
 }
 
-/** Ink toasts bottom-right (above the tab bar on phones): confirmations 4s, errors 8s. */
-export function ToastProvider({ children }: { children: ReactNode }) {
+/**
+ * Ink toasts bottom-right (above the tab bar on phones): confirmations 4s, errors 8s.
+ *
+ * `scope` is whose work the toasts are about (the shell passes the team). When it changes, the stack clears: an old
+ * team's confirmation, Undo or Retry never sits over, or acts from, the new team's page (PAGE_PERFORMANCE.md rule 8).
+ */
+export function ToastProvider({ children, scope = '' }: { children: ReactNode; scope?: string }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [shownScope, setShownScope] = useState(scope);
+  if (scope !== shownScope) {
+    // Cleared in the same render that draws the new scope, so not one frame shows the old stack.
+    setShownScope(scope);
+    setToasts([]);
+  }
   const nextId = useRef(1);
   const timers = useRef(new Set<number>());
   const reduced = useChReducedMotion();
@@ -97,6 +108,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const host = useToastHost(toasts.length > 0);
 
   const stack = (
+    // CH-1804: confirmations are announced politely; an error toast is role="alert", announced at once.
     <div className={'ch-toasts' + (host ? ' ch-toasts--in-dialog' : '')} aria-live="polite" data-ui="clubhouse">
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
@@ -109,6 +121,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             initial={reduced ? false : { opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}
+            // CH-1604: a toast slides up 10px and fades in; the stack reflows (layout).
             transition={chTween('base')}
           >
             <Icon icon={t.tone === 'error' ? CircleAlert : CircleCheck} size={16} className="ch-toast__icon" />

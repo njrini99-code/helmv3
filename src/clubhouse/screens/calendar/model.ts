@@ -196,12 +196,13 @@ export function rsvpCounts(e: Pick<ChCalEvent, 'people' | 'rsvp'>): Record<ChRsv
   return c;
 }
 
-/** A player's timed commitments on a date: their classes and the events they haven't declined. */
+/** A player's timed commitments on a date: their classes and the events they haven't declined. A cancelled event holds no time. */
 export function busyFor(events: ChCalEvent[], playerId: string, date: string, ignoreId?: string): ChCalEvent[] {
   return events.filter(
     (e) =>
       e.date === date &&
       !e.allDay &&
+      !e.cancelled &&
       e.id !== ignoreId &&
       ((e.type === 'class' && e.owner === playerId) || (e.type !== 'class' && e.people.includes(playerId) && e.rsvp[playerId] !== 'declined')),
   );
@@ -214,7 +215,7 @@ export function findOverlaps(events: ChCalEvent[]): ChCalOverlap[] {
   const out: ChCalOverlap[] = [];
   const seen = new Set<string>();
   for (const e of events) {
-    if (e.type === 'class' || e.allDay || e.start == null || e.end == null) continue;
+    if (e.type === 'class' || e.allDay || e.cancelled || e.start == null || e.end == null) continue;
     for (const pid of e.people) {
       if (e.rsvp[pid] === 'declined') continue;
       for (const b of busyFor(events, pid, e.date, e.id)) {

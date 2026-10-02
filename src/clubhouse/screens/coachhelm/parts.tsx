@@ -2,17 +2,23 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { CalendarX, ChevronDown, ChevronRight, ChevronUp, ClipboardList, Flag, ListChecks, MailQuestionMark, Target, TrendingDown, TrendingUp, Users, type LucideIcon } from 'lucide-react';
-import { PRI_LABEL, type ChHelmEvidence, type ChHelmGauge, type ChInsight, type ChPulseIcon, type ChPulseRow } from '../../data/coachhelm-shape';
+import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChHelmGauge, type ChInsight, type ChPulseIcon, type ChPulseRow } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 
-/** The Priority pill: amber, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working. */
-export function PriPill({ ins }: { ins: ChInsight }) {
-  return <span className={'ch-hl-pri is-' + (ins.strength ? 'ok' : ins.priority)}>{ins.strength ? 'Working' : PRI_LABEL[ins.priority]}</span>;
+/**
+ * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
+ * a card that states no finding reads Note, a read older than the newest round reads Out of date, and a finding already assigned
+ * or acknowledged reads so (`stanceOf`), never as a fresh Priority. `assigned`: the focus area made from it, over what the page loaded.
+ */
+export function PriPill({ ins, assigned }: { ins: ChInsight; assigned?: ChHelmAssigned | null }) {
+  const stance = stanceOf(ins, assigned);
+  return <span className={'ch-hl-pri is-' + stance.cls}>{stance.word}</span>;
 }
 
 /** The confidence read: three bars and the word for the level. The bars are decoration; the word says it. */
-function ReadMeter({ read }: { read: NonNullable<ChHelmEvidence['read']> }) {
+export function ReadMeter({ read }: { read: NonNullable<ChHelmEvidence['read']> }) {
   return (
     <span className="ch-hl-conf">
       <span className="ch-hl-conf__d" aria-hidden="true">
@@ -31,7 +37,7 @@ function ReadMeter({ read }: { read: NonNullable<ChHelmEvidence['read']> }) {
  * and the priority pill beside the title says whether it is a finding or a
  * strength, so colour never carries either.
  */
-function Gauge({ g }: { g: ChHelmGauge }) {
+function Gauge({ g, who }: { g: ChHelmGauge; who?: string }) {
   return (
     <div className={'ch-hl-g' + (g.good ? ' is-good' : '') + (g.fromZero ? ' is-fromzero' : '')}>
       <div className="ch-hl-g__t" aria-hidden="true">
@@ -43,7 +49,7 @@ function Gauge({ g }: { g: ChHelmGauge }) {
       <div className="ch-hl-g__lg">
         <span>
           <i className="is-you" aria-hidden="true" />
-          You · <b className="ch-num">{g.you}</b>
+          {who ?? 'You'} · <b className="ch-num">{g.you}</b>
         </span>
         <span>
           <i className="is-cmp" aria-hidden="true" />
@@ -60,10 +66,13 @@ function Gauge({ g }: { g: ChHelmGauge }) {
   );
 }
 
-export function Evidence({ ev }: { ev: ChHelmEvidence }) {
+/** `who`: the first name the gauge's own number is labelled with on a coach's board; the player's own board says You. */
+export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
+  // A note draws none of the number behind it, so there is nothing to put in a box.
+  if (!ev.label && !ev.bars && !ev.gauge && !ev.sample && !ev.window && !ev.read && !ev.asOf) return null;
   return (
     <div className="ch-hl-ev">
-      <span className="ch-hl-ev__l">{ev.label}</span>
+      {ev.label && <span className="ch-hl-ev__l">{ev.label}</span>}
       {ev.bars ? (
         <ul className="ch-hl-bars">
           {ev.bars.map((b) => (
@@ -77,13 +86,14 @@ export function Evidence({ ev }: { ev: ChHelmEvidence }) {
           ))}
         </ul>
       ) : (
-        ev.gauge && <Gauge g={ev.gauge} />
+        ev.gauge && <Gauge g={ev.gauge} who={who} />
       )}
-      {(ev.sample || ev.window || ev.read) && (
+      {(ev.sample || ev.window || ev.read || ev.asOf) && (
         <div className="ch-hl-ev__f">
           {ev.sample && <span className="ch-num">{ev.sample}</span>}
           {ev.window && <span>{ev.window}</span>}
           {ev.read && <ReadMeter read={ev.read} />}
+          {ev.asOf && <span data-ch-code="CH-13905">{ev.asOf}</span>}
         </div>
       )}
     </div>
@@ -96,18 +106,24 @@ export function Evidence({ ev }: { ev: ChHelmEvidence }) {
  * this". Re-mounted per insight (key), so each opens with its reasoning closed.
  * CH-13804: the reasoning is a disclosure button that names what it controls.
  */
-export function FocusCard({ ins, who, defaultOpen = false }: { ins: ChInsight; who?: string; defaultOpen?: boolean }) {
+export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: ChInsight; who?: string; assigned?: ChHelmAssigned | null; defaultOpen?: boolean }) {
   const [why, setWhy] = useState(defaultOpen);
   const id = useId();
   return (
     <article className="ch-hl-focus" aria-labelledby={`${id}-t`}>
       <div className="ch-hl-focus__k">
         <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
-        <PriPill ins={ins} />
+        <PriPill ins={ins} assigned={assigned} />
       </div>
       <h2 id={`${id}-t`}>{ins.title}</h2>
       {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
-      <Evidence ev={ins.evidence} />
+      {/* CH-13903: a read from before the newest round is never drawn as current. */}
+      {ins.stale && (
+        <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">
+          A round played {ins.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
+        </p>
+      )}
+      <Evidence ev={ins.evidence} who={who} />
       {ins.week && (
         <div className="ch-hl-drill">
           <span className="ch-hl-drill__k">
@@ -144,6 +160,7 @@ export function FocusCard({ ins, who, defaultOpen = false }: { ins: ChInsight; w
  * named for its category, title, value and priority.
  */
 export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void }) {
+  const stance = stanceOf(ins);
   return (
     <button
       type="button"
@@ -153,11 +170,11 @@ export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void
         onPick();
       }}
     >
-      <span className={'ch-hl-row__d is-' + (ins.strength ? 'ok' : ins.priority)} aria-hidden="true" />
+      <span className={'ch-hl-row__d is-' + stance.cls} aria-hidden="true" />
       <span className="ch-hl-row__b">
         <em>{ins.category}</em>
         <b>{ins.title}</b>
-        <span className="ch-sr-only">{ins.strength ? 'Working' : PRI_LABEL[ins.priority]}</span>
+        <span className="ch-sr-only">{stance.word}</span>
       </span>
       <span className="ch-hl-row__v ch-num">{ins.value}</span>
       <Icon icon={ChevronRight} size={15} />
@@ -192,6 +209,21 @@ export function PulseList({ rows }: { rows: ChPulseRow[] }) {
       ))}
     </ol>
   );
+}
+
+/**
+ * CH-13208: a read beside the cards failed, so they were drawn without it. This says which (the Tour comparison, how current each
+ * read is, the drill text, and where the page offers them, which cards already have a focus), so a gap is never read as "none",
+ * "not assigned" or "up to date". `focus: false` leaves out the focus status, which the coach's board says at the card (CH-13207).
+ */
+export function BoardPartial({ missing, what, focus = true }: { missing: ChBoardMissing; what: 'board' | 'page'; focus?: boolean }) {
+  const parts: string[] = [];
+  if (missing.tour) parts.push('Tour comparison unavailable, so a card may be drawn without it.');
+  if (missing.newest) parts.push('Which reads are older than a newer round could not be checked, so a read and the counts may be out of date.');
+  if (focus && (missing.assigned || missing.declined)) parts.push('Which reads already have a focus could not be checked.');
+  if (missing.drills) parts.push('This week’s drill text is missing.');
+  if (parts.length === 0) return null;
+  return <RefreshNotice code="CH-13208" title={`Part of this ${what} didn’t load`} body={`${parts.join(' ')} Try again in a moment.`} />;
 }
 
 /** The page's title block: the role chip, CoachHelm, one line. CH-13801: the h1 labels the page's main landmark (aria-labelledby), and each section below is a labelled region. */

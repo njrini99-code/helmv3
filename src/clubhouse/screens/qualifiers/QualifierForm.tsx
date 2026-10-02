@@ -13,6 +13,7 @@ import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
 import { chTrail } from '../../lib/track';
+import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
 import { PhoneTextAction } from '../../ui/PhoneBar';
@@ -41,6 +42,7 @@ const FIELD_ID: Record<ChQField, string> = {
  */
 export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormData; writes?: ChQWrites }) {
   const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const editing = data.mode === 'edit';
   const [v, setV] = useState<ChQFormValues>(data.initial);
   const [courses, setCourses] = useState<Map<number, ChQFormRoundCourse>>(() => new Map(data.roundCourses.map((c) => [c.number, c])));
@@ -86,7 +88,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           .filter((c) => c.number <= rounds && c.courseName)
           .map((c) => ({ roundNumber: c.number, courseId: c.courseId, courseName: c.courseName, teeId: c.teeId })),
       });
-      if (normalise(res).success) router.push(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
+      // The form has done its job: replaced, so Back from the new qualifier does not return to a form whose Create would make a second one.
+      if (normalise(res).success) router.replace(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
       return res;
     },
     () => ({
@@ -126,7 +129,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       const res = await writes.saveEdit(data.id as string, plan);
       if (!res.success && res.error) setSaveNote(res.error);
       if (normalise(res).success) {
-        router.push(doneHref);
+        // Replaced, not pushed: Back from the qualifier goes to where the coach came from, not into the form they just saved.
+        router.replace(doneHref);
         router.refresh();
       }
       return res;
@@ -357,8 +361,9 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               <legend className="ch-sr-only">Players</legend>
               <div className="ch-qf-fs__h" aria-hidden="true">
                 <h2>Players</h2>
+                {/* No count while the roster failed: "0 of 0" would read as an empty roster. The line stays, so the head keeps its height. */}
                 <p className="ch-num">
-                  {v.playerIds.filter((id) => data.players.some((p) => p.id === id && !p.inactive)).length} of {activeCount} active players entered
+                  {data.playersError ? '\u00a0' : `${v.playerIds.filter((id) => data.players.some((p) => p.id === id && !p.inactive)).length} of ${activeCount} active players entered`}
                 </p>
               </div>
               {data.playersError ? (
@@ -366,7 +371,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   code="CH-09208"
                   title={editing ? 'The players didn’t load.' : 'The roster didn’t load.'}
                   body="Saving waits until they load, so nobody is entered or taken out by mistake."
-                  onRetry={() => router.refresh()}
+                  onRetry={refresh}
+                  retrying={refreshing}
                 />
               ) : data.players.length === 0 ? (
                 <EmptyState compact code="CH-09305" icon={Users} title="No active players on the roster." body="A qualifier needs at least one entrant. Add players to the roster first." />
