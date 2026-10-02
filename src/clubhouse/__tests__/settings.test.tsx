@@ -655,6 +655,47 @@ function goOffline() {
 }
 
 describe('Settings · opening and permission', () => {
+  function narrowRailGeometry() {
+    const rail = nav();
+    const first = within(rail).getByRole('button', { name: /^Account/ });
+    const last = within(rail).getByRole('button', { name: /^Preferences/ });
+    const rect = (left: number, width: number) => ({ left, right: left + width, top: 200, bottom: 240, width, height: 40, x: left, y: 200, toJSON: () => ({}) });
+    Object.defineProperties(rail, { clientWidth: { value: 200 }, scrollWidth: { value: 600 } });
+    vi.spyOn(rail, 'getBoundingClientRect').mockImplementation(() => rect(100, 200));
+    vi.spyOn(first, 'getBoundingClientRect').mockImplementation(() => rect(100 - rail.scrollLeft, 100));
+    vi.spyOn(last, 'getBoundingClientRect').mockImplementation(() => rect(500 - rail.scrollLeft, 100));
+    const scroll = vi.fn((options: ScrollToOptions) => { rail.scrollLeft = options.left ?? rail.scrollLeft; });
+    rail.scrollTo = scroll as unknown as HTMLElement['scrollTo'];
+    return { rail, first, last, scroll };
+  }
+
+  it('narrow desktop rail reveals keyboard focus at either end with horizontal instant scrolling', async () => {
+    const { user } = setup();
+    const { rail, first, last, scroll } = narrowRailGeometry();
+    rail.scrollTop = 37;
+    last.focus();
+    await waitFor(() => expect(scroll).toHaveBeenLastCalledWith({ left: 304, behavior: 'instant' }));
+    expect(rail.scrollTop).toBe(37);
+    await user.keyboard('{Enter}');
+    expect(last.getAttribute('aria-current')).toBe('page');
+    first.focus();
+    await waitFor(() => expect(scroll).toHaveBeenLastCalledWith({ left: 0, behavior: 'instant' }));
+    expect(rail.scrollTop).toBe(37);
+    scroll.mockClear();
+    last.focus();
+    first.focus();
+    await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+    expect(scroll).not.toHaveBeenCalledWith({ left: 304, behavior: 'instant' });
+  });
+
+  it('narrow desktop rail reveals an initially selected section when the viewport resizes', () => {
+    setup({ section: 'preferences' });
+    const { last, scroll } = narrowRailGeometry();
+    expect(last.getAttribute('aria-current')).toBe('page');
+    fireEvent(window, new Event('resize'));
+    expect(scroll).toHaveBeenLastCalledWith({ left: 304, behavior: 'instant' });
+  });
+
   it('80101 opens with the role, team and email, the rail and the first card, and needs no team', () => {
     setup({ data: { ...coachData(), teamId: null, teamName: null, team: null, joinCode: null, scoring: null, reminders: null } });
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeTruthy();

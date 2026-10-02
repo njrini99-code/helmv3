@@ -3,6 +3,24 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Native custom overlays share one lifecycle
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (pending)
+Design package: approved boards; bars and dismissal policy unchanged
+Contract IDs:   CH-1610, CH-1611, CH-1802
+Data impact:    none; client dialog/scroll/focus/gesture lifecycle only
+Held items:     physical iPhone keyboard and gesture validation
+```
+
+Shared Modal and custom native sheets/drawers now retain the last open content
+and ref-counted page lock until transform/opacity exit completes. Reopen cancels
+stale completions; unmount closes while the lock remains held. Opener focus uses
+preventScroll. Custom bars and dismissal guards keep their existing semantics.
+
+Targeted checks: 351 tests pass across the final focused runs; scoped ESLint and
+diff check exit 0. Runtime evidence is recorded in this page's VERIFY entry.
+
 ## 2026-10-02 — Stable sheet and pushed-screen lifecycle
 
 ```text
@@ -17,7 +35,8 @@ Held items:     physical iPhone gesture/frame pacing and native keyboard validat
 A shared reference-counted lock freezes the page at its existing visual position
 until every nested or exiting overlay leaves. Closing More or a dialog restores
 its original page scroll; navigating to another route keeps the new route at the
-top. Pushed screens hold the same lock through their Framer exit and restore focus
+top. Pushed screens hold the same lock through their Framer exit and restore
+focus
 without scrolling. Phone More and Bell focus also avoids moving the page.
 
 Native dialogs retain their content through a 260ms transform/opacity exit;
@@ -166,18 +185,24 @@ Held items:     none
   with chevrons that did nothing, and the switcher had been a recorded non-goal.
 - **Fix.** For a head coach on two or more teams (`canSwitchTeams`, the gate
   `setActiveTeam` enforces, so an assistant is never offered a switch the server
-  refuses) the sidebar's brand block is a menu button that opens a listbox of the
+  refuses) the sidebar's brand block is a menu button that opens a listbox of
+  the
   teams (arrows, Home, End, Enter, Esc, focus back), and the phone More sheet
-  lists the teams under who they are. A pick calls `setActiveTeam`, shows the new
+  lists the teams under who they are. A pick calls `setActiveTeam`, shows the
+  new
   team at once, refreshes every screen, and the route remounts for the new team
-  (`RouteFrame` is keyed by pathname and team). A refusal or a network failure is
+  (`RouteFrame` is keyed by pathname and team). A refusal or a network failure
+  is
   a toast (CH-1003) with the reason, no Retry when trying again cannot help, and
-  the team goes back. A coach on one team, an assistant and a player keep the plain
+  the team goes back. A coach on one team, an assistant and a player keep the
+  plain
   label (CH-1305). The More sheet scrolls on a short screen, for every role.
 - **Checked.** `team-switch.test.tsx` 16/16 (removing the `canSwitchTeams` gate
-  fails 2); the Clubhouse suite 2515/2515; `clubhouse:check` clean; a browser pass
+  fails 2); the Clubhouse suite 2515/2515; `clubhouse:check` clean; a browser
+  pass
   at 1280 and 390 (the popover, the sheet, a refused switch). Not exercised: a
-  switch that lands (the preview has no session), and a device pass of the sheet.
+  switch that lands (the preview has no session), and a device pass of the
+  sheet.
 - **Open.** With `HELM_CLUBHOUSE_TEAMS` set, a head coach who switches to a team
   that is not listed gets Fairway for it.
 

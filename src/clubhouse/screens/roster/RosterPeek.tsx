@@ -83,7 +83,7 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
     { icon: GraduationCap, label: 'Class of', value: p.gradYear ? String(p.gradYear) : null },
     { icon: Hash, label: 'Jersey', value: p.jersey },
   ].filter((f) => f.value);
-  const messageHref = rebuiltHref('/golf/dashboard/messages');
+  const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52), as the phone's Plan 1:1.
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
   const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);

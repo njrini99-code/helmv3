@@ -128,5 +128,16 @@
     "note": "candidate checks and physical phone acceptance; production remains unchanged",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "UX_OPTIMIZATION.md",
+    "title": "Mobile and desktop UX optimization",
+    "kind": "plan",
+    "date": "2026-10-02",
+    "scope": "Remaining custom overlays, narrow round setup, person-specific messaging and complete mobile/desktop task coverage.",
+    "status": "in_progress",
+    "note": "confirmed defects being corrected; physical Safari and intended-user validation remain open",
+    "allPages": true,
+    "pages": []
   }
 ]

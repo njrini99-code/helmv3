@@ -2,10 +2,8 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { useOverlayScrollLock } from '../lib/overlay-scroll';
-import { CH_DUR } from '../lib/motion';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { useId, type ReactNode } from 'react';
+import { useDialogLifetime } from '../lib/dialog-lifetime';
 import { useSheetDrag } from '../lib/sheet-drag';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
@@ -39,55 +37,12 @@ export function Modal({
   footer?: ReactNode;
   children?: ReactNode;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const opener = useRef<Element | null>(null);
   const titleId = useId();
-  const [present, setPresent] = useState(open);
-  const openRef = useRef(open);
-  openRef.current = open;
   const phone = useChPhone();
-  const reduced = useChReducedMotion();
-  useOverlayScrollLock(open || present);
+  const { ref, reduced, retainContent } = useDialogLifetime(open, {
+    direction: phone ? 'bottom' : 'center', surfaceSelector: '.ch-modal__panel',
+  });
   const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
-
-  useLayoutEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open) {
-      setPresent(true);
-      d.removeAttribute('data-closing');
-      // A sheet dragged shut last time opens from the bottom again.
-      d.style.translate = '';
-      d.style.transition = '';
-      if (!d.open) {
-        opener.current = document.activeElement;
-        d.showModal();
-      }
-      return;
-    }
-    if (!d.open) return;
-    const finish = () => {
-      if (openRef.current) return;
-      d.close();
-      setPresent(false);
-      const target = opener.current;
-      if (target instanceof HTMLElement && target.isConnected && !target.closest('[inert]')) target.focus({ preventScroll: true });
-    };
-    const panel = d.querySelector<HTMLElement>('.ch-modal__panel');
-    if (reduced || !panel?.animate) { finish(); return; }
-    d.setAttribute('data-closing', '');
-    const exit = panel.animate([
-      { transform: getComputedStyle(panel).transform, opacity: getComputedStyle(panel).opacity },
-      phone ? { transform: 'translateY(100%)', opacity: 1 } : { transform: 'translateY(6px) scale(.98)', opacity: 0 },
-    ], { duration: CH_DUR.base * 1000, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
-    exit.onfinish = finish;
-    return () => { exit.onfinish = null; exit.cancel(); };
-  }, [open, reduced, phone]);
-
-  useLayoutEffect(() => {
-    const dialog = ref.current;
-    return () => { dialog?.close(); };
-  }, []);
 
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.
@@ -106,8 +61,8 @@ export function Modal({
         if (e.target === ref.current) onClose();
       }}
     >
-      {(open || present) && (
-        <div className="ch-modal__panel" inert={!open || undefined}>
+      {retainContent(open && (
+        <div className="ch-modal__panel">
           <div className="ch-modal__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-modal__head" onPointerDown={drag.onPointerDown}>
             {icon && (
@@ -126,7 +81,7 @@ export function Modal({
           {children && <div className="ch-modal__body">{children}</div>}
           {footer && <footer className="ch-modal__foot">{footer}</footer>}
         </div>
-      )}
+      ))}
     </dialog>
   );
 }

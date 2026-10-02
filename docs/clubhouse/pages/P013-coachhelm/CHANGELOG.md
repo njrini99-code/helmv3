@@ -3,6 +3,28 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — History drawer uses stable modal and pointer lifetimes
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (pending)
+Design package: approved boards; bars and dismissal policy unchanged
+Contract IDs:   CH-13621, CH-13822
+Data impact:    none; client dialog/scroll/focus/gesture lifecycle only
+Held items:     physical iPhone keyboard and gesture validation
+```
+
+History now shares the native dialog lifetime and the directional drag helper.
+Only the initiating primary pointer owns the drag; pointer cancellation/unmount
+removes listeners. A short left drag held still before release springs back
+instead of reusing old flick velocity. Closing retains the drawer and page lock
+through its transform exit.
+
+When the keyboard is open, the History drawer uses the available height so its
+searchable history stays above it.
+
+Targeted checks: 351 tests pass across the final focused runs; scoped ESLint and
+diff check exit 0. Runtime evidence is recorded in this page's VERIFY entry.
+
 ## 2026-10-01 — Layered board cards on the phone
 
 ```text

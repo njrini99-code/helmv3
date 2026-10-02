@@ -3,6 +3,25 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/roster.md`.
 
+## 2026-10-02 — Desktop Message target parity
+
+- The desktop player panel and list-row Message menu now carry the selected
+  player's encoded `?player=` target, matching the supported phone deep link.
+- `./node_modules/.bin/vitest run --project unit-dom
+  src/clubhouse/__tests__/roster.test.tsx --maxWorkers=1`:
+  68/68 passed, exit 0. The two added regressions exercise different players,
+  keyboard activation of the panel link and keyboard opening of each row menu.
+- ESLint for `Roster.tsx`, `RosterPeek.tsx` and `roster.test.tsx`: exit 0;
+  `git diff --check`: exit 0.
+- Local WebKit at 1024 × 900 confirmed Theo and Jonah have distinct panel and
+  row-menu URLs; Enter opens their cards and menus, Escape closes them. All
+  eight
+  table headers remained present, and the menus fit inside the viewport.
+- Artifacts: `/tmp/helm-clubhouse-desktop-daily/roster-table-1024.png` and
+  `/tmp/helm-clubhouse-desktop-daily/roster-selected-1024.png`.
+- This verifies the destination link and keyboard access. Real-account thread
+  resolution or message delivery was not exercised in this pass.
+
 ## Current verification status
 
 ```text
@@ -176,10 +195,9 @@ before, after, baseline or evidence.
 - Found, not fixed (owner or lead decides):
   - Fairway's roster warned when one student is on the roster twice (#1477);
     Clubhouse dropped that notice.
-  - The desktop Message button opens the inbox, while the phone opens the
-    player's thread (`?player=`, as
-    `phone/roster.md` records). P007's PAGE.md says Roster's Message buttons use
-    `?player=`.
+  - Resolved 2026-10-02: the desktop player panel and row menu now carry the
+    player's thread target (`?player=`), matching the phone and P007 entry
+    contract.
   - The join-request notification links to `roster?tab=requests`; Roster ignores
     `tab`, though the requests are the
     first thing under the header.

@@ -3,6 +3,31 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/stats-team.md`.
 
+## 2026-10-02 — Narrow figure readability
+
+Working tree after `c1e81e0fe`; WebKit iPhone 13 descriptor, isolated
+`stats-narrow` CLI session, populated synthetic `/clubhouse-preview/stats`.
+
+- Before at 320px: Scrambling occupied a 51px column and two lines,
+  32.375px tall. At 375px it already fit one line in a 64.75px column.
+- After at 320px: the same summary card has two 144px columns; Scrambling has
+  123px available and occupies one 16.1875px line. All four labels are one
+  line. Document width is 320px and card client/scroll widths are both 288px.
+- After at 375px: four 85.75px columns remain; all labels are still one line.
+  Document width is 375px and card client/scroll widths are both 343px.
+- Browser assertions checked actual label heights against computed line
+  height, unchanged 12px caption size, and document/card overflow. Figure
+  order and values remained `73.6`, `61%`, `30.4`, `52%`, with their original
+  changes. Both final captures were manually inspected.
+- `git diff --check` passed. Only `styles/stats.css` changed; no mirror unit
+  test was added for this CSS-only fix. The feature map reports the CSS and
+  `StatsTeamPhone.tsx` unmapped; reported to the parent, no registry change.
+
+Four local captures are in `/tmp/helm-clubhouse-mobile-flow-audit/`:
+`stats-before-320.png`, `stats-before-375.png`, `stats-after-320.png`, and
+`stats-after-375.png`. Browser closed after verification. Physical Safari,
+software keyboard, text zoom and live authenticated data were not tested.
+
 ## Current verification status
 
 ```text

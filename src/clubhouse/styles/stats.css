@@ -2909,6 +2909,18 @@ a.ch-lg__r:focus-visible {
   color: var(--ch-text-secondary);
 }
 
+/* Give the four team figures readable columns on the narrowest phones. */
+@media (max-width: 360px) {
+  .ch-stm-figs {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 20px;
+  }
+  .ch-stm-figs > div:nth-child(odd) {
+    border-left: 0;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */

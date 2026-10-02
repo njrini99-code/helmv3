@@ -181,7 +181,6 @@ export function Roster({ data }: { data: ChRoster }) {
   };
 
   const statsHref = (p: ChRosterPlayer) => rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
-  const messagesHref = rebuiltHref('/golf/dashboard/messages');
   const menuFor = (p: ChRosterPlayer): MenuItem[] => {
     const items: MenuItem[] = [];
     // The board's first row item: CoachHelm opened on this player.
@@ -189,6 +188,7 @@ export function Roster({ data }: { data: ChRoster }) {
     if (insights) items.push({ label: 'View insights', icon: Sparkles, href: insights });
     const s = statsHref(p);
     if (s) items.push({ label: 'View stats', icon: BarChart3, href: s });
+    const messagesHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
     items.push({ label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => setRemoving(p) });

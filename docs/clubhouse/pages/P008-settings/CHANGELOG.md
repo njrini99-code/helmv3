@@ -2,6 +2,45 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-02 — Keep narrow desktop sections in view
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (pending)
+Design package: existing horizontal desktop section rail
+Contract IDs:   existing section navigation and responsive layout; none added
+Data impact:    none; local scroll and keyboard focus only
+Held items:     physical Safari and VoiceOver validation
+```
+
+Focused and selected sections now reveal themselves inside the horizontal rail
+at narrow desktop widths, including after resize. The rail scrolls immediately
+on its own horizontal axis, leaving the form and page scroll alone. A guarded
+next-frame reveal handles WebKit's native focus alignment; rapid focus changes
+and unmount cancel the old reveal. Two regression cases and fresh 821px WebKit
+keyboard/reduced-motion checks passed; exact results are in VERIFY.md.
+
+## 2026-10-02 — Phone sheet dismissal preserves the page and edit context
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (pending)
+Design package: approved boards; bars and dismissal policy unchanged
+Contract IDs:   CH-8509, CH-8806
+Data impact:    none; client dialog/scroll/focus/gesture lifecycle only
+Held items:     physical iPhone keyboard and gesture validation
+```
+
+Form, list and destructive action sheets now share the native dialog lifetime:
+background lock and content remain until exit finishes, nested confirmation
+releases only its own lock, and focus returns without scrolling. Dirty
+confirmation and in-flight save guards remain in force.
+
+Keyboard viewport sizing keeps the form header and Save above the keyboard; body
+cards keep their row height and scroll instead of compressing. Nested action
+sheets also stay above the keyboard and can scroll when space is short.
+
+Targeted checks: 351 tests pass across the final focused runs; scoped ESLint and
+diff check exit 0. Runtime evidence is recorded in this page's VERIFY entry.
+
 ## 2026-10-01 — Coaching staff in Settings → Team; distance unit in Preferences (swap audit §14 D1, D7)
 
 ```text

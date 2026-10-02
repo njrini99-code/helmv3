@@ -1,5 +1,24 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-02 — Readable figures on the narrowest phones
+
+```text
+Design package: existing team Stats phone summary
+PR/commit:      codex/clubhouse-design-fidelity (working tree after c1e81e0fe)
+Contract IDs:   none changed
+Actions:        unchanged
+Data impact:    none; CSS only
+Held items:     physical Safari and text-zoom verification
+```
+
+At 320px, the four-column card split Scrambling in the middle of the word.
+Below 361px the same card now places its four figures in two columns. Labels
+keep their 12px phone floor, values stay 20px, and all colors, material, data
+and order remain unchanged. At 375px the original four-column layout remains.
+
+WebKit before/after geometry and visual checks passed at 320 and 375px; see
+VERIFY.md. No component, action or metric calculation changed.
+
 ## 2026-10-02 — Phone stats filter date fields reach 44px
 
 ```text

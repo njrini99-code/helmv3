@@ -805,6 +805,9 @@
   box-shadow: 8px 0 30px rgb(0 0 0 / 0.18);
   touch-action: pan-y;
 }
+body.keyboard-open .ch-ask-hist.is-drawer {
+  height: calc(100dvh - var(--keyboard-height, 0px));
+}
 .ch-ask-drawer[open] .ch-ask-hist.is-drawer {
   animation: ch-ask-drawer-in var(--ch-dur-base) var(--ch-ease);
 }

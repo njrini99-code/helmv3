@@ -90,7 +90,11 @@ Notes:             LCP and INP come only from sampled Sentry tracing (12101)
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -98,18 +102,22 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P001__filter-body__coach__375__overlay-lifecycle__before__72fa726.png` | before | 72fa726 | filter-body (coach), 375px, overlay-lifecycle |
 | `P001__more-stable__coach__390__overlay-lifecycle__evidence__72fa726.png` | evidence | 72fa726 | more-stable (coach), 390px, overlay-lifecycle |
 | `P001__nested-details__coach__390__overlay-lifecycle__evidence__72fa726.png` | evidence | 72fa726 | nested-details (coach), 390px, overlay-lifecycle |
+| `P001__filter-sheet__coach__1440__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | filter-sheet (coach), 1440px, keyboard-viewport; /clubhouse-preview/stats |
 
 ## Open verification gaps
 
 - The iPhone pass (owner).
 - `clubhouse:a11y` rerun after the v2 changes.
-- The route boundary's automatic retry is tested only through the view (11401), not the boundary.
-- A Clubhouse-side detector for rage, dead and slow clicks does not exist (12201 to 12203).
+- The route boundary's automatic retry is tested only through the view (11401),
+  not the boundary.
+- A Clubhouse-side detector for rage, dead and slow clicks does not exist (12201
+  to 12203).
 
 ## 2026-10-02 — Overlay scroll, focus and gesture lifecycle
 
 - `vitest run overlay-scroll.test.tsx shell.test.tsx --maxWorkers=1`:59 pass,
-  exit 0. Seven focused regressions cover nested lock counts, exact styles/canvas
+  exit 0. Seven focused regressions cover nested lock counts, exact
+  styles/canvas
   restoration, route changes, unmount release, distinct dialog titles, canceled
   and competing pointers, paused flick speed, and rapid close/reopen.
 - Scoped ESLint on the helper, drag, Modal, PhoneScreen, TabBar, Bell and test:
@@ -128,12 +136,66 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
   a subsequent 120px drag dismisses and returns focus to More. No extra
   animation delay: the fix stops counting an old move as a current flick.
 - Reduced-motion WebKit: More opens at transform:none and is removed with the
-  lock released within 50ms after Close. The native modal reduced-motion branch skips its exit animation.
-- Evidence JSON/captures: `/tmp/helm-clubhouse-overlay-stability/`. The screenshot
+  lock released within 50ms after Close. The native modal reduced-motion branch
+  skips its exit animation.
+- Evidence JSON/captures: `/tmp/helm-clubhouse-overlay-stability/`. The
+  screenshot
   table logs actual filed images; still images do not prove frame pacing.
 - Setup limitations: mobile WebKit does not support mouse.wheel; native PageDown
   and real pointer mouse events exercise scrolling and gesture ownership.
   Message actions is screen-reader-only and was activated with focus+Enter.
   One first messages load timed out under development compilation and succeeded
-  after DOMContentLoaded/settling. No physical Safari FPS, edge gesture, keyboard
+  after DOMContentLoaded/settling. No physical Safari FPS, edge gesture,
+  keyboard
   or production persistence claim; no production writes.
+
+## 2026-10-02 — Custom native overlay lifetime
+
+- Before captures in `/tmp/helm-clubhouse-custom-overlays/`: Settings Profile
+  and
+  Recruiting Add opened without a body scroll lock. A real History pointer drag
+  moved left 35px, paused 350ms, and wrongly dismissed on release.
+- Shared lifetime now retains the last open content and lock through
+  transform/opacity
+  exit, cancels superseded completions, restores focus with `preventScroll`,
+  and closes before releasing the lock on unmount. Dirty/busy guards are
+  preserved.
+- Final scoped runs cover 351 tests: Settings, Recruiting, Ask, shell, overlay
+  scroll and seven new custom lifecycle regressions. The old Ask pointer fixture
+  now identifies its primary pointer; its original assertions/timeouts remain.
+  Final Ask rerun:54 pass, exit0. Final helper/scroll rerun after releasing
+  retained
+  subtree references:14 pass, exit0. Scoped ESLint and diff check: exit0.
+- New shared/helper and Settings/History files are semantically unmapped and
+  reported
+  to the coordinator; existing page manifests govern them. Recruiting maps to
+  `memory/features/recruiting.md`, updated with the client lifecycle contract.
+- Fresh WebKit 375/390/430: Settings/Recruiting form tops54px, keyboard-visible
+  bottom544px at844px height with a synthetic300px keyboard. Before, both tops
+  were−246px and their headers were offscreen. Settings cards retain full row
+  heights in the scrolling body; Full name input307–339px and header85–129px.
+  Recruiting body scroll reaches Stage/Notes while Cancel/Add remain accessible.
+- Nested Settings discard prompt fits341.625–544px; closing it retains the
+  parent's lock. Both native dialogs/content remain during60ms exit; completing
+  all closes releases the final lock. Existing dirty/busy policy is unchanged.
+- History settled frames explicitly await entry animations: left0, width322.5px
+  at375 or330px at390/430, height544px above the synthetic keyboard. A35px left
+  drag held350ms stays open;120px closes with lock held through exit. Earlier
+  mid-entry captures were superseded after manual review, not accepted as final.
+- Keyboard Enter→Esc returns focus to Profile, Add prospect and Chats at every
+  tested width. Shared Modal at1440 retains its lock/content through60ms exit;
+  reduced-motion Recruiting releases the lock within50ms, without an exit slide.
+- Fresh shared Modal on Stats at375/390/430 over scroll300px: marker−250px
+  before,
+  open, PageDown,60ms exit and after. Final scroll restores300px. Short
+  Recruiting
+  fixtures have no300px scroll range, so their scroll-zero checks are not
+  presented
+  as long-page preservation evidence.
+- Final evidence: `final-matrix.json`, `focus-final.json`, `settled-final.json`,
+  `stats-scroll-final.json` and manually reviewed PNGs in
+  `/tmp/helm-clubhouse-custom-overlays/`; conventional captures logged above.
+  Browser session `overlay-audit` closed. Local ENOSPC/old-session timeouts were
+  resolved before final proof; development/HMR timings are not product timings.
+  No production/customer writes or physical-iPhone keyboard, edge-gesture or
+  frame-pacing claim. Root owns combined typecheck/build/release verification.

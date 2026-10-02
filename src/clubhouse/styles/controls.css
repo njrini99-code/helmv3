@@ -269,7 +269,7 @@
   background: rgb(20 20 18 / 0.32);
   animation: ch-fade var(--ch-dur-base) var(--ch-ease);
 }
-.ch-modal[data-closing]::backdrop {
+.ch-root dialog[data-closing]::backdrop {
   animation: ch-fade var(--ch-dur-base) var(--ch-ease) reverse forwards;
 }
 .ch-modal__panel {

@@ -3,6 +3,30 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
 `docs/clubhouse/screens/settings.md`.
 
+## 2026-10-02 — Narrow desktop section visibility
+
+At 821 × 900, the horizontal Settings rail kept the last section partly
+outside the canvas even when focused. It now reveals the focused or selected
+section with bounded, immediate horizontal scrolling. Keyboard focus is
+revealed after WebKit's native alignment; a superseded focus or unmounted
+element cannot scroll the rail later. Resizing also reveals the current section.
+
+- Full scoped `settings.test.tsx`: 172/172 passed, exit 0. After the WebKit
+  timing repair, the two new rail cases passed again (170 unchanged cases
+  skipped); they cover both ends, rapid focus replacement, horizontal-only
+  immediate scrolling and the initially selected section on resize.
+- ESLint for `SettingsView.tsx` and `settings.test.tsx`: exit 0.
+- Fresh local WebKit at 821 × 900: Preferences' right edge 809.33 was inside
+  the rail's right edge 813; Account's left edge 244 was inside the rail's
+  left edge 240. Enter selected either section. The canvas stayed at scrollTop
+  0 throughout this final traversal. Reduced motion produced the same visible
+  Preferences result, and there was no document horizontal overflow.
+- Artifacts:
+  `/tmp/helm-clubhouse-desktop-daily/settings-rail-fixed-last-821.png`
+  and `/tmp/helm-clubhouse-desktop-daily/settings-rail-fixed-first-821.png`.
+- Local fixture navigation only: physical Safari, VoiceOver and account
+  persistence were not exercised by this desktop rail check.
+
 ## Current verification status
 
 ```text
@@ -131,6 +155,11 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P008__settings-sheet__coach__390__custom-lifecycle__before__c1e81e0.png` | before | c1e81e0 | settings-sheet (coach), 390px, custom-lifecycle; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__390__keyboard-viewport__before__c1e81e0.png` | before | c1e81e0 | profile-sheet (coach), 390px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__375__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 375px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 390px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 430px, keyboard-viewport; /clubhouse-preview/settings?section=account |
 
 ## Open verification gaps
 
@@ -159,3 +188,54 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
   - The loader reads `golf_coach_philosophy` and `golf_teams` twice each.
   - Leave team, Make a new invite code, Reset CoachHelm updates and Turn off CoachHelm open their confirm without the
     warning haptic (an owner decision under D-70).
+
+## 2026-10-02 — Custom native overlay lifetime
+
+- Before captures in `/tmp/helm-clubhouse-custom-overlays/`: Settings Profile
+  and
+  Recruiting Add opened without a body scroll lock. A real History pointer drag
+  moved left 35px, paused 350ms, and wrongly dismissed on release.
+- Shared lifetime now retains the last open content and lock through
+  transform/opacity
+  exit, cancels superseded completions, restores focus with `preventScroll`,
+  and closes before releasing the lock on unmount. Dirty/busy guards are
+  preserved.
+- Final scoped runs cover 351 tests: Settings, Recruiting, Ask, shell, overlay
+  scroll and seven new custom lifecycle regressions. The old Ask pointer fixture
+  now identifies its primary pointer; its original assertions/timeouts remain.
+  Final Ask rerun:54 pass, exit0. Final helper/scroll rerun after releasing
+  retained
+  subtree references:14 pass, exit0. Scoped ESLint and diff check: exit0.
+- New shared/helper and Settings/History files are semantically unmapped and
+  reported
+  to the coordinator; existing page manifests govern them. Recruiting maps to
+  `memory/features/recruiting.md`, updated with the client lifecycle contract.
+- Fresh WebKit 375/390/430: Settings/Recruiting form tops54px, keyboard-visible
+  bottom544px at844px height with a synthetic300px keyboard. Before, both tops
+  were−246px and their headers were offscreen. Settings cards retain full row
+  heights in the scrolling body; Full name input307–339px and header85–129px.
+  Recruiting body scroll reaches Stage/Notes while Cancel/Add remain accessible.
+- Nested Settings discard prompt fits341.625–544px; closing it retains the
+  parent's lock. Both native dialogs/content remain during60ms exit; completing
+  all closes releases the final lock. Existing dirty/busy policy is unchanged.
+- History settled frames explicitly await entry animations: left0, width322.5px
+  at375 or330px at390/430, height544px above the synthetic keyboard. A35px left
+  drag held350ms stays open;120px closes with lock held through exit. Earlier
+  mid-entry captures were superseded after manual review, not accepted as final.
+- Keyboard Enter→Esc returns focus to Profile, Add prospect and Chats at every
+  tested width. Shared Modal at1440 retains its lock/content through60ms exit;
+  reduced-motion Recruiting releases the lock within50ms, without an exit slide.
+- Fresh shared Modal on Stats at375/390/430 over scroll300px: marker−250px
+  before,
+  open, PageDown,60ms exit and after. Final scroll restores300px. Short
+  Recruiting
+  fixtures have no300px scroll range, so their scroll-zero checks are not
+  presented
+  as long-page preservation evidence.
+- Final evidence: `final-matrix.json`, `focus-final.json`, `settled-final.json`,
+  `stats-scroll-final.json` and manually reviewed PNGs in
+  `/tmp/helm-clubhouse-custom-overlays/`; conventional captures logged above.
+  Browser session `overlay-audit` closed. Local ENOSPC/old-session timeouts were
+  resolved before final proof; development/HMR timings are not product timings.
+  No production/customer writes or physical-iPhone keyboard, edge-gesture or
+  frame-pacing claim. Root owns combined typecheck/build/release verification.

@@ -4,6 +4,28 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.
 
+## 2026-10-02 — Keep narrow round setup readable
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree after c1e81e0fe)
+Design package: existing P011 phone setup and shared 820px phone boundary
+Contract IDs:   none changed
+Actions:        unchanged course selection and round start
+Data impact:    none; setup CSS only
+Held items:     physical Safari keyboard and routed account verification
+```
+
+At 320px, Browse courses extended 51px beyond its clipped course card. The
+setup container could not apply its own padding through a self-container
+query, so desktop gutters remained on phones. Phone padding now uses the
+shared viewport boundary. The empty course card gives its text a full column
+and Browse a separate 44px row; round-type controls fit without smaller type.
+The dock summary can wrap rather than truncate the selected course.
+
+WebKit geometry and actual hit checks passed at 320, 375, 390, 430 and 820px.
+At 390px, Browse, Finley GC and Blue tee selection enabled Start and retained
+the full 18-hole, par-72 summary. See VERIFY.md for dimensions and limits.
+
 ## 2026-10-02 — Shiro fix: a stable, finger-sized continue action
 
 ```text

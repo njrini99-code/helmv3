@@ -341,6 +341,39 @@ before, after, baseline or evidence.
 | `P011__shiro-mobile-overview__player__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
 | `P011__shiro-mobile-overview__player__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
 
+## 2026-10-02 — Narrow setup layout and course selection
+
+Working tree after `c1e81e0fe`; WebKit, isolated `mobile-flow-audit` CLI
+session,
+synthetic `/clubhouse-preview/setup` ports on local development server 3120.
+This pass changed only `styles/rounds-setup.css`.
+
+- Before: at 320px the document was 334px wide; the course card was 240px wide
+  and clipped Browse courses at its right edge. Browse ended at x331.17 while
+  the card ended at x280. The round-type strip scrolled 274px within 200px.
+- After: document and body widths equal the viewport at 320/375/390/430/820px.
+  Course cards measure 296/351/366/406/796px, with matching client and scroll
+  widths. Round-type strips also have matching client and scroll widths.
+- Browse stays within the course card at every width. Its phone row is 44px
+  tall at 320/375/390/430px. At 820px the wide row retains its 36px visual
+  button and the shared 44px expanded touch target.
+- At each width with a 480px-high viewport, scrolling Browse to the center
+  makes its actual center hit reachable. The sticky Start dock ends at y472
+  on the narrow widths and y464 at 820px. The long form requires scrolling;
+  these assertions do not claim every section fits above the dock at once.
+- Actual 390px interactions opened Browse, searched Finley, selected Finley
+  GC and Blue tees, and enabled Start. The dock showed
+  `Finley GC · Blue · 18 holes · Par 72`. Start was not pressed.
+- `git diff --check` passed. No TSX, engine, server or test source changed.
+  CSS mapping remains absent; reported to the parent for its mapping decision.
+
+Evidence is local in `/tmp/helm-clubhouse-mobile-flow-audit/`: five
+`setup-before-*`, five `setup-after-*`, five `setup-short-after-*` captures,
+plus the course-search and selected-course captures. Screenshot UI includes
+the development-only Next indicator. Real Safari browser chrome, software
+keyboard, text zoom, live persistence and routed accounts were not tested.
+Further browser checks paused when the shared dev server ran out of disk.
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev`, a browser pass with a real player and a real coach account (the library, the
