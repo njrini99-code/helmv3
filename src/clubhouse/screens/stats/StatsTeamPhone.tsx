@@ -82,7 +82,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
               {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
               {(() => {
                 const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
-                return coverage ? <p style={{ margin: '8px 2px 0', font: 'var(--ch-type-caption)', color: 'var(--ch-text-tertiary)' }}>{coverage}</p> : null;
+                return <p className="ch-stm-cover" aria-hidden={coverage ? undefined : true}>{coverage}</p>;
               })()}
             </SectionBoundary>
             <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
@@ -113,7 +113,7 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
     Scrambling: 'Scrambling',
   };
   const shown = figures.filter((f) => !f.signed).slice(0, 4);
-  // The change row only when some figure has one, so a window with no earlier rounds leaves no empty band (F-43).
+  // Keep the comparison row's geometry across windows; absence stays hidden from assistive technology.
   const anyDelta = shown.some((f) => f.delta != null);
   return (
     <dl className="ch-stm-figs">
@@ -122,9 +122,7 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
           <dt>{short[f.label] ?? f.label}</dt>
           <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
           {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
-          {anyDelta && (
-            <dd className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? ' ' : formatSigned(f.delta, f.digits)}</dd>
-          )}
+          <dd aria-hidden={!anyDelta || f.delta == null ? true : undefined} className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? null : formatSigned(f.delta, f.digits)}</dd>
         </div>
       ))}
     </dl>

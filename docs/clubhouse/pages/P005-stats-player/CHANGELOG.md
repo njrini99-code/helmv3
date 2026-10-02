@@ -1,5 +1,28 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-02 — Stable phone overview across periods
+
+The measured Season switch removed 47px of overview caption height, while
+Qualifiers inserted an early-read card above the figures. The player overview
+now puts its sample caveat or comparison in a full-width metadata footer inside
+the same layered card. The exact early and no-shots text, codes and note role
+remain; the early caveat still applies to averages and trends as well as SG.
+All values, labels, benchmark and team comparisons remain visible.
+
+The footer and figure captions retain a compact footprint across periods,
+growing naturally for longer text. Empty and populated SG panels share a
+minimum height based on the measured populated panel. No thresholds, loader,
+data or backend behavior changed. The player suite passed 71/71 with one
+worker, including caveat, sufficient-evidence and failed-read transitions.
+
+At 320px the three player figures stay across, rather than inheriting the
+team's two-column layout and leaving a vacant fourth cell. A four-line
+metadata footprint holds the exact early caveat without a period jump;
+the final overview is 204.969px tall instead of the intermediate 299.750px.
+The loading shape now reuses the overview/footer and Trend value geometry.
+Its real player-RSC handoff remains unmeasured; the structural regression
+and settled width checks are recorded separately in VERIFY.md.
+
 ## 2026-10-02 — Phone stats filter date fields reach 44px
 
 ```text

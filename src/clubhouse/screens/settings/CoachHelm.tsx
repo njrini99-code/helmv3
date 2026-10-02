@@ -9,7 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { Slider } from '../../ui/Slider';
-import { useToast } from '../../ui/Toast';
+import { useDelayedToast, useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
@@ -47,6 +47,7 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
   current.current = p;
   const initialOrCurrent = (k: string) => (current.current as unknown as Record<string, unknown>)[k];
   const toast = useToast();
+  const delayedToast = useDelayedToast();
 
   useEffect(() => {
     const t = timers.current;
@@ -74,7 +75,7 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
     queue.current = queue.current.then(async () => {
       let ok = false;
       let error: string | undefined;
-      const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
+      const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }, CH_SLOW_SAVE_AFTER);
       try {
         const r = await writes.savePhilosophy(idRef.current, patch);
         ok = !!(r.success || r.ok);
@@ -83,7 +84,7 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
       } catch (err) {
         chReport(err, { surface: 'settings.coachhelm', action: 'savePhilosophy' });
       } finally {
-        window.clearTimeout(slow);
+        stopSlow();
       }
       inflight.current -= 1;
       // An autosave that lands is silent (D-70); "All changes saved" says it.

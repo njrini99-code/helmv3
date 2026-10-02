@@ -22,6 +22,12 @@ One player, read like a head pro would: who they are, four numbers, then the gam
 
 ## Identity
 
+On the phone, the three overview figures share one card with a full-width
+metadata footer. It names the sample and an available SG comparison, or shows
+the exact early-read/no-shots caveat as an accessible note. It keeps the period
+change from inserting a separate warning card above the figures. Missing and
+failed reads retain their existing distinct states and thresholds.
+
 ```text
 Page ID:            P005
 Page Name:          Stats (player)

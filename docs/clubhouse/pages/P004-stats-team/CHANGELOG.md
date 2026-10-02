@@ -1,5 +1,23 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-02 — Keep charts steady when the period changes
+
+The measured phone Season switch moved the charts up by 64px: the comparison
+row and hole-coverage line disappeared. Both now retain their compact space,
+matching the desktop's existing hold behavior. Unavailable comparisons and
+coverage stay empty and hidden from assistive technology; no zero is invented.
+Metric values, filters, sample rules and card materials are unchanged.
+
+The team suite passed 53/53 with one worker, including a period-change
+regression for absent and restored comparisons and coverage. See VERIFY.md
+for baseline geometry and the follow-up measurement boundary.
+
+The measured team loading handoff now uses the same line-sized header,
+44px controls, comparison and coverage slots, responsive chart frame and
+panel minimums. At 390px its trend origin and height match loaded content
+exactly. Skeleton shapes remain decorative with the existing loading label.
+The focused geometry suite passes 11/11; see VERIFY.md for width boundaries.
+
 ## 2026-10-02 — Readable figures on the narrowest phones
 
 ```text

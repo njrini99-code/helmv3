@@ -3,6 +3,55 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/stats-team.md`.
 
+## 2026-10-02 — Period-switch geometry
+
+The optimized `a32c933e0` baseline recorded three 390px, 4x-CPU trials per
+switch. Season and returning Last 10 each had raw shift score 0.0521; the
+moving sources were the trend and leg panels. Standard CLS excluded these
+recent-input shifts. This is evidence of visible movement, not a field score.
+
+Bounded read-only WebKit inspection of the same local seeded build confirmed
+the cause: the figures were 94.98px tall in Last 10 and 73.19px in Season.
+An 18.19px hole-coverage paragraph and its surrounding spacing also vanished,
+moving the next panel from y352.16 to y288.17. The repair retains both slots
+while hiding absent information from assistive technology.
+
+The affected team suite passed 53/53 with one worker in 3.70s. A new test
+changes periods and checks that absent comparisons/coverage are empty,
+aria-hidden and restored correctly, with original metric values retained.
+Scoped TSX/test ESLint and `git diff --check` passed. The source map remains
+unassigned for these phone/CSS paths and was reported to the parent.
+
+Baseline captures are local in `/tmp/helm-clubhouse-stats-stability/` as
+`team-{Last-10,Season,Qualifiers}-before.png`. The inspection session closed
+before the separate Messages benchmark. Optimized post-change measurement
+and physical Safari verification remain pending; no improvement score is
+claimed from source or unit tests.
+
+### Final source WebKit check
+
+Read-only local seeded WebKit checked Last 10, Season and Qualifiers at
+320, 375 and 390px. Document width equaled viewport in all nine states.
+The trend stayed at y445.328 at 320px and y344.156 at 375/390px across
+all periods. The four narrow team figures retained their two-column layout.
+
+A 1.5-second held RSC navigation exposed the real team loading screen.
+Before repair, its trend started at y299.797 against loaded y344.156.
+After repair at 390px, header 56.984px, controls 44px, figures 94.984px,
+coverage 18.187px and trend 209.078px exactly matched the loaded page.
+Value definitions were 20px in both. Trend and SG origins also matched;
+the last skeleton panel was 0.641px taller than the populated panel.
+The skeleton remains decorative and preserves its loading label/code.
+At 320px the actual personalized team caption wraps; its unknown text is
+not synthesized in the loading screen, so narrow header parity is unproven.
+
+The focused geometry suite passed 11/11 in 1.57s, with one worker; scoped
+skeleton/test ESLint and final diff checks passed. This supplements the
+53/53 team suite above. Optimized timing is a separate parent-owned check.
+Evidence stays in `/tmp/helm-clubhouse-stats-stability/`: nine width/period
+after frames and `team-skeleton-{before,after}.png`. Both owned browsers
+closed. No production writes or physical-device performance claim.
+
 ## 2026-10-02 — Narrow figure readability
 
 Working tree after `c1e81e0fe`; WebKit iPhone 13 descriptor, isolated

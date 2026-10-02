@@ -3,6 +3,23 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Slow feedback follows its request
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (pending)
+Design package: existing toast material, durations and action behavior
+Contract IDs:   CH-1902, CH-4902, CH-5902
+Data impact:    none; dismissing feedback does not cancel a write
+Held items:     physical iPhone Safari acceptance
+```
+
+The shared toast lifetime and delayed-feedback helper remove obsolete progress
+notices when a request completes, is replaced or loses its mounted owner.
+Stats period changes, shared actions, Messages and manual Settings saves use
+the same lifecycle. Old cleanup cannot remove newer feedback. Confirmation
+and error durations, Retry, pending-write and unknown-outcome guards remain
+unchanged. Final regression evidence is recorded in VERIFY.md.
+
 ## 2026-10-02 — Native custom overlays share one lifecycle
 
 ```text

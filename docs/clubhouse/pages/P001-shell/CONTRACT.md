@@ -84,6 +84,12 @@ Status: DEFINED
 
 The banner under the top bar (10701), a save over five seconds says so once (10702), a save while offline is refused before anything is sent (10703), and Try again while offline says so instead of failing again (10704). Every page inherits all four.
 
+Slow feedback belongs to its request. Completion, replacement or unmount ends
+its notice, including one already displayed; it cannot remove a newer notice.
+This cancels feedback only. Pending writes, recovery identities and save guards
+continue to follow their existing action contracts. Ordinary confirmations
+remain four seconds and errors eight seconds.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 10701 | CH-1901 | `THE_DEVICE_GOES_OFFLINE` | The device goes offline |

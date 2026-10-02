@@ -9,6 +9,21 @@ with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 
+## October 2 whole-app smoothness follow-up
+
+[UX_OPTIMIZATION.md](UX_OPTIMIZATION.md) records the custom overlay repairs,
+narrow controls, task continuity, request feedback and measured performance.
+The optimized a32c933e0 baseline completed 44 cases / 132 trials with 4x CPU
+throttling at 390/1280px, without blank flashes or recorded runtime problems.
+It exposed phone Stats period-change movement; the corrected source keeps
+comparison/caption space and sample caveats inside the existing cards.
+WebKit confirms stable period anchors at 320/375/390px and matched 390px team
+loading geometry. Optimized after-measurement remains pending in this entry.
+Messages scrolling and composer growth retained the reader's position with
+200 of 254 disposable local messages rendered. The stress check does not
+establish access to older history or physical iPhone keyboard/frame pacing.
+Production remains unchanged; this is candidate verification.
+
 ## October 2 production preparation
 
 [RELEASE_CANDIDATE.md](RELEASE_CANDIDATE.md) records PR #2121, the release

@@ -3,6 +3,19 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — End obsolete slow-save feedback
+
+Messages now ties its CH-1902 notice to the attempt it describes. The notice
+and pending timer end on settlement, screen unmount, or team-scope change.
+Old callbacks cannot revive it after A → B → A navigation, and old cleanup
+preserves new feedback. This affects feedback only: send/retry, busy guards,
+refusal and unknown attachment outcomes remain unchanged. The 5-second
+threshold and default 4-second confirmations / 8-second errors are unchanged.
+The focused Messages regression confirms that a settled mute failure removes
+the slow notice while its error remains visible. The shared verification set
+has 21 unique passing cases: 11 Toast and 10 page/action cases. No later
+optimized-build or browser result is claimed by this entry.
+
 ## 2026-10-02 — Owner correction: softer reply and message surfaces
 
 Removed the green stripe from quoted replies in both composer and history.

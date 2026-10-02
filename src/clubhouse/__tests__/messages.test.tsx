@@ -281,6 +281,28 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7010', /Couldn't leave the group/);
   });
 
+  it('CH-1902 the Messages progress notice ends when mute settles and its failure stays visible', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      let finish!: (result: { success: boolean; error: string }) => void;
+      a.setGolfConversationMute.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+      show();
+      await openDetails(user);
+      await user.click(await screen.findByRole('button', { name: 'Mute 8 hours' }));
+      expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-1902', /Still saving/);
+      await act(async () => finish({ success: false, error: 'nope' }));
+      await expectCode('CH-7011', /Couldn't mute the conversation/);
+      await waitFor(() => expect(code('CH-1902')).toBeNull());
+      expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
+      expect(code('CH-7011')).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('CH-7011 muting fails', async () => {
     const user = userEvent.setup();
     a.setGolfConversationMute.mockResolvedValue({ success: false, error: 'nope' });

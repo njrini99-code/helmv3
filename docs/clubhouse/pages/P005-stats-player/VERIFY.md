@@ -3,6 +3,64 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/stats-player.md`.
 
+## 2026-10-02 — Period-switch geometry and truthful metadata
+
+The optimized `a32c933e0` baseline recorded three 390px, 4x-CPU trials per
+switch. Raw shift scores were 0.0379 for Season, 0.1116 for Qualifiers and
+0.0956 for returning Last 10. Standard CLS excluded the recent-input shifts;
+the sources were the overview, SG panel and game section, with no blank flash.
+
+Read-only WebKit inspection of the same seeded build confirmed the cause.
+Last 10's overview was 142.17px tall; Season was 94.98px because its SG
+comparison disappeared. Qualifiers added an 84.89px early-read banner and a
+16px gap above the overview. Its empty SG panel was 250px tall, against a
+265.36px populated panel. The repair puts sample caveats/comparisons in the
+overview's shared footer and keeps caption and SG footprints stable, with
+natural growth for longer text. Warning text, scopes and thresholds remain.
+
+The affected player suite passed 71/71 with one worker in 8.08s. A new test
+checks the exact global early caveat beside all figures, its removal when
+evidence is sufficient, the exact no-shots count and caveat, and a failed-read
+state that hides the overview. Scoped TSX/test ESLint and diff checks passed.
+
+Baseline captures are local in `/tmp/helm-clubhouse-stats-stability/` as
+`player-{Last-10,Season,Qualifiers}-before.png`; the browser used a coach
+reading the disposable local player and made no writes. The inspection
+session closed before the separate Messages benchmark. Optimized post-change
+measurement, physical Safari and live customer reads remain pending; no
+improvement score is claimed from source or unit tests. The unmapped phone/CSS
+paths were reported to the parent without expanding the registry.
+
+### Final source WebKit check
+
+Read-only seeded local WebKit checked Last 10, Season and Qualifiers at
+320, 375 and 390px. The overview remains three figures across, including at
+320px; only the four-figure team strip uses the narrow two-column layout.
+All labels remain one 16.187px line with 12px type. Captions hold 33.594px
+without hiding their text. Document width equaled viewport in all states.
+
+At 375/390px, every period had overview height 184.672px and SG origin
+y394.672. At 320px, the metadata footer reserves four readable lines for
+the longer caveat: every period had overview height 204.969px and SG origin
+y414.969. The SG panel remained 266px tall. Exact early-read copy stayed
+visible alongside the real figures; unavailable SG still displayed a dash.
+The no-shots caveat is covered by the functional suite; that specific seeded
+browser state was not available in this bounded check.
+
+The phone skeleton now uses the same overview/footer and responsive figure
+classes, including the smaller Trend value. Its labels and shapes remain
+decorative and its loading label/code are unchanged. The focused geometry
+suite passed 11/11 in 1.57s; scoped skeleton/test ESLint and diff checks
+passed. A held player-RSC handoff was not measured after bounded attempts;
+shared structure coverage does not establish browser handoff parity.
+
+Nine period/width frames and `player-after-geometry.json` are local in
+`/tmp/helm-clubhouse-stats-stability/`. Fresh direct-navigation 320px normal
+and early frames (`player-320-{last10,qualifiers}-settled.png`) have no
+lingering local slow-request toast. Earlier chained switches could retain
+a prior request's toast; its lifetime was not measured. Both browser
+sessions closed. Optimized measurement and physical Safari remain separate.
+
 ## Current verification status
 
 ```text

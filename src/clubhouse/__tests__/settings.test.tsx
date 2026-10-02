@@ -932,6 +932,31 @@ describe('Settings · saving', () => {
 });
 
 describe('Settings · what the person is told about standing conditions', () => {
+  it.each([
+    ['notifications', 'Tasks by push', 'setDelivery'],
+    ['coachhelm', 'Performance plateau', 'savePhilosophy'],
+  ] as const)('CH-1902 %s progress notice ends when its independent save finishes', async (section, label, write) => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      let finish!: (result: ChResult<{ id: string }>) => void;
+      const request = vi.fn(() => new Promise<ChResult<{ id: string }>>((resolve) => { finish = resolve; }));
+      setup({ section, writes: { [write]: request } });
+      await user.click(screen.getByRole('switch', { name: label }));
+      expect(request).toHaveBeenCalledTimes(1);
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-1902', /Still saving/);
+      await act(async () => finish({ success: true, data: { id: 'ph1' } }));
+      await waitFor(() => expect(code('CH-1902')).toBeNull());
+      expect(request).toHaveBeenCalledTimes(1);
+      // Instant settings retain their existing quiet-success behavior.
+      expect(hapticSpy).not.toHaveBeenCalledWith('success');
+      expect(document.querySelector('.ch-toast')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('80701 while offline a switch and a CoachHelm autosave are refused before they change', async () => {
     const online = goOffline();
     try {

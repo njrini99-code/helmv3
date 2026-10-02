@@ -9,9 +9,10 @@ this pass does not introduce a new select or date-picker system.
 | --- | --- | --- | --- | --- |
 | Select/Listbox | `ui/Select.tsx`, `ui/Menu.tsx` | Page DESIGN and CONTRACT | Native short choice lists; authored action menus | Shared control tests; browser keyboard and open-popup checks |
 | Date | Calendar model and timezone helpers; existing sheet date fields | Calendar CONTRACT; `lib/calendar/timezone.ts` | Native entry; team-local timed instants; literal all-day dates | Calendar and Home date tests |
+| Overlay | `lib/dialog-lifetime.ts`, `lib/overlay-scroll.ts`, `lib/sheet-drag.ts`; shared Modal and PhoneScreen | Shell and page CONTRACT/DESIGN | Native forms, action sheets and drawers; pushed phone screens | Nested lock/content/focus tests; WebKit keyboard and gesture checks |
 | Form | `styles/controls.css`; feature form components and their server actions | Each page CONTRACT and WIRING | Auth; editor sheets; inline composer | Auth and editor validation/recovery tests |
 | Scrollbar | `styles/base.css` and scoped tokens | Shell DESIGN; runtime styles | Page/panel scrollers; hidden tab/hole strips and onboarding column | Browser computed styles, native scroll and forced colors |
-| Toast | `ui/Toast.tsx`; `lib/use-action.ts` | Shell and page CONTRACT | Success; warning; error with Retry | Toast/action tests and failure-path browser checks |
+| Toast | `ui/Toast.tsx` and its delayed-feedback helper; `lib/use-action.ts` | Shell and page CONTRACT | Success; warning; error with Retry; request-scoped slow feedback | Toast/action/Stats lifetime tests and failure-path browser checks |
 | CRUD | Existing page containers and sport-specific server actions | Page CONTRACT and WIRING | Per-object optimistic replies/checks; confirmed editor writes | Hub, Messages and editor action tests |
 
 The shared Button renders a link when supplied `href`; the Home `Form` component

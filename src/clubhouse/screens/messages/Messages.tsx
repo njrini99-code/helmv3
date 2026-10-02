@@ -22,7 +22,7 @@ import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
-import { useToast } from '../../ui/Toast';
+import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useNow } from '../../lib/use-now';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
@@ -48,6 +48,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
+  const delayedToast = useDelayedToast();
   const clock = useNow();
   const now = clock ? clock.toISOString() : data.now;
   const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
@@ -162,17 +163,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
         toast({ tone: 'error', title: `${copy.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
         return false;
       }
-      const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
+      const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }, CH_SLOW_SAVE_AFTER);
       try {
         return (await fn()) !== false;
       } catch (err) {
         fail(surface, err, copy.failed, copy.hint, copy.code);
         return false;
       } finally {
-        window.clearTimeout(slow);
+        stopSlow();
       }
     },
-    [toast, fail],
+    [delayedToast, toast, fail],
   );
 
   const startDirect = useCallback(

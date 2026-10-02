@@ -2,6 +2,19 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-02 — End obsolete autosave feedback
+
+Instant settings and queued CoachHelm saves use the shared request-lifetime
+notice helper. CH-1902 and its pending timer end on settlement, screen unmount,
+or team-scope change. Stale A → B → A callbacks cannot revive old feedback;
+old cleanup preserves new-scope notices. Feedback cancellation does not cancel
+writes or queues and does not alter busy guards, rollback, Retry or quiet
+success behavior. The 5-second threshold and default 4-second confirmations /
+8-second errors are unchanged. Two focused Settings cases confirm cleanup
+after independent notification and CoachHelm saves. The shared verification
+set has 21 unique passing cases: 11 Toast and 10 page/action cases. No later
+optimized-build or browser result is claimed by this entry.
+
 ## 2026-10-02 — Keep narrow desktop sections in view
 
 ```text

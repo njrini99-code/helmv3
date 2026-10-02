@@ -3,6 +3,27 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row
 "Foundation"); the per-gate checklist is `docs/clubhouse/screens/foundation.md`.
 
+## 2026-10-02 — Request-lifetime slow feedback
+
+- Focused verification: 21 unique cases pass, exit 0. These are 11 cases in
+  `toast-timers.test.tsx` and 10 selected CH-1902 / CH-4902 / CH-5902 cases
+  across `shell`, `stats-team`, `stats-player`, `messages` and `settings`
+  tests. Other page cases were not run in this focused selection.
+- Toast cases verify visible-notice abort, timer/listener cleanup on timeout,
+  eviction, scope change and unmount, and the unchanged 4-second confirmation
+  and 8-second error durations. Scheduling still uses the 5-second threshold.
+- Delayed feedback ends on settlement, replacement, unmount or team-scope
+  change. Stale ShowToast and scheduling callbacks cannot revive a prior
+  scope, including A → B → A returns. New-scope layout-effect registrations
+  retain their timers/listeners through old-scope passive cleanup.
+- Page/action cases verify settled and replaced Stats feedback, Settings
+  notification and CoachHelm saves, shared-action success feedback, and a
+  Messages mute failure whose error remains after its slow notice disappears.
+  Writes, queues, busy guards, refusal/retry and quiet success remain intact.
+- Scoped ESLint for 13 changed source/test files and the final two-file Toast
+  scope repair passed, exit 0. Diff check passed, exit 0. This entry claims no
+  subsequent optimized-build, browser, physical-device or production result.
+
 ## Current verification status
 
 ```text

@@ -7,8 +7,8 @@ green/ivory identity, floating materials and Apple Messages direction.
 
 ## Current evidence
 
-The pushed c1e81e0fe revision passes CI. Shared Modal, PhoneScreen, More and
-Bell
+The earlier pushed c1e81e0fe revision passed CI. Shared Modal, PhoneScreen,
+More and Bell
 keep the background stationary through nested overlays and exits. WebKit
 375/390/430 checks cover scroll restoration, focus, rapid reopen, pointer
 cancellation and a paused short drag. Physical iPhone Safari remains unverified.
@@ -61,7 +61,9 @@ keyboard sizing is verified separately from actual iPhone keyboard behavior.
 - **Medium.** Observation: Scrambling fractures mid-word in the 320px Stats
   summary.; Correction and acceptance: Use two columns inside the same card at
   360px and below; preserve four columns at 375px and unchanged text sizes,
-  values and colors.; State: WebKit verification passed
+  values and colors. Scope this rule to the four team figures; the player's
+  three figures retain their designed row rather than a vacant fourth cell.;
+  State: WebKit verification passed at 320/375/390px
 
 - **Medium.** Observation: At small laptop widths the selected Roster profile is
   below the card list, outside the first viewport. The supplied handoff
@@ -72,6 +74,14 @@ keyboard sizing is verified separately from actual iPhone keyboard behavior.
 These are observations with source/runtime evidence, not a numeric product
 score.
 Agents keep scoped reports and geometry in local ignored evidence directories.
+Capture filenames name the c1e81e0 base with this task's uncommitted patch;
+product source was then frozen and committed as a32c933e0. The optimized
+benchmark uses that committed source, with only harness-local configuration.
+
+The new shared dialog helper and several existing Clubhouse controls/styles are
+semantically unmapped in the feature registry. This is reported here; the
+existing page manifests, P001/P008/P013/P014 contracts and UI ownership index
+govern the repair. Recruiting's mapped feature document was also updated.
 
 ## Smoothness acceptance
 
@@ -84,10 +94,54 @@ existing 260ms token and transform/opacity. Reduced motion closes immediately.
 The performance pass uses an optimized committed snapshot against disposable
 local data: eight players, 114 rounds, 2,016 holes and 5,782 shots. It records
 three-run medians under 4x CPU throttling for coach/player Home and Stats cold
-loads, navigation, period changes and profile tabs at 390/1280px. Inspect raw
-layout shifts, blank/skeleton flashes, input-to-paint durations, long tasks,
-read waves and useful-content timing together. This is a current baseline;
-there is no before/after speed claim without comparable runs of both revisions.
+loads, navigation, period changes and profile tabs at 390/1280px. The a32c933e0
+baseline completed 44 cases / 132 trials without a blank flash or recorded
+runtime problem. The largest case-median input duration was 88ms; the highest
+cold case-median total blocking time was 161ms. These are local Chromium
+measurements, not physical Safari or production database timings.
+
+The baseline exposed phone layout movement after period changes: player
+Qualifiers 0.1116 raw layout shift, Last 10 0.0956, Season 0.0379; coach team
+Season 0.0521. Standard CLS excludes these recent-input shifts, which is why
+raw shifts and actual element positions are necessary here. The follow-up
+stabilizes missing comparison/caption space and keeps sample caveats inside the
+existing player overview card. Values, thresholds and missing-data states stay
+unchanged. WebKit shows identical anchors across the three periods at
+320/375/390px. The player overview is 204.969px tall at 320px rather than the
+unintended four-cell layout's 299.750px. At 390px the team loading header,
+controls, figures, caption and chart exactly match their loaded dimensions;
+the former chart handoff was displaced 44.36px. Player loading handoff and
+narrow personalized-caption parity were not established. Optimized
+after-measurement is required before claiming the raw-shift correction.
+
+Slow feedback had a separate lifetime defect: its timer stopped on settlement,
+but a notice already shown could still claim old figures were displayed. The
+shared feedback lifetime now removes a notice on completion, replacement or
+unmount, without cancelling writes. Scope ownership protects new-team feedback
+from old cleanup and prevents stale callbacks from repopulating old notices.
+The five-second threshold and normal four/eight-second durations are retained.
+
+The 680.9ms player-phone Home-to-Stats content-availability median includes
+opening More and selecting Stats. It is not route latency from the Stats tap.
+Its measured server response was 113.4ms with zero total blocking time. The
+content probe detects a live, non-busy node, not finished paint; overlapping
+read durations are not summed into a claim of server wall time. Source and
+trace correlation did not justify a loader or database rewrite in this pass.
+
+Messages stress used 254 disposable local messages with the existing newest
+200 rendered, at 390/1280px under the same 4x CPU throttle. Six trials retained
+the reader's scroll position while the composer grew. Scrolling and typing
+recorded no long tasks; animation-frame interval p95 was at most 16.8ms during
+those phases. This is scheduling evidence, not physical-device frame pacing.
+The phone conversation-open event measured 144ms in each trial.
+
+Continuous automated typing produced contradictory long Event Timing entries
+despite uninterrupted frames, so those entries are not treated as a product
+responsiveness result. An isolated follow-up exercised 19 individual keys per
+viewport: input-to-next-frame maximum 17.3ms phone / 16.7ms desktop, with
+largest recorded keyboard event 24ms. Native iPhone keyboard behavior remains
+unverified. The existing 200-message history cap is unchanged; this stress run
+does not establish access to older stored history.
 
 Production Supabase performance advisors were read without changing schema or
 customer data. They flag possible index/RLS work, but do not establish the cause
