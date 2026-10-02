@@ -97,6 +97,38 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P007__list__coach__1440__default__after__ba75b0a.png` | after | ba75b0a | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__list__coach__1440__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__list__coach__375__default__after__ba75b0a.png` | after | ba75b0a | list (coach), 375px, default; /clubhouse-preview/messages?state=rail, synthetic preview fixture |
+| `P007__list__coach__375__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 375px, default; /clubhouse-preview/messages?state=rail, synthetic preview fixture |
+| `P007__list__coach__390__default__after__ba75b0a.png` | after | ba75b0a | list (coach), 390px, default; /clubhouse-preview/messages?state=rail, synthetic preview fixture |
+| `P007__list__coach__390__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 390px, default; /clubhouse-preview/messages?state=rail, synthetic preview fixture |
+| `P007__list__coach__430__default__after__ba75b0a.png` | after | ba75b0a | list (coach), 430px, default; /clubhouse-preview/messages?state=rail, synthetic preview fixture |
+| `P007__list__coach__430__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 430px, default; /clubhouse-preview/messages?state=rail, synthetic preview fixture |
+| `P007__thread__coach__1440__composer-draft__after__f724065.png` | after | f724065 | thread (coach), 1440px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__1440__composer-draft__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 1440px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__1440__composer-draft__before__ba75b0a.png` | before | ba75b0a | thread (coach), 1440px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__1440__thread-open__after__f724065.png` | after | f724065 | thread (coach), 1440px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__1440__thread-open__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 1440px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__1440__thread-open__before__ba75b0a.png` | before | ba75b0a | thread (coach), 1440px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__375__composer-draft__after__f724065.png` | after | f724065 | thread (coach), 375px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__375__composer-draft__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 375px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__375__composer-draft__before__ba75b0a.png` | before | ba75b0a | thread (coach), 375px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__375__thread-open__after__f724065.png` | after | f724065 | thread (coach), 375px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__375__thread-open__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 375px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__375__thread-open__before__ba75b0a.png` | before | ba75b0a | thread (coach), 375px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390__composer-draft__after__f724065.png` | after | f724065 | thread (coach), 390px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390__composer-draft__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 390px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390__composer-draft__before__ba75b0a.png` | before | ba75b0a | thread (coach), 390px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390__thread-open__after__f724065.png` | after | f724065 | thread (coach), 390px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390__thread-open__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 390px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390__thread-open__before__ba75b0a.png` | before | ba75b0a | thread (coach), 390px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__430__composer-draft__after__f724065.png` | after | f724065 | thread (coach), 430px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__430__composer-draft__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 430px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__430__composer-draft__before__ba75b0a.png` | before | ba75b0a | thread (coach), 430px, composer-draft; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__430__thread-open__after__f724065.png` | after | f724065 | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__430__thread-open__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__430__thread-open__before__ba75b0a.png` | before | ba75b0a | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
 
 ## Open verification gaps
 

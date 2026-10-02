@@ -12,7 +12,7 @@
 | Phone spec | [phone/coachhelm.md](../../phone/coachhelm.md) |
 | Design boards | [Player - CoachHelm.html](../../../../design/handoff/Player%20-%20CoachHelm.html) · [Coach - CoachHelm.html](../../../../design/handoff/Coach%20-%20CoachHelm.html) · [helm3.jsx](../../../../design/handoff/helm3.jsx) · [helm3.css](../../../../design/handoff/helm3.css) · [coachhelm2.css](../../../../design/handoff/coachhelm2.css) · [Coach and Player - CoachHelm - Mobile.html](../../../../design/handoff/Coach%20and%20Player%20-%20CoachHelm%20-%20Mobile.html) · [helm3.jsx](../../../../design/handoff/helm3.jsx) |
 | Code | [coachhelm](../../../../src/clubhouse/screens/coachhelm) · [coachhelm.ts](../../../../src/clubhouse/data/coachhelm.ts) · [coachhelm.tsx](../../../../src/clubhouse/routes/coachhelm.tsx) · [coachhelm.css](../../../../src/clubhouse/styles/coachhelm.css) |
-| Audits | [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [all audits](../../AUDITS.md) |
+| Audits | [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "CoachHelm" |
 | Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 <!-- clubhouse:related:end -->

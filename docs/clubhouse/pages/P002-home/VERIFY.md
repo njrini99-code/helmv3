@@ -103,6 +103,30 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P002__dashboard__coach__1440__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__before__f724065.png` | before | f724065 | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__375__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 375px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__375__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 375px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__375__default__before__f724065.png` | before | f724065 | dashboard (coach), 375px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__before__f724065.png` | before | f724065 | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__430__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 430px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__430__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 430px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__430__default__before__f724065.png` | before | f724065 | dashboard (coach), 430px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__before__f724065.png` | before | f724065 | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__375__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 375px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__375__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 375px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__375__default__before__f724065.png` | before | f724065 | dashboard (player), 375px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__before__f724065.png` | before | f724065 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__430__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__430__default__before__f724065.png` | before | f724065 | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
 
 ## Open verification gaps
 

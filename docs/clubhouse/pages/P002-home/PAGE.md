@@ -12,7 +12,7 @@
 | Phone spec | [phone/home.md](../../phone/home.md) |
 | Design boards | [Coach - Home.html](../../../../design/handoff/Coach%20-%20Home.html) · [Coach Home v3.html](../../../../design/handoff/Coach%20Home%20v3.html) · [coach-home-v3.jsx](../../../../design/handoff/coach-home-v3.jsx) · [Player - Home.html](../../../../design/handoff/Player%20-%20Home.html) · [player-home.jsx](../../../../design/handoff/player-home.jsx) · [player-home.css](../../../../design/handoff/player-home.css) · [Coach - Home - Mobile.html](../../../../design/handoff/Coach%20-%20Home%20-%20Mobile.html) · [m-home.jsx](../../../../design/handoff/m-home.jsx) · [m-home.css](../../../../design/handoff/m-home.css) · [Player - Home - Mobile.html](../../../../design/handoff/Player%20-%20Home%20-%20Mobile.html) · [m-player-home.jsx](../../../../design/handoff/m-player-home.jsx) · [m-player-home.css](../../../../design/handoff/m-player-home.css) |
 | Code | [home](../../../../src/clubhouse/screens/home) · [home.ts](../../../../src/clubhouse/data/home.ts) · [home.css](../../../../src/clubhouse/styles/home.css) |
-| Audits | [all audits](../../AUDITS.md) |
+| Audits | [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Home" |
 | Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 <!-- clubhouse:related:end -->

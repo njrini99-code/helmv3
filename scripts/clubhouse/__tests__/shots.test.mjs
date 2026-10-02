@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { buildName, checkScreenshotLog, checkStore, looseCaptures, looksClubhouse, parseName, validateFields } from '../shots.mjs';
+import { appendRows, buildName, checkScreenshotLog, logRows, checkStore, looseCaptures, looksClubhouse, parseName, validateFields } from '../shots.mjs';
 
 const fields = { page: 'P007', surface: 'list', role: 'coach', viewport: '390', state: 'unread-mixed', phase: 'before', sha7: 'a1b2c3d' };
 const NAME = 'P007__list__coach__390__unread-mixed__before__a1b2c3d.png';
@@ -87,4 +87,17 @@ test('import moves a loose capture into the store under its label, records it, a
   assert.equal(run('check').status, 0);
   writeFileSync(join(store, 'P007-messages/2026-10-01/stray.png'), 'x');
   assert.equal(run('check').status, 1);
+});
+
+test('log: rows come from manifest entries, skip labels already listed, and append to the end of the table', () => {
+  const entries = [{ file: NAME, fixture: '/clubhouse-preview/messages?state=rail (synthetic preview fixture)' }, { file: 'notes.txt' }];
+  const rows = logRows(entries, '');
+  assert.equal(rows.length, 1);
+  assert.match(rows[0], new RegExp(`^\\| \`${NAME}\` \\| before \\| a1b2c3d \\| list \\(coach\\), 390px, unread-mixed; /clubhouse-preview/messages\\?state=rail, synthetic preview fixture \\|$`));
+  assert.deepEqual(logRows(entries, `| ${NAME} | before |`), []);
+  const md = `# P007\n\n## Screenshots\n\nPointer.\n\n| Label | Phase | Commit | What it shows |\n| --- | --- | --- | --- |\n\n## Open verification gaps\n`;
+  const out = appendRows(md, rows);
+  assert.ok(out.indexOf(rows[0]) > out.indexOf('| --- |') && out.indexOf(rows[0]) < out.indexOf('## Open'));
+  assert.deepEqual(checkScreenshotLog(out, 'v.md', 'P007'), []);
+  assert.equal(appendRows('# no section\n', rows), '# no section\n');
 });

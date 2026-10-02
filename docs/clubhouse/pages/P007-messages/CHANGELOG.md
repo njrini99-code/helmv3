@@ -3,6 +3,40 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Aesthetic audit: unread rows read as unread, placeholders and initials hold their floors
+
+```text
+PR/commit:      agent/swap-audit (#2111): ba75b0a24 (list), f724065db (thread)
+Design package: none (owner's aesthetic audit guide, 2026-10-01)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; visual only
+Held items:     none
+```
+
+- **Issue.** (1) On the phone the ink ramp had no step: tertiary text was raised
+  to hold 4.5:1 on the darker page and sat 1.1 contrast points under secondary
+  (7.4 against 6.3 on a card), so a preview, a time and a caption read as one
+  gray. (2) An unread row differed from a read one by a name at 600 against 500
+  and a preview 1.1 points darker. (3) The search placeholder measured 2.8:1 on
+  the phone page. (4) A thread's 30px coin drew its initials at 10.2px, under
+  the phone's 12px floor (Q-141).
+- **Fix.** `tokens.css` (phone block): `--ch-ink-600` is `#46433d`, 9.3 against
+  6.3. `messages.css`: an unread row's name is 700 and its preview
+  `--ch-ink-700` (11.1:1; a read preview stays tertiary, 6.3:1). `controls.css`:
+  search, input and textarea placeholders use `--ch-text-tertiary` (5.5:1 on the
+  page). `ui.css`: on the phone an avatar's initials are the larger of 34% of
+  the coin and the smaller of 12px and 42% of it. The last three are shared, so
+  every phone page takes them (recaptured before each later family).
+- **Not done, on purpose.** The selected state of the phone filter chips (the
+  board's raised white) and the solid green disc a group draws (the board's
+  `.m-grp`) are owner calls: Q-148 and Q-149.
+- **Verification.** Before and after at 375, 390, 430 and 1440 on the Messages
+  preview fixture; the labels are in VERIFY.md "Screenshots".
+  `messages.test.tsx` 66 of 66. No overflow, clipping or off-screen element at
+  any width; no touch target under 44px by hit test. Not tested: a real iPhone,
+  the keyboard-open state, the installed app.
+
 ## 2026-10-01 — Page pass: stale threads said, failed text in its bubble
 
 PAGE_PERFORMANCE.md rules 4 and 11.

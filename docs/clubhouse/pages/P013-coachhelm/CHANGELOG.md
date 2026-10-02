@@ -3,6 +3,28 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Aesthetic audit: a two-line metric label takes caption leading
+
+```text
+PR/commit:      agent/swap-audit (#2111): 6f5f08123
+Design package: none (owner's aesthetic audit guide, 2026-10-01)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; visual only
+Held items:     none
+```
+
+- **Issue.** The evidence chart's metric label ran at line-height 1.0; on a
+  phone it wraps ("Downhill penalty vs level putts (distance-controlled)", 286px
+  at 390px) and the two lines touched.
+- **Fix.** `coachhelm.css`: `.ch-hl-ev__l` is 12.5px at 1.3. Nothing in
+  `src/lib/coachhelm` or any data path changed.
+- **Not done, on purpose.** The Program pulse card keeps its reserved height (a
+  performance rule: nothing below moves when the rows land); the three
+  filter-chip languages are Q-148.
+- **Verification.** Before and after at 375, 390, 430 and 1440, coach and
+  player. `coachhelm-views.test.tsx` 22 of 22.
+
 ## 2026-10-01 — The CoachHelm gate reads in two round trips
 
 The gate (`src/lib/coachhelm/v2/gate.ts`) stood in front of every CoachHelm

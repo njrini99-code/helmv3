@@ -2,6 +2,22 @@
 
 Every Clubhouse change with the issue it fixed, newest first. Each page's own changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-01 (aesthetic audit)
+
+| Page | Issue | Fix |
+| --- | --- | --- |
+| All phone pages | **Secondary and tertiary text read as one gray (aesthetic audit M-L1).** Tertiary was raised to hold 4.5:1 on the darker page and sat 1.1 contrast points under secondary. | `tokens.css` phone block: `--ch-ink-600` is `#46433d` (9.3 against 6.3). Q-147. |
+| All pages | **Search, input and textarea placeholders measured 2.8:1 on the phone page (M-L3).** | `controls.css`: they use `--ch-text-tertiary`. Q-147. |
+| All phone pages | **A 30px coin drew its initials at 10.2px (M-T1).** | `ui.css`: the phone's 12px floor, with a 42% rule for a coin too small for it. Q-147. |
+| Messages | **Unread rows barely differed from read ones (M-L2).** | Unread name 700, unread preview `--ch-ink-700`. |
+| Home | **Stacked coins hid their initials (H-1); the latest round's stats floated 171px to 234px below its scorecard (H-2).** | Overlap 4px; the footer follows the scorecard. |
+| Rounds | **The shot screen kept desktop gutters on a phone (S-1): a container query on its own container never ran.** | `.ch-rt-q` is the container; the phone's 12px padding applies and the strip bleeds. |
+| Calendar | **Events sharing a column showed "Sh..." (C-1); audience coins hid their initials (C-2).** | Shared blocks wrap their title and keep the start time; overlap 5px. |
+| CoachHelm | **A two-line metric label ran at line-height 1.0 (CH-1).** | 1.3. |
+| Qualifiers | Audited, no defect found. | None. |
+
+Findings, evidence and the owner questions (Q-148 to Q-151) are in `AESTHETIC_AUDIT.md`.
+
 ## 2026-10-01 (CI on PR #2111)
 
 | Page | Issue | Fix |

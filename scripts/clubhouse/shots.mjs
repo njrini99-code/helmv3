@@ -24,6 +24,9 @@
  *                                (a no-op success when there is no store, as in CI); warns, never fails, about
  *                                Clubhouse captures left in the scratch dirs (SCRATCH_DIRS) instead of the store
  *   clubhouse:shots -- index     writes INDEX.md in the store, grouped by page
+ *   clubhouse:shots -- log --page P007 [--write]
+ *       prints (or, with --write, appends to the page's VERIFY.md "Screenshots" table) one row per recorded file
+ *       that the table does not list yet; each row is read from the manifest, nothing is made up
  */
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
@@ -153,6 +156,33 @@ export function checkScreenshotLog(md, at, pageId) {
     if (!shows) v.push(`${at}: Screenshots row ${name} does not say what it shows`);
   }
   return v;
+}
+
+/** The VERIFY.md table rows for these manifest entries (label, phase, commit, what it shows), skipping labels already listed. */
+export function logRows(entries, existingMd = '') {
+  const cell = (x) => String(x ?? '').replace(/\|/g, '\\|');
+  return entries
+    .filter((e) => parseName(e.file) && !existingMd.includes(e.file))
+    .sort((a, b) => a.file.localeCompare(b.file))
+    .map((e) => {
+      const f = parseName(e.file);
+      const shows = `${f.surface} (${f.role}), ${f.viewport}px, ${f.state}${e.fixture ? `; ${String(e.fixture).replace(/ \(synthetic preview fixture\)/, ', synthetic preview fixture')}` : ''}`;
+      return `| \`${e.file}\` | ${f.phase} | ${f.sha7} | ${cell(shows)} |`;
+    });
+}
+
+/** `md` with `rows` appended to the end of its "## Screenshots" table; unchanged when there are none or no section. */
+export function appendRows(md, rows) {
+  if (!rows.length) return md;
+  const lines = md.split('\n');
+  const start = lines.findIndex((l) => /^##\s+Screenshots\s*$/.test(l));
+  if (start < 0) return md;
+  const end = lines.findIndex((l, i) => i > start && /^##\s/.test(l));
+  let last = -1;
+  for (let i = start + 1; i < (end < 0 ? lines.length : end); i += 1) if (lines[i].trim().startsWith('|')) last = i;
+  if (last < 0) return md;
+  lines.splice(last + 1, 0, ...rows);
+  return lines.join('\n');
 }
 
 /** Scratch directories where captures pile up; a Clubhouse capture left there is unlabeled and unlogged. */
@@ -334,6 +364,24 @@ function cmdCheck(root) {
   console.log(`clubhouse:shots check clean: ${files.filter((f) => f.endsWith('.png')).length} screenshot(s), ${warnings.length + (loose.length ? 1 : 0)} warning(s).`);
 }
 
+function cmdLog(opts, root) {
+  const pages = loadPages(root);
+  if (!pages.has(opts.page)) fail(`page "${opts.page}" is not in config/clubhouse/pages`);
+  const dir = join(storeDir(root), pageDir(pages, opts.page));
+  if (!existsSync(dir)) fail(`no screenshots for ${opts.page} in ${dir}`);
+  const entries = [];
+  for (const day of readdirSync(dir)) {
+    const m = join(dir, day, 'manifest.json');
+    if (existsSync(m)) entries.push(...JSON.parse(readFileSync(m, 'utf8')));
+  }
+  const verify = join(root, 'docs/clubhouse/pages', pageDir(pages, opts.page), 'VERIFY.md');
+  const md = existsSync(verify) ? readFileSync(verify, 'utf8') : '';
+  const rows = logRows(entries, md);
+  if (!opts.write) return console.log(rows.join('\n') || '(every recorded file is already listed)');
+  writeFileSync(verify, appendRows(md, rows));
+  console.log(`${verify}: ${rows.length} row(s) added`);
+}
+
 function cmdIndex(root) {
   const dir = storeDir(root);
   if (!existsSync(dir)) fail(`no screenshot store at ${dir}`);
@@ -361,7 +409,7 @@ function main() {
   const { values, positionals } = parseArgs({
     args: rest,
     allowPositionals: true,
-    options: Object.fromEntries(['page', 'surface', 'role', 'viewport', 'state', 'phase', 'sha', 'date', 'route', 'fixture', 'browser', 'note'].map((k) => [k, { type: 'string' }])),
+    options: { ...Object.fromEntries(['page', 'surface', 'role', 'viewport', 'state', 'phase', 'sha', 'date', 'route', 'fixture', 'browser', 'note'].map((k) => [k, { type: 'string' }])), write: { type: 'boolean' } },
   });
   const root = rootDir();
   if (cmd === 'name') cmdName(values, root);
@@ -369,7 +417,8 @@ function main() {
   else if (cmd === 'import') cmdImport(positionals[0], values, root);
   else if (cmd === 'check') cmdCheck(root);
   else if (cmd === 'index') cmdIndex(root);
-  else fail('usage: clubhouse:shots -- <name|record|import|check|index> (see the header of scripts/clubhouse/shots.mjs)');
+  else if (cmd === 'log') cmdLog(values, root);
+  else fail('usage: clubhouse:shots -- <name|record|import|check|index|log> (see the header of scripts/clubhouse/shots.mjs)');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

@@ -126,6 +126,30 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P009__detail__coach__1440__live__baseline__ee5976d.png` | baseline | ee5976d | detail (coach), 1440px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__detail__coach__1440__live__before__2b04867.png` | before | 2b04867 | detail (coach), 1440px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__detail__coach__375__live__baseline__ee5976d.png` | baseline | ee5976d | detail (coach), 375px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__detail__coach__375__live__before__2b04867.png` | before | 2b04867 | detail (coach), 375px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__detail__coach__390__live__baseline__ee5976d.png` | baseline | ee5976d | detail (coach), 390px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__detail__coach__390__live__before__2b04867.png` | before | 2b04867 | detail (coach), 390px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__detail__coach__430__live__baseline__ee5976d.png` | baseline | ee5976d | detail (coach), 430px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__detail__coach__430__live__before__2b04867.png` | before | 2b04867 | detail (coach), 430px, live; /clubhouse-preview/qualifier?q=live, synthetic preview fixture |
+| `P009__list__coach__1440__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 1440px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__coach__1440__default__before__2b04867.png` | before | 2b04867 | list (coach), 1440px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__coach__375__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 375px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__coach__375__default__before__2b04867.png` | before | 2b04867 | list (coach), 375px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__coach__390__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 390px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__coach__390__default__before__2b04867.png` | before | 2b04867 | list (coach), 390px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__coach__430__default__baseline__ee5976d.png` | baseline | ee5976d | list (coach), 430px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__coach__430__default__before__2b04867.png` | before | 2b04867 | list (coach), 430px, default; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__list__player__1440__default__baseline__ee5976d.png` | baseline | ee5976d | list (player), 1440px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__list__player__1440__default__before__2b04867.png` | before | 2b04867 | list (player), 1440px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__list__player__375__default__baseline__ee5976d.png` | baseline | ee5976d | list (player), 375px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__list__player__375__default__before__2b04867.png` | before | 2b04867 | list (player), 375px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__list__player__390__default__baseline__ee5976d.png` | baseline | ee5976d | list (player), 390px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__list__player__390__default__before__2b04867.png` | before | 2b04867 | list (player), 390px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__list__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | list (player), 430px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__list__player__430__default__before__2b04867.png` | before | 2b04867 | list (player), 430px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
 
 ## Open verification gaps
 

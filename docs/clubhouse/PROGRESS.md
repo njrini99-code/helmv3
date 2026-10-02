@@ -1524,6 +1524,38 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-151 (open, 2026-10-01; not built) The shot screen's hole strip draws 34px
+  chips (the board, `rounds-track.css`), and the 96px phone map's shot numbers
+  draw at 7.5px (an SVG scaled down). `MOBILE.md` asks for 44px targets and the
+  phone floor is 12px. Neither fits without redrawing: a 40px chip shows 8 holes
+  where 9 show now; a 12px number needs a larger marker. Recommended: 40px chips,
+  and leave the map digits (they repeat the order the dotted line already shows).
+  The audit fixed what the board did not intend (the strip's bleed, Q-147).
+- Q-150 (open, 2026-10-01; not built) The Home and Calendar conflict marker is
+  an icon-only triangle ("Overlaps another event" is its tooltip and screen-reader
+  text); a tooltip does not show on a touch screen. Recommended: a visible word
+  ("Overlaps") beside the triangle on the phone. Copy, so the owner's call.
+- Q-149 (open, 2026-10-01; not built) The phone inbox draws a group as a solid
+  green disc (the board, `m.css` `.m-grp`) and a person as a pale one, so the
+  heaviest mark on the screen belongs to the groups, read or not, while the
+  unread person has the faintest. Recommended: keep the board's disc for a group
+  with unread messages only, and draw a read group as the desktop does (green-100,
+  green-700 icon). Board decision, so not built.
+- Q-148 (open, 2026-10-01; not built) Phone filter chips have three selected
+  states: raised white (Messages, `qm-chip`), mint tint with a green ring
+  (Qualifiers, `qf-pill`) and solid green (CoachHelm's views and players). Messages
+  is the weakest: its selected and unselected fills are within 1.0 to 1.07 in
+  contrast, and a shadow carries the difference. Recommended: the mint tint everywhere (green-50 fill, green-600
+  ring, green-700 text at 600): clear without the weight of solid green. Each is
+  the owner's board, so not built.
+- Q-147 (open, 2026-10-01; built, reversible) The aesthetic audit (`AESTHETIC_AUDIT.md`)
+  changed three shared things: the phone's secondary ink (`--ch-ink-600`
+  #55524b to #46433d, so secondary and tertiary text are 3 contrast points apart
+  again, 9.3 against 6.3, not 1.1, 7.4 against 6.3), search and input placeholders (ink-400 at 2.8:1 to tertiary at 5.5:1)
+  and the avatar initials floor (a 30px coin drew 10.2px initials; 12px now),
+  plus visual fixes on Messages, Home, Rounds (shot screen), Calendar and CoachHelm.
+  Recommended: review the before and after shots (the PR description) and keep.
+  Each is one rule to revert.
 - Q-146 (open, 2026-10-01; built, reversible: fail closed) The CoachHelm gate
   (`src/lib/coachhelm/v2/gate.ts`, shared with Fairway) fails open when the
   coach settings, staff, team memberships or team settings read errors (it

@@ -4,6 +4,36 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.
 
+## 2026-10-01 — Aesthetic audit: the shot screen uses the phone's gutters
+
+```text
+PR/commit:      agent/swap-audit (#2111): cee8548a0
+Design package: none (owner's aesthetic audit guide, 2026-10-01)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; visual only
+Held items:     none
+```
+
+- **Issue.** The phone rule `.ch-rt { padding: 4px 12px 0 }` sat inside
+  `@container chrt`, and `.ch-rt` was itself the `chrt` container; a container
+  query never matches its own container, so the rule never applied. On a 390px
+  phone the shot screen kept the desktop's 28px gutters: cards 335px wide
+  instead of 366px, and the hole strip (margin -12px, drawn to bleed to the
+  edges) stopped 16px short of both with square corners. The board is
+  `design/handoff/rounds-track.css`, where the container is outside `.rt`.
+- **Fix.** `RoundTracking.tsx` wraps the screen in `.ch-rt-q`;
+  `rounds-track.css` gives the container to the wrapper. The desktop is
+  unchanged (padding 28px, checked at 1440).
+- **Not done, on purpose.** The strip's 34px chips (the board; `MOBILE.md` says
+  44px) and the map's 7.5px shot numbers: Q-151.
+- **Verification.** Before and after at 375, 390, 430 and 1440 for the approach
+  step, the putt step and the submit-failed overlay. `round-tracking`,
+  `round-save-status` and `round-entry` tests, 68 of 68. Not tested: landscape
+  and short heights, repeated taps, save, exit, reload and resume against real
+  data (this is a stylesheet and wrapper change, not a persistence one), a real
+  iPhone.
+
 ## 2026-10-01 — The round's save line tells the truth
 
 Owner rule 3 (2026-10-01): "Saved" only once the server confirms; before that,

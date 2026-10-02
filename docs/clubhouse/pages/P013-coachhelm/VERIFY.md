@@ -189,6 +189,30 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P013__insights__coach__1440__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__1440__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__1440__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 1440px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__375__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 375px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__375__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 375px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__375__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 375px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__390__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 390px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__430__assigned__after__6f5f081.png` | after | 6f5f081 | insights (coach), 430px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__430__assigned__baseline__ee5976d.png` | baseline | ee5976d | insights (coach), 430px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__coach__430__assigned__before__2b04867.png` | before | 2b04867 | insights (coach), 430px, assigned; /clubhouse-preview/coachhelm?state=assigned, synthetic preview fixture |
+| `P013__insights__player__1440__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__1440__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__1440__default__before__2b04867.png` | before | 2b04867 | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__375__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 375px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__375__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 375px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__375__default__before__2b04867.png` | before | 2b04867 | insights (player), 375px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__390__default__before__2b04867.png` | before | 2b04867 | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__430__default__after__6f5f081.png` | after | 6f5f081 | insights (player), 430px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | insights (player), 430px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__insights__player__430__default__before__2b04867.png` | before | 2b04867 | insights (player), 430px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
 
 ## Open verification gaps
 

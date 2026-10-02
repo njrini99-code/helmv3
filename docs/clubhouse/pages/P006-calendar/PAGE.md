@@ -12,7 +12,7 @@
 | Phone spec | [phone/calendar.md](../../phone/calendar.md) |
 | Design boards | [Coach - Calendar.html](../../../../design/handoff/Coach%20-%20Calendar.html) · [Calendar.html](../../../../design/handoff/Calendar.html) · [cal-views.jsx](../../../../design/handoff/cal-views.jsx) · [cal-inspector.jsx](../../../../design/handoff/cal-inspector.jsx) · [cal-editor.jsx](../../../../design/handoff/cal-editor.jsx) · [Coach - Calendar - Mobile.html](../../../../design/handoff/Coach%20-%20Calendar%20-%20Mobile.html) · [m-cal.jsx](../../../../design/handoff/m-cal.jsx) |
 | Code | [calendar](../../../../src/clubhouse/screens/calendar) · [calendar.ts](../../../../src/clubhouse/data/calendar.ts) · [calendar.tsx](../../../../src/clubhouse/routes/calendar.tsx) · [calendar.css](../../../../src/clubhouse/styles/calendar.css) |
-| Audits | [all audits](../../AUDITS.md) |
+| Audits | [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Calendar" |
 | Screenshots | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 <!-- clubhouse:related:end -->

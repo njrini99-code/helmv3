@@ -2,6 +2,32 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Aesthetic audit: the stacked coins clear their initials, the latest round's stats follow its scorecard
+
+```text
+PR/commit:      agent/swap-audit (#2111): 4e01c43d8
+Design package: none (owner's aesthetic audit guide, 2026-10-01)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; visual only
+Held items:     none
+```
+
+- **Issue.** (1) The phone's avatar stack overlapped 7px, so the last stroke of
+  four coach initials ran under the next coin (measured 1.6 to 3.3px; "TM" read
+  "TN"). (2) The latest round's stats row was pinned to the sheet's bottom,
+  171px (coach) and 234px (player) under the scorecard at 1440x1000, 38% and 46%
+  of the column, because the week beside it runs longer.
+- **Fix.** `home.css`: the stack overlaps 4px; `.ch-h-round__foot` has
+  `margin-top: 4px` instead of `auto`.
+- **Not done, on purpose.** The space under the stats is still there (it moved
+  to the bottom of the sheet); filling it is new content. The conflict triangle
+  on the timeline is icon-only (Q-150). The "Latest round" move is design
+  judgment and one rule to revert.
+- **Verification.** Before and after at 375, 390, 430 and 1440, coach and
+  player; the geometry report shows "initials under next coin: TM, SA, AL, JO"
+  before and none after. Not tested: a real iPhone.
+
 ## 2026-10-01 — Page performance: Home reads in fewer round trips, and its skeleton is the page's height
 
 ```text

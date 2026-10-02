@@ -2,6 +2,31 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Aesthetic audit: events that share a column wrap their title
+
+```text
+PR/commit:      agent/swap-audit (#2111): 2b0486765
+Design package: none (owner's aesthetic audit guide, 2026-10-01)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; visual only
+Held items:     none
+```
+
+- **Issue.** In the week view a three-way overlap leaves 29px of text, and the
+  one-line title showed "Sh..." and "Te..." (15 labels under half visible at
+  1440). The audience coins' initials ran under the next coin (26px coins, 8px
+  overlap).
+- **Fix.** `views.tsx` marks a block that shares its column (`ch-ev--lane`) and
+  gives it the start time only; `calendar.css`: that block has 5px padding and
+  wraps its title to three lines, a short one keeps its row and drops the time
+  (the range stays in the button's name and the side panel); the audience stack
+  overlaps 5px. Under half visible: 15 to 4.
+- **Not done, on purpose.** An overlap of four or more events is still narrow; a
+  cascade layout is a redesign.
+- **Verification.** Before and after at 375, 390, 430 and 1440, coach and
+  player. `calendar.test.tsx` 83 of 83.
+
 ## 2026-10-01 — Page pass: the week stays on screen while the next one loads
 
 PAGE_PERFORMANCE.md rules 4, 8 and 11. The audit found every failed read
