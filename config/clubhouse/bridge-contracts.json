@@ -5702,6 +5702,39 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70633,
+    "page": "P007",
+    "category": 6,
+    "item": 33,
+    "name": "TEXT_DELIVERED_ATTACHMENT_METADATA_REFUSED",
+    "chCode": "CH-7022",
+    "meaning": "Text delivered, attachment metadata refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70634,
+    "page": "P007",
+    "category": 6,
+    "item": 34,
+    "name": "ATTACHMENT_SEND_CANNOT_BE_CONFIRMED",
+    "chCode": "CH-7023",
+    "meaning": "Attachment send cannot be confirmed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70635,
+    "page": "P007",
+    "category": 6,
+    "item": 35,
+    "name": "PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED",
+    "chCode": "CH-7217",
+    "meaning": "Pending attachment recovery cannot be checked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,

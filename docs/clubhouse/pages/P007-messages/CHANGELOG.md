@@ -3,6 +3,37 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Release repair: composer resize and attachment outcome recovery
+
+The WebKit phone thread reproduced a 180px bottom gap after selecting a quote
+and
+writing six lines: the last bubble remained behind the expanded composer. The
+thread anchor now observes viewport/content size and preserves the prior reading
+intent even when Safari emits a resize scroll before the observer. Newest
+readers
+stay at the end; older readers keep their position. Before/after captures record
+the exact gap; simulated keyboard opening/closing also held the end.
+
+Attachment text can be delivered even when the metadata batch fails. The UI now
+separates complete, partial, refused and unknown outcomes. Partial recovery
+keeps
+only unsaved files and original reply target, so retry does not duplicate
+delivered
+text. Recovery filename chips now wrap unbroken names within the phone viewport.
+Unknown recovery freezes the original payload, uses the hook's same-attempt
+retry, and preserves later pending-request edits separately. The hook stores the
+exact uploaded request under the authenticated user and conversation before the
+server call. After a page reload, the composer shows the stored caption,
+filenames
+and reply target; Retry uses those original IDs and paths without uploading or
+plain-text sending again. The later ordinary draft remains durable even while a
+recovery Retry is pending. A refused recovered attachment displays filenames to
+choose again, since a reload cannot restore local File bytes. CH-7217 gates
+normal
+Send when the pending-request check cannot be completed. CH-7022/7023 preserve
+existing shared-file-open CH-7021. Local authenticated WebKit recovery verified
+lost responses after commit, reload, and stable message/attachment counts.
+
 ## 2026-10-02 — Phone messaging follows the owner's Apple Messages benchmark
 
 Branch: `codex/clubhouse-design-fidelity`. Shiro fix review and Frontend Design
@@ -18,8 +49,10 @@ Reply and swipe right select a real parent; swipe left reveals actual message
 time.
 Quotes show loaded author/text or attachment labels, truthful
 deleted/unavailable
-states, and scroll only to loaded parents. Parent jumps honor reduced motion with
-an instant scroll; the focused timestamp/quote test verifies both motion settings.
+states, and scroll only to loaded parents. Parent jumps honor reduced motion
+with
+an instant scroll; the focused timestamp/quote test verifies both motion
+settings.
 Sending forwards the existing reply
 ID
 through text and attachment hooks. Pending sends synchronously lock reply
@@ -38,7 +71,8 @@ Return/newline and selected-message context were exercised. Thread Axe scan
 reports
 zero WCAG 2 A/AA and 2.1 AA violations. Four captures are local and recorded
 under
-`P007-messages/2026-10-02`; Next's development indicator overlaps Attach in captures
+`P007-messages/2026-10-02`; Next's development indicator overlaps Attach in
+captures
 and is development-only. Physical iPhone Safari remains an owner verification
 gap.
 

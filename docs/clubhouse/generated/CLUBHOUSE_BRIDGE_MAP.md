@@ -104,7 +104,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 62 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 83 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
-| P007 | 2 | 10 | 1 | 9 | 5 | 32 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 91 |
+| P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 94 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 132 |
 | P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
@@ -644,6 +644,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70630 | CH-7214 | 06 Server / system error | `THE_SHARED_FILES_DONT_LOAD` | implemented | The shared files don't load (Details) |
 | 70631 | CH-7215 | 06 Server / system error | `THE_ADD_SHEETS_TEAM_LIST_DOESNT_LOAD` | implemented | The Add sheet's team list doesn't load |
 | 70632 | CH-7216 | 06 Server / system error | `A_CONVERSATIONS_MESSAGES_DONT_REFRESH_WHILE_AN` | implemented | A conversation's messages don't refresh while an earlier copy is shown |
+| 70633 | CH-7022 | 06 Server / system error | `TEXT_DELIVERED_ATTACHMENT_METADATA_REFUSED` | implemented | Text delivered, attachment metadata refused |
+| 70634 | CH-7023 | 06 Server / system error | `ATTACHMENT_SEND_CANNOT_BE_CONFIRMED` | implemented | Attachment send cannot be confirmed |
+| 70635 | CH-7217 | 06 Server / system error | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | implemented | Pending attachment recovery cannot be checked |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |

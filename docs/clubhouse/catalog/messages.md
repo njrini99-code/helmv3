@@ -1,10 +1,16 @@
 # Messages catalog (7xxx)
 
-Route `/golf/dashboard/messages` (coach and player) · code `src/clubhouse/screens/messages/`, loader
-`src/clubhouse/data/messages.ts` · tests `src/clubhouse/__tests__/messages.test.tsx` · preview
-`/clubhouse-preview/messages` (`?state=empty|rail|failed|thread-failed|loading|loading-route|announcement|ann-failed|files-failed|add-failed`) and
-`/clubhouse-preview/messages-player`. Below 820px the same numbers hold on the phone
-design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018 to CH-7021,
+Route `/golf/dashboard/messages` (coach and player) · code
+`src/clubhouse/screens/messages/`, loader
+`src/clubhouse/data/messages.ts` · tests
+`src/clubhouse/__tests__/messages.test.tsx` · preview
+`/clubhouse-preview/messages`
+(`?state=empty|rail|failed|thread-failed|loading|loading-route|announcement|ann-failed|files-failed|add-failed`)
+and
+`/clubhouse-preview/messages-player`. Below 820px the same numbers hold on the
+phone
+design (`MessagesPhone`, `docs/clubhouse/phone/messages.md`); CH-7018 to
+CH-7021,
 7214, 7215, 7306, 7307, 7409, 7410, 7604, 7704 and 7804 were added with it.
 
 Messages keeps the live realtime hooks (D-13). Every change runs through one
@@ -38,6 +44,8 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7019 | A coach's new group is created, but a coach picked for it couldn't be added (D-45) | "Group created, but Dan wasn't added" + "Add them from Details." (warning haptic) | `createGroup` | messages.test › CH-7019 |
 | CH-7020 | Copying a message fails (phone, from the long-press sheet) | "Couldn't copy the message" + "Try again in a moment." Done: "Copied" | `PhoneThread` | messages.test › CH-7020 |
 | CH-7021 | A shared file won't open (Details › Files) | "Couldn't open Room list · Pinehurst.pdf" + "Try again in a moment." | `FilesPanel`, `FilesSection` | messages.test › CH-7021 |
+| CH-7022 | Text delivered, attachment metadata refused | "Message sent; attachments not saved". Only unsaved files and the original reply remain; retry sends no copy of delivered text | `sendFiles`, `Composer` | messages.test › CH-7022 |
+| CH-7023 | Attachment send cannot be confirmed | Frozen original text/files/reply, "Couldn't confirm this send", Retry send; reload restores stored filenames/request identity; queued later draft survives pending Retry and resumes after confirmation | `sendFiles`, `Composer` | messages.test › CH-7023 |
 
 ## 71xx Validation
 
@@ -69,6 +77,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7214 | The shared files don't load (Details) | "Files didn't load." + "Your messages are fine…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
 | CH-7215 | The Add sheet's team list doesn't load | "The team list didn't load." Try again | `AddMembersModal` | messages.test › CH-7215 |
 | CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date." + "It didn't refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
+| CH-7217 | Pending attachment recovery cannot be checked | "Couldn’t check a pending send" + "Try again before sending another message." Try again; ordinary Send stays locked | `Composer` | messages.test › CH-7217 |
 
 ## 73xx Empty
 

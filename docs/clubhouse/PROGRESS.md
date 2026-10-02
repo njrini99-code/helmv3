@@ -9,6 +9,24 @@ with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 
+## October 2 production preparation
+
+[RELEASE_CANDIDATE.md](RELEASE_CANDIDATE.md) records PR #2121, the release
+conditions and verified boundaries. A disposable local Supabase/WebKit flow
+passed coach and player sign-in, the animated golf hole, dashboard, Messages,
+quoted reply/photo, participant read-back and private photo download.
+Fault injection lost two responses after an attachment committed; same-tab
+reload and explicit Retry retained the original IDs, with exactly one message
+and attachment. Messages now follows composer resizing only for a reader at
+the newest messages. Partial attachment refusal preserves unsaved files without
+duplicating delivered text. Forty-one screenshots are in the local store.
+
+Production remains unchanged and both Clubhouse flags remain off. The routine
+weekly deployment budget was 2/2 used when checked. Existing held database
+work, rollout scope and physical iPhone acceptance remain owner release
+conditions; this preparation does not discharge them. Final candidate build
+and CI evidence is attached to the PR.
+
 ## October 2 installed-plugin repair pass
 
 Frontend Design Premium, Shiro, Intuitive Software Design, Codebase Design

@@ -268,9 +268,11 @@ describe('Team Hub · player', () => {
     expect(reply).toHaveBeenCalledTimes(2);
     expect(within(dinner()).getByRole('radio', { name: 'Maybe' })).toHaveAttribute('aria-checked', 'true');
     expect(dinner()).toHaveAttribute('aria-busy', 'true');
+    // Retry dismisses its original toast, whose DOM stays until AnimatePresence finishes its exit.
+    // Waiting for zero also rejects a replacement failure toast from the busy attempt.
+    await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-10001"]')).toHaveLength(0));
     expect(hapticSpy).not.toHaveBeenCalledWith('error');
     expect(track.chReport).not.toHaveBeenCalled();
-    expect(document.querySelectorAll('[data-ch-code="CH-10001"]')).toHaveLength(0);
     settle({ success: true });
     await waitFor(() => expect(within(dinner()).getByRole('radio', { name: 'Maybe' })).not.toBeDisabled());
   });

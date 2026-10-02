@@ -2112,6 +2112,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
         "pattern": "src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
         "category": "tests"
@@ -2194,6 +2199,11 @@
       {
         "id": "tests:src/clubhouse/__tests__/recruiting.test.tsx",
         "pattern": "src/clubhouse/__tests__/recruiting.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/thread-anchor.test.tsx",
+        "pattern": "src/clubhouse/__tests__/thread-anchor.test.tsx",
         "category": "tests"
       },
       {
@@ -22565,6 +22575,18 @@
     },
     {
       "source": "team_communications",
+      "target": "tests:src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "tests:src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
       "kind": "feature_test",
       "evidence": [
@@ -22596,6 +22618,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/__tests__/messages*.test.*"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/clubhouse/__tests__/thread-anchor.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/thread-anchor.test.tsx"
         }
       ]
     },

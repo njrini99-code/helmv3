@@ -72,7 +72,8 @@ Result:       built to the approved spec; the iPhone pass is open
 | Destructive | 71101, 71102 | tests | confirm first, warning haptic |
 | Optimistic rollback | 71301, 70613 | test (a refused send stays marked with Retry) | bubble marked Not sent, never removed |
 
-Not forced yet against a live session: send, edit, delete and leave failures (the merge pass). A state
+Not forced yet against a live session: send, edit, delete and leave failures
+(the merge pass). A state
 never observed is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 
 ## Accessibility
@@ -148,6 +149,9 @@ before, after, baseline or evidence.
 | `P007__apple-thread__coach__390x664__group__before__cca081c.png` | before | cca081c | apple-thread (coach), 390x664px, group |
 | `P007__apple-thread__coach__390x664__long-press__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, long-press |
 | `P007__apple-thread__coach__390x664__reply-multiline__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, reply-multiline |
+| `P007__composer-resize__coach__390x664__quote-six-lines__after__ae6447d.png` | after | ae6447d | composer-resize (coach), 390x664px, quote-six-lines |
+| `P007__composer-resize__coach__390x664__quote-six-lines__before__ae6447d.png` | before | ae6447d | composer-resize (coach), 390x664px, quote-six-lines |
+| `P007__recovery-geometry__coach__390x664__unbroken-filename__after__ae6447d.png` | after | ae6447d | recovery-geometry (coach), 390x664px, unbroken-filename; populated preview; temporary DOM pending notice/quote/filename content |
 
 ## 2026-10-02 — Apple Messages phone interaction pass
 
@@ -184,6 +188,56 @@ before, after, baseline or evidence.
 Combined final production build: exit 0. Compiled in 117 seconds, TypeScript
 finished in 13.3 seconds, all 181 static pages generated and the route table
 emitted. This verifies the built source, not a deployed real-account write.
+
+## 2026-10-02 — Release repair evidence
+
+WebKit iPhone13, local populated preview at port 3120: quote plus six lines
+changed
+bottom gap 0 to 180px before repair. After repair gap 0, last message bottom
+407.55px
+and composer top 424.33px. Older-reader scrollTop 200 remained 200 when
+multiline
+input reduced the viewport. Simulated keyboard 180px padding opened/closed at
+gap 0
+(scrollTop 725 then 545). These manipulate the shared keyboard contract, not a
+physical Safari keyboard. Two local before/after shots are recorded below the
+existing screenshot table. The owned browser and dev server were closed
+afterward.
+
+UI regressions cover files-only partial retry (no delivered-text duplicate),
+unknown-payload text/file/reply locks, exact File-object retry, recovery across
+thread reopening, queued later edits restoration, resize observer ordering and
+older-reader position. The final scoped UI run passed **92/92** (78 Messages, 8
+audit, 6 anchor) in 12.03s with one worker. It also pins persisted-recovery
+reload
+summary, offline Retry locks, a failed recovery-read gate, and the queued
+ordinary
+draft remaining durable during a deferred recovery Retry.
+
+Local authenticated WebKit iPhone13 QA used two after-commit response aborts,
+then reloaded the same context: original caption, stored filenames and quote
+returned locked; Retry resolved the original identity with one message and one
+attachment. Recipient RLS readback returned 25,327 photo bytes; browser errors
+were empty. Evidence: `/tmp/helm-clubhouse-local-recovery/`. This is controlled
+local authenticated evidence, not production or physical-device verification.
+Settled 390px WebKit fixture geometry stayed within the viewport: document
+clientWidth/scrollWidth 390/390, thread x0/width390, notice/quote/pending
+filenames
+x10/width370/right380 and Send right380. The immediate authenticated QA
+screenshot
+was taken during thread entry, so its transformed edge did not establish settled
+overflow. A separate 150-character unbroken filename did expose chip text
+overflow
+(scrollWidth1388/composer1398); the scoped recovery-chip wrap rule reduced both
+to
+370/390. Geometry used temporary DOM content with the production CSS, not a
+second
+backend persistence test. Snapshot:
+`/tmp/helm-messages-recovery-geometry-settled.png`.
+
+Backend action/hook identity evidence is recorded by its owner. Source changes
+after the preceding production build require a fresh build; root owns that
+check.
 
 ## Open verification gaps
 

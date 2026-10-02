@@ -35,7 +35,10 @@ const live = vi.hoisted(() => ({
     sendTypingStatus: vi.fn(),
   },
   reactions: { rows: [] as unknown[], setReaction: vi.fn(async () => {}) },
-  files: { sendMessageWithAttachments: vi.fn(async (): Promise<{ success: boolean; error?: string }> => ({ success: true })) },
+  files: {
+    getPendingAttachmentSend: vi.fn(async (_conversationId: string): Promise<{ clientMessageId: string; content: string; replyToId: string | null; attachments: { fileName: string }[] } | null> => null),
+    retryPendingAttachmentSend: vi.fn(async (_conversationId: string): Promise<{ success: boolean; attachmentsFailed?: boolean; sendOutcome?: 'unknown' }> => ({ success: true })),
+    sendMessageWithAttachments: vi.fn(async (_options: { conversationId: string; content: string; attachments: { file: File }[]; replyToId?: string | null }): Promise<{ success: boolean; error?: string; attachmentsFailed?: boolean; sendOutcome?: "unknown" }> => ({ success: true })) },
 }));
 vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => live.convs, useGolfMessages: () => live.msgs }));
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));
@@ -80,6 +83,7 @@ vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: a.
 
 import type { ChMessagesData } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
+import { DraftStore } from '../screens/messages/drafts';
 import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
 import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
 import { ToastProvider } from '../ui/Toast';
@@ -175,6 +179,8 @@ beforeEach(() => {
   live.msgs.removeMessage.mockReset().mockResolvedValue(undefined);
   live.reactions.setReaction.mockReset().mockResolvedValue(undefined);
   live.files.sendMessageWithAttachments.mockReset().mockResolvedValue({ success: true });
+  live.files.getPendingAttachmentSend.mockReset().mockResolvedValue(null);
+  live.files.retryPendingAttachmentSend.mockReset().mockResolvedValue({ success: true });
   a.getGolfConversationFiles.mockResolvedValue({ files: [] });
   a.getGolfGroupAddCandidates.mockResolvedValue({ candidates: [] });
   a.addGolfGroupMember.mockResolvedValue({ success: true });
@@ -847,6 +853,127 @@ describe('Messages · phone', () => {
     expect(within(thread).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
     expect(within(thread).getByLabelText('Reply to You').textContent).toContain('Bus at 6:15');
     expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('CH-7022 partial attachment success keeps only the unsaved files and parent; retry never duplicates delivered text', async () => {
+    const user = userEvent.setup();
+    live.files.sendMessageWithAttachments.mockResolvedValueOnce({ success: true, attachmentsFailed: true });
+    showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    const file = new File(['x'], 'plan.pdf', { type: 'application/pdf' });
+    await user.upload(thread.querySelector('input[type="file"]') as HTMLInputElement, file);
+    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    await user.type(box, 'Delivered text');
+    hapticSpy.mockClear();
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    await expectCode('CH-7022', /Message sent; attachments not saved/);
+    expect(box.value).toBe('');
+    expect(within(thread).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
+    expect(within(thread).getByRole('button', { name: 'Cancel reply' })).toBeTruthy();
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(2));
+    expect(live.files.sendMessageWithAttachments.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ content: '', replyToId: 'm1', attachments: [expect.objectContaining({ file })] }));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7023 an unknown attachment send freezes its payload across reopening; confirmation restores the later draft', async () => {
+    const user = userEvent.setup();
+    let finish!: (value: { success: boolean; sendOutcome: 'unknown' }) => void;
+    live.files.sendMessageWithAttachments.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    const file = new File(['x'], 'plan.pdf', { type: 'application/pdf' });
+    const laterFile = new File(['y'], 'map.pdf', { type: 'application/pdf' });
+    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    const input = thread.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, file);
+    await user.type(box, 'Original text');
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    await user.type(box, 'Next draft');
+    await user.upload(input, laterFile);
+    hapticSpy.mockClear();
+    await act(async () => finish({ success: false, sendOutcome: 'unknown' }));
+    expect(box.value).toBe('Original text');
+    expect(box.readOnly).toBe(true);
+    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(thread).getByRole('button', { name: 'Remove plan.pdf' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(thread).getByRole('button', { name: 'Attach a file' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    await user.type(box, 'Changed');
+    expect(box.value).toBe('Original text');
+    await user.click(within(thread).getByRole('button', { name: 'Back to Messages' }));
+    const reopened = await openThread(user);
+    const restored = within(reopened).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    expect(restored.value).toBe('Original text');
+    expect(restored.readOnly).toBe(true);
+    expect(within(reopened).getByLabelText('Reply to You').textContent).toContain('Bus at 6:15');
+    await user.click(within(reopened).getByRole('button', { name: 'Retry send' }));
+    await waitFor(() => expect(restored.readOnly).toBe(false));
+    expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(2);
+    const first = live.files.sendMessageWithAttachments.mock.calls[0]?.[0];
+    const retry = live.files.sendMessageWithAttachments.mock.calls[1]?.[0];
+    expect(retry).toEqual(expect.objectContaining({ content: 'Original text', replyToId: 'm1' }));
+    expect(retry?.attachments[0]?.file).toBe(first?.attachments[0]?.file);
+    expect(restored.value).toBe('Next draft');
+    expect(within(reopened).getByRole('button', { name: 'Remove map.pdf' })).toBeTruthy();
+    expect(within(reopened).queryByRole('button', { name: 'Remove plan.pdf' })).toBeNull();
+    expect(within(reopened).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
+  });
+
+  it('CH-7023 after reload a pending request shows stored filenames and retries its identity; offline cannot unlock a plain send', async () => {
+    const user = userEvent.setup();
+    new DraftStore(data.viewerUserId).set('team', 'Later ordinary draft');
+    live.files.getPendingAttachmentSend.mockResolvedValue({ clientMessageId: 'same-request-id', content: 'Original request text', replyToId: 'm1', attachments: [{ fileName: 'plan.pdf' }] });
+    showPhone();
+    const thread = await openThread(user);
+    const retry = await within(thread).findByRole('button', { name: 'Retry send' });
+    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    expect(box.value).toBe('Original request text');
+    expect(box.readOnly).toBe(true);
+    expect(within(thread).getByLabelText('Pending attachments').textContent).toContain('plan.pdf');
+    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
+    setOnline(false);
+    await user.click(retry);
+    await expectCode('CH-1903', /offline/);
+    expect(box.value).toBe('Original request text');
+    expect(box.readOnly).toBe(true);
+    expect(live.files.retryPendingAttachmentSend).not.toHaveBeenCalled();
+    expect(live.files.sendMessageWithAttachments).not.toHaveBeenCalled();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    setOnline(true);
+    let confirm!: (result: { success: boolean }) => void;
+    live.files.retryPendingAttachmentSend.mockImplementationOnce(() => new Promise((resolve) => { confirm = resolve; }));
+    await user.click(retry);
+    await waitFor(() => expect(live.files.retryPendingAttachmentSend).toHaveBeenCalledWith('team'));
+    expect(new DraftStore(data.viewerUserId).get('team')).toBe('Later ordinary draft');
+    await act(async () => { confirm({ success: true }); });
+    await waitFor(() => expect(box.readOnly).toBe(false));
+    expect(box.value).toBe('Later ordinary draft');
+    expect(within(thread).queryByLabelText('Pending attachments')).toBeNull();
+    expect(live.files.sendMessageWithAttachments).not.toHaveBeenCalled();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7217 a failed recovery check blocks sending until the check succeeds', async () => {
+    const user = userEvent.setup();
+    live.files.getPendingAttachmentSend.mockRejectedValueOnce(new Error('unreadable')).mockResolvedValue(null);
+    showPhone();
+    const thread = await openThread(user);
+    await expectCode('CH-7217', /Couldn’t check a pending send/);
+    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    expect(box.readOnly).toBe(true);
+    expect((within(thread).getByRole('button', { name: 'Send' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(within(code('CH-7217') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(box.readOnly).toBe(false));
+    await user.type(box, 'Fresh message');
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Fresh message'));
   });
 
   it('72002 leaving a phone thread clears reply intent while preserving its text draft', async () => {

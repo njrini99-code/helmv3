@@ -117,5 +117,16 @@
       "P005",
       "P010"
     ]
+  },
+  {
+    "file": "RELEASE_CANDIDATE.md",
+    "title": "Mobile fidelity release candidate",
+    "kind": "plan",
+    "date": "2026-10-02",
+    "scope": "Candidate behavior, local authenticated WebKit evidence, recovery boundaries and owner production release conditions.",
+    "status": "in_progress",
+    "note": "candidate checks and physical phone acceptance; production remains unchanged",
+    "allPages": true,
+    "pages": []
   }
 ]
