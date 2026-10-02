@@ -3,6 +3,17 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Owner correction: softer reply and message surfaces
+
+Removed the green stripe from quoted replies in both composer and history.
+The author and snippet establish hierarchy on a softly floating ivory face.
+Attachment cards, file chips and reaction badges consume canonical elevation
+instead of adding their own decorative outlines. Composer recovery notices
+retain their status tone and actions with a softer floating edge. Existing
+reply, send, multiline, scroll and recovery behavior stays intact.
+The selected inbox conversation keeps its tint and stronger title while
+dropping the same green edge stripe.
+
 ## 2026-10-02 — Visual repair: six-line phone editor
 
 The phone writing pill now includes its padding and borders when sizing, with

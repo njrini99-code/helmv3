@@ -139,6 +139,35 @@
   box-shadow: var(--ch-sheet-shadow);
   border-radius: 16px;
 }
+/* System contrast modes suppress shadows; retain a visible surface boundary there. */
+@media (forced-colors: active) {
+  .ch-sheet,
+  .ch-raised,
+  .ch-well,
+  .ch-well-soft,
+  .ch-rs-face,
+  .ch-rs-peek,
+  .ch-rsm-banner,
+  .ch-sgm,
+  .ch-yb,
+  .ch-cl-card,
+  .ch-cl-today__row,
+  .ch-qf-card,
+  .ch-qf-hero,
+  .ch-hl-focus,
+  .ch-hg-m,
+  .ch-hs-g,
+  .ch-hd-rail,
+  .ch-hd-dos,
+  .ch-th-fig,
+  .ch-th-act,
+  .ch-hv-next,
+  .ch-ox-stage,
+  .ch-ox-mc {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}
 
 /* Routine navigation shows a page as soon as it is ready: the page crossfade (RouteFrame) is the only entrance. The
    staggered first-paint reveal (D-64) was retired by the owner on 2026-10-01 (high-fidelity audit F01: a page could take

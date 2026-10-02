@@ -5,6 +5,19 @@ changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
 is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-02 — Floating cards and stationary overlay backgrounds
+
+The owner rejected striped, outlined cards and unstable pull-up screens. Shared
+surfaces now use stronger soft elevation, with decorative rails and frame rings
+removed across Messages, Hub, Stats, Roster, Classes, Qualifiers and CoachHelm.
+Focus outlines and meaningful selected/chart states remain.
+
+Nested and exiting overlays hold one reference-counted scroll lock, preserving
+the underlying page position and returning focus without scrolling. Modal close
+animation runs before the native dialog releases its lock. Drag events follow
+one primary pointer and cancel cleanly; nested dialogs have unique title IDs.
+The welcome also protects its text from background trees and removes blur.
+
 ## 2026-10-02 — Installed plugins find concrete flow and data gaps
 
 The owner requested Apple Messages display and behavior with the existing

@@ -196,7 +196,7 @@ Skip to content, the modal More sheet, the current page and named landmarks, ann
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 11801 | CH-1801 | `THE_FIRST_TAB_ON_ANY_PAGE_OFFERS` | The first Tab on any page offers "Skip to content", which jumps past the navigation to the page |
-| 11802 | CH-1802 | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | The phone More sheet is modal: focus moves in, Tab stays inside, Esc closes it and focus returns to More |
+| 11802 | CH-1802 | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes |
 | 11803 | CH-1803 | `THE_CURRENT_PAGE_IS_MARKED_IN_THE` | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page |
 | 11804 | CH-1804 | `TOASTS_ARE_ANNOUNCED_CONFIRMATIONS_POLITELY_ERRORS_RIGHT` | Toasts are announced: confirmations politely, errors right away |
 | 11805 | CH-1805 | `THE_BELL_PANEL_IS_A_DIALOG_IT` | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard |

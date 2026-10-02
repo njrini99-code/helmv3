@@ -440,10 +440,12 @@
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sgm:hover {
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), 0 6px 16px -10px rgb(28 25 18 / 0.25);
+  box-shadow: var(--ch-elevation-reading-hover);
 }
 .ch-sgm[aria-pressed='true'] {
-  box-shadow: 0 0 0 1.5px var(--ch-green-600), 0 6px 16px -10px rgb(11 58 37 / 0.3);
+  background: var(--ch-green-50);
+  color: var(--ch-green-800);
+  box-shadow: var(--ch-elevation-reading-hover);
 }
 .ch-sgm__top {
   display: flex;
@@ -567,7 +569,7 @@ a.ch-lg__r:focus-visible {
   border-radius: 14px;
   background: var(--ch-chart-paper);
   color: var(--ch-ink-900);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-yb__head {
   display: flex;
@@ -706,7 +708,7 @@ a.ch-lg__r:focus-visible {
 }
 /* Team view: the handoff's putting page keeps the design system's YardagePage depth. */
 .ch-st-grid2 .ch-yb {
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 2px rgb(28 25 18 / 0.04), 0 10px 24px -16px rgb(28 25 18 / 0.22);
+  box-shadow: var(--ch-elevation-reading);
 }
 /* Beats `.ch-yb svg`: the rings are a fixed-size figure (360px), left-aligned like the handoff. */
 .ch-yb .ch-pg {
@@ -880,7 +882,7 @@ a.ch-lg__r:focus-visible {
   padding: 6px;
   border-radius: 14px;
   background: rgb(253 252 248 / 0.92);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 8px 20px -12px rgb(28 25 18 / 0.3), inset 0 1px 0 #fff;
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-pf-hero__figs div {
   display: flex;
@@ -2028,7 +2030,7 @@ a.ch-lg__r:focus-visible {
     border-radius: 50%;
     background: var(--ch-bg-surface);
     color: var(--ch-green-700);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-control);
     touch-action: manipulation;
   }
   .ch-spm-round {

@@ -72,3 +72,11 @@ WCAG 2/2.1/2.2 A/AA tags, no document overflow, 16px credential fields and the
 existing username/current-password autocomplete. Tab traverses both fields.
 Reduced-motion welcome reports the camera at rest with an identity transform.
 These are local previews, not real credentials or physical Safari timing.
+
+## October 2 readability follow-up
+
+Fresh WebKit screenshots cover sunrise at 375, 390 and 430px, and noon, sunset
+and night at 390px. The heading has no blur and the document has no horizontal
+overflow. The updated veil and floating updates card were visually inspected.
+The focused auth suites passed 90 tests. These are local browser checks;
+physical iPhone Safari and real account authentication remain separate checks.

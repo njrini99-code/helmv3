@@ -94,6 +94,10 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P001__filter-body__coach__375__overlay-lifecycle__after__72fa726.png` | after | 72fa726 | filter-body (coach), 375px, overlay-lifecycle |
+| `P001__filter-body__coach__375__overlay-lifecycle__before__72fa726.png` | before | 72fa726 | filter-body (coach), 375px, overlay-lifecycle |
+| `P001__more-stable__coach__390__overlay-lifecycle__evidence__72fa726.png` | evidence | 72fa726 | more-stable (coach), 390px, overlay-lifecycle |
+| `P001__nested-details__coach__390__overlay-lifecycle__evidence__72fa726.png` | evidence | 72fa726 | nested-details (coach), 390px, overlay-lifecycle |
 
 ## Open verification gaps
 
@@ -101,3 +105,35 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 - `clubhouse:a11y` rerun after the v2 changes.
 - The route boundary's automatic retry is tested only through the view (11401), not the boundary.
 - A Clubhouse-side detector for rage, dead and slow clicks does not exist (12201 to 12203).
+
+## 2026-10-02 — Overlay scroll, focus and gesture lifecycle
+
+- `vitest run overlay-scroll.test.tsx shell.test.tsx --maxWorkers=1`:59 pass,
+  exit 0. Seven focused regressions cover nested lock counts, exact styles/canvas
+  restoration, route changes, unmount release, distinct dialog titles, canceled
+  and competing pointers, paused flick speed, and rapid close/reopen.
+- Scoped ESLint on the helper, drag, Modal, PhoneScreen, TabBar, Bell and test:
+  exit 0. Root owns combined typecheck/build. Shared primitives are reported as
+  semantically unmapped; existing P 001 manifest governs them.
+- Fresh WebKit 375/390/430: More opens over a page scrolled 300px. Its content
+  marker stays exactly −250px before/open/PageDown/during 60ms exit/after close;
+  final window scroll restores 300px. Stats Filter keeps its page marker 50px,
+  scrolls its own long body, and holds native dialog+lock until exit completes.
+- Fresh WebKit 375/390/430: Message modal over a thread, then Details over that
+  thread. Closing either child retains the thread's lock. Details fills each
+  viewport, underlying thread is inert, final Back releases the last lock.
+  All document widths equal viewport widths. More receives focus after close.
+- Actual pointer flow exposed the stale-speed defect: move 35px, pause 350ms,
+  release wrongly dismissed. Final run springs back and keeps More open;
+  a subsequent 120px drag dismisses and returns focus to More. No extra
+  animation delay: the fix stops counting an old move as a current flick.
+- Reduced-motion WebKit: More opens at transform:none and is removed with the
+  lock released within 50ms after Close. The native modal reduced-motion branch skips its exit animation.
+- Evidence JSON/captures: `/tmp/helm-clubhouse-overlay-stability/`. The screenshot
+  table logs actual filed images; still images do not prove frame pacing.
+- Setup limitations: mobile WebKit does not support mouse.wheel; native PageDown
+  and real pointer mouse events exercise scrolling and gesture ownership.
+  Message actions is screen-reader-only and was activated with focus+Enter.
+  One first messages load timed out under development compilation and succeeded
+  after DOMContentLoaded/settling. No physical Safari FPS, edge gesture, keyboard
+  or production persistence claim; no production writes.

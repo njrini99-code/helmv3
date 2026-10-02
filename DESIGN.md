@@ -51,7 +51,10 @@ and the ownership map in `docs/clubhouse/UI_OWNERSHIP.md`.
 
 `design/handoff/depth.css` is the visual reference. Runtime sheet, well, raised
 control and bubble tokens implement lit faces, contact shadows and restrained
-ambient depth. Static cards remain readable immediately; motion does not hide
+ambient depth. The owner’s October 2 revision removes decorative green rails
+and outline rings from cards and quoted replies. Raised cards use soft contact
+and ambient shadows, with lit faces, so their depth remains visible at rest.
+Focus outlines and meaningful chart markings remain. Static cards remain readable immediately; motion does not hide
 them. Routine page changes crossfade together, while the auth course has its
 own documented choreography and reduced-motion path.
 

@@ -256,6 +256,32 @@ Close target around its 30px visual button. Evidence lives in
 captures. These checks simulate available keyboard space; physical iPhone
 Safari keyboard and animation frame pacing remain owner checks.
 
+## 2026-10-02 — Owner's stripe-free Messages correction
+
+Messages and Messages-audit suites passed 87/87 with one worker. No message
+behavior or transport source changed. Fresh settled WebKit captures at 375,
+390 and 430px show border-free quote cards using floating material. Six lines
+retain their 144px editor with client/scroll height138; the editor bottom is
+732px at a 740px viewport and 472px at a 480px viewport. Document width equals
+each viewport. Long-press actions opened and Close restored the thread at all
+three widths. A desktop capture confirms selected conversations retain tint
+and stronger titles without an inset stripe.
+
+A separate DOM layout fixture uses the real recovery notice/chip CSS with an
+unbroken filename. At390px, notice and chip span x10..380, editor ends at732,
+and document width stays390. This fixture establishes material/wrapping only;
+the real partial/unknown/reload behavior remains covered by the 87 UI tests
+and the earlier authenticated verification, not by a synthetic Retry action.
+
+Evidence: `/tmp/helm-clubhouse-message-material/` (11 PNGs and scoped report).
+The comparison reference is the earlier striped quote capture in
+`/tmp/helm-clubhouse-visual-messages/reply-small-390-fixed.png`. Development
+HMR reset early capture drafts; those attempts are not layout passes. The
+final quote captures ran after source settled. Physical Safari remains
+unverified. The premium static auditor still exits1 with the same25 literal
+detections and0 unresolved owners documented in UI_OWNERSHIP; its JSON is
+preserved with the visual evidence and is not a compliance pass.
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner).

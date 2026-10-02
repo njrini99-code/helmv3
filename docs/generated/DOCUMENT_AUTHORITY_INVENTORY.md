@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 48 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 24 | 1 | 8 | 5 |
-| `UNKNOWN` | 318 | 12 | 55 | 81 |
+| `UNKNOWN` | 318 | 12 | 56 | 81 |
 
 ## Files
 
@@ -776,7 +776,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |

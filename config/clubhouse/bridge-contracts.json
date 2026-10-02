@@ -598,7 +598,7 @@
     "item": 2,
     "name": "THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS",
     "chCode": "CH-1802",
-    "meaning": "The phone More sheet is modal: focus moves in, Tab stays inside, Esc closes it and focus returns to More",
+    "meaning": "The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

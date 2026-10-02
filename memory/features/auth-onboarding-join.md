@@ -12,7 +12,9 @@ Clubhouse sign-in keeps the form in server HTML and ships a still of the painted
 course while its animation chunk loads. The phone layout sizes its artwork
 against the small viewport, with a scrollable form sheet. Its welcome frames the
 hole and cup, with a gentle camera push completed before automatic phone
-navigation. Reduced motion holds the camera still. Sign-in credentials, invite
+navigation. A protected reading veil keeps the greeting clear over trees; its
+text never blurs. The updates card uses an opaque floating surface. Reduced
+motion holds the camera still. Sign-in credentials, invite
 destinations, stale-bundle recovery and session behavior use the existing shared
 auth logic; this visual path does not change access control. Implementation:
 `src/clubhouse/screens/auth/`, page contract and design:

@@ -172,3 +172,18 @@ Auth frames show the golf hole, camera movement and ball before updates enter;
 they do not establish device frame rate. No blocking visible defect remains in
 the reviewed settled states. Subsidiary forms, real keyboard/browser chrome,
 VoiceOver and the owner’s physical-device acceptance remain outside this pass.
+
+## Owner feedback: floating surfaces and overlay stability
+
+October 2 follow-up removes decorative card and reply rails, strengthens the
+shared elevation ladder, and protects welcome text from its course artwork.
+Bottom and side overlays preserve underlying scroll position through nested
+openings and animated exits. Dialog titles are unique; drag tracking follows
+one primary pointer and cancels cleanly.
+
+Local WebKit checks cover 375/390/430px sheet lifetimes and Messages layouts;
+phone/desktop surface samples and forced-color/reduced-motion samples were
+inspected. Physical iPhone Safari frame pacing remains unverified. This
+follow-up does not change production data, release holds or deployment status.
+Shared CSS and the new overlay helper remain semantically unmapped by the
+feature registry; P001 and page design handoffs document their contract.

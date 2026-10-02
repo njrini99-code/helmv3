@@ -75,7 +75,7 @@ What is on the design's clock, and where it lives:
 
 | Piece | Timing | Where |
 | --- | --- | --- |
-| Welcome's pieces | scrim 1.4s at 0.2s, mark 0.7s at 0.3s, date 0.5s, "Good morning," 1s at 0.64s out of a 10px blur, the name 1.1s at 1.05s, the card 0.9s at 2.25s, each item 140ms after the one before from 2.55s | `auth-motion.ts` variants |
+| Welcome's pieces | scrim 1.4s at 0.2s, mark 0.7s at 0.3s, date 0.5s, "Good morning," 1s at 0.64s with opacity and a 16px rise, the name 1.1s at 1.05s, the card 0.9s at 2.25s, each item 140ms after the one before from 2.55s | `auth-motion.ts` variants |
 | Camera and ball | desktop push to 1.34 over 5.2s; phone push to 1.18 over 2.6s toward the hole; ball flight 1.65s, one hop, a roll to the cup | `auth-tokens.css`, `GolfScene`, `scene-ball` |
 | Sign-in to welcome | form leaves, the course takes the frame, the veil and tagline fade, 720ms | `AuthFrame`, `OPENING_MS` |
 | Hand-off | text slides left and fades 420ms, the course clips to the app canvas over 880ms, paper fades in, the destination is asked for at 1s; 520ms when there is nothing to fold into; a fade to ivory on the phone | `Welcome`, `HANDOFF_MS`, `auth.css` |
@@ -83,7 +83,7 @@ What is on the design's clock, and where it lives:
 
 How it stays inside the rest of the doctrine:
 
-- Only transform, opacity and the one blur of the greeting's focus-in are animated. The camera is a CSS transform on one
+- Only transform and opacity are animated; the greeting never blurs. The camera is a CSS transform on one
   wrapper, `will-change` is set only while it moves, and the ball is a motion value written straight to two attributes, so
   nothing re-renders while it flies.
 - Nothing uses `staggerChildren`: every piece carries its own delay, and an item's delay is its index times a step.
@@ -141,7 +141,7 @@ a named, pressed-state button. Text over the course holds contrast by day and fl
   forms, so the two cannot drift.
 - **Onboarding skips the welcome.** An account with no profile has no name to greet, so a sign-in that routes to onboarding goes
   there directly (an invite keeps its `joinCode`).
-- **The welcome does not auto-advance.** It waits for Continue or Return.
+- **Phone welcome advances after its choreography.** Desktop waits for Continue or Return.
 - **Scoped D-64 exception**, as above.
 
 ## Not built
@@ -162,3 +162,10 @@ a named, pressed-state button. Text over the course holds contrast by day and fl
 - **The last-visit label.** `users.last_seen` is last activity, so "Since you last signed in" can be a little later than the real
   last sign-in.
 - **Date format.** The welcome's date uses the viewer's locale.
+
+## October 2 readability correction
+
+The welcome protects its heading and date with a wider, nearly opaque reading
+veil. The hole remains visible below the greeting. Text has no glow or animated
+blur, and the updates card uses an opaque floating surface without backdrop
+blur. The card enters by opacity and translation rather than scale.

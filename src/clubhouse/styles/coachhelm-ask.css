@@ -551,11 +551,11 @@
   padding: 18px 18px 12px;
   border-radius: 24px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle), 0 12px 32px -14px rgb(28 25 18 / 0.22);
+  box-shadow: var(--ch-elevation-floating);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-cmp__box:focus-within {
-  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo), 0 12px 32px -14px rgb(28 25 18 / 0.22);
+  box-shadow: var(--ch-elevation-floating-focus);
 }
 .ch-ask-cmp__label {
   position: absolute;

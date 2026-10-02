@@ -220,7 +220,7 @@
   padding: 18px 20px 16px;
   border-radius: 18px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.09), 0 4px 14px -8px rgb(28 25 18 / 0.14);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-th--phone .ch-th-fig {
   padding: 14px 14px 12px;
@@ -639,11 +639,11 @@
   overflow: hidden;
   border-radius: 20px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px var(--ch-green-ring), 0 12px 30px -16px rgb(11 58 37 / 0.35);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-th-act[data-status='cancelled'],
 .ch-th-act[data-status='abandoned'] {
-  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-th-act__head {
   display: flex;

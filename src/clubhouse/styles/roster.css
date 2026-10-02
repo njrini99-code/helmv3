@@ -60,7 +60,7 @@
   overflow: hidden;
   border-radius: 14px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 10px 24px -16px rgb(28 25 18 / 0.18);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-rs-req__head {
   display: flex;
@@ -138,7 +138,7 @@
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rs-attn__c:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong);
+  box-shadow: var(--ch-elevation-reading-hover);
 }
 .ch-rs-attn__c b {
   font: 600 13px/1 var(--ch-font-sans);
@@ -237,22 +237,20 @@
   color: inherit;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 1px rgb(28 25 18 / 0.06), 0 4px 8px -4px rgb(28 25 18 / 0.12),
-    0 16px 28px -16px rgb(28 25 18 / 0.28), inset 0 1px 0 #fff, inset 0 -1px 0 rgb(28 25 18 / 0.04);
+  box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-base) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rs-face:not(.ch-rs-face--static):hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 2px rgb(28 25 18 / 0.06), 0 8px 14px -6px rgb(28 25 18 / 0.16),
-    0 26px 40px -20px rgb(28 25 18 / 0.36), inset 0 1px 0 #fff;
+  box-shadow: var(--ch-elevation-reading-hover);
 }
 /* Pressing drops the hover lift; the shrink is the shell's press (D-64), so it isn't doubled here. */
 .ch-rs-face:not(.ch-rs-face--static):active {
   transform: translateY(0);
 }
 .ch-rs-face.is-sel {
-  box-shadow: 0 0 0 2px var(--ch-green-600), 0 4px 8px -4px rgb(11 58 37 / 0.2), 0 18px 30px -16px rgb(11 58 37 / 0.4),
-    inset 0 1px 0 #fff;
+  background: var(--ch-green-50);
+  box-shadow: var(--ch-elevation-reading-hover);
 }
 .ch-rs-face.is-off {
   opacity: 0.7;
@@ -470,7 +468,7 @@
   overflow: hidden;
   border-radius: 16px;
   background: var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.05), 0 18px 40px -20px rgb(28 25 18 / 0.25);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-rs-peek > * {
   margin-right: 20px;
@@ -1083,7 +1081,7 @@
     overflow: hidden;
     border-radius: 12px;
     background: linear-gradient(rgb(238 245 240 / 0.5), rgb(238 245 240 / 0.5)), var(--ch-bg-surface);
-    box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12);
+    box-shadow: var(--ch-elevation-reading);
   }
   .ch-rsm-facts > div {
     display: flex;
@@ -1122,7 +1120,7 @@
     border: 0;
     border-radius: 14px;
     background: var(--ch-green-50);
-    box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16);
+    box-shadow: var(--ch-elevation-reading);
     color: var(--ch-green-700);
     font: inherit;
     text-align: left;

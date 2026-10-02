@@ -278,7 +278,7 @@
   box-shadow: var(--ch-sheet-shadow);
 }
 .ch-hb-ann.is-featured {
-  box-shadow: 0 0 0 1px var(--ch-champagne-ring), 0 20px 44px -34px rgb(28 25 18 / 0.5);
+  box-shadow: var(--ch-elevation-floating);
 }
 .ch-hb-ann h3 {
   margin: 2px 0 0;
@@ -399,7 +399,7 @@
 }
 .ch-hb-pass.is-big {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 20px 40px -28px rgb(11 58 37 / 0.55);
+  box-shadow: var(--ch-elevation-floating);
 }
 .ch-hb-pass__main {
   display: flex;

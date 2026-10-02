@@ -3,6 +3,29 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Stable sheet and pushed-screen lifecycle
+
+```text
+Design package: existing owner phone sheets and right-side pushed screens
+PR/commit:      codex/clubhouse-design-fidelity (working tree after 72fa726)
+Contract IDs:   CH-1610, CH-1611, CH-1802, CH-1809; strengthened existing behavior
+Actions:        existing open, close, drag and Back only
+Data impact:    no API, schema or customer writes
+Held items:     physical iPhone gesture/frame pacing and native keyboard validation
+```
+
+A shared reference-counted lock freezes the page at its existing visual position
+until every nested or exiting overlay leaves. Closing More or a dialog restores
+its original page scroll; navigating to another route keeps the new route at the
+top. Pushed screens hold the same lock through their Framer exit and restore focus
+without scrolling. Phone More and Bell focus also avoids moving the page.
+
+Native dialogs retain their content through a 260ms transform/opacity exit;
+rapid reopening cancels the old exit instead of closing the new sheet. Nested
+dialogs have distinct accessible title IDs. Sheet drags belong to one primary
+pointer, ignore another finger, and cancel cleanly. Reduced-motion pushed
+screens, More and Bell settle immediately. No arbitrary transition delay added.
+
 ## 2026-10-02 — Shared scrollbar ownership and design context
 
 The Frontend Design Premium review now points to the existing page handoffs via

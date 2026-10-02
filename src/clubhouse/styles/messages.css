@@ -100,7 +100,6 @@
 }
 .ch-ms-row.is-sel {
   background: var(--ch-green-50);
-  box-shadow: inset 3px 0 0 var(--ch-green-600);
 }
 .ch-ms-grp {
   display: grid;
@@ -138,6 +137,10 @@
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.ch-ms-row.is-sel .ch-ms-row__top b {
+  font-weight: 600;
+  color: var(--ch-green-700);
 }
 .ch-ms-row__top > span {
   flex: none;
@@ -369,8 +372,8 @@
   cursor: pointer;
 }
 .ch-ms-msg.is-mine .ch-ms-bub.ch-ms-bub--file {
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm), 0 0 0 1px rgb(21 90 57 / 0.18);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-bubble);
   color: var(--ch-text-primary);
 }
 .ch-ms-bub--file b {
@@ -478,17 +481,16 @@
   border: 0;
   border-radius: 999px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-control);
   font: 600 11.5px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
 .ch-ms-react:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong);
+  background: var(--ch-ivory-0);
 }
 .ch-ms-react.is-mine {
   background: var(--ch-green-50);
-  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.3);
   color: var(--ch-green-700);
 }
 .ch-ms-msg__t {
@@ -768,7 +770,7 @@
   padding: 0 4px;
   border-radius: 999px;
   background: var(--ch-green-50);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.22);
+  box-shadow: var(--ch-elevation-control);
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-green-800);
 }
@@ -1204,7 +1206,7 @@
     box-shadow: var(--ch-elevation-bubble);
     font: 400 17px/1.4 var(--ch-font-sans);
   }
-  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub {
+  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file) {
     background: var(--ch-bubble-mine-bg);
     box-shadow: var(--ch-elevation-bubble-mine);
     color: #fff;
@@ -1720,7 +1722,7 @@
   }
 }
 
-/* Persisted reply context uses the same message surface, with a quieter inset. */
+/* Reply context is a softly raised reference, identified by author and text. */
 .ch-ms-quote {
   appearance: none;
   text-align: left;
@@ -1728,20 +1730,22 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   max-width: 100%;
-  padding: 8px 12px;
-  border-left: 3px solid var(--ch-green-500);
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: 16px;
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-bubble);
+  box-shadow: var(--ch-elevation-floating);
   color: var(--ch-text-secondary);
   font: 400 14px/1.35 var(--ch-font-sans);
 }
 .ch-ms-quote:disabled { cursor: default; opacity: 1; }
 .ch-ms-quote:focus-visible { outline: 2px solid var(--ch-green-500); outline-offset: 3px; }
-.ch-ms-quote b { font-weight: 600; }
+.ch-ms-quote b {
+  font: 600 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
 .ch-ms-quote span {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1756,6 +1760,10 @@
   padding: 0 4px 10px;
 }
 .ch-ms-comp__reply .ch-ms-quote { flex: 1; }
+.ch-ms-comp > .ch-notice {
+  border-radius: 16px;
+  box-shadow: var(--ch-elevation-floating);
+}
 .ch-ms-comp .ch-ms-to__c {
   box-sizing: border-box;
   min-width: 0;

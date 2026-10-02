@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-02 — Clear welcome text over the hole
+
+The owner’s Safari screenshot showed tree silhouettes competing with the
+greeting. A stronger reading veil protects the heading and date; greeting blur
+and glow are removed. The updates card uses an opaque floating surface and
+translation without scale or backdrop blur. Credential behavior is unchanged.
+
 ## 2026-10-02 — A repeated submit sends one sign-in
 
 Frontend Design Premium's interaction pass reproduced two requests from form

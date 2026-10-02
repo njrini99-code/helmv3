@@ -5,6 +5,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { usePhoneImmersive } from './phone-chrome';
+import { useOverlayScrollLock } from '../lib/overlay-scroll';
 
 /**
  * A pushed phone screen (a thread, details, a new message): it slides in over
@@ -38,13 +39,18 @@ export function PhoneScreen({
   covered?: boolean;
 }) {
   usePhoneImmersive(true);
+  useOverlayScrollLock();
   const reduced = useChReducedMotion();
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
+    const opener = document.activeElement;
     const title = document.getElementById(labelledBy);
     const inside = title && ref.current?.contains(title) ? title : null;
     const target = inside?.matches('h1, [tabindex]') ? inside : inside?.querySelector<HTMLElement>('[tabindex], h1, button');
     (target ?? ref.current)?.focus({ preventScroll: true });
+    return () => {
+      if (opener instanceof HTMLElement && opener.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true });
+    };
   }, [labelledBy]);
   return (
     <m.section
@@ -57,9 +63,9 @@ export function PhoneScreen({
       inert={covered || undefined}
       tabIndex={-1}
       initial={reduced ? { opacity: 0 } : { x: '100%' }}
-      animate={reduced ? { opacity: 1 } : { x: 0 }}
-      exit={reduced ? { opacity: 0 } : { x: '100%' }}
-      transition={chTween('base')}
+      animate={{ x: 0, opacity: 1 }}
+      exit={reduced ? { x: 0, opacity: 0 } : { x: '100%' }}
+      transition={reduced ? { duration: 0 } : chTween('base')}
     >
       {children}
     </m.section>

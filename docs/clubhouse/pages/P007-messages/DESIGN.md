@@ -20,6 +20,15 @@ guide](https://support.apple.com/guide/iphone/send-and-reply-to-messages-iph82fb
 for tap Send, touch-and-hold actions, swipe-right Reply and swipe-left timestamps.
 The owner's palette remains authoritative.
 
+The owner's later screenshot correction removes the green left stripe from
+every quoted-reply surface. Quotes use a softly floating ivory face, compact
+author text and a readable snippet. Attachment cards, file chips and reaction
+badges use material depth rather than decorative outline rings. Pending-send
+notices keep their truthful status color and recovery actions with the same
+softer edge; focus indicators remain visible.
+The selected conversation uses its tinted row and stronger title, without a
+green edge stripe.
+
 ## Package
 
 ```text

@@ -61,8 +61,8 @@ D-40 to D-43).
 | CH-1607 | The first Tab on a page | Skip to content slides into view (180ms) | `.ch-skip` | preview |
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
 | CH-1609 | A page or section is loading | Nothing for the first 150ms, then the skeleton fades in (260ms); one shimmer sweep shared by every block (1.9s loop); they hold still when Animations is off or motion is reduced (D-64) | `.ch-skel`, `main[aria-busy]` in `base.css` | preview |
-| CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 260ms; a fade when motion is reduced | `PhoneScreen`, `chTween('base')` | preview |
-| CH-1611 | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (260ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button | `useSheetDrag` in `TabBar`, `Bell` and `Modal` | shell.test › CH-1611 |
+| CH-1610 | A phone screen is pushed (a thread, details, a new message) or popped | It slides in from the right, and back out, in 260ms; settles immediately with reduced motion. The underlying page stays at its visual position through nested screens and exit, and focus returns without scrolling | `PhoneScreen`, `chTween('base')` | preview |
+| CH-1611 | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header | It follows the finger; past 80px or on a quick flick it closes with the press haptic, otherwise it springs back (260ms). With reduced motion there is no drag: the sheet fades, and Close, the scrim and Esc close it. The Close button inside stays a button. A single primary pointer owns the drag; another finger cannot replace it, and cancellation springs back. Nested and exiting overlays retain the shared background scroll lock | `useSheetDrag` in `TabBar`, `Bell` and `Modal` | shell.test › CH-1611 |
 | CH-1612 | Opening the bell on a phone | The notifications sheet rises (260ms) over a fading scrim (260ms), as More does; a fade when motion is reduced | `Bell`, `chTween('base')` | preview |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
@@ -82,7 +82,7 @@ D-40 to D-43).
 | # | What | How | Test |
 | --- | --- | --- | --- |
 | CH-1801 | The first Tab on any page offers "Skip to content", which jumps past the navigation to the page | `.ch-skip` → `#ch-content` (`tabIndex=-1`) | shell.test › CH-1801 |
-| CH-1802 | The phone More sheet is modal: focus moves in, Tab stays inside, Esc closes it and focus returns to More | `TabBar` | shell.test › CH-1802 |
+| CH-1802 | The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes | `TabBar` | shell.test › CH-1802 |
 | CH-1803 | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page | `aria-current="page"`, `aria-label` | shell.test › CH-1803 |
 | CH-1804 | Toasts are announced: confirmations politely, errors right away | `aria-live="polite"`, `role="alert"` on errors | shell.test › CH-1804 |
 | CH-1805 | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard | `Bell`, `Menu` (arrow keys, Home, End, Esc) | shell.test › CH-1805 (opens as a dialog); preview (keyboard) |
