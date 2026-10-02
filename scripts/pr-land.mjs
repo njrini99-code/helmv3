@@ -14,7 +14,9 @@
  *   2. Refuses a PR whose branch is not `agent/*`, unless --any-branch is
  *      passed — this tool is for the agent-worktree workflow, not for
  *      landing arbitrary branches on someone's behalf.
- *   3. Merges with `gh pr merge --squash`. Never force-push,
+ *   3. Squash-merges through GitHub's async merge API, pinned to the head commit
+ *      whose checks were read (falls back to `gh pr merge --squash` where the
+ *      endpoint is absent). Never force-push,
  *      never any other merge strategy.
  *   4. Fast-forwards the CANONICAL checkout (resolved from git worktree
  *      metadata, never a hardcoded path) with `git pull --ff-only`.
@@ -145,6 +147,89 @@ export function landedResidue(worktreePorcelain, branchExists, branch) {
   return 'worktree and local branch retired';
 }
 
+/**
+ * GitHub's asynchronous merge API (GA 2026-10-01): one `PUT .../pulls/{n}/merge-async` that GitHub runs in the background, then
+ * `GET .../merge-async/{uuid}` until it settles. `sha` pins the merge to the head commit whose required checks were just read, so a
+ * push that lands between the check and the merge makes GitHub refuse instead of merging an unchecked commit. `merge_action:
+ * direct_merge` and `merge_method: squash` keep the one strategy this tool allows; `bypass_rules: false` keeps branch protection.
+ */
+export const ASYNC_MERGE_POLL_MS = 3000;
+export const ASYNC_MERGE_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** Parses `gh api --include` output: the HTTP status from the first line, the JSON body after the blank line. */
+export function parseGhApiInclude(raw) {
+  const text = String(raw ?? '');
+  const status = Number((text.match(/^HTTP\/[\d.]+\s+(\d{3})/m) ?? [])[1] ?? NaN);
+  const split = text.search(/\r?\n\r?\n/);
+  let body = null;
+  if (split >= 0) {
+    try {
+      body = JSON.parse(text.slice(split).trim());
+    } catch {
+      body = null;
+    }
+  }
+  return { status, body };
+}
+
+/**
+ * What the PUT's answer means. 202 (accepted) and 409 (a request is already pending) both carry the uuid to poll; 200 means the PR is
+ * already merged (or queued); 404 means this host has no async endpoint, so the caller uses `gh pr merge`; anything else is a refusal.
+ */
+export function classifyAsyncMergeStart({ status, body }) {
+  if (status === 202 || status === 409) {
+    return body?.uuid ? { kind: 'poll', uuid: body.uuid } : { kind: 'error', message: `HTTP ${status} without a request uuid` };
+  }
+  if (status === 200) return { kind: 'done', status: body?.status ?? 'merged', sha: body?.sha ?? null };
+  if (status === 404) return { kind: 'unsupported' };
+  return { kind: 'error', message: `HTTP ${Number.isNaN(status) ? 'error' : status}: ${body?.message ?? 'no message'}` };
+}
+
+/** A polled request's state: `merged` is success; `failed` and `enqueued` (never asked for: this tool merges directly) stop with its message. */
+export function classifyAsyncMergeResult(body) {
+  const status = body?.status;
+  if (status === 'pending') return { kind: 'pending' };
+  if (status === 'merged') return { kind: 'merged', sha: body?.sha ?? null };
+  return { kind: 'failed', message: `${status ?? 'unknown'}: ${body?.message ?? 'no message'}` };
+}
+
+/**
+ * Starts the async merge and waits for it. Returns { ok: true, sha } on a merge, { ok: false, unsupported: true } when the endpoint is
+ * absent, or { ok: false, message } otherwise. `run(args)` is `gh` with the given args; `sleep(ms)` and `now()` are injectable for tests.
+ */
+export async function asyncMerge({ repo, prNumber, headSha, run, sleep, now = Date.now, pollMs = ASYNC_MERGE_POLL_MS, timeoutMs = ASYNC_MERGE_TIMEOUT_MS }) {
+  const path = `repos/${repo}/pulls/${prNumber}/merge-async`;
+  const start = classifyAsyncMergeStart(
+    parseGhApiInclude(
+      run([
+        'api', '--include', '-X', 'PUT', path,
+        '-f', 'merge_method=squash', '-f', 'merge_action=direct_merge', '-f', `sha=${headSha}`, '-F', 'bypass_rules=false',
+      ]).stdout,
+    ),
+  );
+  if (start.kind === 'unsupported') return { ok: false, unsupported: true };
+  if (start.kind === 'error') return { ok: false, message: start.message };
+  if (start.kind === 'done') {
+    return start.status === 'merged' ? { ok: true, sha: start.sha } : { ok: false, message: `already ${start.status}` };
+  }
+  const deadline = now() + timeoutMs;
+  while (now() < deadline) {
+    await sleep(pollMs);
+    const r = run(['api', `${path}/${start.uuid}`]);
+    if (!r.ok) continue; // a transient read error: poll again until the deadline
+    let body = null;
+    try {
+      body = JSON.parse(r.stdout);
+    } catch {
+      continue;
+    }
+    const result = classifyAsyncMergeResult(body);
+    if (result.kind === 'merged') return { ok: true, sha: result.sha };
+    if (result.kind === 'failed') return { ok: false, message: result.message };
+  }
+  return { ok: false, message: `still pending after ${Math.round(timeoutMs / 1000)}s (request ${start.uuid})` };
+}
+
 /** Run a command, returning { ok, stdout, stderr }. Never throws. */
 function exec(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
@@ -251,14 +336,34 @@ async function main(argv) {
   }
 
   process.stdout.write(`pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}) — merging\n`);
-  const merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash'], { cwd: canonicalRoot });
+  // The async merge API pins the squash to the head whose checks were just read; a host without it falls back to `gh pr merge`.
+  const repo = ghJson(['repo', 'view', '--json', 'nameWithOwner'], canonicalRoot)?.nameWithOwner;
+  let mergedVia = 'async merge API (squash, pinned to the checked head)';
+  let merge = { ok: false, stdout: '', stderr: 'repository name unavailable' };
+  if (repo && pr.headRefOid) {
+    const r = await asyncMerge({
+      repo,
+      prNumber: args.prNumber,
+      headSha: pr.headRefOid,
+      run: (a) => exec('gh', a, { cwd: canonicalRoot }),
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    });
+    merge = r.ok ? { ok: true, stdout: '', stderr: '' } : { ok: false, stdout: '', stderr: r.message ?? '' };
+    if (r.unsupported) {
+      mergedVia = 'gh pr merge --squash (no async merge endpoint)';
+      merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash', '--match-head-commit', pr.headRefOid], { cwd: canonicalRoot });
+    }
+  } else {
+    mergedVia = 'gh pr merge --squash';
+    merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash'], { cwd: canonicalRoot });
+  }
   if (!merge.ok) {
     // A transport error can arrive after GitHub accepts the merge. Re-read
     // its state before reporting failure. Branch deletion belongs to the
     // lifecycle tool so it can verify an archive before removing either ref.
     const after = ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot);
     if (after?.state !== 'MERGED') {
-      process.stderr.write(`pr-land: gh pr merge failed:\n${merge.stderr || merge.stdout}\n`);
+      process.stderr.write(`pr-land: merge failed (${mergedVia}):\n${merge.stderr || merge.stdout}\n`);
       return 1;
     }
     process.stdout.write(
@@ -303,7 +408,7 @@ async function main(argv) {
 
   process.stdout.write('\n');
   process.stdout.write(`pr-land summary for #${args.prNumber}\n`);
-  process.stdout.write(`  merged:  gh pr merge --squash (branch ${pr.headRefName})\n`);
+  process.stdout.write(`  merged:  ${mergedVia} (branch ${pr.headRefName})\n`);
   process.stdout.write(`  pulled:  ${canonicalRoot} fast-forwarded to origin/main\n`);
   process.stdout.write(`  retired: ${retire.ok ? 'worktree-lifecycle.mjs --retire ran' : 'worktree-lifecycle.mjs --retire reported an issue — see above'}\n`);
   process.stdout.write(`  ${pr.headRefName}: ${residue}\n`);
