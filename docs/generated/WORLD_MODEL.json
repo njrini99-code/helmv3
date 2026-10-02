@@ -1545,6 +1545,11 @@
         "category": "services"
       },
       {
+        "id": "services:config/repo/manifest.yml",
+        "pattern": "config/repo/manifest.yml",
+        "category": "services"
+      },
+      {
         "id": "services:docs/ai-system/selfheal/**",
         "pattern": "docs/ai-system/selfheal/**",
         "category": "services"
@@ -15447,6 +15452,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "config/open-pr-dispositions.json"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:config/repo/manifest.yml",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "config/repo/manifest.yml"
         }
       ]
     },

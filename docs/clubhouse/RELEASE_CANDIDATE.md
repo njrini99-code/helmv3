@@ -49,9 +49,34 @@ logout. No migration, RLS relaxation or production data write is included.
   Final focused checks passed: 61 backend/recovery cases, 92 Messages/audit/
   anchor cases and 144 Hub cases. Scoped ESLint, 67 Clubhouse tooling tests,
   knowledge/generated checks, Markdown ratchet and whitespace checks passed.
-- Final production build exited 0: compiled in 119s, TypeScript finished in
-  11.7s, all 181 static pages generated and the route table emitted. The PR
+- Final production build exited 0: compiled in 5.0min, TypeScript finished in
+  90s, all 181 static pages generated and the route table emitted. The PR
   records the exact pushed head and its GitHub check results.
+
+## Runtime dependency review
+
+Both sharp overrides move from `0.35.3` to `0.35.5`, including its platform
+binaries. The installed native runtime reports libheif `1.23.5` and librsvg
+`2.63.2`; AVIF-to-WebP and SVG-to-PNG decode checks passed. This addresses the
+maintainer’s [libheif advisory](https://github.com/lovell/sharp/security/advisories/GHSA-rgj7-g3m4-5g8c)
+and [librsvg advisory](https://github.com/lovell/sharp/security/advisories/GHSA-wq5f-xc86-pv6w).
+The anonymous Next image optimizer is reachable; removing the vulnerable decoder
+pin is part of this release rather than relying on the messaging display path.
+
+`npm audit --omit=dev` still exits 1 with four entries (three high, one low).
+The scoped review found no Clubhouse/auth/message input path to their exploit
+conditions: gRPC server authorization (the app has client exporters), untrusted
+glob patterns (build/utility dependencies), and DOMPurify in-place sanitization
+with a node-removing hook (no such source use). This is an explicit scope limit,
+not a clean dependency audit or product-wide security verdict. No unrelated
+package versions were updated. A disposable npm 10 production-only install
+retained Sharp’s native libraries and passed the same decode checks. The Linux
+production install plan includes its matching native binaries.
+
+The Vercel dry-run manifest originally included local `.helm/` state. The upload
+exclusions and checked repository manifest now exclude it: 44/44 required paths
+are covered, and the final 8,327-file upload omits screenshots, telemetry, local
+env files, dependencies and build output. The coverage tool’s ten tests pass.
 
 ## Release conditions
 
@@ -79,6 +104,34 @@ In particular, qualifier reasoning isolation, round-submit version checks and
 stats/cache corrections must be reconciled with the approved rollout. This PR
 does not discharge those holds or claim product-wide completeness. Weather and
 season-week figures still lack a real source and remain absent.
+
+Read-only live ledger and function/grant checks confirmed these versions are
+still unapplied on `qmnssrrolpinvwjjnufo`:
+
+| Dependency | Pending versions |
+| --- | --- |
+| Qualifier privacy | `20260929200000` |
+| SG correction | `20260930150000` |
+| Cache chain, in order | `20260924120000` → `20260924140000` → `20260925120000` → `20260928120000` → `20260928150000` |
+| Submit version guard | `20261001000000` |
+| Lost-round integrity | `20261001120000` |
+
+The `is_test` prerequisite `20260924130000` is already applied. The currently
+served app has the compatible qualifier reader, so that prerequisite needs no
+additional app release. Live grants still expose `coach_reasoning` to
+`authenticated`, and the coach-only reasons RPC is absent. The SG migration
+supersedes `20260928160000`; apply only the later correction, with approved
+recomputation afterward. The cache chain requires test exclusions last, then
+cache/Standing refresh. Matching pre-apply hashes support the plan; they do not
+prove post-apply results or authorize these customer writes.
+
+Q120 requires an app change as well as SQL: both engines hold a server timestamp
+but omit it from terminal submission payloads, and submit conflicts currently
+use the generic failure surface. The proposed correction carries the acknowledged
+timestamp through direct/offline submissions and activates the existing Reload
+banner on conflict while preserving recovery copies. The owner behavior decision
+is pending. The held SQL is optional for missing-token legacy payloads, so applying
+it alone does not establish stale-submit protection.
 
 Message notification fanout remains best effort. Confirmed fresh writes schedule
 it once; confirmed replay suppresses another fanout. A process dying before its

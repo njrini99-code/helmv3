@@ -82,6 +82,7 @@ features:
         - scripts/worktree-lifecycle.mjs
         - scripts/deploy-prod.sh
         - .vercelignore
+        - config/repo/manifest.yml
         - config/open-pr-dispositions.json
       db: []
       tests: []
