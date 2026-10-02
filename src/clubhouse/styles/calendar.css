@@ -516,6 +516,12 @@
   text-overflow: ellipsis;
   opacity: 0.82;
 }
+/* Faded to 0.82 the time on a class or busy block measured 3.6:1 and 4.0:1; its own color holds 5.2:1 and 6.0:1.
+   Aesthetic audit X-3. */
+.ch-ev--class .ch-ev__m,
+.ch-ev--busy .ch-ev__m {
+  opacity: 1;
+}
 /* Events that share a column (aesthetic audit C-1): at 1440px a three-way overlap leaves 29px of text, and the one-line
    title showed "Sh..." and "Te..." (15 labels under half visible in the week). A shared block takes smaller padding,
    wraps its title (three lines) and keeps only the start time; a short one keeps its row and drops the time. The

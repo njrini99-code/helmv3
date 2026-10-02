@@ -17,7 +17,9 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #6f6a5f;
+  /* The unselected label sits on the well's gradient: #6f6a5f measured 4.1:1 there, on every segmented control in
+     Clubhouse (aesthetic audit X-1); secondary ink holds 5.4:1 and still reads lighter than the selected green. */
+  color: var(--ch-text-secondary);
   font: 500 13px/1 var(--ch-font-sans);
   white-space: nowrap;
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);

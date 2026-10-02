@@ -132,11 +132,13 @@
 button.ch-rt-strip__h {
   cursor: pointer;
 }
+/* The par over a hole not yet played: ivory at 0.5 measured 3.8:1 on the strip's green; 0.66 holds 4.5:1. Aesthetic
+   audit X-4. */
 .ch-rt-strip__h em {
   font: 500 10px/1 var(--ch-font-sans);
   font-style: normal;
   font-variant-numeric: tabular-nums;
-  color: rgb(244 241 232 / 0.5);
+  color: rgb(244 241 232 / 0.66);
 }
 .ch-rt-strip__h b {
   height: 22px;
@@ -183,7 +185,7 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-strip__tot em {
   font: 500 10px/1 var(--ch-font-sans);
   font-style: normal;
-  color: rgb(244 241 232 / 0.55);
+  color: rgb(244 241 232 / 0.66);
 }
 .ch-rt-strip__tot b {
   font: 600 17px/1 var(--ch-font-sans);
@@ -631,13 +633,14 @@ button.ch-rt-strip__h.is-done:hover {
   color: var(--ch-ink-700);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
+/* A result option's note and the rare options were #8a857a on the well: 3.2:1 (aesthetic audit X-4); tertiary holds 4.7:1. */
 .ch-rt-seg button em {
   font: 400 10.5px/1 var(--ch-font-sans);
   font-style: normal;
-  color: #8a857a;
+  color: var(--ch-text-tertiary);
 }
 .ch-rt-seg button.is-rare {
-  color: #8a857a;
+  color: var(--ch-text-tertiary);
 }
 .ch-rt-seg button[aria-checked='true'] {
   font-weight: 600;
