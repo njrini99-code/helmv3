@@ -1524,7 +1524,7 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
-- Q-152 (open, 2026-10-01; not built) Past events fade to 0.45 to 0.55 opacity
+- Q-152 (answered 2026-10-02, owner: keep the built version, b359c0414) Past events fade to 0.45 to 0.55 opacity
   (the board: `m.css` `.m-ev.is-past` 0.55, `.m-ag.is-past` 0.5, `m-home.css`
   `.mh-tl__r.is-past` 0.45), so their text measures 2.3:1 to 3.6:1 on the phone
   Calendar (title 3.6, times and place 2.3). The recession is deliberate and the
