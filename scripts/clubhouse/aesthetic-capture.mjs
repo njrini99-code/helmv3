@@ -26,6 +26,10 @@ const today = () => {
 };
 const HEIGHT = { 375: 812, 390: 844, 430: 932, 1440: 1000 };
 
+// The previews' clock leaves no card in the past; this marks the first rows as passed (the class the app sets) so the recession shows.
+const markPast = (selector, count) => (page) => page.evaluate(([sel, n]) => document.querySelectorAll(sel).forEach((e, i) => i < n && e.classList.add('is-past')), [selector, count]);
+const PAST_NOTE = 'the first rows carry is-past, added in the DOM: the preview clock has no passed card';
+
 const typeDraft = async (page) => {
   const box = page.locator('.ch-ms-comp textarea, .ch-msp-comp textarea, textarea').first();
   if (await box.count()) {
@@ -53,6 +57,8 @@ export const FAMILIES = {
     shots: [
       { surface: 'dashboard', role: 'coach', state: 'default', url: '/clubhouse-preview/home' },
       { surface: 'dashboard', role: 'player', state: 'default', url: '/clubhouse-preview/home-player' },
+      { surface: 'dashboard', role: 'coach', state: 'past-rows', url: '/clubhouse-preview/home', act: markPast('.ch-hm-tl__r', 2), note: PAST_NOTE },
+      { surface: 'dashboard', role: 'player', state: 'past-rows', url: '/clubhouse-preview/home-player', act: markPast('.ch-hm-tl__r', 2), note: PAST_NOTE },
     ],
   },
   'shot-tracking': {
@@ -70,6 +76,8 @@ export const FAMILIES = {
     shots: [
       { surface: 'calendar', role: 'coach', state: 'default', url: '/clubhouse-preview/calendar' },
       { surface: 'calendar', role: 'player', state: 'default', url: '/clubhouse-preview/calendar-player' },
+      { surface: 'calendar', role: 'coach', state: 'past-rows', url: '/clubhouse-preview/calendar', act: markPast('.ch-calm-ev:not(.is-class):not(.is-busy)', 2), note: PAST_NOTE },
+      { surface: 'calendar', role: 'player', state: 'past-rows', url: '/clubhouse-preview/calendar-player', act: markPast('.ch-calm-ev:not(.is-class):not(.is-busy)', 2), note: PAST_NOTE },
     ],
   },
   qualifiers: {
@@ -183,7 +191,7 @@ async function main() {
         const file = shotPath({ page: fam.page, surface: shot.surface, role: shot.role, viewport: String(width), state: shot.state, phase: o.phase, sha: o.sha }, ROOT, today());
         await page.screenshot({ path: file });
         const geo = await page.evaluate(geometry);
-        recordShot(file, { route: fam.route, fixture: `${typeof shot.url === 'function' ? shot.url(width) : shot.url} (synthetic preview fixture)`, browser: version, note: `${o.family}; local dev server ${base}` }, ROOT, { geometry: geo }, { gallery: false });
+        recordShot(file, { route: fam.route, fixture: `${typeof shot.url === 'function' ? shot.url(width) : shot.url} (synthetic preview fixture)`, browser: version, note: `${o.family}; local dev server ${base}${shot.note ? `; ${shot.note}` : ''}` }, ROOT, { geometry: geo }, { gallery: false });
         report.push({ width, surface: shot.surface, role: shot.role, state: shot.state, ...geo });
       }
       await ctx.close();
