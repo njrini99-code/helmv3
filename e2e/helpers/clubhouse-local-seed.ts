@@ -75,6 +75,52 @@ export async function scoredHoles(roundId: string): Promise<number> {
   return rows.filter((h) => h.score != null).length;
 }
 
+export interface RoundSnapshot {
+  round: { id: string; status: string; current_hole: number | null; holes_played: number | null; total_score: number | null };
+  holes: Array<{ hole_number: number; par: number | null; score: number | null; putts: number | null; fairway_hit: boolean | null; gir: boolean | null }>;
+  shots: Array<{
+    hole_number: number;
+    shot_number: number;
+    shot_type: string | null;
+    club_type: string | null;
+    result: string | null;
+    lie_before: string | null;
+    lie_after: string | null;
+    shot_distance: number | null;
+    putt_made: boolean | null;
+    putt_distance_feet: number | null;
+    is_penalty: boolean | null;
+  }>;
+}
+
+/**
+ * One round as the database holds it, read with the service role (an authoritative read, not the app's own display):
+ * the round row, its holes, and its shots in play order. Row ids are left out on purpose. `save_partial_round_atomic`
+ * deletes and re-inserts every hole and shot of a round on each save, so only the round's id is stable; a snapshot
+ * compares the values and the counts.
+ */
+export async function roundSnapshot(roundId: string): Promise<RoundSnapshot> {
+  const admin = adminClient();
+  const round = (await must(
+    'round',
+    admin.from('golf_rounds').select('id, status, current_hole, holes_played, total_score').eq('id', roundId).single(),
+  )) as RoundSnapshot['round'];
+  const holes = (await must(
+    'holes',
+    admin.from('golf_holes').select('hole_number, par, score, putts, fairway_hit, gir').eq('round_id', roundId).order('hole_number'),
+  )) as RoundSnapshot['holes'];
+  const shots = (await must(
+    'shots',
+    admin
+      .from('golf_shots')
+      .select('hole_number, shot_number, shot_type, club_type, result, lie_before, lie_after, shot_distance, putt_made, putt_distance_feet, is_penalty')
+      .eq('round_id', roundId)
+      .order('hole_number')
+      .order('shot_number'),
+  )) as RoundSnapshot['shots'];
+  return { round, holes, shots };
+}
+
 /**
  * Deletes everything a seed created, rounds included, and throws if anything is left. Safe to call twice.
  * It goes through a direct connection to the LOCAL database with triggers off: a completed round's holes and shots
