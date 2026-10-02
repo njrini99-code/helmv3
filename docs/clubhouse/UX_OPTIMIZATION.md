@@ -12,7 +12,8 @@ More and Bell
 keep the background stationary through nested overlays and exits. WebKit
 375/390/430 checks cover scroll restoration, focus, rapid reopen, pointer
 cancellation and a paused short drag. Physical iPhone Safari remains unverified.
-The existing Preview serves identical runtime source at da44bd67b.
+That earlier Preview serves identical runtime source at da44bd67b; it does
+not include the follow-up repairs below.
 
 A follow-up inventory found separate Settings, Recruiting and CoachHelm history
 dialogs still using earlier lifecycle code. This pass consolidates their
@@ -111,8 +112,28 @@ unchanged. WebKit shows identical anchors across the three periods at
 unintended four-cell layout's 299.750px. At 390px the team loading header,
 controls, figures, caption and chart exactly match their loaded dimensions;
 the former chart handoff was displaced 44.36px. Player loading handoff and
-narrow personalized-caption parity were not established. Optimized
-after-measurement is required before claiming the raw-shift correction.
+narrow personalized-caption parity were not established.
+
+The optimized e8a103c2a follow-up passed nine phone cases / 27 trials with no
+blank flashes or recorded runtime problems. Each case recorded zero median
+long tasks and total blocking time. Largest case-median input duration was
+72ms. The same period cases changed as follows (raw layout shift; three runs):
+
+| Phone period | Before a32c933e0 | After e8a103c2a |
+| --- | --- | --- |
+| Coach team Season | 0.0521 | 0 |
+| Coach team Last 10 | 0.0521 | 0.0002 |
+| Coach team Qualifiers | 0.0002 | 0.0002 |
+| Coach/player profile Season | 0.0379 | 0.0005 |
+| Coach/player profile Qualifiers | 0.1116 | 0.0015 |
+| Coach/player profile Last 10 | 0.0956 | 0.0006 |
+
+The largest remaining shift is a sample-caption span wrapping inside its
+reserved overview space; the measured card anchors stay fixed. This is not a
+claim of zero movement everywhere or faster server work. Machine load and swap
+were higher at the start of the after run; response ranges overlap. Runtime
+source is frozen at e8a103c2a, whose optimized build passed in 282 seconds,
+including TypeScript, 181 static pages, route output and postbuild.
 
 Slow feedback had a separate lifetime defect: its timer stopped on settlement,
 but a notice already shown could still claim old figures were displayed. The
@@ -120,6 +141,11 @@ shared feedback lifetime now removes a notice on completion, replacement or
 unmount, without cancelling writes. Scope ownership protects new-team feedback
 from old cleanup and prevents stale callbacks from repopulating old notices.
 The five-second threshold and normal four/eight-second durations are retained.
+Twenty-one focused regressions pass. In optimized WebKit at 390px, a team
+Stats request held 6.5 seconds raised CH-4902 while the page was busy. The
+notice was absent within 1.5 seconds of settlement, rather than waiting for
+its normal expiry; the final page was not busy. No write was exercised.
+There were no page errors; WebKit reported unused-CSS-preload warnings.
 
 The 680.9ms player-phone Home-to-Stats content-availability median includes
 opening More and selecting Stats. It is not route latency from the Stats tap.

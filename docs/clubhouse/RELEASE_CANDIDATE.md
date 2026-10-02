@@ -187,3 +187,37 @@ inspected. Physical iPhone Safari frame pacing remains unverified. This
 follow-up does not change production data, release holds or deployment status.
 Shared CSS and the new overlay helper remain semantically unmapped by the
 feature registry; P001 and page design handoffs document their contract.
+
+## Whole-app smoothness follow-up
+
+The follow-up runtime is committed as e8a103c2a. It consolidates remaining
+custom dialog lifetimes, fixes narrow Round setup and Settings controls,
+retains Roster message recipients, stabilizes phone Stats card/loading
+geometry and gives slow feedback the lifetime of its request and team scope.
+[UX_OPTIMIZATION.md](UX_OPTIMIZATION.md) records the measured limits and
+remaining task coverage.
+
+The optimized local build passed in 282 seconds, including TypeScript,
+181 static pages and route output. The affected phone period follow-up passed
+nine cases / 27 trials: worst raw layout shift 0.1116 → 0.0015, with no blank
+flash or recorded runtime problem and zero median blocking time in all nine
+cases. The broader prior baseline and Messages stress remain separately
+identified; this is not physical Safari or production-network evidence.
+
+The new Preview was created against that exact runtime source:
+[Clubhouse candidate](https://helmv3-820ui659p-nick-rinis-projects.vercel.app/golf/login).
+The build and runtime release variable both name e8a103c2a. Deployment READY
+status and the served `/api/health` release are verification requirements;
+their current result is recorded in PR #2121. Later documentation-only commits
+do not change the measured runtime. Fixture-only routes remain unavailable
+in Preview builds. No production deployment or feature flag was changed.
+
+### Local stack cleanup incident
+
+After the performance fixture cleanup verified zero remaining team/player/user
+references, the agent incorrectly stopped local Supabase with `--no-backup`.
+That removed the local `helmv3` data volumes. The stack had started from an
+existing local backup, so absence of unrelated prior local data is not proved.
+No recoverable SQL/data backup was found in the workspace or temporary-file
+checks. Prior local data has not been recovered. Production was untouched;
+other named local CI volumes remain present. The stack remains stopped.

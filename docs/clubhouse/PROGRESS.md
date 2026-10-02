@@ -18,7 +18,11 @@ throttling at 390/1280px, without blank flashes or recorded runtime problems.
 It exposed phone Stats period-change movement; the corrected source keeps
 comparison/caption space and sample caveats inside the existing cards.
 WebKit confirms stable period anchors at 320/375/390px and matched 390px team
-loading geometry. Optimized after-measurement remains pending in this entry.
+loading geometry. The optimized e8a103c2a follow-up passed nine phone cases /
+27 trials; worst raw period-change shift fell from 0.1116 to 0.0015. All nine
+cases recorded zero median total blocking time. The full build passed in
+282 seconds. Slow feedback now follows its request and team scope, with
+21 focused regressions passing. Physical Safari remains unverified.
 Messages scrolling and composer growth retained the reader's position with
 200 of 254 disposable local messages rendered. The stress check does not
 establish access to older history or physical iPhone keyboard/frame pacing.

@@ -136,7 +136,7 @@
     "date": "2026-10-02",
     "scope": "Remaining custom overlays, narrow round setup, person-specific messaging and complete mobile/desktop task coverage.",
     "status": "in_progress",
-    "note": "confirmed defects being corrected; physical Safari and intended-user validation remain open",
+    "note": "custom overlays, narrow controls, scoped feedback and measured phone Stats correction verified locally; physical Safari and intended-user validation remain open",
     "allPages": true,
     "pages": []
   }

@@ -6,7 +6,7 @@ log and decisions).
 ## 2026-10-02 — Slow feedback follows its request
 
 ```text
-PR/commit:      codex/clubhouse-design-fidelity (pending)
+PR/commit:      codex/clubhouse-design-fidelity (PR #2121)
 Design package: existing toast material, durations and action behavior
 Contract IDs:   CH-1902, CH-4902, CH-5902
 Data impact:    none; dismissing feedback does not cancel a write
@@ -23,7 +23,7 @@ unchanged. Final regression evidence is recorded in VERIFY.md.
 ## 2026-10-02 — Native custom overlays share one lifecycle
 
 ```text
-PR/commit:      codex/clubhouse-design-fidelity (pending)
+PR/commit:      codex/clubhouse-design-fidelity (PR #2121)
 Design package: approved boards; bars and dismissal policy unchanged
 Contract IDs:   CH-1610, CH-1611, CH-1802
 Data impact:    none; client dialog/scroll/focus/gesture lifecycle only
