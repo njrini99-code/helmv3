@@ -15,8 +15,10 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const TEST_FILE = /(^|\/)__tests__\/|\.(test|spec)\.[cm]?[jt]sx?$/;
-export const isTestFile = (f) => TEST_FILE.test(f);
+// A test is a file under a __tests__ directory or a *.test.* / *.spec.* file. Two plain checks rather than one alternation, whose
+// anchors would bind to one branch only (CodeQL js/regex/missing-regexp-anchor).
+const TEST_SUFFIX = /\.(?:test|spec)\.[cm]?[jt]sx?$/;
+export const isTestFile = (f) => f.split('/').includes('__tests__') || TEST_SUFFIX.test(f);
 
 const covers = (path, file) => file === path || file.startsWith(path.endsWith('/') ? path : `${path}/`);
 const componentFiles = (m) => [...new Set((m.actions ?? []).map((a) => a.component?.split('#')[0]).filter(Boolean))];

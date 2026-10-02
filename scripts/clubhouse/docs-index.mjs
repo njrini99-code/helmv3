@@ -89,7 +89,7 @@ export function checkAudits({ audits, manifests, exists, docs, readmeMd, progres
     if (!a.allPages && !(a.pages ?? []).length) v.push(`${at}: names no page (set allPages or pages)`);
     for (const id of a.pages ?? []) if (!ids.has(id)) v.push(`${at}: page ${id} is not a registered page`);
   }
-  for (const d of docs.filter((n) => /AUDIT|_PLAN\.md$/.test(n) && n !== 'AUDITS.md')) {
+  for (const d of docs.filter((n) => (n.includes('AUDIT') || n.endsWith('_PLAN.md')) && n !== 'AUDITS.md')) {
     if (!seen.has(d)) v.push(`docs/clubhouse/${d}: an audit or plan doc that config/clubhouse/audits.json does not list (add it, then run registry.mjs sync)`);
   }
   if (!/\]\(AUDITS\.md\)/.test(readmeMd)) v.push('docs/clubhouse/README.md does not link AUDITS.md');

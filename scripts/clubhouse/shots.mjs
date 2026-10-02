@@ -160,7 +160,7 @@ export function checkScreenshotLog(md, at, pageId) {
 
 /** The VERIFY.md table rows for these manifest entries (label, phase, commit, what it shows), skipping labels already listed. */
 export function logRows(entries, existingMd = '') {
-  const cell = (x) => String(x ?? '').replace(/\|/g, '\\|');
+  const cell = (x) => String(x ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
   return entries
     .filter((e) => parseName(e.file) && !existingMd.includes(e.file))
     .sort((a, b) => a.file.localeCompare(b.file))
@@ -286,7 +286,13 @@ function cmdImport(file, opts, root) {
 export function recordShot(file, opts, root, extra = {}) {
   if (!file) fail('record needs the screenshot file');
   const abs = resolve(file);
-  if (!existsSync(abs)) fail(`${file} does not exist`);
+  // One stat, read once: no exists-check before the stat that uses it (CodeQL js/file-system-race).
+  let shotStat;
+  try {
+    shotStat = statSync(abs);
+  } catch {
+    fail(`${file} does not exist`);
+  }
   const f = parseName(basename(abs));
   if (!f) fail(`${basename(abs)} does not follow ${NAME_PATTERN}`);
   if (!opts.route) fail('record needs --route');
@@ -311,7 +317,7 @@ export function recordShot(file, opts, root, extra = {}) {
     commit,
     browser: opts.browser ?? null,
     fixture: opts.fixture ?? null,
-    capturedAt: statSync(abs).mtime.toISOString(),
+    capturedAt: shotStat.mtime.toISOString(),
     note: opts.note ?? null,
     ...extra,
   };
@@ -396,7 +402,7 @@ function cmdIndex(root) {
   for (const page of [...byPage.keys()].sort()) {
     out.push('', `## ${page}`, '', '| Date | Surface | Role | Viewport | State | Phase | Commit | Route | Note | File |', '|---|---|---|---|---|---|---|---|---|---|');
     for (const { date, name, p, entry } of byPage.get(page).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name))) {
-      const cell = (x) => String(x ?? '').replace(/\|/g, '\\|');
+      const cell = (x) => String(x ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
       out.push(`| ${date} | ${cell(p?.surface)} | ${cell(p?.role)} | ${cell(p?.viewport)} | ${cell(p?.state)} | ${cell(p?.phase)} | ${cell(p?.sha7)} | ${cell(entry?.route)} | ${cell(entry?.note)} | ${name} |`);
     }
   }
