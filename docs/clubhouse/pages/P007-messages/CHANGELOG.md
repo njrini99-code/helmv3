@@ -31,6 +31,8 @@ Held items:     none
 - **Not done, on purpose.** The selected state of the phone filter chips (the
   board's raised white) and the solid green disc a group draws (the board's
   `.m-grp`) are owner calls: Q-148 and Q-149.
+- **Contrast pass (`d4367ee`).** The desktop rail's All, Unread and Groups
+  switch was 4.1:1 on the well (shared `.ch-seg__b`, secondary ink now).
 - **Verification.** Before and after at 375, 390, 430 and 1440 on the Messages
   preview fixture; the labels are in VERIFY.md "Screenshots".
   `messages.test.tsx` 66 of 66. No overflow, clipping or off-screen element at

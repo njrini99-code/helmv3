@@ -15,7 +15,7 @@ hit test). **Design judgment** means a call about composition that a number does
 not settle. Owner decisions stand: the ivory ladder and role depth (Q-142), the
 12px phone floor (Q-141), the boards in `design/handoff/`, red only for under
 par (D-42). Where the audit argues with one, it is an owner question in
-`PROGRESS.md` (Q-147 to Q-151) and is not built.
+`PROGRESS.md` (Q-147 to Q-152) and is not built.
 
 ## How it was run
 
@@ -56,6 +56,7 @@ par (D-42). Where the audit argues with one, it is an owner question in
 | Calendar | P006 | C-1 shared-column events, C-2 audience coins | none | `2b0486765` | `cee8548` before, `2b04867` after |
 | Qualifiers | P009 | nothing (no defect found) | Q-148 chips | none | `ee5976d` baseline, `2b04867` before |
 | CoachHelm | P013 | CH-1 metric label leading | Q-148 chips | `6f5f08123` | `2b04867` before, `6f5f081` after |
+| Contrast sweep | P002, P006, P007, P011, P013 | X-1 segmented labels, X-2 week labels, X-3 event times, X-4 shot strip and options | Q-152 past-event fade | `d4367ee` | `d3a6483` before, `d4367ee` after (390 and 1440) |
 
 The shared changes (M-L1, M-L3, M-T1 in `tokens.css`, `controls.css`, `ui.css`)
 reach every page. They are one decision, Q-147, and each is one rule to revert.
@@ -291,8 +292,111 @@ evidence, the action.
 
 ## External tools
 
-(To be completed with the verdicts of each tool: accepted, revised, rejected,
-with the reason. Pixelait only if a free account was already signed in.)
+All free, nothing paid, only the synthetic preview captures (fictional people,
+no emails) uploaded. A background run of a general-purpose agent did the
+browsing; it checked each image before upload.
+
+| Tool | Result | Verdict |
+| --- | --- | --- |
+| UX360 design critique | Its AI never answered on any of the seven images ("The AI did not answer this time"; the critique endpoint returned 503, with no budget wording, on the first try and one retry). The measured checks ran on all seven. | Measured checks accepted, below; no AI opinion to weigh. |
+| Blur Test (free roast) | Three roasts an hour is the cap, so 3 of 7 were run: dashboard 81, shot tracking 82, CoachHelm 68 out of 100. The $5 credit offer was not touched. The site says it stores uploads; three result pages exist (blurtest.com/roast/b133c16e-b5db-435d-b95a-a2f7c28477b9, c31cf800-e0cd-41ab-bab0-343c86a9a344, d1fb4472-395f-4344-8ff3-f10bde234620). | Mostly rejected, below. |
+| Pixelait | Skipped: no free account was signed in and the Chrome extension was not connected; no account created. | Not run. |
+| Sakaax ux-pilot | Needs `/plugin`, which a session cannot run. | Done by hand with Playwright screenshots, computed styles and the sweep. |
+| VisBug | Not installed; injected CSS in Playwright tried the stack overlaps and the footer. | Substituted. |
+
+UX360's measured checks, each confirmed or not against the live computed style
+(the guide's section 5A step 5):
+
+- **Messages list: search placeholder 2.5:1.** Confirmed, and it is M-L3.
+- **Messages thread: nothing reads as a heading (the largest text 3% above
+  body).** Rejected: a chat has no headings; the title is 17px 600 and the
+  messages are 17px 400, by design.
+- **Dashboard: weekday labels 3.7:1.** Confirmed at 4.1:1 computed on the
+  gradient (UX360 sampled the anti-aliased glyph); X-2.
+- **Dashboard: scorecard "Par" and "35" 3.8:1.** Rejected: computed `#6b6860` on
+  `#eeebe2` is 4.7:1; the lower figure is the sampled glyph color. It is close
+  to the line; the sweep did not flag it.
+- **Calendar: four failures on class and busy rows.** Confirmed: they are the
+  past-event fade (3.6:1, 2.3:1), Q-152; the times on the week view's class and
+  busy blocks are X-3.
+- **Shot tracking, qualifier leaderboard, CoachHelm:** nothing to fix. The sweep
+  did find the shot strip (X-4); UX360 did not.
+
+Blur Test's opinions, none of them measured:
+
+- **Dashboard.** "The Latest round scorecard dominates; collapse it." Rejected
+  (the board's composition; H-2 changed only the stats row). "No legend for the
+  circles and squares." Noted, not built (golf's own notation; a legend is new
+  content). "Calendar dots and sidebar icons too small to tap." Rejected: a
+  desktop render, and the guide's own caution on touch advice.
+- **Shot tracking.** "The 142 yards hero is strong." Agreed, nothing to do.
+  "Result buttons equal weight and cramped; no selected state." Rejected: the
+  screen is before a selection, and the options are equal choices; it also
+  misread "Shot 2" as sitting on a dark header.
+- **CoachHelm.** "Program pulse dominates with four equal alerts." Rejected: the
+  overview is the page's first job and its height is reserved on purpose. "The
+  player pills are small and the last is cropped." Rejected: a horizontal
+  scroller that shows its edge on purpose. "Dark Eli against outline Jonah reads
+  as favoritism." Rejected: it is selected against unselected (Q-148 is the chip
+  language). "The bell's 3 duplicates '3 players'." Rejected: speculation.
+
+Two AI tools agreeing is not proof, and here one never answered: no change rests
+on an AI opinion alone.
+
+## Contrast sweep (cross-family)
+
+UX360's measured checks (above) found three contrast failures that this audit's
+first probes had missed: they had looked at the elements the screenshots
+suggested, not at every text node. A sweep was added: for every text node on the
+seven families at 390 and 1440, the computed color is composited over its
+backgrounds (gradients and opacity included) and compared with 4.5:1 (3:1 for
+large text). It is a computed number, not a pixel sample. It handles vertical
+gradients only, so one horizontal-gradient result (a "Practice green" line on
+Home's player timeline) was dropped as a false positive, and disabled controls
+are exempt (the "Next shot" button reads 1.5:1 at rest, by design).
+
+### X-1 Segmented labels on the well (built, measured)
+
+- **Measured.** The unselected label of every segmented control is `#6f6a5f` on
+  the well's gradient: 4.1:1 at 12.5px to 13px (Messages on desktop, the
+  Calendar view switcher on phone and desktop, CoachHelm Board and Ask,
+  CoachHelm's views, Home's Last 5 and Last 20).
+- **Change.** `controls.css`: `.ch-seg__b` uses `--ch-text-secondary` (5.4:1 on
+  the well). The selected label is still green 600.
+- **Verdict.** Accepted: one shared rule, five pages. **Confidence.** Confirmed.
+
+### X-2 Home's weekday labels (built, measured)
+
+- **Measured.** Tertiary ink on the week strip's gradient: 4.1:1 at 11.5px;
+  UX360 sampled 3.7:1 (`#706d65` on `#e0dbcf`).
+- **Change.** `home.css`: `.ch-h-day__d` uses secondary ink. **Verdict.**
+  Accepted.
+
+### X-3 Event times on class and busy blocks (built, measured)
+
+- **Measured.** The time line of a week-view block is faded to 0.82: 3.6:1 on a
+  class block and 4.0:1 on a busy block.
+- **Change.** `calendar.css`: on those two types it keeps its own color (5.2:1
+  and 6.0:1). **Verdict.** Accepted.
+
+### X-4 The shot strip and result options (built, measured)
+
+- **Measured.** The par over a hole not yet played (ivory at 0.5) is 3.8:1 on
+  the strip's green; "Thru" is 4.3:1; a result option's note ("not fringe") and
+  the rare options are `#8a857a` on the well, 3.2:1.
+- **Change.** `rounds-track.css`: the strip labels are 0.66 (4.5:1 or more); the
+  note and rare options use tertiary ink (4.7:1).
+- **Verdict.** Accepted.
+
+### Past events fade to 2.3:1 to 3.6:1 (owner question, Q-152)
+
+- **Measured.** Every past row of the phone Calendar sits at opacity 0.55 (title
+  3.6:1, times and place 2.3:1); the board does the same for the agenda (0.5)
+  and Home's timeline (0.45). UX360 measured the same on the Calendar phone
+  image.
+- **Not built.** The recession is the owner's board, a deliberate state.
+  Recommended in Q-152: fade the row's surface, keep the text at 4.5:1, and let
+  the "now" line carry the split.
 
 ## Not tested
 

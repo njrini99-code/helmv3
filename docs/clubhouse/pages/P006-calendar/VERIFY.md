@@ -138,6 +138,14 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P006__calendar__player__430__default__after__2b04867.png` | after | 2b04867 | calendar (player), 430px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
 | `P006__calendar__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (player), 430px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
 | `P006__calendar__player__430__default__before__cee8548.png` | before | cee8548 | calendar (player), 430px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__coach__1440__default__after__d4367ee.png` | after | d4367ee | calendar (coach), 1440px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__1440__default__before__d3a6483.png` | before | d3a6483 | calendar (coach), 1440px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__390__default__after__d4367ee.png` | after | d4367ee | calendar (coach), 390px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__390__default__before__d3a6483.png` | before | d3a6483 | calendar (coach), 390px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__player__1440__default__after__d4367ee.png` | after | d4367ee | calendar (player), 1440px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__1440__default__before__d3a6483.png` | before | d3a6483 | calendar (player), 1440px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__390__default__after__d4367ee.png` | after | d4367ee | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__390__default__before__d3a6483.png` | before | d3a6483 | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
 
 ## Open verification gaps
 

@@ -129,6 +129,8 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P007__thread__coach__430__thread-open__after__f724065.png` | after | f724065 | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
 | `P007__thread__coach__430__thread-open__baseline__ee5976d.png` | baseline | ee5976d | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
 | `P007__thread__coach__430__thread-open__before__ba75b0a.png` | before | ba75b0a | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__list__coach__1440__default__after__d4367ee.png` | after | d4367ee | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__list__coach__1440__default__before__d3a6483.png` | before | d3a6483 | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
 
 ## Open verification gaps
 

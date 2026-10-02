@@ -14,9 +14,10 @@ Every Clubhouse change with the issue it fixed, newest first. Each page's own ch
 | Rounds | **The shot screen kept desktop gutters on a phone (S-1): a container query on its own container never ran.** | `.ch-rt-q` is the container; the phone's 12px padding applies and the strip bleeds. |
 | Calendar | **Events sharing a column showed "Sh..." (C-1); audience coins hid their initials (C-2).** | Shared blocks wrap their title and keep the start time; overlap 5px. |
 | CoachHelm | **A two-line metric label ran at line-height 1.0 (CH-1).** | 1.3. |
+| Segmented controls, Home, Calendar, Rounds | **Contrast sweep (X-1 to X-4): unselected segmented labels 4.1:1, Home weekday labels 4.1:1, class and busy event times 3.6:1 and 4.0:1, the shot strip's par labels 3.8:1 and its option notes 3.2:1.** | Secondary ink on the segmented label and the weekday label; the event time keeps its color; the strip labels 0.66 and the option notes tertiary. Past-event fade: Q-152. |
 | Qualifiers | Audited, no defect found. | None. |
 
-Findings, evidence and the owner questions (Q-148 to Q-151) are in `AESTHETIC_AUDIT.md`.
+Findings, evidence and the owner questions (Q-148 to Q-152) are in `AESTHETIC_AUDIT.md`.
 
 ## 2026-10-01 (CI on PR #2111)
 

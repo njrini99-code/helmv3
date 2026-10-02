@@ -27,6 +27,9 @@ Held items:     none
   unchanged (padding 28px, checked at 1440).
 - **Not done, on purpose.** The strip's 34px chips (the board; `MOBILE.md` says
   44px) and the map's 7.5px shot numbers: Q-151.
+- **Contrast pass (`d4367ee`).** The strip's par and Thru labels were ivory at
+  0.5 and 0.55 (3.8:1, 4.3:1): 0.66 now. A result option's note and the rare
+  options were `#8a857a` on the well, 3.2:1: tertiary ink, 4.7:1.
 - **Verification.** Before and after at 375, 390, 430 and 1440 for the approach
   step, the putt step and the submit-failed overlay. `round-tracking`,
   `round-save-status` and `round-entry` tests, 68 of 68. Not tested: landscape

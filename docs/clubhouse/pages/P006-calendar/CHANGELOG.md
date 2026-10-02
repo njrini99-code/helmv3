@@ -24,6 +24,10 @@ Held items:     none
   overlaps 5px. Under half visible: 15 to 4.
 - **Not done, on purpose.** An overlap of four or more events is still narrow; a
   cascade layout is a redesign.
+- **Contrast pass (`d4367ee`).** The unselected labels of the view switcher were
+  4.1:1 on the well (shared `.ch-seg__b`, secondary ink now); the time on a
+  class or busy block faded to 3.6:1 and 4.0:1 and keeps its own color (5.2:1,
+  6.0:1). Past rows stay faded (0.55, 2.3:1 to 3.6:1): Q-152.
 - **Verification.** Before and after at 375, 390, 430 and 1440, coach and
   player. `calendar.test.tsx` 83 of 83.
 

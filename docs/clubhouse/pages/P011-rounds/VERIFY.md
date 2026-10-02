@@ -319,6 +319,18 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P011__track__player__430__putt__before__4e01c43.png` | before | 4e01c43 | track (player), 430px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
 | `P011__track__player__430__submit-failed__after__cee8548.png` | after | cee8548 | track (player), 430px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
 | `P011__track__player__430__submit-failed__before__4e01c43.png` | before | 4e01c43 | track (player), 430px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__1440__approach__after__d4367ee.png` | after | d4367ee | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__1440__approach__before__d3a6483.png` | before | d3a6483 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__1440__putt__after__d4367ee.png` | after | d4367ee | track (player), 1440px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__1440__putt__before__d3a6483.png` | before | d3a6483 | track (player), 1440px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__1440__submit-failed__after__d4367ee.png` | after | d4367ee | track (player), 1440px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__1440__submit-failed__before__d3a6483.png` | before | d3a6483 | track (player), 1440px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__390__approach__after__d4367ee.png` | after | d4367ee | track (player), 390px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__390__approach__before__d3a6483.png` | before | d3a6483 | track (player), 390px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__390__putt__after__d4367ee.png` | after | d4367ee | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__390__putt__before__d3a6483.png` | before | d3a6483 | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__390__submit-failed__after__d4367ee.png` | after | d4367ee | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__390__submit-failed__before__d3a6483.png` | before | d3a6483 | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
 
 ## Open verification gaps
 

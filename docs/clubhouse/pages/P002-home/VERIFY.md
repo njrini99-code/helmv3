@@ -127,6 +127,14 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P002__dashboard__player__430__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
 | `P002__dashboard__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
 | `P002__dashboard__player__430__default__before__f724065.png` | before | f724065 | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__after__d4367ee.png` | after | d4367ee | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__before__d3a6483.png` | before | d3a6483 | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__after__d4367ee.png` | after | d4367ee | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__before__d3a6483.png` | before | d3a6483 | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__after__d4367ee.png` | after | d4367ee | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__before__d3a6483.png` | before | d3a6483 | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__after__d4367ee.png` | after | d4367ee | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__before__d3a6483.png` | before | d3a6483 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
 
 ## Open verification gaps
 

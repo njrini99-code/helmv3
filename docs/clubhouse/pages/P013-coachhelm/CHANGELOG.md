@@ -22,6 +22,8 @@ Held items:     none
 - **Not done, on purpose.** The Program pulse card keeps its reserved height (a
   performance rule: nothing below moves when the rows land); the three
   filter-chip languages are Q-148.
+- **Contrast pass (`d4367ee`).** The Board and Ask switch and the player views'
+  labels were 4.1:1 on the well (shared `.ch-seg__b`, secondary ink now).
 - **Verification.** Before and after at 375, 390, 430 and 1440, coach and
   player. `coachhelm-views.test.tsx` 22 of 22.
 

@@ -24,6 +24,9 @@ Held items:     none
   to the bottom of the sheet); filling it is new content. The conflict triangle
   on the timeline is icon-only (Q-150). The "Latest round" move is design
   judgment and one rule to revert.
+- **Contrast pass (`d4367ee`).** The week strip's weekday labels measured 4.1:1
+  (UX360 sampled 3.7:1): `.ch-h-day__d` uses secondary ink. The segmented Last 5
+  and Last 20 labels take the shared fix below.
 - **Verification.** Before and after at 375, 390, 430 and 1440, coach and
   player; the geometry report shows "initials under next coin: TM, SA, AL, JO"
   before and none after. Not tested: a real iPhone.
