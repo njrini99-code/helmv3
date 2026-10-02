@@ -3,6 +3,20 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/stats-player.md`.
 
+## 2026-10-02 — SG comparison test follows the overview footer
+
+CI at `ca530ff4f` exposed a stale selector that still looked for the change
+inside the SG figure. The focused test reproduced that failure with exit 1.
+The assertion now requires the figures and metadata footer to be direct
+children of the same overview card, with the footer immediately below the
+figures. It checks exact `−1.3` and `vs. previous 10` within that footer's
+change chip. Both round SG values and their gain/loss classes remain checked.
+
+The full strokes-gained suite passed 67/67 with one worker in 6.30s.
+Scoped ESLint, `npm run typecheck:fast` and `git diff --check` exited 0.
+Only the test and this note changed; runtime source was untouched. The test
+path remains unmapped by the semantic feature registry, reported to the lead.
+
 ## 2026-10-02 — Period-switch geometry and truthful metadata
 
 The optimized `a32c933e0` baseline recorded three 390px, 4x-CPU trials per
