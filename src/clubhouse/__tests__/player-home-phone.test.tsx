@@ -190,8 +190,10 @@ describe('Today, on the phone', () => {
     expect(rows[0]!.className).toContain('is-past');
     expect(rows[0]!.querySelector('.ch-hm-now')).toBeNull();
     expect(rows[1]!.querySelector('.ch-hm-now')!.textContent).toBe('Next');
-    expect(css).toMatch(/\.ch-hm-tl\.is-player \.ch-hm-tl__r\.is-past\s*{\s*opacity: 1;/);
-    expect(css).toMatch(/\.ch-hm-tl\.is-player \.is-past \.ch-hm-tl__t\s*{\s*color: var\(--ch-text-tertiary\);/);
+    // Q-152 (owner kept, b359c0414): no past row is dimmed as a whole on either Home, so the player's override is gone; the
+    // time steps back for every role through the shared rule.
+    expect(css).not.toMatch(/\.ch-hm-tl__r\.is-past\s*{[^}]*opacity:/);
+    expect(css).toMatch(/\.ch-hm-tl__r\.is-past \.ch-hm-tl__t\s*{\s*color: var\(--ch-text-tertiary\);/);
   });
 
   it('marks nothing once every row has passed', () => {

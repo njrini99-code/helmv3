@@ -385,15 +385,25 @@ function cmdLog(opts, root) {
   if (!existsSync(dir)) fail(`no screenshots for ${opts.page} in ${dir}`);
   const entries = [];
   for (const day of readdirSync(dir)) {
-    const m = join(dir, day, 'manifest.json');
-    if (existsSync(m)) entries.push(...JSON.parse(readFileSync(m, 'utf8')));
+    const m = readIfPresent(join(dir, day, 'manifest.json'));
+    if (m) entries.push(...JSON.parse(m));
   }
   const verify = join(root, 'docs/clubhouse/pages', pageDir(pages, opts.page), 'VERIFY.md');
-  const md = existsSync(verify) ? readFileSync(verify, 'utf8') : '';
+  const md = readIfPresent(verify) ?? '';
   const rows = logRows(entries, md);
   if (!opts.write) return console.log(rows.join('\n') || '(every recorded file is already listed)');
   writeFileSync(verify, appendRows(md, rows));
   console.log(`${verify}: ${rows.length} row(s) added`);
+}
+
+/** Reads a file, or null when it is absent: one call, so nothing is checked and then read (CodeQL js/file-system-race). */
+function readIfPresent(file) {
+  try {
+    return readFileSync(file, 'utf8');
+  } catch (err) {
+    if (err?.code === 'ENOENT') return null;
+    throw err;
+  }
 }
 
 /** A page's recorded shots (newest first), each with the `date` of its directory; entries whose file is gone are left out. */
