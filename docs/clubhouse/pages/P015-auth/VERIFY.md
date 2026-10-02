@@ -62,3 +62,13 @@ before, after, baseline or evidence.
 - Reduced motion recorded on video: not yet (the tests cover the one-millisecond paths).
 - `npm run build`: exit 0 in this repair pass; compilation, TypeScript and
   static-page generation completed, with the route table emitted.
+
+## 2026-10-02 — Plugin interaction and accessibility verification
+
+Auth/credentials/scene suites: 64 tests pass. The repeated-submit regression
+first reproduced two requests and now verifies one request, plus retry after
+refusal. WebKit Sign in at the phone viewport reports no Axe violations for
+WCAG 2/2.1/2.2 A/AA tags, no document overflow, 16px credential fields and the
+existing username/current-password autocomplete. Tab traverses both fields.
+Reduced-motion welcome reports the camera at rest with an identity transform.
+These are local previews, not real credentials or physical Safari timing.

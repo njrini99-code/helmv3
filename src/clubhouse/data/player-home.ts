@@ -232,7 +232,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
   const sand = window.reduce(
     (a, r) => {
       const c = cache.get(r.id);
-      return c?.sand_attempts ? { saves: a.saves + (c.sand_saves ?? 0), att: a.att + c.sand_attempts } : a;
+      return c?.sand_attempts && c.sand_saves != null ? { saves: a.saves + c.sand_saves, att: a.att + c.sand_attempts } : a;
     },
     { saves: 0, att: 0 },
   );

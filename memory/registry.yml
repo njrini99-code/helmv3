@@ -1070,11 +1070,13 @@ features:
         - src/app/golf/(dashboard)/dashboard/announcements/**
       components:
         - src/components/golf/messages/**
+        - src/clubhouse/screens/messages/**
         - src/components/golf/announcements/**
       api:
         - src/components/fairway/pages/messages/**
         - src/components/fairway/pages/announcements/**
       actions:
+        - src/app/actions/messages.ts
         - src/app/golf/actions/messages.ts
         - src/app/golf/actions/message-attachments.ts
         - src/app/golf/actions/announcements.ts
@@ -1087,6 +1089,7 @@ features:
       services:
         - src/lib/supabase/**
         - src/lib/golf/conversation-audience.ts
+        - src/lib/golf/message-replies.ts
         # `src/hooks/**` appears NOWHERE else in this registry, so every golf
         # hook resolved to no feature at all — `knowledge:map` returned an empty
         # impactedFeatures for the hook that owns the entire conversation rail.
@@ -1098,6 +1101,7 @@ features:
         # belong to other features, and a confidently wrong mapping is worse
         # than a recorded gap.
         - src/hooks/golf/use-golf-messages.ts
+        - src/clubhouse/data/messages.ts
         - src/hooks/golf/use-message-attachments.ts
         - src/hooks/golf/use-message-reactions.ts
         # Same gap, same fix (named, not globbed): the warm-start cache
@@ -1119,6 +1123,7 @@ features:
         - supabase/migrations/20260907120000_golf_participants_mute_columns.sql
       tests:
         - e2e/messages.spec.ts
+        - src/clubhouse/__tests__/messages*.test.*
         - e2e/golf-critical-paths.spec.ts
         - supabase/tests/rls/golf_message_reactions.sql
         - src/app/golf/actions/unified-notifications-model.test.ts
@@ -1126,6 +1131,9 @@ features:
         # holds several other features' action tests, so a glob would claim them.
         - src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts
         - src/test/actions/send-message-duplicate-key-equivalence.test.ts
+        - src/test/actions/send-message-quoted-reply.test.ts
+        - src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts
+        - src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx
         - src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx
         - src/hooks/golf/__tests__/use-surface-prewarm.test.tsx
         - src/lib/golf/__tests__/client-resource-cache.test.ts
@@ -1176,6 +1184,7 @@ features:
         - src/components/fairway/pages/travel/**
         - src/components/fairway/pages/team-hub/**
         - src/clubhouse/screens/home/**
+        - src/clubhouse/screens/hub/**
       api:
         - src/components/fairway/pages/documents/**
       actions:

@@ -1,5 +1,33 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-02 — Intuitive improvement: distinguish pending choices from confirmed changes
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   100208–100210, 101301; CH-10408–CH-10410
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+The Hub now owns an action gate and pending state for each event reply, post
+acknowledgment and task, so tab changes and older toast Retries share the same
+lock. Completing and reopening a task share one gate.
+Sending/Acknowledging/Saving names the current object; only that object locks,
+while another can save independently. Acknowledgment retains the featured post
+until its write answers. Refusal restores prior state and Retry preserves the
+requested action; a task reopened earlier in the visit also restores that last
+confirmed state after a failed completion. No write endpoint or role rule
+changed. Nine added regression cases verify independent saves,
+duplicate/opposite-action prevention, rollback, acknowledgment Retry, the
+reopened-task edge case, tab remounts, quiet stale Retry contention and retaining
+a confirmed acknowledgment after a later stale Retry refuses. The full Hub
+file passes 144/144 tests (exit 0, 37.46 s, one worker).
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
 ## 2026-10-02 — Team Hub: restore card material and consistent phone gutters
 
 ```text

@@ -5965,7 +5965,7 @@
     "name": "THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION",
     "chCode": "CH-7801",
     "meaning": "The composer is named for the conversation (\"Message Varsity team\"); a message that didn't send is an alert",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5975,7 +5975,7 @@
     "item": 2,
     "name": "SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE",
     "chCode": "CH-7802",
-    "meaning": "Search results are announced as they arrive; Enter sends, Shift+Enter adds a line",
+    "meaning": "Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -9183,6 +9183,39 @@
     "name": "PLAN_A_TRIP_THE_TRAVELERS_CLASSES_ARE",
     "chCode": "CH-10407",
     "meaning": "Plan a trip: the travelers' classes are being checked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100208,
+    "page": "P010",
+    "category": 2,
+    "item": 8,
+    "name": "A_PLAYERS_EVENT_REPLY_IS_BEING_SENT",
+    "chCode": "CH-10408",
+    "meaning": "A player's event reply is being sent",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100209,
+    "page": "P010",
+    "category": 2,
+    "item": 9,
+    "name": "A_PLAYERS_ACKNOWLEDGMENT_IS_BEING_SENT",
+    "chCode": "CH-10409",
+    "meaning": "A player's acknowledgment is being sent",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100210,
+    "page": "P010",
+    "category": 2,
+    "item": 10,
+    "name": "A_PLAYERS_TASK_COMPLETION_OR_REOPENING_IS",
+    "chCode": "CH-10410",
+    "meaning": "A player's task completion or reopening is being saved",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },

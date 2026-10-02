@@ -18,6 +18,7 @@ import { chTrail } from '../../lib/track';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
@@ -98,10 +99,10 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
 
 /** "In 50 min", "Happening now", "Tomorrow · 3:30 PM", "Thu · 8:42 AM". Before the clock is known, the day only. */
 export function whenLabel(e: ChHomeEvent, now: Date | null): { text: string; soon: boolean } {
-  if (e.allDay) return { text: now && dayDiff(e.date, now) === 0 ? 'Today · all day' : `${weekday(e.date)} · all day`, soon: false };
+  if (e.allDay) return { text: now && dayDiff(e.date, now, e.timezone) === 0 ? 'Today · all day' : `${weekday(e.date)} · all day`, soon: false };
   if (!now) return { text: e.startLabel, soon: false };
   const mins = Math.round((Date.parse(e.startIso) - now.getTime()) / 60000);
-  const days = dayDiff(e.date, now);
+  const days = dayDiff(e.date, now, e.timezone);
   if (days === 0) {
     const end = e.endIso ? Date.parse(e.endIso) : Date.parse(e.startIso);
     if (mins <= 0 && now.getTime() < end) return { text: 'Happening now', soon: true };
@@ -111,9 +112,9 @@ export function whenLabel(e: ChHomeEvent, now: Date | null): { text: string; soo
   return { text: `${days === 1 ? 'Tomorrow' : weekday(e.date)} · ${e.startLabel}`, soon: false };
 }
 
-/** Whole days from the viewer's today to a YYYY-MM-DD, on the viewer's clock (the team date is the loader's). */
-function dayDiff(date: string, now: Date): number {
-  const local = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+/** Whole days on the same team clock that produced the event's calendar date. */
+function dayDiff(date: string, now: Date, timezone?: string): number {
+  const local = new Intl.DateTimeFormat('en-CA', { timeZone: getValidTimezone(timezone), year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
   return Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${local}T12:00:00Z`)) / 86400000);
 }
 const WD = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
@@ -141,9 +142,11 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
               <Avatar key={n} name={n} size={24} />
             ))}
           </span>
-          <span className="ch-hm-next__rsvp ch-num">
-            <b>{e.going}</b> of {people.length} going
-          </span>
+          {e.going != null && (
+            <span className="ch-hm-next__rsvp ch-num">
+              <b>{e.going}</b> of {people.length} going
+            </span>
+          )}
           <Icon icon={ChevronRight} size={17} />
         </span>
       )}

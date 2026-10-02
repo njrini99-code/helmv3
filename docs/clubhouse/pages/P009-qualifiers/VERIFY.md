@@ -156,6 +156,8 @@ before, after, baseline or evidence.
 | `P009__list__player__430__default__before__2b04867.png` | before | 2b04867 | list (player), 430px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
 | `P009__mobile-overview__coach__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/qualifiers, synthetic preview fixture; shared materials in progress |
 | `P009__mobile-overview__coach__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/qualifiers, synthetic preview fixture; shared materials in progress |
+| `P009__shiro-mobile-overview__coach__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (coach), 390px, populated; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__shiro-mobile-overview__coach__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (coach), 390px, populated; /clubhouse-preview/qualifiers, synthetic preview fixture |
 
 ## Open verification gaps
 

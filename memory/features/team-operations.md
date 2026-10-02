@@ -14,7 +14,6 @@
 
 <!-- schema-drift-absent: golf_travel_expense_splits -->
 
-
 ## Status
 
 - active
@@ -36,6 +35,20 @@ and a countdown only for recorded timed starts; the countdown reserves its space
 before the client clock is available. Home's section read errors remain distinct
 from empty data. Page contracts and data limitations live in
 `docs/clubhouse/pages/P002-home/` and `docs/clubhouse/PROGRESS.md`.
+
+Home resolves relative event days on the team clock even when the viewer is in
+another timezone. Partial invitee identities retain known names without claiming
+a paired Going count against an incomplete denominator. Player scoring counts
+under-par rounds only where par is recorded and draws a common par line only
+when every displayed round has the same known par. Missing sand-save totals
+remain unavailable rather than becoming zero.
+
+Clubhouse Team Hub (`src/clubhouse/screens/hub/`) gives each event reply, task
+and acknowledgment its own pending state and action gate. Another object can
+save independently. Object gates last for the Hub visit across tab changes and
+old Retry callbacks. Complete/reopen share the task gate; a refused write restores
+its last confirmed state. Acknowledgment keeps the featured post until the write
+confirms, then advances; failure preserves that post and the existing Retry.
 
 ## Primary Entry Points
 

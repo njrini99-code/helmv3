@@ -52,7 +52,7 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '../preview/fixtures-hub';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
+const code = (c: string) => document.querySelector<HTMLElement>(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -107,6 +107,192 @@ beforeEach(() => {
 });
 
 describe('Team Hub · player', () => {
+  it('CH-10408 a pending reply is explicit, locks only its event, and restores the confirmed reply on refusal', async () => {
+    const user = userEvent.setup();
+    const settle = new Map<string, (result: { success: boolean; error?: string }) => void>();
+    const reply = vi.fn((id: string) => new Promise<{ success: boolean; error?: string }>((resolve) => settle.set(id, resolve)));
+    show(PREVIEW_HUB_PLAYER, writes({ reply }));
+    const dinner = screen.getByRole('radiogroup', { name: 'Your reply for Team dinner' });
+    const nine = screen.getByRole('radiogroup', { name: 'Your reply for Recovery nine' });
+    await user.click(within(dinner).getByRole('radio', { name: 'Going' }));
+    expect(code('CH-10408')!.textContent).toContain('Sending reply for Team dinner');
+    expect(dinner).toHaveAttribute('aria-busy', 'true');
+    within(dinner).getAllByRole('radio').forEach((button) => expect(button).toBeDisabled());
+    await user.click(within(dinner).getByRole('radio', { name: 'Maybe' }));
+    expect(reply).toHaveBeenCalledTimes(1);
+    expect(within(nine).getByRole('radio', { name: 'Going' })).not.toBeDisabled();
+    await user.click(within(nine).getByRole('radio', { name: 'Going' }));
+    expect(reply).toHaveBeenCalledTimes(2);
+    settle.get('r2')!({ success: false, error: 'refused' });
+    await expectCode('CH-10001', /Couldn't send your reply for Team dinner/);
+    await waitFor(() => expect(within(dinner).getByRole('radio', { name: 'Going' })).not.toBeDisabled());
+    expect(within(dinner).getByRole('radio', { name: 'Going' })).toHaveAttribute('aria-checked', 'false');
+    settle.get('r3')!({ success: true });
+    await waitFor(() => expect(within(nine).getByRole('radio', { name: 'Going' })).not.toBeDisabled());
+    expect(within(nine).getByRole('radio', { name: 'Going' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('CH-10410 completing a task cannot be undone while pending, and another task can save independently', async () => {
+    const user = userEvent.setup();
+    const settle = new Map<string, (result: { success: boolean; error?: string }) => void>();
+    const completeTask = vi.fn((id: string) => new Promise<{ success: boolean; error?: string }>((resolve) => settle.set(id, resolve)));
+    const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask }));
+    const waiver = () => screen.getByRole('button', { name: /^Sign travel waiver/ });
+    await user.click(waiver());
+    expect(waiver()).toBeDisabled();
+    expect(code('CH-10410')).toHaveAttribute('aria-label', 'Saving Sign travel waiver');
+    await user.click(waiver());
+    expect(w.uncompleteTask).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Post two practice rounds' }));
+    expect(completeTask).toHaveBeenCalledTimes(2);
+    settle.get('t1')!({ success: false, error: 'refused' });
+    await expectCode('CH-10003', /Couldn't mark Sign travel waiver done/);
+    await waitFor(() => expect(waiver()).not.toBeDisabled());
+    expect(waiver()).toHaveAttribute('aria-pressed', 'false');
+    settle.get('t2')!({ success: true });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Post two practice rounds, done' })).not.toBeDisabled());
+  });
+
+  it('CH-10410 a failed completion restores a loaded completed task that was already reopened this visit', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }));
+    const schedule = () => screen.getByRole('button', { name: /^Upload class schedule/ });
+    await user.click(schedule());
+    await waitFor(() => expect(schedule()).toHaveAttribute('aria-pressed', 'false'));
+    expect(w.uncompleteTask).toHaveBeenCalledWith('t3');
+    await user.click(schedule());
+    await expectCode('CH-10003', /Couldn't mark Upload class schedule done/);
+    await waitFor(() => expect(schedule()).not.toBeDisabled());
+    expect(schedule()).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('CH-10409 an acknowledgment stays on its post until confirmed; failure restores Got it and Retry', async () => {
+    const user = userEvent.setup();
+    let settle!: (result: { success: boolean; error?: string }) => void;
+    const acknowledge = vi.fn(() => new Promise<{ success: boolean; error?: string }>((resolve) => { settle = resolve; }));
+    const data = { ...PREVIEW_HUB_PLAYER, announcements: { ...PREVIEW_HUB_PLAYER.announcements, rows: PREVIEW_HUB_PLAYER.announcements.rows.map((a, i) => ({ ...a, needAck: i < 2 })) } };
+    show(data, writes({ acknowledge }));
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(code('CH-10409')!.textContent).toContain('Acknowledging Pairings and tee times for Thursday');
+    expect(screen.getByRole('heading', { level: 3, name: 'Pairings and tee times for Thursday' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
+    expect(screen.queryByText('Acknowledged')).toBeNull();
+    settle({ success: false, error: 'refused' });
+    await expectCode('CH-10002', /Couldn't acknowledge/);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Got it' })).toBeTruthy());
+    await user.click(within(code('CH-10002')!).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(acknowledge).toHaveBeenCalledTimes(2));
+    expect(code('CH-10409')).not.toBeNull();
+    settle({ success: true });
+    await waitFor(() => expect(screen.getByRole('heading', { level: 3, name: 'Short-game block moves to Green 2' })).toBeTruthy());
+    expect(code('CH-10409')).toBeNull();
+  });
+
+  it('CH-10410 a task stays locked after leaving Home and returning while its completion is pending', async () => {
+    const user = userEvent.setup();
+    let settle!: (result: { success: boolean }) => void;
+    const completeTask = vi.fn(() => new Promise<{ success: boolean }>((resolve) => { settle = resolve; }));
+    const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask }));
+    const waiver = () => screen.getByRole('button', { name: /^Sign travel waiver/ });
+    await user.click(waiver());
+    await tab('Announcements');
+    await tab('Home');
+    expect(waiver()).toBeDisabled();
+    expect(waiver()).toHaveAttribute('aria-busy', 'true');
+    expect(code('CH-10410')).toHaveAttribute('aria-label', 'Saving Sign travel waiver');
+    await user.click(waiver());
+    expect(completeTask).toHaveBeenCalledTimes(1);
+    expect(w.uncompleteTask).not.toHaveBeenCalled();
+    settle({ success: true });
+    await waitFor(() => expect(waiver()).not.toBeDisabled());
+    expect(waiver()).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('CH-10408 a reply stays locked across tab remount while a different event can still save', async () => {
+    const user = userEvent.setup();
+    const settle = new Map<string, (result: { success: boolean }) => void>();
+    const reply = vi.fn((id: string) => new Promise<{ success: boolean }>((resolve) => settle.set(id, resolve)));
+    show(PREVIEW_HUB_PLAYER, writes({ reply }));
+    const dinner = () => screen.getByRole('radiogroup', { name: 'Your reply for Team dinner' });
+    await user.click(within(dinner()).getByRole('radio', { name: 'Going' }));
+    await tab('Travel');
+    await tab('Home');
+    expect(dinner()).toHaveAttribute('aria-busy', 'true');
+    within(dinner()).getAllByRole('radio').forEach((button) => expect(button).toBeDisabled());
+    await user.click(within(dinner()).getByRole('radio', { name: 'Maybe' }));
+    expect(reply).toHaveBeenCalledTimes(1);
+    const nine = screen.getByRole('radiogroup', { name: 'Your reply for Recovery nine' });
+    await user.click(within(nine).getByRole('radio', { name: 'Going' }));
+    expect(reply).toHaveBeenCalledTimes(2);
+    settle.get('r2')!({ success: true });
+    settle.get('r3')!({ success: true });
+    await waitFor(() => expect(within(dinner()).getByRole('radio', { name: 'Going' })).not.toBeDisabled());
+    expect(within(dinner()).getByRole('radio', { name: 'Going' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('CH-10409 Home and Announcements share the pending acknowledgment until it confirms', async () => {
+    const user = userEvent.setup();
+    let settle!: (result: { success: boolean }) => void;
+    const acknowledge = vi.fn(() => new Promise<{ success: boolean }>((resolve) => { settle = resolve; }));
+    show(PREVIEW_HUB_PLAYER, writes({ acknowledge }));
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    await tab('Announcements');
+    expect(code('CH-10409')!.textContent).toContain('Acknowledging Pairings and tee times for Thursday');
+    expect(screen.queryByText('Acknowledged')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
+    await tab('Home');
+    expect(code('CH-10409')).not.toBeNull();
+    expect(acknowledge).toHaveBeenCalledTimes(1);
+    settle({ success: true });
+    await waitFor(() => expect(screen.getByText('Acknowledged')).toBeTruthy());
+    expect(code('CH-10409')).toBeNull();
+  });
+
+  it('CH-10408 an old toast Retry cannot bypass a remounted event lock or emit a false failure', async () => {
+    const user = userEvent.setup();
+    let settle!: (result: { success: boolean }) => void;
+    const reply = vi.fn().mockResolvedValueOnce({ success: false, error: 'refused' })
+      .mockImplementationOnce(() => new Promise<{ success: boolean }>((resolve) => { settle = resolve; }))
+      .mockResolvedValue({ success: true });
+    show(PREVIEW_HUB_PLAYER, writes({ reply }));
+    const dinner = () => screen.getByRole('radiogroup', { name: 'Your reply for Team dinner' });
+    await user.click(within(dinner()).getByRole('radio', { name: 'Going' }));
+    await expectCode('CH-10001');
+    const retry = within(code('CH-10001')!).getByRole('button', { name: 'Retry' });
+    await tab('Travel');
+    await tab('Home');
+    await user.click(within(dinner()).getByRole('radio', { name: 'Maybe' }));
+    hapticSpy.mockClear();
+    track.chReport.mockClear();
+    await user.click(retry);
+    expect(reply).toHaveBeenCalledTimes(2);
+    expect(within(dinner()).getByRole('radio', { name: 'Maybe' })).toHaveAttribute('aria-checked', 'true');
+    expect(dinner()).toHaveAttribute('aria-busy', 'true');
+    expect(hapticSpy).not.toHaveBeenCalledWith('error');
+    expect(track.chReport).not.toHaveBeenCalled();
+    expect(document.querySelectorAll('[data-ch-code="CH-10001"]')).toHaveLength(0);
+    settle({ success: true });
+    await waitFor(() => expect(within(dinner()).getByRole('radio', { name: 'Maybe' })).not.toBeDisabled());
+  });
+
+  it('CH-10409 a stale acknowledgment Retry failure preserves a later confirmed acknowledgment', async () => {
+    const user = userEvent.setup();
+    const acknowledge = vi.fn().mockResolvedValueOnce({ success: false, error: 'refused' })
+      .mockResolvedValueOnce({ success: true }).mockResolvedValueOnce({ success: false, error: 'refused' });
+    show(PREVIEW_HUB_PLAYER, writes({ acknowledge }));
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    await expectCode('CH-10002');
+    const retry = within(code('CH-10002')!).getByRole('button', { name: 'Retry' });
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    await waitFor(() => expect(screen.getByText('Acknowledged')).toBeTruthy());
+    await tab('Announcements');
+    await user.click(retry);
+    await waitFor(() => expect(acknowledge).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(code('CH-10409')).toBeNull());
+    expect(screen.getByText('Acknowledged')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
+  });
+
   it('100101 Home: RSVPs, the post waiting on them, the next trip, updates and tasks', () => {
     show(PREVIEW_HUB_PLAYER);
     expect(screen.getByRole('heading', { level: 1, name: 'Team Hub' })).toBeTruthy();

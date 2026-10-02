@@ -144,6 +144,46 @@ before, after, baseline or evidence.
 | `P007__list__coach__1440__default__before__d3a6483.png` | before | d3a6483 | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
 | `P007__thread__coach__390x664__ready__before__cbc1c0d.png` | before | `cbc1c0d` | Before: flat incoming and sent bubble fills. |
 | `P007__thread__coach__390x664__ready__after__cbc1c0d.png` | after | `cbc1c0d` | After: graded surfaces, highlights and grounded bubble shadows; thread settled at0x0. |
+| `P007__apple-thread__coach__390x664__group__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, group |
+| `P007__apple-thread__coach__390x664__group__before__cca081c.png` | before | cca081c | apple-thread (coach), 390x664px, group |
+| `P007__apple-thread__coach__390x664__long-press__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, long-press |
+| `P007__apple-thread__coach__390x664__reply-multiline__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, reply-multiline |
+
+## 2026-10-02 — Apple Messages phone interaction pass
+
+- Messages 74/74 + audit 8/8: 82 passed, one worker, 11.61 seconds, real exit 0.
+  Includes multiline Return/explicit Send; real parent send ID and Cancel;
+  vertical
+  scroll/back-edge gesture guards; loaded/deleted/unavailable quote
+  truthfulness;
+  pending text target lock; deferred attachment refusal restoration;
+  phone-thread
+  departure clearing reply while preserving text; intermediate timestamp reveal
+  and loaded-parent scrolling. Hook/server Retry checks are recorded by their
+  owner.
+- After the full suite, the reduced-motion parent jump was repaired and its
+  existing timestamp/quote-scroll test ran again: 1/1 selected passed (281ms,
+  1.74 seconds overall), checking smooth normally and instant under reduced motion.
+- Final scoped Messages source/test ESLint exit 0; `git diff --check` exit 0.
+- WebKit iPhone13 emulation, local synthetic populated fixture at port 3120:
+  scrollWidth equals viewport at 375/390/430 pixels. At 390, a held native
+  pointer opened the
+  selected-message sheet, a 70px rightward pointer gesture on a visible bubble
+  selected Reply, Return produced `First line\nSecond line`, input retained
+  focus
+  and `enterkeyhint=enter`. The action sheet showed actual 2:31 PM and selected
+  text.
+- Axe WCAG 2 A/AA and 2.1 AA scan of the active thread: zero violations.
+  Physical touch,
+  Safari keyboard chrome, frame timing and production persistence were not
+  measured
+  by this emulator pass. Four shots show settled group, reply multiline, and
+  action
+  context; the Next development indicator in the lower-left is not product UI.
+
+Combined final production build: exit 0. Compiled in 117 seconds, TypeScript
+finished in 13.3 seconds, all 181 static pages generated and the route table
+emitted. This verifies the built source, not a deployed real-account write.
 
 ## Open verification gaps
 

@@ -1,5 +1,23 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-02 — Intuitive improvement: easier phone filter activation
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   none changed
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+The shared phone stats control now gives the player profile an explicit 44×44px
+filter target. Existing early-read, missing-data and window comparison copy is
+unchanged. WebKit verified the target and captured the coach profile at 390.
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
 ## 2026-10-02 — Player stats: layered panels and less compressed captions
 
 ```text

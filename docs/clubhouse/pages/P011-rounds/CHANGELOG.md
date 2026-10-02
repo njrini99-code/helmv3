@@ -4,6 +4,27 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.
 
+## 2026-10-02 — Shiro fix: a stable, finger-sized continue action
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081cff)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; CSS only
+Held items:     physical iPhone Safari verification
+```
+
+Shiro fix mode confirmed that the Continue action was only 38px tall in WebKit
+at 375 and 390px, with no expanded touch target. The phone action and discard
+control are now 44px tall; the footer can move its action group to another line
+instead of squeezing progress text. A long last-round label can wrap within the
+card. Layered card materials and the hole strip remain intact.
+
+WebKit at 375/390/430px measured 44px action heights and no horizontal document
+overflow. A controlled +12 through 17 label stayed on one line. The populated
+preview captures are logged below; no real round was changed.
+
 ## 2026-10-01 — Give the phone library room to read
 
 ```text

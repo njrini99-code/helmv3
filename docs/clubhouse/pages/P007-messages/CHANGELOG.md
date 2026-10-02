@@ -3,6 +3,45 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Phone messaging follows the owner's Apple Messages benchmark
+
+Branch: `codex/clubhouse-design-fidelity`. Shiro fix review and Frontend Design
+Premium interaction review found identical rounded phone bubbles, a redundant
+avatar rail in direct chats, and Return sending immediately. Restored run
+geometry
+and terminal tails, expanded the usable bubble column to 82%, retained existing
+green/ivory depth, and made phone Return multiline with explicit Send. Desktop
+keyboard behavior is preserved.
+
+Long press keeps selected text and actual time in the existing action sheet.
+Reply and swipe right select a real parent; swipe left reveals actual message
+time.
+Quotes show loaded author/text or attachment labels, truthful
+deleted/unavailable
+states, and scroll only to loaded parents. Parent jumps honor reduced motion with
+an instant scroll; the focused timestamp/quote test verifies both motion settings.
+Sending forwards the existing reply
+ID
+through text and attachment hooks. Pending sends synchronously lock reply
+changes;
+text failures retain the target in their bubble and attachment refusals restore
+text/files/target. Leaving a phone thread clears reply intent while retaining
+text.
+The pending long-press timer is cancelled on unmount.
+
+Verification: final Messages suite 74/74 and audit suite 8/8 (82 total), capped
+at
+one worker, 11.61 seconds. Scoped ESLint and diff checks pass. WebKit at 375,
+390 and
+430 has no horizontal overflow; 390 pointer long press, rightward Reply gesture,
+Return/newline and selected-message context were exercised. Thread Axe scan
+reports
+zero WCAG 2 A/AA and 2.1 AA violations. Four captures are local and recorded
+under
+`P007-messages/2026-10-02`; Next's development indicator overlaps Attach in captures
+and is development-only. Physical iPhone Safari remains an owner verification
+gap.
+
 ## 2026-10-01 — The intended depth in message bubbles
 
 Branch: `codex/clubhouse-design-fidelity`. Owner requested more depth in bubbles

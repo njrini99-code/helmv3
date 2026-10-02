@@ -3,6 +3,19 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Partial data keeps its meaning
+
+The Codebase Design plugin review found relative day labels using the viewer's
+clock, partial invitee identities paired with a complete Going count, and
+missing sand/par data converted into confident figures. Home now uses its team
+timezone, suppresses an unresolvable paired attendance count, and includes only
+recorded par/sand values in those figures. A common par line requires all shown
+rounds to agree. Known names and available totals remain visible.
+
+Verification: 132 targeted data/consumer tests pass with one worker, including
+traveling timezones, unresolved identities and missing par/sand values. These
+are mocked-read tests; no migration or customer-data repair was performed.
+
 ## 2026-10-01 — Safari Home and truthful event timing
 
 Branch: `codex/clubhouse-design-fidelity`. Owner approved showing dates for

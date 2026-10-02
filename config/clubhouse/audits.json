@@ -101,5 +101,21 @@
       "P011",
       "P013"
     ]
+  },
+  {
+    "file": "INTUITIVE_SECONDARY_AUDIT.md",
+    "title": "Secondary screens: Intuitive Software Design improvement",
+    "kind": "audit",
+    "date": "2026-10-02",
+    "scope": "Roster and statistics task orientation plus Team Hub per-object pending feedback, concurrent writes, confirmation and failure recovery.",
+    "status": "done",
+    "note": "scoped local corrections; physical Safari, human testing and live persistence remain unverified",
+    "allPages": false,
+    "pages": [
+      "P003",
+      "P004",
+      "P005",
+      "P010"
+    ]
   }
 ]

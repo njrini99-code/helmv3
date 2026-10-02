@@ -125,8 +125,8 @@ export interface ChMessagesApi {
   refetchMsgs: () => void;
   typing: boolean;
   onTyping: (on: boolean) => void;
-  send: (text: string) => Promise<boolean>;
-  sendFiles: (text: string, files: File[]) => Promise<boolean>;
+  send: (text: string, replyToId?: string | null) => Promise<boolean>;
+  sendFiles: (text: string, files: File[], replyToId?: string | null) => Promise<boolean>;
   retry: (id: string) => void;
   discard: (id: string) => void;
   edit: (id: string, text: string) => Promise<boolean>;
@@ -538,18 +538,22 @@ export function Attachments({
  * moving opens the message's actions, with a press tick (CH-7704). A right
  * click or the context-menu key does the same.
  */
-function useLongPress(onFire: (() => void) | undefined) {
+function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direction: "left" | "right") => void) {
   const timer = useRef<number | null>(null);
   const origin = useRef<{ x: number; y: number } | null>(null);
-  if (!onFire) return {};
   const clear = () => {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = null;
     origin.current = null;
   };
+  useEffect(() => () => {
+    if (timer.current) window.clearTimeout(timer.current);
+  }, []); // Cancel a pending press when the thread closes.
+  if (!onFire) return {};
   return {
     onPointerDown: (e: ReactPointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      clear();
       origin.current = { x: e.clientX, y: e.clientY };
       timer.current = window.setTimeout(() => {
         clear();
@@ -559,9 +563,21 @@ function useLongPress(onFire: (() => void) | undefined) {
     },
     onPointerMove: (e: ReactPointerEvent) => {
       const o = origin.current;
-      if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > 10) clear();
+      if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > 10) {
+        if (timer.current) window.clearTimeout(timer.current);
+        timer.current = null;
+        // Vertical movement belongs to the native scroll view.
+        if (Math.abs(e.clientY - o.y) > 24) origin.current = null;
+      }
     },
-    onPointerUp: clear,
+    onPointerUp: (e: ReactPointerEvent) => {
+      const o = origin.current;
+      if (o && o.x >= 24 && onSwipe && Math.abs(e.clientX - o.x) >= 60 && Math.abs(e.clientY - o.y) <= 24) {
+        haptic("select");
+        onSwipe(e.clientX > o.x ? "right" : "left");
+      }
+      clear();
+    },
     onPointerCancel: clear,
     onPointerLeave: clear,
     onContextMenu: (e: ReactMouseEvent) => {
@@ -583,6 +599,7 @@ export function Bubble({
   onEdit,
   onDelete,
   onActions,
+  onReply,
 }: {
   api: ChMessagesApi;
   m: ChMsg;
@@ -595,9 +612,14 @@ export function Bubble({
   onDelete: () => void;
   /** Phone: the message's actions open in a sheet on a long press, in place of the hover tools. */
   onActions?: () => void;
+  onReply?: () => void;
 }) {
   const who = personOf(api, m.senderId);
-  const press = useLongPress(m.failed ? undefined : onActions);
+  const [showTime, setShowTime] = useState(false);
+  const press = useLongPress(m.failed ? undefined : onActions, onActions ? (direction) => {
+    if (direction === "right") onReply?.();
+    else setShowTime(true);
+  } : undefined);
   // Desktop (no actions sheet): a right click opens the reaction bar, as the React button does (the board's gesture).
   const rightClick =
     !onActions && !m.failed
@@ -612,8 +634,10 @@ export function Bubble({
   if (m.deleted) {
     return (
       <div
+        id={`ch-ms-message-${m.id}`}
         className={
           "ch-ms-msg" +
+          (group ? " is-group" : "") +
           (m.mine ? " is-mine" : "") +
           (first ? " is-first" : "") +
           (last ? " is-last" : "")
@@ -628,8 +652,10 @@ export function Bubble({
   }
   return (
     <div
+      id={`ch-ms-message-${m.id}`}
       className={
         "ch-ms-msg" +
+        (group ? " is-group" : "") +
         (m.mine ? " is-mine" : "") +
         (first ? " is-first" : "") +
         (last ? " is-last" : "") +
@@ -649,6 +675,7 @@ export function Bubble({
         )}
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>
+            {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
             {m.text && <div className="ch-ms-bub">{m.text}</div>}
             {m.hasAttachments && (
               <Attachments load={api.attachments} id={m.id} mine={m.mine} />
@@ -766,7 +793,7 @@ export function Bubble({
             </button>
           </span>
         ) : (
-          last && (
+          (last || showTime) && (
             <span className="ch-ms-msg__t ch-num">
               {clock(m.at, api.timeZone)}
               {m.edited ? " · Edited" : ""}
@@ -776,6 +803,22 @@ export function Bubble({
         )}
       </div>
     </div>
+  );
+}
+
+/** A parent outside the loaded history remains an honest unavailable reference. */
+export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: string }) {
+  const parent = api.msgs.find((m) => m.id === replyToId);
+  const name = parent ? (parent.mine ? "You" : personOf(api, parent.senderId)?.name ?? "Member") : "Reply";
+  return (
+    <button type="button" className="ch-ms-quote" aria-label={`Reply to ${name}`} disabled={!parent}
+      onClick={() => document.getElementById(`ch-ms-message-${replyToId}`)?.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      })}>
+      <b>{name}</b>
+      <span>{!parent ? "Original message unavailable" : parent.deleted ? "Message deleted" : parent.text || (parent.hasAttachments ? "Attachment" : "Message")}</span>
+    </button>
   );
 }
 
@@ -859,6 +902,9 @@ export function Composer({
   initialDraft,
   initialFiles,
   autoSend = false,
+  replyToId,
+  onClearReply,
+  onSendingChange,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
@@ -870,6 +916,9 @@ export function Composer({
   initialFiles?: File[];
   /** Send `initialDraft` and `initialFiles` as soon as the thread opens; a failure leaves them in the box (CH-7004). */
   autoSend?: boolean;
+  replyToId?: string | null;
+  onClearReply?: () => void;
+  onSendingChange?: (sending: boolean) => void;
 }) {
   const [draft, setDraftState] = useState(initialDraft ?? api.drafts.get(conv.id) ?? "");
   const setDraft = (text: string) => {
@@ -879,6 +928,7 @@ export function Composer({
   };
   const [files, setFiles] = useState<File[]>(initialFiles ?? []);
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
   const typingTimer = useRef<number | null>(null);
   const ready = (draft.trim() || files.length) && !sending;
@@ -891,18 +941,25 @@ export function Composer({
   }, [draft]);
 
   const send = async () => {
-    if (!ready) return;
+    if (!ready || sendingRef.current) return;
+    sendingRef.current = true;
     const text = draft.trim();
     const pending = files;
+    const parentId = replyToId;
     setSending(true);
+    onSendingChange?.(true);
     setDraft("");
     setFiles([]);
     api.onTyping(false);
     chTrail("messages send");
     const ok = pending.length
-      ? await api.sendFiles(text, pending)
-      : await api.send(text);
+      ? await (parentId ? api.sendFiles(text, pending, parentId) : api.sendFiles(text, pending))
+      : await (parentId ? api.send(text, parentId) : api.send(text));
+    // Text failures retain their parent in the failed bubble; attachment failures stay in this composer.
+    if (ok || !pending.length) onClearReply?.();
+    sendingRef.current = false;
     setSending(false);
+    onSendingChange?.(false);
     if (ok) haptic("success");
     else {
       haptic("error");
@@ -926,7 +983,7 @@ export function Composer({
     // Once, when the thread first opens with the first message.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (!phone && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       void send();
     }
@@ -934,6 +991,12 @@ export function Composer({
   const label = conv.group ? conv.title : firstName(conv.title);
   return (
     <footer className="ch-ms-comp">
+      {replyToId && (
+        <div className="ch-ms-comp__reply">
+          <ReplyQuote api={api} replyToId={replyToId} />
+          <IconButton icon={X} label="Cancel reply" onClick={onClearReply} disabled={sending} />
+        </div>
+      )}
       <AttachChips
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
@@ -946,7 +1009,7 @@ export function Composer({
         <textarea
           ref={ta}
           rows={1}
-          // CH-7801: the composer is named for the conversation. CH-7802: Enter sends, Shift+Enter adds a line (onKey).
+          // CH-7802: desktop Enter sends; phone Return adds a line and the Send button sends.
           aria-label={`Message ${label}`}
           placeholder={`Message ${label}`}
           value={draft}
@@ -960,7 +1023,7 @@ export function Composer({
             );
           }}
           onKeyDown={onKey}
-          enterKeyHint="send"
+          enterKeyHint={phone ? "enter" : "send"}
         />
         <button
           type="button"

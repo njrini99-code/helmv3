@@ -107,7 +107,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 32 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 91 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 132 |
-| P010 | 2 | 7 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
+| P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 168 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
@@ -666,8 +666,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71702 | CH-7702 | 17 Haptic | `A_CHANGE_LANDS` | implemented | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
 | 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction, a filter or a conversation |
 | 71704 | CH-7704 | 17 Haptic | `A_LONG_PRESS_ON_A_MESSAGE_2` | implemented | A long press on a message (phone) |
-| 71801 | CH-7801 | 18 Accessibility | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | implemented | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |
-| 71802 | CH-7802 | 18 Accessibility | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | implemented | Search results are announced as they arrive; Enter sends, Shift+Enter adds a line |
+| 71801 | CH-7801 | 18 Accessibility | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | reserved | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |
+| 71802 | CH-7802 | 18 Accessibility | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | implemented | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends |
 | 71803 | CH-7803 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | 18 Accessibility | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | implemented | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") |
 | 71901 |  | 19 Responsive layout | `PHONE_STACK` | implemented | At 820px and below Messages is the phone stack: Inbox, Thread, Details and New message push and pop as screens, never a shrunken desktop. |
@@ -959,6 +959,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100205 | CH-10405 | 02 Initial loading / skeleton | `TEAM_HUB_IS_LOADING` | implemented | Team Hub is loading |
 | 100206 | CH-10406 | 02 Initial loading / skeleton | `AN_EDIT_IS_BEING_SAVED` | implemented | An edit is being saved |
 | 100207 | CH-10407 | 02 Initial loading / skeleton | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_ARE` | implemented | Plan a trip: the travelers' classes are being checked |
+| 100208 | CH-10408 | 02 Initial loading / skeleton | `A_PLAYERS_EVENT_REPLY_IS_BEING_SENT` | implemented | A player's event reply is being sent |
+| 100209 | CH-10409 | 02 Initial loading / skeleton | `A_PLAYERS_ACKNOWLEDGMENT_IS_BEING_SENT` | implemented | A player's acknowledgment is being sent |
+| 100210 | CH-10410 | 02 Initial loading / skeleton | `A_PLAYERS_TASK_COMPLETION_OR_REOPENING_IS` | implemented | A player's task completion or reopening is being saved |
 | 100401 | CH-10301 | 04 Empty | `NO_EVENTS_NEED_A_REPLY` | implemented | No events need a reply |
 | 100402 | CH-10302 | 04 Empty | `NO_UPDATES` | implemented | No updates |
 | 100403 | CH-10303 | 04 Empty | `NO_TASKS` | implemented | No tasks |

@@ -5,6 +5,37 @@ changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
 is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-02 — Installed plugins find concrete flow and data gaps
+
+The owner requested Apple Messages display and behavior with the existing
+green/ivory palette. Phone threads now group their bubbles, use direct-chat
+width, insert a newline with Return, and preserve selected-message context.
+Quoted replies carry the existing parent relationship through send, optimistic
+state and Retry; the server validates conversation access. The Supabase plugin
+guides this existing-schema integration; no migration is added.
+
+Frontend Design Premium and Shiro preserve the supplied visual direction while
+checking shared ownership, phone geometry and feedback. Intuitive Software
+Design reviews Roster, Stats and Hub tasks; Codebase Design reviews Home's read
+seam. Root DESIGN.md and UI_OWNERSHIP.md point to existing handoffs and runtime
+owners. They do not replace the page contracts or generate a second CSS system.
+The plugin auditor's scope is declared in premium-ui.json.
+
+Corrections: repeated Sign in sends one request, failed attempts can retry,
+round controls reach 44px, qualifier names wrap, stats filters reach 44px and
+roster profile spacing/material follows its list. Hub exposes per-object saves,
+allows independent writes, retains a post until acknowledgment confirms, and
+rolls back to the last confirmed state. Home uses the team clock and avoids
+invented par, sand-save and incomplete attendance figures. Shared scrollbars
+retain native scrolling and restore defaults under forced colors.
+
+The scoped static plugin auditor cannot resolve custom React Button/Form
+semantics or inherited CSS. Its remaining detections are reviewed against the
+canonical owners and browser evidence; strict automated compliance is not
+claimed. Local fixture behavior, layout and regression tests provide bounded
+evidence. Physical iPhone frame rate, human usability and live-account
+persistence remain unverified. No merge, production deploy or flag change.
+
 ## 2026-10-01 — Safari design fidelity and restored surface depth
 
 Branch: `codex/clubhouse-design-fidelity`. Owner reference: Coach home dashboard

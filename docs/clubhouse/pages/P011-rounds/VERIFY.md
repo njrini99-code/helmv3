@@ -338,6 +338,8 @@ before, after, baseline or evidence.
 | `P011__track__player__390__submit-failed__before__d3a6483.png` | before | d3a6483 | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
 | `P011__mobile-overview__player__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (player), 390px, WebKit iPhone 13; /clubhouse-preview/rounds, synthetic preview fixture; shared materials in progress |
 | `P011__mobile-overview__player__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (player), 390px, WebKit iPhone 13; /clubhouse-preview/rounds, synthetic preview fixture; shared materials in progress |
+| `P011__shiro-mobile-overview__player__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
+| `P011__shiro-mobile-overview__player__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
 
 ## Open verification gaps
 

@@ -275,6 +275,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           edited: !!m.edited_at,
           deleted: !!m.is_deleted,
           hasAttachments: !!m.has_attachments,
+          replyToId: m.reply_to_id ?? null,
         })),
     [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
   );
@@ -464,10 +465,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
     refetchMsgs: () => void msgs.refetch(),
     typing: msgs.isOtherTyping,
     onTyping: (on) => msgs.sendTypingStatus(on),
-    send: async (text) => {
+    send: async (text, replyToId) => {
       try {
         if (selectedId === autoOpened) select(selectedId);
-        await msgs.sendMessage(text);
+        if (replyToId) await msgs.sendMessage(text, replyToId);
+        else await msgs.sendMessage(text);
         return true;
       } catch (err) {
         const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
@@ -475,7 +477,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return false;
       }
     },
-    sendFiles: async (text, files) => {
+    sendFiles: async (text, files, replyToId) => {
       if (!selectedId) return false;
       const bad = files.map((f) => ({ f, v: validateFile(f) })).find((x) => !x.v.valid);
       if (bad) {
@@ -497,7 +499,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         uploadProgress: 0,
       }));
       return attempt('sendFiles', { failed: "Couldn't send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
-        const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending });
+        const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
         if (res.cancelled) return false;
         if (!res.success) throw new Error(res.error || 'Attachment send failed');
         return true;

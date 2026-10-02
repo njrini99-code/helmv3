@@ -3,6 +3,18 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Shared scrollbar ownership and design context
+
+The Frontend Design Premium review now points to the existing page handoffs via
+root DESIGN.md and the Clubhouse UI ownership index. Runtime tokens remain the
+source of CSS. A scoped scrollbar baseline provides both standard and WebKit
+styling, using existing ink/radius tokens. Page-specific hidden horizontal
+strips retain their geometry. Forced colors restore browser defaults.
+
+WebKit computed styles verify thin themed scrollbars and native scrolling;
+forced colors verify automatic color/width. The body outside Clubhouse stays
+at browser defaults. No navigation or page hierarchy changes.
+
 ## 2026-10-01 — Safari header, surface depth and crossfade
 
 Branch: `codex/clubhouse-design-fidelity`. The supplied mobile photo showed the

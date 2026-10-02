@@ -1,0 +1,26 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": [
+    "src/clubhouse/screens/auth",
+    "src/clubhouse/screens/home",
+    "src/clubhouse/screens/messages",
+    "src/clubhouse/screens/hub",
+    "src/clubhouse/ui",
+    "src/clubhouse/shell",
+    "src/clubhouse/styles"
+  ],
+  "locale": "en-US",
+  "canonicalMap": "docs/clubhouse/UI_OWNERSHIP.md",
+  "requiredCapabilities": [
+    "Form",
+    "Scrollbar",
+    "Toast",
+    "Select/Listbox",
+    "Date",
+    "CRUD"
+  ],
+  "ownership": {
+    "Select/Listbox": "native",
+    "Date": "native"
+  }
+}

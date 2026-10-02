@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 2026-10-02 — A repeated submit sends one sign-in
+
+Frontend Design Premium's interaction pass reproduced two requests from form
+submissions dispatched before the busy button committed. Sign-in now sets a
+synchronous gate before sending credentials. A failed attempt releases it for
+Retry; a successful handoff keeps the existing pending state. CH-15402 remains
+the contract. Auth, credentials and scene suites pass: 64 tests. The new
+regression failed before the guard and passes after it.
+
 ## 2026-10-01 — Safari sign-in loads coherently and animates the hole
 
 Branch: `codex/clubhouse-design-fidelity`. The current owner feedback asks for

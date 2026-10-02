@@ -2,6 +2,7 @@
 
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { notifyGolfMessageRecipients } from '@/lib/notifications/golf-message-fanout';
@@ -59,7 +60,8 @@ function buildAttachmentPreview(content: string, attachments: AttachmentUploadDa
 async function sendGolfMessageWithAttachmentsImpl(
   conversationId: string,
   content: string,
-  attachments: AttachmentUploadData[]
+  attachments: AttachmentUploadData[],
+  replyToId?: string | null,
 ): Promise<{ success: boolean; messageId?: string; error?: string; attachmentsFailed?: boolean }> {
   try {
     const supabase = await createClient();
@@ -84,6 +86,9 @@ async function sendGolfMessageWithAttachmentsImpl(
       return { success: false, error: 'Not a participant in this conversation' };
     }
 
+    const reply = await validateGolfReplyTarget(supabase, conversationId, replyToId);
+    if (!reply.success) return { success: false, error: reply.error };
+
     // Determine if message has attachments
     const hasAttachments = attachments && attachments.length > 0;
     // Set when the attachment rows fail but the message text survives, so the
@@ -100,6 +105,7 @@ async function sendGolfMessageWithAttachmentsImpl(
         content: content || '', // Allow empty content if there are attachments
         read: false,
         has_attachments: hasAttachments,
+        ...(reply.replyToId ? { reply_to_id: reply.replyToId } : {}),
       })
       .select('id')
       .single();
@@ -232,9 +238,10 @@ const observedSendGolfMessageWithAttachments = withAdminObserved(
 export async function sendGolfMessageWithAttachments(
   conversationId: string,
   content: string,
-  attachments: AttachmentUploadData[]
+  attachments: AttachmentUploadData[],
+  replyToId?: string | null,
 ): Promise<{ success: boolean; messageId?: string; error?: string; attachmentsFailed?: boolean }> {
-  return observedSendGolfMessageWithAttachments(conversationId, content, attachments);
+  return observedSendGolfMessageWithAttachments(conversationId, content, attachments, replyToId);
 }
 
 /**

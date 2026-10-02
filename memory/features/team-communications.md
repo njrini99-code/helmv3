@@ -88,6 +88,19 @@ The phone composer keyboard contract is measured in
 
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
+Clubhouse Messages (`src/clubhouse/screens/messages/`) follows the owner's
+Apple Messages interaction reference while retaining the existing GolfHelm
+palette. Phone Return inserts a line; tapping Send sends. Grouped bubbles retain
+sender-run geometry, direct conversations use the available thread width, and
+long-press actions keep the selected message's context.
+
+Quoted replies use the existing nullable `golf_messages.reply_to_id` foreign
+key. Sending validates that the target belongs to the same conversation after
+participant authorization; replay equivalence includes the reply reference.
+Optimistic and failed/retried messages retain it. Unresolved parent content
+remains unavailable rather than being invented. This adds no schema or policy
+change and does not establish live-account persistence before deployment.
+
 ## Primary Entry Points
 
 ### Routes

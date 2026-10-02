@@ -1192,7 +1192,7 @@
     margin-top: 10px;
   }
   .ch-msp-thread .ch-ms-msg__col {
-    max-width: 78%;
+    max-width: 82%;
   }
   .ch-msp-thread .ch-ms-msg__stack {
     -webkit-touch-callout: none;
@@ -1209,13 +1209,32 @@
     box-shadow: var(--ch-elevation-bubble-mine);
     color: #fff;
   }
-  .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub,
-  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub,
-  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub,
-  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub,
-  .ch-msp-thread .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub {
-    border-radius: 18px;
+  /* The outer corners start a run; close corners join messages from the same sender. */
+  .ch-msp-thread .ch-ms-bub { position: relative; border-radius: 20px; }
+  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub { border-top-left-radius: 6px; }
+  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub { border-bottom-left-radius: 6px; }
+  .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub { border-bottom-left-radius: 6px; }
+  .ch-msp-thread .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub { border-top-right-radius: 6px; }
+  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub { border-bottom-right-radius: 6px; }
+  .ch-msp-thread .ch-ms-msg.is-last .ch-ms-bub:not(.ch-ms-bub--file):not(.is-deleted)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -6px;
+    width: 12px;
+    height: 14px;
+    background: inherit;
+    clip-path: path('M 12 0 L 12 14 L 0 14 Q 9 11 12 0 Z');
+    pointer-events: none;
   }
+  .ch-msp-thread .ch-ms-msg.is-mine.is-last .ch-ms-bub:not(.ch-ms-bub--file):not(.is-deleted)::after {
+    left: auto;
+    right: -6px;
+    transform: scaleX(-1);
+  }
+  .ch-msp-thread .ch-ms-msg:not(.is-group) .ch-ms-msg__av { display: none; }
+  .ch-msp-thread .ch-ms-msg__stack { touch-action: pan-y; }
+  .ch-msp-composer { flex: none; min-width: 0; }
   .ch-msp-thread .ch-ms-msg__t {
     font: 500 12px/1 var(--ch-font-sans);
   }
@@ -1697,4 +1716,55 @@
   .ch-msp-thread .ch-ms-msg__t {
     font-size: 12px;
   }
+}
+
+/* Persisted reply context uses the same message surface, with a quieter inset. */
+.ch-ms-quote {
+  appearance: none;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-left: 3px solid var(--ch-green-500);
+  border-radius: 10px;
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-bubble);
+  color: var(--ch-text-secondary);
+  font: 400 14px/1.35 var(--ch-font-sans);
+}
+.ch-ms-quote:disabled { cursor: default; opacity: 1; }
+.ch-ms-quote:focus-visible { outline: 2px solid var(--ch-green-500); outline-offset: 3px; }
+.ch-ms-quote b { font-weight: 600; }
+.ch-ms-quote span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.ch-ms-comp__reply {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 10px;
+}
+.ch-ms-comp__reply .ch-ms-quote { flex: 1; }
+.ch-msp-acts__preview {
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-bubble);
+}
+.ch-msp-acts__preview p {
+  margin: 6px 0 0;
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 400 17px/1.4 var(--ch-font-sans);
 }

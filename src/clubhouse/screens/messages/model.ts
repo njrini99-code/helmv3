@@ -41,6 +41,8 @@ export interface ChMsg {
   edited: boolean;
   deleted: boolean;
   hasAttachments: boolean;
+  /** Persisted parent in this conversation; content is read only from loaded messages. */
+  replyToId?: string | null;
 }
 
 export interface ChAttachment {

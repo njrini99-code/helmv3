@@ -599,8 +599,28 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/screens/auth/**",
+        "pattern": "src/clubhouse/screens/auth/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/clubhouse/screens/classes/**",
         "pattern": "src/clubhouse/screens/classes/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/screens/home/**",
+        "pattern": "src/clubhouse/screens/home/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/screens/hub/**",
+        "pattern": "src/clubhouse/screens/hub/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/screens/messages/**",
+        "pattern": "src/clubhouse/screens/messages/**",
         "category": "components"
       },
       {
@@ -982,6 +1002,11 @@
       }
     ],
     "actions": [
+      {
+        "id": "actions:src/app/actions/messages.ts",
+        "pattern": "src/app/actions/messages.ts",
+        "category": "actions"
+      },
       {
         "id": "actions:src/app/admin/actions/analyze-error.ts",
         "pattern": "src/app/admin/actions/analyze-error.ts",
@@ -1675,6 +1700,26 @@
         "category": "services"
       },
       {
+        "id": "services:src/clubhouse/data/home.ts",
+        "pattern": "src/clubhouse/data/home.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:src/clubhouse/data/messages.ts",
+        "pattern": "src/clubhouse/data/messages.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:src/clubhouse/data/player-home.ts",
+        "pattern": "src/clubhouse/data/player-home.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:src/clubhouse/routes/auth.tsx",
+        "pattern": "src/clubhouse/routes/auth.tsx",
+        "category": "services"
+      },
+      {
         "id": "services:src/hooks/golf/use-golf-messages.ts",
         "pattern": "src/hooks/golf/use-golf-messages.ts",
         "category": "services"
@@ -1900,6 +1945,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/message-replies.ts",
+        "pattern": "src/lib/golf/message-replies.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/golf/nav-registry.ts",
         "pattern": "src/lib/golf/nav-registry.ts",
         "category": "services"
@@ -2102,8 +2152,33 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/clubhouse/__tests__/auth*.test.*",
+        "pattern": "src/clubhouse/__tests__/auth*.test.*",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/clubhouse/__tests__/classes.test.tsx",
         "pattern": "src/clubhouse/__tests__/classes.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/home-data-completeness.test.ts",
+        "pattern": "src/clubhouse/__tests__/home-data-completeness.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/home.test.tsx",
+        "pattern": "src/clubhouse/__tests__/home.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/messages*.test.*",
+        "pattern": "src/clubhouse/__tests__/messages*.test.*",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/player-home.test.tsx",
+        "pattern": "src/clubhouse/__tests__/player-home.test.tsx",
         "category": "tests"
       },
       {
@@ -2129,6 +2204,16 @@
       {
         "id": "tests:src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx",
         "pattern": "src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx",
+        "pattern": "src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts",
+        "pattern": "src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts",
         "category": "tests"
       },
       {
@@ -2204,6 +2289,11 @@
       {
         "id": "tests:src/test/actions/send-message-duplicate-key-equivalence.test.ts",
         "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/test/actions/send-message-quoted-reply.test.ts",
+        "pattern": "src/test/actions/send-message-quoted-reply.test.ts",
         "category": "tests"
       },
       {
@@ -8291,6 +8381,18 @@
     },
     {
       "source": "auth_onboarding_join",
+      "target": "components:src/clubhouse/screens/auth/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/auth/**"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
       "target": "components:src/components/golf/onboarding/**",
       "kind": "feature_component",
       "evidence": [
@@ -8500,6 +8602,18 @@
     },
     {
       "source": "auth_onboarding_join",
+      "target": "services:src/clubhouse/routes/auth.tsx",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/routes/auth.tsx"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
       "target": "services:src/hooks/use-presence.ts",
       "kind": "feature_service",
       "evidence": [
@@ -8555,6 +8669,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "e2e/auth.spec.ts"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "tests:src/clubhouse/__tests__/auth*.test.*",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/auth*.test.*"
         }
       ]
     },
@@ -11814,6 +11940,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/recruiting/**"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "team_communications",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/baseball/actions/messages.ts",
+          "anchor": "src/app/actions/messages"
         }
       ]
     },
@@ -21787,6 +21925,18 @@
     },
     {
       "source": "team_communications",
+      "target": "actions:src/app/actions/messages.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/actions/messages.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "actions:src/app/golf/actions/announcements.ts",
       "kind": "feature_action",
       "evidence": [
@@ -21900,6 +22050,21 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/admin/rls-denial"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/announcements.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -22003,6 +22168,11 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/announcements.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -22060,6 +22230,23 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/unified-notifications.ts",
           "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/message-replies.ts",
+          "anchor": "src/lib/supabase/server"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "components:src/clubhouse/screens/messages/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/messages/**"
         }
       ]
     },
@@ -22127,6 +22314,16 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/golf/resolve-team-server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/golf/resolve-team"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/announcements.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -22149,6 +22346,18 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/messages.ts",
           "anchor": "src/lib/golf/with-golf-action"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "mark_golf_messages_read",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "mark_golf_messages_read"
         }
       ]
     },
@@ -22219,6 +22428,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/messages/**"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "services:src/clubhouse/data/messages.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/messages.ts"
         }
       ]
     },
@@ -22296,6 +22517,18 @@
     },
     {
       "source": "team_communications",
+      "target": "services:src/lib/golf/message-replies.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/message-replies.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "services:src/lib/supabase/**",
       "kind": "feature_service",
       "evidence": [
@@ -22356,6 +22589,18 @@
     },
     {
       "source": "team_communications",
+      "target": "tests:src/clubhouse/__tests__/messages*.test.*",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/messages*.test.*"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "tests:src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx",
       "kind": "feature_test",
       "evidence": [
@@ -22363,6 +22608,30 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts"
         }
       ]
     },
@@ -22399,6 +22668,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/test/actions/send-message-quoted-reply.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/actions/send-message-quoted-reply.test.ts"
         }
       ]
     },
@@ -22595,6 +22876,30 @@
     },
     {
       "source": "team_operations",
+      "target": "components:src/clubhouse/screens/home/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/home/**"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "components:src/clubhouse/screens/hub/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/hub/**"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
       "target": "components:src/components/fairway/pages/tasks/**",
       "kind": "feature_component",
       "evidence": [
@@ -22776,6 +23081,30 @@
     },
     {
       "source": "team_operations",
+      "target": "services:src/clubhouse/data/home.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/home.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "services:src/clubhouse/data/player-home.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/player-home.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
       "target": "services:src/lib/golf/nav-registry.ts",
       "kind": "feature_service",
       "evidence": [
@@ -22819,6 +23148,42 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/__tests__/travel.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "tests:src/clubhouse/__tests__/home-data-completeness.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/home-data-completeness.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "tests:src/clubhouse/__tests__/home.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/home.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "tests:src/clubhouse/__tests__/player-home.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/player-home.test.tsx"
         }
       ]
     },

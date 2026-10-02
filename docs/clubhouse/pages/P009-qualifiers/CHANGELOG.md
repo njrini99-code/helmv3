@@ -3,6 +3,50 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Independent qualifier write verification
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Design package: none; test structure only
+Contract IDs:   91501, assertions unchanged
+Actions:        none
+Data impact:    none; no product code change
+Held items:     CI rerun
+```
+
+CI timed out after 5,023ms while one test drove all eight qualifier write
+scenarios through both success and refusal. The same aggregate test passed
+locally in 2,076ms. Each scenario now has its own named parameterized test and
+normal cleanup, retaining every refresh and navigation assertion and the
+default timeout. No coverage was removed and no timeout was raised.
+
+The full Qualifiers suite passed with one worker: 164 tests, 19.88s overall
+(18.71s of test execution). The slowest new 91501 case was 347ms. The existing
+streaming test emitted an unawaited-act warning; it still passed. CI remains
+the check for behavior under the shared runner's load.
+
+## 2026-10-02 — Shiro fix: leaderboard identity can wrap
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081cff)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; CSS only
+Held items:     physical iPhone Safari verification
+```
+
+Shiro fix mode found that the phone live leaderboard forced names onto one line
+in fixed 32px rows. Full names now wrap, and rows grow instead of hiding part of
+the identity. The inset leaderboard well and raised qualifier card retain their
+depth.
+
+In an interactive WebKit page, the controlled long-name probe measured 36.4px of
+text in a 44.4px row at 375/390/430px, with no horizontal document overflow.
+Active and All filtering both worked. The populated preview captures are logged
+below. A development HMR ChunkLoadError occurred during rebuild; a fresh page
+loaded with no console errors and passed the filter check.
+
 ## 2026-10-01 — Layered mobile cards and readable metadata
 
 ```text

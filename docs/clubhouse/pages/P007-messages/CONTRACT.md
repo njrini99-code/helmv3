@@ -182,7 +182,11 @@ Delete a message and Leave a group ask first (71101, 71102) and fire the warning
 
 Status: DEFINED
 
-A failed send puts the text and files back (71201). An unsent draft is kept per conversation, so switching threads and back finds it where it was (71202; fixed 2026-09-30, it used to be lost).
+A refused text send stays in its failed bubble, with Retry and its original
+quote target. A failed attachment send puts its text, files and original quote
+target back in the composer (71201). An unsent draft is kept per conversation,
+so switching threads and back finds it where it was (71202; fixed 2026-09-30,
+it used to be lost).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -259,7 +263,7 @@ Messages' own (71801 to 71804): named rows and bubbles, the long press reachable
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 71801 | CH-7801 | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |
-| 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; Enter sends, Shift+Enter adds a line |
+| 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends |
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") |
 
@@ -279,7 +283,9 @@ The phone stack at 820px and below (71901); the phone spec is `docs/clubhouse/ph
 
 Status: DEFINED
 
-Enter sends, Shift+Enter adds a line, an IME keeps its Enter (72001). The shell's edge swipe and browser back pop a pushed screen (12001).
+Desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and
+Send sends. An IME keeps its Enter (72001). The shell's edge swipe and browser
+back pop a pushed screen (12001).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

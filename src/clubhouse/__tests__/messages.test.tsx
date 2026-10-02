@@ -735,6 +735,158 @@ describe('Messages · phone', () => {
     expect(thread.hasAttribute('inert')).toBe(true);
   });
 
+  it('72001 phone Return adds a line; tapping Send sends the complete text', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    const thread = await openThread(user);
+    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    await user.type(box, 'Bus at 6{Enter}Bring water');
+    expect(box.value).toBe('Bus at 6\nBring water');
+    expect(box.getAttribute('enterkeyhint')).toBe('enter');
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Bus at 6\nBring water'));
+  });
+
+  it('72002 Reply from the message sheet sends its persisted parent id and Cancel removes it', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    const sheet = within(code('CH-7604') as HTMLElement);
+    expect(sheet.getByLabelText('Selected message').textContent).toContain('Bus at 6:15');
+    await user.click(sheet.getByRole('button', { name: 'Reply' }));
+    expect(within(thread).getByLabelText('Reply to You').textContent).toContain('Bus at 6:15');
+    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ });
+    expect(document.activeElement).toBe(box);
+    await user.type(box, 'I will be there');
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('I will be there', 'm1'));
+    expect(within(thread).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    await user.click(within(thread).getByRole('button', { name: 'Cancel reply' }));
+    expect(within(thread).queryByLabelText('Reply to You')).toBeNull();
+  });
+
+  it('72002 horizontal reply gesture respects vertical scrolling and the shell back edge', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    const thread = await openThread(user);
+    const stack = (await within(thread).findByText('Bus at 6:15', { selector: '.ch-ms-bub' })).closest('.ch-ms-msg__stack') as HTMLElement;
+    const gesture = (x: number, y: number, endX: number, endY: number) => {
+      fireEvent.pointerDown(stack, { clientX: x, clientY: y });
+      fireEvent.pointerMove(stack, { clientX: endX, clientY: endY });
+      fireEvent.pointerUp(stack, { clientX: endX, clientY: endY });
+    };
+    // MouseEvent preserves pointer coordinates in jsdom, where PointerEvent is absent.
+    const original = window.PointerEvent;
+    window.PointerEvent = MouseEvent as typeof PointerEvent;
+    try {
+      gesture(80, 80, 145, 130);
+      expect(within(thread).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
+      gesture(12, 80, 100, 80);
+      expect(within(thread).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
+      gesture(80, 80, 145, 85);
+      expect(within(thread).getByRole('button', { name: 'Cancel reply' })).toBeTruthy();
+    } finally { window.PointerEvent = original; }
+  });
+
+  it('72002 loaded, deleted and unavailable reply parents are distinguished without invented context', async () => {
+    live.msgs.messages = [mine, { ...mine, id: 'm2', content: 'Yes coach', sender_id: 'jonah', reply_to_id: 'm1' }, { ...mine, id: 'm3', content: 'Later', reply_to_id: 'not-loaded' }, { ...mine, id: 'gone', content: 'Private text', is_deleted: true }, { ...mine, id: 'm4', content: 'Acknowledged', reply_to_id: 'gone' }];
+    const user = userEvent.setup();
+    showPhone();
+    const thread = await openThread(user);
+    expect(within(thread).getByLabelText('Reply to Reply').textContent).toContain('Original message unavailable');
+    const quotes = within(thread).getAllByLabelText('Reply to You');
+    expect(quotes.some((quote) => quote.textContent?.includes('Bus at 6:15'))).toBe(true);
+    expect(quotes.some((quote) => quote.textContent?.includes('Message deleted'))).toBe(true);
+    expect(quotes.some((quote) => quote.textContent?.includes('Private text'))).toBe(false);
+  });
+
+  it('72002 an in-flight send locks its reply target until completion', async () => {
+    const user = userEvent.setup();
+    let finish!: () => void;
+    live.msgs.sendMessage.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+    live.msgs.messages = [mine, { ...mine, id: 'm2', content: 'Second message' }];
+    showPhone();
+    const thread = await openThread(user);
+    const actions = within(thread).getAllByRole('button', { name: 'Message actions' });
+    await user.click(actions[0]!);
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    await user.type(within(thread).getByRole('textbox', { name: /Message Varsity team/ }), 'Response to first');
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(actions[1]!);
+    const sheet = within(code('CH-7604') as HTMLElement);
+    expect((sheet.getByRole('button', { name: 'Reply' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(sheet.getByRole('button', { name: 'Reply' }));
+    expect(live.msgs.sendMessage).toHaveBeenCalledWith('Response to first', 'm1');
+    await user.click(sheet.getByRole('button', { name: 'Close' }));
+    await act(async () => finish());
+    expect(within(thread).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
+  });
+
+  it('72002 a refused attachment restores its original text, file and reply target', async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    let refuse!: (result: { success: boolean; error: string }) => void;
+    live.files.sendMessageWithAttachments.mockImplementationOnce(() => new Promise((resolve) => { refuse = resolve; }));
+    showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    await user.type(within(thread).getByRole('textbox', { name: /Message Varsity team/ }), 'Original response');
+    await user.upload(thread.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
+    await user.click(within(thread).getByRole('button', { name: 'Send' }));
+    expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(1);
+    expect(live.files.sendMessageWithAttachments).toHaveBeenCalledWith(expect.objectContaining({ replyToId: 'm1', content: 'Original response' }));
+    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(within(thread).getByRole('button', { name: 'Cancel reply' }));
+    await act(async () => refuse({ success: false, error: 'refused' }));
+    expect((within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement).value).toBe('Original response');
+    expect(within(thread).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
+    expect(within(thread).getByLabelText('Reply to You').textContent).toContain('Bus at 6:15');
+    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('72002 leaving a phone thread clears reply intent while preserving its text draft', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    const thread = await openThread(user);
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    await user.type(within(thread).getByRole('textbox', { name: /Message Varsity team/ }), 'Half written');
+    await user.click(within(thread).getByRole('button', { name: 'Back to Messages' }));
+    const reopened = await openThread(user);
+    expect((within(reopened).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement).value).toBe('Half written');
+    expect(within(reopened).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
+  });
+
+  it('72003 swipe-left reveals a real intermediate timestamp; tapping a loaded quote goes to its parent', async () => {
+    const user = userEvent.setup();
+    live.msgs.messages = [mine, { ...mine, id: 'm2', content: 'Follow up', created_at: '2026-10-14T18:01:00Z', reply_to_id: 'm1' }];
+    showPhone();
+    const thread = await openThread(user);
+    expect(within(thread).queryByText('2:00 PM')).toBeNull();
+    const stack = (await within(thread).findByText('Bus at 6:15', { selector: '.ch-ms-bub' })).closest('.ch-ms-msg__stack') as HTMLElement;
+    act(() => {
+      stack.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 160, clientY: 80 }));
+      stack.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 90, clientY: 84 }));
+      stack.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 90, clientY: 84 }));
+    });
+    expect(within(thread).getByText('2:00 PM')).toBeTruthy();
+    const scroll = vi.fn();
+    document.getElementById('ch-ms-message-m1')!.scrollIntoView = scroll;
+    await user.click(within(thread).getByRole('button', { name: 'Reply to You' }));
+    expect(scroll).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' });
+    const previousMatchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ ...previousMatchMedia(query), matches: query === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
+    try {
+      await user.click(within(thread).getByRole('button', { name: 'Reply to You' }));
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'center', behavior: 'instant' });
+    } finally { window.matchMedia = previousMatchMedia; }
+  });
+
   it('CH-7309 the phone with nothing at all yet is the first-run empty alone: no search or filter chips over nothing', async () => {
     live.convs.conversations = [];
     live.msgs.messages = [];

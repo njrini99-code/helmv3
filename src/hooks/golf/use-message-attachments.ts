@@ -15,6 +15,7 @@ import { logError } from '@/lib/error-logging';
 interface SendMessageWithAttachmentsOptions {
   conversationId: string;
   content: string;
+  replyToId?: string | null;
   attachments?: PendingAttachment[];
   onProgress?: (attachmentId: string, progress: number) => void;
   /**
@@ -39,6 +40,7 @@ export function useMessageAttachments() {
     async ({
       conversationId,
       content,
+      replyToId,
       attachments,
       onProgress,
       signal,
@@ -73,7 +75,9 @@ export function useMessageAttachments() {
       try {
         // If no attachments, just call the regular send action
         if (!attachments || attachments.length === 0) {
-          const result = await sendGolfMessageWithAttachments(conversationId, content, []);
+          const result = replyToId
+            ? await sendGolfMessageWithAttachments(conversationId, content, [], replyToId)
+            : await sendGolfMessageWithAttachments(conversationId, content, []);
           return result;
         }
 
@@ -134,11 +138,9 @@ export function useMessageAttachments() {
         }));
 
         // Send message with attachment metadata
-        const messageResult = await sendGolfMessageWithAttachments(
-          conversationId,
-          content,
-          attachmentData
-        );
+        const messageResult = replyToId
+          ? await sendGolfMessageWithAttachments(conversationId, content, attachmentData, replyToId)
+          : await sendGolfMessageWithAttachments(conversationId, content, attachmentData);
 
         if (!messageResult.success) {
           logError(

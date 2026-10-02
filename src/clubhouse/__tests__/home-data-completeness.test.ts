@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { loadHomeWeek } from '../data/home';
 import { briefFor, legRows } from '../data/player-home';
 import type { ChRound } from '../data/season';
+import type { ChRoundCache } from '../data/stats-common';
 
 const now = new Date('2026-10-01T16:00:00Z');
 const event = (id: string, start: string, end: string | null = null, allDay = true) => ({
@@ -88,6 +89,38 @@ describe('Home calendar completeness', () => {
     expect(week.todayEvents).toHaveLength(1001);
     expect(week.week.days.find((d) => d.isToday)?.eventCount).toBe(1001);
   });
+
+  it('does not expose a partial first page as a complete week if a later page fails', async () => {
+    const events = Array.from({ length: 1000 }, (_, i) => event(`e${i}`, '2026-10-01T00:00:00Z'));
+    tables.current = {
+      golf_events: (filters) => Number(filters.find(([op]) => op === 'range')![1][0]) === 0
+        ? { data: events }
+        : { error: { message: 'Second page unavailable' } },
+      golf_event_attendance: { data: [] },
+    };
+    const week = await loadHomeWeek(await createClient(), { teamId: 't1', tz: 'America/New_York', now, names: new Map() });
+    expect(week.week.error).toBe(true);
+    expect(week.next).toBeNull();
+    expect(week.todayEvents).toEqual([]);
+    expect(week.nextCompetition).toBeNull();
+    expect(week.weekNote).toBeNull();
+  });
+
+  it('does not pair three accepted replies with only two resolved identities out of four invitees', async () => {
+    tables.current = {
+      golf_events: { data: [event('Practice', '2026-10-01T00:00:00Z')] },
+      golf_event_attendance: { data: ['p1', 'p2', 'p3', 'p4'].map((player_id, i) => ({
+        id: `a${i}`, event_id: 'Practice', player_id, status: i < 3 ? 'accepted' : 'pending',
+      })) },
+    };
+    const week = await loadHomeWeek(await createClient(), {
+      teamId: 't1', tz: 'America/New_York', now, names: new Map([['p1', 'Ada Lin'], ['p2', 'Bo Fox']]),
+    });
+    expect(week.next?.invitees).toEqual(['Ada Lin', 'Bo Fox']);
+    expect(week.next?.going).toBeNull();
+    // The attendance rows still reliably establish the agenda's raw count.
+    expect(week.week.agenda[0]?.detail).toBe('Pines · 4 players');
+  });
 });
 
 describe('Player Home truthful brief', () => {
@@ -100,5 +133,14 @@ describe('Player Home truthful brief', () => {
   it('still names a measured loss when another leg is neutral', () => {
     const legs = legRows([], new Map(), null, { tee: 0, approach: -0.9, around: null, putting: null });
     expect(briefFor(rounds, legs)).toBe('Your last round was 72. Approach is costing the most, 0.9 strokes a round.');
+  });
+
+  it.each([null, 0])('distinguishes unknown sand saves from a measured zero (%s)', (saves) => {
+    const window = [{ id: 'r1' }] as ChRound[];
+    const cache = new Map([['r1', {
+      round_id: 'r1', scrambles_converted: 1, scramble_attempts: 2, sand_attempts: 3, sand_saves: saves,
+    } as ChRoundCache]]);
+    const short = legRows(window, cache, null, { tee: null, approach: null, around: null, putting: null }).find((l) => l.key === 'short');
+    expect(short?.note).toBe(saves === null ? 'Up and down 1 of 2' : 'Up and down 1 of 2 · sand saves 0 of 3');
   });
 });

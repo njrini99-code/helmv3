@@ -168,7 +168,7 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 31 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**` … and 39 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`
 - **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified)
@@ -179,7 +179,7 @@ is a second thing to keep true.
 **Team Operations** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-operations.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 26 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 27 more in the registry
 - **Telemetry:** `task_management` (golfhelm, med), `documents` (golfhelm, low), `travel` (golfhelm, low), `coach_dashboard` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

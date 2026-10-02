@@ -92,6 +92,8 @@ export interface ChHomeEvent {
   type: 'practice' | 'qualifier' | 'tournament' | 'meeting' | 'travel' | 'other';
   /** Team-local date, YYYY-MM-DD. */
   date: string;
+  /** Team clock for relative day labels. Server reads always set it; old fixtures use the product default. */
+  timezone?: string;
   startIso: string;
   endIso: string | null;
   allDay: boolean;
@@ -102,7 +104,7 @@ export interface ChHomeEvent {
   location: string | null;
   /** Invitees' names, in roster order; null when replies didn't load (CH-2209). */
   invitees: string[] | null;
-  /** Accepted replies; null when replies didn't load. */
+  /** Accepted replies; null when replies or the identities needed for the paired count didn't load. */
   going: number | null;
   /** Overlaps another of today's timed events. */
   conflict: boolean;
@@ -512,19 +514,23 @@ export async function loadHomeWeek(
     !e.all_day && !!e.end_time && timed.some((o) => o.id !== e.id && new Date(o.start_time) < new Date(e.end_time!) && new Date(e.start_time) < new Date(o.end_time!));
   const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
     const ids = inviteesOf(e.id);
+    const invitees = ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null;
     return {
       id: e.id,
       title: e.title,
       type: HOME_TYPES.has(e.event_type) ? (e.event_type as ChHomeEvent['type']) : 'other',
       date: e.localDate,
+      timezone: tz,
       startIso: e.start_time,
       endIso: e.end_time,
       allDay: !!e.all_day,
       startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
       rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
       location: e.location,
-      invitees: ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null,
-      going: ids ? (accepted.get(e.id) ?? 0) : null,
+      invitees,
+      // The card pairs this number with the rendered names' count. Partial
+      // identities cannot turn "3 of 4" actual replies into "3 of 2 going".
+      going: ids && invitees?.length === ids.length ? (accepted.get(e.id) ?? 0) : null,
       conflict: runsOn(e, today) && overlaps(e),
     };
   };

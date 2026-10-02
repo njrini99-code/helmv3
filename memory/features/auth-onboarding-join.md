@@ -18,6 +18,10 @@ auth logic; this visual path does not change access control. Implementation:
 `src/clubhouse/screens/auth/`, page contract and design:
 `docs/clubhouse/pages/P015-auth/`.
 
+Sign-in also gates duplicate submissions synchronously before React commits the
+busy button. The gate stays set through a successful handoff or stale-bundle
+reload; a refused or failed attempt releases it so credentials can be retried.
+
 Coach and player onboarding are separate routes. Join-code links can redirect users into player onboarding when the player profile is incomplete.
 
 ## Primary Entry Points

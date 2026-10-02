@@ -1,5 +1,24 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-02 — Intuitive improvement: easier phone filter activation
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   none changed
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+The phone filter now has an explicit 44×44px target, keeping the existing
+control, label and window choices. WebKit measured the target at 375, 390 and
+430 with zero horizontal overflow. Window-change, empty and failed data behavior
+is unchanged.
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
 ## 2026-10-02 — Team stats: clearer card spacing and material depth
 
 ```text

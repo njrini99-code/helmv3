@@ -758,6 +758,25 @@ a.ch-rd-sc:focus-visible {
     font-size: 23px;
     margin-top: 12px;
   }
+  .ch-rd-unf__f {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .ch-rd-unf__f > span:first-child {
+    flex-shrink: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .ch-rd-unf__acts {
+    margin-left: auto;
+  }
+  .ch-rd-unf__cta {
+    height: 44px;
+  }
+  .ch-rd-unf__discard {
+    width: 44px;
+    height: 44px;
+  }
   .ch-rd-strip {
     margin: 14px 0 12px;
     gap: 3px;

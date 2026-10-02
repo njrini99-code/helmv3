@@ -9,6 +9,47 @@ with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 
+## October 2 installed-plugin repair pass
+
+Frontend Design Premium, Shiro, Intuitive Software Design, Codebase Design
+and Supabase were applied to the current owner feedback. The existing page designs remain
+the reference; root DESIGN.md and UI_OWNERSHIP.md index the runtime owners.
+The secondary flow evidence is registered in AUDITS.md.
+
+The owner requested Apple Messages display and behavior with the existing
+green/ivory palette. Phone threads group bubbles with terminal tails, keep
+direct-chat width, use Return for a newline, and offer contextual actions,
+swipe-right Reply and swipe-left timestamps. Quotes use the existing parent
+field; loaded quotes jump to their real parent. Missing or deleted parents
+remain labeled. Pending sends lock the reply selection; failure and Retry
+preserve the original target. The backend reply suites pass 62 distinct tests.
+Supabase read-only metadata confirms the nullable UUID parent field and its
+foreign key in the existing project; no schema change is required.
+
+The pass fixes duplicate Sign in, undersized round/stats controls, clipped
+qualifier names, inconsistent profile spacing, Hub pending/concurrent/recovery
+behavior and Home's partial-data/timezone claims. Local WebKit checks cover
+375/390/430px and the reduced-motion camera. Native scrolling and forced-color
+fallback were observed in WebKit. Thirty-eight screenshots are in the local
+store; verification screenshots remain uncommitted. Auth suites pass 64 tests,
+Home data/consumer suites 132, Hub 144 and Qualifiers 164.
+Messages and its audit pass 82 tests; reduced-motion quote jumping also passes
+its focused regression. Home/Hub accessibility
+checks pass 13 phone states; a separate WebKit Axe scan passes Sign in with
+keyboard/credential geometry checked. TypeScript, scoped ESLint, contracts,
+knowledge/world-model checks and Markdown ratchet pass. WebKit follow-up
+confirms task/event pending state survives tab remounts,
+settles when both fixture writes answer and passes the Hub Axe scan. The final
+production build passes with exit 0: compiled in 117 seconds, TypeScript in
+13.3 seconds, all 181 static pages generated and the route table emitted.
+This is a local build, not a production deployment.
+
+The literal static plugin auditor has unresolved component/CSS detections;
+manual adjudication is in UI_OWNERSHIP.md. It has no unresolved ownership
+choice.
+Physical Safari performance, intended-user research and live durable writes
+remain outside the verified evidence. This pass does not enable the flag.
+
 ## October 1 Safari repair pass
 
 `codex/clubhouse-design-fidelity` restores the supplied design's layered cards
@@ -2049,8 +2090,9 @@ shows the options as they were put.
   (light only until the dark theme). The current app's controls keep working
   with the flag off.
 - Settings: the comparison weights stay hidden, as in the current app.
-- Messages: threaded replies and a shared-files list in details have no backend.
-  They are not shown.
+- Messages: quoted replies use the existing message parent field, with
+  same-conversation validation and truthful unavailable/deleted parent previews.
+  The shared-files list in details remains hidden; it has no loader.
 - Messages: the thread header's search icon is not built; message search is
   team-wide (`searchGolfMessages` takes no conversation) and lives in the rail.
   The typing indicator shows an avatar in direct threads only, because the

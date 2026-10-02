@@ -887,12 +887,12 @@
     min-height: 0;
     overflow: auto;
     overscroll-behavior: contain;
-    padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
+    padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
   }
   .ch-rsm-prof {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
   .ch-rsm-hero {
     display: flex;
@@ -945,10 +945,10 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     margin: 0;
-    padding: 12px 0;
-    border-radius: 14px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-shadow-sm);
+    padding: 16px 0;
+    border-radius: 16px;
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
   }
   .ch-rsm-figs > div {
     display: flex;

@@ -67,6 +67,7 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 
 | State | Contract | How forced | Observed result |
 | --- | --- | --- | --- |
+| P005__filter__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Phoneplayerstatsfilter44×44px target withremainingcontrolsvisible |
 | P005__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone player stats before page spacing and material repairs |
 | P005__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered overview and strokes gained panels,16px rhythm and readable captions |
 | Skeleton | CH-4401 | the route's loading.tsx (Team stats' shape); test on Team stats | busy skeleton; a profile's first paint moves it |
@@ -172,6 +173,14 @@ before, after, baseline or evidence.
 - Before/after captures at 390 show the shared sheet gradient, inset highlight and layered shadow. The captures use deterministic preview fixtures, not a live customer session.
 - At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
 - Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
+
+## 2026-10-02 — Intuitive improvement verification
+
+- WebKit measured the coach player-profile filter at 44×44px at 390 and captured
+  the retained figure/window layout.
+- Fixture actions do not touch production. These checks do not establish
+  intended-user discoverability, physical iPhone performance or durable
+  live-data outcomes.
 
 ## Open verification gaps
 

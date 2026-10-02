@@ -19,6 +19,50 @@
 .ch-root *::after {
   box-sizing: border-box;
 }
+/* App-owned scrolling has one inherited theme. The browser's chrome is outside this scope. */
+[data-ui='clubhouse'] {
+  scrollbar-color: var(--ch-scrollbar-thumb) var(--ch-scrollbar-track);
+  scrollbar-width: thin;
+}
+[data-ui='clubhouse'] * {
+  scrollbar-color: inherit;
+  scrollbar-width: thin;
+}
+[data-ui='clubhouse']::-webkit-scrollbar,
+[data-ui='clubhouse'] *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-ui='clubhouse']::-webkit-scrollbar-track,
+[data-ui='clubhouse'] *::-webkit-scrollbar-track {
+  background: var(--ch-scrollbar-track);
+}
+[data-ui='clubhouse']::-webkit-scrollbar-thumb,
+[data-ui='clubhouse'] *::-webkit-scrollbar-thumb {
+  background: var(--ch-scrollbar-thumb);
+  border-radius: var(--ch-radius-xs);
+}
+[data-ui='clubhouse']::-webkit-scrollbar-thumb:hover,
+[data-ui='clubhouse'] *::-webkit-scrollbar-thumb:hover {
+  background: var(--ch-scrollbar-thumb-hover);
+}
+[data-ui='clubhouse']::-webkit-scrollbar-thumb:active,
+[data-ui='clubhouse'] *::-webkit-scrollbar-thumb:active {
+  background: var(--ch-scrollbar-thumb-active);
+}
+@media (forced-colors: active) {
+  [data-ui='clubhouse'] {
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+    --ch-scrollbar-thumb: ButtonText;
+    --ch-scrollbar-thumb-hover: Highlight;
+    --ch-scrollbar-thumb-active: Highlight;
+    --ch-scrollbar-track: Canvas;
+  }
+  [data-ui='clubhouse'] * {
+    scrollbar-width: auto;
+  }
+}
 /* Controls answer a quick second tap (a score stepper, a toggle) instead of iOS reading it as a
    double-tap zoom; pinch zoom still works everywhere. Long-press doesn't pop the link preview. */
 .ch-root button,

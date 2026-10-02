@@ -1282,6 +1282,8 @@
   .ch-qf-lead__r {
     grid-template-columns: 24px minmax(0, 1fr) auto;
     gap: 8px;
+    height: auto;
+    min-height: 36px;
     padding: 4px 0;
   }
   .ch-qf-lead__h + div .ch-qf-lead__r {
@@ -1289,6 +1291,9 @@
   }
   .ch-qf-lead__n {
     font-size: 14px;
+    line-height: 1.3;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .ch-qf-grid {
     grid-template-columns: minmax(0, 1fr);

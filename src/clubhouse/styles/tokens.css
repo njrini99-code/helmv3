@@ -25,6 +25,11 @@
   --ch-ink-500: #6b6860;
   --ch-ink-400: #8f8b81;
   --ch-ink-300: #b3afa5;
+  /* Every owned scroller inherits the same quiet thumb; horizontal strip geometry stays page-owned. */
+  --ch-scrollbar-thumb: var(--ch-ink-300);
+  --ch-scrollbar-thumb-hover: var(--ch-ink-400);
+  --ch-scrollbar-thumb-active: var(--ch-ink-500);
+  --ch-scrollbar-track: transparent;
   /* Augusta green */
   --ch-green-25: #f5f9f6;
   --ch-green-50: #eef5f0;

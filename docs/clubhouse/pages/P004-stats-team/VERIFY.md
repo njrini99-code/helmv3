@@ -31,15 +31,24 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/stats-player.test.tsx` | CH-4309 (the no-team page state, catalogued here), and the profile's contracts | pass (53/53, 2026-09-30) |
 | `src/clubhouse/__tests__/logic.test.ts` | the window math, weighted rates, tour choice and week bucketing | not re-run in this pass |
 
-Each test added in this pass was mutation-checked: the code it guards was broken, the test failed, and the
-code was restored. Checked: 40501 (the name written as text), 40901 (the file name, the toast, the tick),
-40801 (a player given the team), 40802 (the roster filter by team and by status), 40102 (the window read from
-the address and written back with scroll off), 41201 (the leg and player reset on a window change), 41401 (Try
-again doing nothing), 41901 (the phone view never taking over), 42001 (a grid row that does not focus its
-player), 42101 (a second team read; the benchmarks read after the rounds), 42301 (the team read not logged),
-40101 (Season bests removed), CH-4402 (the page never busy) and 42401 (a catalog row no test names). 20 checks.
-The three assertions in 40801 on the frame's route list (`isRebuilt`) were added after that run and are not
-mutation-checked: the code they read is the shell's `nav.ts`, which this pass does not touch.
+Each test added in this pass was mutation-checked: the code it guards was
+broken, the test failed, and the
+code was restored. Checked: 40501 (the name written as text), 40901 (the file
+name, the toast, the tick),
+40801 (a player given the team), 40802 (the roster filter by team and by
+status), 40102 (the window read from
+the address and written back with scroll off), 41201 (the leg and player reset
+on a window change), 41401 (Try
+again doing nothing), 41901 (the phone view never taking over), 42001 (a grid
+row that does not focus its
+player), 42101 (a second team read; the benchmarks read after the rounds), 42301
+(the team read not logged),
+40101 (Season bests removed), CH-4402 (the page never busy) and 42401 (a catalog
+row no test names). 20 checks.
+The three assertions in 40801 on the frame's route list (`isRebuilt`) were added
+after that run and are not
+mutation-checked: the code they read is the shell's `nav.ts`, which this pass
+does not touch.
 
 ## Visual verification
 
@@ -67,6 +76,7 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 
 | State | Contract | How forced | Observed result |
 | --- | --- | --- | --- |
+| P004__filter__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Phone filter target is44×44px; figure labels and window choices remain visible |
 | P004__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone team stats before page spacing and material repairs |
 | P004__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered sheet material,16px section rhythm and readable figure captions |
 | Skeleton | 40201 | `/clubhouse-preview/stats?state=loading`, test | skeleton in Team stats' shape, busy |
@@ -79,11 +89,14 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 | Destructive | none | N/A: nothing is deleted | |
 | Optimistic rollback | none | N/A: nothing is optimistic | |
 
-Not forced against a live session: every state above was forced against a fake Supabase client and rendered
-in jsdom, or in the preview, never against a live session (Q-4, the owner's live pass). A state never observed
+Not forced against a live session: every state above was forced against a fake
+Supabase client and rendered
+in jsdom, or in the preview, never against a live session (Q-4, the owner's live
+pass). A state never observed
 is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 
-Not tested: the old address /golf/dashboard/stats/team sending a non-coach to /stats (it is in the Fairway
+Not tested: the old address /golf/dashboard/stats/team sending a non-coach to
+/stats (it is in the Fairway
 page, which the test does not import); only the Clubhouse frame's side of it is.
 
 ## Accessibility
@@ -153,10 +166,22 @@ before, after, baseline or evidence.
 
 ## 2026-10-02 — Mobile design fidelity verification
 
-- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has no horizontal document overflow; roster status notes and stats figure labels remain inside their columns.
-- Before/after captures at 390 show the shared sheet gradient, inset highlight and layered shadow. The captures use deterministic preview fixtures, not a live customer session.
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has
+  no horizontal document overflow; roster status notes and stats figure labels
+  remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight
+  and layered shadow. The captures use deterministic preview fixtures, not a
+  live customer session.
 - At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
 - Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
+
+## 2026-10-02 — Intuitive improvement verification
+
+- WebKit measured the filter target at 44×44px at 375, 390 and 430, each with
+  zero horizontal overflow.
+- Fixture actions do not touch production. These checks do not establish
+  intended-user discoverability, physical iPhone performance or durable
+  live-data outcomes.
 
 ## Open verification gaps
 

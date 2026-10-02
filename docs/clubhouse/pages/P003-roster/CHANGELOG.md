@@ -1,5 +1,25 @@
 # P003 — Roster: changelog
 
+## 2026-10-02 — Intuitive improvement: consistent profile context
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   none changed
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+Profile gutters, section gaps and figure lighting now match the parent roster at
+phone widths. The existing player name, Roster back action, scoring evidence and
+Message/Plan 1:1 actions remain intact. WebKit exercised the fixture
+row-to-profile path; delivery, meeting creation and private-note persistence
+were not exercised.
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
 ## 2026-10-02 — Roster: room for complete player status
 
 ```text

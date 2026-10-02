@@ -113,7 +113,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7601 | A message arrives or is sent | It appears in place, no count-up or stagger; the thread keeps its scroll unless you're at the bottom | `Thread` | preview |
 | CH-7602 | Someone is typing | Three dots pulse under the last message | `.ch-ms-typing` | preview |
 | CH-7603 | Opening details or a reaction bar | It opens from its button (180ms) | `CH_POP` | preview |
-| CH-7604 | A long press on a message (phone) | The message sheet rises (260ms): the six reactions, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
+| CH-7604 | A long press on a message (phone) | The message sheet rises (260ms), retaining selected text and its actual timestamp: six reactions, Reply, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
 
 ## 77xx Haptics
 
@@ -129,6 +129,6 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | # | What | How | Test |
 | --- | --- | --- | --- |
 | CH-7801 | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert | `aria-label`, `role="alert"` | messages.test › CH-7801 |
-| CH-7802 | Search results are announced as they arrive; Enter sends, Shift+Enter adds a line | `aria-live`, key handler | preview |
+| CH-7802 | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends | `aria-live`, key handler | preview |
 | CH-7803 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-7804 | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") | `Bubble` `onActions`, `PhoneScreen`, `PhoneBar` | messages.test › CH-7804 |
