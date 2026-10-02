@@ -218,6 +218,20 @@ After the performance fixture cleanup verified zero remaining team/player/user
 references, the agent incorrectly stopped local Supabase with `--no-backup`.
 That removed the local `helmv3` data volumes. The stack had started from an
 existing local backup, so absence of unrelated prior local data is not proved.
-No recoverable SQL/data backup was found in the workspace or temporary-file
-checks. Prior local data has not been recovered. Production was untouched;
-other named local CI volumes remain present. The stack remains stopped.
+Recovery preserved two post-incident Docker disk images and read-only physical
+copies of three surviving test clusters. One verified copy was used to recreate
+the local development baseline: 276 public tables with RLS, 934 policies, 56 PGA
+standards and 28 metric rows. Local Supabase start, Auth sign-in, authenticated
+API reads and owned test-account cleanup passed. Fresh complete logical backups
+were saved privately with checksums. The local stack is running again.
+
+**The deleted original data has not been recovered.** The surviving copies
+contain no user accounts, teams, players, rounds or messages. Most inspected
+deleted-file blocks read as zero; journal metadata did not yield a usable
+database cluster.
+No pre-incident database dump or disk image was found in the accessible paths
+checked. Trash remains unchecked because macOS denied terminal access and
+Computer Use reported the Mac locked; an unlock/backup-location request is
+pending. Recovery evidence and backups remain private and uncommitted under
+`~/.helm-recovery/2026-10-02-local-supabase/`. Production was untouched, and the
+original surviving test volumes were preserved.
