@@ -1,15 +1,22 @@
 # P007 — Messages: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/messages.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/messages.md`.
 
 ## Current verification status
 
 ```text
 Status:     partial
-Commit/PR:  agent/clubhouse (local; draft PR #2102 is behind it)
-Date:       2026-09-29
+Commit/PR:  codex/clubhouse-design-fidelity (repair pass)
+Date:       2026-10-01
 ```
+
+October 1 repair checks: settled WebKit thread at 390x664 has graded incoming
+ivory and sent green faces, visible upper highlights and layered contact/ambient
+shadows. The page fills the viewport without document overflow. Capture waits
+for the thread panel to finish sliding; the after image is not an intermediate
+transition frame. Message behavior tests pass with the combined repair tests.
+Physical iPhone scrolling and keyboard performance remain unverified.
 
 ## Static checks
 
@@ -93,7 +100,11 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -131,6 +142,8 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P007__thread__coach__430__thread-open__before__ba75b0a.png` | before | ba75b0a | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
 | `P007__list__coach__1440__default__after__d4367ee.png` | after | d4367ee | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
 | `P007__list__coach__1440__default__before__d3a6483.png` | before | d3a6483 | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390x664__ready__before__cbc1c0d.png` | before | `cbc1c0d` | Before: flat incoming and sent bubble fills. |
+| `P007__thread__coach__390x664__ready__after__cbc1c0d.png` | after | `cbc1c0d` | After: graded surfaces, highlights and grounded bubble shadows; thread settled at0x0. |
 
 ## Open verification gaps
 

@@ -3,6 +3,27 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Layered board cards on the phone
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; layout and material only
+Held items:     real iPhone Safari device verification
+```
+
+The focus, program pulse and proposal cards use the shared layered sheet
+surface. The program pulse gains a little breathing room around its evidence.
+Existing evidence summaries and the horizontal player selector retain their
+behavior.
+
+Verified in Playwright WebKit with iPhone 13 emulation at 375, 390 and 430px:
+the document stays within the viewport and Instrument Sans is loaded. Before and
+after captures at 390px are logged in VERIFY.md. This verifies layout, not
+physical iPhone scrolling performance or live database data.
+
 ## 2026-10-01 — Aesthetic audit: a two-line metric label takes caption leading
 
 ```text

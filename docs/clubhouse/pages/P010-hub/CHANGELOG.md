@@ -1,5 +1,27 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-02 — Team Hub: restore card material and consistent phone gutters
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+RSVP, task, announcement and travel cards use the shared layered sheet gradient
+and shadow. Phone card headings and lists have consistent 16px gutters and more
+room between sections; tabs keep their existing horizontal scrolling and touch
+areas. The duplicate desktop heading is visually hidden by phone CSS before
+hydration, avoiding its first-paint jump under the shell title. Existing data
+and role permissions are unchanged.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

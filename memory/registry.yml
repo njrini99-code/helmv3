@@ -1175,6 +1175,7 @@ features:
         - src/components/golf/documents/**
         - src/components/fairway/pages/travel/**
         - src/components/fairway/pages/team-hub/**
+        - src/clubhouse/screens/home/**
       api:
         - src/components/fairway/pages/documents/**
       actions:
@@ -1188,6 +1189,8 @@ features:
       services:
         - src/lib/supabase/**
         - src/lib/golf/nav-registry.ts
+        - src/clubhouse/data/home.ts
+        - src/clubhouse/data/player-home.ts
       db:
         - supabase/migrations/*task*.sql
         # Team documents only: `*document*` also matched recruiting's recruit_documents files.
@@ -1198,6 +1201,9 @@ features:
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
         - src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts
+        - src/clubhouse/__tests__/home.test.tsx
+        - src/clubhouse/__tests__/player-home.test.tsx
+        - src/clubhouse/__tests__/home-data-completeness.test.ts
     integrations:
       - supabase
       - storage
@@ -1351,6 +1357,7 @@ features:
       components:
         - src/components/golf/onboarding/**
         - src/components/golf/settings/JoinTeamSection.tsx
+        - src/clubhouse/screens/auth/**
       api:
         - src/app/api/golf/auth/**
       actions:
@@ -1365,6 +1372,7 @@ features:
         - src/lib/auth/**
         - src/lib/supabase/**
         - src/hooks/use-presence.ts
+        - src/clubhouse/routes/auth.tsx
       db:
         - supabase/migrations/*auth*.sql
         - supabase/migrations/*user*.sql
@@ -1372,6 +1380,7 @@ features:
       tests:
         - e2e/auth.spec.ts
         - src/test/lib/auth/**
+        - src/clubhouse/__tests__/auth*.test.*
     integrations:
       - supabase
       - team_access_control

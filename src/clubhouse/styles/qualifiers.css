@@ -1213,7 +1213,7 @@
     justify-items: start;
     gap: 10px;
     padding: 16px;
-    background: var(--ch-bg-surface);
+    background: var(--ch-sheet-bg);
     box-shadow: 0 0 0 1px var(--ch-border-subtle), var(--ch-shadow-md);
   }
   .ch-qf .ch-qf-hero h2 {
@@ -1244,7 +1244,8 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px 16px;
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.4;
   }
   .ch-qf-meta > span:first-child {
     flex: 0 0 100%;
@@ -1281,7 +1282,7 @@
   .ch-qf-lead__r {
     grid-template-columns: 24px minmax(0, 1fr) auto;
     gap: 8px;
-    padding: 0;
+    padding: 4px 0;
   }
   .ch-qf-lead__h + div .ch-qf-lead__r {
     border-top: 0;
@@ -1294,9 +1295,10 @@
     gap: 10px;
   }
   .ch-qf-card {
-    gap: 10px;
+    gap: 12px;
     padding: 16px;
     border-radius: 16px;
+    background: var(--ch-sheet-bg);
   }
   .ch-qf-card__h p {
     display: none;

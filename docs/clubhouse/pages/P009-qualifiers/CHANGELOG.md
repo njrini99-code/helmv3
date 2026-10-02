@@ -3,6 +3,27 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Layered mobile cards and readable metadata
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; layout and material only
+Held items:     real iPhone Safari device verification
+```
+
+The mobile live qualifier and list cards use the shared sheet gradient.
+Dates/course metadata use a 14px line with room to wrap, leaderboard rows gain
+vertical spacing and list cards gain separation. Status counts, scores and
+recorded-round totals are unchanged.
+
+Verified in Playwright WebKit with iPhone 13 emulation at 375, 390 and 430px:
+the document stays within the viewport and Instrument Sans is loaded. Before and
+after captures at 390px are logged in VERIFY.md. This verifies layout, not
+physical iPhone scrolling performance or live database data.
+
 ## 2026-10-01 — Owner rules for page states (P009)
 
 Owner, 2026-10-01: never an empty or a zero for a failed or unfinished read;

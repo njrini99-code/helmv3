@@ -2,6 +2,29 @@
 
 Newest first.
 
+## 2026-10-01 — Safari sign-in loads coherently and animates the hole
+
+Branch: `codex/clubhouse-design-fidelity`. The current owner feedback asks for
+the golf hole after Sign in. The phone crop and camera pivot now frame the pin,
+cup and ball landing instead of locking onto the clubhouse. Its 2.6s gentle push
+completes before automatic navigation. Reduced motion keeps the camera at rest.
+
+Sign-in's fixed 352px art reservation now scales down with the small viewport;
+the same scrollable sheet holds the form. The compact brand starts below the
+actual safe area. A 213KB still of the existing course artwork ships with server
+HTML and remains behind the independently loaded animation, so a slow or failed
+chunk leaves an actual hole instead of the placeholder gradient. It is an
+application artwork asset, not a verification screenshot. The poster uses the
+same wide/tall SVG crop as the animation. Credential/session/invite behavior is
+unchanged.
+
+Verified local WebKit: form and course with JavaScript disabled; 375x568,
+390x664 and 430x900 with the submit button inside the viewport; the full preview
+Sign in → welcome with visible hole/ball → player Home sequence. Auth tests
+cover server artwork, scene failure isolation, camera framing and existing
+credential behavior. Physical Safari performance and a real account round-trip
+remain unverified.
+
 ## 2026-10-01 — Phone: the welcome carries on by itself (Q-137)
 
 ```text

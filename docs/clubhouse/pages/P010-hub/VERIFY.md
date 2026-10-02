@@ -1,7 +1,7 @@
 # P010 — Team Hub: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/team-hub.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/team-hub.md`.
 
 ## Current verification status
 
@@ -62,6 +62,8 @@ Result:       built to the approved spec and seen at 390 in that pass; the iPhon
 
 | State | Contract | How forced | Observed result |
 | --- | --- | --- | --- |
+| P010__home__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone Team Hub before page spacing and material repairs |
+| P010__home__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered RSVP cards,16px phone gutters and no duplicate heading before hydration |
 | Skeleton | CH-10405 | test (loading route inside and outside the shell) | the Clubhouse skeleton in the shell, Fairway's outside it |
 | Empty | CH-10301 to CH-10311, 100410 | tests, `?state=empty` | distinct from a failed read; Updates count |
 | Validation | CH-10101 to CH-10108 | tests | message under the field, nothing sent |
@@ -98,10 +100,21 @@ Notes:             first-load JS and LCP (CH-1954) are open
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+
+## 2026-10-02 — Mobile design fidelity verification
+
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has no horizontal document overflow; roster status notes and stats figure labels remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight and layered shadow. The captures use deterministic preview fixtures, not a live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
 
 ## Open verification gaps
 

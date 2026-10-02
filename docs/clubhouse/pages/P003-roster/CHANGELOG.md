@@ -1,5 +1,25 @@
 # P003 — Roster: changelog
 
+## 2026-10-02 — Roster: room for complete player status
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+The phone roster now uses the shared sheet gradient and layered lighting. Rows
+have a 72px minimum with room for wrapping status text; long attention notes
+remain visible instead of ending in an ellipsis. Content and skeleton gutters
+use the same 16px rhythm.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

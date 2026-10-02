@@ -1,8 +1,9 @@
 # P011 — Rounds: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/rounds.md` (it still reads "This covers the library" and its boxes are not brought current
-for Review, Setup and Tracking; see the gaps below).
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/rounds.md` (it still reads "This covers the
+library" and its boxes are not brought current for Review, Setup and Tracking;
+see the gaps below).
 
 ## What is live, and what is preview only
 
@@ -283,7 +284,11 @@ assertions).
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -331,6 +336,8 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P011__track__player__390__putt__before__d3a6483.png` | before | d3a6483 | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
 | `P011__track__player__390__submit-failed__after__d4367ee.png` | after | d4367ee | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
 | `P011__track__player__390__submit-failed__before__d3a6483.png` | before | d3a6483 | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__mobile-overview__player__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (player), 390px, WebKit iPhone 13; /clubhouse-preview/rounds, synthetic preview fixture; shared materials in progress |
+| `P011__mobile-overview__player__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (player), 390px, WebKit iPhone 13; /clubhouse-preview/rounds, synthetic preview fixture; shared materials in progress |
 
 ## Open verification gaps
 

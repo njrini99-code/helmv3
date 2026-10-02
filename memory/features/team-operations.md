@@ -28,6 +28,15 @@ operations destination.
 
 Tasks let coaches assign work to players. Documents provide a team file library with versioning and visibility controls. Travel manages itinerary details and partially implemented budget/expense tracking. The player hub pulls travel, task, and event data into a player action center.
 
+Clubhouse Home (`src/clubhouse/data/home.ts`, `player-home.ts`, `screens/home/`)
+assembles the team's schedule and the viewer-appropriate round summaries.
+All-day dates follow Calendar's literal date and inclusive date-span rules,
+including ongoing multi-day events. Player Home shows dates for all-day events
+and a countdown only for recorded timed starts; the countdown reserves its space
+before the client clock is available. Home's section read errors remain distinct
+from empty data. Page contracts and data limitations live in
+`docs/clubhouse/pages/P002-home/` and `docs/clubhouse/PROGRESS.md`.
+
 ## Primary Entry Points
 
 ### Routes

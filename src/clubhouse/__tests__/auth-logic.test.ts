@@ -156,14 +156,21 @@ describe('CH-15602 the greeting by hour, and the sky it sits on', () => {
     expect(a.reeds).toHaveLength(26);
   });
 
-  it('centres the phone camera on the clubhouse and the desktop one on the pin', () => {
+  it('pivots both cameras on the hole and keeps the cup visible on narrow phones', () => {
     const desktop = sceneMetrics(1600, 1000, 'wide');
     expect(desktop.unit).toBeCloseTo(1, 6);
     expect(desktop.originX).toBeCloseTo(1052, 6);
     expect(desktop.originY).toBeCloseTo(640, 6);
     const phone = sceneMetrics(760, 1000, 'tall');
-    expect(phone.originX).toBeCloseTo(560 - 360, 6);
-    expect(phone.originY).toBeCloseTo(610, 6);
+    expect(phone.originX).toBeCloseTo(CUP[0] - 650, 6);
+    expect(phone.originY).toBeCloseTo(640, 6);
+    for (const [width, height] of [[375, 667], [390, 664], [430, 900]]) {
+      const m = sceneMetrics(width!, height!, 'tall');
+      expect(m.originX).toBeGreaterThan(width! * 0.25);
+      expect(m.originX).toBeLessThan(width! * 0.75);
+      expect(m.originY).toBeGreaterThan(height! * 0.3);
+      expect(m.originY).toBeLessThan(height! * 0.75);
+    }
   });
 });
 

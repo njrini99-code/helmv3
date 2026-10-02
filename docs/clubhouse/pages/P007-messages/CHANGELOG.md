@@ -3,6 +3,16 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — The intended depth in message bubbles
+
+Branch: `codex/clubhouse-design-fidelity`. Owner requested more depth in bubbles
+and cards. Incoming bubbles now use a graded warm ivory sheet, with upper light,
+lower edge and two grounded shadows. Sent bubbles use a graded Augusta green
+face and their own highlight/contact shadow. The same tokens apply to desktop
+and phone; phone body text retains its 17px reading size. No sending, delivery,
+unread, attachments or identity behavior changes. Before/after WebKit thread
+captures are in the local screenshot gallery.
+
 ## 2026-10-01 — Aesthetic audit: unread rows read as unread, placeholders and initials hold their floors
 
 ```text

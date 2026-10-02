@@ -1,7 +1,7 @@
 # P005 — Stats (player): verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/stats-player.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/stats-player.md`.
 
 ## Current verification status
 
@@ -67,6 +67,8 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 
 | State | Contract | How forced | Observed result |
 | --- | --- | --- | --- |
+| P005__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone player stats before page spacing and material repairs |
+| P005__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered overview and strokes gained panels,16px rhythm and readable captions |
 | Skeleton | CH-4401 | the route's loading.tsx (Team stats' shape); test on Team stats | busy skeleton; a profile's first paint moves it |
 | Empty | 50401 to 50405 | `?state=early` (preview), tests | each tab or section says what is missing; an early read names what will move |
 | Validation | 50501 | test | message under the field, the field focused, the warning tick, nothing sent |
@@ -155,10 +157,21 @@ Notes:             first-load JS and LCP after the v2 reveal are open (D-27, CH-
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+
+## 2026-10-02 — Mobile design fidelity verification
+
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has no horizontal document overflow; roster status notes and stats figure labels remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight and layered shadow. The captures use deterministic preview fixtures, not a live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
 
 ## Open verification gaps
 

@@ -3,11 +3,30 @@
 The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
 (desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off). Rules:
 `.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement:
-`npm run clubhouse:check`, which also validates this file.
-Audits and plans, with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
+`npm run clubhouse:check`, which also validates this file. Audits and plans,
+with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
+
+## October 1 Safari repair pass
+
+`codex/clubhouse-design-fidelity` restores the supplied design's layered cards
+and message bubbles, relieves cramped secondary phone layouts, frames the
+welcome on the golf hole, and renders course artwork before the animation loads.
+Home shows an event date for all-day starts, reads every event page, preserves
+all-day calendar dates and includes ongoing multi-day events. A neutral
+strokes-gained result no longer claims a loss. These repairs do not fill figures
+that lack a real source, such as weather and season-week counts.
+
+Local WebKit checks cover 375, 390 and 430px, short sign-in viewports, populated
+secondary screens and their recorded empty/error states. Twenty-four screenshots
+are indexed in the local gallery and page VERIFY logs. TypeScript, scoped ESLint
+and the targeted component/data suites pass. Physical iPhone frame rate, a
+real-account sign-in and the owner's deployed preview remain unverified. This
+pass does not advance those gates or enable the flag. The production build exits
+0 after compilation, TypeScript and all 181 static pages; the route table is
+emitted.
 
 ## How a screen moves
 
@@ -1975,8 +1994,9 @@ shows the options as they were put.
 
 - Home: the prototype's weather and "Week 7 of 12" have no source (golf teams
   have no season start or end dates). They are omitted until one exists.
-- Home: the prototype's "Open recap" needs a single-round screen, which isn't
-  rebuilt. The link opens the player's stats and says so.
+- Home: "Open recap" now opens the rebuilt round review for persisted round IDs.
+  Preview-only rounds without persisted IDs open the player's stats. The old
+  recap data gap is resolved; see `screens/home/player-links.ts`.
 - Shell: the top-bar search (⌘K) needs its own spec. It is not rendered until
   then, so there is no dead control.
 - Shell: Practice and Events are in the design's navigation but have no route.

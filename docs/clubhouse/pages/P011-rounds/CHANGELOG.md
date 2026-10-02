@@ -4,6 +4,27 @@ Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.
 
+## 2026-10-01 — Give the phone library room to read
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; layout and material only
+Held items:     real iPhone Safari device verification
+```
+
+The phone library uses 16px gaps between sections. Posted-round course names
+wrap at 16px instead of forcing one-line ellipsis. Season scoring and
+posted-round cards use the shared layered sheet surface, preserving the score
+tiles, season frame and live round data.
+
+Verified in Playwright WebKit with iPhone 13 emulation at 375, 390 and 430px:
+the document stays within the viewport and Instrument Sans is loaded. Before and
+after captures at 390px are logged in VERIFY.md. This verifies layout, not
+physical iPhone scrolling performance or live database data.
+
 ## 2026-10-01 — Aesthetic audit: the shot screen uses the phone's gutters
 
 ```text

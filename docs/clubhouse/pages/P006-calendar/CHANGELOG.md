@@ -1,6 +1,29 @@
 # P006 — Calendar: changelog
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
+
+## 2026-10-01 — Readable agenda cards on mobile Safari
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; layout and material only
+Held items:     real iPhone Safari device verification
+```
+
+Calendar event titles and locations now wrap instead of cutting off on one line,
+with 16px titles, 14px detail, taller rows and 8px spacing. The date/count
+header wraps safely on narrow phones. Upcoming event cards use the shared
+layered sheet surface; past events and busy blocks keep their distinct
+treatment.
+
+Verified in Playwright WebKit with iPhone 13 emulation at 375, 390 and 430px:
+the document stays within the viewport and Instrument Sans is loaded. Before and
+after captures at 390px are logged in VERIFY.md. This verifies layout, not
+physical iPhone scrolling performance or live database data.
 
 ## 2026-10-01 — Aesthetic audit: events that share a column wrap their title
 

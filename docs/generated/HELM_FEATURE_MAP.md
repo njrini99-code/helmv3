@@ -179,7 +179,7 @@ is a second thing to keep true.
 **Team Operations** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-operations.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 20 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 26 more in the registry
 - **Telemetry:** `task_management` (golfhelm, med), `documents` (golfhelm, low), `travel` (golfhelm, low), `coach_dashboard` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -212,7 +212,7 @@ is a second thing to keep true.
 **Auth Onboarding And Join** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/auth-onboarding-join.md`
-- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/components/golf/onboarding/**`, `src/components/golf/settings/JoinTeamSection.tsx`, `src/app/api/golf/auth/**` … and 15 more in the registry
+- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/components/golf/onboarding/**`, `src/components/golf/settings/JoinTeamSection.tsx`, `src/clubhouse/screens/auth/**` … and 18 more in the registry
 - **Telemetry:** `auth_onboarding` (golfhelm, med), `join_team_flow` (golfhelm, med)
 - **Incidents:** `memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md`
 - **Repair units:** `presence-webkit-abort-2026-09-27` (verified)

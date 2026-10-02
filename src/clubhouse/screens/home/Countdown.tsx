@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 
 /**
  * Days, hours, minutes and seconds to an event (Player - Home.html `Countdown`).
- * Renders nothing until the clock is known (no hydration mismatch) and once
- * the event has started. `frozen` (ISO) stops the clock for the preview and tests.
+ * Reserves the four wells until the clock is known (no hydration jump), and
+ * disappears once the event starts. `frozen` (ISO) stops the clock for previews.
  */
 export function Countdown({ to, frozen }: { to: string; frozen?: string }) {
   const [now, setNow] = useState<number | null>(frozen ? Date.parse(frozen) : null);
@@ -15,7 +15,11 @@ export function Countdown({ to, frozen }: { to: string; frozen?: string }) {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [frozen]);
-  if (now == null) return null;
+  if (now == null) return (
+    <span className="ch-cd" aria-hidden="true">
+      {['d', 'h', 'm', 's'].map((s) => <span key={s}><b className="ch-num">—</b><em>{s}</em></span>)}
+    </span>
+  );
   const left = Math.floor((Date.parse(to) - now) / 1000);
   if (!(left > 0)) return null;
   const parts: Array<[number, string, string]> = [

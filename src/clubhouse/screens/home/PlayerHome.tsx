@@ -82,7 +82,7 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
       </span>
       <span className="ch-ph-next__t">{e.title}</span>
       <span className="ch-ph-next__m ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</span>
-      <Countdown to={e.startIso} frozen={frozen} />
+      {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
       <LinkPending />
     </Link>
   );

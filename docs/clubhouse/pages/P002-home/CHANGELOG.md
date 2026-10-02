@@ -1,6 +1,23 @@
 # P002 — Home: changelog
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
+
+## 2026-10-01 — Safari Home and truthful event timing
+
+Branch: `codex/clubhouse-design-fidelity`. Owner approved showing dates for
+all-day events instead of a midnight countdown. Both player layouts follow that
+rule; timed countdowns reserve their four wells before hydration and use roomier
+padding. Shared surface depth and the compact header mark follow the supplied
+mobile boards.
+
+Data repairs: Home now uses Calendar's literal all-day dates and inclusive
+spans, retains events active today, includes multi-day events starting before
+this week, and reads every event page instead of silently stopping at 500.
+Neutral strokes gained no longer produce a false loss claim. No event writes or
+schema changes. Regression coverage is in `home-data-completeness.test.ts`,
+`home-reads.test.ts` and `player-home.test.tsx`. Synthetic WebKit and local
+mocked reads verify these contracts; no customer database was touched.
 
 ## 2026-10-01 — Aesthetic audit: the stacked coins clear their initials, the latest round's stats follow its scorecard
 

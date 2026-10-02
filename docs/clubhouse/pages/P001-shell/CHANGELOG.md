@@ -3,6 +3,18 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — Safari header, surface depth and crossfade
+
+Branch: `codex/clubhouse-design-fidelity`. The supplied mobile photo showed the
+wide wordmark compressed into 22px. Home now uses the existing compact GolfHelm
+mark in the board's ivory medallion, with readable team text. The solid hero bar
+no longer applies backdrop blur. Shared cards and wells recover the handoff's
+graded surface and highlight; Messages has its own raised bubble treatment. The
+named page crossfade uses simultaneous 180ms opacity animation and selectors
+supported without transition classes. Browser edges now read the actual page
+tokens, create a missing theme-color tag and restore it on unmount or resize. No
+navigation destinations or access controls change.
+
 ## 2026-10-01 — Kept screen state never disagrees with hydration
 
 `useChSessionState` (`src/clubhouse/lib/session-state.ts`) draws the default

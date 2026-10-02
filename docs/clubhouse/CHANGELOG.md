@@ -1,6 +1,35 @@
 # Clubhouse changelog
 
-Every Clubhouse change with the issue it fixed, newest first. Each page's own changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here is in production: Clubhouse is behind a flag that is off.
+Every Clubhouse change with the issue it fixed, newest first. Each page's own
+changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
+and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
+is in production: Clubhouse is behind a flag that is off.
+
+## 2026-10-01 — Safari design fidelity and restored surface depth
+
+Branch: `codex/clubhouse-design-fidelity`. Owner reference: Coach home dashboard
+redesign (5)/(6), existing auth handoff, and the supplied Safari photo. The
+current feedback supersedes the darker flat phone treatment and clubhouse-only
+phone camera. Shared sheets, content wells and Messages bubbles regain graded
+ivory/green faces, upper highlights, contact shadows and restrained ambient
+depth. The mobile canvas remains warm ivory with the existing readable type
+floors. The Home header uses the compact GolfHelm mark on a 32px medallion.
+Named page snapshots use a simultaneous 180ms crossfade without the old arrival
+delay, including browsers without transition-class selectors. Browser edges read
+current tokens and create a missing theme-color tag, replacing a stale darker
+beige.
+
+Home, Auth and eight secondary page passes are logged in their page changelogs.
+Shared CSS and several secondary page styles remain outside the semantic
+knowledge map; page manifests and their design/verification documents cover
+them. Home and Auth behavior paths are now mapped to their existing features.
+Physical iPhone frame rate and the owner's deployed preview are unverified;
+local WebKit evidence is filed under `.helm/screenshots/clubhouse/`.
+
+Verification: targeted component/data suites, scoped ESLint, TypeScript,
+Clubhouse contracts, knowledge checks, screenshot validation and Markdown
+ratchet pass. The full production build exits 0: compiled successfully,
+TypeScript completed, all 181 static pages generated and route table emitted.
 
 ## 2026-10-01 (aesthetic audit)
 

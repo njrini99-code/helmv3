@@ -736,7 +736,7 @@
   }
   .ch-rs[aria-busy='true'],
   .ch-rs-none {
-    padding: 14px 14px 24px;
+    padding: 16px 16px 28px;
   }
   .ch-rs-skel-desk {
     display: none;
@@ -750,13 +750,13 @@
   .ch-rsm {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px 14px 24px;
+    gap: 16px;
+    padding: 16px 16px 28px;
   }
   .ch-rsm-page {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
   .ch-rsm-head {
     display: flex;
@@ -791,9 +791,9 @@
     inset: -9px 0;
   }
   .ch-rsm-panel {
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-shadow-sm);
+    border-radius: 18px;
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
     overflow: hidden;
   }
   .ch-rsm-list {
@@ -815,8 +815,8 @@
     gap: 12px;
     box-sizing: border-box;
     width: 100%;
-    min-height: 64px;
-    padding: 8px 16px;
+    min-height: 72px;
+    padding: 12px 14px;
     border: 0;
     background: none;
     color: inherit;
@@ -850,11 +850,10 @@
     text-overflow: ellipsis;
   }
   .ch-rsm-row__b > span {
-    overflow: hidden;
     font: var(--ch-type-caption);
+    line-height: 1.4;
     color: var(--ch-text-tertiary);
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
   .ch-rsm-row__b > span.is-warning {
     color: var(--ch-chart-loss);

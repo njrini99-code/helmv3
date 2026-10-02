@@ -185,7 +185,11 @@ are in a `'use server'` file: `npm run build` was not run for them here.
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -221,6 +225,8 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P013__insights__player__1440__default__before__d3a6483.png` | before | d3a6483 | insights (player), 1440px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
 | `P013__insights__player__390__default__after__d4367ee.png` | after | d4367ee | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
 | `P013__insights__player__390__default__before__d3a6483.png` | before | d3a6483 | insights (player), 390px, default; /clubhouse-preview/coachhelm-player, synthetic preview fixture |
+| `P013__mobile-overview__coach__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/coachhelm, synthetic preview fixture; shared materials in progress |
+| `P013__mobile-overview__coach__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/coachhelm, synthetic preview fixture; shared materials in progress |
 
 ## Open verification gaps
 

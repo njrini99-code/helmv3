@@ -1,5 +1,25 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-02 — Team stats: clearer card spacing and material depth
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+Phone stats now use the shared layered sheet surface, 16px section spacing and
+card padding. Figure captions have a readable line height and can wrap when a
+narrow screen needs it. All values, filters, chart data and missing-data states
+are unchanged.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
 ## 2026-10-01 — Page performance: fewer round trips, a page that keeps its shape across windows

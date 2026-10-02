@@ -1706,8 +1706,8 @@ a.ch-lg__r:focus-visible {
   .ch-stm {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px 14px 24px;
+    gap: 16px;
+    padding: 16px 16px 28px;
   }
   .ch-stm-head {
     display: flex;
@@ -1731,25 +1731,25 @@ a.ch-lg__r:focus-visible {
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     margin: 0;
-    padding: 12px 0;
-    border-radius: 14px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
+    padding: 16px 0;
+    border-radius: 16px;
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
   }
   .ch-stm-figs > div {
     display: flex;
     flex-direction: column;
     gap: 5px;
     min-width: 0;
-    padding: 0 12px;
+    padding: 0 10px;
   }
   .ch-stm-figs > div + div {
     border-left: 1px solid var(--ch-border-hairline);
   }
   .ch-stm-figs dt {
-    font: 500 11.5px/1.1 var(--ch-font-sans);
+    font: 500 11.5px/1.35 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
   .ch-stm-figs dd {
     margin: 0;
@@ -1762,16 +1762,16 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-figs dd + dd {
     min-height: 1em;
-    font: 500 11.5px/1 var(--ch-font-sans);
+    font: 500 11.5px/1.4 var(--ch-font-sans);
   }
   .ch-stm-panel {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
+    gap: 12px;
+    padding: 16px;
+    border-radius: 18px;
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
   }
   .ch-stm-panel__h {
     display: flex;
@@ -2665,8 +2665,8 @@ a.ch-lg__r:focus-visible {
     letter-spacing: -0.01em;
   }
   .ch-gd.is-phone .ch-gm {
-    background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), 0 1px 3px rgb(28 25 18 / 0.08);
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
   }
   .ch-gd.is-phone .ch-gm__head {
     grid-template-columns: minmax(0, 1fr);
@@ -2712,7 +2712,7 @@ a.ch-lg__r:focus-visible {
   .ch-gd.is-phone .ch-gm-p {
     gap: 12px;
     padding: 14px 16px 16px;
-    background: var(--ch-bg-surface);
+    background: transparent;
   }
   .ch-gd.is-phone .ch-gm-p__t {
     font: 600 14.5px/1.25 var(--ch-font-sans);

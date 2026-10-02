@@ -1,5 +1,25 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-02 — Player stats: layered panels and less compressed captions
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+The phone profile uses the shared sheet gradient and shadows for overview,
+strokes gained and game-detail panels, with 16px section spacing. Figure
+captions have more leading and flexible labels. Data sources, scope, comparison
+captions and early-read states are unchanged.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

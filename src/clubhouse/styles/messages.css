@@ -317,7 +317,7 @@
 .ch-ms-bub {
   padding: 10px 14px;
   border-radius: 18px;
-  background: var(--ch-bg-surface);
+  background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
   font: 400 14.5px/1.45 var(--ch-font-sans);
   color: var(--ch-text-primary);
@@ -336,7 +336,7 @@
 }
 .ch-ms-msg.is-mine .ch-ms-bub {
   border-bottom-right-radius: 6px;
-  background: var(--ch-green-600);
+  background: var(--ch-bubble-mine-bg);
   box-shadow: var(--ch-elevation-bubble-mine);
   color: #f7fbf8;
 }
@@ -1205,7 +1205,7 @@
     font: 400 17px/1.4 var(--ch-font-sans);
   }
   .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub {
-    background: var(--ch-green-700);
+    background: var(--ch-bubble-mine-bg);
     box-shadow: var(--ch-elevation-bubble-mine);
     color: #fff;
   }

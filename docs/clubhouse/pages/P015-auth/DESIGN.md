@@ -38,13 +38,17 @@ Welcome: the greeting, then the name, then the card with what is new, then Conti
 
 ### New Clubhouse components
 
-`SignIn`, `SignInForm` (the same behaviour as the current form), `AuthNotice`, `AuthFrame` (the page frame, the motion
-features and the phase), `Welcome`, `WelcomeStage` (the course that stays put while the greeting streams in),
-`SceneMount` (`next/dynamic`, client only), `GolfScene` and `SceneLayers` (the painted course in layers: sky, stars,
-clouds, birds, land, effects, foreground), and the pure modules `scene-sky` (ten sky keyframes and `skyAt(hour)`),
-`scene-geometry` (the seeded course), `scene-ball` (the flight), `sign-in-state` (each refusal's tone, haptic, field and
-number), `auth-motion` (the welcome's variants), `use-hour` (the viewer's clock, one shared store) and `use-query-param`.
-Data: `data/welcome.ts` (server only) with `data/welcome-shape.ts` (pure).
+`SignIn`, `SignInForm` (the same behaviour as the current form), `AuthNotice`,
+`AuthFrame` (the page frame, the motion features and the phase), `Welcome`,
+`WelcomeStage` (the course that stays put while the greeting streams in),
+`SceneMount` (server-rendered course poster with a `next/dynamic` animated
+overlay), `GolfScene` and `SceneLayers` (the painted course in layers: sky,
+stars, clouds, birds, land, effects, foreground), and the pure modules
+`scene-sky` (ten sky keyframes and `skyAt(hour)`), `scene-geometry` (the seeded
+course), `scene-ball` (the flight), `sign-in-state` (each refusal's tone,
+haptic, field and number), `auth-motion` (the welcome's variants), `use-hour`
+(the viewer's clock, one shared store) and `use-query-param`. Data:
+`data/welcome.ts` (server only) with `data/welcome-shape.ts` (pure).
 
 ### Modified components
 
@@ -72,7 +76,7 @@ What is on the design's clock, and where it lives:
 | Piece | Timing | Where |
 | --- | --- | --- |
 | Welcome's pieces | scrim 1.4s at 0.2s, mark 0.7s at 0.3s, date 0.5s, "Good morning," 1s at 0.64s out of a 10px blur, the name 1.1s at 1.05s, the card 0.9s at 2.25s, each item 140ms after the one before from 2.55s | `auth-motion.ts` variants |
-| Camera and ball | push to 1.34 over 5.2s; ball flight 1.65s, one hop, a roll to the cup | `auth-tokens.css`, `GolfScene`, `scene-ball` |
+| Camera and ball | desktop push to 1.34 over 5.2s; phone push to 1.18 over 2.6s toward the hole; ball flight 1.65s, one hop, a roll to the cup | `auth-tokens.css`, `GolfScene`, `scene-ball` |
 | Sign-in to welcome | form leaves, the course takes the frame, the veil and tagline fade, 720ms | `AuthFrame`, `OPENING_MS` |
 | Hand-off | text slides left and fades 420ms, the course clips to the app canvas over 880ms, paper fades in, the destination is asked for at 1s; 520ms when there is nothing to fold into; a fade to ivory on the phone | `Welcome`, `HANDOFF_MS`, `auth.css` |
 | Loops | flag wave, water shimmer, oaks, clouds, birds, stars | `auth-tokens.css`, `auth.css` |
@@ -86,7 +90,7 @@ How it stays inside the rest of the doctrine:
 - Variants are defined outside components (`custom` carries `{ reduced, index }`), and the animation features load in their
   own chunk with `LazyMotion` and `m`.
 - Reduced motion, and Animations off in Settings, make every transition 1ms, pause every loop, stop the camera short, put the
-  ball on the green and turn the hand-off into a quick fade (CH-15605).
+  ball on the green and turn the hand-off into a quick fade (CH-15605). The phone camera stays at its resting scale.
 - Loops pause when the tab is hidden (CH-15606).
 
 ## Haptic intent
@@ -97,10 +101,15 @@ unexpected, and medium for Continue. Every other tap is silent. On the web none 
 
 ## Responsive intent
 
-One structure with the desktop's, switched in CSS at 820px (the same width as `useChPhone`), so the server HTML fits both and
-nothing is chosen by sniffing a device. On the phone: the course on top and the form on a sheet from 352px, grouped rows, the
-Forgot link under the button, every control at least 44px, and the welcome full screen with the clubhouse centred and the list
-stacked. The keyboard scrolls the button above itself.
+One structure with the desktop's, switched in CSS at 820px (the same width as
+`useChPhone`), so the server HTML fits both and nothing is chosen by sniffing a
+device. On the phone: the course on top and the form on a sheet from
+`clamp(200px, 42svh, 352px)`, grouped rows, the Forgot link under the button,
+every control at least 44px, and the welcome full screen with the hole centred
+and the list stacked. The keyboard scrolls the button above itself. The October
+1 owner review explicitly calls for the hole after Sign in. The course poster
+uses the same wide and tall viewboxes as the animated scene so initial rendering
+and animation loading preserve that framing.
 
 ## Accessibility intent
 

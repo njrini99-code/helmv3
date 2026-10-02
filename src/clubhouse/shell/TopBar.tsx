@@ -54,7 +54,7 @@ export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | 
       <b className="ch-topbar__ptitle">{crumbs[crumbs.length - 1]}</b>
       {/* The green hero's bar (usePhoneHero, the phone Home): the team in place of the title. */}
       <span className="ch-topbar__team" aria-hidden="true">
-        <img src="/helm-main-logo-transparent-white-trim.png" alt="" width={22} height={22} />
+        <span className="ch-topbar__mark"><img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={20} height={20} /></span>
         {teamName ?? 'GolfHelm'}
       </span>
       <div className="ch-topbar__pslot" ref={setSlot} />

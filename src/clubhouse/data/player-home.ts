@@ -295,5 +295,5 @@ export function briefFor(full: ChRound[], legs: ChPlayerLeg[]): string | null {
   if (!best) return first;
   if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${best.sg.toFixed(1)} strokes a round.`;
   const worst = withSg[withSg.length - 1]!;
-  return `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.`;
+  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.` : first;
 }
