@@ -1,5 +1,21 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-02 — Phone stats filter date fields reach 44px
+
+```text
+Design package: owner's mobile boards; shared Stats filter sheet
+PR/commit:      codex/clubhouse-design-fidelity (working tree after 83b9990)
+Contract IDs:   none changed
+Actions:        existing filter choices only
+Data impact:    no endpoint or schema changes
+Held items:     physical iPhone Safari and native date-picker validation
+```
+
+The phone From and To fields now have a 44px minimum height, up from 38px.
+Desktop retains its 38px fields. Existing 30/34/36px drawn buttons already
+have 44px effective targets through the shared pseudo element; WebKit hit
+checks confirmed those extensions and non-overlapping adjacent targets.
+
 ## 2026-10-02 — Intuitive improvement: easier phone filter activation
 
 ```text

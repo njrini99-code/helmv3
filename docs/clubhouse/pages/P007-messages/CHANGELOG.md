@@ -3,6 +3,14 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Visual repair: six-line phone editor
+
+The phone writing pill now includes its padding and borders when sizing, with
+a 144px mobile cap so six 20px lines fit completely. Desktop keeps its 132px
+cap. Longer drafts still scroll within the field and retain the visible caret.
+Settled WebKit checks at 375, 390 and 430px in a 480px viewport kept the editor
+and Send inside the available screen. The focused sizing regression passed.
+
 ## 2026-10-02 — Release repair: composer resize and attachment outcome recovery
 
 The WebKit phone thread reproduced a 180px bottom gap after selecting a quote

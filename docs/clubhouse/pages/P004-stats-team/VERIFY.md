@@ -163,6 +163,8 @@ before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P004__filter-sheet__coach__375__date-field-targets__after__83b9990.png` | after | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
+| `P004__filter-sheet__coach__375__date-field-targets__before__83b9990.png` | before | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -194,3 +196,21 @@ before, after, baseline or evidence.
 - Found and fixed 2026-09-30: the CSV export wrote a name that starts with = + - or @ as a formula. It is
   written as text now (40501), and the test fails with the fix taken out (checked).
 - v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet" (D-71); not built, owner decision.
+
+## 2026-10-02 — Settled WebKit filter-sheet targets
+
+- Scoped phone date-field repair: From/To measure 44px at 375, 390 and 430px,
+  with 16px text. Desktop 1440px remains 38px/14px. Document width equals
+  viewport in all four captures.
+- Close, pills and window segments have shared 44px pseudo targets; WebKit
+  `elementFromPoint` verifies the expanded area above/below each visible
+  control. Adjacent expanded targets retain 2.08–4px horizontal gaps.
+- Scrolling the sheet body exposes Pick rounds; Exclude these remains reachable
+  through its expanded target and Clear/Done stay visible in the footer.
+- Before/after date-field evidence is logged in P004's screenshot table; both
+  Stats pages use this shared sheet CSS. Runtime geometry:
+  `/tmp/helm-clubhouse-visual-secondary/stats-targets.json`.
+- The semantic feature mapper reports stats.css as unmapped; the existing
+  P004/P005 page manifests govern it. No behavior or data contract changed.
+- Local fixture WebKit only; physical Safari chrome and native date picker were
+  not exercised. No production writes.

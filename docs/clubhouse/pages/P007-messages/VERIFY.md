@@ -239,6 +239,23 @@ Backend action/hook identity evidence is recorded by its owner. Source changes
 after the preceding production build require a fresh build; root owns that
 check.
 
+## 2026-10-02 — Final mobile editor visual check
+
+Fresh local WebKit captures at 375, 390 and 430px reproduced the six-line
+editor's internal clipping: its 132px border box had 126px client height for
+138px content. The mobile cap is now 144px and sizing includes its borders;
+desktop retains its 132px cap. At each width in a 480px viewport, the settled
+editor ends at y472 and its six lines have equal 138px client/scroll heights.
+Eight lines remain scrollable (178px content, scrollTop40), with the caret at
+the final character. Document width matches the viewport. The focused sizing
+regression passed 1/1; browser assertions checked the actual geometry.
+
+Selected-message actions retain 44px reaction buttons and an effective 44px
+Close target around its 30px visual button. Evidence lives in
+`/tmp/helm-clubhouse-visual-messages/`, including before/after small-viewport
+captures. These checks simulate available keyboard space; physical iPhone
+Safari keyboard and animation frame pacing remain owner checks.
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner).

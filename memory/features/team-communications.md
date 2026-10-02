@@ -119,7 +119,9 @@ settle before a known pre-write failure cleans their orphaned objects.
 
 The thread follows composer, quote, image and keyboard size changes only when
 the reader was already at the newest messages. Someone reading older content
-keeps that position. This is verified with local fixtures and disposable
+keeps that position. The phone editor fits six 20px lines, including padding
+and borders, before longer drafts scroll within the field. Desktop retains its
+132px cap. This is verified with local fixtures and disposable
 loopback data, not a claim about physical-device frame timing.
 
 ## Primary Entry Points

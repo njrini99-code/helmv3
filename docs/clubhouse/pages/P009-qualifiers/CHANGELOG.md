@@ -449,3 +449,10 @@ Held items:     qualifier-squad-and-entrants (feature), qualifier-db-hardening (
   server actions (D-30), the v2 motion and
   haptics (D-64, D-70), and the D-61 gate on the squad-size and entrants
   actions.
+
+## 2026-10-02 — visual review search hint
+
+Shortened the list search placeholder to “Search qualifiers” so it fits the
+375px phone field. Search matching and the accessible label remain unchanged.
+Fresh WebKit captures at 375/390/430px pass document bounds; local evidence is
+`/tmp/helm-clubhouse-visual-secondary/qualifiers-search-fixed-<width>.png`.

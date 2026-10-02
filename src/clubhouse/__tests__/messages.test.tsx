@@ -754,6 +754,26 @@ describe('Messages · phone', () => {
     await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Bus at 6\nBring water'));
   });
 
+  it('72001 a bordered six-line phone editor fits its content and longer drafts retain the cap', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    const thread = await openThread(user);
+    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    // JSDOM has no layout: reproduce WebKit's measured content and border box.
+    box.style.cssText = 'max-height:144px;box-sizing:border-box;border:3px solid transparent';
+    const contentHeight = vi.spyOn(box, 'scrollHeight', 'get').mockReturnValue(138);
+    const sixLines = 'Travel plan\nBreakfast at six\nMeet at the field house\nBring pairings\nRain gear\nThanks, coach';
+    fireEvent.change(box, { target: { value: sixLines } });
+    expect(box.style.height).toBe('144px');
+    expect(box.value).toBe(sixLines);
+    contentHeight.mockReturnValue(158);
+    fireEvent.change(box, { target: { value: `${sixLines}\nOne more detail` } });
+    expect(box.style.height).toBe('144px');
+    expect(box.value).toContain('One more detail');
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    contentHeight.mockRestore();
+  });
+
   it('72002 Reply from the message sheet sends its persisted parent id and Cancel removes it', async () => {
     const user = userEvent.setup();
     showPhone();

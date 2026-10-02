@@ -152,3 +152,23 @@ introduced here.
 5. If acceptance fails, request rollback or promotion explicitly. Restore the
    prior approved deployment or disable the approved flags through the release
    path; never treat a source push as a rollback of the served application.
+
+## Visual review follow-up
+
+Fresh settled WebKit captures cover coach/player Home, Calendar, Rounds, round
+review, Classes, Roster, team/player Stats, Hub, Qualifiers, Messages and auth.
+Phone widths are 375/390/430px, with desktop 1440px and shorter viewport checks.
+Manual comparison uses the supplied ZIP6 and its handoff boards. These are
+fixture/local screenshots, not production customer or physical iPhone evidence.
+
+The review found and repaired a six-line draft partly hidden inside the phone
+editor. Its 144px cap includes padding/borders; all six lines now fit, and
+longer drafts scroll to the final caret. Stats phone date fields grow from 38
+to 44px. Other compact drawn controls already have nonoverlapping 44px expanded
+targets, verified by hit testing. The Qualifiers search hint fits narrow phones.
+
+The local review gallery is `/tmp/helm-clubhouse-visual-review/GALLERY.html`.
+Auth frames show the golf hole, camera movement and ball before updates enter;
+they do not establish device frame rate. No blocking visible defect remains in
+the reviewed settled states. Subsidiary forms, real keyboard/browser chrome,
+VoiceOver and the owner’s physical-device acceptance remain outside this pass.

@@ -1276,6 +1276,8 @@
   .ch-msp-thread .ch-ms-comp__field textarea,
   .ch-msp-new .ch-ms-comp__field textarea {
     min-height: 44px;
+    /* Six 20px lines plus padding and the focused pill's border. */
+    max-height: 144px;
     padding: 9px 14px;
     box-sizing: border-box;
     border: 3px solid transparent;

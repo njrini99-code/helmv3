@@ -973,7 +973,12 @@ export function Composer({
     const t = ta.current;
     if (!t) return;
     t.style.height = "auto";
-    t.style.height = `${Math.min(t.scrollHeight, 132)}px`;
+    const style = getComputedStyle(t);
+    const cap = Number.parseFloat(style.maxHeight) || 132;
+    const border = style.boxSizing === "border-box"
+      ? (Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0)
+      : 0;
+    t.style.height = `${Math.min(t.scrollHeight + border, cap)}px`;
   }, [draft]);
 
   useEffect(() => {

@@ -2617,6 +2617,9 @@ a.ch-lg__r:focus-visible {
   .ch-sf-range {
     grid-template-columns: minmax(0, 1fr);
   }
+  .ch-sf-range .ch-input {
+    min-height: 44px;
+  }
   .ch-sf-list .ch-check {
     min-height: 44px;
   }
