@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkChangelogs, implementationPaths, isTestFile, pagesTouched } from '../changelog-gate.mjs';
+import { checkChangelogs, CROSS_PAGE_LOG, implementationPaths, isTestFile, pagesTouched, sharedTouched } from '../changelog-gate.mjs';
 
 const messages = {
   id: 'P007',
@@ -57,10 +57,36 @@ test("another page's CHANGELOG does not satisfy it, and a path prefix is not a m
   assert.equal(pagesTouched([messages], ['src/clubhouse/screens/messages-archive/x.tsx']).size, 0);
 });
 
-test('files outside every page, docs and many files report once with a count', () => {
-  assert.deepEqual(checkChangelogs([messages], ['src/clubhouse/lib/haptics.ts', 'docs/clubhouse/PROGRESS.md'], 'base'), []);
+test('files outside every page and every shared directory, docs and many files report once with a count', () => {
+  assert.deepEqual(checkChangelogs([messages], ['src/clubhouse/preview/Fixture.tsx', 'docs/clubhouse/PROGRESS.md'], 'base'), []);
   const many = Array.from({ length: 8 }, (_, i) => `src/clubhouse/screens/messages/F${i}.tsx`);
   const v = checkChangelogs([messages], many, 'base');
   assert.equal(v.length, 1);
   assert.match(v[0], /\+3 more/);
+});
+
+const shell = { id: 'P001', name: 'Shell', slug: 'shell', implementation: { root: 'src/clubhouse/shell', styles: 'src/clubhouse/styles/shell.css' }, actions: [] };
+const helm = { id: 'P013', name: 'CoachHelm', slug: 'coachhelm', implementation: { root: 'src/clubhouse/screens/coachhelm', styles: 'src/clubhouse/styles/coachhelm.css' }, actions: [] };
+const rounds = { id: 'P011', name: 'Rounds', slug: 'rounds', implementation: { root: 'src/clubhouse/screens/rounds' }, actions: [{ component: 'src/clubhouse/ui/Notices.tsx#Retry' }] };
+const classes = { id: 'P012', name: 'Classes', slug: 'classes', implementation: { root: 'src/clubhouse/screens/classes' }, actions: [{ component: 'src/clubhouse/ui/Notices.tsx#Retry' }] };
+const all = [messages, home, shell, helm, rounds, classes];
+
+test('a shared piece is a file under ui, lib or styles that no page owns, or a component several pages name', () => {
+  const changed = ['src/clubhouse/styles/tokens.css', 'src/clubhouse/styles/controls.css', 'src/clubhouse/lib/format.ts', 'src/clubhouse/ui/Notices.tsx', 'src/clubhouse/ui/Button.tsx'];
+  assert.deepEqual(sharedTouched(all, changed), changed);
+  const owned = ['src/clubhouse/styles/messages.css', 'src/clubhouse/styles/coachhelm-dive.css', 'src/clubhouse/shell/Nav.tsx', 'src/clubhouse/screens/home/Hero.tsx', 'src/clubhouse/lib/__tests__/format.test.ts', 'src/clubhouse/ui/Button.test.tsx', 'docs/x.md'];
+  assert.deepEqual(sharedTouched(all, owned), [], 'a page stylesheet, its -*.css sheets, a page root (the shell), a test and a doc are not shared');
+});
+
+test('a shared piece needs the cross-page log, not the page logs', () => {
+  const changed = ['src/clubhouse/styles/tokens.css', 'src/clubhouse/ui/Notices.tsx'];
+  const v = checkChangelogs(all, changed, 'base');
+  assert.equal(v.length, 1);
+  assert.match(v[0], /Shared pieces changed since base \(src\/clubhouse\/styles\/tokens\.css, src\/clubhouse\/ui\/Notices\.tsx\)/);
+  assert.ok(v[0].includes(CROSS_PAGE_LOG));
+  assert.deepEqual(checkChangelogs(all, [...changed, CROSS_PAGE_LOG], 'base'), []);
+  // The page that renders it is not asked for a changelog of its own.
+  assert.ok(!v.some((x) => /P011|P012/.test(x)));
+  // An owned page file still needs its own log, and the cross-page log does not stand in for it.
+  assert.equal(checkChangelogs(all, ['src/clubhouse/styles/messages.css', CROSS_PAGE_LOG], 'base').length, 1);
 });

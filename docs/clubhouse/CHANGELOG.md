@@ -19,6 +19,17 @@ Every Clubhouse change with the issue it fixed, newest first. Each page's own ch
 
 Findings, evidence and the owner questions (Q-148 to Q-152) are in `AESTHETIC_AUDIT.md`.
 
+## 2026-10-01 (shared pieces, backfilled from the history)
+
+The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `lib` or `styles` that no page owns) to this log. These changed on the branch with no entry or sha here; each row is read from its commit.
+
+| Shared piece | Issue | Fix |
+| --- | --- | --- |
+| `styles/*` (page phone blocks), Home links | **Phone text under 12px, wide chart axis text, and Home's links under 44px (audit F09, Q-141).** `0595983ff` | A 12px floor in each stylesheet's phone block; chart axis text readable; the links hit at 44px. |
+| `lib/format.ts`, `styles/home.css` | **A change that rounds to zero read as a gain or loss on Home.** `21d75dfdf` | It is plain on both Homes. |
+| `lib/session-state.ts` | **Kept screen state drew over a streamed part while it hydrated (Qualifiers review S1).** `c331f404a` | It draws the default until the part hydrates. |
+| `lib/use-action.ts`, `lib/motion.ts`, `lib/press.ts`, `lib/reduced-motion.ts`, `lib/track.ts`, `ui/States.tsx`, `ui/Toast.tsx` | **Contract codes (P001, P007) named at their implementation.** `9cd0c284d`, `a5701f290` | Comments and tags only; no behavior. |
+
 ## 2026-10-01 (CI on PR #2111)
 
 | Page | Issue | Fix |

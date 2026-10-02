@@ -51,6 +51,10 @@ rejected the result; this tree exists so that cannot happen again.
 
 `clubhouse:check` fails a page whose implementation files changed since the
 merge-base with `origin/main` (tests exempt) but whose `CHANGELOG.md` did not.
+It runs in CI (Static checks, full history) and reads uncommitted files too, so
+a red gate can be another session's work in progress. A shared piece (a file
+under `src/clubhouse/ui`, `lib` or `styles` that no page owns, or a component
+several pages name) goes in `docs/clubhouse/CHANGELOG.md` once, not on each page.
 
 - **Visible change:** a dated entry in the page's `CHANGELOG.md` (the header
   block in `docs/clubhouse/templates/CHANGELOG.md`), plus before and after
