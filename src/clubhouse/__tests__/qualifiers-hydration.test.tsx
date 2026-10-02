@@ -1,3 +1,4 @@
+import './dialog-polyfill';
 import { act } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { hydrateRoot } from 'react-dom/client';

@@ -26,6 +26,10 @@ dialogs have distinct accessible title IDs. Sheet drags belong to one primary
 pointer, ignore another finger, and cancel cleanly. Reduced-motion pushed
 screens, More and Bell settle immediately. No arbitrary transition delay added.
 
+Broader CI found four page test files without the existing jsdom dialog
+polyfill. They now import the same modal API support as other Clubhouse suites;
+assertions and runtime code remain unchanged.
+
 ## 2026-10-02 — Shared scrollbar ownership and design context
 
 The Frontend Design Premium review now points to the existing page handoffs via
