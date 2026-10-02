@@ -781,8 +781,17 @@
     color: inherit;
     text-decoration: none;
   }
-  .ch-hm-tl__r.is-past {
-    opacity: 0.45;
+  /* A row that has passed steps back by its time, not by whole-row opacity: at 0.45 the coach's title measured 3.0:1 and the
+     place 2.0:1 (aesthetic audit, Q-152). The coach's title steps to secondary ink and the rail dot fades; the player's
+     keeps its ink (the board's .mp-tl). */
+  .ch-hm-tl__r.is-past .ch-hm-tl__t {
+    color: var(--ch-text-tertiary);
+  }
+  .ch-hm-tl:not(.is-player) .ch-hm-tl__r.is-past .ch-hm-tl__b b {
+    color: var(--ch-text-secondary);
+  }
+  .ch-hm-tl:not(.is-player) .ch-hm-tl__r.is-past .ch-hm-tl__rail i {
+    opacity: 0.5;
   }
   .ch-hm-tl__r.is-now {
     background: linear-gradient(90deg, var(--ch-green-50), transparent);
@@ -793,12 +802,6 @@
   }
   .ch-hm-tl.is-player .is-now .ch-hm-tl__rail i {
     background: var(--ch-green-600);
-  }
-  .ch-hm-tl.is-player .ch-hm-tl__r.is-past {
-    opacity: 1;
-  }
-  .ch-hm-tl.is-player .is-past .ch-hm-tl__t {
-    color: var(--ch-text-tertiary);
   }
   .ch-hm-tl__t {
     font: 500 13px/1 var(--ch-font-sans);

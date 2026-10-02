@@ -1816,7 +1816,17 @@
   .ch-calm-ev.is-sel:not(.is-busy) {
     background: var(--ch-bg-hover);
   }
-  .ch-calm-ev.is-past {
+  /* A row that has passed steps back by its surface and its ink, never by whole-row opacity: at 0.55 the place measured 2.2:1
+     and the title 3.6:1 (aesthetic audit, Q-152). It sits flat on the page, in secondary ink, with the "now" line as the split. */
+  .ch-calm-ev.is-past:not(.is-class):not(.is-busy):not(.is-sel):not(:active) {
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  }
+  .ch-calm-ev.is-past .ch-calm-ev__t,
+  .ch-calm-ev.is-past .ch-calm-ev__b b {
+    color: var(--ch-text-secondary);
+  }
+  .ch-calm-ev.is-past .ch-calm-ev__w {
     opacity: 0.55;
   }
   .ch-calm-ev.is-cancelled b {
