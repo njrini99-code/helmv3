@@ -106,7 +106,7 @@ const geometry = () => {
       if (['auto', 'scroll', 'hidden', 'clip'].includes(getComputedStyle(p).overflowX) && p.scrollWidth > p.clientWidth) scroller = true;
     }
     if ((r.right > vw + 1 || r.left < -1) && !scroller && !e.closest('[hidden]') && !/fixed|sticky/.test(cs.position)) out.offscreen.push(name(e));
-    if (e.clientWidth > 0 && e.scrollWidth > e.clientWidth + 1 && e.textContent.trim() && !e.children.length) {
+    if (e.clientWidth > 1 && e.scrollWidth > e.clientWidth + 1 && e.textContent.trim() && !e.children.length) {
       if (cs.textOverflow === 'ellipsis') out.truncated += 1;
       else if (['hidden', 'clip'].includes(cs.overflowX)) out.clipped.push(name(e));
     }
@@ -117,7 +117,7 @@ const geometry = () => {
       const r = e.getBoundingClientRect();
       const cs = getComputedStyle(e);
       if (r.width === 0 || r.height === 0 || cs.visibility === 'hidden' || r.bottom < 0 || r.top > window.innerHeight || e.closest('[aria-hidden="true"], nextjs-portal, .ch-sr-only') || e.classList.contains('ch-sr-only')) continue;
-      if (Math.min(r.width, r.height) >= 44 || e.closest('[inert], .ch-search')) continue;
+      if (Math.min(r.width, r.height) >= 44 || r.left + r.width / 2 > vw || r.left + r.width / 2 < 0 || e.closest('[inert], .ch-search')) continue;
       // The drawn control may be small while a ::before enlarges what a finger hits: probe 21px either side of its centre.
       const cx = r.left + r.width / 2;
       const cy = r.top + r.height / 2;
