@@ -35,7 +35,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 131 | 0 | 7 | 19 |
+| `AGENT_SKILL` | 131 | 0 | 7 | 17 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
@@ -109,7 +109,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/golfhelm-creative-engine/references/design-tokens.md` | current | - | - | yes | - |
 | `.claude/skills/golfhelm-creative-engine/references/product-features.md` | current | - | - | - | - |
 | `.claude/skills/helm-sentry/SKILL.md` | current | - | - | - | - |
-| `.claude/skills/helm-supabase/SKILL.md` | current | - | - | - | 2 |
+| `.claude/skills/helm-supabase/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/modern-saas-ui/SKILL.md` | current | - | - | yes | - |
 | `.claude/skills/modern-saas-ui/references/avoiding-vibe-coded.md` | current | - | - | - | - |
 | `.claude/skills/modern-saas-ui/references/dashboard-design.md` | current | - | - | - | - |

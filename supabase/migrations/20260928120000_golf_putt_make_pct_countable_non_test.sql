@@ -35,10 +35,10 @@
 -- in 20260609090000_cache_putt_band_attempts_and_lifetime_span.sql, then rerun
 -- the refresh above.
 -- VERIFY: select 1 from pg_proc p
---   join pg_namespace n on n.oid = p.pronamespace
---   where n.nspname = 'public' and p.proname = 'update_player_putt_make_pct'
---     and p.prosrc like '%is_test = false%'
---     and p.prosrc like '%golf_round_is_countable%';
+-- VERIFY:   join pg_namespace n on n.oid = p.pronamespace
+-- VERIFY:   where n.nspname = 'public' and p.proname = 'update_player_putt_make_pct'
+-- VERIFY:   and p.prosrc like '%is_test = false%'
+-- VERIFY:   and p.prosrc like '%golf_round_is_countable%';
 
 DO $$
 BEGIN

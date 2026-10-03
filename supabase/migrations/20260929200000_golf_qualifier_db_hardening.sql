@@ -60,34 +60,34 @@
 --   ALTER FUNCTION public.is_team_coach(uuid) SET search_path = public;
 --   ALTER FUNCTION public.is_team_player(uuid) SET search_path = public;
 -- VERIFY: select 1 where not has_column_privilege('authenticated',
--- 'public.golf_qualifier_selections', 'coach_reasoning', 'SELECT')
+-- VERIFY:   'public.golf_qualifier_selections', 'coach_reasoning', 'SELECT')
 -- VERIFY:   and has_column_privilege('authenticated',
--- 'public.golf_qualifier_selections', 'player_id', 'SELECT');
+-- VERIFY:   'public.golf_qualifier_selections', 'player_id', 'SELECT');
 -- VERIFY: select 1 from pg_proc where oid =
--- 'public.golf_qualifier_selection_reasons(uuid)'::regprocedure and prosecdef;
+-- VERIFY:   'public.golf_qualifier_selection_reasons(uuid)'::regprocedure and prosecdef;
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename =
--- 'golf_qualifier_entries'
+-- VERIFY:   'golf_qualifier_entries'
 -- VERIFY:   and policyname = 'golf_qualifier_entries_insert_coach' and
--- with_check like '%golf_team_members%';
+-- VERIFY:   with_check like '%golf_team_members%';
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename =
--- 'golf_qualifier_entries'
+-- VERIFY:   'golf_qualifier_entries'
 -- VERIFY:   and policyname = 'golf_qualifier_entries_update_coach' and
--- with_check like '%golf_team_members%';
+-- VERIFY:   with_check like '%golf_team_members%';
 -- VERIFY: select 1 from pg_proc where oid =
--- 'helm_private.prevent_qualifier_entry_active_round_stranding()'::regprocedure
--- and prosecdef;
+-- VERIFY:   'helm_private.prevent_qualifier_entry_active_round_stranding()'::regprocedure
+-- VERIFY:   and prosecdef;
 -- VERIFY: select 1 where not has_table_privilege('anon',
--- 'public.golf_qualifiers', 'SELECT')
+-- VERIFY:   'public.golf_qualifiers', 'SELECT')
 -- VERIFY:   and not has_table_privilege('anon',
--- 'public.golf_qualifier_entries', 'SELECT')
+-- VERIFY:   'public.golf_qualifier_entries', 'SELECT')
 -- VERIFY:   and not has_table_privilege('anon',
--- 'public.golf_qualifier_selections', 'SELECT');
+-- VERIFY:   'public.golf_qualifier_selections', 'SELECT');
 -- VERIFY: select 1 from pg_proc where oid =
--- 'public.is_team_coach(uuid)'::regprocedure and proconfig::text like
--- '%pg_temp%';
+-- VERIFY:   'public.is_team_coach(uuid)'::regprocedure and proconfig::text like
+-- VERIFY:   '%pg_temp%';
 -- VERIFY: select 1 from pg_proc where oid =
--- 'public.is_team_player(uuid)'::regprocedure and proconfig::text like
--- '%pg_temp%';
+-- VERIFY:   'public.is_team_player(uuid)'::regprocedure and proconfig::text like
+-- VERIFY:   '%pg_temp%';
 
 
 -- 1. coach_reasoning is coach-only -----------------------------------------
