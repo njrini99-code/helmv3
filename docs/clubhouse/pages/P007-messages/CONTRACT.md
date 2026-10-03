@@ -2,7 +2,8 @@
 
 Every behaviour Messages promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 7, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/messages.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/messages.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
@@ -12,7 +13,9 @@ namespace 1) apply here too and are named where they carry a category.
 
 Status: DEFINED
 
-The page opens on the rail and, on desktop, the newest thread beside it without marking it read (so an unread count never clears by itself). Deep links open or start a thread.
+The page opens on the rail and, on desktop, the newest thread beside it without
+marking it read (so an unread count never clears by itself). Deep links open or
+start a thread.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -23,7 +26,9 @@ The page opens on the rail and, on desktop, the newest thread beside it without 
 
 Status: DEFINED
 
-Route skeleton (70201) in Messages' own shape, plus a skeleton for every section that loads on its own. v2 timing: nothing for 150ms, then a fade (the shell's 11609).
+Route skeleton (70201) in Messages' own shape, plus a skeleton for every section
+that loads on its own. v2 timing: nothing for 150ms, then a fade (the shell's
+11609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -44,7 +49,8 @@ From the shell (P001): 10201 CH-1401.
 
 Status: DEFINED
 
-Realtime keeps the thread and the rail current without a reload (70301). There is no pull to refresh; the list is realtime (D-43, Q-47).
+Realtime keeps the thread and the rail current without a reload (70301). There
+is no pull to refresh; the list is realtime (D-43, Q-47).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -54,7 +60,10 @@ Realtime keeps the thread and the rail current without a reload (70301). There i
 
 Status: DEFINED
 
-First-run (70401, no conversations) and filtered (70402 to 70404) are distinct, and a failed read is never shown as empty. No team is the v2 page empty state (70408). Open: v2 draws the no-conversations state as a whole-page empty (D-71); the rail version stays until this page's v2 pass.
+First-run (70401, no conversations) and filtered (70402 to 70404) are distinct,
+and a failed read is never shown as empty. No team is the v2 page empty state
+(70408). Open: v2 draws the no-conversations state as a whole-page empty (D-71);
+the rail version stays until this page's v2 pass.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -72,7 +81,8 @@ First-run (70401, no conversations) and filtered (70402 to 70404) are distinct, 
 
 Status: DEFINED
 
-Checked before anything is sent: attachments (70501), group name and members (70502 to 70504), announcement fields (70505).
+Checked before anything is sent: attachments (70501), group name and members
+(70502 to 70504), announcement fields (70505).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -86,7 +96,9 @@ Checked before anything is sent: attachments (70501), group name and members (70
 
 Status: DEFINED
 
-Every change has its own toast (70601 to 70616) naming what failed and what to do; every section that fails to load has its own notice with Try again (70617 to 70631). A crash stays in its section (SectionBoundary).
+Every change has its own toast (70601 to 70616) naming what failed and what to
+do; every section that fails to load has its own notice with Try again (70617 to
+70631). A crash stays in its section (SectionBoundary).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -122,12 +134,19 @@ Every change has its own toast (70601 to 70616) naming what failed and what to d
 | 70630 | CH-7214 | `THE_SHARED_FILES_DONT_LOAD` | The shared files don't load (Details) |
 | 70631 | CH-7215 | `THE_ADD_SHEETS_TEAM_LIST_DOESNT_LOAD` | The Add sheet's team list doesn't load |
 | 70632 | CH-7216 | `A_CONVERSATIONS_MESSAGES_DONT_REFRESH_WHILE_AN` | A conversation's messages don't refresh while an earlier copy is shown |
+| 70633 | CH-7022 | `TEXT_DELIVERED_ATTACHMENT_METADATA_REFUSED` | Text delivered, attachment metadata refused |
+| 70634 | CH-7023 | `ATTACHMENT_SEND_CANNOT_BE_CONFIRMED` | Attachment send cannot be confirmed |
+| 70635 | CH-7217 | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | Pending attachment recovery cannot be checked |
 
 ## 07 — Network / offline
 
 Status: DEFINED
 
-A send whose confirmation is lost (70701) is told apart from a refusal. Offline and slow saves are the shell's: nothing is sent offline (10703), a save over 5 seconds says so (10702), the banner (10701), Try again while offline (10704).
+A send whose confirmation is lost (70701) is told apart from a refusal. Offline
+and slow saves are the shell's: nothing is sent offline (10703), a save over 5
+seconds says so (10702), the banner (10701), Try again while offline (10704).
+
+CH-1905.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -139,7 +158,9 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-190
 
 Status: DEFINED
 
-A link to a player who isn't on the team (70801), and an open conversation that is no longer the viewer's (70802). Who may message whom is decided by the server actions and RLS, never by this screen.
+A link to a player who isn't on the team (70801), and an open conversation that
+is no longer the viewer's (70802). Who may message whom is decided by the server
+actions and RLS, never by this screen.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -150,7 +171,8 @@ A link to a player who isn't on the team (70801), and an open conversation that 
 
 Status: DEFINED
 
-A sent message takes its place without a toast (70901); every other change that lands names itself in a toast (70902). The success haptic fires for both (D-70).
+A sent message takes its place without a toast (70901); every other change that
+lands names itself in a toast (70902). The success haptic fires for both (D-70).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -161,7 +183,8 @@ A sent message takes its place without a toast (70901); every other change that 
 
 Status: DEFINED
 
-A group created without one of the chosen coaches (71001): the group stands, and the coach is told how to finish.
+A group created without one of the chosen coaches (71001): the group stands, and
+the coach is told how to finish.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -171,7 +194,8 @@ A group created without one of the chosen coaches (71001): the group stands, and
 
 Status: DEFINED
 
-Delete a message and Leave a group ask first (71101, 71102) and fire the warning haptic. Delete conversation is hidden: no policy defines it (D-48).
+Delete a message and Leave a group ask first (71101, 71102) and fire the warning
+haptic. Delete conversation is hidden: no policy defines it (D-48).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -182,7 +206,11 @@ Delete a message and Leave a group ask first (71101, 71102) and fire the warning
 
 Status: DEFINED
 
-A failed send puts the text and files back (71201). An unsent draft is kept per conversation, so switching threads and back finds it where it was (71202; fixed 2026-09-30, it used to be lost).
+A refused text send stays in its failed bubble, with Retry and its original
+quote target. A failed attachment send puts its text, files and original quote
+target back in the composer (71201). An unsent draft is kept per conversation,
+so switching threads and back finds it where it was (71202; fixed 2026-09-30,
+it used to be lost).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -193,7 +221,9 @@ A failed send puts the text and files back (71201). An unsent draft is kept per 
 
 Status: DEFINED
 
-Sends are optimistic and reconciled in place by id; a refused one stays marked Not sent (71301). Reactions are not optimistic: a tap waits for the write, and a failure toasts (70607).
+Sends are optimistic and reconciled in place by id; a refused one stays marked
+Not sent (71301). Reactions are not optimistic: a tap waits for the write, and a
+failure toasts (70607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -203,7 +233,8 @@ Sends are optimistic and reconciled in place by id; a refused one stays marked N
 
 Status: DEFINED
 
-Retry on a refused message re-sends under the same id (71401); Try again on a section re-reads only that section (71402).
+Retry on a refused message re-sends under the same id (71401); Try again on a
+section re-reads only that section (71402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -214,7 +245,8 @@ Retry on a refused message re-sends under the same id (71401); Try again on a se
 
 Status: DEFINED
 
-A send the client can't confirm says to check the thread before sending again (71501), so nobody double-posts.
+A send the client can't confirm says to check the thread before sending again
+(71501), so nobody double-posts.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -224,7 +256,11 @@ A send the client can't confirm says to check the thread before sending again (7
 
 Status: DEFINED
 
-Messages' own motion (71601 to 71604), and the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
+Messages' own motion (71601 to 71604), and the shell's: v2 press, reveal, sheets
+and pushes (11601 to 11612, D-64).
+
+CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609
+CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -239,7 +275,10 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-160
 
 Status: DEFINED
 
-Messages' own haptics (71701 to 71704) on the v2 grammar (D-70), with the shell's (11701 to 11706).
+Messages' own haptics (71701 to 71704) on the v2 grammar (D-70), with the
+shell's (11701 to 11706).
+
+CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -254,12 +293,18 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-170
 
 Status: DEFINED
 
-Messages' own (71801 to 71804): named rows and bubbles, the long press reachable by keyboard and VoiceOver. The shell's skip link, landmarks and dialog behaviour (11801 to 11811). Axe runs at 1280 and 390 (`clubhouse:a11y`).
+Messages' own (71801 to 71804): named rows and bubbles, the long press reachable
+by keyboard and VoiceOver. The shell's skip link, landmarks and dialog behaviour
+(11801 to 11811). Axe runs at 1280 and 390 (`clubhouse:a11y`).
+
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 71801 | CH-7801 | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |
-| 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; Enter sends, Shift+Enter adds a line |
+| 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends |
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") |
 
@@ -269,7 +314,8 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-180
 
 Status: DEFINED
 
-The phone stack at 820px and below (71901); the phone spec is `docs/clubhouse/phone/messages.md` (approved).
+The phone stack at 820px and below (71901); the phone spec is
+`docs/clubhouse/phone/messages.md` (approved).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -279,7 +325,9 @@ The phone stack at 820px and below (71901); the phone spec is `docs/clubhouse/ph
 
 Status: DEFINED
 
-Enter sends, Shift+Enter adds a line, an IME keeps its Enter (72001). The shell's edge swipe and browser back pop a pushed screen (12001).
+Desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and
+Send sends. An IME keeps its Enter (72001). The shell's edge swipe and browser
+back pop a pushed screen (12001).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -291,7 +339,8 @@ From the shell (P001): 12001 CH-1906.
 
 Status: DEFINED
 
-One fetch and one subscription per open thread; a one-pass loader (72101). Web vitals are the shell's (12101).
+One fetch and one subscription per open thread; a one-pass loader (72101). Web
+vitals are the shell's (12101).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -303,7 +352,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page (12201 to 12203). Messages adds no events of its own.
+The shell records rage, dead and slow clicks for every page (12201 to 12203).
+Messages adds no events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -311,7 +361,8 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Failures reported, server reads logged, intents breadcrumbed (72301); the held files action refuses when Clubhouse is off (72302).
+Failures reported, server reads logged, intents breadcrumbed (72301); the held
+files action refuses when Clubhouse is off (72302).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -322,7 +373,8 @@ Failures reported, server reads logged, intents breadcrumbed (72301); the held f
 
 Status: DEFINED
 
-Every catalog code is forced by a named test (72401); `clubhouse:check` fails a catalog row of kinds 0 to 5 that no test names.
+Every catalog code is forced by a named test (72401); `clubhouse:check` fails a
+catalog row of kinds 0 to 5 that no test names.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -330,4 +382,7 @@ Every catalog code is forced by a named test (72401); `clubhouse:check` fails a 
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (focus the composer, open New message, retry the last send) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (focus the composer, open New message,
+retry the last send) are defined when the Bridge is.

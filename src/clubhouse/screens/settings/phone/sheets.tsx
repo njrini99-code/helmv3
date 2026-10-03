@@ -1,10 +1,10 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
+import { useEffect, useId, useState, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { Icon } from '../../../ui/Icon';
 import { haptic } from '../../../lib/haptics';
-import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { useDialogLifetime } from '../../../lib/dialog-lifetime';
 import { useSheetDrag } from '../../../lib/sheet-drag';
 import { useReportDirty } from '../parts';
 
@@ -18,9 +18,7 @@ import { useReportDirty } from '../parts';
 
 /** Opens and closes a <dialog> with `open`, follows the finger down (CH-1611), and sends Esc and the backdrop the same way. */
 function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boolean; dirty?: boolean; ask: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const opener = useRef<Element | null>(null);
-  const reduced = useChReducedMotion();
+  const { ref, reduced, retainContent } = useDialogLifetime(open, { surfaceSelector: '.ch-setm-sheet' });
   // A drag that is refused (unsaved changes, a save in flight) must not leave the sheet half way down.
   const springBack = () => {
     const d = ref.current;
@@ -37,19 +35,6 @@ function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boo
     onClose();
   };
   const drag = useSheetDrag(ref, requestClose, { enabled: !reduced });
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      opener.current = document.activeElement;
-      d.style.transition = '';
-      d.style.translate = '';
-      d.showModal();
-    } else if (!open && d.open) {
-      d.close();
-      if (opener.current instanceof HTMLElement) opener.current.focus();
-    }
-  }, [open]);
   const dialogProps = {
     ref,
     onCancel: (e: SyntheticEvent) => {
@@ -61,7 +46,7 @@ function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boo
       if (e.target === ref.current) requestClose();
     },
   };
-  return { dialogProps, drag, requestClose };
+  return { dialogProps, drag, requestClose, retainContent };
 }
 
 /**
@@ -106,11 +91,11 @@ export function FormSheet({
   const [asking, setAsking] = useState(false);
   // The page guards on any unsaved edit: closing or reloading the tab asks (CH-8508), and so does a link off the page (CH-8506).
   useReportDirty(titleId, open && !!dirty);
-  const { dialogProps, drag, requestClose } = useSheetDialog(open, onClose, { busy, dirty, ask: () => setAsking(true) });
+  const { dialogProps, drag, requestClose, retainContent } = useSheetDialog(open, onClose, { busy, dirty, ask: () => setAsking(true) });
   return (
     <>
       <dialog {...dialogProps} className={'ch-setm-dlg' + (full ? ' is-full' : '')} aria-labelledby={titleId} data-ch-code={code}>
-        {open && (
+        {retainContent(open && (
           <form
             className="ch-setm-sheet"
             noValidate
@@ -139,7 +124,7 @@ export function FormSheet({
             <div className="ch-setm-sheet__body">{children}</div>
             {note && <p className="ch-setm-sheet__note">{note}</p>}
           </form>
-        )}
+        ))}
       </dialog>
       <ActionSheet
         open={asking}
@@ -181,10 +166,10 @@ export function ListSheet({
   children: ReactNode;
 }) {
   const titleId = useId();
-  const { dialogProps, drag } = useSheetDialog(open, onClose);
+  const { dialogProps, drag, retainContent } = useSheetDialog(open, onClose);
   return (
     <dialog {...dialogProps} className="ch-setm-dlg" aria-labelledby={titleId} data-ch-code={code}>
-      {open && (
+      {retainContent(open && (
         <div className="ch-setm-sheet">
           <div className="ch-setm-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-setm-lbar" onPointerDown={drag.onPointerDown}>
@@ -199,7 +184,7 @@ export function ListSheet({
           <div className="ch-setm-sheet__body">{children}</div>
           {note && <p className="ch-setm-sheet__note">{note}</p>}
         </div>
-      )}
+      ))}
     </dialog>
   );
 }
@@ -267,21 +252,7 @@ export function ActionSheet({
 }) {
   const titleId = useId();
   const messageId = useId();
-  const ref = useRef<HTMLDialogElement>(null);
-  const cancel = useRef<HTMLButtonElement>(null);
-  const opener = useRef<Element | null>(null);
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      opener.current = document.activeElement;
-      d.showModal();
-      cancel.current?.focus();
-    } else if (!open && d.open) {
-      d.close();
-      if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus();
-    }
-  }, [open]);
+  const { ref, retainContent } = useDialogLifetime(open, { focusSelector: '.ch-setm-act__cancel' });
   useEffect(() => {
     if (open) haptic('warning');
   }, [open]);
@@ -303,7 +274,7 @@ export function ActionSheet({
         if (e.target === ref.current) onClose();
       }}
     >
-      {open && (
+      {retainContent(open && (
         <>
           <div className="ch-setm-act__card">
             <div className="ch-setm-act__msg">
@@ -316,11 +287,11 @@ export function ActionSheet({
               </button>
             ))}
           </div>
-          <button ref={cancel} type="button" className="ch-setm-act__cancel" onClick={onClose}>
+          <button type="button" className="ch-setm-act__cancel" onClick={onClose}>
             {cancelLabel}
           </button>
         </>
-      )}
+      ))}
     </dialog>
   );
 }

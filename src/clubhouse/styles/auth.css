@@ -52,10 +52,19 @@
 
 /* ── The painted course ───────────────────────────────────────────────────── */
 
+.ch-au-poster,
 .ch-au-scene {
   position: absolute;
   inset: 0;
   overflow: hidden;
+}
+.ch-au-poster svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ch-au-poster .ch-au-poster__tall { display: none; }
+.ch-au-scene {
   animation: chAuSceneIn var(--ch-au-t-panel) var(--ch-au-out) both;
 }
 .ch-au-scene svg {
@@ -67,15 +76,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-}
-/* The phone's layers draw x 180 to 1120 of the course and sit where the design's x 360 to 1120 crop would, so the
-   welcome's slide to the left has picture under it. One user unit of the course is --ch-au-u pixels (measured). */
-.ch-au-scene[data-crop='tall'] .ch-au-layer {
-  inset: auto;
-  bottom: 0;
-  left: calc(50% - 560 * var(--ch-au-u, 0.5px));
-  width: calc(940 * var(--ch-au-u, 0.5px));
-  height: calc(1000 * var(--ch-au-u, 0.5px));
 }
 /* The camera is one transform on one wrapper: a GPU layer that only ever scales about the pin. */
 .ch-au-cam {
@@ -93,11 +93,11 @@
   transition-timing-function: var(--ch-au-ease);
 }
 .ch-au-scene[data-crop='tall'] {
-  /* The phone's camera holds still from the form to the welcome (F-50): framed on the clubhouse from the start, with
-     no push and no slide, so the route change shows the same picture. The owner rejected the zoom. */
-  --ch-au-push: 1;
-  --ch-au-leave: 1;
-  --ch-au-shift: 1;
+  /* The October 1 Safari review asks for the hole animation. Finish the gentle push before the automatic handoff. */
+  --ch-au-push: 1.18;
+  --ch-au-leave: 1.22;
+  --ch-au-shift: 0;
+  --ch-au-t-cam: var(--ch-au-t-phone-cam);
 }
 @media (max-height: 760px) and (min-width: 821px) {
   .ch-au-scene[data-crop='wide'] {
@@ -284,6 +284,7 @@
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
   pointer-events: none;
 }
+.ch-au-photo > .ch-au-poster,
 .ch-au-photo > .ch-au-scene {
   transform: translateX(calc(var(--ch-au-pw) * -0.5 - 4px));
   transition: transform var(--ch-au-t-photo) var(--ch-au-ease);
@@ -694,8 +695,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* Stronger and wider than the prototype's: at golden hour the warm sky sat close to the green type (owner, 2026-09-30). */
-  background: radial-gradient(80% 70% at 12% 22%, rgb(251 250 246 / 0.86), rgb(251 250 246 / 0.55) 48%, transparent 80%);
+  /* Keep foliage out of the greeting's reading plane; the hole remains visible below it. */
+  background: radial-gradient(90% 80% at 12% 18%, rgb(251 250 246 / 0.99), rgb(251 250 246 / 0.96) 46%, transparent 82%);
 }
 .ch-au-wl-mark {
   position: relative;
@@ -740,7 +741,7 @@
 .ch-au-wl-l1 {
   display: block;
   color: var(--ch-green-800);
-  text-shadow: 0 1px 2px rgb(251 250 246 / 0.7), 0 0 28px rgb(251 250 246 / 0.9);
+  text-shadow: none;
 }
 .ch-au-wl-l2 {
   display: block;
@@ -761,10 +762,8 @@
   gap: 24px;
   padding: 16px 16px 16px 20px;
   border-radius: 16px;
-  background: rgb(251 250 246 / 0.74);
-  -webkit-backdrop-filter: blur(34px) saturate(170%);
-  backdrop-filter: blur(34px) saturate(170%);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.06), 0 18px 40px -18px rgb(11 38 22 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-floating);
 }
 .ch-au-wl-news {
   display: flex;
@@ -882,19 +881,19 @@
   color: var(--ch-au-ivory);
 }
 .ch-au-wl[data-dark] .ch-au-wl-scrim {
-  background: radial-gradient(80% 70% at 12% 22%, rgb(8 14 30 / 0.72), rgb(8 14 30 / 0.38) 50%, transparent 80%);
+  background: radial-gradient(90% 80% at 12% 18%, rgb(8 14 30 / 0.97), rgb(8 14 30 / 0.92) 46%, transparent 82%);
 }
 .ch-au-wl[data-dark] .ch-au-wl-date {
   color: #c9d2e0;
 }
 .ch-au-wl[data-dark] .ch-au-wl-l1 {
   color: #f0d7a0;
-  text-shadow: 0 1px 2px rgb(8 14 30 / 0.6), 0 0 28px rgb(8 14 30 / 0.75);
+  text-shadow: none;
 }
 /* The name: ivory on the night sky. The base h1 rule paints ink, which vanished into the dark (F-50). */
 .ch-au-wl[data-dark] h1 {
   color: var(--ch-au-ivory);
-  text-shadow: 0 1px 2px rgb(8 14 30 / 0.6), 0 0 28px rgb(8 14 30 / 0.75);
+  text-shadow: none;
 }
 .ch-au-wl[data-dark] .ch-au-wl-hint {
   color: #c9d2e0;
@@ -930,7 +929,11 @@
 /* ── The phone: the course on top, the form on a sheet ────────────────────── */
 
 @media (max-width: 820px) {
-  /* The course is drawn to the whole screen, framed as the welcome frames it, and shown through a 392px window with
+  .ch-au {
+    --ch-au-phone-sheet-top: clamp(200px, 42svh, 352px);
+    --ch-au-phone-window: calc(var(--ch-au-phone-sheet-top) + 40px);
+  }
+  /* The course is drawn to the whole screen, framed as the welcome frames it, and shown through a responsive window with
      the camera raised (F-50). Signing in opens the window and lowers the camera together, both GPU-cheap, so the
      welcome route lands on the very picture already on screen: no green slab under the sheet, no jump in the art. */
   .ch-au-photo {
@@ -940,27 +943,30 @@
     bottom: 0;
     height: auto;
     border-radius: 0;
-    clip-path: inset(0 0 calc(100% - 392px) 0);
+    clip-path: inset(0 0 calc(100% - var(--ch-au-phone-window)) 0);
     transition: clip-path var(--ch-au-t-sheet) var(--ch-au-ease);
   }
   .ch-au-photo::after {
     display: none;
   }
+  .ch-au-photo > .ch-au-poster,
   .ch-au-photo > .ch-au-scene {
-    transform: translateY(calc((392px - 100%) * 0.55));
+    transform: translateY(calc((var(--ch-au-phone-window) - 100%) * 0.55));
     transition: transform var(--ch-au-t-sheet) var(--ch-au-ease);
     --ch-au-inl: 0px;
     --ch-au-inr: 0px;
   }
+  .ch-au-poster .ch-au-poster__wide { display: none; }
+  .ch-au-poster .ch-au-poster__tall { display: block; }
   .ch-au-veil {
     bottom: auto;
-    height: 392px;
+    height: var(--ch-au-phone-window);
     background: linear-gradient(180deg, rgb(10 51 31 / 0) 40%, rgb(10 51 31 / 0.5) 72%, rgb(10 51 31 / 0.9) 100%);
   }
   .ch-au-say {
     left: 24px;
     right: 24px;
-    bottom: calc(100% - 392px + 56px);
+    bottom: calc(100% - var(--ch-au-phone-window) + 56px);
     gap: 12px;
   }
   .ch-au-say h2 {
@@ -973,7 +979,7 @@
   }
   .ch-au-mark {
     position: absolute;
-    top: 58px;
+    top: calc(20px + env(safe-area-inset-top));
     left: 20px;
     display: flex;
     align-items: center;
@@ -992,7 +998,7 @@
     padding-top: 0;
   }
   .ch-au-panel {
-    top: 352px;
+    top: var(--ch-au-phone-sheet-top);
     left: 0;
     right: 0;
     bottom: 0;
@@ -1132,7 +1138,9 @@
   }
   /* The welcome on a phone: the course is the whole screen, the camera where the opening left it. */
   .ch-au[data-phase='opening'] .ch-au-photo > .ch-au-scene,
-  .ch-au--welcome .ch-au-photo > .ch-au-scene {
+  .ch-au--welcome .ch-au-photo > .ch-au-scene,
+  .ch-au[data-phase='opening'] .ch-au-photo > .ch-au-poster,
+  .ch-au--welcome .ch-au-photo > .ch-au-poster {
     transform: none;
   }
   .ch-au-wl {
@@ -1141,10 +1149,10 @@
     padding: 62px 22px 40px;
   }
   .ch-au-wl-scrim {
-    background: linear-gradient(180deg, rgb(251 250 246 / 0.6), rgb(251 250 246 / 0.3) 40%, transparent 60%);
+    background: linear-gradient(180deg, rgb(251 250 246 / 0.99), rgb(251 250 246 / 0.97) 36%, rgb(251 250 246 / 0.88) 42%, transparent 62%);
   }
   .ch-au-wl[data-dark] .ch-au-wl-scrim {
-    background: linear-gradient(180deg, rgb(8 14 30 / 0.55), rgb(8 14 30 / 0.2) 40%, transparent 60%);
+    background: linear-gradient(180deg, rgb(8 14 30 / 0.98), rgb(8 14 30 / 0.95) 36%, rgb(8 14 30 / 0.88) 42%, transparent 62%);
   }
   .ch-au-wl-body {
     margin-top: 34px;

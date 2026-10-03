@@ -29,10 +29,12 @@ the whole session. Fairway starts it in `OfflineProvider`, and Clubhouse starts
 it in `src/clubhouse/shell/OfflineSync.tsx` (swap audit F-14, 2026-09-30).
 Queued rounds, holes and shots therefore sync on the engine's interval, after a
 reload and on reconnect, not only while a round screen is open. With the
-Clubhouse flag on, `/golf/dashboard/rounds/recover` has no Clubhouse screen yet
-(F-02, `docs/clubhouse/SWAP_AUDIT.md`). Clubhouse's New and Continue round send
-the engine's recovery destination to the Rounds library, which does not read
-device-only rounds.
+Clubhouse flag on, `/golf/dashboard/rounds/recover` opens the Clubhouse recovery
+screen. New and Continue round use that destination when submission requires
+recovery. The screen exposes device snapshots with Restore, Retry and explicit
+Discard, rather than sending the player to a library that cannot read them
+(resolved F-02, `docs/clubhouse/SWAP_AUDIT.md`). Source and unit verification are
+recorded there; a physical-device failed-submit journey remains unverified.
 
 This is one of the highest-risk product areas because a broken write path can
 lose user-entered golf data, corrupt stats, or feed bad evidence into CoachHelm.

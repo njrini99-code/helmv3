@@ -13,7 +13,7 @@
 | Design boards | [Coach - Team Hub.html](../../../../design/handoff/Coach%20-%20Team%20Hub.html) · [Player - Team Hub.html](../../../../design/handoff/Player%20-%20Team%20Hub.html) · [hub.jsx](../../../../design/handoff/hub.jsx) · [hub.css](../../../../design/handoff/hub.css) · [hub-data.js](../../../../design/handoff/hub-data.js) · [Coach and Player - Team Hub - Mobile.html](../../../../design/handoff/Coach%20and%20Player%20-%20Team%20Hub%20-%20Mobile.html) · [hub.jsx](../../../../design/handoff/hub.jsx) |
 | Code | [hub](../../../../src/clubhouse/screens/hub) · [hub.ts](../../../../src/clubhouse/data/hub.ts) · [hub.tsx](../../../../src/clubhouse/routes/hub.tsx) · [hub.css](../../../../src/clubhouse/styles/hub.css) |
 | Held plans | [document-policy-scoping.md](../../held/data/document-policy-scoping.md) |
-| Audits | [all audits](../../AUDITS.md) |
+| Audits | [INTUITIVE_SECONDARY_AUDIT](../../INTUITIVE_SECONDARY_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Team Hub" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 | Screenshots | `npm run clubhouse:shots -- gallery --page P010`, which opens `.helm/screenshots/clubhouse/P010-hub/GALLERY.html` (local) |

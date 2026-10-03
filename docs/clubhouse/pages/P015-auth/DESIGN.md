@@ -38,13 +38,17 @@ Welcome: the greeting, then the name, then the card with what is new, then Conti
 
 ### New Clubhouse components
 
-`SignIn`, `SignInForm` (the same behaviour as the current form), `AuthNotice`, `AuthFrame` (the page frame, the motion
-features and the phase), `Welcome`, `WelcomeStage` (the course that stays put while the greeting streams in),
-`SceneMount` (`next/dynamic`, client only), `GolfScene` and `SceneLayers` (the painted course in layers: sky, stars,
-clouds, birds, land, effects, foreground), and the pure modules `scene-sky` (ten sky keyframes and `skyAt(hour)`),
-`scene-geometry` (the seeded course), `scene-ball` (the flight), `sign-in-state` (each refusal's tone, haptic, field and
-number), `auth-motion` (the welcome's variants), `use-hour` (the viewer's clock, one shared store) and `use-query-param`.
-Data: `data/welcome.ts` (server only) with `data/welcome-shape.ts` (pure).
+`SignIn`, `SignInForm` (the same behaviour as the current form), `AuthNotice`,
+`AuthFrame` (the page frame, the motion features and the phase), `Welcome`,
+`WelcomeStage` (the course that stays put while the greeting streams in),
+`SceneMount` (server-rendered course poster with a `next/dynamic` animated
+overlay), `GolfScene` and `SceneLayers` (the painted course in layers: sky,
+stars, clouds, birds, land, effects, foreground), and the pure modules
+`scene-sky` (ten sky keyframes and `skyAt(hour)`), `scene-geometry` (the seeded
+course), `scene-ball` (the flight), `sign-in-state` (each refusal's tone,
+haptic, field and number), `auth-motion` (the welcome's variants), `use-hour`
+(the viewer's clock, one shared store) and `use-query-param`. Data:
+`data/welcome.ts` (server only) with `data/welcome-shape.ts` (pure).
 
 ### Modified components
 
@@ -71,22 +75,22 @@ What is on the design's clock, and where it lives:
 
 | Piece | Timing | Where |
 | --- | --- | --- |
-| Welcome's pieces | scrim 1.4s at 0.2s, mark 0.7s at 0.3s, date 0.5s, "Good morning," 1s at 0.64s out of a 10px blur, the name 1.1s at 1.05s, the card 0.9s at 2.25s, each item 140ms after the one before from 2.55s | `auth-motion.ts` variants |
-| Camera and ball | push to 1.34 over 5.2s; ball flight 1.65s, one hop, a roll to the cup | `auth-tokens.css`, `GolfScene`, `scene-ball` |
+| Welcome's pieces | scrim 1.4s at 0.2s, mark 0.7s at 0.3s, date 0.5s, "Good morning," 1s at 0.64s with opacity and a 16px rise, the name 1.1s at 1.05s, the card 0.9s at 2.25s, each item 140ms after the one before from 2.55s | `auth-motion.ts` variants |
+| Camera and ball | desktop push to 1.34 over 5.2s; phone push to 1.18 over 2.6s toward the hole; ball flight 1.65s, one hop, a roll to the cup | `auth-tokens.css`, `GolfScene`, `scene-ball` |
 | Sign-in to welcome | form leaves, the course takes the frame, the veil and tagline fade, 720ms | `AuthFrame`, `OPENING_MS` |
 | Hand-off | text slides left and fades 420ms, the course clips to the app canvas over 880ms, paper fades in, the destination is asked for at 1s; 520ms when there is nothing to fold into; a fade to ivory on the phone | `Welcome`, `HANDOFF_MS`, `auth.css` |
 | Loops | flag wave, water shimmer, oaks, clouds, birds, stars | `auth-tokens.css`, `auth.css` |
 
 How it stays inside the rest of the doctrine:
 
-- Only transform, opacity and the one blur of the greeting's focus-in are animated. The camera is a CSS transform on one
+- Only transform and opacity are animated; the greeting never blurs. The camera is a CSS transform on one
   wrapper, `will-change` is set only while it moves, and the ball is a motion value written straight to two attributes, so
   nothing re-renders while it flies.
 - Nothing uses `staggerChildren`: every piece carries its own delay, and an item's delay is its index times a step.
 - Variants are defined outside components (`custom` carries `{ reduced, index }`), and the animation features load in their
   own chunk with `LazyMotion` and `m`.
 - Reduced motion, and Animations off in Settings, make every transition 1ms, pause every loop, stop the camera short, put the
-  ball on the green and turn the hand-off into a quick fade (CH-15605).
+  ball on the green and turn the hand-off into a quick fade (CH-15605). The phone camera stays at its resting scale.
 - Loops pause when the tab is hidden (CH-15606).
 
 ## Haptic intent
@@ -97,10 +101,15 @@ unexpected, and medium for Continue. Every other tap is silent. On the web none 
 
 ## Responsive intent
 
-One structure with the desktop's, switched in CSS at 820px (the same width as `useChPhone`), so the server HTML fits both and
-nothing is chosen by sniffing a device. On the phone: the course on top and the form on a sheet from 352px, grouped rows, the
-Forgot link under the button, every control at least 44px, and the welcome full screen with the clubhouse centred and the list
-stacked. The keyboard scrolls the button above itself.
+One structure with the desktop's, switched in CSS at 820px (the same width as
+`useChPhone`), so the server HTML fits both and nothing is chosen by sniffing a
+device. On the phone: the course on top and the form on a sheet from
+`clamp(200px, 42svh, 352px)`, grouped rows, the Forgot link under the button,
+every control at least 44px, and the welcome full screen with the hole centred
+and the list stacked. The keyboard scrolls the button above itself. The October
+1 owner review explicitly calls for the hole after Sign in. The course poster
+uses the same wide and tall viewboxes as the animated scene so initial rendering
+and animation loading preserve that framing.
 
 ## Accessibility intent
 
@@ -132,7 +141,7 @@ a named, pressed-state button. Text over the course holds contrast by day and fl
   forms, so the two cannot drift.
 - **Onboarding skips the welcome.** An account with no profile has no name to greet, so a sign-in that routes to onboarding goes
   there directly (an invite keeps its `joinCode`).
-- **The welcome does not auto-advance.** It waits for Continue or Return.
+- **Phone welcome advances after its choreography.** Desktop waits for Continue or Return.
 - **Scoped D-64 exception**, as above.
 
 ## Not built
@@ -153,3 +162,10 @@ a named, pressed-state button. Text over the course holds contrast by day and fl
 - **The last-visit label.** `users.last_seen` is last activity, so "Since you last signed in" can be a little later than the real
   last sign-in.
 - **Date format.** The welcome's date uses the viewer's locale.
+
+## October 2 readability correction
+
+The welcome protects its heading and date with a wider, nearly opaque reading
+veil. The hole remains visible below the greeting. Text has no glow or animated
+blur, and the updates card uses an opaque floating surface without backdrop
+blur. The card enters by opacity and translation rather than scale.

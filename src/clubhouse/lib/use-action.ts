@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { chReport, chTrail } from './track';
-import { useToast } from '../ui/Toast';
+import { useDelayedToast, useToast } from '../ui/Toast';
 import { haptic } from './haptics';
 
 /** Helm server actions return either shape; useAction normalises both. */
@@ -63,6 +63,7 @@ export function useAction<A extends unknown[], T>(
   refine?: (result: ActionResult<T>, copy: ActionCopy) => ActionCopy,
 ) {
   const toast = useToast();
+  const delayedToast = useDelayedToast();
   const [pending, setPending] = useState(false);
   // The gate is a ref, not `pending`: a toast's Retry and a second quick tap both call a `run` made in an earlier render,
   // whose `pending` is stale (true after the action settled, false before it started).
@@ -81,7 +82,7 @@ export function useAction<A extends unknown[], T>(
       }
       inFlight.current = true;
       setPending(true);
-      const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
+      const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }, CH_SLOW_SAVE_AFTER);
       let result: ActionResult<T>;
       try {
         result = normalise(await action(...args));
@@ -89,7 +90,7 @@ export function useAction<A extends unknown[], T>(
         chReport(err, { surface: name.split('.')[0] ?? name, action: name });
         result = { success: false, error: undefined };
       } finally {
-        window.clearTimeout(slow);
+        stopSlow();
         inFlight.current = false;
         setPending(false);
       }
@@ -114,7 +115,7 @@ export function useAction<A extends unknown[], T>(
       }
       return result;
     },
-    [action, copy, name, refine, toast],
+    [action, copy, delayedToast, name, refine, toast],
   );
 
   return { run, pending };

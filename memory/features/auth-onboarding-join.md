@@ -8,6 +8,22 @@
 
 Auth, onboarding, and join flows establish user identity, role-specific setup, player/coach profiles, and team membership. This is the front door for GolfHelm and a dependency for every dashboard feature.
 
+Clubhouse sign-in keeps the form in server HTML and ships a still of the painted
+course while its animation chunk loads. The phone layout sizes its artwork
+against the small viewport, with a scrollable form sheet. Its welcome frames the
+hole and cup, with a gentle camera push completed before automatic phone
+navigation. A protected reading veil keeps the greeting clear over trees; its
+text never blurs. The updates card uses an opaque floating surface. Reduced
+motion holds the camera still. Sign-in credentials, invite
+destinations, stale-bundle recovery and session behavior use the existing shared
+auth logic; this visual path does not change access control. Implementation:
+`src/clubhouse/screens/auth/`, page contract and design:
+`docs/clubhouse/pages/P015-auth/`.
+
+Sign-in also gates duplicate submissions synchronously before React commits the
+busy button. The gate stays set through a successful handoff or stale-bundle
+reload; a refused or failed attempt releases it so credentials can be retried.
+
 Coach and player onboarding are separate routes. Join-code links can redirect users into player onboarding when the player profile is incomplete.
 
 ## Primary Entry Points

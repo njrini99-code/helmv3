@@ -10,6 +10,13 @@ namespace 1) apply here too and are named where they carry a category.
 
 Home is two pages under one address, `/golf/dashboard`: Coach Home and Player Home. Where a contract belongs to one of them the note says which. Home only reads: it has no saves, no toasts and no forms, which is why eight of the 25 categories are N/A.
 
+Safari review, 2026-10-01: the player's countdown applies to timed events only.
+All-day events show their date and All day without treating midnight as a tee
+time. All-day dates retain Calendar's literal dates and inclusive multi-day
+span; an event active today remains in Today and Up next. The timed countdown
+reserves its space before the client clock is available. No schema or event
+write changes.
+
 ## 01 — Default / core UI
 
 Status: DEFINED

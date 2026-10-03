@@ -157,7 +157,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                 </button>
               ))}
             </div>
-            <SearchField className="ch-qf-search" value={q} onChange={setQ} placeholder="Search qualifiers by name, course, or detail" label="Search qualifiers" />
+            <SearchField className="ch-qf-search" value={q} onChange={setQ} placeholder="Search qualifiers" label="Search qualifiers" />
           </div>
 
           {data.standingsError && (

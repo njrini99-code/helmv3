@@ -1233,8 +1233,14 @@
     background: rgb(20 20 18 / 0.42);
     animation: ch-fade var(--ch-dur-base) var(--ch-ease);
   }
-  body.keyboard-open .ch-setm-dlg {
+  body.keyboard-open .ch-setm-dlg,
+  body.keyboard-open .ch-setm-act {
     margin-bottom: var(--keyboard-height, 0px);
+  }
+  body.keyboard-open .ch-setm-act {
+    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .ch-setm-sheet {
     display: flex;
@@ -1252,6 +1258,12 @@
   .ch-setm-dlg.is-full .ch-setm-sheet {
     height: calc(100dvh - max(54px, env(safe-area-inset-top)));
     gap: 18px;
+  }
+  body.keyboard-open .ch-setm-sheet {
+    max-height: calc(100dvh - max(54px, env(safe-area-inset-top)) - var(--keyboard-height, 0px));
+  }
+  body.keyboard-open .ch-setm-sheet__body > * {
+    flex-shrink: 0;
   }
   .ch-setm-sheet__body {
     display: flex;

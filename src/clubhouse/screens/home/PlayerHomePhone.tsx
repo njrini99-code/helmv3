@@ -51,7 +51,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
             </div>
           ) : data.next ? (
             <UpNext e={data.next} now={now} kicker="Up next">
-              <Countdown to={data.next.startIso} frozen={frozen} />
+              {!data.next.allDay && <Countdown to={data.next.startIso} frozen={frozen} />}
             </UpNext>
           ) : (
             <div className="ch-hm-next is-static" data-ch-code="CH-2309">

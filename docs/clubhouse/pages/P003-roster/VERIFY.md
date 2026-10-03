@@ -3,6 +3,25 @@
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/roster.md`.
 
+## 2026-10-02 — Desktop Message target parity
+
+- The desktop player panel and list-row Message menu now carry the selected
+  player's encoded `?player=` target, matching the supported phone deep link.
+- `./node_modules/.bin/vitest run --project unit-dom
+  src/clubhouse/__tests__/roster.test.tsx --maxWorkers=1`:
+  68/68 passed, exit 0. The two added regressions exercise different players,
+  keyboard activation of the panel link and keyboard opening of each row menu.
+- ESLint for `Roster.tsx`, `RosterPeek.tsx` and `roster.test.tsx`: exit 0;
+  `git diff --check`: exit 0.
+- Local WebKit at 1024 × 900 confirmed Theo and Jonah have distinct panel and
+  row-menu URLs; Enter opens their cards and menus, Escape closes them. All
+  eight
+  table headers remained present, and the menus fit inside the viewport.
+- Artifacts: `/tmp/helm-clubhouse-desktop-daily/roster-table-1024.png` and
+  `/tmp/helm-clubhouse-desktop-daily/roster-selected-1024.png`.
+- This verifies the destination link and keyboard access. Real-account thread
+  resolution or message delivery was not exercised in this pass.
+
 ## Current verification status
 
 ```text
@@ -68,6 +87,10 @@ Result:       built to the approved spec and compared with the boards on 2026-09
 
 | State | Contract | How forced | Observed result |
 | --- | --- | --- | --- |
+| P003__profile__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Theo profile with16px gutters/gaps and layered figures |
+| P003__profile__coach__390__populated__before__cca081c.png | before | cca081c (working-tree before) | WebKit iPhone 13; Theo profile before matching parent spacing and figure material |
+| P003__list__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone roster before page spacing and material repairs |
+| P003__list__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered card surface,72px player rows, full wrapped status notes and16px spacing |
 | Skeleton | 30201 | test (`aria-busy`), `/clubhouse-preview/roster?state=loading` | skeleton in Roster's shape |
 | Empty | 30401 to 30406 | tests, `?state=empty` | distinct from a failed read; no team is Roster's own state |
 | Validation | 30501 | test | the counter and the limit |
@@ -110,34 +133,79 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
 
+## 2026-10-02 — Mobile design fidelity verification
+
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has
+  no horizontal document overflow; roster status notes and stats figure labels
+  remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight
+  and layered shadow. The captures use deterministic preview fixtures, not a
+  live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and
+  controls. Roster player populated/empty, Team Hub player populated and Player
+  Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified.
+  Failed fixtures also logged AdminLoggerClient event-send failures in the local
+  development browser; no production data was changed.
+
+## 2026-10-02 — Intuitive improvement verification
+
+- WebKit fixture walkthrough opened Theo from his visible roster row; the named
+  profile and its Roster back affordance remained. Settled profile capture shows
+  16px gutter/gap and layered figures, with zero horizontal overflow at 390.
+- Fixture actions do not touch production. These checks do not establish
+  intended-user discoverability, physical iPhone performance or durable
+  live-data outcomes.
+
 ## Open verification gaps
 
-- The iPhone pass through `npm run ios:dev` (owner); 430px and toasts over content (merge pass).
-- A browser pass with a real coach account (Q-4), including forced remove, approve, decline and note failures.
-- The full keyboard walk; `clubhouse:a11y` rerun after the v2 changes and this pass; LCP and layout shift.
-- Not verified: that an approved player appears on the roster in a real session. 30303 relies on Next sending the
-  revalidated page back after the server action (each action calls `revalidatePath`); the test simulates that page
+- The iPhone pass through `npm run ios:dev` (owner); 430px and toasts over
+  content (merge pass).
+- A browser pass with a real coach account (Q-4), including forced remove,
+  approve, decline and note failures.
+- The full keyboard walk; `clubhouse:a11y` rerun after the v2 changes and this
+  pass; LCP and layout shift.
+- Not verified: that an approved player appears on the roster in a real session.
+  30303 relies on Next sending the
+  revalidated page back after the server action (each action calls
+  `revalidatePath`); the test simulates that page
   with `rerender`, and nothing has watched it in a browser.
-- Fixed 2026-09-30, each with a test that fails without the fix: the toast's Retry did not finish the change on
-  screen (a retried removal left the player listed and the dialog open, a retried approval put the request back);
-  Try again after a failed read showed "No players yet" because the screen kept its first copy; a saved note read
-  back as the old text; Remove player fired no warning haptic (D-70); a coach with no team saw Home's empty state;
-  on desktop, Approve on a second request while the first was in flight did nothing and said nothing; the CSV export
-  wrote a player's name that starts with `=`, `+`, `-` or `@` as it was typed, which a spreadsheet may read as a
+- Fixed 2026-09-30, each with a test that fails without the fix: the toast's
+  Retry did not finish the change on
+  screen (a retried removal left the player listed and the dialog open, a
+  retried approval put the request back);
+  Try again after a failed read showed "No players yet" because the screen kept
+  its first copy; a saved note read
+  back as the old text; Remove player fired no warning haptic (D-70); a coach
+  with no team saw Home's empty state;
+  on desktop, Approve on a second request while the first was in flight did
+  nothing and said nothing; the CSV export
+  wrote a player's name that starts with `=`, `+`, `-` or `@` as it was typed,
+  which a spreadsheet may read as a
   formula; Esc inside the Remove or Invite dialog also closed the player panel.
 - Found, not fixed (owner or lead decides):
-  - Fairway's roster warned when one student is on the roster twice (#1477); Clubhouse dropped that notice.
-  - The desktop Message button opens the inbox, while the phone opens the player's thread (`?player=`, as
-    `phone/roster.md` records). P007's PAGE.md says Roster's Message buttons use `?player=`.
-  - The join-request notification links to `roster?tab=requests`; Roster ignores `tab`, though the requests are the
+  - Fairway's roster warned when one student is on the roster twice (#1477);
+    Clubhouse dropped that notice.
+  - Resolved 2026-10-02: the desktop player panel and row menu now carry the
+    player's thread target (`?player=`), matching the phone and P007 entry
+    contract.
+  - The join-request notification links to `roster?tab=requests`; Roster ignores
+    `tab`, though the requests are the
     first thing under the header.
-  - `docs/clubhouse/screens/roster.md` said the page reads in one pass; it is two parallel rounds (corrected).
-  - The Clubhouse roster files are not mapped to a feature in `memory/registry.yml` (`knowledge:map` finds none), so
+  - `docs/clubhouse/screens/roster.md` said the page reads in one pass; it is
+    two parallel rounds (corrected).
+  - The Clubhouse roster files are not mapped to a feature in
+    `memory/registry.yml` (`knowledge:map` finds none), so
     no feature doc is updated by a Roster change.
-  - The desktop Schedule 1:1 (panel) and View insights (row menu, CoachHelm `?player=`) were built 2026-09-30
+  - The desktop Schedule 1:1 (panel) and View insights (row menu, CoachHelm
+    `?player=`) were built 2026-09-30
     (CLICKABLES gaps 4 and 16).

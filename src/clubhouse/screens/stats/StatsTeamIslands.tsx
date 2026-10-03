@@ -15,7 +15,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { useToast } from '../../ui/Toast';
+import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
 import { useChSessionState } from '../../lib/session-state';
 import { haptic } from '../../lib/haptics';
@@ -63,6 +63,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   const isPhone = useChPhone() && phone != null;
   const router = useRouter();
   const toast = useToast();
+  const delayedToast = useDelayedToast();
   const [pending, start] = useTransition();
   const here = statsHref('/golf/dashboard/stats', current);
   // The filter being loaded; cleared when the server answers with a new address.
@@ -76,9 +77,8 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     if (!loading) return;
     // CH-4902: a slow window or filter change says so once instead of dimming forever.
     const words = changeWords(current, loading);
-    const slow = window.setTimeout(() => toast({ title: words.slow, body: `This is taking longer than usual. ${words.still}`, code: 'CH-4902' }), CH_SLOW_SAVE_AFTER);
-    return () => window.clearTimeout(slow);
-  }, [loading, current, toast]);
+    return delayedToast({ title: words.slow, body: `This is taking longer than usual. ${words.still}`, code: 'CH-4902' }, CH_SLOW_SAVE_AFTER);
+  }, [loading, current, delayedToast]);
   const go = (next: ChFilter) => {
     if (isOffline()) {
       // CH-4901: nothing is requested while offline, and the control stays where it is.

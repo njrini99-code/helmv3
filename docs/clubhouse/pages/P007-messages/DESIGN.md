@@ -1,5 +1,34 @@
 # P007 — Messages: design handoff
 
+## Owner direction — 2026-10-02
+
+Apple Messages is the phone layout and interaction benchmark. The owner
+keeps GolfHelm green and ivory. Preserve graded surfaces and grounded bubble
+depth, while restoring same-sender run corners and terminal tails. Direct
+threads use the available width without a repeated avatar rail; group threads
+keep author identity. Reading size remains 17px.
+
+Phone Return makes a new line and the Send control sends. A long press retains
+selected-message context in the existing app-owned action sheet. Swipe right
+and Reply select a persisted quote target; swipe left exposes real message time.
+Quotes use loaded messages with honest unavailable/deleted states. The existing
+dialog, composer, icons and phone shell remain the owners of those primitives.
+No new shared UI primitive or transport status is introduced.
+
+Reference: [Apple's send and reply
+guide](https://support.apple.com/guide/iphone/send-and-reply-to-messages-iph82fb73ba3/ios)
+for tap Send, touch-and-hold actions, swipe-right Reply and swipe-left timestamps.
+The owner's palette remains authoritative.
+
+The owner's later screenshot correction removes the green left stripe from
+every quoted-reply surface. Quotes use a softly floating ivory face, compact
+author text and a readable snippet. Attachment cards, file chips and reaction
+badges use material depth rather than decorative outline rings. Pending-send
+notices keep their truthful status color and recovery actions with the same
+softer edge; focus indicators remain visible.
+The selected conversation uses its tinted row and stronger title, without a
+green edge stripe.
+
 ## Package
 
 ```text

@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 68 routes, 56 components, 30 apis, 93 actions, 107 services, 73 tests, 134 tables, 165 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1013 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 29 features, 68 routes, 60 components, 30 apis, 94 actions, 113 services, 83 tests, 134 tables, 165 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1036 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -82,14 +82,14 @@ Auth Onboarding And Join · active · criticality high · owner platform
 - **Relations:** 1 doc/structurally-evidenced, 28 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
-- **Test surfaces:** 2
+- **Test surfaces:** 3
 - **Sentry/admin_events signals:** `auth_onboarding`, `join_team_flow`
 
 ### `baseball_core`
 
 BaseballHelm (recruiting + team management + Lift Lab) · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `baseball_actions`, `baseball_ai_audit`, `baseball_availability_statuses`, `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_bodyweight_entries`, `baseball_catching_events`, `baseball_class_conflicts`, `baseball_coach_notes`, `baseball_coach_player_notes`, `baseball_decision_log`, `baseball_demo_sessions`, `baseball_event_acknowledgements`, `baseball_exercises`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_import_runs`, `baseball_import_sources`, `baseball_integration_configs`, `baseball_legacy_backfill_manifest`, `baseball_lift_assignments`, `baseball_lift_days`, `baseball_lift_exercise_substitutions`, `baseball_lift_exercises`, `baseball_lift_import_rows`, `baseball_lift_import_runs`, `baseball_lift_prescriptions`, `baseball_lift_program_assignments`, `baseball_lift_programs`, `baseball_lift_results`, `baseball_lift_sections`, `baseball_lift_session_exercises`, `baseball_lift_sessions`, `baseball_lift_set_results`, `baseball_lift_weeks`, `baseball_meeting_items`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_daily_contracts`, `baseball_player_development_metrics`, `baseball_player_external_ids`, `baseball_player_passport_settings`, `baseball_player_passport_share_tokens`, `baseball_player_timeline_events`, `baseball_postgame_review_items`, `baseball_postgame_reviews`, `baseball_practice_attendance`, `baseball_practice_block_objectives`, `baseball_practice_blocks`, `baseball_practice_effectiveness_reviews`, `baseball_practice_lineup_slots`, `baseball_practice_scrimmages`, `baseball_practices`, `baseball_program_settings`, `baseball_readiness_checkins`, `baseball_seasons`, `baseball_settings_audit_log`, `baseball_signals`, `baseball_soreness_maps`, `baseball_staff_audit_events`, `baseball_staff_invitations`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_stat_visual_views`, `baseball_strength_group_audit`, `baseball_strength_group_members`, `baseball_strength_groups`, `baseball_strength_maxes`, `baseball_strength_prs`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `helm_lifting_athletes`, `helm_lifting_availability_statuses`, `helm_lifting_bodyweight_entries`, `helm_lifting_coach_assignments`, `helm_lifting_coach_invites`, `helm_lifting_coaches`, `helm_lifting_days`, `helm_lifting_exercise_substitutions`, `helm_lifting_exercises`, `helm_lifting_group_audit`, `helm_lifting_group_members`, `helm_lifting_groups`, `helm_lifting_import_rows`, `helm_lifting_import_runs`, `helm_lifting_maxes`, `helm_lifting_nutrition_plan_assignments`, `helm_lifting_nutrition_plans`, `helm_lifting_org_viewers`, `helm_lifting_prescriptions`, `helm_lifting_program_assignments`, `helm_lifting_programs`, `helm_lifting_prs`, `helm_lifting_readiness_checkins`, `helm_lifting_sections`, `helm_lifting_session_exercises`, `helm_lifting_sessions`, `helm_lifting_set_results`, `helm_lifting_soreness_check_requests`, `helm_lifting_soreness_check_schedules`, `helm_lifting_soreness_maps`, `helm_lifting_weeks`, `helm_lifting_weight_checkin_requests`, `helm_lifting_weight_checkin_schedules`
 - **RPCs:** `find_baseball_player_by_email_for_roster`, `helm_lifting_mark_athlete_onboarded`, `helm_lifting_sync_org_athletes`, `recalculate_baseball_season_stats`, `recalculate_team_baseball_season_stats`, `save_baseball_full_box_score`
 - **Test surfaces:** 2
@@ -289,10 +289,10 @@ Team Access Control And RLS · active · criticality high · owner platform
 
 Team Communications · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
-- **RPCs:** none
-- **Test surfaces:** 9
+- **RPCs:** `mark_golf_messages_read`
+- **Test surfaces:** 15
 - **Sentry/admin_events signals:** `announcements`, `messaging`, `notifications`
 
 ### `team_operations`
@@ -302,7 +302,7 @@ Team Operations · active · criticality high · owner product
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
-- **Test surfaces:** 2
+- **Test surfaces:** 5
 - **Sentry/admin_events signals:** `coach_dashboard`, `documents`, `task_management`, `travel`
 
 ---
@@ -391,6 +391,7 @@ Team Operations · active · criticality high · owner product
 | `baseball_core` | `crm_outreach` | import_graph (weak) |
 | `baseball_core` | `email_outbound` | import_graph (weak) |
 | `baseball_core` | `observability_sentry` | import_graph (weak) |
+| `baseball_core` | `team_communications` | import_graph (weak) |
 | `calendar_events` | `admin_platform` | import_graph (weak) |
 | `calendar_events` | `auth_onboarding_join` | import_graph (weak) |
 | `calendar_events` | `golf_round_lifecycle` | import_graph (weak) |

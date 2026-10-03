@@ -11,10 +11,7 @@
   overflow: hidden;
   color: var(--ch-ivory-100);
   background: radial-gradient(120% 140% at 92% -30%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-green-800);
-  box-shadow:
-    0 0 0 1px var(--ch-green-900),
-    0 1px 2px rgb(8 43 28 / 0.2),
-    0 30px 60px -44px rgb(11 58 37 / 0.6);
+  box-shadow: var(--ch-elevation-reading-accent);
 }
 .ch-hg-hero__k {
   display: flex;
@@ -159,10 +156,7 @@
   padding: 22px 24px 18px;
   border-radius: 18px;
   background: var(--ch-ivory-25);
-  box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.07),
-    0 1px 2px rgb(28 25 18 / 0.04),
-    0 18px 36px -30px rgb(11 58 37 / 0.35);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hg-m.is-good {
   --ch-hg-tone: var(--ch-green-600);

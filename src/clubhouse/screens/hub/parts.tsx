@@ -11,11 +11,17 @@ import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
+import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
  * the callbacks that change it; TeamHub holds the optimistic state and the writes.
  */
+
+// A duplicate from an older mounted row/Retry is refused by the Hub gate without an error outcome.
+function quietBusy(result: ActionResult, copy: ActionCopy): ActionCopy {
+  return !result.success && result.error === 'busy' ? { ...copy, quiet: true } : copy;
+}
 
 const REPLIES: Array<[Exclude<ChRsvp, 'pending'>, string]> = [
   ['accepted', 'Going'],
@@ -40,13 +46,15 @@ export function Rsvps({
   role,
   data,
   replies,
+  isPending,
   onReply,
   compact = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['rsvps'];
   replies: Map<string, ChRsvp>;
-  onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => void;
+  isPending: (r: ChHubRsvp) => boolean;
+  onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
   /** The phone build: a reply line that leaves out the counts that are zero. */
   compact?: boolean;
 }) {
@@ -106,13 +114,7 @@ export function Rsvps({
                   <span className="ch-hb-muted">Replies didn’t load</span>
                 )
               ) : (
-                <span className="ch-hb-rsvp__a" role="radiogroup" aria-label={`Your reply for ${r.title}`}>
-                  {REPLIES.map(([k, l]) => (
-                    <button key={k} type="button" role="radio" aria-checked={mine(r) === k} onClick={() => mine(r) !== k && onReply(r, k)}>
-                      {l}
-                    </button>
-                  ))}
-                </span>
+                <ReplyChoices r={r} mine={mine(r)} pending={isPending(r)} onReply={onReply} />
               )}
             </li>
           ))}
@@ -122,11 +124,52 @@ export function Rsvps({
   );
 }
 
+/** The optimistic selection remains visible but is explicitly pending until this event's write answers. */
+function ReplyChoices({ r, mine, pending, onReply }: {
+  r: ChHubRsvp;
+  mine: ChRsvp;
+  pending: boolean;
+  onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
+}) {
+  const save = useAction('hub.reply', onReply, (event, answer) => ({
+    done: answer === 'accepted' ? `You're going to ${event.title}` : answer === 'tentative' ? `Marked maybe for ${event.title}` : `Your coach knows you can't make ${event.title}`,
+    failed: `Couldn't send your reply for ${event.title}`,
+    code: 'CH-10001',
+  }), quietBusy);
+  return (
+    <div className="ch-hb-rsvp__choice">
+      <span className="ch-hb-rsvp__a" role="radiogroup" aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
+        {REPLIES.map(([answer, label]) => (
+          <button key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
+            if (mine === answer) return;
+            haptic('select');
+            void save.run(r, answer);
+          }}>{label}</button>
+        ))}
+      </span>
+      {pending && <span className="ch-hb-saving" role="status" data-ch-code="CH-10408">Sending reply for {r.title}…</span>}
+    </div>
+  );
+}
+
+function Acknowledgement({ a, acked, pending, onAck }: {
+  a: ChHubAnnouncement;
+  acked: boolean;
+  pending: boolean;
+  onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
+}) {
+  const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn't acknowledge "${post.title}"`, code: 'CH-10002' }), quietBusy);
+  if (pending) return <span className="ch-hb-saving" role="status" data-ch-code="CH-10409">Acknowledging {a.title}…</span>;
+  if (acked) return <span className="ch-hb-acked"><Icon icon={Check} size={13} />Acknowledged</span>;
+  return <Button size="sm" variant="primary" onClick={() => void save.run(a)}>Got it</Button>;
+}
+
 export function Announcement({
   a,
   role,
   featured = false,
   acked,
+  pending,
   onAck,
   onEdit,
   onDelete,
@@ -135,7 +178,8 @@ export function Announcement({
   role: ChTeamHub['role'];
   featured?: boolean;
   acked: boolean;
-  onAck: (a: ChHubAnnouncement) => void;
+  pending: boolean;
+  onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
   onEdit: (a: ChHubAnnouncement) => void;
   onDelete: (a: ChHubAnnouncement) => void;
 }) {
@@ -177,16 +221,7 @@ export function Announcement({
             {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
           </span>
         ) : a.needAck ? (
-          acked ? (
-            <span className="ch-hb-acked">
-              <Icon icon={Check} size={13} />
-              Acknowledged
-            </span>
-          ) : (
-            <Button size="sm" variant="primary" onClick={() => onAck(a)}>
-              Got it
-            </Button>
-          )
+          <Acknowledgement a={a} acked={acked} pending={pending} onAck={onAck} />
         ) : null}
         {a.documentCount > 0 && <span className="ch-hb-muted ch-num">{a.documentCount === 1 ? '1 attachment' : `${a.documentCount} attachments`}</span>}
       </div>
@@ -351,6 +386,7 @@ export function Tasks({
   role,
   data,
   isDone,
+  isPending,
   onToggle,
   onAssign,
   onDelete,
@@ -358,7 +394,8 @@ export function Tasks({
   role: ChTeamHub['role'];
   data: ChTeamHub['tasks'];
   isDone: (t: ChHubTask) => boolean;
-  onToggle: (t: ChHubTask) => void;
+  isPending: (t: ChHubTask) => boolean;
+  onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onAssign?: () => void;
   onDelete?: (t: ChHubTask) => void;
 }) {
@@ -382,39 +419,7 @@ export function Tasks({
         <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned.' : 'No tasks right now.'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
-          {data.rows.map((t) => {
-            const d = isDone(t);
-            return (
-              <div key={t.id} className={'ch-hb-task' + (d ? ' is-done' : '')}>
-                {coach ? (
-                  <span className="ch-hb-ring" style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? (t.done[0] / t.done[1]) * 100 : 0 }} aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
-                    <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>
-                  </span>
-                ) : (
-                  <button type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} onClick={() => onToggle(t)}>
-                    {d && <Icon icon={Check} size={13} />}
-                  </button>
-                )}
-                <div>
-                  <b>{t.title}</b>
-                  {t.detail && <span>{t.detail}</span>}
-                </div>
-                <em className={'ch-num' + (!d && (t.status === 'overdue' || t.due === 'Today' || t.due === 'Tomorrow') ? ' is-soon' : '')}>{d && !coach ? 'Done' : t.status === 'overdue' && !d ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
-                {coach && onDelete && (
-                  <Menu
-                    label={`More for ${t.title}`}
-                    align="end"
-                    items={[{ label: 'Delete task', icon: Trash2, danger: true, onSelect: () => onDelete(t) }]}
-                    trigger={(p) => (
-                      <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
-                        <Icon icon={MoreHorizontal} size={16} />
-                      </button>
-                    )}
-                  />
-                )}
-              </div>
-            );
-          })}
+          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} />)}
           {data.total != null && data.total > data.rows.length && (
             // C-20: the list is capped; it says so rather than passing for every task.
             <p className="ch-hb-muted ch-num">
@@ -424,6 +429,57 @@ export function Tasks({
         </div>
       )}
     </section>
+  );
+}
+
+/** One gate per task, shared by completing and reopening it; other tasks remain usable. */
+function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
+  t: ChHubTask;
+  coach: boolean;
+  d: boolean;
+  pending: boolean;
+  onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
+  onDelete?: (t: ChHubTask) => void;
+}) {
+  const save = useAction(
+    d ? 'hub.uncompleteTask' : 'hub.completeTask',
+    onToggle,
+    (task, nextDone) => ({
+      done: nextDone ? `${task.title} done` : `${task.title} is open again`,
+      failed: nextDone ? `Couldn't mark ${task.title} done` : `Couldn't reopen ${task.title}`,
+      code: nextDone ? 'CH-10003' : 'CH-10011',
+    }),
+    quietBusy,
+  );
+  return (
+    <div className={'ch-hb-task' + (d ? ' is-done' : '')}>
+      {coach ? (
+        <span className="ch-hb-ring" style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? (t.done[0] / t.done[1]) * 100 : 0 }} aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
+          <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>
+        </span>
+      ) : (
+        <button type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} disabled={pending} aria-busy={pending} onClick={() => void save.run(t, !d)}>
+          {d && <Icon icon={Check} size={13} />}
+        </button>
+      )}
+      <div>
+        <b>{t.title}</b>
+        {t.detail && <span>{t.detail}</span>}
+      </div>
+      <em role={pending ? 'status' : undefined} data-ch-code={pending ? 'CH-10410' : undefined} aria-label={pending ? `Saving ${t.title}` : undefined} className={'ch-num' + (!d && (t.status === 'overdue' || t.due === 'Today' || t.due === 'Tomorrow') ? ' is-soon' : '')}>{pending ? 'Saving…' : d && !coach ? 'Done' : t.status === 'overdue' && !d ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
+      {coach && onDelete && (
+        <Menu
+          label={`More for ${t.title}`}
+          align="end"
+          items={[{ label: 'Delete task', icon: Trash2, danger: true, onSelect: () => onDelete(t) }]}
+          trigger={(p) => (
+            <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
+              <Icon icon={MoreHorizontal} size={16} />
+            </button>
+          )}
+        />
+      )}
+    </div>
   );
 }
 

@@ -101,5 +101,43 @@
       "P011",
       "P013"
     ]
+  },
+  {
+    "file": "INTUITIVE_SECONDARY_AUDIT.md",
+    "title": "Secondary screens: Intuitive Software Design improvement",
+    "kind": "audit",
+    "date": "2026-10-02",
+    "scope": "Roster and statistics task orientation plus Team Hub per-object pending feedback, concurrent writes, confirmation and failure recovery.",
+    "status": "done",
+    "note": "scoped local corrections; physical Safari, human testing and live persistence remain unverified",
+    "allPages": false,
+    "pages": [
+      "P003",
+      "P004",
+      "P005",
+      "P010"
+    ]
+  },
+  {
+    "file": "RELEASE_CANDIDATE.md",
+    "title": "Mobile fidelity release candidate",
+    "kind": "plan",
+    "date": "2026-10-02",
+    "scope": "Candidate behavior, local authenticated WebKit evidence, recovery boundaries and owner production release conditions.",
+    "status": "in_progress",
+    "note": "candidate checks and physical phone acceptance; production remains unchanged",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "UX_OPTIMIZATION.md",
+    "title": "Mobile and desktop UX optimization",
+    "kind": "plan",
+    "date": "2026-10-02",
+    "scope": "Remaining custom overlays, narrow round setup, person-specific messaging and complete mobile/desktop task coverage.",
+    "status": "in_progress",
+    "note": "custom overlays, narrow controls, scoped feedback and measured phone Stats correction verified locally; physical Safari and intended-user validation remain open",
+    "allPages": true,
+    "pages": []
   }
 ]

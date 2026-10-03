@@ -26,11 +26,11 @@ export interface GolfSceneProps {
 
 /**
  * A user unit of the scene in pixels, and where the camera pivots, for a box the scene's `xMidYMax slice` fills. The
- * desktop camera pivots on the pin; the phone's on the clubhouse, as the design has it.
+ * Both cameras pivot on the hole. The phone crop keeps the cup and ball landing inside the viewport.
  */
 export function sceneMetrics(width: number, height: number, crop: SceneCrop) {
-  const [vx, vw] = crop === 'tall' ? [360, 760] : [0, 1600];
-  const [px, py] = crop === 'tall' ? [560, 610] : [1052, 640];
+  const [vx, vw] = crop === 'tall' ? [650, 760] : [0, 1600];
+  const [px, py] = [1052, 640];
   const vh = 1000;
   const unit = Math.max(width / vw, height / vh);
   const originX = (width - vw * unit) / 2 + (px - vx) * unit;
@@ -152,15 +152,16 @@ export function GolfScene({ hour, crop = 'wide', camera = 'rest', play = false, 
     let second = 0;
     const first = requestAnimationFrame(() => {
       second = requestAnimationFrame(() => {
-        el.setAttribute('data-camera', typeof camera === 'number' ? 'zoom' : camera);
-        el.style.setProperty('--ch-au-zoom', zoomFor(camera));
+        const target = reduced ? 'rest' : camera;
+        el.setAttribute('data-camera', typeof target === 'number' ? 'zoom' : target);
+        el.style.setProperty('--ch-au-zoom', zoomFor(target));
       });
     });
     return () => {
       cancelAnimationFrame(first);
       cancelAnimationFrame(second);
     };
-  }, [camera]);
+  }, [camera, reduced]);
 
   return (
     <div ref={root} className={['ch-au-scene', className].filter(Boolean).join(' ')} data-crop={crop} data-camera="rest" data-motion={reduced ? 'reduced' : undefined} aria-hidden="true">

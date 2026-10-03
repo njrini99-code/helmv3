@@ -22,12 +22,12 @@ import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
-import { useToast } from '../../ui/Toast';
+import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useNow } from '../../lib/use-now';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
-import type { ChMessagesApi } from './MessagesView';
+import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
 import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
@@ -48,6 +48,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
+  const delayedToast = useDelayedToast();
   const clock = useNow();
   const now = clock ? clock.toISOString() : data.now;
   const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
@@ -56,6 +57,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const handledParams = useRef(false);
   /** Unsent drafts by conversation, so switching threads (71202) or reloading (F-12) never loses what was written. */
   const [drafts] = useState<Map<string, string>>(() => new DraftStore(data.viewerUserId));
+  const [attachmentRecovery] = useState(() => new Map<string, ChAttachmentRecovery>());
   const [paramsDone, setParamsDone] = useState(false);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
@@ -86,7 +88,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
-  const { sendMessageWithAttachments } = useMessageAttachments();
+  const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments();
 
   // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
   useEffect(() => {
@@ -161,17 +163,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
         toast({ tone: 'error', title: `${copy.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
         return false;
       }
-      const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
+      const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }, CH_SLOW_SAVE_AFTER);
       try {
         return (await fn()) !== false;
       } catch (err) {
         fail(surface, err, copy.failed, copy.hint, copy.code);
         return false;
       } finally {
-        window.clearTimeout(slow);
+        stopSlow();
       }
     },
-    [toast, fail],
+    [delayedToast, toast, fail],
   );
 
   const startDirect = useCallback(
@@ -275,6 +277,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           edited: !!m.edited_at,
           deleted: !!m.is_deleted,
           hasAttachments: !!m.has_attachments,
+          replyToId: m.reply_to_id ?? null,
         })),
     [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
   );
@@ -454,6 +457,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     convsError: !!error && !conversations.length,
     refetchConvs: () => void refetch(),
     drafts,
+    attachmentRecovery,
     selectedId,
     select,
     msgs: chMsgs,
@@ -464,10 +468,34 @@ export function Messages({ data }: { data: ChMessagesData }) {
     refetchMsgs: () => void msgs.refetch(),
     typing: msgs.isOtherTyping,
     onTyping: (on) => msgs.sendTypingStatus(on),
-    send: async (text) => {
+    loadPendingAttachmentSend: async () => {
+      if (!selectedId) return null;
+      const pending = await getPendingAttachmentSend(selectedId);
+      return pending ? { id: pending.clientMessageId, text: pending.content, replyToId: pending.replyToId, filenames: pending.attachments.map((file) => file.fileName) } : null;
+    },
+    retryPendingAttachmentSend: async () => {
+      if (!selectedId) return 'unknown';
+      if (isOffline()) {
+        toast({ tone: 'error', title: "Couldn't check this send: you're offline", body: 'Reconnect, then retry the same send.', code: 'CH-1903' });
+        return 'unknown';
+      }
+      try {
+        const result = await retryPendingAttachmentSend(selectedId);
+        if (result.sendOutcome === 'unknown') return 'unknown';
+        if (result.attachmentsFailed) {
+          toast({ tone: 'error', title: 'Message sent; attachments not saved', body: 'Your text was delivered. Choose the files again if they are no longer in this composer.', code: 'CH-7022' });
+          return 'partial';
+        }
+        return result.success;
+      } catch {
+        return 'unknown';
+      }
+    },
+    send: async (text, replyToId) => {
       try {
         if (selectedId === autoOpened) select(selectedId);
-        await msgs.sendMessage(text);
+        if (replyToId) await msgs.sendMessage(text, replyToId);
+        else await msgs.sendMessage(text);
         return true;
       } catch (err) {
         const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
@@ -475,7 +503,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return false;
       }
     },
-    sendFiles: async (text, files) => {
+    sendFiles: async (text, files, replyToId) => {
       if (!selectedId) return false;
       const bad = files.map((f) => ({ f, v: validateFile(f) })).find((x) => !x.v.valid);
       if (bad) {
@@ -496,12 +524,26 @@ export function Messages({ data }: { data: ChMessagesData }) {
         status: 'pending',
         uploadProgress: 0,
       }));
-      return attempt('sendFiles', { failed: "Couldn't send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
-        const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending });
+      let partial = false;
+      let unknown = false;
+      let checked = false;
+      const ok = await attempt('sendFiles', { failed: "Couldn't send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
+        const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
         if (res.cancelled) return false;
+        checked = true;
+        if (res.sendOutcome === 'unknown') {
+          unknown = true;
+          toast({ tone: 'error', title: "Couldn't confirm this send", body: 'Your draft and files are kept. Retry send checks the same attempt before sending again.', code: 'CH-7023' });
+          return true;
+        }
         if (!res.success) throw new Error(res.error || 'Attachment send failed');
+        if (res.attachmentsFailed) {
+          partial = true;
+          toast({ tone: 'error', title: 'Message sent; attachments not saved', body: 'Your text was delivered. The files are still in the composer; send them again when ready.', code: 'CH-7022' });
+        }
         return true;
       });
+      return (ok && unknown) || (!ok && !checked && attachmentRecovery.has(selectedId)) ? 'unknown' : ok && partial ? 'partial' : ok;
     },
     retry: (id) => void msgs.retryMessage(id),
     discard: (id) => msgs.discardFailedMessage(id),

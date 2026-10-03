@@ -12,7 +12,7 @@
 | Phone spec | [phone/stats-team.md](../../phone/stats-team.md) |
 | Design boards | [Coach - Stats.html](../../../../design/handoff/Coach%20-%20Stats.html) · [Stats.html](../../../../design/handoff/Stats.html) · [stats.jsx](../../../../design/handoff/stats.jsx) · [Coach - Stats - Mobile.html](../../../../design/handoff/Coach%20-%20Stats%20-%20Mobile.html) · [m-stats.jsx](../../../../design/handoff/m-stats.jsx) |
 | Code | [stats](../../../../src/clubhouse/screens/stats) · [stats-team.ts](../../../../src/clubhouse/data/stats-team.ts) · [stats.tsx](../../../../src/clubhouse/routes/stats.tsx) · [stats.css](../../../../src/clubhouse/styles/stats.css) |
-| Audits | [all audits](../../AUDITS.md) |
+| Audits | [INTUITIVE_SECONDARY_AUDIT](../../INTUITIVE_SECONDARY_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Stats (team)" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 | Screenshots | `npm run clubhouse:shots -- gallery --page P004`, which opens `.helm/screenshots/clubhouse/P004-stats-team/GALLERY.html` (local) |

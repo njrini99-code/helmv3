@@ -10,7 +10,7 @@ import { CH_DUR } from '../../lib/motion';
  * piece carries its own delay, and the items' delay is their index times a step.
  *
  * Variants live out here so a render never builds them again. All of it animates
- * transform, opacity and the one blur of the greeting's focus-in.
+ * transform and opacity; greeting text stays sharp during its entrance.
  * Times are seconds from when the welcome mounts.
  */
 export interface AuthCustom {
@@ -52,10 +52,10 @@ export const welcomeDate: Variants = {
   hidden: { opacity: 0, y: 10 },
   show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.date, WELCOME_AT.date, OUT, c) }),
 };
-/** "Good morning," focuses in: it rises 16px out of a blur. */
+/** The greeting rises without blurring readable text (owner clarity correction). */
 export const welcomeLine1: Variants = {
-  hidden: { opacity: 0, y: 16, filter: 'blur(10px)' },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, filter: 'blur(0px)', transition: tx(WELCOME_TAKES.line1, WELCOME_AT.line1, OUT, c) }),
+  hidden: { opacity: 0, y: 16 },
+  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.line1, WELCOME_AT.line1, OUT, c) }),
 };
 /** The name rises out of its own clipped line. */
 export const welcomeName: Variants = {
@@ -63,8 +63,8 @@ export const welcomeName: Variants = {
   show: (c: AuthCustom) => ({ y: '0%', transition: tx(WELCOME_TAKES.name, WELCOME_AT.name, SMOOTH, c) }),
 };
 export const welcomeCard: Variants = {
-  hidden: { opacity: 0, y: 18, scale: 0.97 },
-  show: (c: AuthCustom) => ({ opacity: 1, y: 0, scale: 1, transition: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c) }),
+  hidden: { opacity: 0, y: 18 },
+  show: (c: AuthCustom) => ({ opacity: 1, y: 0, transition: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c) }),
   leave,
 };
 export const welcomeItem: Variants = {

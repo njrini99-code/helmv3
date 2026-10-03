@@ -1,3 +1,4 @@
+import './dialog-polyfill';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'framer-motion';
@@ -164,10 +165,20 @@ describe('Skeletons draw the loaded page\'s lines', () => {
   it('the phone skeletons keep the loaded order (a profile: head, the window and filter row, then the figures) and give each figure its second line', () => {
     const profile = render(<StatsPlayerPhoneSkeleton />);
     const order = [...profile.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
-    expect(order.slice(0, 3)).toEqual(['ch-spm-head', 'ch-stm-controls', 'ch-stm-figs']);
+    expect(order.slice(0, 3)).toEqual(['ch-spm-head', 'ch-stm-controls', 'ch-stm-overview']);
+    const overview = profile.container.querySelector('.ch-stm-overview')!;
+    expect(overview.getAttribute('aria-hidden')).toBe('true');
+    expect(overview.querySelector('.ch-stm-figs.is-three')).not.toBeNull();
+    expect(overview.querySelector('.ch-stm-figs > div:last-child dd')?.classList.contains('is-words')).toBe(true);
+    expect(overview.querySelector('.ch-stm-overview__meta')).not.toBeNull();
+    expect(overview.textContent).toBe('');
+    expect(profile.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading player stats');
     profile.unmount();
     const teamPhone = render(<StatsTeamPhoneSkeleton />);
     for (const fig of teamPhone.container.querySelectorAll('.ch-stm-figs > div')) expect(fig.querySelectorAll('dd')).toHaveLength(2);
+    expect(teamPhone.container.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBe('true');
+    expect(teamPhone.container.querySelector('.ch-stm-chart-hold')).not.toBeNull();
+    expect(teamPhone.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading stats');
   });
 
   it('Home: the head has its sentence and its two actions, as loaded', () => {

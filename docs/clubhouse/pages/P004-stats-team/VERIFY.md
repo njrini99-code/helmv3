@@ -1,7 +1,81 @@
 # P004 — Stats (team): verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/stats-team.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/stats-team.md`.
+
+## 2026-10-02 — Period-switch geometry
+
+The optimized `a32c933e0` baseline recorded three 390px, 4x-CPU trials per
+switch. Season and returning Last 10 each had raw shift score 0.0521; the
+moving sources were the trend and leg panels. Standard CLS excluded these
+recent-input shifts. This is evidence of visible movement, not a field score.
+
+Bounded read-only WebKit inspection of the same local seeded build confirmed
+the cause: the figures were 94.98px tall in Last 10 and 73.19px in Season.
+An 18.19px hole-coverage paragraph and its surrounding spacing also vanished,
+moving the next panel from y352.16 to y288.17. The repair retains both slots
+while hiding absent information from assistive technology.
+
+The affected team suite passed 53/53 with one worker in 3.70s. A new test
+changes periods and checks that absent comparisons/coverage are empty,
+aria-hidden and restored correctly, with original metric values retained.
+Scoped TSX/test ESLint and `git diff --check` passed. The source map remains
+unassigned for these phone/CSS paths and was reported to the parent.
+
+Baseline captures are local in `/tmp/helm-clubhouse-stats-stability/` as
+`team-{Last-10,Season,Qualifiers}-before.png`. The inspection session closed
+before the separate Messages benchmark. Optimized post-change measurement
+and physical Safari verification remain pending; no improvement score is
+claimed from source or unit tests.
+
+### Final source WebKit check
+
+Read-only local seeded WebKit checked Last 10, Season and Qualifiers at
+320, 375 and 390px. Document width equaled viewport in all nine states.
+The trend stayed at y445.328 at 320px and y344.156 at 375/390px across
+all periods. The four narrow team figures retained their two-column layout.
+
+A 1.5-second held RSC navigation exposed the real team loading screen.
+Before repair, its trend started at y299.797 against loaded y344.156.
+After repair at 390px, header 56.984px, controls 44px, figures 94.984px,
+coverage 18.187px and trend 209.078px exactly matched the loaded page.
+Value definitions were 20px in both. Trend and SG origins also matched;
+the last skeleton panel was 0.641px taller than the populated panel.
+The skeleton remains decorative and preserves its loading label/code.
+At 320px the actual personalized team caption wraps; its unknown text is
+not synthesized in the loading screen, so narrow header parity is unproven.
+
+The focused geometry suite passed 11/11 in 1.57s, with one worker; scoped
+skeleton/test ESLint and final diff checks passed. This supplements the
+53/53 team suite above. Optimized timing is a separate parent-owned check.
+Evidence stays in `/tmp/helm-clubhouse-stats-stability/`: nine width/period
+after frames and `team-skeleton-{before,after}.png`. Both owned browsers
+closed. No production writes or physical-device performance claim.
+
+## 2026-10-02 — Narrow figure readability
+
+Working tree after `c1e81e0fe`; WebKit iPhone 13 descriptor, isolated
+`stats-narrow` CLI session, populated synthetic `/clubhouse-preview/stats`.
+
+- Before at 320px: Scrambling occupied a 51px column and two lines,
+  32.375px tall. At 375px it already fit one line in a 64.75px column.
+- After at 320px: the same summary card has two 144px columns; Scrambling has
+  123px available and occupies one 16.1875px line. All four labels are one
+  line. Document width is 320px and card client/scroll widths are both 288px.
+- After at 375px: four 85.75px columns remain; all labels are still one line.
+  Document width is 375px and card client/scroll widths are both 343px.
+- Browser assertions checked actual label heights against computed line
+  height, unchanged 12px caption size, and document/card overflow. Figure
+  order and values remained `73.6`, `61%`, `30.4`, `52%`, with their original
+  changes. Both final captures were manually inspected.
+- `git diff --check` passed. Only `styles/stats.css` changed; no mirror unit
+  test was added for this CSS-only fix. The feature map reports the CSS and
+  `StatsTeamPhone.tsx` unmapped; reported to the parent, no registry change.
+
+Four local captures are in `/tmp/helm-clubhouse-mobile-flow-audit/`:
+`stats-before-320.png`, `stats-before-375.png`, `stats-after-320.png`, and
+`stats-after-375.png`. Browser closed after verification. Physical Safari,
+software keyboard, text zoom and live authenticated data were not tested.
 
 ## Current verification status
 
@@ -31,15 +105,24 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/stats-player.test.tsx` | CH-4309 (the no-team page state, catalogued here), and the profile's contracts | pass (53/53, 2026-09-30) |
 | `src/clubhouse/__tests__/logic.test.ts` | the window math, weighted rates, tour choice and week bucketing | not re-run in this pass |
 
-Each test added in this pass was mutation-checked: the code it guards was broken, the test failed, and the
-code was restored. Checked: 40501 (the name written as text), 40901 (the file name, the toast, the tick),
-40801 (a player given the team), 40802 (the roster filter by team and by status), 40102 (the window read from
-the address and written back with scroll off), 41201 (the leg and player reset on a window change), 41401 (Try
-again doing nothing), 41901 (the phone view never taking over), 42001 (a grid row that does not focus its
-player), 42101 (a second team read; the benchmarks read after the rounds), 42301 (the team read not logged),
-40101 (Season bests removed), CH-4402 (the page never busy) and 42401 (a catalog row no test names). 20 checks.
-The three assertions in 40801 on the frame's route list (`isRebuilt`) were added after that run and are not
-mutation-checked: the code they read is the shell's `nav.ts`, which this pass does not touch.
+Each test added in this pass was mutation-checked: the code it guards was
+broken, the test failed, and the
+code was restored. Checked: 40501 (the name written as text), 40901 (the file
+name, the toast, the tick),
+40801 (a player given the team), 40802 (the roster filter by team and by
+status), 40102 (the window read from
+the address and written back with scroll off), 41201 (the leg and player reset
+on a window change), 41401 (Try
+again doing nothing), 41901 (the phone view never taking over), 42001 (a grid
+row that does not focus its
+player), 42101 (a second team read; the benchmarks read after the rounds), 42301
+(the team read not logged),
+40101 (Season bests removed), CH-4402 (the page never busy) and 42401 (a catalog
+row no test names). 20 checks.
+The three assertions in 40801 on the frame's route list (`isRebuilt`) were added
+after that run and are not
+mutation-checked: the code they read is the shell's `nav.ts`, which this pass
+does not touch.
 
 ## Visual verification
 
@@ -67,6 +150,9 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 
 | State | Contract | How forced | Observed result |
 | --- | --- | --- | --- |
+| P004__filter__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Phone filter target is44×44px; figure labels and window choices remain visible |
+| P004__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone team stats before page spacing and material repairs |
+| P004__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered sheet material,16px section rhythm and readable figure captions |
 | Skeleton | 40201 | `/clubhouse-preview/stats?state=loading`, test | skeleton in Team stats' shape, busy |
 | Empty | 40401 to 40409 | `?state=empty`, tests | distinct from a failed read; Show the season |
 | Validation | 40501 | test | a name that starts with = + - or @ is written as text |
@@ -77,11 +163,14 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 | Destructive | none | N/A: nothing is deleted | |
 | Optimistic rollback | none | N/A: nothing is optimistic | |
 
-Not forced against a live session: every state above was forced against a fake Supabase client and rendered
-in jsdom, or in the preview, never against a live session (Q-4, the owner's live pass). A state never observed
+Not forced against a live session: every state above was forced against a fake
+Supabase client and rendered
+in jsdom, or in the preview, never against a live session (Q-4, the owner's live
+pass). A state never observed
 is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 
-Not tested: the old address /golf/dashboard/stats/team sending a non-coach to /stats (it is in the Fairway
+Not tested: the old address /golf/dashboard/stats/team sending a non-coach to
+/stats (it is in the Fairway
 page, which the test does not import); only the Clubhouse frame's side of it is.
 
 ## Accessibility
@@ -140,10 +229,35 @@ Notes:             client code 17.7 to 11.8 KB minified after the server/island 
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P004__filter-sheet__coach__375__date-field-targets__after__83b9990.png` | after | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
+| `P004__filter-sheet__coach__375__date-field-targets__before__83b9990.png` | before | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
+
+## 2026-10-02 — Mobile design fidelity verification
+
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has
+  no horizontal document overflow; roster status notes and stats figure labels
+  remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight
+  and layered shadow. The captures use deterministic preview fixtures, not a
+  live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
+
+## 2026-10-02 — Intuitive improvement verification
+
+- WebKit measured the filter target at 44×44px at 375, 390 and 430, each with
+  zero horizontal overflow.
+- Fixture actions do not touch production. These checks do not establish
+  intended-user discoverability, physical iPhone performance or durable
+  live-data outcomes.
 
 ## Open verification gaps
 
@@ -156,3 +270,21 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 - Found and fixed 2026-09-30: the CSV export wrote a name that starts with = + - or @ as a formula. It is
   written as text now (40501), and the test fails with the fix taken out (checked).
 - v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet" (D-71); not built, owner decision.
+
+## 2026-10-02 — Settled WebKit filter-sheet targets
+
+- Scoped phone date-field repair: From/To measure 44px at 375, 390 and 430px,
+  with 16px text. Desktop 1440px remains 38px/14px. Document width equals
+  viewport in all four captures.
+- Close, pills and window segments have shared 44px pseudo targets; WebKit
+  `elementFromPoint` verifies the expanded area above/below each visible
+  control. Adjacent expanded targets retain 2.08–4px horizontal gaps.
+- Scrolling the sheet body exposes Pick rounds; Exclude these remains reachable
+  through its expanded target and Clear/Done stay visible in the footer.
+- Before/after date-field evidence is logged in P004's screenshot table; both
+  Stats pages use this shared sheet CSS. Runtime geometry:
+  `/tmp/helm-clubhouse-visual-secondary/stats-targets.json`.
+- The semantic feature mapper reports stats.css as unmapped; the existing
+  P004/P005 page manifests govern it. No behavior or data contract changed.
+- Local fixture WebKit only; physical Safari chrome and native date picker were
+  not exercised. No production writes.

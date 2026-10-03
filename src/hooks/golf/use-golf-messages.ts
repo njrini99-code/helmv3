@@ -618,7 +618,7 @@ export function useGolfMessages(
       // conversation was opened. That is the "Can't see pics" report from the
       // team chat: the sender saw it send, the recipients opened the thread
       // later and saw nothing.
-      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at')
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -924,7 +924,7 @@ export function useGolfMessages(
       ? 'unknown'
       : 'refused';
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, replyToId?: string | null) => {
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
@@ -945,7 +945,7 @@ export function useGolfMessages(
       edited_at: null,
       is_deleted: false,
       // A plain text message from the composer — never one of the
-      // structured kinds (poll/rsvp/event/etc), never a reply, never pinned.
+      // structured kinds (poll/rsvp/event/etc), never pinned. Replies use the existing link.
       // These columns (and golf_message_reactions/_mentions/_responses)
       // shipped to production 2026-09-04 with no committed migration; see
       // supabase/migrations/20260904160000_golf_messaging_structured.sql.
@@ -953,7 +953,7 @@ export function useGolfMessages(
       payload: null,
       pinned_at: null,
       pinned_by: null,
-      reply_to_id: null,
+      reply_to_id: replyToId ?? null,
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
@@ -969,7 +969,9 @@ export function useGolfMessages(
       // reports it back as the success it is (see sendMessage/action's 23505
       // handling) instead of creating a second, duplicate row.
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, content, optimisticId),
+        () => replyToId
+          ? sendGolfMessage(conversationId, content, optimisticId, replyToId)
+          : sendGolfMessage(conversationId, content, optimisticId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
 
@@ -1030,7 +1032,9 @@ export function useGolfMessages(
 
     try {
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, target.content, messageId),
+        () => target.reply_to_id
+          ? sendGolfMessage(conversationId, target.content, messageId, target.reply_to_id)
+          : sendGolfMessage(conversationId, target.content, messageId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
       if (!result || !result.success || ('error' in result && result.error)) {

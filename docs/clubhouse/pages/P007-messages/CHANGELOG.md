@@ -3,6 +3,121 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — End obsolete slow-save feedback
+
+Messages now ties its CH-1902 notice to the attempt it describes. The notice
+and pending timer end on settlement, screen unmount, or team-scope change.
+Old callbacks cannot revive it after A → B → A navigation, and old cleanup
+preserves new feedback. This affects feedback only: send/retry, busy guards,
+refusal and unknown attachment outcomes remain unchanged. The 5-second
+threshold and default 4-second confirmations / 8-second errors are unchanged.
+The focused Messages regression confirms that a settled mute failure removes
+the slow notice while its error remains visible. The shared verification set
+has 21 unique passing cases: 11 Toast and 10 page/action cases. No later
+optimized-build or browser result is claimed by this entry.
+
+## 2026-10-02 — Owner correction: softer reply and message surfaces
+
+Removed the green stripe from quoted replies in both composer and history.
+The author and snippet establish hierarchy on a softly floating ivory face.
+Attachment cards, file chips and reaction badges consume canonical elevation
+instead of adding their own decorative outlines. Composer recovery notices
+retain their status tone and actions with a softer floating edge. Existing
+reply, send, multiline, scroll and recovery behavior stays intact.
+The selected inbox conversation keeps its tint and stronger title while
+dropping the same green edge stripe.
+
+## 2026-10-02 — Visual repair: six-line phone editor
+
+The phone writing pill now includes its padding and borders when sizing, with
+a 144px mobile cap so six 20px lines fit completely. Desktop keeps its 132px
+cap. Longer drafts still scroll within the field and retain the visible caret.
+Settled WebKit checks at 375, 390 and 430px in a 480px viewport kept the editor
+and Send inside the available screen. The focused sizing regression passed.
+
+## 2026-10-02 — Release repair: composer resize and attachment outcome recovery
+
+The WebKit phone thread reproduced a 180px bottom gap after selecting a quote
+and
+writing six lines: the last bubble remained behind the expanded composer. The
+thread anchor now observes viewport/content size and preserves the prior reading
+intent even when Safari emits a resize scroll before the observer. Newest
+readers
+stay at the end; older readers keep their position. Before/after captures record
+the exact gap; simulated keyboard opening/closing also held the end.
+
+Attachment text can be delivered even when the metadata batch fails. The UI now
+separates complete, partial, refused and unknown outcomes. Partial recovery
+keeps
+only unsaved files and original reply target, so retry does not duplicate
+delivered
+text. Recovery filename chips now wrap unbroken names within the phone viewport.
+Unknown recovery freezes the original payload, uses the hook's same-attempt
+retry, and preserves later pending-request edits separately. The hook stores the
+exact uploaded request under the authenticated user and conversation before the
+server call. After a page reload, the composer shows the stored caption,
+filenames
+and reply target; Retry uses those original IDs and paths without uploading or
+plain-text sending again. The later ordinary draft remains durable even while a
+recovery Retry is pending. A refused recovered attachment displays filenames to
+choose again, since a reload cannot restore local File bytes. CH-7217 gates
+normal
+Send when the pending-request check cannot be completed. CH-7022/7023 preserve
+existing shared-file-open CH-7021. Local authenticated WebKit recovery verified
+lost responses after commit, reload, and stable message/attachment counts.
+
+## 2026-10-02 — Phone messaging follows the owner's Apple Messages benchmark
+
+Branch: `codex/clubhouse-design-fidelity`. Shiro fix review and Frontend Design
+Premium interaction review found identical rounded phone bubbles, a redundant
+avatar rail in direct chats, and Return sending immediately. Restored run
+geometry
+and terminal tails, expanded the usable bubble column to 82%, retained existing
+green/ivory depth, and made phone Return multiline with explicit Send. Desktop
+keyboard behavior is preserved.
+
+Long press keeps selected text and actual time in the existing action sheet.
+Reply and swipe right select a real parent; swipe left reveals actual message
+time.
+Quotes show loaded author/text or attachment labels, truthful
+deleted/unavailable
+states, and scroll only to loaded parents. Parent jumps honor reduced motion
+with
+an instant scroll; the focused timestamp/quote test verifies both motion
+settings.
+Sending forwards the existing reply
+ID
+through text and attachment hooks. Pending sends synchronously lock reply
+changes;
+text failures retain the target in their bubble and attachment refusals restore
+text/files/target. Leaving a phone thread clears reply intent while retaining
+text.
+The pending long-press timer is cancelled on unmount.
+
+Verification: final Messages suite 74/74 and audit suite 8/8 (82 total), capped
+at
+one worker, 11.61 seconds. Scoped ESLint and diff checks pass. WebKit at 375,
+390 and
+430 has no horizontal overflow; 390 pointer long press, rightward Reply gesture,
+Return/newline and selected-message context were exercised. Thread Axe scan
+reports
+zero WCAG 2 A/AA and 2.1 AA violations. Four captures are local and recorded
+under
+`P007-messages/2026-10-02`; Next's development indicator overlaps Attach in
+captures
+and is development-only. Physical iPhone Safari remains an owner verification
+gap.
+
+## 2026-10-01 — The intended depth in message bubbles
+
+Branch: `codex/clubhouse-design-fidelity`. Owner requested more depth in bubbles
+and cards. Incoming bubbles now use a graded warm ivory sheet, with upper light,
+lower edge and two grounded shadows. Sent bubbles use a graded Augusta green
+face and their own highlight/contact shadow. The same tokens apply to desktop
+and phone; phone body text retains its 17px reading size. No sending, delivery,
+unread, attachments or identity behavior changes. Before/after WebKit thread
+captures are in the local screenshot gallery.
+
 ## 2026-10-01 — Aesthetic audit: unread rows read as unread, placeholders and initials hold their floors
 
 ```text
