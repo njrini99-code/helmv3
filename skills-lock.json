@@ -1,18 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "supabase": {
-      "source": "supabase/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/supabase/SKILL.md",
-      "computedHash": "583344c20e90f3654dbb0632f088d89fd9f1dde8ac85e8a644dd12eee59b1380"
-    },
-    "supabase-postgres-best-practices": {
-      "source": "supabase/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
-      "computedHash": "e14e276241805c97dbcfe40dcbea1a3035269cc7293cac4b1832dda41a835e60"
-    },
     "app-store-screenshots": {
       "source": "skills-101/superpowers",
       "sourceType": "github",
@@ -36,6 +24,24 @@
       "sourceType": "github",
       "skillPath": "skills/debugging-capacitor/SKILL.md",
       "computedHash": "e2782526d4fd891f40514575fffda70746b0be2480a077842bf7a44f357d6852"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "211141fd078b4b3645803868528d54221bc7755d24d5c8af45a366785c151dba"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "e14e276241805c97dbcfe40dcbea1a3035269cc7293cac4b1832dda41a835e60"
+    },
+    "supabase-server": {
+      "source": "supabase/server",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-server/SKILL.md",
+      "computedHash": "5a5cda5bf2f2c645876db9326e4ce71f0938adac8ca9ca8b73cf62e119e743b6"
     }
   }
 }
