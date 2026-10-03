@@ -147,6 +147,21 @@ describe('pattern-miner starvation telemetry — per-player fingerprint', () => 
     const [ctx] = loggedFingerprints();
     expect(ctx?.fingerprint).toEqual(['pattern-miner-starvation', 'player-dddd']);
   });
+
+  it('stays telemetry at any round count: info severity, bursts folded (Bridge noise, 2026-10-01)', async () => {
+    // Production 2026-10-01: ~200 starvation rows in 24h across 11 players, the
+    // >=16-round ones at 'warning'. The classifier (incident-classification.ts
+    // TELEMETRY_PHRASES '.starvation') and feature-registry both call this
+    // telemetry, so a 'warning' row only joined the triage queue, got closed,
+    // and re-fired minutes later (pattern-miner-starvation:e61da37b… resolved
+    // 21:17Z, back 22:11Z as 4 rows in 3s).
+    roundsData.rows = flatRounds(20);
+    await new PatternMiner('player-eeee').minePatterns();
+    const calls = logServerEventMock.mock.calls as unknown as Array<[string, { durableCollapse?: boolean }, string]>;
+    const [, ctx, severity] = calls[0]!;
+    expect(severity).toBe('info');
+    expect(ctx.durableCollapse).toBe(true);
+  });
 });
 
 // OD-03 leak (2026-09-28 audit): mined patterns and the insights built on them
