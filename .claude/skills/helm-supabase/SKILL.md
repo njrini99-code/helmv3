@@ -79,9 +79,25 @@ untrusted data.
 
 ## Testing paths (cheapest first)
 1. Vitest with mocked Supabase: `npm run test:file -- <paths>`.
-2. Local stack (`supabase start`, then `npm run test:rls` for pgTAP). This
-   still needs a Docker-API container runtime (Docker Desktop, OrbStack, or
-   Podman) running; the CLI does not run the stack without one.
+2. Local stack, then `npm run test:rls` for pgTAP. No Docker needed: CLI
+   2.119+ runs the stack as native processes (alpha, off by default,
+   macOS Apple silicon and Linux):
+   `SUPABASE_EXPERIMENTAL_STACK=1 supabase start --runtime native --stack <name>`.
+   One stack per name, so parallel worktrees can each run their own.
+   `supabase stack list|status|logs|stop|destroy` manage them (same env var).
+   `--runtime auto` picks Docker, then Podman, then native. The plain
+   `supabase start` without the env var is the legacy Docker path.
+   Our `supabase/config.toml` sets `auth.email.template.*.content_path`,
+   which the native stack rejects (`ExperimentalStackStartError`); run it
+   against a scratch copy of `supabase/` with those lines removed (verified
+   2026-10-03: all migrations and seeds apply natively, and all 85 pgTAP
+   files pass). A native stack idles to `readiness: sleeping`, and
+   `supabase test db --local` then fails with `LocalDbRunningError` even though
+   the database answers on connect. Run `npm run test:rls` with `SUPABASE_CLI`
+   pointing at a wrapper that swaps `--local` for
+   `--db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres` (the local
+   default, not a secret).
+   (`--workdir <copy>`) rather than editing the repo config.
 3. Read-only production checks: `get_advisors`, `query_logs`, read-only
    `execute_sql`.
 4. A Supabase preview branch (`create_branch`): schema only, no customer data,
