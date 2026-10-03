@@ -1,9 +1,8 @@
 'use client';
 
 import { BarChart3, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import type { ChQDetail } from '../../data/qualifiers';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -16,12 +15,14 @@ import { Nine } from '../../ui/Nine';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { dayLabel, plural, positionLabel, shortRange, type ChQRow, type ChQStatus } from './model';
+import { dayLabel, plural, positionLabel, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { StateBadge, StatusPill, ToPar } from './parts';
-import { Courses, Selections } from './QualifierSections';
+import { Courses, Selections, StaleStandings } from './QualifierSections';
+import { NinesSkeleton, Streamed } from './streamed';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -35,18 +36,27 @@ const LIST = '/golf/dashboard/qualifiers';
  */
 export function QualifierDetailPhone({
   data,
+  stale,
+  onBack,
+  onSelectionClick,
   status,
   onAskClose,
   onReopen,
   reopenPending,
 }: {
-  data: ChQDetail;
+  data: ChQDetailCore;
+  /** The standings are the last good ones, because the latest read of them failed. */
+  stale: boolean;
+  /** The top bar's Back: a step back to the list when the list is the entry before this one, the list's address otherwise. */
+  onBack: () => void;
+  /** A click inside the actions: Manage selections leaves the note its Back steps back by (return-state.ts). */
+  onSelectionClick: (e: MouseEvent<HTMLElement>) => void;
   status: ChQStatus;
   onAskClose: () => void;
-  onReopen: () => void;
+  /** Runs the reopen and answers once the server has: the sheet that asked stays up until then. */
+  onReopen: () => Promise<{ success: boolean }>;
   reopenPending: boolean;
 }) {
-  const router = useRouter();
   const coach = data.role === 'coach';
   const [actions, setActions] = useState(false);
   const [peek, setPeek] = useState<string | null>(null);
@@ -64,7 +74,10 @@ export function QualifierDetailPhone({
     <main className="ch-qfm" aria-label={data.name}>
       <PhoneTop
         title="Qualifier"
-        back={{ label: 'Qualifiers', onBack: () => router.push(LIST) }}
+        back={{
+          label: 'Qualifiers',
+          onBack,
+        }}
         action={coach ? <PhoneIconAction icon={Ellipsis} label="Qualifier actions" onClick={() => setActions(true)} /> : undefined}
       />
       <header className="ch-qfm-head">
@@ -77,7 +90,7 @@ export function QualifierDetailPhone({
       </header>
 
       {coach && (
-        <div className="ch-qfm-acts">
+        <div className="ch-qfm-acts" onClickCapture={onSelectionClick}>
           {data.selectionState !== 'selected' && (
             <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
               Manage selections
@@ -115,7 +128,7 @@ export function QualifierDetailPhone({
       )}
 
       <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-        <Board data={data} status={status} onPeek={setPeek} />
+        <Board data={data} status={status} stale={stale} onPeek={setPeek} />
       </SectionBoundary>
 
       <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
@@ -160,11 +173,14 @@ export function QualifierDetailPhone({
               leftIcon={LockOpen}
               disabled={reopenPending}
               onClick={() => {
-                setActions(false);
-                onReopen();
+                // The sheet stays up while the server answers, so the wait is shown on the button that asked; a refusal leaves it
+                // there to try again, and a landed reopen closes it (the sheet then offers Close, not Reopen).
+                void onReopen().then((res) => {
+                  if (res.success) setActions(false);
+                });
               }}
             >
-              Reopen qualifier
+              {reopenPending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
             </Button>
           )}
         </div>
@@ -176,8 +192,8 @@ export function QualifierDetailPhone({
 }
 
 /** The leaderboard as cards (board 02): position, avatar, name and state, to par; rounds, average and total under it. */
-function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; onPeek: (id: string) => void }) {
-  const router = useRouter();
+function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: ChQStatus; stale: boolean; onPeek: (id: string) => void }) {
+  const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';
   const b = data.board;
   const [announce, setAnnounce] = useState('');
@@ -208,9 +224,9 @@ function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; o
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
-          <InlineNotice code="CH-09204" title="Scores didn’t load." body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-09204" title="Scores didn’t load." body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );
@@ -219,6 +235,7 @@ function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; o
     return (
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
+        {stale && <StaleStandings />}
         <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round." body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
       </section>
     );
@@ -227,6 +244,7 @@ function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; o
   return (
     <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
       {head}
+      {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
@@ -312,16 +330,13 @@ function Board({ data, status, onPeek }: { data: ChQDetail; status: ChQStatus; o
 }
 
 /** A player's rounds (board 03): a chip per round, then that round's card, Out and In. */
-function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | null; onClose: () => void }) {
-  const router = useRouter();
+function PlayerRounds({ data, row, onClose }: { data: ChQDetailCore; row: ChQRow | null; onClose: () => void }) {
   const coach = data.role === 'coach';
   const played = row?.rounds ?? [];
   const latest = played.length ? played[played.length - 1]!.number : 1;
   const [n, setN] = useState(latest);
   useEffect(() => setN(latest), [row?.playerId, latest]);
   const rd = played.find((x) => x.number === n) ?? null;
-  const holes = rd && !data.holesError ? (data.holes[rd.id] ?? []) : null;
-  const course = data.roundCourses.find((c) => c.number === n)?.course ?? rd?.course ?? null;
   const messageHref = row && coach ? rebuiltHref(`/golf/dashboard/messages?player=${row.playerId}`, 'coach') : null;
   const statsHref = row ? rebuiltHref(coach ? `/golf/dashboard/stats?player=${row.playerId}` : '/golf/dashboard/stats', data.role) : null;
 
@@ -375,22 +390,16 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | n
             <p className="ch-qfm-muted">Round {n} not submitted yet.</p>
           ) : (
             <>
-              <div className="ch-qfm-rdh ch-num">
-                <span>{[course, dayLabel(rd.date)].filter(Boolean).join(' · ')}</span>
-                <b>{rd.total ?? '—'}</b>
-              </div>
-              {data.holesError ? (
-                <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={() => router.refresh()} />
-              ) : holes && holes.length ? (
-                <>
-                  <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />
-                  <Nine holes={holes.filter((h) => h.n > 9)} label="In" caption={`Round ${n}, back nine`} />
-                </>
-              ) : (
-                <p className="ch-qfm-muted" data-ch-code="CH-09308">
-                  No hole-by-hole card for this round. Only the total was recorded.
-                </p>
-              )}
+              {/* The card and the course name stream in behind the standings: the round's head and total are the standings', so they stay. */}
+              <Streamed
+                fallback={
+                  <PlayerRoundHead round={rd} course={rd.course}>
+                    <NinesSkeleton />
+                  </PlayerRoundHead>
+                }
+              >
+                {(s) => <PlayerRoundCard round={rd} n={n} s={s} />}
+              </Streamed>
               {row.avg != null && (
                 <p className="ch-qfm-muted ch-num">
                   Average {formatFixed(row.avg)} over {plural(row.played - row.shortRounds, '18-hole round')}
@@ -401,5 +410,41 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetail; row: ChQRow | n
         </div>
       )}
     </Modal>
+  );
+}
+
+/** A round in the sheet: its head (course and day, total) over `children`. */
+function PlayerRoundHead({ round, course, children }: { round: ChQRound; course: string | null; children: ReactNode }) {
+  return (
+    <>
+      <div className="ch-qfm-rdh ch-num">
+        <span>{[course, dayLabel(round.date)].filter(Boolean).join(' · ')}</span>
+        <b>{round.total ?? '—'}</b>
+      </div>
+      {children}
+    </>
+  );
+}
+
+/** The streamed part of a round in the sheet: the course assigned to the round, and its card. */
+function PlayerRoundCard({ round, n, s }: { round: ChQRound; n: number; s: ChQDetailSecondary }) {
+  const { refresh, refreshing } = useRefresh();
+  const course = s.roundCourses.find((c) => c.number === n)?.course ?? round.course ?? null;
+  const holes = s.holesError ? null : (s.holes[round.id] ?? []);
+  return (
+    <PlayerRoundHead round={round} course={course}>
+      {s.holesError ? (
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
+      ) : holes && holes.length ? (
+        <>
+          <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />
+          <Nine holes={holes.filter((h) => h.n > 9)} label="In" caption={`Round ${n}, back nine`} />
+        </>
+      ) : (
+        <p className="ch-qfm-muted" data-ch-code="CH-09308">
+          No hole-by-hole card for this round. Only the total was recorded.
+        </p>
+      )}
+    </PlayerRoundHead>
   );
 }

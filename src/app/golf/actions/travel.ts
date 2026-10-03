@@ -130,6 +130,41 @@ export interface UpdateTravelItineraryInput {
 
 // Travel update data is same as UpdateTravelItineraryInput without id
 
+type EventTeamCheck = 'ok' | 'mismatch' | 'unavailable';
+
+const EVENT_TEAM_ERRORS: Record<Exclude<EventTeamCheck, 'ok'>, string> = {
+  mismatch: "That event isn't on this team, so it can't be linked to this itinerary.",
+  unavailable: "Couldn't check the event you linked just now. Please try again.",
+};
+
+/**
+ * An itinerary may link only to one of ITS OWN team's calendar events. The
+ * event id comes from the client, and the link makes the trip appear on that
+ * event for everyone who can read it. A failed read is not "wrong team": it is
+ * reported separately so the coach is told to retry, not that the event is
+ * someone else's.
+ */
+async function eventTeamCheck(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventId: string,
+  teamId: string,
+): Promise<EventTeamCheck> {
+  const { data: event, error } = await supabase
+    .from('golf_events')
+    .select('team_id')
+    .eq('id', eventId)
+    .maybeSingle();
+  if (error) {
+    await logServerError(
+      `travel event link check failed: ${describeError(error)}`,
+      { action: 'travel.eventTeamCheck', featureArea: 'travel' },
+      'warning',
+    );
+    return 'unavailable';
+  }
+  return event && event.team_id === teamId ? 'ok' : 'mismatch';
+}
+
 /**
  * Create a new golf travel itinerary
  */
@@ -149,7 +184,7 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
     // golf_coaches.id, so use the trusted row from auth instead of client input.
     const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -169,6 +204,19 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
     }
     if (!coach) {
       return { success: false, error: 'Only coaches can manage travel itineraries' };
+    }
+
+    // `team_id` and `event_id` arrive from the browser. Being A coach proved
+    // nothing about THIS team: the insert ran for any team uuid and left the
+    // gate to RLS, which a program head staffed on both squads satisfies for
+    // either. Every sibling action (update, delete, expenses, class conflicts)
+    // asks validateCoachTeamAccess; create did not. Staff-strict, before any write.
+    if (!(await validateCoachTeamAccess(supabase, coach.id, validatedData.team_id, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
+    }
+    if (validatedData.event_id) {
+      const eventTeam = await eventTeamCheck(supabase, validatedData.event_id, validatedData.team_id);
+      if (eventTeam !== 'ok') return { success: false, error: EVENT_TEAM_ERRORS[eventTeam] };
     }
 
     // DB column types: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
@@ -311,6 +359,11 @@ async function updateGolfTravelItineraryImpl(input: UpdateTravelItineraryInput) 
     // a program head on both teams; not tied to the active toggle).
     if (!(await validateCoachTeamAccess(supabase, coach.id, itineraryRecord.team_id, coach.organization_id))) {
       return { success: false, error: 'Not authorized for this team' };
+    }
+    // The same link rule as create: only one of this itinerary's own team's events.
+    if (typeof validatedData.event_id === 'string' && validatedData.event_id) {
+      const eventTeam = await eventTeamCheck(supabase, validatedData.event_id, itineraryRecord.team_id);
+      if (eventTeam !== 'ok') return { success: false, error: EVENT_TEAM_ERRORS[eventTeam] };
     }
 
     // Extract update data (omit id and fields that don't exist in the database)

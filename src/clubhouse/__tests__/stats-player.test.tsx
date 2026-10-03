@@ -37,6 +37,7 @@ const emptySpray = () => ({ driving: emptyGroup('driving'), approach: emptyGroup
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { ChPlayerProfile } from '../data/stats-player';
 import { loadPlayerProfile } from '../data/stats-player';
+import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
 import { loadTeamStats } from '../data/stats-team';
 import { resolveClubhouseTeam } from '../routes/team';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
@@ -47,6 +48,7 @@ import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome'
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
 import { ClubhouseMarker } from '../shell/context';
+import { markAppRunning, RouteScope } from '../lib/session-state';
 import StatsLoading from '@/app/golf/(dashboard)/dashboard/stats/loading';
 import './dialog-polyfill';
 
@@ -357,7 +359,12 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
     expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds · 3.9 hcp');
     const figs = document.querySelector('.ch-stm-figs')!;
-    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Form']);
+    // The board's three (m-stats.jsx Player): the trend in words, green when scores come down, amber when they rise (F-54).
+    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Trend']);
+    const trend = figs.querySelector('dd.is-words')!;
+    expect(trend.textContent).toMatch(/^(down|up) \d+\.\d$|^level$|^—$/);
+    if (trend.textContent!.startsWith('down')) expect(trend.classList.contains('ch-gain')).toBe(true);
+    if (trend.textContent!.startsWith('up')) expect(trend.classList.contains('ch-loss')).toBe(true);
     // One section: Scoring first; a chip switches it with a tick.
     expect(screen.getByRole('heading', { level: 2, name: 'Scoring' })).toBeTruthy();
     expect(screen.queryByRole('heading', { level: 2, name: 'Approach' })).toBeNull();
@@ -467,9 +474,21 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
 
   it('CH-5201 CH-5202 CH-5203 failed reads: notices, never zeros', () => {
+    // Rounds that did not load hide every section that reads them (the game section included), so shot-level detail that failed
+    // beside them has no section to say so in: its own notice shows when the rounds did load.
     phone(player({ roundsError: true, statsError: true, stats: null, devError: true }));
-    for (const c of ['CH-5201', 'CH-5202', 'CH-5203']) expect(code(c)).not.toBeNull();
+    for (const c of ['CH-5201', 'CH-5203']) expect(code(c)).not.toBeNull();
     expect(code('CH-5301')).toBeNull();
+    expect(code('CH-5202')).toBeNull();
+    cleanup();
+    phone(player({ statsError: true, stats: null }));
+    expect(code('CH-5202')).not.toBeNull();
+    expect(code('CH-5301')).toBeNull();
+  });
+
+  it('C-24 CH-5213 the round cache does not load: the phone says so above the figures', () => {
+    phone(player({ cacheError: true }));
+    expect(code('CH-5213')!.textContent).toMatch(/fairways, greens, putts and scrambling are missing/);
   });
 
   it('CH-5302 no rounds in the window', () => {
@@ -697,6 +716,34 @@ describe('Stats player · the loader', () => {
     expect(none!.statsError).toBe(false);
   });
 
+  // Swap audit C-24(f): a round-cache read that failed left fairways, greens, putts and scrambling as dashes, read as no data.
+  it('C-24 CH-5213 the round cache does not load: the profile says so above the figures', async () => {
+    tables.current = profileTables({ golf_round_stats_cache: { error: { message: 'boom' } } });
+    const profile = (await loadAs())!;
+    expect(profile.cacheError).toBe(true);
+    expect(logServer).toHaveBeenCalledWith('stats', 'roundCache', expect.anything());
+    show(player({ cacheError: true }));
+    await expectCode('CH-5213', /Some round figures didn't load/);
+    cleanup();
+    tables.current = profileTables();
+    expect((await loadAs())!.cacheError).toBe(false);
+  });
+
+  // Swap audit C-14: a timed-out shot read comes back as getDetailedStats' round-level fallback, which counts the rounds but
+  // scores no hole. Game detail showed its zero birdies, pars and scrambling as the player's figures.
+  it('C-14 the detail’s round-level fallback (rounds counted, no hole scored) shows as "didn\'t load", never as zeros', async () => {
+    const fallback = calculateStatsFromShots([], [], []);
+    detailed.mockResolvedValue({ ...fallback, roundsPlayed: 1, holesPlayed: 18, scoringAverage: 72 });
+    const profile = await loadAs();
+    expect(profile!.statsError).toBe(true);
+    expect(profile!.stats).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('stats', 'detailedStatsFallback', expect.any(String), 'stats_analytics');
+    // A real answer scores its holes, and stands.
+    const { isRoundLevelFallback } = await vi.importActual<typeof import('../data/stats-player')>('../data/stats-player');
+    expect(isRoundLevelFallback({ ...fallback, roundsPlayed: 1, totalPars: 14, totalBogeys: 4 }, 1)).toBe(false);
+    expect(isRoundLevelFallback({ ...fallback, roundsPlayed: 1 }, 0)).toBe(false);
+  });
+
   it('every shot-level figure counts the window’s own 18-hole rounds: the same ids go to the detail, the putts, the holes, the approaches and where shots finish; nine-hole rounds and other windows stay out', async () => {
     const at = (id: string, day: number, type: string, holes = 18) => ({ id, player_id: OTHER, round_date: `2026-09-${String(day).padStart(2, '0')}`, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: holes, status: 'completed', round_type: type });
     const rounds = [...Array.from({ length: 12 }, (_, i) => at(`r${i + 1}`, 28 - i, i === 2 || i === 5 ? 'qualifier' : 'practice')), at('nine', 29, 'practice', 9)];
@@ -764,19 +811,25 @@ describe('Stats player · the loader', () => {
     expect(screen.getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?window=season');
   });
 
-  it('52101 the loader reads each source once: the team, the player and the membership together, then rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once', async () => {
+  it('52101 the loader reads each source once: the team, the player, the membership and the player’s own rounds together, a coach’s teammates’ rounds on their own, and no round twice', async () => {
     const reads: Record<string, number> = {};
+    const roundReads: string[][] = [];
+    const playerIds = (f: Filters) => f.find(([k, a]) => k === 'in' && a[0] === 'player_id')?.[1][1] as string[] | undefined;
     const count = (table: string, answer: import('./supabase-fake').ChFakeTables[string]) => (f: Filters) => {
       reads[table] = (reads[table] ?? 0) + 1;
+      if (table === 'golf_rounds') roundReads.push(playerIds(f) ?? []);
       return typeof answer === 'function' ? answer(f) : answer;
     };
-    tables.current = Object.fromEntries(Object.entries({ ...profileTables(), golf_holes: { data: [] }, golf_shots: { data: [] } }).map(([table, answer]) => [table, count(table, answer)]));
+    const observed = () => Object.fromEntries(Object.entries({ ...profileTables(), golf_holes: { data: [] }, golf_shots: { data: [] } }).map(([table, answer]) => [table, count(table, answer)]));
+    tables.current = observed();
     await loadAs('coach', OTHER, 'last10');
     expect(reads).toEqual({
       golf_teams: 1,
       golf_players: 1,
       golf_team_members: 2,
-      golf_rounds: 1,
+      // The player's own rounds, and the teammates' (the comparisons' team column): two reads that share no player, so no round is read twice.
+      golf_rounds: 2,
+      // The teammates have no round here, so only the player's own round figures are read.
       golf_round_stats_cache: 1,
       golf_pga_standards: 1,
       golf_player_focus_areas: 1,
@@ -785,8 +838,19 @@ describe('Stats player · the loader', () => {
       golf_holes: 1,
       golf_shots: 2,
     });
+    expect(roundReads.map((ids) => ids.join()).sort()).toEqual(['p2', OTHER].sort());
     expect(detailed).toHaveBeenCalledTimes(1);
     expect(getSpray).toHaveBeenCalledTimes(1);
+
+    // A player sees only themselves: no team list, and one read of rounds.
+    for (const k of Object.keys(reads)) delete reads[k];
+    roundReads.length = 0;
+    tables.current = observed();
+    await loadAs('player', OTHER, 'last10');
+    expect(reads.golf_team_members).toBe(1);
+    expect(reads.golf_rounds).toBe(1);
+    expect(roundReads).toEqual([[OTHER]]);
+
     // A failed rounds read is flagged, never thrown, and the rest of the page loads.
     tables.current = profileTables({ golf_rounds: { error: { message: 'boom' } } });
     const partial = await loadAs();
@@ -967,7 +1031,7 @@ describe('Stats player · network', () => {
     }
   });
 
-  it('CH-5402 while the new window loads the page is marked busy, and it stays the last 10 rounds until the server answers', async () => {
+  it('CH-5402 while the new window loads the page is marked busy: the switch moves on the tap, the figures stay the last 10 rounds until the server answers', async () => {
     const user = userEvent.setup();
     router.push.mockImplementation(() => new Promise(() => {}));
     try {
@@ -976,9 +1040,40 @@ describe('Stats player · network', () => {
       await user.click(screen.getByRole('radio', { name: 'Season' }));
       await waitFor(() => expect(document.querySelector('.ch-st')!.getAttribute('aria-busy')).toBe('true'));
       expect(code('CH-5402')).not.toBeNull();
-      expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
+      // F-55: the switch answers the tap at once; what is still the last 10 rounds is the figures, dimmed under it.
+      expect(screen.getByRole('radio', { name: 'Season' }).getAttribute('aria-checked')).toBe('true');
+      expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('false');
     } finally {
       router.push.mockReset();
+    }
+  });
+
+  it('CH-5903 the note names the figures still shown while a window loads (the last 10 rounds), outside the dimmed page; a quick Season, Qualifiers, Season ends with the last tap (the last choice wins)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      router.push.mockImplementation(() => new Promise(() => {}));
+      show(player({ window: 'last10' }));
+      const checked = () =>
+        within(screen.getByRole('radiogroup', { name: 'Window' }))
+          .getAllByRole('radio')
+          .filter((r) => r.getAttribute('aria-checked') === 'true')
+          .map((r) => r.textContent);
+      expect(code('CH-5903')).toBeNull();
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      expect(code('CH-5903')!.textContent).toBe('Showing the last 10 rounds, loading the season');
+      expect(document.querySelector('.ch-st')!.contains(code('CH-5903'))).toBe(false);
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      expect(code('CH-5903')!.textContent).toBe('Showing the last 10 rounds, loading qualifier rounds');
+      // Back to what is on screen: the switch, the note and the slow notice all end with the last tap.
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      expect(code('CH-5903')).toBeNull();
+      expect(checked()).toEqual(['Last 10']);
+      vi.advanceTimersByTime(7000);
+      expect(code('CH-5902')).toBeNull();
+    } finally {
+      router.push.mockReset();
+      vi.useRealTimers();
     }
   });
 
@@ -1015,6 +1110,153 @@ describe('Stats player · network', () => {
       expect(router.push).not.toHaveBeenCalled();
     } finally {
       online.mockRestore();
+      window.matchMedia = real;
+    }
+  });
+});
+
+/** What a failed read must never look like: a count, an average, an early-read note or an empty state made of the rounds that did not load. */
+const FALSE_ZEROS = /\b0 (countable )?rounds?\b|Last 0|No rounds|No shot-by-shot|Early read|Nothing to break down/;
+
+describe('Stats player · a failed read is never drawn as zero', () => {
+  beforeEach(async () => {
+    detailed.mockReset();
+    detailed.mockResolvedValue({ ...PREVIEW_PLAYER.stats!, roundsPlayed: 0 });
+    getSpray.mockReset();
+    getSpray.mockResolvedValue(emptySpray());
+    // The real loader on a rounds read that fails: what the page is handed is what production hands it.
+    tables.current = profileTables({ golf_rounds: { error: { message: 'boom' } } });
+  });
+
+  it('CH-5201 51402 the desktop profile: dashes in the hero, no count, no early-read note, and each tab that reads rounds is empty of figures, with the one notice and Try again', async () => {
+    const user = userEvent.setup();
+    const profile = await loadAs('coach', OTHER, 'season');
+    expect(profile!.roundsError).toBe(true);
+    show(profile!);
+    const figs = [...document.querySelectorAll('.ch-pf-hero__figs > div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]);
+    expect(figs).toEqual([
+      ['Scoring avg', '—'],
+      ['Handicap', '3.9'],
+      ['SG / round', '—'],
+      ['Rounds', '—'],
+    ]);
+    expect(document.querySelector('.ch-pf-hero__figs')!.textContent).not.toMatch(FALSE_ZEROS);
+    // The Rounds tab carries no count (a "0" there would say the player has none).
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Game detail', 'Rounds', 'Development']);
+    expect(code('CH-5305')).toBeNull();
+    expect(code('CH-5308')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const tab of [/Overview/, /Game detail/, /Rounds/]) {
+      await openTab(user, tab);
+      expect(document.querySelector('main')!.textContent).not.toMatch(FALSE_ZEROS);
+      expect(document.querySelector('.ch-st-panel')!.textContent).toBe('');
+    }
+    // What does not read the rounds still shows.
+    await openTab(user, /Development/);
+    expect(document.querySelector('.ch-st-panel')!.textContent).not.toBe('');
+  });
+
+  it('CH-5201 51402 the phone profile: no round count under the name, no early-read note, no figure or empty section made of nothing', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const profile = await loadAs('coach', OTHER, 'season');
+      function Slot() {
+        const { setSlot } = usePhoneChromeState();
+        return <div ref={setSlot} />;
+      }
+      wrap(
+        <PhoneChromeProvider>
+          <Slot />
+          <StatsPlayer data={profile!} coachId="c1" />
+        </PhoneChromeProvider>,
+      );
+      expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 3.9 hcp');
+      expect(code('CH-5201')).not.toBeNull();
+      expect(code('CH-5305')).toBeNull();
+      expect(code('CH-5308')).toBeNull();
+      expect(document.querySelector('main')!.textContent).not.toMatch(FALSE_ZEROS);
+      expect(document.querySelector('.ch-stm-figs')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('a read that worked and found no round is still an empty answer: zero rounds, the early read and the empty sections are drawn', async () => {
+    tables.current = profileTables({ golf_rounds: { data: [] } });
+    const profile = await loadAs('coach', OTHER, 'season');
+    expect(profile!.roundsError).toBe(false);
+    show(profile!);
+    expect(document.querySelector('.ch-pf-hero__figs')!.textContent).toMatch(/0 rounds/);
+    expect(code('CH-5305')).not.toBeNull();
+    expect(code('CH-5201')).toBeNull();
+  });
+});
+
+describe('Stats player · what the coach chose comes back (PAGE_PERFORMANCE.md rule 1)', () => {
+  beforeEach(() => sessionStorage.clear());
+  const selected = () => screen.getByRole('tab', { selected: true }).textContent;
+
+  it('51404 the tab comes back on a return to the profile; an address that names a tab wins until one is chosen; another team starts on Overview', async () => {
+    markAppRunning();
+    const user = userEvent.setup();
+    const at = (scope: string, tab?: string) =>
+      wrap(
+        <RouteScope value={scope}>
+          <StatsPlayer data={player()} coachId="c1" initialTab={tab} />
+        </RouteScope>,
+      );
+    const first = at('/golf/dashboard/stats\u0000t1');
+    expect(selected()).toBe('Overview');
+    await openTab(user, /Game detail/);
+    first.unmount();
+    const back = at('/golf/dashboard/stats\u0000t1');
+    expect(selected()).toBe('Game detail');
+    back.unmount();
+    // Roster's "All N" opens the rounds tab (D-53): the address wins, and the first tab chosen after it is kept.
+    const named = at('/golf/dashboard/stats\u0000t1', 'rounds');
+    expect(selected()).toMatch(/^Rounds/);
+    await openTab(user, /Development/);
+    expect(selected()).toBe('Development');
+    named.unmount();
+    const again = at('/golf/dashboard/stats\u0000t1');
+    expect(selected()).toBe('Development');
+    again.unmount();
+    at('/golf/dashboard/stats\u0000t2');
+    expect(selected()).toBe('Overview');
+  });
+
+  it('51404 on the phone the game section chosen comes back; on desktop the section only follows the scroll and is not kept', async () => {
+    markAppRunning();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      const user = userEvent.setup();
+      function Slot() {
+        const { setSlot } = usePhoneChromeState();
+        return <div ref={setSlot} />;
+      }
+      const at = (scope: string) =>
+        wrap(
+          <RouteScope value={scope}>
+            <PhoneChromeProvider>
+              <Slot />
+              <StatsPlayer data={player()} coachId="c1" />
+            </PhoneChromeProvider>
+          </RouteScope>,
+        );
+      const pressed = () => screen.getAllByRole('button', { pressed: true }).map((b) => b.textContent);
+      const first = at('/golf/dashboard/stats\u0000t1');
+      expect(pressed()).toContain('Scoring');
+      await user.click(screen.getByRole('button', { name: 'Putting' }));
+      expect(pressed()).toContain('Putting');
+      first.unmount();
+      const back = at('/golf/dashboard/stats\u0000t1');
+      expect(pressed()).toContain('Putting');
+      back.unmount();
+      at('/golf/dashboard/stats\u0000t2');
+      expect(pressed()).toContain('Scoring');
+    } finally {
       window.matchMedia = real;
     }
   });

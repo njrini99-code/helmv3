@@ -1915,6 +1915,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/native-haptics.ts",
+        "pattern": "src/lib/native-haptics.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/native/**",
         "pattern": "src/lib/native/**",
         "category": "services"
@@ -12196,6 +12201,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/recurring-events.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/recurring-events.ts",
           "anchor": "src/lib/golf/recurrence"
         },
         {
@@ -15840,6 +15850,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -16677,6 +16692,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/fairway/haptics.ts"
+        }
+      ]
+    },
+    {
+      "source": "ios_native_shell",
+      "target": "services:src/lib/native-haptics.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/native-haptics.ts"
         }
       ]
     },
@@ -18558,7 +18585,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/program-pulse.ts",
-          "anchor": "src/lib/golf/round-countable"
+          "anchor": "src/lib/golf/round-score-countable"
         },
         {
           "kind": "import_graph",
@@ -19313,6 +19340,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/qualifying.ts",
           "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/qualifying/loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         }
       ]
     },

@@ -24,6 +24,19 @@
     ]
   },
   {
+    "id": 10103,
+    "page": "P001",
+    "category": 1,
+    "item": 3,
+    "name": "TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN",
+    "meaning": "Switching teams sets the active team on the server (the same action Fairway uses), then refreshes the page so the layout, the sidebar's next event and Roster badge, and the page itself read for the new team; the route remounts for the new team, so a search, an open panel or a live feed the old team's screen held does not carry over, while a refresh for the same team keeps its state.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/team-switch.ts#useTeamSwitch; src/clubhouse/shell/ClubhouseFrame.tsx#ClubhouseFrame",
+    "tests": [
+      "src/clubhouse/__tests__/team-switch.test.tsx"
+    ]
+  },
+  {
     "id": 10201,
     "page": "P001",
     "category": 2,
@@ -88,6 +101,17 @@
     "name": "NOTHING_IS_SCHEDULED",
     "chCode": "CH-1304",
     "meaning": "Nothing is scheduled",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10405,
+    "page": "P001",
+    "category": 4,
+    "item": 5,
+    "name": "A_COACH_WITH_ONE_TEAM_A_COACH",
+    "chCode": "CH-1305",
+    "meaning": "A coach with one team, a coach who cannot switch (an assistant on several teams), or a player",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -202,6 +226,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10611,
+    "page": "P001",
+    "category": 6,
+    "item": 11,
+    "name": "SWITCHING_TEAM_FAILS",
+    "chCode": "CH-1003",
+    "meaning": "Switching team fails (a head coach on more than one team)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -272,6 +307,19 @@
     ]
   },
   {
+    "id": 10803,
+    "page": "P001",
+    "category": 8,
+    "item": 3,
+    "name": "TEAM_SWITCH_IS_A_HEAD_COACHS",
+    "meaning": "Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer.",
+    "status": "implemented",
+    "where": "src/clubhouse/shell/team-switch.ts#teamSwitchFor; src/app/golf/actions/team-switcher.ts#setActiveTeam",
+    "tests": [
+      "src/clubhouse/__tests__/team-switch.test.tsx"
+    ]
+  },
+  {
     "id": 10901,
     "page": "P001",
     "category": 9,
@@ -331,7 +379,7 @@
     "name": "MOVING_TO_ANOTHER_PAGE",
     "chCode": "CH-1601",
     "meaning": "Moving to another page, or its first load",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -342,7 +390,7 @@
     "name": "OPENING_MORE_ON_A_PHONE",
     "chCode": "CH-1602",
     "meaning": "Opening More on a phone",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -353,7 +401,7 @@
     "name": "OPENING_THE_BELL_OR_ANY_MENU",
     "chCode": "CH-1603",
     "meaning": "Opening the bell or any menu",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -364,7 +412,7 @@
     "name": "A_TOAST_ARRIVES_OR_LEAVES",
     "chCode": "CH-1604",
     "meaning": "A toast arrives or leaves",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -375,7 +423,7 @@
     "name": "GOING_OFFLINE_OR_BACK_ONLINE",
     "chCode": "CH-1605",
     "meaning": "Going offline or back online",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -386,7 +434,7 @@
     "name": "PRESSING_ANY_BUTTON_ROW_OR_TAB",
     "chCode": "CH-1606",
     "meaning": "Pressing any button, row, tab or link",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -397,7 +445,7 @@
     "name": "THE_FIRST_TAB_ON_A_PAGE",
     "chCode": "CH-1607",
     "meaning": "The first Tab on a page",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -408,7 +456,7 @@
     "name": "ANIMATIONS_OFF_IN_SETTINGS_OR_THE_OS",
     "chCode": "CH-1608",
     "meaning": "Animations off in Settings, or the OS asks for reduced motion",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -419,7 +467,7 @@
     "name": "A_PAGE_OR_SECTION_IS_LOADING",
     "chCode": "CH-1609",
     "meaning": "A page or section is loading",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -452,7 +500,7 @@
     "name": "OPENING_THE_BELL_ON_A_PHONE",
     "chCode": "CH-1612",
     "meaning": "Opening the bell on a phone",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -463,7 +511,7 @@
     "name": "CHANGING_TABS",
     "chCode": "CH-1701",
     "meaning": "Changing tabs (not tapping the tab they're on)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -474,7 +522,7 @@
     "name": "ANY_SAVE_OR_SEND_LANDS",
     "chCode": "CH-1702",
     "meaning": "Any save or send lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -485,7 +533,7 @@
     "name": "ANY_SAVE_OR_SEND_FAILS",
     "chCode": "CH-1703",
     "meaning": "Any save or send fails",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -496,7 +544,7 @@
     "name": "OPENING_MORE_SWIPING_THE_SHEET_AWAY",
     "chCode": "CH-1704",
     "meaning": "Opening More; swiping the sheet away",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -507,7 +555,7 @@
     "name": "OPENING_THE_BELL_A_NOTIFICATION_OR_A",
     "chCode": "CH-1705",
     "meaning": "Opening the bell, a notification, or a menu item",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -518,7 +566,18 @@
     "name": "THE_CONNECTION_DROPS",
     "chCode": "CH-1706",
     "meaning": "The connection drops",
-    "status": "reserved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11707,
+    "page": "P001",
+    "category": 17,
+    "item": 7,
+    "name": "PICKING_ANOTHER_TEAM_IN_THE_SWITCHER",
+    "chCode": "CH-1707",
+    "meaning": "Picking another team in the switcher",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -551,7 +610,7 @@
     "name": "THE_CURRENT_PAGE_IS_MARKED_IN_THE",
     "chCode": "CH-1803",
     "meaning": "The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -562,7 +621,7 @@
     "name": "TOASTS_ARE_ANNOUNCED_CONFIRMATIONS_POLITELY_ERRORS_RIGHT",
     "chCode": "CH-1804",
     "meaning": "Toasts are announced: confirmations politely, errors right away",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -573,7 +632,7 @@
     "name": "THE_BELL_PANEL_IS_A_DIALOG_IT",
     "chCode": "CH-1805",
     "meaning": "The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -628,7 +687,7 @@
     "name": "ON_THE_PHONE_THE_TOP_BAR_NAMES",
     "chCode": "CH-1810",
     "meaning": "On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes (\"Back to More\") in place of the bell",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -650,6 +709,28 @@
     "name": "A_TOAST_RAISED_WHILE_A_DIALOG_OR",
     "chCode": "CH-1812",
     "meaning": "A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11813,
+    "page": "P001",
+    "category": 18,
+    "item": 13,
+    "name": "ON_A_DESKTOP_A_HEAD_COACH_ON",
+    "chCode": "CH-1813",
+    "meaning": "On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11814,
+    "page": "P001",
+    "category": 18,
+    "item": 14,
+    "name": "ON_THE_PHONE_THE_SAME_COACH_SEES",
+    "chCode": "CH-1814",
+    "meaning": "On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -685,7 +766,7 @@
     "name": "THE_PAGE_IS_SLOW_TO_RESPOND_OR",
     "chCode": "CH-1954",
     "meaning": "The page is slow to respond or shifts after loading (INP, CLS, LCP)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -696,7 +777,7 @@
     "name": "SOMEONE_CLICKS_THE_SAME_THING_OVER_AND",
     "chCode": "CH-1951",
     "meaning": "Someone clicks the same thing over and over (rage click)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -707,7 +788,7 @@
     "name": "A_CLICK_THAT_DOES_NOTHING",
     "chCode": "CH-1952",
     "meaning": "A click that does nothing (dead click)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -718,7 +799,7 @@
     "name": "A_SLOW_RESPONSE_TO_A_CLICK",
     "chCode": "CH-1953",
     "meaning": "A slow response to a click (slow click)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -1589,6 +1670,28 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30407,
+    "page": "P003",
+    "category": 4,
+    "item": 7,
+    "name": "A_PLAYERS_TEAM_HAS_NOBODY_ON_IT",
+    "chCode": "CH-3307",
+    "meaning": "A player's team has nobody on it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30408,
+    "page": "P003",
+    "category": 4,
+    "item": 8,
+    "name": "A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE",
+    "chCode": "CH-3308",
+    "meaning": "A player signed in with no active team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30501,
     "page": "P003",
     "category": 5,
@@ -1789,6 +1892,28 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30617,
+    "page": "P003",
+    "category": 6,
+    "item": 17,
+    "name": "THE_PLAYERS_ROSTER_DOESNT_LOAD",
+    "chCode": "CH-3210",
+    "meaning": "The player's roster doesn't load (a player's own team's members)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30618,
+    "page": "P003",
+    "category": 6,
+    "item": 18,
+    "name": "THE_PLAYERS_ROSTER_LIST_CRASHES",
+    "chCode": "CH-3211",
+    "meaning": "The player's roster list crashes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -1807,7 +1932,7 @@
     "category": 8,
     "item": 1,
     "name": "COACH_ONLY_ROSTER",
-    "meaning": "Only a coach gets the Clubhouse roster: the page hands it over for a coach with the flag on, the route checks the coach again before any read, and a player on this address gets the shell's not-rebuilt notice, never the list, the notes or the join requests.",
+    "meaning": "The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests.",
     "status": "implemented",
     "where": "src/app/golf/(dashboard)/dashboard/roster/page.tsx#GolfRosterPage; src/clubhouse/routes/roster.tsx#ClubhouseRosterRoute",
     "tests": [
@@ -1838,6 +1963,45 @@
     "where": "src/clubhouse/screens/roster/Roster.tsx#remove; useJoinRequests.ts#decideOne; RosterPeek.tsx#CoachNote",
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30804,
+    "page": "P003",
+    "category": 8,
+    "item": 4,
+    "name": "PLAYER_ROSTER_IS_READ_ONLY",
+    "meaning": "A player on this address gets their own team's roster as plain text: name, class year and handicap of the active members. No card or row is a link or a button (none takes focus), and nothing on the screen leads to a teammate's profile, stats or notes, or invites, exports, approves, removes or messages anyone.",
+    "status": "implemented",
+    "where": "src/clubhouse/routes/roster.tsx#ClubhouseRosterRoute; src/clubhouse/screens/roster/TeamRoster.tsx#TeamRoster; TeamRosterPhone.tsx#TeamRosterPhone",
+    "tests": [
+      "src/clubhouse/__tests__/roster-player.test.tsx"
+    ]
+  },
+  {
+    "id": 30805,
+    "page": "P003",
+    "category": 8,
+    "item": 5,
+    "name": "PLAYER_ROSTER_READS_NO_COACH_DATA",
+    "meaning": "The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/roster-player.ts#loadPlayerRoster",
+    "tests": [
+      "src/clubhouse/__tests__/roster-player.test.tsx"
+    ]
+  },
+  {
+    "id": 30806,
+    "page": "P003",
+    "category": 8,
+    "item": 6,
+    "name": "PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST",
+    "meaning": "With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/roster/[id]/layout.tsx#RosterPlayerLayout",
+    "tests": [
+      "src/clubhouse/__tests__/alias.test.ts"
     ]
   },
   {
@@ -1963,7 +2127,7 @@
     "name": "OPENING_OR_SWITCHING_A_PLAYER",
     "chCode": "CH-3601",
     "meaning": "Opening or switching a player",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -1974,7 +2138,7 @@
     "name": "HOVERING_OR_PRESSING_A_FACE_CARD_OR",
     "chCode": "CH-3602",
     "meaning": "Hovering or pressing a face card or row",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -1985,7 +2149,7 @@
     "name": "OPENING_A_PLAYER_CHANGING_A_FILTER_LAYOUT",
     "chCode": "CH-3701",
     "meaning": "Opening a player; changing a filter, layout or sort",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -1996,7 +2160,7 @@
     "name": "AN_EXPORT_LANDS",
     "chCode": "CH-3702",
     "meaning": "An export lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2031,7 +2195,7 @@
     "name": "THE_DESKTOP_LIST_VIEW_IS_A_TABLE",
     "chCode": "CH-3801",
     "meaning": "The desktop list view is a table (phone rows: CH-3806): every value, including the player's open button, sits in a cell under a column header",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2042,7 +2206,7 @@
     "name": "A_FACE_CARD_READS_ITS_STATUS_AS",
     "chCode": "CH-3802",
     "meaning": "A face card reads its status as a word; the green dot is decoration",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2053,7 +2217,7 @@
     "name": "ESC_CLOSES_THE_PLAYER_PANEL_EXCEPT_WHILE",
     "chCode": "CH-3803",
     "meaning": "Esc closes the player panel, except while typing a note (desktop; on the phone, Back and the edge swipe pop the profile, CH-1906)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2064,7 +2228,7 @@
     "name": "THE_NOTE_COUNTER_IS_ANNOUNCED_POLITELY_A",
     "chCode": "CH-3804",
     "meaning": "The note counter is announced politely; a locked note says why it's locked",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2086,6 +2250,17 @@
     "name": "PHONE_A_PLAYER_ROW_IS_ONE_BUTTON",
     "chCode": "CH-3806",
     "meaning": "Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31807,
+    "page": "P003",
+    "category": 18,
+    "item": 7,
+    "name": "THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT",
+    "chCode": "CH-3807",
+    "meaning": "The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2557,6 +2732,17 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 40612,
+    "page": "P004",
+    "category": 6,
+    "item": 12,
+    "name": "THE_SEASONS_LONGEST_PUTT_DOESNT_LOAD",
+    "chCode": "CH-4211",
+    "meaning": "The season's longest putt doesn't load (the one-row read of Season bests)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 40701,
     "page": "P004",
     "category": 7,
@@ -2575,6 +2761,17 @@
     "name": "A_WINDOW_CHANGE_TAKES_LONGER_THAN_5",
     "chCode": "CH-4902",
     "meaning": "A window or filter change takes longer than 5 seconds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 40703,
+    "page": "P004",
+    "category": 7,
+    "item": 3,
+    "name": "A_WINDOW_OR_FILTER_CHANGE_IS_IN",
+    "chCode": "CH-4903",
+    "meaning": "A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -3390,6 +3587,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50618,
+    "page": "P005",
+    "category": 6,
+    "item": 18,
+    "name": "THE_ROUND_CACHE_DOESNT_LOAD",
+    "chCode": "CH-5213",
+    "meaning": "The round cache doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50701,
     "page": "P005",
     "category": 7,
@@ -3408,6 +3616,17 @@
     "name": "A_WINDOW_CHANGE_TAKES_LONGER_THAN_5",
     "chCode": "CH-5902",
     "meaning": "A window or filter change takes longer than 5 seconds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50703,
+    "page": "P005",
+    "category": 7,
+    "item": 3,
+    "name": "A_WINDOW_OR_FILTER_CHANGE_IS_IN",
+    "chCode": "CH-5903",
+    "meaning": "A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -3884,7 +4103,7 @@
     "name": "CHANGING_VIEW_OR_WEEK_OR_A_SAVE",
     "chCode": "CH-6406",
     "meaning": "Changing view or week, or a save in flight",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4321,6 +4540,39 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60625,
+    "page": "P006",
+    "category": 6,
+    "item": 25,
+    "name": "THE_ROSTER_DOESNT_LOAD",
+    "chCode": "CH-6213",
+    "meaning": "The roster doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60626,
+    "page": "P006",
+    "category": 6,
+    "item": 26,
+    "name": "MAKING_A_NEW_CALENDAR_APP_LINK_FAILS",
+    "chCode": "CH-6013",
+    "meaning": "Making a new calendar-app link fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60627,
+    "page": "P006",
+    "category": 6,
+    "item": 27,
+    "name": "REMOVING_A_CALENDAR_APP_LINK_FAILS",
+    "chCode": "CH-6014",
+    "meaning": "Removing a calendar-app link fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -4496,6 +4748,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61103,
+    "page": "P006",
+    "category": 11,
+    "item": 3,
+    "name": "NEW_LINK",
+    "chCode": "CH-6504",
+    "meaning": "New link (a calendar-app link)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61104,
+    "page": "P006",
+    "category": 11,
+    "item": 4,
+    "name": "REMOVE",
+    "chCode": "CH-6505",
+    "meaning": "Remove (a calendar-app link)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61201,
     "page": "P006",
     "category": 12,
@@ -4605,7 +4879,7 @@
     "name": "HOVERING_OR_SELECTING_AN_EVENT",
     "chCode": "CH-6601",
     "meaning": "Hovering or selecting an event",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4616,7 +4890,7 @@
     "name": "DRAGGING_THE_TIME_BAND_IN_FIND_A",
     "chCode": "CH-6602",
     "meaning": "Dragging the time band in Find a time",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4627,7 +4901,7 @@
     "name": "THE_CURRENT_TIME",
     "chCode": "CH-6603",
     "meaning": "The current time",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4638,7 +4912,7 @@
     "name": "OPENING_AN_EVENT_A_DAY_OR_A",
     "chCode": "CH-6701",
     "meaning": "Opening an event, a day or a panel item; changing view, week or players; each Find a time step",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4649,7 +4923,7 @@
     "name": "A_FORM_WITH_A_PROBLEM_OR_CLOSING",
     "chCode": "CH-6702",
     "meaning": "A form with a problem, or closing the editor with changes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4660,7 +4934,7 @@
     "name": "A_LINK_IS_COPIED",
     "chCode": "CH-6703",
     "meaning": "A link is copied",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4671,7 +4945,7 @@
     "name": "EACH_EVENT_IS_A_BUTTON_NAMED_WITH",
     "chCode": "CH-6801",
     "meaning": "Each event is a button named with its title and time, and \"schedule overlap\" when it has one; each day header opens the day",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4682,7 +4956,7 @@
     "name": "THE_DETAIL_PANEL_IS_A_POLITE_LIVE",
     "chCode": "CH-6802",
     "meaning": "The detail panel is a polite live region; form errors are tied to their field",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -4693,7 +4967,7 @@
     "name": "CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED",
     "chCode": "CH-6803",
     "meaning": "Changing the player filter is announced (\"Showing 2 players\")",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -5417,6 +5691,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70632,
+    "page": "P007",
+    "category": 6,
+    "item": 32,
+    "name": "A_CONVERSATIONS_MESSAGES_DONT_REFRESH_WHILE_AN",
+    "chCode": "CH-7216",
+    "meaning": "A conversation's messages don't refresh while an earlier copy is shown",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -5592,7 +5877,7 @@
     "name": "A_MESSAGE_ARRIVES_OR_IS_SENT",
     "chCode": "CH-7601",
     "meaning": "A message arrives or is sent",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5603,7 +5888,7 @@
     "name": "SOMEONE_IS_TYPING",
     "chCode": "CH-7602",
     "meaning": "Someone is typing",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5614,7 +5899,7 @@
     "name": "OPENING_DETAILS_OR_A_REACTION_BAR",
     "chCode": "CH-7603",
     "meaning": "Opening details or a reaction bar",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5636,7 +5921,7 @@
     "name": "A_CHANGE_FAILS",
     "chCode": "CH-7701",
     "meaning": "A change fails",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5647,7 +5932,7 @@
     "name": "A_CHANGE_LANDS",
     "chCode": "CH-7702",
     "meaning": "A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5658,7 +5943,7 @@
     "name": "PICKING_A_REACTION_A_FILTER_OR_A",
     "chCode": "CH-7703",
     "meaning": "Picking a reaction, a filter or a conversation",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5680,7 +5965,7 @@
     "name": "THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION",
     "chCode": "CH-7801",
     "meaning": "The composer is named for the conversation (\"Message Varsity team\"); a message that didn't send is an alert",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5691,7 +5976,7 @@
     "name": "SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE",
     "chCode": "CH-7802",
     "meaning": "Search results are announced as they arrive; Enter sends, Shift+Enter adds a line",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -5852,7 +6137,7 @@
     "name": "A_PHOTO_IS_UPLOADING",
     "chCode": "CH-8404",
     "meaning": "A photo is uploading",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6485,6 +6770,50 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 80637,
+    "page": "P008",
+    "category": 6,
+    "item": 37,
+    "name": "APPROVING_AN_ASSISTANT_COACH_REQUEST_FAILS",
+    "chCode": "CH-8026",
+    "meaning": "Approving an assistant coach request fails (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80638,
+    "page": "P008",
+    "category": 6,
+    "item": 38,
+    "name": "DECLINING_AN_ASSISTANT_COACH_REQUEST_FAILS",
+    "chCode": "CH-8027",
+    "meaning": "Declining an assistant coach request fails (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80639,
+    "page": "P008",
+    "category": 6,
+    "item": 39,
+    "name": "MAKING_A_STAFF_INVITE_FAILS",
+    "chCode": "CH-8028",
+    "meaning": "Making a staff invite fails (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80640,
+    "page": "P008",
+    "category": 6,
+    "item": 40,
+    "name": "THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD",
+    "chCode": "CH-8213",
+    "meaning": "The assistant coach requests don't load (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 80701,
     "page": "P008",
     "category": 7,
@@ -6900,7 +7229,7 @@
     "name": "SWITCHING_SECTION",
     "chCode": "CH-8601",
     "meaning": "Switching section",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6911,7 +7240,7 @@
     "name": "SAVE_STATUS_CHANGES",
     "chCode": "CH-8602",
     "meaning": "Save status changes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6922,7 +7251,7 @@
     "name": "FLIPPING_A_SWITCH",
     "chCode": "CH-8603",
     "meaning": "Flipping a switch",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6933,7 +7262,7 @@
     "name": "A_CONFIRM_OPENS",
     "chCode": "CH-8604",
     "meaning": "A confirm opens",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6944,7 +7273,7 @@
     "name": "A_TOAST_APPEARS_OR_LEAVES",
     "chCode": "CH-8605",
     "meaning": "A toast appears or leaves",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6955,7 +7284,7 @@
     "name": "MOVING_A_COACHHELM_PRIORITY",
     "chCode": "CH-8606",
     "meaning": "Moving a CoachHelm priority",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6966,7 +7295,7 @@
     "name": "PRESSING_A_SECTION_OR_BUTTON",
     "chCode": "CH-8607",
     "meaning": "Pressing a section or button",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6977,7 +7306,7 @@
     "name": "ANIMATIONS_TURNED_OFF_IN_PREFERENCES",
     "chCode": "CH-8608",
     "meaning": "Animations turned off in Preferences",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6988,7 +7317,7 @@
     "name": "PICKING_A_SECTION_FLIPPING_A_SWITCH_CHOOSING",
     "chCode": "CH-8701",
     "meaning": "Picking a section, flipping a switch, choosing a segment, each slider step",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -6999,7 +7328,7 @@
     "name": "A_SAVE_LANDS",
     "chCode": "CH-8702",
     "meaning": "A Save changes that lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7010,7 +7339,7 @@
     "name": "A_SAVE_FAILS_OR_A_PHOTO_IS",
     "chCode": "CH-8703",
     "meaning": "A save fails or a photo is rejected",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7021,7 +7350,7 @@
     "name": "OPENING_DELETE_ACCOUNT_OR_PRESSING_UPDATE_PASSWORD",
     "chCode": "CH-8704",
     "meaning": "Opening Delete account, or pressing Update password with a problem",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7032,7 +7361,7 @@
     "name": "COPYING_THE_INVITE_CODE_OR_LINK",
     "chCode": "CH-8705",
     "meaning": "Copying the invite code or link",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7043,7 +7372,7 @@
     "name": "PRESSING_A_PRIMARY_BUTTON",
     "chCode": "CH-8706",
     "meaning": "Pressing a primary button (Save changes)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7054,7 +7383,7 @@
     "name": "TURNING_HAPTICS_BACK_ON",
     "chCode": "CH-8707",
     "meaning": "Turning Haptics back on",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7078,7 +7407,7 @@
     "name": "THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK",
     "chCode": "CH-8801",
     "meaning": "The section list is a navigation landmark; the open section is marked current. On the phone the list is the landmark and an open section names itself in the bar (\"Back to Settings\" and the heading)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7089,7 +7418,7 @@
     "name": "EVERY_SWITCH_HAS_A_NAME_A_SCREEN",
     "chCode": "CH-8802",
     "meaning": "Every switch has a name a screen reader reads (for example \"Messages by email\")",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7100,7 +7429,7 @@
     "name": "SAVE_STATUS_CHANGES_ARE_ANNOUNCED",
     "chCode": "CH-8803",
     "meaning": "Save status changes are announced",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7111,7 +7440,7 @@
     "name": "ERRORS_ARE_ANNOUNCED",
     "chCode": "CH-8804",
     "meaning": "Errors are announced",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7122,7 +7451,7 @@
     "name": "THE_NOTIFICATION_GRIDS_ARE_TABLES",
     "chCode": "CH-8805",
     "meaning": "The notification grids are tables. On the phone there is no grid: each kind is a button that names what is on, and its sheet has named switches",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7133,7 +7462,7 @@
     "name": "DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS",
     "chCode": "CH-8806",
     "meaning": "Dialogs trap focus, Esc closes, focus returns to the button",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7144,7 +7473,7 @@
     "name": "EVERY_FIELD_HAS_A_LABEL_AND_ITS",
     "chCode": "CH-8807",
     "meaning": "Every field has a label, and its help or error is read with it",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
@@ -7359,6 +7688,28 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90206,
+    "page": "P009",
+    "category": 2,
+    "item": 6,
+    "name": "MANAGE_SELECTIONS_IS_LOADING",
+    "chCode": "CH-09409",
+    "meaning": "Manage selections is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90207,
+    "page": "P009",
+    "category": 2,
+    "item": 7,
+    "name": "A_QUALIFIERS_COURSES_AND_SCORECARDS_ARE_STILL",
+    "chCode": "CH-09410",
+    "meaning": "A qualifier's courses and scorecards are still streaming in behind its standings",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90301,
     "page": "P009",
     "category": 3,
@@ -7533,6 +7884,17 @@
     "name": "NO_PLACE_ON_SCORE_IS_FILLED",
     "chCode": "CH-09316",
     "meaning": "No place on score is filled",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90413,
+    "page": "P009",
+    "category": 4,
+    "item": 13,
+    "name": "PLAYERS_ARE_LEVEL_AT_THE_LAST_PLACE",
+    "chCode": "CH-09318",
+    "meaning": "Players are level at the last place on score (Q-114)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -7789,7 +8151,7 @@
     "item": 9,
     "name": "THE_SCORECARDS_DONT_LOAD",
     "chCode": "CH-09205",
-    "meaning": "The scorecards don't load",
+    "meaning": "The scorecards don't load (or the stream that carries them is cut off)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -7800,7 +8162,7 @@
     "item": 10,
     "name": "THE_ROUND_COURSES_DONT_LOAD",
     "chCode": "CH-09206",
-    "meaning": "The round courses don't load (detail)",
+    "meaning": "The round courses don't load (detail), or the stream that carries them is cut off",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -7811,7 +8173,7 @@
     "item": 11,
     "name": "THE_CONFIRMED_SQUAD_DOESNT_LOAD",
     "chCode": "CH-09207",
-    "meaning": "The confirmed squad doesn't load",
+    "meaning": "The confirmed squad doesn't load, or the entries it takes its names from don't",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -8003,6 +8365,61 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90629,
+    "page": "P009",
+    "category": 6,
+    "item": 29,
+    "name": "THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE",
+    "chCode": "CH-09009",
+    "meaning": "The squad is confirmed but telling the players failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90630,
+    "page": "P009",
+    "category": 6,
+    "item": 30,
+    "name": "GIVING_OR_TAKING_BACK_A_PLACE_AT",
+    "chCode": "CH-09010",
+    "meaning": "Giving or taking back a place at a tied cut fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90631,
+    "page": "P009",
+    "category": 6,
+    "item": 31,
+    "name": "THE_COACHS_PICK_NOTES_DONT_LOAD",
+    "chCode": "CH-09221",
+    "meaning": "The coach's pick notes don't load (detail, coach, confirmed squad)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90632,
+    "page": "P009",
+    "category": 6,
+    "item": 32,
+    "name": "A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY",
+    "chCode": "CH-09222",
+    "meaning": "A player's entries don't load on /my-qualifiers",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90633,
+    "page": "P009",
+    "category": 6,
+    "item": 33,
+    "name": "A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS",
+    "chCode": "CH-09220",
+    "meaning": "A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -8025,6 +8442,28 @@
     "tests": [
       "src/clubhouse/__tests__/qualifiers.test.tsx"
     ]
+  },
+  {
+    "id": 90703,
+    "page": "P009",
+    "category": 7,
+    "item": 3,
+    "name": "THE_LISTS_FILTER_AND_SEARCH",
+    "chCode": "CH-09904",
+    "meaning": "The list's filter and search",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90704,
+    "page": "P009",
+    "category": 7,
+    "item": 4,
+    "name": "RETURNING_TO_THE_LIST_FROM_A_QUALIFIER",
+    "chCode": "CH-09905",
+    "meaning": "Returning to the list from a qualifier",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
     "id": 90801,
@@ -9130,7 +9569,7 @@
     "item": 9,
     "name": "DELETING_A_POST_TASK_OR_FILE_FAILS",
     "chCode": "CH-10009",
-    "meaning": "Deleting a post, task or file fails",
+    "meaning": "Deleting a post, task, file or trip fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -9300,6 +9739,17 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100625,
+    "page": "P010",
+    "category": 6,
+    "item": 25,
+    "name": "SAVING_AN_EDIT_TO_A_TRIP_FAILS",
+    "chCode": "CH-10013",
+    "meaning": "Saving an edit to a trip fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100701,
     "page": "P010",
     "category": 7,
@@ -9357,7 +9807,7 @@
     "category": 8,
     "item": 4,
     "name": "SERVER_ACTIONS_ARE_THE_GATE",
-    "meaning": "Every write is checked again by its server action, whatever the screen shows: createEnrichedAnnouncement, createGolfTravelItinerary, createTask, createGolfDocument, deleteAnnouncement and deleteTask refuse a caller who is not a coach of the team, and respondToEvent, acknowledgeAnnouncement and completeTask refuse a caller with no player profile or team membership; deleteGolfDocument (any active member of the team passes) and uploadGolfDocument (any signed-in user passes) do not check for a coach, so for those the screen and row-level security are the gate. Read in this pass, not run: no test here forces a refusal.",
+    "meaning": "Every write is checked again by its server action, whatever the screen shows: createEnrichedAnnouncement, createGolfTravelItinerary, createTask, createGolfDocument, deleteAnnouncement and deleteTask refuse a caller who is not a coach of the team, and respondToEvent, acknowledgeAnnouncement and completeTask refuse a caller with no player profile or team membership; every document write (upload, create, edit, delete, version delete, restore) is coach-only since Q-74. Forced refusals so far: documents (src/app/golf/actions/__tests__/documents-coach-only.test.ts), travel (travel.test.ts: another team's coach), tasks (src/test/golf/actions/task-authz-failure-vs-refusal.test.ts), posting an announcement (src/test/golf/actions/announcement-attachments.test.ts). Not yet forced: deleteAnnouncement, respondToEvent, acknowledgeAnnouncement and completeTask.",
     "status": "reserved",
     "where": "src/app/golf/actions/announcements.ts; travel.ts; tasks.ts; documents.ts; golf.ts; communication.ts"
   },
@@ -9404,6 +9854,17 @@
     "name": "DELETING_A_FILE",
     "chCode": "CH-10503",
     "meaning": "Deleting a file",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 101104,
+    "page": "P010",
+    "category": 11,
+    "item": 4,
+    "name": "DELETING_A_TRIP",
+    "chCode": "CH-10504",
+    "meaning": "Deleting a trip",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -9640,7 +10101,7 @@
     "category": 1,
     "item": 5,
     "name": "UNBUILT_TARGETS_ARE_NOT_DRAWN",
-    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds, and /rounds/recover stays Fairway's, so nothing links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
+    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES",
     "tests": [
@@ -9668,7 +10129,7 @@
     "category": 1,
     "item": 7,
     "name": "NOT_COUNTED_ROUNDS_STILL_LIST",
-    "meaning": "A posted round that does not count (isCountableRound) is still listed, with a \"Not counted\" pill, and sets no season figure. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats).",
+    "meaning": "A posted round that does not count (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123) is still listed, with a \"Not counted\" pill, and sets no season figure. A round posted as a total only counts toward the season average, to par and best score, and has no greens or putts to add. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats).",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/parts.tsx#RoundRow; src/clubhouse/data/rounds-shape.ts#toLibraryRound; src/clubhouse/data/rounds-shape.ts#seasonFrom",
     "tests": [
@@ -9857,6 +10318,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110209,
+    "page": "P011",
+    "category": 2,
+    "item": 9,
+    "name": "ROUND_RECOVERY_ROUTE_LOADING",
+    "chCode": "CH-11408",
+    "meaning": "Round recovery route loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110210,
+    "page": "P011",
+    "category": 2,
+    "item": 10,
+    "name": "READING_THE_DEVICE_FOR_SAVED_ROUNDS",
+    "chCode": "CH-11409",
+    "meaning": "Reading the device for saved rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110211,
+    "page": "P011",
+    "category": 2,
+    "item": 11,
+    "name": "THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE",
+    "chCode": "CH-11410",
+    "meaning": "The Rounds library is refreshing (a Try again is running) with the page on screen",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -10009,6 +10503,28 @@
     "name": "A_ROUND_WITH_NO_STROKES_GAINED",
     "chCode": "CH-11313",
     "meaning": "A round with no strokes gained (posted without shots)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110415,
+    "page": "P011",
+    "category": 4,
+    "item": 15,
+    "name": "NOTHING_ON_THIS_DEVICE_TO_RECOVER",
+    "chCode": "CH-11314",
+    "meaning": "Nothing on this device to recover",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110416,
+    "page": "P011",
+    "category": 4,
+    "item": 16,
+    "name": "COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL",
+    "chCode": "CH-11315",
+    "meaning": "Completed rounds with no score at all (no total and no nines)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -10436,6 +10952,105 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110629,
+    "page": "P011",
+    "category": 6,
+    "item": 29,
+    "name": "RESTORING_A_SAVED_ROUND_FAILS",
+    "chCode": "CH-11017",
+    "meaning": "Restoring a saved round fails (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110630,
+    "page": "P011",
+    "category": 6,
+    "item": 30,
+    "name": "RETRY_SYNC_FAILS",
+    "chCode": "CH-11018",
+    "meaning": "Retry sync fails (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110631,
+    "page": "P011",
+    "category": 6,
+    "item": 31,
+    "name": "DISCARDING_A_SAVED_ROUND_FAILS",
+    "chCode": "CH-11019",
+    "meaning": "Discarding a saved round fails (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110632,
+    "page": "P011",
+    "category": 6,
+    "item": 32,
+    "name": "THIS_DEVICES_SAVED_ROUNDS_CANT_BE_READ",
+    "chCode": "CH-11212",
+    "meaning": "This device's saved rounds can't be read (every store failed and nothing was found)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110633,
+    "page": "P011",
+    "category": 6,
+    "item": 33,
+    "name": "THE_IN_PROGRESS_CARDS_HOLES_DONT_LOAD",
+    "chCode": "CH-11214",
+    "meaning": "The in-progress card's holes don't load (the read of the round's scored holes failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110634,
+    "page": "P011",
+    "category": 6,
+    "item": 34,
+    "name": "A_FINISHED_IN_PROGRESS_ROUND_WHILE_THE",
+    "chCode": "CH-11215",
+    "meaning": "A finished in-progress round (every hole scored) while the posted rounds didn't load, so \"already posted\" can't be ruled out",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110635,
+    "page": "P011",
+    "category": 6,
+    "item": 35,
+    "name": "A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE",
+    "chCode": "CH-11216",
+    "meaning": "A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110636,
+    "page": "P011",
+    "category": 6,
+    "item": 36,
+    "name": "A_REVIEWS_TEAM_READ_FAILS_SO_WHICH",
+    "chCode": "CH-11217",
+    "meaning": "A review's team read fails, so which Tour the strokes gained is measured against is unknown",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110637,
+    "page": "P011",
+    "category": 6,
+    "item": 37,
+    "name": "A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS",
+    "chCode": "CH-11213",
+    "meaning": "A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -10552,6 +11167,28 @@
     "name": "EVERY_HOLE_IS_IN_BUT_THE_FINISH",
     "chCode": "CH-11910",
     "meaning": "Every hole is in but the finish sheet was closed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110712,
+    "page": "P011",
+    "category": 7,
+    "item": 12,
+    "name": "OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH",
+    "chCode": "CH-11911",
+    "meaning": "Opened from a submit that couldn't reach the server (`?from=submit`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110713,
+    "page": "P011",
+    "category": 7,
+    "item": 13,
+    "name": "BACK_FROM_A_ROUND_TO_THE_LIBRARY",
+    "chCode": "CH-11912",
+    "meaning": "Back from a round to the library",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -10848,6 +11485,17 @@
     "name": "THE_SAME_AND_NO_ROUND_IS_LEFT",
     "chCode": "CH-11519",
     "meaning": "The same, and no round is left to choose",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111120,
+    "page": "P011",
+    "category": 11,
+    "item": 20,
+    "name": "DISCARD_ON_A_SAVED_ROUND",
+    "chCode": "CH-11520",
+    "meaning": "Discard on a saved round (Recover)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -11473,6 +12121,17 @@
     ]
   },
   {
+    "id": 120408,
+    "page": "P012",
+    "category": 4,
+    "item": 8,
+    "name": "PHONE_NO_CLASS_MEETS_TODAY",
+    "chCode": "CH-12308",
+    "meaning": "Phone: no class meets today",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 120501,
     "page": "P012",
     "category": 5,
@@ -11817,7 +12476,7 @@
     "item": 3,
     "name": "WRITES_REFUSE_OFFLINE",
     "meaning": "Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (every useAction); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -11830,7 +12489,7 @@
     "item": 1,
     "name": "THE_PAGE_IS_THE_PLAYERS",
     "meaning": "Clubhouse Classes is the player's page. A session that is a player with a player profile, with the Clubhouse on for the player role, gets it; a coach (including a coach who also has a player profile), a signed-out session and everyone else get the current Fairway page, unchanged. The route itself renders nothing for a session with no player profile, and a team where the member's role is not player gets the no-team page (CH-12305).",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/app/golf/(dashboard)/dashboard/classes/page.tsx; src/clubhouse/routes/classes.tsx#ClubhouseClassesRoute",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -11938,7 +12597,7 @@
     "item": 1,
     "name": "RETRY_FINISHES_THE_JOB",
     "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: a save's Retry adds the class to the list, closes the sheet and starts the calendar sync; a remove's Retry takes the class out of the list and closes the question; an import's Retry shows the imported view and starts the sync; a sync's Retry puts the failed classes on the calendar. A failed sync's Retry never saves the class a second time.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (saveAction, removeAction, importAction, syncAction); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -11964,7 +12623,7 @@
     "item": 3,
     "name": "TRY_AGAIN_REREADS_THE_PAGE",
     "meaning": "Try again on the classes' failed-load notice (CH-12201) and on the team events' notice (CH-12202) has the server read the whole page again (router.refresh); classes the server sends afresh replace what the page holds.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (InlineNotice onRetry, the classes effect); src/clubhouse/screens/classes/parts.tsx#OverlapsCard",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12054,7 +12713,7 @@
     "name": "A_SCHEDULE_IS_BEING_READ_2",
     "chCode": "CH-12602",
     "meaning": "A schedule is being read",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -12184,7 +12843,7 @@
     "item": 1,
     "name": "PHONE_LAYOUT",
     "meaning": "At 820px and below Classes is the phone build, never a shrunken desktop: the shell's top bar reads \"Classes\" with \"‹ More\" going back to More, the page keeps its own header, and the same classes and actions are there; the sheets are bottom sheets. Below a 1000px container the side column goes under the deck, and below 640px the deck is one column, the overview stacks and the two header buttons share the row.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (phone, PhoneTop); src/clubhouse/lib/use-phone.ts#useChPhone; src/clubhouse/styles/classes.css",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12207,7 +12866,7 @@
     "item": 1,
     "name": "LOADER_READS_IN_ONE_PASS",
     "meaning": "The server loader reads the page before first paint in one pass: the team's time zone, then the player's classes and the team's events for the week together (each limited to 500 rows). Each failed read is flagged on its own (classes.error, week.error) and logged, never thrown, so the other still shows. \"Today\" is the team's day in the team's zone (in the evening in New York it is already tomorrow in UTC), and the week runs Monday to Sunday around it.",
-    "status": "reserved",
+    "status": "implemented",
     "where": "src/clubhouse/data/classes.ts#loadClasses",
     "tests": [
       "src/clubhouse/__tests__/classes.test.tsx"
@@ -12242,7 +12901,7 @@
     "category": 1,
     "item": 1,
     "name": "COACHHELM_OPENS_FOR_THE_ROLE",
-    "meaning": "One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (up to five), Working (up to five) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of open signals across players), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint.",
+    "meaning": "One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (up to five), Working (up to five) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint.",
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
     "tests": [
@@ -12255,7 +12914,7 @@
     "category": 1,
     "item": 2,
     "name": "THE_FOCUS_IS_THE_TOP_INSIGHT_THAT_IS_NOT_WORKING",
-    "meaning": "The player's focus card is the insight the person picked or, without a pick, the top-ranked insight that is not a strength, in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; Also worth knowing keeps at most five findings and Working at most five strengths; with only strengths there is no focus and CH-13303 says nothing needs work. On the coach's board the focus is the chosen player's top insight.",
+    "meaning": "The player's focus card is the insight the person picked or, without a pick, the top-ranked finding that is current (a read older than the newest round, and a card that states no finding, do not lead), in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; Also worth knowing keeps at most five findings and Working at most five strengths; with only strengths there is no focus and CH-13303 says nothing needs work. On the coach's board the focus is the chosen player's top insight.",
     "status": "implemented",
     "where": "src/clubhouse/data/coachhelm-shape.ts#partitionInsights; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
     "tests": [
@@ -12268,7 +12927,7 @@
     "category": 1,
     "item": 3,
     "name": "PLAYERS_ARE_ORDERED_MOST_PRESSING_FIRST",
-    "meaning": "The coach's By player list is ordered by how pressing each player's top insight is (Priority, then Worth closing, then Minor; a strength last, whatever its own priority), then by how many open signals the player has, then by name. The first player's focus is open when the page opens, and picking a player (a toggle, aria-pressed) shows that player's focus.",
+    "meaning": "The coach's By player list is ordered by how pressing each player's top insight is (Priority, then Worth closing, then Minor; a strength last, whatever its own priority), then by how many open signals the player has, then by name. A strength, and a top read that is out of date, come after the findings, and a card that states no finding comes last. The first player's focus is open when the page opens, and picking a player (a toggle, aria-pressed) shows that player's focus.",
     "status": "implemented",
     "where": "src/clubhouse/data/coachhelm-shape.ts#sortCoachPlayers; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
     "tests": [
@@ -12281,11 +12940,12 @@
     "category": 1,
     "item": 4,
     "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
-    "meaning": "?view=development, ?view=profile and ?view=standing (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) show the shell's not-rebuilt page (CH-1301) naming Development, Game profile or Standing, with Back to Home, instead of the board. The page passes ?view= to the route and the route checks it before it reads the session, so it holds for a coach as well as a player. ?view=insights, no view and any other value (?view=deep-dive is a Fairway view) draw the board (Q-76, open).",
+    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for).",
     "status": "reserved",
-    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (VIEWS_NOT_REBUILT); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/shell/NotRebuilt.tsx#NotRebuilt",
+    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm.test.tsx",
+      "src/clubhouse/__tests__/coachhelm-views.test.tsx"
     ]
   },
   {
@@ -12294,7 +12954,7 @@
     "category": 1,
     "item": 5,
     "name": "OPEN_SIGNALS_FOLLOW_DISMISSALS",
-    "meaning": "The header's count of open signals across players is the sum of each player's open signals, and each row shows its player's count. Dismissing a player's top insight here takes one off that player's count and off the header, and a player left with none leaves the count of players; Undo puts both back. The row reads Dismissed while the notice is up.",
+    "meaning": "The header counts the players with an open signal (\"4 players have an open signal.\"): the board draws one card per player, so it never counts the rows behind them. A player's open signals are their visible findings whose read is current, and each row shows that count: a strength, a card that states no finding and a read older than the player's newest completed round are not open signals, and a player with only those has none. Dismissing a player's top insight here takes one off that player's count when the card was one of their open signals, and a player left with none leaves the count of players; Undo puts both back. The row reads Dismissed while the notice is up.",
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (open, totalOpen, playersOpen); src/clubhouse/data/coachhelm-shape.ts#signalsLine",
     "tests": [
@@ -12307,12 +12967,23 @@
     "category": 1,
     "item": 6,
     "name": "INSIGHTS_ARE_GENERATOR_OUTPUT_ONLY",
-    "meaning": "Every insight is a delivery-action row (EvidenceInsight) re-shaped by toChInsight; nothing is generated, ranked or computed here beyond a gauge's display scale. The value is the generator's own display; the downhill-penalty finding is two bars and no gauge, any other insight with a comparison is a gauge (you, the cohort, and the Tour when it differs) and one with no comparison draws no gauge; the sample names what it counts and the window is days or All rounds; the read is a word; the drill is the attached drill (its text read from golf_drills.description) and the generator's placeholder action is not shown as a drill. An insight is working when it is resolved or encouraging, or ahead of its comparison at low priority (isNegativePolarityMetric decides which way a number is good).",
+    "meaning": "Every insight is a delivery-action row (EvidenceInsight) re-shaped by toChInsight; nothing is generated, ranked or computed here beyond a gauge's display scale. The value is the generator's own display; the downhill-penalty finding is two bars and no gauge, any other insight with a comparison is a gauge (you, the cohort, and the Tour when it differs) and one with no comparison draws no gauge; the sample names what it counts and the window is days or All rounds; the read is a word; the drill is the attached drill (its text read from golf_drills.description) and the generator's placeholder action is not shown as a drill. An insight is working when it is resolved, or better than the comparison the card draws (the Tour's value where the generator carried a college comparison, never a stored college one the page does not show) at low priority or with an encouraging tone (isNegativePolarityMetric decides which way a number is good; a missing comparison is none, never zero). The read says Solid, Early or Thin from the one table every surface uses. The text is the player's own on the player's board (a coach's \"have the player\" instruction is dropped) and about the player by their first name on the coach's board (the gauge says \"Jonah ·\", not \"You ·\").",
     "status": "implemented",
     "where": "src/clubhouse/data/coachhelm-map.ts#toChInsight; src/clubhouse/data/coachhelm-map.ts#splitContent; src/clubhouse/data/coachhelm-map.ts#formatComparison",
     "tests": [
       "src/clubhouse/__tests__/coachhelm.test.tsx"
     ]
+  },
+  {
+    "id": 130107,
+    "page": "P013",
+    "category": 1,
+    "item": 7,
+    "name": "COACH_A_PLAYERS_TOP_CARD_STATES_NO",
+    "chCode": "CH-13904",
+    "meaning": "Coach: a player's top card states no finding (a note)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
     "id": 130201,
@@ -12405,6 +13076,50 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130209,
+    "page": "P013",
+    "category": 2,
+    "item": 9,
+    "name": "PROFILE_THE_GAME_PROFILE_IS_ON_ITS",
+    "chCode": "CH-13460",
+    "meaning": "Profile: the Game profile is on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130210,
+    "page": "P013",
+    "category": 2,
+    "item": 10,
+    "name": "STANDING_THE_STANDING_IS_ON_ITS_WAY",
+    "chCode": "CH-13470",
+    "meaning": "Standing: the standing is on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130211,
+    "page": "P013",
+    "category": 2,
+    "item": 11,
+    "name": "DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR",
+    "chCode": "CH-13480",
+    "meaning": "Deep dive: the insights are on their way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130212,
+    "page": "P013",
+    "category": 2,
+    "item": 12,
+    "name": "COACH_THE_BOARD_IS_DRAWN_AND_THE",
+    "chCode": "CH-13405",
+    "meaning": "Coach: the board is drawn and the program pulse is still on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -12444,7 +13159,7 @@
     "item": 4,
     "name": "PLAYER_COACHHELM_IS_OFF_FOR_THEM",
     "chCode": "CH-13304",
-    "meaning": "Player: CoachHelm is off for them",
+    "meaning": "Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12499,7 +13214,7 @@
     "item": 9,
     "name": "COACH_THE_PULSE_HAS_NOTHING_FLAGGED",
     "chCode": "CH-13309",
-    "meaning": "Coach: the pulse has nothing flagged",
+    "meaning": "Coach: the pulse has nothing flagged, and every read it is made from landed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12556,7 +13271,7 @@
     "item": 14,
     "name": "ASK_PLAYERS_BUT_NO_RECORDED_ROUND",
     "chCode": "CH-13322",
-    "meaning": "Ask: Players but no recorded round",
+    "meaning": "Ask: Players but no recorded round (the rounds read landed and found none)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12589,7 +13304,7 @@
     "item": 17,
     "name": "ASK_ROUNDS_RECORDED_NOTHING_FLAGGED",
     "chCode": "CH-13325",
-    "meaning": "Ask: Rounds recorded, nothing flagged",
+    "meaning": "Ask: Rounds recorded, nothing flagged, and every read the pulse is made from landed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12601,6 +13316,127 @@
     "name": "ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED",
     "chCode": "CH-13350",
     "meaning": "Ask: A read tool found nothing recorded",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130419,
+    "page": "P013",
+    "category": 4,
+    "item": 19,
+    "name": "PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET",
+    "chCode": "CH-13360",
+    "meaning": "Profile: no measure has enough rounds yet (no genome row, or one with nothing computed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130420,
+    "page": "P013",
+    "category": 4,
+    "item": 20,
+    "name": "PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND",
+    "chCode": "CH-13361",
+    "meaning": "Profile: some measures have enough rounds and some do not (an early read)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130421,
+    "page": "P013",
+    "category": 4,
+    "item": 21,
+    "name": "STANDING_NO_STANDING_ROW_YET",
+    "chCode": "CH-13370",
+    "meaning": "Standing: no standing row yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130422,
+    "page": "P013",
+    "category": 4,
+    "item": 22,
+    "name": "STANDING_AN_EARLY_READ",
+    "chCode": "CH-13371",
+    "meaning": "Standing: an early read (rows, but under five rounds on file, or the count unknown)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130423,
+    "page": "P013",
+    "category": 4,
+    "item": 23,
+    "name": "STANDING_A_STAT_THE_TEAM_IS_TOO",
+    "chCode": "CH-13372",
+    "meaning": "Standing: a stat the team is too small to compare on (under five teammates have it)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130424,
+    "page": "P013",
+    "category": 4,
+    "item": 24,
+    "name": "STANDING_A_STAT_WHOSE_TOUR_VALUE_IS",
+    "chCode": "CH-13373",
+    "meaning": "Standing: a stat whose Tour value is not comparable",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130425,
+    "page": "P013",
+    "category": 4,
+    "item": 25,
+    "name": "DEEP_DIVE_NO_ROUND_POSTED_YET",
+    "chCode": "CH-13380",
+    "meaning": "Deep dive: no round posted yet (nothing to read, and the countable-round count is 0)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130426,
+    "page": "P013",
+    "category": 4,
+    "item": 26,
+    "name": "DEEP_DIVE_ROUNDS_POSTED_NO_INSIGHT_YET",
+    "chCode": "CH-13381",
+    "meaning": "Deep dive: rounds posted, no insight yet (or the round count is unknown)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130427,
+    "page": "P013",
+    "category": 4,
+    "item": 27,
+    "name": "DEEP_DIVE_A_READ_NAMES_NO_ROUNDS",
+    "chCode": "CH-13382",
+    "meaning": "Deep dive: a read names no rounds, or none of them can be listed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130428,
+    "page": "P013",
+    "category": 4,
+    "item": 28,
+    "name": "DEEP_DIVE_A_READ_HAS_NO_TREND",
+    "chCode": "CH-13383",
+    "meaning": "Deep dive: a read has no trend",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130429,
+    "page": "P013",
+    "category": 4,
+    "item": 29,
+    "name": "DEEP_DIVE_A_READ_IS_NOT_PART",
+    "chCode": "CH-13384",
+    "meaning": "Deep dive: a read is not part of a plan",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12767,7 +13603,7 @@
     "item": 14,
     "name": "ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD",
     "chCode": "CH-13221",
-    "meaning": "Ask: The chat context (the program) does not load",
+    "meaning": "Ask: The chat context (the program) does not load, or its roster read fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -12878,6 +13714,138 @@
     "name": "ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR",
     "chCode": "CH-13255",
     "meaning": "Ask: The evidence panel is opened for a player the conversation has nothing on",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130625,
+    "page": "P013",
+    "category": 6,
+    "item": 25,
+    "name": "PROFILE_THE_GAME_PROFILE_DOESNT_LOAD",
+    "chCode": "CH-13260",
+    "meaning": "Profile: the Game profile doesn't load (the genome read fails or throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130626,
+    "page": "P013",
+    "category": 6,
+    "item": 26,
+    "name": "STANDING_THE_STANDING_DOESNT_LOAD",
+    "chCode": "CH-13270",
+    "meaning": "Standing: the standing doesn't load (the standing read fails or throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130627,
+    "page": "P013",
+    "category": 6,
+    "item": 27,
+    "name": "STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD",
+    "chCode": "CH-13271",
+    "meaning": "Standing: their scoring average doesn't load (the read every projection starts from fails)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130628,
+    "page": "P013",
+    "category": 6,
+    "item": 28,
+    "name": "DEEP_DIVE_THE_INSIGHTS_DONT_LOAD",
+    "chCode": "CH-13280",
+    "meaning": "Deep dive: the insights don't load (the delivery read throws, or comes back empty while undismissed insights are on file, or a read after it throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130629,
+    "page": "P013",
+    "category": 6,
+    "item": 29,
+    "name": "DEEP_DIVE_THE_ROUNDS_BEHIND_A_READ",
+    "chCode": "CH-13281",
+    "meaning": "Deep dive: the rounds behind a read don't load (that one read of `golf_rounds` fails)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130630,
+    "page": "P013",
+    "category": 6,
+    "item": 30,
+    "name": "DEEP_DIVE_THEIR_FOCUS_AREAS_AND_GOALS",
+    "chCode": "CH-13282",
+    "meaning": "Deep dive: their focus areas and goals don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130631,
+    "page": "P013",
+    "category": 6,
+    "item": 31,
+    "name": "DEEP_DIVE_THE_CATEGORY_TRENDS_DONT_LOAD",
+    "chCode": "CH-13283",
+    "meaning": "Deep dive: the category trends don't load (`getThemesForPlayer` answers `success: false` or throws)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130632,
+    "page": "P013",
+    "category": 6,
+    "item": 32,
+    "name": "COACH_A_READ_THE_PROGRAM_PULSE_IS",
+    "chCode": "CH-13206",
+    "meaning": "Coach: a read the program pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130633,
+    "page": "P013",
+    "category": 6,
+    "item": 33,
+    "name": "COACH_A_READ_ABOUT_THE_TOP_CARD",
+    "chCode": "CH-13207",
+    "meaning": "Coach: a read about the top card failed: which focus areas were made from it, which were declined, or the newest round (whether the read is still current)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130634,
+    "page": "P013",
+    "category": 6,
+    "item": 34,
+    "name": "A_READ_BESIDE_THE_CARDS_FAILED_THE",
+    "chCode": "CH-13208",
+    "meaning": "A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130635,
+    "page": "P013",
+    "category": 6,
+    "item": 35,
+    "name": "ASK_A_READ_THE_PULSE_IS_MADE",
+    "chCode": "CH-13226",
+    "meaning": "Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130636,
+    "page": "P013",
+    "category": 6,
+    "item": 36,
+    "name": "STANDING_THE_COHORT_LOOKUP_FAILED",
+    "chCode": "CH-13272",
+    "meaning": "Standing: the cohort lookup (their team's gender, which picks the Tour) failed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13002,6 +13970,127 @@
     "chCode": "CH-13953",
     "meaning": "Ask: A confirmed action lands",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130712,
+    "page": "P013",
+    "category": 7,
+    "item": 12,
+    "name": "PLAYER_THE_SUB_NAVIGATION",
+    "chCode": "CH-13930",
+    "meaning": "Player: the sub-navigation",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130713,
+    "page": "P013",
+    "category": 7,
+    "item": 13,
+    "name": "PLAYER_DEVELOPMENT",
+    "chCode": "CH-13931",
+    "meaning": "Player: Development",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130714,
+    "page": "P013",
+    "category": 7,
+    "item": 14,
+    "name": "DEEP_DIVE_A_READ_IS_OPENED_ON",
+    "chCode": "CH-13980",
+    "meaning": "Deep dive: a read is opened on the phone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130715,
+    "page": "P013",
+    "category": 7,
+    "item": 15,
+    "name": "DEEP_DIVE_AN_ADDRESS_NAMES_A_READ",
+    "chCode": "CH-13981",
+    "meaning": "Deep dive: an address names a read (`?view=deep-dive&insight=<id>`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130716,
+    "page": "P013",
+    "category": 7,
+    "item": 16,
+    "name": "DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS",
+    "chCode": "CH-13982",
+    "meaning": "Deep dive: a cause is a hypothesis",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130717,
+    "page": "P013",
+    "category": 7,
+    "item": 17,
+    "name": "COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE",
+    "chCode": "CH-13907",
+    "meaning": "Coach: the player declined a focus made from the top card, and none stands now",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130718,
+    "page": "P013",
+    "category": 7,
+    "item": 18,
+    "name": "COACH_THE_PLAYER_THE_COACH_HAD_PICKED",
+    "chCode": "CH-13908",
+    "meaning": "Coach: the player the coach had picked is no longer on the refreshed board (their signal went)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130719,
+    "page": "P013",
+    "category": 7,
+    "item": 19,
+    "name": "PLAYER_THE_READ_THE_PLAYER_HAD_PICKED",
+    "chCode": "CH-13909",
+    "meaning": "Player: the read the player had picked is no longer on the refreshed board",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130720,
+    "page": "P013",
+    "category": 7,
+    "item": 20,
+    "name": "DEEP_DIVE_THE_READ_THAT_WAS_OPEN",
+    "chCode": "CH-13910",
+    "meaning": "Deep dive: the read that was open is no longer on the page after a refresh",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130721,
+    "page": "P013",
+    "category": 7,
+    "item": 21,
+    "name": "COACH_PLAYER_COMING_BACK_TO_THE_PAGE",
+    "chCode": "CH-13911",
+    "meaning": "Coach, player: coming back to the page (Back, a reload, a link) after leaving it",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130722,
+    "page": "P013",
+    "category": 7,
+    "item": 22,
+    "name": "ASK_COMING_BACK_TO_THE_PAGE_AFTER",
+    "chCode": "CH-13924",
+    "meaning": "Ask: coming back to the page after leaving it",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -13184,6 +14273,39 @@
     ]
   },
   {
+    "id": 131502,
+    "page": "P013",
+    "category": 15,
+    "item": 2,
+    "name": "A_READ_IS_OLDER_THAN_THE_PLAYERS",
+    "chCode": "CH-13903",
+    "meaning": "A read is older than the player's newest completed round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131503,
+    "page": "P013",
+    "category": 15,
+    "item": 3,
+    "name": "A_CARD_SAYS_WHEN_ITS_READ_WAS",
+    "chCode": "CH-13905",
+    "meaning": "A card says when its read was made",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131504,
+    "page": "P013",
+    "category": 15,
+    "item": 4,
+    "name": "COACH_THE_TOP_READ_IS_OUT_OF",
+    "chCode": "CH-13906",
+    "meaning": "Coach: the top read is out of date",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131601,
     "page": "P013",
     "category": 16,
@@ -13290,6 +14412,17 @@
     "name": "ASK_A_FOLLOW_UP_IS_TAPPED",
     "chCode": "CH-13752",
     "meaning": "Ask: A follow-up is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131707,
+    "page": "P013",
+    "category": 17,
+    "item": 7,
+    "name": "DEEP_DIVE_A_READ_IN_THE_LIST",
+    "chCode": "CH-13780",
+    "meaning": "Deep dive: a read in the list, or a round or a plan under it, is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -13454,6 +14587,39 @@
     "name": "ASK_EVIDENCE_DRAWN_AS_A_CHART",
     "chCode": "CH-13852",
     "meaning": "Ask: Evidence drawn as a chart",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131816,
+    "page": "P013",
+    "category": 18,
+    "item": 16,
+    "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
+    "chCode": "CH-13860",
+    "meaning": "Profile: a screen reader moves through the page",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131817,
+    "page": "P013",
+    "category": 18,
+    "item": 17,
+    "name": "STANDING_A_SCREEN_READER_MOVES_THROUGH_THE",
+    "chCode": "CH-13880",
+    "meaning": "Standing: a screen reader moves through the page",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131818,
+    "page": "P013",
+    "category": 18,
+    "item": 18,
+    "name": "DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH",
+    "chCode": "CH-13890",
+    "meaning": "Deep dive: a screen reader moves through the page",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14098,7 +15264,7 @@
     "name": "STORAGE_TURNS_A_FILE_DOWN",
     "chCode": "CH-14703",
     "meaning": "Storage turns a file down (CH-14107, CH-14108)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
   {
@@ -14406,7 +15572,7 @@
     "name": "WHERE_A_SIGN_IN_GOES",
     "chCode": "CH-15902",
     "meaning": "Where a sign-in goes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14417,7 +15583,7 @@
     "name": "THE_WELCOME_IS_OPENED_WITH_A_SESSION",
     "chCode": "CH-15903",
     "meaning": "The welcome is opened with a session the auth server has ruled invalid",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14439,7 +15605,7 @@
     "name": "THE_PERSON_CAME_FROM_AN_INVITE_LINK",
     "chCode": "CH-15901",
     "meaning": "The person came from an invite link or a demo link",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14450,7 +15616,7 @@
     "name": "THE_APP_UPDATED_BETWEEN_LOAD_AND_SIGN",
     "chCode": "CH-15906",
     "meaning": "The app updated between load and sign in (a stale bundle: a server action answers with something Next cannot parse)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14461,7 +15627,7 @@
     "name": "FIRST_PAINT_THEN_A_SIGN_IN_LANDING",
     "chCode": "CH-15601",
     "meaning": "First paint, then a sign-in landing",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14472,7 +15638,7 @@
     "name": "THE_WELCOME_DRAWS",
     "chCode": "CH-15602",
     "meaning": "The welcome draws",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14483,7 +15649,7 @@
     "name": "THE_WELCOMES_SCENE_PLAYS",
     "chCode": "CH-15603",
     "meaning": "The welcome's scene plays",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14494,7 +15660,7 @@
     "name": "CONTINUE_IS_PRESSED",
     "chCode": "CH-15604",
     "meaning": "Continue is pressed (or Return)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14505,7 +15671,7 @@
     "name": "REDUCED_MOTION_OR_SETTINGS_PREFERENCES_ANIMATIONS_OFF",
     "chCode": "CH-15605",
     "meaning": "Reduced motion, or Settings > Preferences > Animations off",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14516,7 +15682,7 @@
     "name": "THE_TAB_IS_HIDDEN",
     "chCode": "CH-15606",
     "meaning": "The tab is hidden",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14527,7 +15693,7 @@
     "name": "SIGN_IN_IS_TAPPED",
     "chCode": "CH-15701",
     "meaning": "Sign in is tapped",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14538,7 +15704,7 @@
     "name": "A_SIGN_IN_LANDS",
     "chCode": "CH-15702",
     "meaning": "A sign-in lands",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14549,7 +15715,7 @@
     "name": "A_WARNING_TONED_REFUSAL",
     "chCode": "CH-15703",
     "meaning": "A warning-toned refusal (an empty field, an unverified email, a rate limit)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14560,7 +15726,7 @@
     "name": "A_DANGER_TONED_REFUSAL",
     "chCode": "CH-15704",
     "meaning": "A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14571,7 +15737,7 @@
     "name": "CONTINUE_ON_THE_WELCOME",
     "chCode": "CH-15705",
     "meaning": "Continue on the welcome",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14593,7 +15759,7 @@
     "name": "A_REFUSED_SIGN_IN_IS_READ_OUT",
     "chCode": "CH-15802",
     "meaning": "A refused sign-in is read out as it appears (`role=\"alert\"` for danger and warning) and focus moves to the first invalid field; both fields name the notice in `aria-describedby`",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14626,7 +15792,7 @@
     "name": "THE_PASSWORD_EYE_IS_A_NAMED_PRESSED",
     "chCode": "CH-15805",
     "meaning": "The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14648,7 +15814,7 @@
     "name": "THE_WINDOW_IS_820PX_WIDE_OR_LESS",
     "chCode": "CH-15909",
     "meaning": "The window is 820px wide or less (a phone)",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14659,7 +15825,7 @@
     "name": "THE_KEYBOARD",
     "chCode": "CH-15910",
     "meaning": "The keyboard",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14670,7 +15836,7 @@
     "name": "EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE",
     "chCode": "CH-15907",
     "meaning": "Either screen loads, on a slow phone or a fast desktop",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
@@ -14681,7 +15847,7 @@
     "name": "A_READ_FAILS_OR_THE_COURSE_CRASHES",
     "chCode": "CH-15908",
     "meaning": "A read fails, or the course crashes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   }
 ]

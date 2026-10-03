@@ -11,5 +11,7 @@ export function chLogServer(surface: string, read: string, error: unknown, featu
   void logServerError(`[clubhouse ${surface}] ${read} failed: ${describeError(error)}`, {
     action: `clubhouse.${surface}.${read}`,
     featureArea,
+    // Server events carried no UI tag, so a Clubhouse read failure could not be told from a Fairway one (swap audit §18).
+    tags: { ui: 'clubhouse', surface },
   });
 }

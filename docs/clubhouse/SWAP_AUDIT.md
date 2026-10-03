@@ -14,7 +14,7 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA),
 
 | Baseline | SHA | How it was established |
 | --- | --- | --- |
-| Production (served) | `6ee77e98e` | `npm run release:status`, at session start |
+| Production (served) | `ef6e017a2` | `npm run release:status`, 2026-10-01 |
 | main | `c706fc80e` | `origin/main` |
 | Clubhouse candidate (#2102) | `c221d1ca2` | `agent/clubhouse` |
 | Release train | PR #2110, `agent/release-train` at `c0f1b17fe` (#2102, #2104 round engine, #2108 security, #2109 stats engine, plus the audit fixes) | local `next build` exit 0 at `24a4bbca2` (later commits: docs, lint layout, the Hub read fix, one test timeout); CI rerunning at `c0f1b17fe` |
@@ -31,17 +31,17 @@ affects no customer until the flag is flipped.
 | Gate | Status | Evidence |
 | --- | --- | --- |
 | Baseline | **Passed** | §1 |
-| Complete shell swap | **Open**: route gaps in §3; the owner decides build, alias or retire (after this audit) | route table §3 |
-| Round preservation | **Database contracts Passed**: CI pgTAP at `c0f1b17fe` (every migration applied, held included) passed `golf_round_lifecycle_contract` (direct writes cannot complete a round; completed history cannot be edited; only the atomic path completes), `golf_round_submit_identity` (a stale retry cannot retarget a round's type, qualifier or slot), `golf_qualifier_round_slot_integrity` (no duplicate active qualifier round) and `golf_atomic_snapshot_integrity`. Client fault paths are covered by fake-backed Clubhouse tests (`round-entry-*`). **Open**: F-02 (recovery unreachable with the flag on); F-14 fixed | F-02, F-14 |
-| Calendar | **Blocked / not exercised** at runtime (no isolated DB session run yet); source reviewed; deep link `?event=` wired | §3 notifications |
-| Stats and visuals | **Source reviewed**; parity register `pages/P005-stats-player/PARITY.md` (87 rows); formula fixtures not rerun at the train SHA | PARITY.md |
-| Qualifiers | **Open**: F-03 tie inconsistency, source-confirmed; the tie policy is an owner decision | F-03 |
-| Messages | **Passed**: two-session journey on the local stack, 7/7 (see the runtime journeys below); deep link `?conversation=` verified | §4 |
-| CoachHelm | **Open**: F-04 views not rebuilt | F-04 |
+| Complete shell swap | **Mostly closed** (Q-130): team switcher (`67f40c962`) and the read-only player roster (`0672d5738`) built; the other gaps alias (`6daf50afc`). The player CoachHelm views are built (Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`) | route table §3 |
+| Round preservation | **Source-confirmed fixes, runtime not exercised**: database contracts Passed (CI pgTAP at `c0f1b17fe`). Night audit: R-1..R-12 fixed in both engines with 35 new tests (`72c920ce3`); the shared-device re-create the security review found is fixed (`6acd57346`). F-02 (recovery unreachable with the flag on) is fixed (`4d5f3f565`; source and unit tests, not run on a phone). **Open**: Q-120 (held submit version check); device fault-injection on a real phone not run. Q-119: owner, leave it | F-02, R-1..R-12, Q-119, Q-120 |
+| Calendar | **Source-confirmed fixes, runtime not exercised**: 9 bugs fixed (`ac64ba366`, `696b49570`); write journeys on the Demo team pending (they notify the whole roster: check Demo members' email and push first). Fixed 2026-10-01: CAL-05 (`4f3670a41`), Q-108 invitees only (`24b0b9542`). Open: create idempotency | §4 Calendar |
+| Stats and visuals | **Reconciled on production data (Demo team)**: the SQL oracle matches every player's Last 10 and the team row after F-51 (Q-122, Q-123). Visuals to the board (F-54), one smooth window switch (F-55). Earlier fixes F-34, C-14..C-16, C-24 (`98f7bb52e`). SG and Qualifiers reconciled (§4); stale stored SG on 7 rounds waits on the recompute. Q-112 fixed: the comparison pairs the same players (`100f35007`) | §4 §10 Stats gate |
+| Qualifiers | **Source-confirmed fixes**: one comparator for board, workspace and confirm; no-round players never rank; selection guards (`3c2fce175`). Fixed 2026-10-01: Q-114 tie at the cut waits for the coach (`2ea18e38c`), Q-115, Q-116 (`f6002eaab`); stored entry totals rewritten (Q-134). Open: Q-117; coach_reasoning readable by players until held `20260929200000` is applied | §4 Qualifiers |
+| Messages | **Passed**: two-session journey on the local stack, 7/7; deep link verified. Night audit fixed failed-reaction silence, lost text on a failed send and the coach phone inbox shift (CLS 0.292, not re-measured) | §4 |
+| CoachHelm | **Audited**, no P0. Demo regenerated (Q-125), tentative cards on (Q-126); CH13-14, CH13-21, CH13-22, CH13-23, CH13-24 fixed; CH13-8 labelled. **Open**: Q-124 cache migrations (owner applies) | §4 §13 §7 |
 | Migrations | **Passed**: no train code reads a held column; every RPC the app calls exists in production or has a verified fallback; CI applied the whole migration set, held included, and all 86 pgTAP suites passed at `c0f1b17fe`; squawk and SQL lint clean | §5 |
-| Phone/accessibility | **Blocked / not exercised**: needs the owner's iPhone pass on the preview | — |
-| Build/regression | Local `test:all`: 13 failures in 8 files, fixed (F-15..F-20). First CI run on #2110 added F-21..F-25, all fixed or owner-decided; `next build` exit 0 locally | §4 |
-| Cutover/rollback | Release package in §6; rollback = flag off (Clubhouse) or redeploy `6ee77e98e` (owner) | §6 |
+| Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
+| Build/regression | Local gates on `c7e24b4f9`: typecheck, lint ratchet, Supabase-error and fail-open audits, `clubhouse:check`, `docs:check` all 0; unit suite 2067 files, 22182 tests, all pass; local production build used for the F-56 timings. CI on PR #2111 at `9d65dd3ff`: see §4 | §4 |
+| Cutover/rollback | Q-131 built: `HELM_CLUBHOUSE_TEAMS` allowlist (`a49a75f6a`); Q-132 held migration written (`9a49d3bf9`). **Open**: setting the allowlist, applying the held files, the flag flip (all owner) | §18 §7 |
 | Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
 
 ## 3. Role × route table (F-01)
@@ -58,20 +58,38 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   `new`, `[id]`, `[id]/edit`, `[id]/selection`), `team-hub`, `settings` (plus
   `notifications`, `coaching-intelligence`), `rounds/[uuid]`.
 - **Player:** `/golf/dashboard`, `coachhelm`, `calendar`, `team-hub`,
-  `messages`, `rounds`, `rounds/new`, `rounds/[uuid]`, `rounds/continue/[uuid]`,
+  `messages`, `rounds`, `rounds/new`, `rounds/recover` (F-02), `rounds/[uuid]`,
+  `rounds/continue/[uuid]`,
   `classes`, `stats`, `qualifiers`, `my-qualifiers`, `settings` (plus both
-  sub-pages).
+  sub-pages), and `roster` (built 2026-10-01, Q-130: the coach's screen,
+  read-only; see below).
 - **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
-  tabs; `roster/[id]` goes to `stats?player=`; `rounds/[id]/review` goes to
-  `rounds/[id]`; `coachhelm/chat` goes to `coachhelm?view=ask` (coach).
+  tabs; `roster/[id]` goes to `stats?player=` (coach) or to `roster` (player);
+  `rounds/[id]/review` goes to `rounds/[id]`; `coachhelm/chat` goes to
+  `coachhelm?view=ask` (coach).
+- **Player roster (built 2026-10-01, Q-130):** `/roster` for a player is the
+  coach's roster, read-only. A teammate shows name, class year and handicap
+  (what Fairway's player roster showed) and no scores, so no row is a link or a
+  button, and there is no invite, export, join request, player panel or note.
+  The loader (`data/roster-player.ts`) reads the team's name and season and the
+  active members only, by the player's own team. It is a sidebar entry under
+  Team and a row in the phone More sheet (the boards' player nav has none).
+  Catalog CH-3210, CH-3211, CH-3307, CH-3308, CH-3807; contracts 30804 to
+  30806; `roster-player.test.tsx`.
+- **Not a route, the team switcher (built 2026-10-01, Q-130):** a head coach on
+  two or more teams (`canSwitchTeams`, the gate `setActiveTeam` enforces)
+  switches from the sidebar's team line (desktop) or the More sheet's Team list
+  (phone). It calls `setActiveTeam`, then `router.refresh()`, and the page
+  remounts for the new team. A coach on one team, an assistant on several, and a
+  player see the team as a plain label. Catalog CH-1003, CH-1305, CH-1813,
+  CH-1814; `team-switch.test.tsx`.
 
 ### Not rebuilt with the flag on (owner decides after this audit)
 
 | Route | Role | Today (flag on) | Suggested destination |
 | --- | --- | --- | --- |
-| `/rounds/recover` | player | NotRebuilt | **Build** (P0, F-02): a Clubhouse recover screen over `lib/offline/indexed-db` + `shot-storage` + `round-missing-recovery` |
 | `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | NotRebuilt | Alias to `coachhelm` (`?player=` kept) |
-| `coachhelm?view=development\|profile\|standing\|deep-dive`; `/my-development`, `/my-game-profile`, `/my-standing` | player | NotRebuilt (F-04) | Alias: development and deep dive go to `coachhelm`; profile and standing go to `stats`. Or build |
+| `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing` (and `/my-development`, which goes to `coachhelm?view=development`) | player | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development | Nothing left on this row |
 | `/players/[id]`, `/players/[id]/game`, `/game/print`, `/genome`; `/coachhelm/genome/[id]` | coach | NotRebuilt | Alias to `stats?player=<id>` |
 | `/coachhelm/genome/compare` | coach | NotRebuilt | Owner: retire or build |
 | `/team` | both | NotRebuilt | Coach: `settings?section=team`; player: `settings?section=golf` |
@@ -105,17 +123,17 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 | ID | Sev | Label | Finding | Disposition |
 | --- | --- | --- | --- | --- |
 | F-01 | Blocker (flag on) | Source-confirmed | NotRebuilt for supported routes (§3). | Owner picks build, alias or retire per row, after the audit |
-| F-02 | P0 (flag on) | Source-confirmed | With the flag on, a player cannot reach round recovery. `NewRound`/`ContinueRound` send the engine's `recover` destination to `/rounds` (`ENGINE_ROUTES`). `RoundsLibrary` reads server rounds only (in-progress `limit(20)`) and never reads `getPendingRounds`, `getFailedRounds` or `getRoundRecoverySnapshots`. A round saved only on the device can be neither seen nor restored in Clubhouse. | Open: build the recover screen (the §3 row). Stop condition for a player flag flip |
-| F-03 | P1 | Source-confirmed | Leaderboard `buildBoard` (`screens/qualifiers/model.ts`) shares positions on equal to-par and total, orders ties by rounds played then name, and sets the automatic slots by that order. Selection `rankCandidates` (`lib/coachhelm/v3/qualifying/loader.ts`) assigns unique ranks in input order after to-par and total, and `classifySlots` uses them. A tie across the last automatic slot can put a different player in by each view. | Owner decision (Q-104). Oracle test to be written with the chosen rule |
-| F-04 | P1 | Source-confirmed | `routes/coachhelm.tsx` `VIEWS_NOT_REBUILT`: development, profile, standing, deep-dive. | Owner decision (§3) |
+| F-02 | P0 (flag on) | Source-confirmed | With the flag on, a player cannot reach round recovery. `NewRound`/`ContinueRound` send the engine's `recover` destination to `/rounds` (`ENGINE_ROUTES`). `RoundsLibrary` reads server rounds only (in-progress `limit(20)`) and never reads `getPendingRounds`, `getFailedRounds` or `getRoundRecoverySnapshots`. A round saved only on the device can be neither seen nor restored in Clubhouse. | **Fixed** `4d5f3f565`: `/rounds/recover` is rebuilt for a player (`screens/rounds/recover/`). The engines' recover route is it (`entry/routes.ts`, `?from=submit`). It lists only the signed-in player's device rounds (recovery journal, failed-submit queue, old database, emergency save; one card per round) and offers Restore (Fairway's recovery, ported), Retry sync (`getSyncEngine().retryFailed`) and Discard after a question (the Library's discard, then every device copy and the tombstone). Tests `rounds-recover.test`, `rounds-recover-ports.test`. A discard guard for a queue row with no round id is in `f6002eaab`. Not run on a phone or against a real failed submit. The Library does not link to the screen (a player reaches it from a failed submit, as on Fairway). Fairway's scan logic is duplicated, not shared, until Fairway is retired |
+| F-03 | P1 | Source-confirmed | Leaderboard `buildBoard` (`screens/qualifiers/model.ts`) shares positions on equal to-par and total, orders ties by rounds played then name, and sets the automatic slots by that order. Selection `rankCandidates` (`lib/coachhelm/v3/qualifying/loader.ts`) assigns unique ranks in input order after to-par and total, and `classifySlots` uses them. A tie across the last automatic slot can put a different player in by each view. | **Fixed** `2ea18e38c` (Q-114): players level at the last place on score are "Tie at cut" on the board, in selection and at confirm; the coach gives the places left (Clubhouse and Fairway) and confirm waits. Name order decides nothing. Tests `qualifying.test`, `selection-guards.test`, `qualifiers.test` |
+| F-04 | P1 | Source-confirmed, fixed | `routes/coachhelm.tsx` `VIEWS_NOT_REBUILT`: development, profile, standing, deep-dive. | **Fixed.** Owner (2026-10-01): "coachhelm for player you can build but be detailed." The player's Game profile (`28f83d3a8`), Standing (`a657a7d15`) and Deep dive (`438781162`) are built in P013, each for the signed-in player alone behind the board's own switch, with a sub-navigation (Board, Game profile, Standing, Deep dive, and a link to Development); `?view=development` goes to Stats' Development (§14 D4). `VIEWS_NOT_REBUILT` is gone. Tests `coachhelm-profile.test`, `coachhelm-standing.test`, `coachhelm-dive.test`, `coachhelm-views.test`. The phone layouts are a draft (no owner board for these views). The team switcher and the read-only player roster (`67f40c962`, `0672d5738`) and the aliases (`6daf50afc`) closed the rest |
 | F-05 | P0 gate | Documented, not reverified | Authenticated writes on the candidate, fault injection and the iPhone pass have not run. | Preview pass by the owner (§6); local-Supabase journeys still to do |
-| F-06 | P0 gate | Source-confirmed | `e2e/golf-round.spec.ts` drives Fairway controls against the configured DB. | Not certifying Clubhouse; a Clubhouse e2e is still needed |
+| F-06 | P0 gate | Source-confirmed | `e2e/golf-round.spec.ts` drives Fairway controls against the configured DB. | **Fixed** (see the commit for F-06): `e2e/clubhouse-round.spec.ts` plays a Clubhouse round as a player, from setup through Save for later, Continue and all 18 holes to Submit, and checks the database (completed, 18 scored holes, total 54). Local stack only: it skips unless Supabase is local, seeds its own player and deletes everything after. 3/3 runs passed |
 | F-07 | P1 | Source-confirmed | Held numeric migrations (countable cache, test-round exclusion, putting, SG) change derived figures. | Stay held. The train does not depend on them (§5) |
-| F-08 | P1 | Risk to test | The coach CoachHelm loader shows one top insight a player; counts can exceed the reachable items. | Not reverified tonight |
+| F-08 | P1 | Risk to test | The coach CoachHelm loader shows one top insight a player; counts can exceed the reachable items. | **Fixed** `2e95b68ff` (CH13-4): the header counts players with an open signal, never the rows behind them; tests `coachhelm.test` › CH13-4, `coachhelm-audit.test` › CH13-4 |
 | F-09 | P2 | Documented | P013 WIRING described bugs already fixed in code. | Code is the evidence; WIRING to be reconciled |
 | F-10 | P1 | Source-confirmed | The train changes shared code (round engine #2104, stats engine #2109, security #2108, `formatToPar`). | The flag-off slice runs in `test:all` (green after F-15..F-20) |
-| F-11 | P1 | Documented | Attachment hardening SQL is not written (`held/data/message-attachments-hardening.md`: HELD). | Stays open. Qualifier hardening is held with a working fallback (§5) |
-| F-12 | P2 | Risk to test | Messages drafts live in a component `Map`: kept across conversation switches, lost across reloads. | Not exercised |
+| F-11 | P1 | Documented | Attachment hardening SQL is not written (`held/data/message-attachments-hardening.md`: HELD). | **Written, held** `076e5acff`: `20261001130000` revokes `anon` and hides a deleted message's files (2 of 14 rows today). The owner applies it |
+| F-12 | P2 | Risk to test | Messages drafts live in a component `Map`: kept across conversation switches, lost across reloads. | **Fixed** `accefa95c`: drafts are kept in the tab's session storage, per user, so a reload keeps them |
 | F-13 | P1 | Source-confirmed | The flag's `cleanup_plan` and `purpose` say "coach"; `isClubhouseFor` covers coach and player. | Fixed in docs: the flag text now names both roles and ties retirement to §3 (this commit) |
 | F-14 | **P0 (flag on)** | Source-confirmed, fixed | Only Fairway's `OfflineProvider` started the sync engine. In Clubhouse, a queued round, hole or shot synced only while a round screen was open (no interval, no initial sync after a reload). | **Fixed** `940f86f8c`: `shell/OfflineSync.tsx`, mounted in `ClubhouseShell`. Test `offline-sync.test.tsx` |
 | F-15 | P1 (CI) | Reproduced | The reduced-motion guard failed on 15 Clubhouse files. All of them gate on `useChReducedMotion`, which the guard didn't know. | **Fixed** `5dc014faa`: registered as a verified delegate |
@@ -153,6 +171,267 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
   server, Chromium and Docker together). The stack was stopped; the seeded data
   is kept for a rerun.
 
+### Full sweep (2026-09-30, night): both roles, phone and desktop
+
+Dev server (flag on, production data, Demo University Golf) for visuals; the
+flag-on preview `helmv3-3hkylvpkq` (a production build) for timing. 46 pages
+were swept (13 coach and 10 player routes, each at 390 px phone and 1440 px
+desktop). The dev server's load times are webpack compile times and are not
+cited. Preview timing ran beside other work, so it is provisional until a
+quiet rerun.
+
+- **F-28 (P1, Reproduced on the preview, fixed `4b91fdd75`).** On the phone,
+  the "Forgot password?" link's 44 px hit area sized itself to the sign-in
+  sheet and took taps meant for Sign in. Test:
+  `auth-forgot-hit-area.test.ts`.
+- **F-29 (P1, Reproduced on the preview, fixed `ce7832dc7`).** After a
+  successful sign-in, `router.refresh()` re-rendered `/golf/login` with the
+  new session, and the proxy redirected it to `/golf/dashboard`. Frames
+  recorded on the preview: login → Fairway dashboard skeleton → blank Home →
+  welcome. On dev after the fix, sign-in lands on `/golf/welcome` directly.
+  `auth.test.tsx` now asserts that no refresh happens.
+- **F-30 (P1, Source-confirmed and Reproduced, fixed `b7b7d2e4d`).**
+  `/golf/loading.tsx` and `(dashboard)/loading.tsx` render Fairway's shell
+  and dashboard skeleton even with the flag on, so every cold entry painted
+  Fairway chrome before Clubhouse (§7.1: Clubhouse layered on Fairway). With
+  the flag on they now render `ClubhouseShellSkeleton` and `HomeSkeleton`.
+  Test: `route-loading-shell.test.tsx`.
+- **F-31 (P0, Reproduced on the preview and on dev).** Team Hub renders the
+  error boundary for both roles at both widths. The server calls
+  `parseHubTab()`, which is exported from a `'use client'` module. Fixed
+  `3c2fce175`: the parser moved to `lib/hub-tabs.ts`, and a new
+  `client-boundary.test.ts` fails on any server import of a non-component
+  value from a client module.
+- **F-32 (P2, Risk to test).** Qualifiers logged a hydration mismatch on the
+  dev server only; the production build did not. A new SSR-then-hydrate test
+  of every qualifiers screen at both widths (18 cases) finds none.
+- **F-33 (P2, Reproduced on the preview).** Coach Messages on the phone has a
+  CLS of 0.292 (desktop 0.019, player phone 0). Cause: announcements loaded
+  after the conversations and pushed them down. Fixed `ac64ba366`: the inbox
+  keeps its skeleton until both arrive. Not re-measured yet.
+- **F-34 (P2, Reproduced on dev).** The coach Home figure strip reads "Rounds
+  0 this week · GIR 100% · Putts 38.0". The figures are arithmetically true
+  (three Aug 2 practice rounds) but unlabelled, and "this week" used another
+  basis. Fixed `98f7bb52e`: the form uses the Stats Last-10 selection and
+  always shows its basis ("3 rounds · Aug 2").
+- **F-35 (owner request, done).** On the phone the ivory ramp moves one step
+  darker: page `#e7e3d8`, cards `#f5f2ea`, and the top bar, tab bar and
+  sheets follow. Tertiary text darkens to `#5f5c55` to hold 4.5:1. The
+  sign-in fields lose the black keyboard outline and get a green hairline.
+- **Round preservation (§9), source audit:** R-1 to R-5 are P1 (false "Round
+  saved"; Restore not rehydrating the current hole; a failed Discard
+  suppressing saves; a non-idempotent Discard that a round can be resurrected
+  from; a vanished-parent submit dead-ending). Fixed `72c920ce3` with R-6 to
+  R-12 from the code audit (35 new tests, each failing on the old code). Left:
+  cross-device discard (Q-119) and the submit version check (held draft,
+  Q-120).
+- **F-36 (P1, Source-confirmed, fixed `22eda4649`, `4aaff91e1`).** The server
+  always rendered desktop (`useChPhone`'s server snapshot), so a cold phone
+  load hid the page until hydration. A `ch_phone` cookie now gives the server
+  the device's last layout.
+- **F-37 (P2, Reproduced, fixed `22eda4649`).** Tab switches on the phone went
+  blank, then skeleton, then page (a 150 ms skeleton delay), and Home's
+  skeleton was the light desktop shape before the green hero. Skeletons now
+  show at once, and Home's phone skeleton is the hero.
+- **F-38 (P3, fixed `fcb14f3b0`).** Player Home phone captions under the
+  figures were drawn at figure size.
+- **F-39 (P3, fixed `49540d392`).** An unbuilt page's phone top bar said
+  "Home".
+- **F-40 (P1 privacy, Source-confirmed, fixed `85abff0dc`).** The shell's
+  next-event read had no class exclusion, so a player's class could show as
+  the team's next event to the coach and teammates.
+- **F-41..F-45 (P2, owner screenshots, fixed `002bc93a9`).** Player Stats on
+  the phone did not match the board: the figures were three cards, not one
+  strip; the trend drew one point per round on a single day ("Aug 2" three
+  times); the skeleton was the desktop shape; "hits" did not agree with its
+  count; the phone ivory was too white. The phone tokens are now the darker
+  ivory.
+- **F-46 (P2, owner screenshot, fixed `34ac231d7`).** A black focus box
+  around More after a tap; focus is green, and a tap restores focus without
+  a ring.
+- **F-47 (P2, owner screenshot, fixed `fdc2c9d60`).** The Classes term line
+  overlapped the week bar on the phone.
+- **F-48 (P2, fixed `2f459d9f2`).** Sheets, insets and popovers kept the
+  light desktop surface on the phone ivory.
+- **F-49 (P1 visual, owner screenshots, fixed `16618ded6`).** The phone's
+  edges did not lead in: a pale strip under the status bar above the green
+  hero (the board runs green under it), a seam between the bar and the hero,
+  and the page hard-cut at a near-opaque tab bar. The shell now sets the
+  theme colour and html background (green on Home, ivory elsewhere), the
+  hero's top fades from the bar's flat green, and the tab bar is glass.
+- **F-50 (P1 motion, owner recording, fixed `972824ab5`).** Phone sign-in:
+  the sheet left a flat green slab for about a second, the welcome redrew
+  the course at a different framing (a jump), the camera pushed and slid
+  (rejected as a zoom), and the name was ink on the night sky. The course is
+  now drawn full screen behind a window that opens, the phone camera holds
+  still, and the name is ivory at night. Verified on dev video; the welcome
+  hand-off on a real phone is unverified (no preview deploys, owner).
+- **F-51 (P1 data, Reproduced on production data).** Player Stats showed 3
+  rounds for a player with 22 completed 18-hole rounds: Last 10 stopped at
+  the season start (the legacy app used the ten newest rounds), and rounds
+  entered as totals only were dropped everywhere. Owner decisions Q-122 and
+  Q-123; fix in progress.
+- **F-52 (P1 data, Reproduced, fixed `681a70582`).** Team Hub Documents
+  showed "Documents didn't load" for the coach. getDocuments embedded
+  `uploader:uploaded_by(...)`, but golf_documents.uploaded_by references
+  auth.users, which PostgREST cannot embed (PGRST200), so every list read
+  failed, for every team, in both UIs. The single read and version compare
+  had the same embed. Uploaders are now resolved from golf_coaches after the
+  read; four tests fail on the old code.
+- **F-53 (P3, fixed `440b25d0a`).** Team Hub RSVPs: an all-day event read
+  "12:00 AM", and an event no one was invited to drew an empty grey bar.
+- **F-51 fixed (`da0c90b6e`, Q-122/Q-123).** Last 10 is each player's ten
+  newest countable rounds in any season; totals-only rounds count in scores
+  and in no hole figure, and a card that reads fewer rounds says so.
+- **§10 Stats gate (run 2026-10-01 against production, Demo team).** SQL
+  oracle per player (Last 10 by date across seasons, totals-only in scores,
+  hole-level pooling) against what coach Team Stats (desktop and phone) and
+  the player's own Stats show on dev. Every player's Last 10 average matches
+  exactly (Cole 74.6, Tyler 74.7, Jackson 75.5, Mason 75.7, Owen 76.0, Dylan
+  76.3, Ethan 76.5); the team row matches (75.6 vs 75.61, +1.1 vs the previous
+  10 from 74.47, 56 of 70 rounds with holes, GIR 65% vs 64.7%, putts 33.1 vs
+  33.07, birdies 2.5 vs 2.52). Scrambling reads 31% against an oracle of
+  31.5% computed as "par or better after a missed green"; the app counts the
+  logged up-and-down, a definition difference, not a defect. Not yet
+  reconciled: SG figures (they need the Tour baseline model), Qualifiers
+  window, CoachHelm evidence (§13 audit running).
+- **F-54 (P1 visual, owner screenshots, fixed `6a3d8fe18` and follow-ups).**
+  Phone Stats was "plain black numbers, no spacing": Game detail drew captions
+  at figure size (a phone rule caught every `dd`), grey bars, uncoloured par
+  tiles, an unreadable desktop make-rate curve, four "0%" cup misses with
+  nothing logged, lag bands out of order, raw floats and metric ids in
+  Development, and a zero change coloured amber. Now to the board: one figure
+  strip, green notes, green and amber bars, make-rate rows, readable
+  development, neutral zero changes, and one coverage line on desktop.
+- **F-55 (P1 motion, owner report, fixed `0798bcec5`).** Last 10 to Season
+  flashed twice and jumped: the skeleton fade-in hit live pages that were
+  aria-busy during a transition (blink to transparent), and the first-paint
+  reveal replayed when aria-busy cleared (second flash and a 10px rise). Now
+  one dim while loading; the switch moves on the tap.
+- **F-56 (P2 perf, fixed `9194fe2ed`).** Two serial round trips removed from
+  the player profile read. Measured on a local production build at 4x CPU:
+  cold first paint 0.7-1.1 s and largest paint 1.3-2.3 s; tab switches
+  0.9-1.4 s; window switches 1.25-1.9 s (Season's server render 1.0 s).
+- **F-57 (P3, fixed `6e2fe5144`).** The Rounds season ribbon printed the
+  same day under every round played that day ("2 Aug 2 Aug 2 Aug"); a day is
+  labelled once.
+- **F-59 (P2, both UIs, fixed).** Found by the F-06 e2e: a Continue tapped on
+  Rounds soon after Save for later was pulled back to the library. The shared
+  new-round engine called `router.refresh()` right after `router.push(library)`;
+  the refresh, bound to the library, landed after the tap. Removed (the push
+  renders the library fresh, as the continue engine already did); Save for
+  later now reaches the library in about 1s instead of 10s on the dev stack.
+  The e2e taps Continue at once and passes 3/3.
+- **§13 CoachHelm (run 2026-10-01, read-only, Demo team).** No P0. Stored
+  putt, approach and tee bands, and sand saves, match a non-test recompute
+  except where the cache counts test rounds (one 15-25 ft band reads 19.2%
+  stored vs 5.8%; a driver vs layback comparison flips): the fix is the held
+  cache migrations (Q-124) and a regeneration (Q-125), both owner decisions.
+  Fixed in code: stale warm-up cards are hidden (CH13-3), the open-signal
+  count matches what is drawn (CH13-4), focus areas carry their team (CH13-5),
+  development notifications open Stats (CH13-7), evidence nouns and freshness
+  (CH13-9), confidence words follow the shared labels (CH13-10), no-finding
+  cards are not assignable (CH13-11), card voice per role (CH13-13),
+  acknowledged cards are not "Priority" (CH13-16), and Ask and its stream
+  endpoint respect the CoachHelm gate (CH13-20). Fixed 2026-10-01: Undo after
+  Dismiss keeps an acknowledgement (CH13-14, `024a7669a`); Assign as focus
+  tells the player, and the link follows the player's team under the
+  allowlist (CH13-24, `f0c107d34`); Assign sends the player's value now as
+  the focus's starting point (CH13-22, `1435fc9dd`, `39270df3b`); a declined
+  focus says so and Assign reads Propose again (CH13-23, `22a26ff00`); only
+  the cards a Clubhouse page draws are recorded as shown (CH13-21,
+  `5107895ee`). CH13-8 (unlabelled round sets): every live card (599 of 599,
+  read-only) carries its window ("90 days", "All rounds") and sample since
+  CH13-9; the test rounds in the stored cache are Q-124's apply. CH13-27 (stored strokes impact not
+  reproducible) is gone after the Q-125 regeneration; the 10 team-level cards
+  (bubble player, pattern) were not regenerated.
+- **F-58 (P2 data, fixed `c7e24b4f9`).** CoachHelm's program pulse used the
+  hole-by-hole rule, so a team posting qualifiers as totals read "no rounds
+  in 60 days". It now uses the Q-123 score rule (shared in
+  `src/lib/golf/round-score-countable.ts`).
+- **§14 Adjacent capabilities (run 2026-10-01, source and read-only SQL).**
+  Connected: roster, Team Hub reads and posts, Classes, Settings, round setup's
+  courses, sign-in and onboarding, Recruiting, exports; Practice, lineups and
+  scouting have no golf production data. No Baseball or Lift Lab regression in
+  the branch diff. Defects: D1 (P1) coaching staff invites and approvals had no
+  Clubhouse screen (fixed `322ca7cfd`); D2 (P1) a Team Hub trip could not be
+  edited or deleted (fixed `12f07da99`); D3 (P2) a calendar link could not be
+  replaced or removed (fixed `40419c193`); D4 (P2) 30 unread dev-plan
+  notifications opened a placeholder (fixed `5c4a9c33a`); D5 (P2, live in
+  production, both UIs) push taps never deep-linked: the payload URL is absolute
+  and the guard rejects "//" (fixed `a99fa9638`); D6, D8 aliases for
+  `/intelligence` and the old qualifying workspace (fixed `5c4a9c33a`); D7 (P3)
+  distance unit not settable (fixed `4e3b87d44`); D9 (P3, dev only) the
+  strict-mode double effect can clear the sync player. Owner: Q-130.
+- **§16 Held migrations (run 2026-10-01, read-only).** None of the 15 held
+  files is applied; every app path that needs one has a fallback. Fixed:
+  `20260928150000` missed the `r2` calls in the trend subqueries and would
+  have reported success with test rounds still in last 5/10 (`ec65c44f6`).
+  Q-128 (OD-01 dropped the 14 totals-only rounds Stats counts) is fixed in
+  the held file (`dcc54baea`). Owner:
+  Q-129 (`20260928160000` is superseded but unguarded). Apply order notes:
+  SG recompute before the cache and standing refreshes; local replay runs
+  the held schema, so local stats results are not production's.
+- **§18 Rollback and observability (run 2026-10-01).** The flag is compiled
+  in: a flip and its undo are deploys. The documented rollback target was
+  stale (now the train deployment; RELEASE doc corrected). Fixed
+  (`8a1dd47f8`): a queued round that fails to sync now reports to Sentry,
+  high when retries end, and server events carry `ui` and `surface` tags.
+  Open, owner: Q-131 (no canary), Q-132 (the nightly lost-round detector has
+  read 14 since 28 Sep, so a new loss looks the same). Production delivery of
+  Clubhouse events is unverified while the flag is off (preview: 20 events).
+- **§10/§11 reconciliation, Qualifiers and SG (2026-10-01, production,
+  Demo team).** Qualifiers: the one scored qualifier matches the SQL oracle
+  for all 7 entrants (rounds, total, to-par, position, automatic slots); no
+  ties exist, so F-03 is not exercised. Defect found and fixed (`802bcfbad`):
+  the selection workspace and confirm ranked from the entry's stored
+  aggregate, which is stale on a live qualifier on another team (3 rounds
+  played, 2 stored); they now rank from the rounds, as the board does. Across
+  production 28 of 132 entries disagree with their rounds (mostly legacy
+  0/null and seed data; Q-134). Latent, no data hits them: a round with a
+  total but no to-par would count as even, and two rounds in one round slot
+  are not deduplicated. SG: every Clubhouse figure is the mean of the stored
+  per-round columns over the window's hole-scored rounds and matches the
+  oracle for all 7 players and the team row (-5.6 vs Tour, 56 rounds). Seven
+  Demo rounds hold stale stored SG (five predate penalty charging), which
+  moves Dylan, Jackson and the team total at one decimal; they change on the
+  owner's recompute (Q-89), not in code. Caption "vs Tour" is correct.
+- **CI on PR #2111 (fixed `55bb26a51`).** The layout test lacked the F-36
+  cookie mock, the held migration's HELD.md row lacked its date and its
+  registry owner, and four test reads were unchecked.
+- **Calendar §8 (fixed `ac64ba366`, `696b49570`).** Editing a multi-day
+  all-day event shrank it to one day; overnight events could not be edited;
+  a series edit could flip All day; week/day grids hid events outside 6 AM to
+  9 PM; cancelled events counted as busy; failed replies read "No players
+  invited"; `calendar?event=` links beyond about six weeks opened on today; a
+  failed roster read looked like an empty team; "Mark all present"
+  overwrote saved marks and Retry resent saved ones. Server-side, not
+  changed: series across the 1 Nov clock change shift an hour (CAL-05), the
+  create fan-out notifies the whole roster (Q-108), and event create has no
+  idempotency key.
+- **Messages §12 (fixed `ac64ba366`).** A failed reaction showed no error; a
+  failed send dropped text and files typed while it was pending.
+- **Qualifiers §11 (fixed `3c2fce175`).** One comparator for the board, the
+  workspace and confirm; players with no scored round never rank; confirm
+  keeps coach picks, is compare-and-set (no double notify), and no longer
+  deadlocks on a small field; picks must be entrants. Owner questions Q-114
+  to Q-117.
+- **Stats §10 (fixed `98f7bb52e`).** A degraded detail read showed zeros as
+  figures; season rounds used the stored total instead of the canonical one;
+  "Where drives finish" summed to 160%; totals-only cache rows averaged as 0.
+  Owner questions Q-111 (total-only rounds never count) and Q-112.
+- **Security review of R-5 (`6acd57346`).** High, fixed: the device-wide v1
+  queue survives sign-out, so player A's queued scorecard drained under
+  player B's session (A's round gone) would come back `round_missing` and be
+  re-created as B's round. The drain now submits only the signed-in player's
+  records. Low, open: the submit tells `round_missing` from the refusal for an
+  id the caller already holds (a one-bit existence check on unguessable ids).
+  Info, open: the discard tombstone list is one device-wide list capped at 50
+  with no expiry.
+- **Preview timing (provisional).** Most pages are ready in 2–3 s on the
+  phone. The first Home after sign-in took 7.1 s. CLS is 0 everywhere except
+  F-33.
+
 ## 5. Schema compatibility (flag-off deploy with no migration applied)
 
 - No source file outside tests reads a column added only by a held migration
@@ -167,6 +446,35 @@ on), `intelligence*`, `my-development`, `coachhelm?view=development`.
 ## 6. Release package (tonight)
 
 See `docs/clubhouse/RELEASE_2026-09-30.md`.
+
+## 7. Status after "Fix all findings" (2026-10-01)
+
+Branch `agent/swap-audit` (PR #2111), local commits not yet pushed. Nothing
+applied to production schema, deployed, flipped or merged.
+
+Done today (code, tests, docs): owner answers Q-108, Q-112, Q-114, Q-115,
+Q-116, Q-126, Q-130, Q-131, Q-134 built; F-02, F-03, F-08, F-12, CAL-05,
+CH13-14, CH13-24 fixed; data fixes Q-125, Q-127, Q-134 run on production as
+approved; held files written or fixed for F-11 (`20261001130000`), Q-128
+(OD-01 counts total-only rounds in score figures only, `dcc54baea`), Q-129
+(guard on `20260928160000`) and Q-132 (`20261001120000`).
+
+Still to do on the branch:
+
+- Final registry sync, full gates, one push, CI green.
+
+Tooling, not fixed here: `scripts/db/check-declarative-schema-drift.sh`
+reports about 3,500 statements on a fresh local reset, including objects
+this branch never touched, and no CI workflow runs it. The branch's own
+held changes are mirrored in `supabase/schemas` (`65f5e0af2`); the gate
+itself needs its own fix.
+
+Owner actions (not agent work):
+
+- Apply the held migrations in the order in `supabase/migrations/HELD.md`,
+  then recompute strokes gained (Q-89) and regenerate CoachHelm (Q-124).
+- Set `HELM_CLUBHOUSE_TEAMS` before the flag flip; the flip is a deploy.
+- Phone sign-off (Q-133) and the preview pass (F-05).
 
 ## Links
 

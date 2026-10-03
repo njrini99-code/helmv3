@@ -169,10 +169,22 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
   with their own row marked, their own scorecards only, and the squad once the
   coach confirms it (`selection_state = 'selected'`), never the pick
   reasoning. Enter round waits for the Round entry rebuild.
-- Standings rank scored players first, then to par ascending, then total
-  strokes, then more rounds; a tie needs the same to par and total and shows
-  as T (the `getQualifierLeaderboard` rule). The average counts 18-hole rounds
+- One ordering everywhere (swap audit §11,
+  `src/lib/coachhelm/v3/qualifying/ranking.ts`): to par ascending, then total
+  strokes, then more rounds, then name. The Clubhouse board, the selection
+  workspace (`rankCandidates`) and confirm all use it, so the board's
+  Qualified set is the set confirm selects, ties at the cut included (the
+  tie rule itself is owner question Q-104). A tie in the display needs the
+  same to par and total and shows as T. The average counts 18-hole rounds
   only.
+- Only scored rounds rank: a completed round with no total is not counted,
+  `updateQualifierEntryStats` writes null (not 0/0/0) when nothing is scored,
+  and `rankCandidates` needs `rounds_completed > 0`.
+- Selection guards (server): confirm fills the places on score around coach
+  picks and never overwrites one; only confirm reaches `selected`, and its
+  state flip is compare-and-set, so a repeat or concurrent confirm is refused
+  and nobody is notified twice; a pick must be an entrant; a field smaller
+  than the squad needs only as many picks as there are eligible players.
 - Closed means closed (D-31): the notice says players can't enter or submit
   rounds, including rounds already started, until the coach reopens it.
   Reopen shows on every completed qualifier.
@@ -189,6 +201,21 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
 - The selection workspace (turning the leaderboard into the travel squad) is
   hidden until it is designed (D-32); the Selections card shows who is
   qualifying now, and the confirmed squad read-only.
+- Page states (owner rules, 2026-10-01): a failed read is a notice with Try
+  again, never an empty or a zero ("You aren't entered", "no notes", "A
+  player", "0 of 0"). The detail sends the standings, facts and squad first
+  and streams the courses, tees and scorecards after them
+  (`loadQualifierDetail` returns the core and a `secondary` promise that never
+  rejects; the privacy filter on scorecards is unchanged). A refresh that
+  fails keeps the last good standings with "may be out of date". The list's
+  filter and search come back through the shell's `useChSessionState` (this tab,
+  per team), its scroll through RouteFrame, and a qualifier opened from the list
+  steps back to it on Back (`screens/qualifiers/return-state.ts`, the Rounds
+  library's pattern); Manage selections does the same toward the qualifier. The
+  selection workspace loader (`lib/coachhelm/v3/qualifying/loader.ts`) fails
+  closed: a failed picks, reasons or rounds read returns null, so the tie and
+  confirm writes refuse rather than count zero picks. Detail:
+  `docs/clubhouse/pages/P009-qualifiers/WIRING.md`.
 
 ## Known Risk Areas
 

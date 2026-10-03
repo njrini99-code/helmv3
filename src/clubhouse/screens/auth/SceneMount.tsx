@@ -15,6 +15,7 @@ import { useLocalHour } from './use-hour';
  * nothing to mismatch. A crash in it leaves the placeholder and never touches
  * the form.
  */
+// CH-15907: the form is in the server HTML and usable before the course, which loads in its own chunk.
 const GolfSceneLazy = dynamic(() => import('./GolfScene').then((m) => m.GolfScene), { ssr: false, loading: () => null });
 
 class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -36,6 +37,7 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
 export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: { camera?: SceneCamera; play?: boolean; /** A fixed hour, for the dev preview; otherwise the viewer's clock. */ hour?: number }) {
   const localHour = useLocalHour();
   const hour = fixedHour ?? localHour;
+  // CH-15909: 820px or less is the phone layout: the course on top, the form on a sheet.
   const phone = useChPhone();
   if (hour === null) return null;
   return (

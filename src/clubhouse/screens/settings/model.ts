@@ -16,13 +16,13 @@ export const SECTIONS: Record<'coach' | 'player', ReadonlyArray<{ id: ChSettings
     { id: 'notifications', label: 'Notifications', hint: 'Email and push' },
     { id: 'team', label: 'Team', hint: 'Scoring, reminders, invites' },
     { id: 'coachhelm', label: 'CoachHelm', hint: 'Priorities and alerts' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion and haptics' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
   ],
   player: [
     { id: 'account', label: 'Account', hint: 'Profile, email, password' },
     { id: 'golf', label: 'Golf profile', hint: 'Handicap and team' },
     { id: 'notifications', label: 'Notifications', hint: 'Email, push, CoachHelm' },
-    { id: 'preferences', label: 'Preferences', hint: 'Motion and haptics' },
+    { id: 'preferences', label: 'Preferences', hint: 'Motion, haptics and units' },
   ],
 };
 
@@ -142,6 +142,12 @@ export const HANDICAP_OPTIONS = [
   { value: 'none', label: 'No handicap' },
 ] as const;
 
+/** The distance a shot or a hole shows in. Display only: shots are stored in yards and feet either way. */
+export const DISTANCE_OPTIONS = [
+  { value: 'yards', label: 'Yards' },
+  { value: 'meters', label: 'Meters' },
+] as const;
+
 export const TIMEZONE_OPTIONS = [
   { value: 'America/New_York', label: 'Eastern (ET)' },
   { value: 'America/Chicago', label: 'Central (CT)' },
@@ -254,6 +260,82 @@ export function orderToPriorities(order: PriorityKey[]): Record<PriorityKey, num
 export type ChResult<T = unknown> = { success?: boolean; ok?: boolean; data?: T; error?: string };
 export type ChProfileInput = { firstName: string; lastName: string; fullName: string; avatarUrl: string | null };
 
+// ── Coaching staff (Team, coach) ──
+
+export interface ChStaffMember {
+  coachId: string;
+  fullName: string | null;
+  title: string | null;
+  /** `head_coach` or `assistant_coach`. */
+  role: string;
+}
+
+/** Someone who signed up with the program and is waiting for a head coach to approve them. */
+export interface ChPendingCoach {
+  coachId: string;
+  fullName: string | null;
+  email: string | null;
+}
+
+/** What an invite grants: coaching access to this team, or head-coach access across the program. */
+export type ChStaffRole = 'coach' | 'admin';
+
+export interface ChStaffInvite {
+  token: string;
+  /** The short code to type at sign-up; null when it could not be stored (the link still works). */
+  code: string | null;
+  role: ChStaffRole;
+  /** Hours the invite lasts, from the server's own expiry. */
+  hours: number | null;
+}
+
+/**
+ * The coaching staff of the team: the same reads and writes Fairway's Team page uses. The server decides who may do
+ * what (a head coach lists requests, approves and invites; an assistant only reads the staff), so a refusal comes back
+ * as an error and is shown, never assumed from the role.
+ */
+export interface ChStaffWrites {
+  list: () => Promise<ChResult<ChStaffMember[]>>;
+  /** Head coach only: an assistant gets an error back. */
+  pending: () => Promise<ChResult<ChPendingCoach[]>>;
+  invite: (role: ChStaffRole) => Promise<ChResult<ChStaffInvite>>;
+  approve: (coachId: string) => Promise<ChResult>;
+  decline: (coachId: string) => Promise<ChResult>;
+}
+
+export const STAFF_ROLE_OPTIONS = [
+  { value: 'coach', label: 'Assistant coach' },
+  { value: 'admin', label: 'Program admin' },
+] as const;
+
+/** What each invite grants, under the role picker (the same words as Fairway's Team page). */
+export const STAFF_ROLE_HELP: Record<ChStaffRole, string> = {
+  coach: 'Coaching access to this team only.',
+  admin: 'Head-coach access across every team in the program.',
+};
+
+/** What a made invite says about itself: its role, and how long it works. */
+export function staffInviteNote(i: ChStaffInvite): string {
+  const role = STAFF_ROLE_OPTIONS.find((o) => o.value === i.role)?.label ?? 'Staff';
+  return `${role} invite${i.hours ? ` · works for ${i.hours} hours` : ''}. It already carries the role, so there is nothing for them to pick.`;
+}
+
+export function staffRoleLabel(role: string): string {
+  return role === 'head_coach' ? 'Head coach' : 'Assistant coach';
+}
+
+const sameWords = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+/** The coach's own title, or null when it is empty or only repeats the role pill ("Head Coach" beside "Head coach"). */
+export function distinctStaffTitle(title: string | null | undefined, roleLabel: string): string | null {
+  const t = title?.trim();
+  return t && sameWords(t) !== sameWords(roleLabel) ? t : null;
+}
+
+export function pendingCoachName(c: ChPendingCoach): string {
+  return c.fullName?.trim() || c.email || 'Unnamed coach';
+}
+
 export interface ChSettingsWrites {
   saveProfile: (p: ChProfileInput) => Promise<ChResult>;
   uploadAvatar: (file: File) => Promise<ChResult<{ url: string }>>;
@@ -282,6 +364,8 @@ export interface ChSettingsWrites {
   cleanupAfterDelete: () => Promise<void>;
   /** After a save that changes what the server renders (names, team). */
   refresh: () => void;
+  /** The coaching staff of the team (Team, coach). */
+  staff: ChStaffWrites;
 }
 
 export interface ChDevice {

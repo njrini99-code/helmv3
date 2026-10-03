@@ -21,6 +21,16 @@ Below the board, from the desktop's other tabs, because a phone has no tabs for 
 - **Previous / next player** isn't on the phone; back to Team and choose the next row.
 - **Rounds and Development** are added under the board's content (above).
 
+## Game detail, the iPhone pass (2026-10-01)
+
+The owner's iPhone brief, for the Approach section first (the same type and notes apply to the other four):
+
+- **Hierarchy.** The value is 28px and 600; its label is 13.5px and its scope 13px in secondary ink. The Tour mark is a scope line ("Tour 66%"), not a second headline.
+- **Distance charts are rows.** Greens hit by distance, proximity against the Tour and finish when the green is hit draw one row per band (band, bar, exact value, and the shots where the source keeps them). A band with no shots says "No shots" (never 0%), a 100% bar fills its track, a band under the Tour's floor says "Needs 10" with its shots.
+- **Short on the default path.** A note is one plain line; the method is behind a closed "How this is measured", and so is the longer account of which rounds a section counts. The line above it is short and honest: "Last 10 rounds · 3 rounds qualify, 18 holes only" when fewer than ten exist.
+- **A dash says why**: "No approach shots", "No putts tracked", and so on.
+- **Voice.** A player reading their own stats reads "You hit" (screen and phone); a coach reads "Jonah hits".
+
 ## Round filter (owner's addition, 2026-09-30)
 
 The approved board has no filter. A Filter button sits under the window switch with the active filters as removable chips

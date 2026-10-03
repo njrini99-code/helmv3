@@ -2,6 +2,33 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Depth ladder: the lists and panels read their role (catch-up entry from the branch history)
+
+```text
+Design package: none (owner direction Q-142, 2026-10-01: "everything is flat and looks basic"; the plan is docs/clubhouse/DEPTH_AUDIT.md)
+PR/commit:      agent/swap-audit (PR #2111): 800f225b1 (depth ladder), ad642694a (a comment in Documents.tsx)
+Contract IDs:   none new; CH-14703 is now named where the refused-file haptic fires (ad642694a)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- **Changed.** `recruiting.css` moved ten flat cards from a one-pixel ring onto
+  the reading-surface role, `var(--ch-elevation-reading)` (800f225b1: a crisp
+  edge, a contact shadow and two soft ambient layers, on the lighter ivory
+  canvas the audit set): on desktop `.ch-rec-list`, `.ch-rec-danger.is-block`
+  and `.ch-rec-empty`; on the phone the list, the no-match card, the tiles, the
+  stage rows and stages, the notes and the form groups (`.ch-recm-*`,
+  `.ch-rec-none-match.is-phone`, `.ch-rec-form.is-phone`). No layout, copy or behavior changed.
+  `Documents.tsx` gained one comment naming CH-14703, the refused-file error
+  pattern (ad642694a); no behavior changed.
+- **Why.** The owner found the whole app flat; one ladder of role tokens
+  replaces per-stylesheet shadows, so a card reads its depth from what it is.
+- **Verification.** The before and after shots for the audit are
+  `e2e/clubhouse-materials.spec.ts` (16 screens at 390 and 1280). This entry was
+  added by the changelog gate (`npm run clubhouse:check`) after the fact: no
+  page-specific screenshots of Recruiting were logged in VERIFY.md.
+
 ## 2026-09-30 — Film, a file drop, and an Add that cannot repeat
 
 ```text

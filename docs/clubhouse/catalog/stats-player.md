@@ -28,7 +28,7 @@ its own boundary, so a crash stays inside the tab.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-5201 | Rounds don't load | "Rounds didn't load." + "Posted rounds are safe…" Try again | `StatsPlayer`; logged `clubhouse.stats.rounds` | stats-player.test › CH-5201 |
+| CH-5201 | Rounds don't load | "Rounds didn't load." + "Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden." Try again. The hero reads "—" for scoring average, strokes gained and the season's rounds, the Rounds tab and the phone's header carry no count, no early-read note shows, and the Overview, Game detail and Rounds tabs draw no figure and no empty state (Development still shows) | `StatsPlayer`; logged `clubhouse.stats.rounds` | stats-player.test › CH-5201 |
 | CH-5202 | Shot-level detail doesn't load | Game detail reads "Shot-level detail didn't load." + "Scores and rounds above are correct…" Try again, never zeros | `StatsPlayer`; logged `clubhouse.stats.detailedStats` | stats-player.test › CH-5202 |
 | CH-5203 | Focus areas or goals don't load | "Some development items didn't load." Try again, above what did load | `Development`; logged | stats-player.test › CH-5203 |
 | CH-5204 | The overview crashes | "The overview couldn't be shown." + "The rest of the page is fine…" Try again; the tabs still work | `SectionBoundary stats.player.overview` | stats-player.test › CH-5204 |
@@ -40,6 +40,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5210 | The approach-shot read fails | Approach › Proximity against the Tour reads "Proximity against the Tour didn't load." + Try again; the table's three proximity rows are dashes. The rest of Game detail stays | `loadApproachShots`; logged `clubhouse.stats.approachShots` | stats-parity.test › CH-5210 |
 | CH-5211 | The putt read fails | Putting › Make rate by distance: "Putts past 20 feet didn't load." + Try again; the curve stops at 20 feet, where the shot stats end | `loadPutts`; logged `clubhouse.stats.putts` | strokes-gained.test › CH-5211 |
 | CH-5212 | The spray read throws | Off the tee and Approach › Where shots finish: "Where shots finish didn't load." + Try again. (Production's own action answers a failed read with an empty response, so that failure reads as CH-5315, not this) | `loadSpray`; logged `clubhouse.stats.spray` | stats-parity.test › CH-5212 |
+| CH-5213 | The round cache doesn't load | "Some round figures didn't load." + Try again above the overview figures | `loadRoundCache`; logged `clubhouse.stats.roundCache` | stats-player.test › CH-5213 |
 
 ## 53xx Empty
 
@@ -114,3 +115,4 @@ its own boundary, so a crash stays inside the tab.
 | --- | --- | --- | --- | --- |
 | CH-5901 | Changing the window (the switch, on desktop or the phone) or the round filter while offline | "Couldn't open the season: you're offline" + "Reconnect, then try again. The figures shown are still the last 10 rounds." A filter change says "Couldn't apply the filter: you're offline" + "Reconnect, then try again. The figures shown are still the rounds you had." Nothing is requested, the control stays where it was, and the OS error pattern plays | `StatsPlayer` `changeWindow`, `isOffline` | stats-player.test › CH-5901 |
 | CH-5902 | A window or filter change takes longer than 5 seconds | "Still loading the season…" + "This is taking longer than usual. The figures shown are still the last 10 rounds.", once (a filter change: "Still loading the filtered rounds…"); the page stays dimmed and busy (CH-5402) until the new window lands | `StatsPlayer`, `CH_SLOW_SAVE_AFTER` | stats-player.test › CH-5902 |
+| CH-5903 | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) | A pill under the top bar names the figures still on screen: "Showing the last 10 rounds, loading the season" (a filter change: "Showing the rounds you had, applying the filter"). The switch has already moved to the new choice; the figures stay, dimmed (CH-5402), and this keeps them from being read as the new period. A quick change back to what is on screen (Season, Qualifiers, Season) ends with the last tap: no pill and no CH-5902 notice. Fixed, so it moves nothing | `UpdatingNote` in `StatsPlayer` | stats-player.test › CH-5903 |

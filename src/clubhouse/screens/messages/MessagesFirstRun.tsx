@@ -28,6 +28,7 @@ export function MessagesFirstRun({ coach, onNew }: { coach: boolean; onNew: () =
 }
 
 /** Nothing to list at all (the list read, not loading or failed). */
-export function isMessagesFirstRun(api: { convs: unknown[]; announcements: unknown[]; convsLoading: boolean; convsError: unknown }): boolean {
-  return !api.convsLoading && !api.convsError && api.convs.length === 0 && api.announcements.length === 0;
+export function isMessagesFirstRun(api: { convs: unknown[]; announcements: unknown[]; convsLoading: boolean; convsError: unknown; annLoading?: boolean }): boolean {
+  // Not before the announcements answer: one landing would swap the first-run page for the inbox (a layout shift).
+  return !api.convsLoading && !api.annLoading && !api.convsError && api.convs.length === 0 && api.announcements.length === 0;
 }

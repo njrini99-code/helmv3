@@ -303,6 +303,7 @@ function Priorities({ p, onChange }: { p: Phil; onChange: (order: PriorityKey[])
   return (
     <ol className="ch-set-rank" aria-label="Priorities, most important first">
       {order.map((k, i) => (
+        // CH-8606: the moved row glows green briefly (on the phone it lifts while held, phone/Reorder.tsx).
         <li key={k} className={'ch-set-rank__i' + (moved === k ? ' is-moved' : '')} onAnimationEnd={() => setMoved(null)}>
           <span className="ch-set-rank__n ch-num">{i + 1}</span>
           <span className="ch-set-rank__txt">

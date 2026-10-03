@@ -1,7 +1,12 @@
 /* Round tracking, the shot screen (design/handoff/rounds-track.css; logic useShotTracking). */
-.ch-rt {
+/* The container the phone rules query. It is a wrapper, not .ch-rt itself: a container query never matches its own
+   container, so the phone's 12px padding on .ch-rt never applied and the shot screen kept the desktop's 28px gutters
+   (cards 335px wide on a 390px phone, the full-bleed hole strip stopping 16px short of the edges). Aesthetic audit S-1. */
+.ch-rt-q {
   container-type: inline-size;
   container-name: chrt;
+}
+.ch-rt {
   display: flex;
   flex-direction: column;
   max-width: 1240px;
@@ -41,9 +46,7 @@
   border-radius: 999px;
   font: 500 13.5px/1 var(--ch-font-sans);
   background: var(--ch-ivory-0);
-  box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.12),
-    0 1px 2px rgb(28 25 18 / 0.06);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-pill--card {
   padding: 0 14px 0 12px;
@@ -129,11 +132,13 @@
 button.ch-rt-strip__h {
   cursor: pointer;
 }
+/* The par over a hole not yet played: ivory at 0.5 measured 3.8:1 on the strip's green; 0.66 holds 4.5:1. Aesthetic
+   audit X-4. */
 .ch-rt-strip__h em {
   font: 500 10px/1 var(--ch-font-sans);
   font-style: normal;
   font-variant-numeric: tabular-nums;
-  color: rgb(244 241 232 / 0.5);
+  color: rgb(244 241 232 / 0.66);
 }
 .ch-rt-strip__h b {
   height: 22px;
@@ -180,7 +185,7 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-strip__tot em {
   font: 500 10px/1 var(--ch-font-sans);
   font-style: normal;
-  color: rgb(244 241 232 / 0.55);
+  color: rgb(244 241 232 / 0.66);
 }
 .ch-rt-strip__tot b {
   font: 600 17px/1 var(--ch-font-sans);
@@ -628,13 +633,14 @@ button.ch-rt-strip__h.is-done:hover {
   color: var(--ch-ink-700);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
+/* A result option's note and the rare options were #8a857a on the well: 3.2:1 (aesthetic audit X-4); tertiary holds 4.7:1. */
 .ch-rt-seg button em {
   font: 400 10.5px/1 var(--ch-font-sans);
   font-style: normal;
-  color: #8a857a;
+  color: var(--ch-text-tertiary);
 }
 .ch-rt-seg button.is-rare {
-  color: #8a857a;
+  color: var(--ch-text-tertiary);
 }
 .ch-rt-seg button[aria-checked='true'] {
   font-weight: 600;
@@ -716,7 +722,7 @@ button.ch-rt-strip__h.is-done:hover {
   border-radius: 999px;
   font: 500 13px/40px var(--ch-font-sans);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-tags button[aria-pressed='true'] {
   background: var(--ch-green-800);
@@ -775,7 +781,7 @@ button.ch-rt-strip__h.is-done:hover {
   font: 500 12.5px/36px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-quick button[aria-pressed='true'] {
   background: var(--ch-green-800);
@@ -828,6 +834,16 @@ button.ch-rt-strip__h.is-done:hover {
 }
 .ch-rt-note--flat {
   margin: 12px 18px 0;
+}
+/* "Saving hole N" holds its place from the tap (so the list under it never shifts) but shows only once the wait passes one base beat (260ms): a
+   hole that saves at once never flashes a status the player has no time to read (perf, 2026-10-01). */
+@keyframes ch-rt-saving-in {
+  from {
+    opacity: 0;
+  }
+}
+.ch-rt-note.is-saving {
+  animation: ch-rt-saving-in var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-base) backwards;
 }
 .ch-rt-confirm {
   display: flex;
@@ -899,7 +915,7 @@ button.ch-rt-strip__h.is-done:hover {
   font: 500 11px/1 var(--ch-font-sans);
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-bar__i:disabled {
   cursor: default;
@@ -1043,7 +1059,7 @@ button.ch-rt-strip__h.is-done:hover {
   padding: 12px 14px;
   border-radius: 12px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-opt > span:last-child {
   display: flex;
@@ -1168,7 +1184,7 @@ button.ch-rt-strip__h.is-done:hover {
   border-radius: 12px;
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-xopt > span {
   display: flex;
@@ -1206,7 +1222,7 @@ button.ch-rt-strip__h.is-done:hover {
   border-collapse: collapse;
   border-radius: 12px;
   background: var(--ch-ivory-0);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-control);
   font: 500 13px/1 var(--ch-font-sans);
 }
 .ch-rt-mc th,
@@ -1492,5 +1508,31 @@ button.ch-rt-strip__h.is-done:hover {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
+  }
+}
+
+/* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
+   under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+@media (max-width: 820px) {
+  .ch-rt-strip__h em,
+  .ch-rt-strip__tot em,
+  .ch-rt-hno em,
+  .ch-rt-mapw figcaption,
+  .ch-rt-log__dots i,
+  .ch-rt-log__n,
+  .ch-rt-log__r strong,
+  .ch-rt-hint,
+  .ch-rt-sub > em,
+  .ch-rt-sub > label,
+  .ch-rt-seg button em,
+  .ch-rt-amiss__k,
+  .ch-rt-bar__i,
+  .ch-rt-opts__k,
+  .ch-rt-exitc__n em,
+  .ch-rt-mc th[scope='row'],
+  .ch-rt-mc thead th,
+  .ch-rt-sum__f dt {
+    font-size: 12px;
   }
 }

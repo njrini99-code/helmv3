@@ -35,7 +35,7 @@ export default async function TeamHubPage({
   // with its own tabs, so `?tab=` opens a tab there instead of redirecting.
   const legacyTab = (await searchParams)?.tab;
   const chSession = await getGolfSessionProfile();
-  if (chSession && ((chSession.coach && isClubhouseFor('coach')) || (chSession.player && isClubhouseFor('player')))) {
+  if (chSession && ((chSession.coach && (await isClubhouseFor('coach'))) || (chSession.player && (await isClubhouseFor('player'))))) {
     return <ClubhouseHubRoute tab={legacyTab} />;
   }
 

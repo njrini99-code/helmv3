@@ -24,6 +24,8 @@ export function PreviewHub({ data, state, tab }: { data: ChTeamHub; state?: stri
       assignTask: r,
       deleteTask: r,
       planTrip: r,
+      editTrip: r,
+      deleteTrip: r,
       setTravelers: r,
       // Preview: the clash line shows for any traveler chosen in the Plan a trip sheet, unless writes are set to fail.
       travelerClasses: (i) =>

@@ -3,7 +3,7 @@
 import { createGolfQualifier, setQualifierRoundCourses, updateGolfQualifierDetails, updateQualifierStatus } from '@/app/golf/actions/golf';
 import { setQualifierEntrants, setQualifierSquadSize } from '@/app/golf/actions/qualifier-setup';
 import { getCourseDetail, getTeamSavedCourses, listCoursesStrict } from '@/app/golf/actions/course-library';
-import { advanceSelectionState, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
+import { advanceSelectionState, chooseQualifierTiePlace, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
 import type { ServerResult } from '../../lib/use-action';
 import { chTrail } from '../../lib/track';
 
@@ -141,7 +141,10 @@ export interface ChQSelectionWrites {
   advance: (id: string, to: ChQSelectionStep) => Promise<ServerResult>;
   setPick: (id: string, playerId: string, reasoning: string) => Promise<ServerResult>;
   removePick: (id: string, playerId: string) => Promise<ServerResult>;
-  confirm: (id: string) => Promise<ServerResult>;
+  /** Give a place at a tied cut to a level player, or take it back (Q-114). */
+  chooseTie: (id: string, playerId: string, give: boolean) => Promise<ServerResult>;
+  /** `data.notified` is false when the squad committed but telling the players failed (Q-116). */
+  confirm: (id: string) => Promise<ServerResult<{ notified: boolean }>>;
 }
 
 const STEPS: ChQSelectionStep[] = ['open', 'scoring', 'closed', 'selected'];
@@ -171,6 +174,8 @@ export function selectionReason(error: string | undefined): string | null {
   if (/slots filled/i.test(error)) return 'Every pick is taken. Remove one first.';
   if (/reasoning required/i.test(error)) return 'Say why you picked this player.';
   if (/not on this team/i.test(error)) return 'That player isn’t on this team.';
+  if (/not entered in this qualifier/i.test(error)) return 'That player isn’t entered in this qualifier.';
+  if (/could not verify the player is entered/i.test(error)) return 'The entrants couldn’t be checked just now. Try again.';
   if (/no entrant has a qualifying score/i.test(error)) return 'Nobody has a score in yet and no pick is made, so there is no squad to confirm.';
   if (/cannot confirm/i.test(error)) return 'Choose every pick, each with a reason, before confirming.';
   if (/could not verify|couldn.t confirm your roster/i.test(error)) return 'The roster couldn’t be checked just now. Try again.';
@@ -189,5 +194,11 @@ export const LIVE_SELECTION_WRITES: ChQSelectionWrites = {
   advance: async (id, to) => asResult(await advanceSelectionState(id, to)),
   setPick: async (id, playerId, reasoning) => asResult(await setQualifierCoachPick(id, playerId, reasoning)),
   removePick: async (id, playerId) => asResult(await removeQualifierCoachPick(id, playerId)),
-  confirm: async (id) => asResult(await confirmQualifierSelection(id)),
+  chooseTie: async (id, playerId, give) => asResult(await chooseQualifierTiePlace(id, playerId, give)),
+  confirm: async (id) => {
+    const r = await confirmQualifierSelection(id);
+    if (r.ok) return { success: true, data: { notified: r.notified !== false } };
+    const refused = asResult(r);
+    return { success: false, error: refused.error };
+  },
 };

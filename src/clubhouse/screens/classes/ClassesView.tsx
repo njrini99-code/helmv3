@@ -16,7 +16,7 @@ import { EmptyState } from '../../ui/States';
 import { ClassDetail } from './ClassDetail';
 import { ClassForm } from './ClassForm';
 import { ImportSchedule } from './ImportSchedule';
-import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar } from './parts';
+import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, TodayClasses } from './parts';
 import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
@@ -288,7 +288,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   };
 
   return (
-    <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-cl-title">
+    <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined}>
       {/* Phone: Classes opens from More (D-66), so the top bar goes back there. */}
       {phone && <PhoneTop title="Classes" back={{ label: 'More', onBack: backFromMore }} />}
       <header className="ch-cl-h">
@@ -296,7 +296,8 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           <span className="ch-cl-k">
             {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
           </span>
-          <h1 id="ch-cl-title">Classes</h1>
+          {/* Phone: the top bar is the page's one heading (iPhone brief: no second "Classes" under it). */}
+          {!phone && <h1 id="ch-cl-title">Classes</h1>}
         </div>
         {/* Neither list is offered while the classes didn't load: an add or an import would land beside a schedule the page can't show (CH-12201). */}
         {!nothing && !data.classes.error && (
@@ -335,8 +336,22 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       ) : (
         <>
           <SectionBoundary surface="classes.term" label="The term overview" code="CH-12203">
-            <TermBar term={term} classes={classes} todayIso={todayIso} weekDates={week.dates} overlaps={conflicts.length} overlapsError={week.error} />
+            <TermBar
+              term={term}
+              classes={classes}
+              todayIso={todayIso}
+              weekDates={week.dates}
+              overlaps={conflicts.length}
+              overlapsError={week.error}
+              compact={phone}
+              onOverlaps={() => document.getElementById('ch-cl-overlaps')?.scrollIntoView({ block: 'start' })}
+            />
           </SectionBoundary>
+          {phone && (
+            <SectionBoundary surface="classes.today" label="Today's classes" code="CH-12203">
+              <TodayClasses classes={classes} term={term} todayIso={todayIso} onOpen={(x) => setOpenId(x.id)} />
+            </SectionBoundary>
+          )}
           <div className="ch-cl-grid">
             <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
               {/* CH-12801: the page is labelled by "Classes"; each card is one button. */}
@@ -375,7 +390,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
               </div>
             </SectionBoundary>
             <SectionBoundary surface="classes.side" label="This week's overlaps" code="CH-12203">
-              <div className="ch-cl-side">
+              <div className="ch-cl-side" id="ch-cl-overlaps">
                 <OverlapsCard groups={groups} error={week.error} onRetry={() => router.refresh()} />
                 <CoachNote />
               </div>

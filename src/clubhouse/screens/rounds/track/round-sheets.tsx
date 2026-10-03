@@ -106,6 +106,7 @@ export function ExitSheet({
   holes,
   currentNumber,
   discarding,
+  saving = false,
   discardError,
   onSave,
   onKeep,
@@ -116,6 +117,8 @@ export function ExitSheet({
   holes: ChCardHole[];
   currentNumber: number;
   discarding: boolean;
+  /** Save for later is writing the round (R-12: it shows, and the sheet can't be dismissed under it). */
+  saving?: boolean;
   discardError: string | null;
   onSave: () => void;
   onKeep: () => void;
@@ -124,12 +127,14 @@ export function ExitSheet({
   const [confirm, setConfirm] = useState(false);
   const done = holes.filter((h) => h.score != null);
   const toPar = done.reduce((s, h) => s + (h.score ?? 0) - h.par, 0);
+  const busy = discarding || saving;
   const keep = () => {
     setConfirm(false);
     onKeep();
   };
   return (
-    <Modal open={open} onClose={keep} title="Exit round" code="CH-11506">
+    // R-12: Escape or the backdrop can't close the sheet while a discard or save is in flight.
+    <Modal open={open} onClose={busy ? () => {} : keep} title="Exit round" code="CH-11506">
       <div className="ch-rt-exitc">
         <span className="ch-rt-exitc__n">
           <b>{done.length}</b>
@@ -174,14 +179,14 @@ export function ExitSheet({
         </div>
       ) : (
         <div className="ch-rt-exit__opts">
-          <button type="button" className="ch-rt-xopt is-primary" onClick={onSave}>
+          <button type="button" className="ch-rt-xopt is-primary" disabled={busy} onClick={onSave}>
             <Icon icon={Bookmark} size={18} />
             <span>
-              <b>Save for later</b>
-              <em>Continue it from Rounds.</em>
+              <b>{saving ? 'Saving…' : 'Save for later'}</b>
+              <em>{saving ? 'Keep this screen open.' : 'Continue it from Rounds.'}</em>
             </span>
           </button>
-          <button type="button" className="ch-rt-xopt" onClick={keep}>
+          <button type="button" className="ch-rt-xopt" disabled={busy} onClick={keep}>
             <Icon icon={CirclePlay} size={18} />
             <span>
               <b>Keep playing</b>
@@ -271,7 +276,8 @@ export function RoundCompleteSheet({
         </dl>
       </div>
       <Scorecard holes={holes} current={null} />
-      <p className="ch-rt-sum__n">Submitting posts this round to your stats and your coach. You can still change shots from the round review.</p>
+      {/* R-11: no promise of edits the round review doesn't offer, or of a coach the player may not have. */}
+      <p className="ch-rt-sum__n">Submitting posts this round to your stats.</p>
     </Modal>
   );
 }
@@ -331,7 +337,7 @@ export function SubmitOverlay({
             </span>
             <b>Round posted</b>
             <span className="ch-rt-subm__m">
-              Your round at {course} is posted.{coach ? ` ${coach} can see it now.` : ' Your coach can see it now.'}
+              Your round at {course} is posted.{coach ? ` ${coach} can see it now.` : ''}
             </span>
             {reviewHref && (
               <a className="ch-btn ch-btn--primary ch-btn--lg" href={reviewHref}>

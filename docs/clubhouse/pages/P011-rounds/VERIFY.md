@@ -39,8 +39,8 @@ Date:       2026-09-30
 
 | Test | Contract | Result |
 | --- | --- | --- |
-| `src/clubhouse/__tests__/rounds.test.tsx` (40 cases) | the library's catalog rows it names (CH-11001, CH-11201 to CH-11203, CH-11301 to CH-11304, CH-11401, CH-11501, CH-11701 to CH-11703, CH-11801 to CH-11803), and by phrase hand contracts 110101, 110105 to 110108, 110413, 110619, 110801, 110901, 111301, 111401, 111402, 111501, 111811, 111902, 112301 | pass |
-| `src/clubhouse/__tests__/round-review.test.tsx` (29 cases) | CH-11204 to CH-11206, CH-11305 to CH-11307, CH-11704, CH-11804, and by phrase 110102, 110105, 110109, 110619, 110801, 110802, 111402, 111501, 111502, 111811, 112301 | pass |
+| `src/clubhouse/__tests__/rounds.test.tsx` (54 cases) | the library's catalog rows it names (CH-11001, CH-11201 to CH-11203, CH-11214, CH-11215, CH-11301 to CH-11304, CH-11315, CH-11401, CH-11501, CH-11701 to CH-11703, CH-11801 to CH-11803), and by phrase hand contracts 110101, 110105 to 110108, 110413, 110619, 110801, 110901, 111301, 111401, 111402, 111501, 111811, 111902, 112301; since 2026-10-01 also the false empties (a failed list or holes read, a finished round with an unread posted list, rounds with no score, a Try again that lands) | pass |
+| `src/clubhouse/__tests__/round-review.test.tsx` (43 cases) | CH-11204 to CH-11206, CH-11216, CH-11217, CH-11305 to CH-11307, CH-11704, CH-11804, and by phrase 110102, 110105, 110109, 110619, 110801, 110802, 111402, 111501, 111502, 111811, 112301; since 2026-10-01 the missing total (never 0 strokes), the tee, player-name and team reads that failed, and the hole re-picked after a retry | pass |
 | `src/clubhouse/__tests__/round-setup.test.tsx` (19 cases) | CH-11007, CH-11107 to CH-11109, CH-11208 to CH-11211, CH-11309 to CH-11312, CH-11403, CH-11510, CH-11511, and by phrase 110103, 110110, 110111, 110113, 110510, 110805, 111401, 111402, 111503 | pass |
 | `src/clubhouse/__tests__/round-tracking.test.tsx` (21 cases) | CH-11002, CH-11003, CH-11005, CH-11101 to CH-11104, CH-11106, CH-11308, CH-11402, CH-11502 to CH-11509, CH-11603, CH-11705, CH-11805, and by phrase 110104, 110112, 110902, 111403 | pass |
 | `src/lib/golf/__tests__/shot-entry-rules.test.ts` (11 cases) | the shared rules behind CH-11101 to CH-11106 and the edit sheet's rules | pass |
@@ -142,7 +142,8 @@ Result:       built to the approved spec and seen at 390; 430px is not recorded 
 | Round entry: submit | CH-11005, CH-11603, CH-11905, CH-11909, 110902 | `round-entry-routes.test` (a fake session), the engines | posted ticks the haptic once and opens the review after 2.5 s; a submit that could not reach the server says it is saved on this device and opens Rounds; slow after 15 s says so |
 | Round entry: skeleton | CH-11407 | tests (the loading switch, the skeleton before the day and the qualifiers are read) | a page-shaped skeleton in the shell; Fairway's with the flag off |
 | Round entry routes, flag on and off | 110114 | `round-entry-routes.test` | flag on: Clubhouse's screens (player); flag off and a coach: Fairway's client and the legacy message, as before |
-| The rebuilt list and the library's links | 110105, 110109 | `round-entry-routes.test`, `rounds.test` | New round, Start a round and Continue are drawn for a player and never for a coach; `/rounds/recover` is not linked |
+| The rebuilt list and the library's links | 110105, 110109 | `round-entry-routes.test`, `rounds.test` | New round, Start a round and Continue are drawn for a player and never for a coach; `/rounds/recover` is rebuilt (F-02) and not linked from the Library |
+| Round recovery (F-02) | CH-11017 to CH-11019, CH-11212, CH-11314, CH-11408, CH-11409, CH-11520, CH-11911 | `rounds-recover.test`, `rounds-recover-ports.test` | the device's rounds listed for the signed-in player only; Restore opens the round (or its review), Retry sync asks the sync engine, Discard asks first and clears every copy and marks the round; the recover address is rebuilt and where the engines send a failed submit |
 
 ## Accessibility
 
@@ -173,10 +174,12 @@ Text scaling:   not checked.
 
 ```text
 Layout shift:      not measured
-Request waterfall: none on the client. The library loader reads in up to four passes, one after the other: the team's time
-                   zone (when there is a team), the posted rounds (paged), the in-progress rounds, then their holes (112101).
-                   The in-progress query does not depend on the posted list (only the ready-to-submit check does), so it
-                   could start earlier; not changed.
+Request waterfall: none on the client. The library loader reads in two passes (rounds-reads.test, 2026-10-01; it was
+                   four): the team's time zone, the posted rounds (paged) and the in-progress rounds start together, then
+                   the in-progress rounds' holes (112101). The route resolves the team beside them, not before. A round's
+                   review reads the round while the team resolves, then its holes, shots, tee and team together. The
+                   continue page (shared with Fairway) reads the round, then its holes, shots and course yardages, then the
+                   putt and approach details, which wait on the shot ids; not changed.
 Large list:        the book draws every posted round (a paged read, no windowing); not measured
 Animation:         the shell's tokens only
 Notes:             first-load JS and LCP (CH-1954) are open
@@ -191,6 +194,144 @@ Notes:             first-load JS and LCP (CH-1954) are open
 | Axe | `node scripts/clubhouse/a11y.mjs rounds` (includes `/clubhouse-preview/round?state=nosg`) | clean |
 | Native-feel | `native.mjs rounds` | the hole-number buttons (30 x 28) are the known exception; nothing new |
 
+## Owner rules of 2026-10-01 (page states)
+
+Four new test files hold these (the library, review and setup cases that
+changed are in `rounds.test`, `round-review.test` and the rows above):
+
+- `rounds-library-states.test.tsx` (7 cases): CH-11213, a failed refresh
+  keeps the last good library, for the same player only; CH-11410, a refresh
+  in flight keeps the page and says it is updating.
+- `rounds-return-state.test.tsx` (14 cases): CH-11912. The search and
+  grouping come back per route and team; the review's Back steps back when
+  it was opened from the library (desktop, phone, a modifier click, a coach,
+  a blocked store, a tab with no history); a new-tab open writes no note;
+  with the real RouteFrame one visit back restores the scroll and the search.
+- `rounds-setup-race.test.tsx` (4 cases): rule 4 on the new-round screen,
+  with the reads held open and answered out of order; the last tee choice
+  wins, also over a course typed in by hand.
+- `rounds-continue-loader.test.tsx` (9 cases): the continue page's loader
+  over the Supabase fake. A failed round read throws (never notFound), a
+  failed course-hole read with no draft yardage throws, and a draft that
+  covers every hole opens as before.
+
+Checks on the final tree:
+
+- Tests: `npm run test:file` over the files above and `rounds.test.tsx`,
+  `round-review.test.tsx`, `round-setup.test.tsx`,
+  `round-entry-routes.test.tsx`, `round-entry-wiring.test.tsx`,
+  `strokes-gained.test.tsx`, `stats-total-only.test.tsx`: pass.
+- `npx eslint` on every file changed: exit 0.
+- `npm run clubhouse:check` after `node scripts/clubhouse/registry.mjs
+  sync`: nothing of P011's; it names other pages' rows still in flight.
+- `npm run audit:supabase-errors`: no regression (1003, the baseline). None
+  of the files changed has an unchecked read.
+
+Mutation: the tee-race guard in `RoundSetup.loadHoles` was removed and all 4
+race cases failed; it was put back. Not run on the other changes.
+
+Observed in unit tests only, not in a browser: the Back step and the scroll
+restore (the real RouteFrame is in the test; the history behaviour of
+`router.back()` and the popstate window are Next's), the "Updating" mark
+(the refresh is faked), and every failed read (the Supabase fake). The
+continue page change is to a page file (not `'use server'`): it needs
+`next build` with the stack. RouteFrame restores only within 1.5 s of the
+popstate and gives up after a second if the page is not yet tall enough, so
+a slow server render behind `loading.tsx` may leave the library at the top:
+to be looked at on a device.
+
+## The save line (2026-10-01, owner rule 3)
+
+What proves CH-11901 now (`npm run test:file -- src/hooks/golf
+src/lib/golf/round-session src/clubhouse/__tests__/round-save-status.test.tsx`
+and the round-entry and round-tracking files: 38 files, 434 tests, pass):
+
+- `use-shot-state-machine.sync-status.test.ts` (8 cases): a shot inside the 2 s
+  an acknowledgement stays up takes "saved" down at once; the
+  acknowledgement of an older snapshot after a newer shot is not "saved";
+  `autoSaveSyncing` is set only by a shot whose device copy landed, cleared
+  only by an acknowledgement of what is on screen, survives a held save that
+  has a device copy and is dropped by one that has none, and is not carried to
+  another hole; a `conflict` hold is re-sent and is "saved" only once the
+  server acknowledges. Removing the effect's `AUTO_SAVE_UNSYNCED` and the
+  acknowledgement guard failed the two "saved" cases; both were put back.
+- Review fixes: the same file holds 5 more cases (Undo and a hole with no
+  shot left drop "syncing"; a save in flight is left alone; the held-resend
+  delay doubles per consecutive `busy` or `conflict` and stays flat for the
+  others), `settle-within.test.ts` (3 cases), and the continue file a hung
+  staleness check held as `conflict` after 8 s. Removing the two
+  `AUTO_SAVE_SETTLED` dispatches failed the two Undo cases; they were put
+  back.
+- `use-continue-round-session.preservation.test` and `use-new-round-session.
+  preservation.test`: a conflict answer is held (`conflict` when healed,
+  `blocked` otherwise, and a blocked round sends nothing more). Each fails on
+  the old fire-and-forget code (checked by putting it back, then removing it
+  again). The continue file also holds `handleSaveShot` reporting the device
+  copy (true; false when `localStorage` throws) and the journey: shot, offline,
+  left, reopened, restored, reconnected, once.
+- `round-save-status.test.tsx` (3 new cases): the line says "Saved on this
+  phone · syncing" for a shot whose device copy landed (and never "Round
+  saved"), and says nothing for a failed device copy or a renderer that
+  reports none.
+
+Not covered: the same journey on the new-round engine (its recovery path
+differs), a lost response followed by a retry against the real row lock
+(the whole-snapshot replace and `expected_updated_at` are read, from
+migration `20260820170000`, not re-proved; no pgTAP ran), the line on a
+phone, and `e2e/golf-round.spec.ts` (its offline case still has no
+assertions).
+
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+| `P011__track__player__1440__approach__after__cee8548.png` | after | cee8548 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__1440__approach__baseline__ee5976d.png` | baseline | ee5976d | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__1440__approach__before__4e01c43.png` | before | 4e01c43 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__1440__putt__after__cee8548.png` | after | cee8548 | track (player), 1440px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__1440__putt__baseline__ee5976d.png` | baseline | ee5976d | track (player), 1440px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__1440__putt__before__4e01c43.png` | before | 4e01c43 | track (player), 1440px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__1440__submit-failed__after__cee8548.png` | after | cee8548 | track (player), 1440px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__1440__submit-failed__before__4e01c43.png` | before | 4e01c43 | track (player), 1440px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__375__approach__after__cee8548.png` | after | cee8548 | track (player), 375px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__375__approach__baseline__ee5976d.png` | baseline | ee5976d | track (player), 375px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__375__approach__before__4e01c43.png` | before | 4e01c43 | track (player), 375px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__375__putt__after__cee8548.png` | after | cee8548 | track (player), 375px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__375__putt__baseline__ee5976d.png` | baseline | ee5976d | track (player), 375px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__375__putt__before__4e01c43.png` | before | 4e01c43 | track (player), 375px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__375__submit-failed__after__cee8548.png` | after | cee8548 | track (player), 375px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__375__submit-failed__before__4e01c43.png` | before | 4e01c43 | track (player), 375px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__390__approach__after__cee8548.png` | after | cee8548 | track (player), 390px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__390__approach__baseline__ee5976d.png` | baseline | ee5976d | track (player), 390px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__390__approach__before__4e01c43.png` | before | 4e01c43 | track (player), 390px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__390__putt__after__cee8548.png` | after | cee8548 | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__390__putt__baseline__ee5976d.png` | baseline | ee5976d | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__390__putt__before__4e01c43.png` | before | 4e01c43 | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__390__submit-failed__after__cee8548.png` | after | cee8548 | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__390__submit-failed__before__4e01c43.png` | before | 4e01c43 | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__430__approach__after__cee8548.png` | after | cee8548 | track (player), 430px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__430__approach__baseline__ee5976d.png` | baseline | ee5976d | track (player), 430px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__430__approach__before__4e01c43.png` | before | 4e01c43 | track (player), 430px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__430__putt__after__cee8548.png` | after | cee8548 | track (player), 430px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__430__putt__baseline__ee5976d.png` | baseline | ee5976d | track (player), 430px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__430__putt__before__4e01c43.png` | before | 4e01c43 | track (player), 430px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__430__submit-failed__after__cee8548.png` | after | cee8548 | track (player), 430px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__430__submit-failed__before__4e01c43.png` | before | 4e01c43 | track (player), 430px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__1440__approach__after__d4367ee.png` | after | d4367ee | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__1440__approach__before__d3a6483.png` | before | d3a6483 | track (player), 1440px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__1440__putt__after__d4367ee.png` | after | d4367ee | track (player), 1440px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__1440__putt__before__d3a6483.png` | before | d3a6483 | track (player), 1440px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__1440__submit-failed__after__d4367ee.png` | after | d4367ee | track (player), 1440px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__1440__submit-failed__before__d3a6483.png` | before | d3a6483 | track (player), 1440px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__390__approach__after__d4367ee.png` | after | d4367ee | track (player), 390px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__390__approach__before__d3a6483.png` | before | d3a6483 | track (player), 390px, approach; /clubhouse-preview/track?state=approach, synthetic preview fixture |
+| `P011__track__player__390__putt__after__d4367ee.png` | after | d4367ee | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__390__putt__before__d3a6483.png` | before | d3a6483 | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
+| `P011__track__player__390__submit-failed__after__d4367ee.png` | after | d4367ee | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__track__player__390__submit-failed__before__d3a6483.png` | before | d3a6483 | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev`, a browser pass with a real player and a real coach account (the library, the
@@ -202,8 +343,9 @@ Notes:             first-load JS and LCP (CH-1954) are open
   the session and the shot screen (a stub in the wiring tests). Nothing was flipped: the flag is off in production.
 - Offline on the library's Discard and the hole's Try again (110702 stays reserved; round entry's Start and Save for
   later are forced offline), a failed Start keeping every field (111201), and the qualifier preselect effect.
-- `/rounds/recover` has no Clubhouse screen (no board): a round the device holds that the server never got is
-  offered from Rounds' Continue (CH-11512), not from recover. The entry routes' `error.tsx` files are still Fairway's.
+- `/rounds/recover` had no Clubhouse screen when this page was verified; it has one now (swap audit F-02, no board;
+  see the row above). It was not run on a phone or against a real failed submit. The entry routes' `error.tsx` files
+  are still Fairway's.
 - Offline (110702), Esc (112001), the read order (112101), a failed Start keeping the setup (111201) and a failed hole save
   keeping the shots (111202) have no test; the review's skeleton (110206) is not built.
 - Found and not fixed (see the report to the parent):

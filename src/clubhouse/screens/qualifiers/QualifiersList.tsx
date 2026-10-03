@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Flag, Medal, Plus, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, type MouseEvent } from 'react';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -12,25 +11,38 @@ import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
+import { useChSessionState } from '../../lib/session-state';
+import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { ctaLabel } from './model';
 import { Meta, StatusPill, ToPar } from './parts';
+import { isPlainClick, noteOpenedFromList } from './return-state';
 import '../../styles/qualifiers.css';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
 const LIST = '/golf/dashboard/qualifiers';
 const detailHref = (id: string) => `${LIST}/${id}`;
+/** Opening a qualifier leaves a note, so its Back steps back to the list as it is (return-state.ts); a new-tab click leaves none. */
+const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
+  chTrail('qualifiers open', { from });
+  if (isPlainClick(e)) noteOpenedFromList(id);
+};
 
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
 export function QualifiersList({ data }: { data: ChQList }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const backFromMore = useBackFromMore();
   const coach = data.role === 'coach';
-  const [filter, setFilter] = useState<Filter>('all');
-  const [q, setQ] = useState('');
+  // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
+  const mineUnknown = data.mode === 'mine' && !!data.entriesError;
+  const unread = data.listError || mineUnknown;
+  // The filter and the search come back when the coach returns to the list (Back from a qualifier, the sidebar, a tab): the shell keeps
+  // them for this tab under the page and the team (`useChSessionState`), and the list's place comes back through RouteFrame (owner rule 8).
+  const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
+  const [q, setQ] = useChSessionState('q', '');
 
   const act = data.items.filter(isActive);
   const con = data.items.filter((i) => !isActive(i));
@@ -66,8 +78,12 @@ export function QualifiersList({ data }: { data: ChQList }) {
       <header className="ch-qf-head">
         <div>
           <span className="ch-qf-eyebrow ch-num">
-            {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
-            {!data.listError && ` · ${act.length} active · ${con.length} concluded`}
+            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). */}
+            <span className="ch-qf-eyebrow__k">
+              {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
+              {!unread && ' · '}
+            </span>
+            {!unread && `${act.length} active · ${con.length} concluded`}
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>
@@ -87,7 +103,16 @@ export function QualifiersList({ data }: { data: ChQList }) {
           code="CH-09201"
           title="The qualifiers didn’t load."
           body="Nothing has changed. Try again, and if it keeps happening the error has already been reported."
-          onRetry={() => router.refresh()}
+          onRetry={refresh}
+          retrying={refreshing}
+        />
+      ) : mineUnknown ? (
+        <InlineNotice
+          code="CH-09222"
+          title="Your qualifiers didn’t load."
+          body="Which qualifiers you’re entered in didn’t load, so none are shown rather than a wrong list. Nothing has changed. Try again."
+          onRetry={refresh}
+          retrying={refreshing}
         />
       ) : data.items.length === 0 ? (
         data.mode === 'mine' ? (
@@ -140,7 +165,8 @@ export function QualifiersList({ data }: { data: ChQList }) {
               code="CH-09202"
               title="Standings didn’t load."
               body="The qualifiers are listed, but entrants, rounds in and leaders are missing until they load."
-              onRetry={() => router.refresh()}
+              onRetry={refresh}
+              retrying={refreshing}
             />
           )}
 
@@ -218,13 +244,13 @@ function Mine({ item }: { item: ChQListItem }) {
 function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={() => chTrail('qualifiers open', { from: 'hero' })}>
+    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')}>
       <div className="ch-qf-hero__main">
         <StatusPill status={item.status} />
         <h2>{item.name}</h2>
         {item.description && <p>{item.description}</p>}
         <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} />
-        <Mine item={item} />
+        {!standingsError && <Mine item={item} />}
         <span className="ch-qf-cta">
           {ctaLabel(item.status)}
           <Icon icon={ArrowRight} size={16} />
@@ -263,7 +289,7 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
 
 function Card({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={() => chTrail('qualifiers open', { from: 'card' })}>
+    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')}>
       <div className="ch-qf-card__h">
         <div>
           <h3>{item.name}</h3>

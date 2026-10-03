@@ -2,6 +2,117 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Aesthetic audit: events that share a column wrap their title
+
+```text
+PR/commit:      agent/swap-audit (#2111): 2b0486765
+Design package: none (owner's aesthetic audit guide, 2026-10-01)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; visual only
+Held items:     none
+```
+
+- **Issue.** In the week view a three-way overlap leaves 29px of text, and the
+  one-line title showed "Sh..." and "Te..." (15 labels under half visible at
+  1440). The audience coins' initials ran under the next coin (26px coins, 8px
+  overlap).
+- **Fix.** `views.tsx` marks a block that shares its column (`ch-ev--lane`) and
+  gives it the start time only; `calendar.css`: that block has 5px padding and
+  wraps its title to three lines, a short one keeps its row and drops the time
+  (the range stays in the button's name and the side panel); the audience stack
+  overlaps 5px. Under half visible: 15 to 4.
+- **Not done, on purpose.** An overlap of four or more events is still narrow; a
+  cascade layout is a redesign.
+- **Contrast pass (`d4367ee`).** The unselected labels of the view switcher were
+  4.1:1 on the well (shared `.ch-seg__b`, secondary ink now); the time on a
+  class or busy block faded to 3.6:1 and 4.0:1 and keeps its own color (5.2:1,
+  6.0:1). Past rows stay faded (0.55, 2.3:1 to 3.6:1): Q-152.
+- **Verification.** Before and after at 375, 390, 430 and 1440, coach and
+  player. `calendar.test.tsx` 83 of 83.
+
+## 2026-10-01 — Page pass: the week stays on screen while the next one loads
+
+PAGE_PERFORMANCE.md rules 4, 8 and 11. The audit found every failed read
+already has its notice; empty copy only draws on loaded data.
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   none new (CH-6010, CH-6401 unchanged)
+Actions:        respondToEvent (unchanged)
+Data impact:    none
+Held items:     none
+```
+
+- **No blank phone page while busy.** The phone skeleton's rule hid every
+  child of a busy `.ch-cal`. The live page is busy during a step outside the
+  loaded window, or a Try again, so a phone went blank until the payload
+  landed. The rules now target `.ch-cal--skel` only; the live page dims.
+- **Quick steps.** A second Next or Previous tap before the new window lands
+  steps on from where the first was headed, so the last choice wins. The
+  title keeps labelling the week on screen until then.
+- **Honest reply.** A player's RSVP that never reached the server (the send
+  threw) goes back to the last confirmed reply. Before, it stayed showing as
+  sent.
+- **Left as is:** the player filter lives in component state and is lost on
+  Back (view and date are in the URL).
+
+## 2026-10-01 — A repeating event keeps its time across a clock change (CAL-05)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none
+Contract IDs:   none new
+Actions:        calendar create and series edit (unchanged calls; the editor now also sends the IANA zone)
+Data impact:    none to existing rows; new series rows store each occurrence's own offset
+Held items:     none
+```
+
+- **Issue.** A series took one UTC offset at save time, so every occurrence
+  after the 1 Nov change landed an hour off (3 PM became 2 PM).
+- **Fix.** With the series' zone, each occurrence (and each one a rule change
+  appends) takes that zone's offset on its own date. Without one, the single
+  offset applies as before. Existing series are not rewritten.
+- **Checked.** `recurring-events.test.ts` CAL-05 (Chicago, 22 Oct to 5 Nov);
+  calendar suites 158 tests.
+
+## 2026-10-01 — Only invited players are notified about a new event (Q-108)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (the editor already says "Attendees will be notified")
+Contract IDs:   none new
+Actions:        calendar create (unchanged call)
+Data impact:    none; createGolfEvent's after() fan-out (bell, email, push) reads only the invited, active players
+Held items:     none
+```
+
+- **Issue.** Creating an event told every active player on the team, invited
+  or not, while the editor promised only attendees would hear.
+- **Fix.** The fan-out reaches only the invited players still on the active
+  roster; an event with no invitees notifies nobody (owner, 2026-10-01).
+- **Checked.** `golf-events.test.ts` 24/24, including the no-invitee and
+  one-invitee cases.
+
+## 2026-10-01 — A calendar link can be replaced or removed (swap audit §14 D3)
+
+```text
+PR/commit:      agent/swap-audit (#2111): 40419c193, 279d7ed6f
+Design package: none (sheet rows in the existing Add to calendar app grammar)
+Contract IDs:   CH-6013, CH-6014, CH-6504, CH-6505
+Actions:        calendar.regenerateFeed, calendar.removeFeed
+Data impact:    reuses regenerateCalendarFeed and deleteCalendarFeed; no schema change
+Held items:     none
+```
+
+- **Issue.** The feed URL is a bearer link, and Clubhouse could only read and
+  create one: a leaked link could not be rotated or revoked.
+- **Fix.** New link and Remove under each link, each asking first and saying
+  the current link stops working. A failed replacement re-reads the links and
+  offers no Retry (the server deletes the old link first).
+- **Checked.** `calendar-feed-manage.test.tsx`; calendar suites green.
+
 ## 2026-09-30 — Duplicate, Print and the jump panel's Close (Clickables gaps 9, 15, 21); Compare schedules on a class (Clickables gap 17)
 
 ```text

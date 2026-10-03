@@ -202,7 +202,7 @@ export default async function PlayerCoachHelmPage({ searchParams }: { searchPara
   const { coach, player } = session;
 
   // Clubhouse CoachHelm (golf_clubhouse_ui): one page for coaches and players, drawn in place (no redirect: see golf-conditional-redirect.test.ts).
-  if ((coach && isClubhouseFor('coach')) || (player && isClubhouseFor('player'))) return <ClubhouseCoachHelmRoute {...(await searchParams)} />;
+  if ((coach && (await isClubhouseFor('coach'))) || (player && (await isClubhouseFor('player')))) return <ClubhouseCoachHelmRoute {...(await searchParams)} />;
 
   if (!player) {
     if (coach) {

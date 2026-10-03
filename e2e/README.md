@@ -215,6 +215,158 @@ cleanup that same night. The Camps spec's create/delete round-trip was
 already fully self-cleaning via its working UI delete action and is
 unaffected by this change.
 
+## Clubhouse round, local stack only (swap audit F-06)
+
+`e2e/clubhouse-round.spec.ts` plays a whole Clubhouse round as a player:
+set up, hole 1, Save for later, Continue from Rounds, holes 2 to 18, Submit.
+It then checks the database: one completed round, 18 scored holes, total 54.
+
+It runs only when `NEXT_PUBLIC_SUPABASE_URL` is 127.0.0.1 or localhost, and
+skips everywhere else, CI included. There is no staging project, and this
+suite has written rounds to production before. It seeds its own user, team,
+membership and course through the local service role
+(`e2e/helpers/clubhouse-local-seed.ts`), and deletes all of it afterwards
+through the local database (`SUPABASE_DB_URL`, default the stack's port
+54322).
+
+1. `npx supabase start` (or `db reset`).
+2. Start `next dev` with `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SECRET_KEY` and `SUPABASE_SERVICE_ROLE_KEY` set from
+   `npx supabase status -o env`, for example on port 3100.
+3. With the same variables:
+   `PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test
+   e2e/clubhouse-round.spec.ts --project=chromium`
+
+## Clubhouse team switch, local stack only (2026-10-01)
+
+`e2e/clubhouse-team-switch.spec.ts` seeds two teams, staffs the first team's
+head coach on the second, and switches teams on Roster. The refresh payload is
+held for three seconds. While it is held, the old team's page must be faded
+(opacity 0) and take no taps. Once it lands, the new team's roster must be on
+screen (PAGE_PERFORMANCE.md rule 8). It has the same local-only guard and
+cleanup as the round spec. Run it the same way, against `next dev --webpack`
+on the local stack.
+
+## Clubhouse perf harness, local stack only (2026-10-01)
+
+Measures what a coach and a player feel on a Clubhouse route: how soon the
+skeleton paints, how soon the content does, layout shift on load and on every
+switch, long tasks, and how many Supabase reads the server made and how deep
+they chain. It is a production build (`next start`) served against the local
+stack, with a seeded team behind it. Nothing in it can reach production: every
+command reads `supabase status` and refuses a URL that is not 127.0.0.1 or
+localhost, the credentials of outside services (Sentry, KV, mail, queues) are
+blanked in the build and the server, and `build` fails if the bundles carry
+the production project's id.
+
+```bash
+npx supabase start                       # the local stack must be up
+npm run clubhouse:perf -- seed           # a coach, 8 players, 114 rounds, 5.8k shots (below)
+npm run clubhouse:perf -- build          # ~12 minutes; one `next build` at a time on this machine; `--ref <sha>` to pick the commit
+npm run clubhouse:perf -- serve          # next start on :3200, reads traced
+npm run clubhouse:perf -- measure --label before --runs 3
+npm run clubhouse:perf -- stop
+npm run clubhouse:perf -- remove         # deletes the seed and checks nothing refers to it
+```
+
+**Reuse the server.** If `status` shows a `serverPid`, `:3200` is serving the
+last build: measure against it instead of building again. `build` exports a
+committed ref (default HEAD) to `~/.helm-perf/clubhouse-snapshot` and builds
+and serves from there, so other sessions editing the checkout cannot break a
+twelve-minute build (the first one failed on someone's half-written file) and
+a measurement names the commit it measured (`status` prints it). Commit what
+you want measured, then `stop`, `build`, `serve`. The snapshot's webpack
+cache is about 5 GB; delete `~/.helm-perf` when the work is done.
+
+**The seed** (`seedClubhouseTeam` in `helpers/clubhouse-local-seed.ts`, rounds
+from `helpers/clubhouse-team-data.ts`): a head coach, 8 players on one
+men's team, three par-72 courses, 12 completed 18-hole rounds per player (18
+for every third player, so "vs. previous 10" has a previous 10) dated across
+the last 120 days (it crosses the 1 August season start, so Last 10 and Season
+differ), a qualifier with an entry for every player, six events this week and
+next with replies, the team chat, and two focus areas. A nine-hole round, a
+round posted as a total only and rounds without shots are in, so the coverage
+notes and the empty paths render. Two rounds in three carry every hole and
+every shot; each hole's shots number its score, its putts are the putting
+rows, and the cache rows come from the database's own trigger when the round
+is completed. Scores are deterministic for a seed (`seed` option; the same
+numbers before and after a change); strokes gained is synthetic, scaled from
+the score. Rounds, holes and shots go through a direct local connection (a
+completed round cannot be inserted by an app caller). `removeTeamSeed` sweeps
+every public table that carries one of the seed's ids and throws if any is
+left. `seed --players 12 --rounds 30` scales it up.
+
+**What `measure` records** (4x CPU throttle through CDP, at 1280 and 390
+wide; the median of `--runs`, signed in once per role):
+
+- `cold`: a fresh browser context opens the route. Skeleton and content times
+  are from the navigation; FCP, LCP, CLS, long tasks, reads.
+- `nav`: from a settled, prefetched page, tap the nav link to the next route.
+  Times are from the click.
+- `switch`: on a settled Stats page, the window switch (Season, Qualifiers,
+  Last 10) and the profile tabs. `flash` is YES if any frame showed a skeleton
+  or nothing instead of the page (dimmed, aria-busy content is the pattern).
+- `geometry` (`--only geometry[,route]`): the destination's data is held back
+  1.5 s, so the route skeleton is on screen and still; the top and height of
+  each landmark (header, filter row, figure cards, trend card, hero, ...) is
+  read in the skeleton frame and again in the loaded page. A skeleton swapping
+  for a page replaces nodes, so layout shift never sees it; this table does
+  (rule 5 of `docs/clubhouse/PAGE_PERFORMANCE.md`). The two frames share class
+  names, so one selector per landmark finds it in both (`LANDMARKS` in
+  `scripts/clubhouse/perf-measure-run.mjs`).
+- `CLS` counts the way the spec does (shifts within 500 ms of a click do not
+  count); `CLS raw` counts every shift, which is the number that matters for a
+  clicked navigation or switch. Keep both at 0. A switch's raw shifts name what
+  moved (`shifts[].src`, the element and where it was and went) in the saved
+  JSON. The spec figure is 0 only because the server answers inside the
+  forgiven 500 ms; a slow phone's switch counts every shift.
+- The phone viewport carries the `ch_phone` layout cookie a returning phone has
+  (F-36); `--first-visit` leaves it out (the one-time desktop-to-phone swap).
+  `report --before <label> --after <label>` prints two saved runs side by
+  side as the markdown tables PROGRESS.md carries.
+- `reads`, `read ms`, `waves`: the Supabase calls the route's own requests
+  made (not prefetches), their summed duration, and how many serial rounds
+  they took (a wave starts when no earlier read is still running). The trace
+  is `scripts/clubhouse/perf-fetch-trace.cjs`, preloaded into the server: no
+  product code is involved.
+
+Results are saved to `.helm/runtime/clubhouse-perf/results/<label>.json`
+(gitignored), with every run and the per-table read counts.
+
+**Reading the numbers.** Reads, layout shift and geometry are exact; the
+milliseconds are not, on a laptop that other sessions share. Each result
+carries the load average and swap in use when it started and ended
+(`machineAtStart`, `machineAtEnd`), and the report shows the min and max of the
+runs beside each median: claim only a change larger than that spread, and a
+pass taken at load 10 or more or with the swap full (read it before trusting a
+timing) is not comparable with one taken at load 5. To compare two commits,
+build both (`HELM_PERF_SNAPSHOT=~/.helm-perf/<name> ... build --ref <sha>`, one
+`next build` at a time; `--overlay <ref>:<path>` lays a file of another commit
+into that snapshot when the ref does not build on its own), then swap the
+server between them and measure each in turn, three passes each, so a load
+spike lands on both (`stop`, then `HELM_PERF_SNAPSHOT=<dir> serve`, then
+`measure`). Measuring one build and then the other an hour apart read a
+change in the machine as a change in the code.
+
+Taps also record INP (the tap's own duration to the next paint) and cold loads
+record every LCP candidate with its element and size (`lcpCandidates` in the
+saved JSON), so a late LCP names the block that painted it.
+`HELM_PERF_REDUCED_MOTION=1 ... measure` runs the browser with reduced motion,
+which draws the app without the page crossfade: the difference from a normal
+run is the crossfade's share of a navigation. Navigations that show a route
+skeleton have a floor of about 350 ms before the page can replace it even when
+its data is back at 120 ms (React holds a Suspense reveal until 300 ms after
+the fallback committed: `globalMostRecentFallbackTime + 300` in the react-dom
+Next bundles, `FALLBACK_THROTTLE_MS` in react-dom 19), plus the
+crossfade, so compare a navigation's content time with that floor, not with
+its server time.
+
+A Clubhouse flag trap: the flag is off for `production` and `next start` runs
+with NODE_ENV=production, so the harness sets `VERCEL_ENV=development`. If a
+route does not render Clubhouse, `measure` stops rather than record a Fairway
+number.
+
 ## CI/CD Integration
 
 ### GitHub Actions

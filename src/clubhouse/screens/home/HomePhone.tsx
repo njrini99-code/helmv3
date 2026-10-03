@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -12,11 +12,12 @@ import { Modal } from '../../ui/Modal';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
+import { LinkPending } from '../../shell/LinkPending';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
@@ -118,8 +119,8 @@ function dayDiff(date: string, now: Date): number {
 const WD = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
 const weekday = (date: string) => WD.format(new Date(`${date}T12:00:00Z`));
 
-/** `children`: what closes the card (the player's countdown). */
-export function UpNext({ e, now, children }: { e: ChHomeEvent; now: Date | null; children?: ReactNode }) {
+/** `children`: what closes the card (the player's countdown). `kicker`: the player's "Up next · Qualifier" (the coach's card names the type alone). */
+export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date | null; children?: ReactNode; kicker?: string }) {
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
@@ -127,7 +128,7 @@ export function UpNext({ e, now, children }: { e: ChHomeEvent; now: Date | null;
       <span className="ch-hm-next__k">
         <span className="ch-hm-next__type">
           <Icon icon={TYPE_ICON[e.type]} size={13} />
-          {TYPE_LABEL[e.type]}
+          {kicker ? `${kicker} · ${TYPE_LABEL[e.type]}` : TYPE_LABEL[e.type]}
         </span>
         <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
       </span>
@@ -147,6 +148,7 @@ export function UpNext({ e, now, children }: { e: ChHomeEvent; now: Date | null;
         </span>
       )}
       {children}
+      <LinkPending />
     </Link>
   );
 }
@@ -188,9 +190,73 @@ function NoEvents() {
   );
 }
 
-/** `canPlan`: a coach gets Plan on an empty day; a player can't add team events. */
-export function Today({ list, now, failed, quiet, canPlan = true }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean }) {
+/**
+ * `canPlan`: a coach gets Plan on an empty day; a player can't add team events.
+ * `inline`: the player's phone (Player - Home - Mobile.html `mp-lab`): a small "Today" label and the timeline inside
+ * This week's section, with no section of its own and no Calendar link (the week's days open it). The row under way
+ * reads "Now"; with none under way, the next one reads "Next". A row that has passed keeps its ink: only its time
+ * steps back, so it never looks disabled.
+ */
+export function Today({ list, now, failed, quiet, canPlan = true, inline = false }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
   if (failed) return null;
+  const t = now?.getTime();
+  const rows = list.map((e) => {
+    const end = e.endIso ? Date.parse(e.endIso) : Date.parse(e.startIso);
+    return { e, past: !e.allDay && t != null && end <= t, live: !e.allDay && t != null && Date.parse(e.startIso) <= t && end > t };
+  });
+  const next = inline && t != null && !rows.some((r) => r.live) ? rows.find((r) => !r.past && !r.e.allDay)?.e.id : undefined;
+  const body = !list.length ? (
+    <div className="ch-hm-empty" data-ch-code="CH-2301">
+      <Icon icon={Sun} size={18} />
+      <span>
+        <b>Nothing scheduled</b>
+        <span>{canPlan ? 'Players can still post rounds from the course.' : 'A good day to play a round.'}</span>
+      </span>
+      {canPlan && !quiet && (
+        <Button size="sm" leftIcon={Plus} href={newEventHref()}>
+          Plan
+        </Button>
+      )}
+    </div>
+  ) : (
+    <ol className={'ch-hm-tl' + (inline ? ' is-player' : '')} aria-labelledby={inline ? 'ch-hm-today' : undefined}>
+      {rows.map(({ e, past, live }) => {
+        const mark = live || e.id === next;
+        return (
+          <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (mark ? ' is-now' : '')}>
+            <Link href={eventHref(e)} className="ch-hm-tl__a">
+              <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
+              <span className="ch-hm-tl__rail" aria-hidden="true">
+                <i className={`is-${e.type}`} />
+              </span>
+              <span className="ch-hm-tl__b">
+                <b>{e.title}</b>
+                {e.location && <span>{e.location}</span>}
+              </span>
+              {e.conflict ? (
+                <span className="ch-hm-tl__w" title="Overlaps another event">
+                  <Icon icon={TriangleAlert} size={13} />
+                  <span className="ch-sr-only">Overlaps another event</span>
+                </span>
+              ) : mark ? (
+                <span className="ch-hm-now">{live ? 'Now' : 'Next'}</span>
+              ) : null}
+            </Link>
+          </li>
+        );
+      })}
+    </ol>
+  );
+  if (inline) {
+    return (
+      <>
+        <h2 id="ch-hm-today" className="ch-hm-lab">
+          Today
+        </h2>
+        {body}
+      </>
+    );
+  }
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-today">
       <div className="ch-hm-sec__h">
@@ -201,56 +267,29 @@ export function Today({ list, now, failed, quiet, canPlan = true }: { list: ChHo
           </Link>
         )}
       </div>
-      {!list.length ? (
-        <div className="ch-hm-empty" data-ch-code="CH-2301">
-          <Icon icon={Sun} size={18} />
-          <span>
-            <b>Nothing scheduled</b>
-            <span>{canPlan ? 'Players can still post rounds from the course.' : 'A good day to play a round.'}</span>
-          </span>
-          {canPlan && !quiet && (
-            <Button size="sm" leftIcon={Plus} href={newEventHref()}>
-              Plan
-            </Button>
-          )}
-        </div>
-      ) : (
-        <ol className="ch-hm-tl">
-          {list.map((e) => {
-            const t = now?.getTime();
-            const end = e.endIso ? Date.parse(e.endIso) : Date.parse(e.startIso);
-            const past = !e.allDay && t != null && end <= t;
-            const live = !e.allDay && t != null && Date.parse(e.startIso) <= t && end > t;
-            return (
-              <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (live ? ' is-now' : '')}>
-                <Link href={eventHref(e)} className="ch-hm-tl__a">
-                  <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
-                  <span className="ch-hm-tl__rail" aria-hidden="true">
-                    <i className={`is-${e.type}`} />
-                  </span>
-                  <span className="ch-hm-tl__b">
-                    <b>{e.title}</b>
-                    {e.location && <span>{e.location}</span>}
-                  </span>
-                  {e.conflict ? (
-                    <span className="ch-hm-tl__w" title="Overlaps another event">
-                      <Icon icon={TriangleAlert} size={13} />
-                      <span className="ch-sr-only">Overlaps another event</span>
-                    </span>
-                  ) : live ? (
-                    <span className="ch-hm-now">Now</span>
-                  ) : null}
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+      {body}
     </section>
   );
 }
 
-/** The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42). */
+const SHORT_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`));
+
+/** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
+export function formBasis(b: ChTeamForm['basis']): string {
+  const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
+  return `${b.rounds} ${b.rounds === 1 ? 'round' : 'rounds'} · ${span}`;
+}
+
+/** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
+function partOf(n: number, of: number): string {
+  return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
+}
+
+/**
+ * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
+ * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
+ */
 function Form({ form }: { form: ChTeamForm }) {
   const W = 320;
   const H = 64;
@@ -260,8 +299,8 @@ function Form({ form }: { form: ChTeamForm }) {
   const x = (i: number) => 4 + (pts.length > 1 ? (i * (W - 8)) / (pts.length - 1) : (W - 8) / 2);
   const y = (v: number) => 6 + ((v - lo) / (hi - lo || 1)) * (H - 12);
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  // Lower scores and fewer putts are better; more greens are better.
-  const tone = (delta: number | null, lowerIsBetter: boolean) => (delta == null || delta === 0 ? '' : (delta < 0) === lowerIsBetter ? 'is-gain' : 'is-loss');
+  // Lower scores and fewer putts are better; more greens are better. A change that rounds to zero as shown ("0.0") is no change: plain, not amber (F-54).
+  const tone = (delta: number | null, lowerIsBetter: boolean, digits: number) => changeTone(delta, lowerIsBetter, digits);
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__top">
@@ -269,15 +308,14 @@ function Form({ form }: { form: ChTeamForm }) {
           <em id="ch-hm-form">Team scoring average</em>
           <b className="ch-num">{formatFixed(form.avg)}</b>
         </span>
-        {form.delta != null && (
-          <span className={'ch-hm-delta ch-num ' + tone(form.delta, true)}>
-            {formatSigned(form.delta)}
-            <em>vs previous 10</em>
-          </span>
-        )}
+        <span className={'ch-hm-delta ch-num ' + tone(form.delta, true, 1)}>
+          {form.delta != null && formatSigned(form.delta)}
+          {form.delta != null && <em>vs previous 10</em>}
+          <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
+        </span>
       </div>
       {pts.length > 1 && (
-        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, a five-round average, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team's average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
           <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
           <path d={d} className="ch-hm-form__line" />
           <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1]!)} r="3.6" className="ch-hm-form__dot" />
@@ -292,19 +330,20 @@ function Form({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.gir.delta, false)}>{form.gir.delta != null ? formatSigned(form.gir.delta, 0) : ' '}</dd>
+          <dd className={'ch-num ' + tone(form.gir.delta, false, 0)}>{form.gir.delta != null ? formatSigned(form.gir.delta, 0) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.putts.delta, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : ' '}</dd>
+          <dd className={'ch-num ' + tone(form.putts.delta, true, 1)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>
   );
 }
 
-export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote'] }) {
+/** `children`: what follows the week inside its section (the player's Today). `majorIcon`: the mark on a competition day (the coach's is the trophy; the player's board draws a flag). */
+export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tournament }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode; majorIcon?: LucideIcon }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
@@ -318,7 +357,7 @@ export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; n
               <b className="ch-num" aria-hidden="true">
                 {d.dayOfMonth}
               </b>
-              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={TYPE_ICON.tournament} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
+              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={majorIcon} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
               <span className="ch-sr-only">
                 {d.weekday} {d.dayOfMonth}
                 {d.isToday ? ', today' : ''}
@@ -333,6 +372,7 @@ export function WeekStrip({ days, note }: { days: ChCoachHome['week']['days']; n
           <b>{note.weekday}</b> {note.title}
         </p>
       )}
+      {children}
     </section>
   );
 }

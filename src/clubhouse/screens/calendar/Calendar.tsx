@@ -3,6 +3,7 @@
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useChSessionState } from '../../lib/session-state';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -204,7 +205,8 @@ export function Calendar({
   const coach = data.role === 'coach';
   const [view, setView] = useState<ChCalView>(data.view);
   const [anchor, setAnchor] = useState(data.anchor);
-  const [sel, setSel] = useState<string[]>([]);
+  // The player filter comes back with the page; view and date already live in the URL (PAGE_PERFORMANCE.md rule 1).
+  const [sel, setSel] = useChSessionState<string[]>('players', []);
   const [insp, setInsp] = useState<ChInsp>(() => {
     const e = initialEvent ? data.events.find((x) => x.id === initialEvent) : undefined;
     return e ? { kind: 'event', id: e.id, date: e.date } : null;
@@ -231,9 +233,13 @@ export function Calendar({
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
 
   // The server is the source of truth: when it re-renders (navigation or refresh), follow it.
+  // Where a step outside the loaded window is headed while its payload is on the way. The page keeps showing (and
+  // labelling) the week it has; a second quick tap steps on from the target instead of asking for the same week again.
+  const target = useRef<string | null>(null);
   useEffect(() => {
     setView(data.view);
     setAnchor(data.anchor);
+    target.current = null;
   }, [data.view, data.anchor]);
 
   const people = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
@@ -249,11 +255,13 @@ export function Calendar({
       const url = buildUrl(nextView, nextAnchor, data.today);
       chTrail(`calendar ${nextView} ${nextAnchor}`);
       if (nextAnchor >= data.range.from && nextAnchor <= data.range.to && (nextView !== 'month' || monthKey(nextAnchor) === monthKey(data.anchor) || (monthCells(nextAnchor)[0]!.date >= data.range.from && monthCells(nextAnchor).at(-1)!.date <= data.range.to))) {
+        target.current = null;
         setView(nextView);
         setAnchor(nextAnchor);
         window.history.replaceState(null, '', url);
         return;
       }
+      target.current = nextAnchor;
       start(() => router.push(url, { scroll: false }));
     },
     [data.today, data.range, data.anchor, router],
@@ -261,10 +269,12 @@ export function Calendar({
 
   const step = useCallback(
     (dir: 1 | -1) => {
+      // CH-6701: a tick on changing view, week or players, opening an event, a day or a panel item.
       haptic('select');
-      if (view === 'day') go(view, addDays(anchor, dir));
-      else if (view === 'week') go(view, addDays(anchor, 7 * dir));
-      else if (view === 'month') go(view, addMonths(anchor, dir));
+      const from = target.current ?? anchor;
+      if (view === 'day') go(view, addDays(from, dir));
+      else if (view === 'week') go(view, addDays(from, 7 * dir));
+      else if (view === 'month') go(view, addMonths(from, dir));
     },
     [view, anchor, go],
   );
@@ -343,6 +353,14 @@ export function Calendar({
           onRetry={refresh}
         />
       )}
+      {data.membersError && (
+        <InlineNotice
+          code="CH-6213"
+          title="The roster didn't load."
+          body="Events are complete, but players can't be invited or picked until it does. Try again; the error has been reported."
+          onRetry={refresh}
+        />
+      )}
       {data.busyError && (
         <InlineNotice code="CH-6202" title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
       )}
@@ -371,6 +389,7 @@ export function Calendar({
           }}
           events={data.events}
           people={data.people}
+          peopleError={!!data.membersError}
           timezone={data.timezone}
           today={now.date}
         />
@@ -454,7 +473,7 @@ export function Calendar({
   }
 
   return (
-    <main className="ch-cal" aria-busy={pending}>
+    <main className="ch-cal" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
       <header className="ch-cal-mast">
         <div className="ch-cal-mast__l">
           <button type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
@@ -586,7 +605,7 @@ export function Calendar({
                 ))}
             </SectionBoundary>
           </div>
-          <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite">
+          <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>
             <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
               {!insp && <Summary ctx={ctx} />}
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
@@ -599,6 +618,7 @@ export function Calendar({
 
       {sel.length > 0 && (
         <span className="ch-sr-only" role="status">
+          {/* CH-6803 */}
           Showing {sel.length} {sel.length === 1 ? 'player' : 'players'}
         </span>
       )}

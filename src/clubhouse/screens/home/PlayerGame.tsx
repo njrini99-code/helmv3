@@ -1,15 +1,16 @@
 'use client';
 
 import { CircleDot, Crosshair, FlagTriangleRight, MoveUpRight, PenLine, type LucideIcon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import type { ChLegKey, ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
-import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { formatHcp } from '../roster/format';
+import { useChSessionState } from '../../lib/session-state';
 
 type Span = 5 | 10 | 20;
 const SPANS: Span[] = [5, 10, 20];
@@ -31,8 +32,15 @@ export function PlayerGame({ data, phone = false }: { data: ChPlayerHome; phone?
   );
 }
 
+/** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
+function commonPar(points: ChScoringPoint[]): number | null {
+  const pars = points.map((p) => p.par).filter((v): v is number => v != null);
+  return pars.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
+}
+
 function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
-  const [n, setN] = useState<Span>(10);
+  // The span of rounds (Last 5, 10, 20) comes back when the player returns to Home (PAGE_PERFORMANCE.md rule 1).
+  const [n, setN] = useChSessionState<Span>('home-span', 10);
   const all = data.scoring.points;
   const shown = all.slice(-n);
   const before = all.slice(-2 * n, -n);
@@ -41,61 +49,77 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
   const delta = mean != null && prevMean != null ? mean - prevMean : null;
   const under = shown.filter((p) => p.par != null && p.score < p.par).length;
   const figs: Array<[string, string, string, string]> = [
-    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, delta == null || Math.abs(delta) < 0.05 ? '' : delta < 0 ? 'is-gain' : 'is-loss'],
-    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, data.sgPerRound == null ? '' : data.sgPerRound >= 0 ? 'is-gain' : 'is-loss'],
+    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, changeTone(delta, true)],
+    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
     ['Under par', shown.length ? `${under} of ${shown.length}` : NO_DATA, 'Rounds in this window', ''],
   ];
+  const par = commonPar(shown);
+  // The phone's card always offers all three windows, as the board's does; the desktop's only the ones with rounds to fill them.
+  const options = (phone ? SPANS : SPANS.filter((k) => k === 5 || all.length > k / 2)).map((k) => ({ value: `${k}` as `${Span}`, label: `Last ${k}` }));
+  const picker = (
+    <Segmented<`${Span}`> size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
+  );
+  const body = data.scoring.error ? (
+    <RefreshNotice code="CH-2215" title="Your rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." />
+  ) : shown.length < 2 ? (
+    <EmptyState
+      compact
+      code="CH-2310"
+      title={shown.length ? 'One round so far.' : 'No rounds posted yet this season.'}
+      body="Your scoring line starts with your second 18-hole round."
+    />
+  ) : (
+    <div className="ch-ph-game__top">
+      <ScoreChart points={shown} phone={phone} />
+      <dl className="ch-ph-figs">
+        {figs.map(([k, v, m, t]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd className={'ch-num ' + t}>{v}</dd>
+            <dd className="ch-ph-figs__m ch-num">{m}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+  const note = !data.scoring.error && shown.length >= 5 && (
+    <p className="ch-ph-note">
+      <Icon icon={PenLine} size={14} />
+      {scoringNote(shown)}
+    </p>
+  );
 
+  // The phone (m-player-home.jsx `Scoring`): the title and its one-line meta sit above the card, which opens on the full-width window picker.
+  if (phone) {
+    return (
+      <section className="ch-hm-sec" aria-labelledby="ch-ph-scoring">
+        <div className="ch-hm-sec__h">
+          <h2 id="ch-ph-scoring">Scoring</h2>
+          <span className="ch-hm-meta">{par != null ? `Gross · par ${par} · countable rounds` : 'Gross · countable rounds'}</span>
+        </div>
+        <div className="ch-ph-game is-phone">
+          {!data.scoring.error && all.length >= 2 && picker}
+          {body}
+          {note}
+        </div>
+      </section>
+    );
+  }
   return (
-    <section className={'ch-ph-game' + (phone ? ' is-phone' : '')} aria-labelledby="ch-ph-scoring">
+    <section className="ch-ph-game" aria-labelledby="ch-ph-scoring">
       <div className="ch-ph-game__h">
         <div>
           <h2 id="ch-ph-scoring">Scoring</h2>
           <span>
             Gross · countable 18-hole rounds
-            {!phone && shown.length >= 2 && !data.scoring.error ? ` · dashed line, your mean ${formatFixed(shown.reduce((a, p) => a + p.score, 0) / shown.length)}` : ''}
+            {shown.length >= 2 && !data.scoring.error ? ` · dashed line, your mean ${formatFixed(shown.reduce((a, p) => a + p.score, 0) / shown.length)}` : ''}
           </span>
         </div>
-        {all.length > 5 && (
-          <Segmented<`${Span}`>
-            size="sm"
-            label="Rounds shown"
-            value={`${n}`}
-            onChange={(v) => setN(Number(v) as Span)}
-            options={SPANS.filter((k) => k === 5 || all.length > k / 2).map((k) => ({ value: `${k}` as `${Span}`, label: `Last ${k}` }))}
-          />
-        )}
+        {all.length > 5 && picker}
       </div>
-      {data.scoring.error ? (
-        <RefreshNotice code="CH-2215" title="Your rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." />
-      ) : shown.length < 2 ? (
-        <EmptyState
-          compact
-          code="CH-2310"
-          title={shown.length ? 'One round so far.' : 'No rounds posted yet this season.'}
-          body="Your scoring line starts with your second 18-hole round."
-        />
-      ) : (
-        <div className="ch-ph-game__top">
-          <ScoreChart points={shown} phone={phone} />
-          <dl className="ch-ph-figs">
-            {figs.map(([k, v, m, t]) => (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd className={'ch-num ' + t}>{v}</dd>
-                <dd className="ch-ph-figs__m ch-num">{m}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      )}
-      {!data.scoring.error && shown.length >= 5 && (
-        <p className="ch-ph-note">
-          <Icon icon={PenLine} size={14} />
-          {scoringNote(shown)}
-        </p>
-      )}
+      {body}
+      {note}
     </section>
   );
 }
@@ -112,6 +136,33 @@ export function scoringNote(points: ChScoringPoint[]): string {
   return `${first[0]!.toUpperCase()}${first.slice(1)} of your last ${say(points.length)} are ${bar} or better.`;
 }
 
+/**
+ * Which points carry a date under the chart: every `step`th, counted back from the newest, and never the same date
+ * twice in a row (several rounds can share a day, and "Aug 2 Aug 2 Aug 2" says nothing). A run of one date is
+ * labelled where it starts.
+ */
+export function axisLabelIndexes(labels: readonly string[], step: number): number[] {
+  const every = Math.max(1, step);
+  const out: number[] = [];
+  if (!labels.length) return out;
+  for (let i = (labels.length - 1) % every; i < labels.length; i += every) {
+    const prev = out[out.length - 1];
+    if (prev != null && labels[prev] === labels[i]) continue;
+    out.push(i);
+  }
+  return out;
+}
+
+/** Whole-stroke ticks for the score axis, no more than `max` of them: every 1, 2, 5 or 10 strokes. */
+export function scoreTicks(lo: number, hi: number, max: number): number[] {
+  const from = Math.ceil(lo);
+  const to = Math.floor(hi);
+  const step = [1, 2, 5, 10].find((s) => Math.floor(to / s) - Math.ceil(from / s) + 1 <= max) ?? 10;
+  const out: number[] = [];
+  for (let v = Math.ceil(from / step) * step; v <= to; v += step) out.push(v);
+  return out;
+}
+
 /** Scores against par (hatched below it) and the player's own mean, the best round pinned. Lower scores sit higher. */
 function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolean }) {
   const uid = useId().replace(/:/g, '');
@@ -123,9 +174,8 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   const T = phone ? 24 : 44;
   const B = phone ? 26 : 30;
   const scores = points.map((p) => p.score);
-  const pars = points.map((p) => p.par).filter((v): v is number => v != null);
-  // The par line only when every round with a par agrees on it.
-  const par = pars.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
+  // The par line only when every round with a par agrees on it; each round is still marked against its own par.
+  const par = commonPar(points);
   const lo = Math.min(...scores, par ?? Infinity) - 1;
   const hi = Math.max(...scores, par ?? -Infinity) + 1;
   const x = (i: number) => L + (i * (W - L - R)) / Math.max(1, points.length - 1);
@@ -144,8 +194,9 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   const last = points.length - 1;
   const labelled = points.length <= 10;
   const step = points.length <= 5 ? 1 : points.length <= 10 ? (phone ? 3 : 1) : phone ? 5 : 2;
-  const ticks = Array.from({ length: Math.floor(hi) - Math.ceil(lo) + 1 }, (_, i) => Math.ceil(lo) + i).filter((v, _, a) => a.length <= 8 || v % 2 === 0);
-  const under = (v: number) => par != null && v < par;
+  const ticks = scoreTicks(lo, hi, phone ? 6 : 8);
+  // Under par against that round's own par, so a dot is green and a label red even where the par line is not drawn.
+  const under = (i: number) => points[i]!.par != null && scores[i]! < points[i]!.par!;
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -188,9 +239,9 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
       <path d={d} className="ch-ph-chart__line" />
       {pts.map(([px, py], i) => (
         <g key={points[i]!.id}>
-          <circle cx={px} cy={py} r={i === last ? 5 : points.length > 10 ? 2.6 : 3.4} className={'ch-ph-chart__dot' + (under(scores[i]!) ? ' is-under' : '')} />
+          <circle cx={px} cy={py} r={i === last ? 5 : points.length > 10 ? 2.6 : 3.4} className={'ch-ph-chart__dot' + (under(i) ? ' is-under' : '')} />
           {labelled && (
-            <text x={px} y={py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(scores[i]!) ? ' is-under' : '')}>
+            <text x={px} y={py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
               {scores[i]}
             </text>
           )}
@@ -202,18 +253,18 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
           <path d="M0,-34 L16,-29 L0,-24 Z" />
           {/* Near the right edge the label reads to the left of the pole, inside the chart. */}
           <text x={x(bi) > W - 160 ? -6 : 20} y="-26" textAnchor={x(bi) > W - 160 ? 'end' : 'start'} className="ch-ph-chart__ann">
-            season low · {best}
+            low · {best}
           </text>
         </g>
       )}
-      {points.map(
-        (p, i) =>
-          (last - i) % step === 0 && (
-            <text key={p.id} x={x(i)} y={H - 6} textAnchor={phone ? (i === 0 ? 'start' : i === last ? 'end' : 'middle') : 'middle'} className="ch-ph-chart__ax">
-              {p.label}
-            </text>
-          ),
-      )}
+      {axisLabelIndexes(
+        points.map((p) => p.label),
+        step,
+      ).map((i) => (
+        <text key={points[i]!.id} x={x(i)} y={H - 6} textAnchor={phone ? (i === 0 ? 'start' : i === last ? 'end' : 'middle') : 'middle'} className="ch-ph-chart__ax">
+          {points[i]!.label}
+        </text>
+      ))}
     </svg>
   );
 }
@@ -222,17 +273,28 @@ function Legs({ legs, tour, phone }: { legs: ChPlayerHome['legs']; tour: ChSgTou
   if (!legs) return null;
   const any = legs.rows.some((l) => l.value != null);
   return (
-    <section className={'ch-ph-legs-sec' + (phone ? ' is-phone' : '')} aria-labelledby="ch-ph-legs">
-      <div className="ch-ph-game__h">
-        <div>
+    <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
+      {phone ? (
+        // The board's one-line meta beside the title. The stats are the last 10 rounds and each part's strokes gained is the season's: each pill says so to a screen reader, and the desktop's caption in full.
+        <div className="ch-hm-sec__h">
           <h2 id="ch-ph-legs">By part of the game</h2>
-          {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
-          <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs}</span>
+          <span className="ch-hm-meta">Strokes gained {sgBaseline(tour).vs}</span>
         </div>
-      </div>
+      ) : (
+        <div className="ch-ph-game__h">
+          <div>
+            <h2 id="ch-ph-legs">By part of the game</h2>
+            {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
+            <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs}</span>
+          </div>
+        </div>
+      )}
       {legs.cacheError && <RefreshNotice code="CH-2216" title="Some of your figures didn't load." body="Scores, greens and putts are right; scrambling is missing. The error has been reported." />}
+      {/* Figures that did not load are not "nothing to break down": the notice above is the whole answer then (CH-2216). */}
       {!any ? (
-        <EmptyState compact code="CH-2311" title="Nothing to break down yet." body="Fairways, greens, scrambling and putts fill in from rounds posted with those stats." />
+        legs.cacheError ? null : (
+          <EmptyState compact code="CH-2311" title="Nothing to break down yet." body="Fairways, greens, scrambling and putts fill in from rounds posted with those stats." />
+        )
       ) : (
         <div className="ch-ph-legs">
           {legs.rows.map((g) => (
@@ -257,9 +319,9 @@ function Leg({ g }: { g: ChPlayerLeg }) {
         </span>
         <b id={`ch-ph-leg-${g.key}`}>{g.label}</b>
         {g.sg != null && (
-          <span className={'ch-ph-leg__sg ch-num ' + (g.sg >= 0 ? 'is-gain' : 'is-loss')}>
+          <span className={'ch-ph-leg__sg ch-num ' + (changeTone(g.sg, false) || 'is-flat')}>
             {formatSigned(g.sg)}
-            <span className="ch-sr-only"> strokes gained a round</span>
+            <span className="ch-sr-only"> strokes gained a round this season</span>
           </span>
         )}
       </div>

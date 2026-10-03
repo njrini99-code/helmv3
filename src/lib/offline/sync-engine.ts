@@ -49,6 +49,8 @@ import {
 // below to avoid a lib/ → app/ circular dependency) is safe: this module has
 // no such dependency.
 import { describeRoundWriteFailure } from '@/lib/golf/round-missing-recovery';
+import { wasRoundDiscarded } from '@/lib/utils/emergency-save';
+import { getSyncSessionPlayer } from './session-player';
 
 // Dynamic import to avoid lib/ → app/ circular dependency
 type RoundDraftData = import('@/app/golf/actions/round-drafts').RoundDraftData;
@@ -635,6 +637,11 @@ class SyncEngine {
       return { synced, failed, errors };
     }
 
+    // Only the signed-in player's own queued rounds are submitted (security review of R-5): the v1 store is
+    // device-wide and survives sign-out. Unknown player: drain nothing this cycle; nothing is deleted.
+    const sessionPlayer = getSyncSessionPlayer();
+    if (!sessionPlayer) return { synced, failed, errors };
+
     const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
     const { submitGolfRoundComprehensive } = await import('@/app/golf/actions/golf');
     const { writeRoundRecreatingIfMissing } = await import('@/lib/golf/round-missing-recovery');
@@ -644,6 +651,20 @@ class SyncEngine {
         break;
       }
       if (!round) continue;
+      // Another account's scorecard: leave it queued for that player, untouched.
+      if (round.playerId !== sessionPlayer) continue;
+
+      // The player discarded this round on this device (swap audit R-4/R-10).
+      // Its queued submission must not run: the row is gone, so the submit
+      // would come back round_missing and re-create the discarded round.
+      if (wasRoundDiscarded(round.serverRoundId ?? round.id, round.playerId)) {
+        try {
+          await legacy.deleteOfflineRound(round.id);
+        } catch {
+          /* left queued; the same check skips it next cycle */
+        }
+        continue;
+      }
 
       // Respect exponential backoff between attempts (mirrors the v2 path so a
       // persistently-failing v1 round can't be re-POSTed every sync cycle).

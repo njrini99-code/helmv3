@@ -93,11 +93,13 @@ afterEach(() => vi.useRealTimers());
 // ── Whose addresses these are ──
 
 describe('112401 Round entry: the addresses (110105, 110109)', () => {
-  it('110105 /rounds/new and /rounds/continue/[id] are a player’s in Clubhouse, and a coach’s are not; recover stays Fairway’s', () => {
+  it('110105 /rounds/new, /rounds/recover and /rounds/continue/[id] are a player’s in Clubhouse, and a coach’s are not', () => {
     expect([isRebuilt('/golf/dashboard/rounds/new', 'player'), isRebuilt('/golf/dashboard/rounds/new/', 'player')]).toEqual([true, true]);
     expect(isRebuilt(`/golf/dashboard/rounds/continue/${ID}`, 'player')).toBe(true);
     expect([isRebuilt('/golf/dashboard/rounds/new', 'coach'), isRebuilt(`/golf/dashboard/rounds/continue/${ID}`, 'coach')]).toEqual([false, false]);
-    expect([isRebuilt('/golf/dashboard/rounds/continue', 'player'), isRebuilt('/golf/dashboard/rounds/continue/not-an-id', 'player'), isRebuilt('/golf/dashboard/rounds/recover', 'player'), isRebuilt('/golf/dashboard/rounds/new/x', 'player')]).toEqual([false, false, false, false]);
+    expect([isRebuilt('/golf/dashboard/rounds/continue', 'player'), isRebuilt('/golf/dashboard/rounds/continue/not-an-id', 'player'), isRebuilt('/golf/dashboard/rounds/new/x', 'player')]).toEqual([false, false, false]);
+    // Recovery is rebuilt (swap audit F-02): where the engines send a submit that could not reach the server. A coach has none.
+    expect([isRebuilt('/golf/dashboard/rounds/recover', 'player'), isRebuilt('/golf/dashboard/rounds/recover', 'coach')]).toEqual([true, false]);
   });
 
   it('110109 a round still being played opens in the rebuilt Continue: the controls that lead to round entry are drawn for a player, and never for a coach', () => {
@@ -412,7 +414,7 @@ describe('Round entry: the engines’ notices (CH-11902, CH-11903 to CH-11908)',
     expect(noticeToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning')).toMatchObject({ code: 'CH-11903', tone: 'error', title: 'Saving is slow' });
     expect(noticeToast('Auto-save is having trouble. Your data is cached locally.', 'warning').code).toBe('CH-11903');
     expect(noticeToast('This device could not save a quick local backup of your shots. They are still being saved to a slower backup and to the server.', 'warning').code).toBe('CH-11904');
-    expect(noticeToast('Round saved on this device. Opening recovery flow.', 'warning')).toMatchObject({ code: 'CH-11905', body: 'It couldn’t reach the server. Continue it from Rounds to submit again.' });
+    expect(noticeToast('Round saved on this device. Opening recovery flow.', 'warning')).toMatchObject({ code: 'CH-11905', body: 'It couldn’t reach the server. Restore it on the next screen to submit it.' });
     expect(noticeToast('Saved as a practice round.', 'success')).toEqual({ title: 'Saved as a practice round', code: 'CH-11906' });
     expect(noticeToast('Saved as a practice round. Reloading…', 'success').code).toBe('CH-11906');
     expect(noticeToast('Something new.', 'info')).toEqual({ tone: 'done', title: 'Something new.', code: 'CH-11908' });

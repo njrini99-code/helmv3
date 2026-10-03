@@ -105,7 +105,8 @@ export function usePhoneImmersive(open: boolean): void {
 
 /**
  * The shell top bar's pushed variant, rendered by the page: a back link
- * ("‹ More"), a centred title, and at most one action. Shown below 820px only.
+ * ("‹ More"), a centred title, and at most one action. Shown below 820px only. CH-1810: the back link is named for
+ * where it goes ("Back to More") and takes the bell's place.
  */
 export function PhoneTop(props: ChPhoneBarParts) {
   const { slot, setPageTop, setRootTop } = useContext(PhoneChromeCtx);

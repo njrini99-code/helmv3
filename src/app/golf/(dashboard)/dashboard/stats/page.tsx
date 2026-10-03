@@ -46,7 +46,7 @@ export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps
   // Clubhouse Stats (golf_clubhouse_ui): team stats and player profiles,
   // coaches and players, each with the permissions they already have.
   const chSession = await getGolfSessionProfile();
-  if (isClubhouseFor(chSession?.coach ? 'coach' : chSession?.player ? 'player' : null)) {
+  if ((await isClubhouseFor(chSession?.coach ? 'coach' : chSession?.player ? 'player' : null))) {
     return <ClubhouseStatsRoute player={params.player} window={params.window} tab={params.tab} query={params} />;
   }
 

@@ -1,9 +1,9 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { fetchAllRowsTogether } from './paging';
 import { chLogServer } from '../lib/track-server';
-import { seasonStartDate, type ChRound } from './season';
+import { lastTenFloor, seasonStartDate, type ChRound } from './season';
 import { hasScore } from './stats-weight';
 import {
   earlierCount,
@@ -35,13 +35,14 @@ export function roundRow(r: ChRound): ChFilterRow {
 
 /**
  * One player's rounds under the filter, newest first: matched on type, round length (18 holes unless the filter says 9 or both),
- * course and time, then the picks, then the newest-ten cut (see stats-filter).
+ * course and time, then the picks, then the newest-ten cut (see stats-filter). Rounds posted as a total only are in (they are scores);
+ * the hole-level figures take `holeRounds` of the result (round-scope).
  */
 export function roundsInFilter(rounds: ChRound[], f: ChFilter): ChRound[] {
   return selectRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
 
-/** The matching rounds before the newest ten, for "vs. previous 10"; null when the filter has no previous window or there are fewer than three. */
+/** The matching rounds before the newest ten, for "vs. previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */
 export function previousInFilter(rounds: ChRound[], f: ChFilter): ChRound[] | null {
   return previousRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
@@ -51,20 +52,23 @@ export function earlierInFilter(rounds: ChRound[], f: ChFilter): number {
   return earlierCount(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
 }
 
-/** Rounds from this season only (a custom range can load earlier ones; the season's own figures must not count them). */
+/** Rounds from this season only (Last 10 and a custom range can load earlier ones; the season's own figures must not count them). */
 export function seasonOnly(rounds: ChRound[]): ChRound[] {
   const start = seasonStartDate();
   return rounds.filter((r) => r.round_date.slice(0, 10) >= start);
 }
 
 /**
- * Where the rounds read starts: the season, unless a custom range reaches before it (then its start, or no bound when
+ * Where the rounds read starts. Last 10 reads a rolling year back (`lastTenFloor`: the newest ten and the ten before them, across seasons,
+ * Q-122); Season and Qualifiers read this season; a custom range reads from its own start when that is before the season (no bound when
  * the range has no start). Undefined is `loadSeasonRounds`' own default, the season.
  */
 export function loadSince(f: ChFilter): string | null | undefined {
-  if (!hasRange(f)) return undefined;
-  if (!f.from) return null;
-  return f.from < seasonStartDate() ? f.from : undefined;
+  if (hasRange(f)) {
+    if (!f.from) return null;
+    return f.from < seasonStartDate() ? f.from : undefined;
+  }
+  return f.window === 'last10' ? lastTenFloor() : undefined;
 }
 
 /** What the sheet can list: the loaded rounds of both lengths (newest first, cut at the list size), and the courses with how many rounds each. */
@@ -115,6 +119,24 @@ export interface ChRoundCache {
   penalty_strokes: number | null;
   double_bogeys: number | null;
   triple_plus: number | null;
+  pars?: number | null;
+  bogeys?: number | null;
+}
+
+const HOLE_COUNTS = ['eagles', 'birdies', 'pars', 'bogeys', 'double_bogeys', 'triple_plus'] as const;
+const HOLE_LEVEL = ['birdies', 'eagles', 'scramble_attempts', 'scrambles_converted', 'sand_attempts', 'sand_saves', 'three_putts', 'double_bogeys', 'triple_plus'] as const;
+
+/**
+ * C-24(a): a cache row for a round with no hole scored (its totals only) holds zeros for every hole-level count, which an
+ * average would read as "no birdies, no three-putts". When every score count is known and they add up to no hole, the
+ * hole-level counts are unknown (null), not zero. Round-level totals (greens, fairways, putts) stay. Exported for the tests.
+ */
+export function withoutEmptyHoleCounts(row: ChRoundCache): ChRoundCache {
+  const counts = HOLE_COUNTS.map((k) => row[k]);
+  if (!counts.every((v) => typeof v === 'number') || counts.reduce<number>((a, v) => a + (v as number), 0) > 0) return row;
+  const out = { ...row };
+  for (const k of HOLE_LEVEL) out[k] = null;
+  return out;
 }
 
 /** Per-round cached aggregates (GIR, fairways, scrambling, birdies...) keyed by round id. */
@@ -130,7 +152,7 @@ export async function loadRoundCache(
       supabase
         .from('golf_round_stats_cache')
         .select(
-          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, penalty_strokes, double_bogeys, triple_plus',
+          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, penalty_strokes, double_bogeys, triple_plus, pars, bogeys',
         )
         .in('round_id', ids),
     ),
@@ -140,7 +162,7 @@ export async function loadRoundCache(
       chLogServer(surface, 'roundCache', error);
       return { byRound, error: true };
     }
-    for (const row of data ?? []) byRound.set(row.round_id, row);
+    for (const row of data ?? []) byRound.set(row.round_id, withoutEmptyHoleCounts(row));
   }
   return { byRound, error: false };
 }
@@ -260,13 +282,13 @@ export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>, bands: 
   });
 }
 
-/** Every putt with a distance and a result on these rounds, read in parallel chunks. */
+/** Every putt with a distance and a result on these rounds, read in parallel chunks (and each chunk's pages together, `fetchAllRowsTogether`). */
 export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise<{ rows: ChPuttRow[]; error: boolean }> {
   const rows: ChPuttRow[] = [];
   // The chunks are independent, so they are read in parallel.
   const results = await Promise.all(
     chunkIds(roundIds).map((ids) =>
-      fetchAllRowsResult<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
+      fetchAllRowsTogether<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
         (from, to) =>
           supabase
             .from('golf_shots')
@@ -292,4 +314,43 @@ export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise
     }
   }
   return { rows, error: false };
+}
+
+/**
+ * The longest putt made on these rounds (the season's best on Team stats): one row from the database (made, a distance of 0 to 120 feet,
+ * the longest) instead of every putt of the season to find it. A tie goes to the lowest round id, then the lowest shot id, in the database and
+ * across chunks alike, so the answer does not depend on how the rounds were chunked or which chunk answered first. Null when none was made;
+ * `error` when the read failed (the best is then left out and logged, never shown as zero). The rows are compared here too, so a source that
+ * returns more than one still answers right.
+ */
+export async function loadLongestPutt(supabase: Supabase, roundIds: string[]): Promise<{ longest: ChPuttRow | null; error: boolean }> {
+  const results = await Promise.all(
+    chunkIds(roundIds).map((ids) =>
+      supabase
+        .from('golf_shots')
+        .select('round_id, putt_distance_feet, putt_made')
+        .in('round_id', ids)
+        .eq('putt_made', true)
+        .gte('putt_distance_feet', 0)
+        .lte('putt_distance_feet', 120)
+        .order('putt_distance_feet', { ascending: false })
+        .order('round_id', { ascending: true })
+        .order('id', { ascending: true })
+        .limit(1),
+    ),
+  );
+  let longest: ChPuttRow | null = null;
+  for (const res of results) {
+    if (res.error) {
+      chLogServer('stats', 'longestPutt', res.error, 'stats_analytics');
+      return { longest: null, error: true };
+    }
+    for (const r of res.data ?? []) {
+      const feet = Number(r.putt_distance_feet);
+      if (r.putt_made && Number.isFinite(feet) && feet >= 0 && feet <= 120 && (!longest || feet > longest.feet || (feet === longest.feet && r.round_id < longest.roundId))) {
+        longest = { roundId: r.round_id, feet, made: true };
+      }
+    }
+  }
+  return { longest, error: false };
 }

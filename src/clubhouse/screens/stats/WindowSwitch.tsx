@@ -45,3 +45,23 @@ export function changeWords(from: ChFilter, to: ChFilter): { slow: string; offli
   }
   return { slow: 'Still loading the filtered rounds…', offline: "Couldn't apply the filter: you're offline", still };
 }
+
+/** What a change in flight says it is showing and loading ("Showing the season, loading the last 10 rounds"). */
+export function updatingWords(from: ChFilter, to: ChFilter): string {
+  const showing = isFiltered(from) ? 'the rounds you had' : WINDOW_WORDS[from.window];
+  return isWindowChange(from, to) ? `Showing ${showing}, loading ${WINDOW_WORDS[to.window]}` : `Showing ${showing}, applying the filter`;
+}
+
+/**
+ * The note for a window or filter change that has not landed yet (CH-4903, CH-5903). The figures stay on screen, dimmed, and this
+ * names which ones they are, so the switch (which has already moved to the new choice) never labels the old figures with the new
+ * period. Fixed, so it moves nothing; it fades in after a beat, so a change that lands at once never shows it.
+ */
+export function UpdatingNote({ from, to, code }: { from: ChFilter; to: ChFilter | null; code: string }) {
+  if (!to) return null;
+  return (
+    <p className="ch-st-updating" role="status" data-ch-code={code}>
+      {updatingWords(from, to)}
+    </p>
+  );
+}

@@ -33,7 +33,7 @@ export function noticeToast(message: string, type: EngineToast): ToastInput {
     return { tone: 'error', title: 'This device couldn’t keep a quick backup', body: 'Your shots are still saving to a slower backup and to the server.', code: 'CH-11904' };
   }
   if (/^round saved on this device/i.test(message)) {
-    return { tone: 'error', title: 'Your round is saved on this device', body: 'It couldn’t reach the server. Continue it from Rounds to submit again.', code: 'CH-11905' };
+    return { tone: 'error', title: 'Your round is saved on this device', body: 'It couldn’t reach the server. Restore it on the next screen to submit it.', code: 'CH-11905' };
   }
   if (/^saved as a practice round/i.test(message)) {
     return { title: 'Saved as a practice round', code: 'CH-11906' };

@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
-import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
-import { NotificationBadgeProvider } from '@/contexts/notification-badge-context';
-import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
-import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
-import type { ChShellData } from '../data/shell';
-import { ClubhouseFrame } from './ClubhouseFrame';
-import { OfflineSync } from './OfflineSync';
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import {
+  GolfUserProvider,
+  type GolfUserData,
+} from "@/contexts/golf-user-context";
+import { NotificationBadgeProvider } from "@/contexts/notification-badge-context";
+import { SessionActivityProvider } from "@/components/providers/SessionActivityProvider";
+import { NativeSwipeBackBridge } from "@/components/golf/NativeSwipeBackBridge";
+import type { ChShellData } from "../data/shell";
+import { ClubhouseFrame } from "./ClubhouseFrame";
+import { OfflineSync } from "./OfflineSync";
+import { ChPhoneHintProvider } from "../lib/use-phone";
 
 /**
  * The live Clubhouse shell: the non-UI providers pages rely on (golf user,
@@ -16,19 +20,36 @@ import { OfflineSync } from './OfflineSync';
  * swipe while a sheet or dialog is open) around the Clubhouse frame. None of
  * Fairway's UI.
  */
-export function ClubhouseShell({ userData, shell, children }: { userData: GolfUserData; shell: ChShellData; children: ReactNode }) {
-  const pathname = usePathname() ?? '/golf/dashboard';
+export function ClubhouseShell({
+  userData,
+  shell,
+  phone = false,
+  children,
+}: {
+  userData: GolfUserData;
+  shell: ChShellData;
+  /** The device's last layout from the server's cookie, so a cold phone load draws the phone structure first (F-36). */
+  phone?: boolean;
+  children: ReactNode;
+}) {
+  const pathname = usePathname() ?? "/golf/dashboard";
   return (
-    <SessionActivityProvider>
-      <NativeSwipeBackBridge />
-      <OfflineSync />
-      <GolfUserProvider userData={userData}>
-        <NotificationBadgeProvider>
-          <ClubhouseFrame userData={userData} shell={shell} pathname={pathname}>
-            {children}
-          </ClubhouseFrame>
-        </NotificationBadgeProvider>
-      </GolfUserProvider>
-    </SessionActivityProvider>
+    <ChPhoneHintProvider phone={phone}>
+      <SessionActivityProvider>
+        <NativeSwipeBackBridge />
+        <OfflineSync />
+        <GolfUserProvider userData={userData}>
+          <NotificationBadgeProvider>
+            <ClubhouseFrame
+              userData={userData}
+              shell={shell}
+              pathname={pathname}
+            >
+              {children}
+            </ClubhouseFrame>
+          </NotificationBadgeProvider>
+        </GolfUserProvider>
+      </SessionActivityProvider>
+    </ChPhoneHintProvider>
   );
 }

@@ -11,6 +11,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
+import { LinkPending } from '../../shell/LinkPending';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { Countdown } from './Countdown';
@@ -82,6 +83,7 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
       <span className="ch-ph-next__t">{e.title}</span>
       <span className="ch-ph-next__m ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</span>
       <Countdown to={e.startIso} frozen={frozen} />
+      <LinkPending />
     </Link>
   );
 }

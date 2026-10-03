@@ -2,6 +2,124 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Page performance: fewer round trips, a page that keeps its shape across windows
+
+```text
+PR/commit:      agent/swap-audit (09870b6d6, 26cf82b2c, 2b3e64862, 169f17833, a5cc23b30, 9000315b7, 6e78c0dc3)
+Design package: none (no new element; the held cards and the caption line add a little height in some windows)
+Contract IDs:   none new (CH-4402, CH-4401 behaviour unchanged)
+Actions:        none
+Data impact:    none; same figures, same reads, in fewer round trips (`loadTeamStats`, `loadLongestPutt`)
+Held items:     none
+```
+
+- **Issue.** (1) The loader read in three round trips, but the shot reads paged
+  a thousand rows at a time one after another, and the season's longest putt
+  read every putt of the season to find one. (2) Choosing a window moved the
+  page: the figure cards were 213, 183 or 172 px tall, the hole-coverage line
+  came and went, and the trend plot was 302 px tall, or 263 when fewer players
+  had rounds in the window. (3) The route skeleton's cards were 179 px and its
+  trend card 313 px against 213 and 419 loaded, so the page moved when it
+  landed.
+- **Fix.** The round figures, the window's putts and the longest putt are read
+  together after the rounds, and a long read asks for its pages in growing
+  batches after the first (2, then 4, then 8 at a time: a three-page read is two
+  round trips instead of three, a six-page one three instead of six;
+  `fetchAllRowsTogether`, same contract; asking for the row count with the first
+  page measured slower, so it is not asked). The longest putt is one row
+  from the database (made, 0 to 120 ft, the longest), asked in chunks of 200
+  rounds and compared across them. The cards hold the height of their fullest
+  layout in every window (the change chip with its words wrapped under it, the
+  strokes gained note on two lines; two across, the narrow layout), the caption
+  line is always there (empty when no note is shared), and the trend plot is as
+  tall as the team's players whichever have rounds, the empty window included
+  (its list keeps its top when it shortens). On the phone the empty trend keeps
+  its chart frame, an empty strokes gained panel the height of the bars, and
+  the putting reading holds two lines. The skeleton draws the same heights
+  (the card has one height variable per layout, shared with the held card; one
+  more band at a 901 to 940 px canvas, where two cards' words take a third
+  line), the caption line and the trend card's head, plot and note. Tapping a
+  player row shows the page's hairline while the profile loads
+  (`LinkPending`).
+- **Not done, on purpose.** Nothing is cached across requests, users or teams,
+  and other windows are not prefetched: a window is a heavy server render and
+  a stale figure is worse than a 250 ms wait. The phone's figure strip still
+  drops its change line in a window with no earlier window (F-43), so the page
+  below moves 16 px between Last 10 and Season; that is an owner decision (the
+  line held blank undoes F-43's "no empty band").
+- **Checked.** `stats-team-reads.test.ts` (waves; the longest putt is one row,
+  chunks of 200 across 450 rounds; a failed longest-putt read leaves the best
+  out), `paging.test.ts`, `stats-geometry.test.tsx`, `stats-team.test.tsx` 47/47;
+  measured with `npm run clubhouse:perf` (PROGRESS.md, "Page performance
+  (2026-10-01)"). Server time at 1280, median of three alternating passes: cold
+  395 to 305 ms, a tap from Home 425 to 292, the Qualifiers window 190 to 119,
+  Last 10 318 to 211; Season did not move (180 to 188, inside the spread; 168
+  to 193 at 390). Cards, strokes gained table and head land within 1 px of the
+  skeleton (the table landed 79 px lower than drawn). Raw layout shift on a
+  switch at 1280 was 0.023 to 0.026 and is 0.001 to 0.003; at 390 Qualifiers
+  went 0.110 to 0 and Last 10 0.128 to 0.042, with Season still 0.042 (the
+  coverage caption, 54 px).
+
+## 2026-10-01 — "vs. previous 10" compares the same players (Q-112)
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (no visual change)
+Contract IDs:   none new
+Actions:        none
+Data impact:    none; `loadTeamStats` (scoring, greens, putts, scrambling, birdies, strokes gained)
+Held items:     none
+```
+
+- **Issue.** The team's change pooled every player's newest ten against the
+  previous ten of only the players who had one, so a player with no earlier
+  rounds moved the trend by joining.
+- **Fix.** Each change compares the window's rounds of the players who also
+  have a previous ten against that ten; the figure itself still reads the
+  whole window (owner, 2026-10-01).
+- **Checked.** `stats-team.test.tsx` 47/47, including the Q-112 case.
+
+## 2026-10-01 — Phone to the board; smooth window changes (F-54, F-55)
+
+```text
+PR/commit:      agent/swap-audit
+Contract IDs:   CH-4402 (behaviour refined, row unchanged)
+Data impact:    none
+```
+
+- **Fix.** Changing the window no longer flashes twice and jumps: a live page
+  that goes busy keeps its content (the skeleton fade-in applied to it too), and
+  the first-paint reveal plays once per page instead of again when the busy
+  state ends. The window switch moves on the tap; only the figures dim, and the
+  header and switch stay crisp.
+- **Fix (phone).** The board's figure strip, panel titles, green notes and bar
+  colours; captions no longer drawn at figure size; a change that rounds to zero
+  is neutral.
+
+## 2026-09-30 — Last 10 across seasons; total-only rounds count (Q-122, Q-123)
+
+```text
+PR/commit:      agent/swap-audit
+Contract IDs:   none new (the contract's intro states the rule)
+Data impact:    none (reads only; no migration)
+```
+
+- **Issue.** Last 10 stopped at the season start (1 August), so Demo's Cole,
+  with 3 rounds this season and 13 tournaments before it, read as 3 rounds. And
+  his two qualifiers posted as totals (25 and 26 September) were in no figure at
+  all.
+- **Fix.** Last 10 is each player's ten newest countable rounds in any season,
+  with "vs. previous 10" the ten before them, read from a rolling 12 months back
+  (`lastTenFloor`); Season and Qualifiers stay this season. A round posted as a
+  total only counts in the scoring and in no hole-level figure; each hole-level
+  card says "Hole stats from 8 of 10 rounds" when that is fewer than the
+  window's (a note under the card; under the figures on the phone), and its own
+  count replaces the window's.
+- **Checked.** Cole's real rounds: Last 10 is 10 rounds (was 3), Season 5 (was
+  3), Qualifiers 2 (was 0), hole stats from 8, 3 and 0 of them. A zeroed cache
+  row of a total-only round cannot dilute putts, penalties or birdies (its id is
+  never read).
+
 ## 2026-09-30 — A team with only 9-hole rounds this season is not a first run (D-71)
 
 ```text

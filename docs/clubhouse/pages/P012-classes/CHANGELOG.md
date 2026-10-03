@@ -2,6 +2,32 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-01 — Phone: today first, one heading, the term in a line (iPhone brief)
+
+From the owner's "GolfHelm iPhone Layout and Native Experience Repair" brief, §10.
+
+```text
+PR/commit:      agent/swap-audit (#2111)
+Design package: none (owner brief; docs/clubhouse/phone/classes.md updated)
+Contract IDs:   CH-12308 (new)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+- **One "Classes".** The phone top bar is the page's only heading; `main` is
+  labelled "Classes" directly.
+- **Today first.** `TodayClasses` lists what meets today by start time: time,
+  name, and room · code, each opening its class. With nothing today it names
+  the next class day (CH-12308).
+- **The term, compact.** One line on the green card, plus an overlaps row that
+  scrolls to the overlap cards (only when there are overlaps). The credit bar
+  and the term line, whose Today marker collided with the warning, stay on
+  desktop.
+- **Overlaps before the deck** on the phone; the course code on a card is
+  metadata, and the name leads.
+- Not verified on a real iPhone.
+
 ## 2026-09-30 — Delete all classes (Q-75a)
 
 ```text

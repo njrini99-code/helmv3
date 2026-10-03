@@ -44,6 +44,7 @@ import {
 import type { FwStatusTone } from '@/components/fairway/controls';
 import {
   advanceSelectionState,
+  chooseQualifierTiePlace,
   confirmQualifierSelection,
   setQualifierCoachPick,
   removeQualifierCoachPick,
@@ -87,7 +88,10 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
     selection_slots_coach_pick,
     candidates,
     coach_picks_complete,
+    tie_at_cut,
   } = workspace;
+  // Q-114: a tie at the last auto-lock place waits for the coach (see SlotLeaderboard).
+  const tieSettled = !tie_at_cut || tie_at_cut.chosen === tie_at_cut.places;
 
   const topScoreSlots = selection_slots_total - selection_slots_coach_pick;
   const pickLabel = selection_slots_coach_pick === 1 ? 'pick' : 'picks';
@@ -123,10 +127,16 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
         <StateBar
           qualifierId={qualifier_id}
           state={selection_state}
-          canConfirm={coach_picks_complete}
+          canConfirm={coach_picks_complete && tieSettled}
         />
 
-        <SlotLeaderboard ranked={ranked} topScoreSlots={topScoreSlots} />
+        <SlotLeaderboard
+          ranked={ranked}
+          topScoreSlots={topScoreSlots}
+          qualifierId={qualifier_id}
+          state={selection_state}
+          tie={tie_at_cut ?? null}
+        />
 
         {selection_slots_coach_pick > 0 ? (
           <CoachPicks
@@ -313,10 +323,24 @@ function StateBar({
 function SlotLeaderboard({
   ranked,
   topScoreSlots,
+  qualifierId,
+  state,
+  tie,
 }: {
   ranked: SelectionCandidate[];
   topScoreSlots: number;
+  qualifierId: string;
+  state: QualifierSelectionState;
+  tie: { places: number; chosen: number } | null;
 }) {
+  const [tiePending, startTie] = useTransition();
+  // Q-114: players level at the last auto-lock place no longer split by name order; the coach gives the place.
+  const giveTie = (c: SelectionCandidate, give: boolean) => {
+    startTie(async () => {
+      const r = await chooseQualifierTiePlace(qualifierId, c.player_id, give);
+      if (!r.ok) fairwayToast.danger(give ? "Couldn't give the place" : "Couldn't take the place back", { description: r.error });
+    });
+  };
   return (
     <Surface aria-label="Selection leaderboard">
       <Surface.Header
@@ -383,7 +407,21 @@ function SlotLeaderboard({
                     {formatToPar(c.total_to_par)}
                   </span>
                   <span className="hidden w-28 text-right sm:inline">
-                    {locked ? (
+                    {c.tied_at_cut && state === 'closed' && tie ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        busy={tiePending}
+                        disabled={!locked && tie.chosen >= tie.places}
+                        onClick={() => giveTie(c, !locked)}
+                      >
+                        {locked ? 'Take back' : 'Give place'}
+                      </Button>
+                    ) : c.tied_at_cut && !locked ? (
+                      <StatusPill tone="warning" size="sm" dot>
+                        Tie at cut
+                      </StatusPill>
+                    ) : locked ? (
                       <StatusPill tone="accent" size="sm" dot>
                         Locked
                       </StatusPill>

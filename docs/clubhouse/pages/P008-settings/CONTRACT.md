@@ -19,7 +19,7 @@ The page opens on Account, or on the section the address names, with a header (r
 | 80101 | — | `SETTINGS_READY` | Settings is open: a header naming the role, team and email, the rail of the sections this role has, and the opened section (Account by default) with its cards; the page needs no team. |
 | 80102 | — | `DEEP_LINK_OPENS_SECTION` | ?section=<id> opens that section, /golf/dashboard/settings/notifications opens Notifications and /golf/dashboard/settings/coaching-intelligence opens CoachHelm for a coach or Account for a player; choosing a section in the rail writes ?section= into the address. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -127,6 +127,10 @@ Every change has its own toast (80601 to 80624) naming what failed and why when 
 | 80634 | CH-8210 | `TEAM_MEMBERSHIP_DOESNT_LOAD` | Team membership doesn't load (player) |
 | 80635 | CH-8211 | `COACHHELM_SETTINGS_DONT_LOAD` | CoachHelm settings don't load (coach) |
 | 80636 | CH-8212 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
+| 80637 | CH-8026 | `APPROVING_AN_ASSISTANT_COACH_REQUEST_FAILS` | Approving an assistant coach request fails (head coach) |
+| 80638 | CH-8027 | `DECLINING_AN_ASSISTANT_COACH_REQUEST_FAILS` | Declining an assistant coach request fails (head coach) |
+| 80639 | CH-8028 | `MAKING_A_STAFF_INVITE_FAILS` | Making a staff invite fails (head coach) |
+| 80640 | CH-8213 | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | The assistant coach requests don't load (head coach) |
 
 ## 07 — Network / offline
 
@@ -157,7 +161,7 @@ Who may open it: a signed-in coach or player with the Clubhouse flag on (the she
 | 80807 | — | `PASSWORD_NEEDS_THE_CURRENT_ONE` | A new password is set only after the current password signs in; a wrong current password changes nothing and says 'Your current password is incorrect.' |
 | 80808 | — | `REFUSED_UPDATE_IS_A_FAILURE` | An update the database refuses by hiding the row (no error, no row changed) is a failure the person sees, not a save: profile, team details (the school, then the team), golf details and the coaching settings count the rows they change and fail with 'Nothing was saved. <what> was not found, or you are not allowed to change it.', which the toast shows as 'Your account doesn’t have access to do this.'; the card stays unsaved with its edits. Leaving a team already did this. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -286,7 +290,7 @@ Settings' own haptics (81701 to 81707) on the v2 grammar (D-70), with Discard ad
 | 81707 | CH-8707 | `TURNING_HAPTICS_BACK_ON` | Turning Haptics back on |
 | 81708 | — | `DISCARD_WARNS` | Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70). |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -304,7 +308,7 @@ Settings' own (81801 to 81807): the rail is a navigation with the open section m
 | 81806 | CH-8806 | `DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS` | Dialogs trap focus, Esc closes, focus returns to the button |
 | 81807 | CH-8807 | `EVERY_FIELD_HAS_A_LABEL_AND_ITS` | Every field has a label, and its help or error is read with it |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

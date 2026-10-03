@@ -152,6 +152,8 @@ const messageMenu = async (user: User, item: string) => {
 const setOnline = (v: boolean) => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => v });
 
 beforeEach(() => {
+  // Drafts persist per tab (F-12); each test starts with none.
+  sessionStorage.clear();
   // Desktop width: the newest thread opens beside the rail.
   window.matchMedia = ((q: string) => ({ matches: /min-width/.test(q), media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
   hapticSpy.mockClear();
@@ -210,16 +212,16 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7002', /Couldn't start the conversation/);
   });
 
-  it('CH-7004 CH-7005 71201 a send that throws keeps the draft; a network error says to check first', async () => {
+  it('CH-7004 CH-7005 71201 a send that throws points to its bubble (the box stays empty); a network error says to check first', async () => {
     const user = userEvent.setup();
     live.msgs.sendMessage.mockRejectedValueOnce(new Error('refused'));
     show();
     const box = await screen.findByRole('textbox', { name: /Message Varsity team/ });
     await user.type(box, 'Bring rain gear{Enter}');
     await expectCode('CH-7004', /Couldn't send the message/);
-    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Bring rain gear'));
+    expect((box as HTMLTextAreaElement).value).toBe('');
     live.msgs.sendMessage.mockRejectedValueOnce(new Error('network timeout'));
-    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await user.type(box, 'Bus at 6{Enter}');
     await expectCode('CH-7005', /Couldn't confirm this message sent/);
   });
 
@@ -310,6 +312,14 @@ describe('Messages · reads that fail', () => {
     live.msgs.error = new Error('boom');
     show();
     await expectCode('CH-7202', /This conversation didn't load/);
+  });
+
+  it('CH-7216 a conversation that fails to refresh keeps its messages and says they may be out of date', async () => {
+    live.msgs.error = new Error('boom');
+    show();
+    await expectCode('CH-7216', /This conversation may be out of date/);
+    expect(code('CH-7202')).toBeNull();
+    expect(code('CH-7304')).toBeNull();
   });
 
   it('CH-7203 71402 message search does not load, with Try again', async () => {
@@ -725,6 +735,15 @@ describe('Messages · phone', () => {
     expect(thread.hasAttribute('inert')).toBe(true);
   });
 
+  it('CH-7309 the phone with nothing at all yet is the first-run empty alone: no search or filter chips over nothing', async () => {
+    live.convs.conversations = [];
+    live.msgs.messages = [];
+    showPhone();
+    await expectCode('CH-7309', /No conversations yet/);
+    expect(screen.queryByRole('searchbox', { name: /Search conversations and messages/ })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Filter conversations' })).toBeNull();
+  });
+
   it('CH-7020 copying a message that cannot be copied says so', async () => {
     const user = userEvent.setup();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
@@ -788,7 +807,7 @@ describe('Messages · phone', () => {
     expect(within(playerNew).getByRole('button', { name: 'Next' })).toBeTruthy();
   });
 
-  it('CH-7004 the first message written in New message is sent when the thread opens, and a failure keeps it in the box', async () => {
+  it('CH-7004 the first message written in New message is sent when the thread opens, and a failure leaves it to its bubble', async () => {
     const user = userEvent.setup();
     live.msgs.sendMessage.mockRejectedValueOnce(new Error('refused'));
     live.convs.conversations = [team, { id: 'dm-jonah', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' }];
@@ -801,7 +820,7 @@ describe('Messages · phone', () => {
     await expectCode('CH-7004', /Couldn't send the message/);
     expect(live.msgs.sendMessage).toHaveBeenCalledWith('5 works. Bay 4.');
     const box = await screen.findByRole('textbox', { name: /Message Jonah/ });
-    expect((box as HTMLTextAreaElement).value).toBe('5 works. Bay 4.');
+    expect((box as HTMLTextAreaElement).value).toBe('');
   });
 
   describe('attach in New message (clickables 14)', () => {

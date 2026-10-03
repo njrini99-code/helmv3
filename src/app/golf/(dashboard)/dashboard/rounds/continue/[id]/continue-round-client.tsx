@@ -102,6 +102,7 @@ export default function ContinueRoundClient({
     handleSubmitRetry,
     handleSubmitSaveAndExit,
     handleSubmitDiscard,
+    restoreEpoch,
   } = useContinueRoundSession({ ...session, ports: { showToast } });
   // Submitting overlay stats (computed once, used by overlay)
   const submittingDefinedStats = completedHoleStats.filter((h): h is HoleStats => h != null);
@@ -196,6 +197,8 @@ export default function ContinueRoundClient({
       {/* Shot Tracking — presentation only, no mutation/autosave logic moves. */}
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayShotTracking
+          // Restore on the same hole must remount the tracker so it re-reads the restored shots (swap audit R-2).
+          key={restoreEpoch}
           safeAreaHandledAbove
           statusSlot={
             pendingFinalStats && !showFinishConfirm && !submitting && (

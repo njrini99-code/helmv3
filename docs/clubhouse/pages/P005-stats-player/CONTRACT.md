@@ -8,6 +8,18 @@ Status: DEFINED
 
 A profile opens on Overview, or the tab the address names, for the window the address names, with who and the four hero figures already in the server's first render (50101). The address is read for its tab and window (50102): ?tab=overview, game, rounds or dev, and ?window=season or qualifiers, anything else opening Overview and Last 10 (D-53; Roster's All N is `window=season&tab=rounds`). A coach pages through the team with Previous player and Next player (50103) and Message opens the player's direct thread (50104). A player's own address is /golf/dashboard/stats with no ?player=.
 
+Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
+
+- Last 10 is the player's ten newest countable rounds in any season, read
+  from a rolling 12 months back, with "vs. previous 10" the ten before them.
+  Season and Qualifiers are this season only.
+- A round posted as a total only (18 holes, no nines, no holes) counts in the
+  scores (average, to par, trend, form, the Rounds table, the personal best
+  score) and in no hole-level figure (strokes gained, GIR, fairways, putts,
+  scrambling, scoring by par, putting). A card or section whose round count is
+  fewer than the window's says "Hole stats from X of Y rounds". A window of
+  totals only has no shot-by-shot rounds (CH-5301), never a failed read.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 50101 | — | `PROFILE_READY` | A profile opens on Overview for the window in the address: who (name, status, class, hometown), four hero figures, the four sections (Overview, Game detail, Rounds, Development) and the comparison table; a coach also gets Message, Add focus area, a way back to Team stats and the previous/next pager; on the phone, the phone profile. |
@@ -15,7 +27,7 @@ A profile opens on Overview, or the tab the address names, for the window the ad
 | 50103 | — | `COACH_PAGES_THROUGH_THE_TEAM` | A coach pages through the active team ordered by scoring average with Previous player and Next player (N of M), wrapping from the last player to the first, and each link keeps the window. |
 | 50104 | — | `MESSAGE_OPENS_THE_PLAYERS_THREAD` | A coach's Message on a profile (the desktop button, the phone header icon) opens Messages on the direct thread with that player (?player=<golf_players.id>); a player's own profile has no Message. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -108,6 +120,7 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50615 | CH-5210 | `THE_APPROACH_SHOT_READ_FAILS` | The approach-shot read fails |
 | 50616 | CH-5211 | `THE_PUTT_READ_FAILS` | The putt read fails |
 | 50617 | CH-5212 | `THE_SPRAY_READ_THROWS` | The spray read throws |
+| 50618 | CH-5213 | `THE_ROUND_CACHE_DOESNT_LOAD` | The round cache doesn't load |
 
 ## 07 — Network / offline
 
@@ -119,6 +132,7 @@ Changing the window while offline is refused before anything is requested, and a
 | --- | --- | --- | --- |
 | 50701 | CH-5901 | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
 | 50702 | CH-5902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
+| 50703 | CH-5903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -144,7 +158,7 @@ A player may open only their own stats, and a coach the team and any player on i
 | 50805 | — | `SERVER_REFUSAL_IS_NOT_ZEROS` | Shot-level detail is read through getDetailedStats for the profile's own player id, which answers empty to a caller who is neither the player nor their coach; empty detail for a window that has rounds shows as Shot-level detail didn't load, never as zeros. |
 | 50806 | — | `ONLY_A_COACH_PROPOSES_FOCUS_AREAS` | The Add focus area buttons and sheet exist only for a coach viewing a profile (the route hands a coach id only to a coach); a player's profile never offers them. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -226,7 +240,7 @@ The profile's own haptics (51701, 51702) on the v2 grammar (D-70): a selection t
 | 51702 | CH-5702 | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | Proposing a focus area with no name |
 | 51703 | CH-5703 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -246,7 +260,7 @@ The profile's own (51801 to 51807): real tabs with their panels, "Stats › name
 | 51808 | CH-5808 | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
 | 51809 | CH-5809 | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

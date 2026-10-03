@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { ToastProvider, useToast } from '../ui/Toast';
 
@@ -46,5 +46,26 @@ describe('ToastProvider timers', () => {
     expect(vi.getTimerCount()).toBeGreaterThan(0);
     unmount();
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('a new scope (a team switch) clears the old stack; the same scope keeps it', async () => {
+    const { rerender } = render(
+      <ToastProvider scope="t-men">
+        <Fire />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Saved')).toBeTruthy();
+    rerender(
+      <ToastProvider scope="t-men">
+        <Fire />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Saved')).toBeTruthy();
+    rerender(
+      <ToastProvider scope="t-women">
+        <Fire />
+      </ToastProvider>,
+    );
+    await waitFor(() => expect(screen.queryByText('Saved')).toBeNull());
   });
 });

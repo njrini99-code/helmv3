@@ -75,9 +75,14 @@ export interface ChHubTrip {
   departDate: string | null;
   /** "Mon 12:00 PM" */
   depart: string | null;
+  /** The departure time as saved (HH:MM), for Edit; `depart` is the same time in words. */
+  departTime: string | null;
   from: string | null;
   /** "Wed · 5:00 PM" */
   back: string | null;
+  /** The return day (YYYY-MM-DD) and time (HH:MM) as saved, for Edit; `back` is the same in words. */
+  returnDate: string | null;
+  returnTime: string | null;
   hotel: string | null;
   transport: string | null;
   notes: string | null;
@@ -159,13 +164,19 @@ export interface ChTeamHub {
    * Coach: the team's upcoming calendar events a trip can be planned for (the trip builder's Event step), with who is
    * invited (its travelers). `invited` is null when attendance didn't load. Empty for a player.
    */
-  tripEvents: { rows: ChHubTripEvent[]; error: boolean };
+  tripEvents: { rows: ChHubTripEvent[]; error: boolean; /** How many there are when more than `rows` (the read is capped). */ total?: number | null };
   announcements: { rows: ChHubAnnouncement[]; error: boolean };
   trips: { rows: ChHubTrip[]; error: boolean };
-  tasks: { rows: ChHubTask[]; error: boolean };
+  tasks: { rows: ChHubTask[]; error: boolean; /** How many there are when more than `rows` (the read is capped). */ total?: number | null };
   documents: { folders: Array<{ name: string; files: ChHubFile[] }>; error: boolean };
   updates: { rows: ChHubUpdate[]; error: boolean };
 }
+
+/** The coach's task list and the trip builder's events are capped reads; each section says how many there are in all. */
+export const HUB_TASK_CAP = 100;
+export const HUB_TRIP_EVENT_CAP = 40;
+/** Event types a team doesn't plan a trip for. */
+const NOT_TRAVELED_FOR = ['practice', 'meeting'];
 
 function log(read: string, error: unknown) {
   chLogServer('hub', read, error);
@@ -275,7 +286,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
             eventId: e.event_id,
             title: e.title,
             ...f.day(e.start_time),
-            meta: [f.time(e.start_time), e.location].filter(Boolean).join(' · '),
+            meta: [closed.allDay.has(e.event_id) ? 'All day' : f.time(e.start_time), e.location].filter(Boolean).join(' · '),
             mandatory: e.is_mandatory,
             mine: (e.rsvp_status ?? 'pending') as ChRsvp,
             counts: null,
@@ -287,7 +298,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         rows: summary
           ? summary.trips.map((t) => {
               const eventId = (t as { event_id?: string | null }).event_id ?? null;
-              return trip({ ...(t as unknown as TripRow), event_id: eventId }, f, today, { travelers: null, count: null, mine: eventId ? invited.has(eventId) : null });
+              return trip({ ...(t as unknown as TripRow), event_id: eventId }, f, today, { travelers: null, count: null, mine: eventId && invited ? invited.has(eventId) : null });
             })
           : [],
         error: !summary,
@@ -312,10 +323,18 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const [annRes, tripsRes, tasksRes, eventsRes, tripEventsRes] = await Promise.all([
     getAnnouncementsWithMeta(input.teamId, input.userId, true).catch(() => ({ success: false as const, error: 'failed' })),
     supabase.from('golf_travel_itineraries').select(TRIP_COLUMNS).eq('team_id', input.teamId).gte('departure_date', addDays(today, -60)).order('departure_date', { ascending: true }).limit(50),
-    supabase.from('golf_tasks').select('id, title, description, due_date, category, status').eq('team_id', input.teamId).is('parent_task_id', null).order('due_date', { ascending: true, nullsFirst: false }).limit(100),
+    // Capped (C-20): the latest due and the undated are kept, so the cap drops the oldest, not this week's; the section
+    // says how many there are in all.
+    supabase
+      .from('golf_tasks')
+      .select('id, title, description, due_date, category, status', { count: 'exact' })
+      .eq('team_id', input.teamId)
+      .is('parent_task_id', null)
+      .order('due_date', { ascending: false, nullsFirst: true })
+      .limit(HUB_TASK_CAP),
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, location')
+      .select('id, title, event_type, start_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
@@ -323,17 +342,18 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       .lt('start_time', `${weekEnd}T23:59:59Z`)
       .order('start_time', { ascending: true })
       .limit(50),
-    // The trip builder's Event step: the next four months of events a team travels for (not classes or busy time).
+    // The trip builder's Event step: the next four months of events a team travels for. Classes, practices and
+    // meetings are left out (C-20): a season's practices filled the cap before the tournaments were reached.
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, end_time, all_day, location')
+      .select('id, title, event_type, start_time, end_time, all_day, location', { count: 'exact' })
       .eq('team_id', input.teamId)
-      .neq('event_type', CLASS_EVENT_TYPE)
+      .not('event_type', 'in', `(${[CLASS_EVENT_TYPE, ...NOT_TRAVELED_FOR].join(',')})`)
       .is('cancelled_at', null)
       .gte('start_time', now.toISOString())
       .lt('start_time', `${addDays(today, 120)}T23:59:59Z`)
       .order('start_time', { ascending: true })
-      .limit(40),
+      .limit(HUB_TRIP_EVENT_CAP),
   ]);
   if (tripEventsRes.error) log('tripEvents', tripEventsRes.error);
   if (!annRes.success) log('announcements', 'error' in annRes ? annRes.error : 'failed');
@@ -342,7 +362,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   if (eventsRes.error) log('events', eventsRes.error);
 
   const trips = (tripsRes.data ?? []) as unknown as TripRow[];
-  const tasks = tasksRes.data ?? [];
+  // Shown soonest due first, the undated last.
+  const tasks = (tasksRes.data ?? []).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
   const events = eventsRes.data ?? [];
   const tripEvents = tripEventsRes.data ?? [];
   // One attendance read for this week's events, the trips' events and the builder's events; one for task completion.
@@ -362,7 +383,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           eventId: e.id,
           title: e.title,
           ...f.day(e.start_time),
-          meta: [f.time(e.start_time), e.location].filter(Boolean).join(' · '),
+          // An all-day event has no clock time: its midnight start read "12:00 AM" (swap audit F-53).
+          meta: [e.all_day ? 'All day' : f.time(e.start_time), e.location].filter(Boolean).join(' · '),
           // golf_events has no mandatory column (get_player_hub_events returns FALSE too); Q-71.
           mandatory: false,
           mine: null,
@@ -386,6 +408,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         };
       }),
       error: !!tripEventsRes.error,
+      total: tripEventsRes.count ?? null,
     },
     trips: {
       rows: trips.map((t) => {
@@ -409,6 +432,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         };
       }),
       error: !!tasksRes.error,
+      total: tasksRes.count ?? null,
     },
   };
 }
@@ -429,10 +453,14 @@ export async function attendanceFor(supabase: Awaited<ReturnType<typeof createCl
   return { byEvent, error: false };
 }
 
-async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], playerId: string): Promise<Set<string>> {
+/** The trips' events the player is invited to, or null when the read failed: unknown, never "Not traveling" (C-19). */
+async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], playerId: string): Promise<Set<string> | null> {
   if (!eventIds.length) return new Set();
   const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', eventIds).eq('player_id', playerId);
-  if (error) log('tripInvites', error);
+  if (error) {
+    log('tripInvites', error);
+    return null;
+  }
   return new Set((data ?? []).map((r) => r.event_id));
 }
 
@@ -447,16 +475,22 @@ export function replyIsClosed(e: { status: string | null; cancelled_at: string |
   return !!e.rsvp_deadline && new Date(e.rsvp_deadline).getTime() < nowMs;
 }
 
-/** Which of these events no longer take a reply. A read that fails closes nothing: the row stays and the server still decides. */
-async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], nowMs: number): Promise<Set<string>> {
-  const closed = new Set<string>();
+/**
+ * Which of these events no longer take a reply, and which are all day (the hub summary carries no all_day, F-53).
+ * A read that fails closes nothing: the row stays and the server still decides.
+ */
+async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], nowMs: number): Promise<Set<string> & { allDay: Set<string> }> {
+  const closed = Object.assign(new Set<string>(), { allDay: new Set<string>() });
   for (const ids of chunkIds([...new Set(eventIds)])) {
     const { data, error } = await supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline').in('id', ids);
     if (error) {
       log('eventReplyRules', error);
       continue;
     }
-    for (const e of data ?? []) if (replyIsClosed(e, nowMs)) closed.add(e.id);
+    for (const e of data ?? []) {
+      if (replyIsClosed(e, nowMs)) closed.add(e.id);
+      if (e.all_day) closed.allDay.add(e.id);
+    }
   }
   return closed;
 }
@@ -513,7 +547,7 @@ function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: stri
   };
 }
 
-function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: { travelers: string[] | null; ids?: string[] | null; count: number | null; mine: boolean | null }): ChHubTrip {
+export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: { travelers: string[] | null; ids?: string[] | null; count: number | null; mine: boolean | null }): ChHubTrip {
   const gear = Array.isArray(t.gear_list) ? t.gear_list.join(', ') : t.gear_list;
   return {
     id: t.id,
@@ -522,8 +556,12 @@ function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: 
     dates: f.range(t.departure_date, t.return_date),
     departDate: t.departure_date,
     depart: t.departure_date ? [f.wd(t.departure_date), t.departure_time ? f.clock(t.departure_time) : null].filter(Boolean).join(' ') : null,
+    // `time` columns come back as HH:MM:SS; the time field takes HH:MM.
+    departTime: t.departure_time ? t.departure_time.slice(0, 5) : null,
     from: t.departure_location,
     back: t.return_date ? [f.wd(t.return_date), t.return_time ? f.clock(t.return_time) : null].filter(Boolean).join(' · ') : null,
+    returnDate: t.return_date,
+    returnTime: t.return_time ? t.return_time.slice(0, 5) : null,
     hotel: t.hotel_name,
     transport: t.transportation_type,
     notes: t.notes,

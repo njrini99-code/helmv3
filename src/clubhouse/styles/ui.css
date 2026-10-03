@@ -152,7 +152,7 @@
   color: var(--ch-av-fg);
   font: 600 calc(var(--ch-av-size, 32px) * 0.34) / 1 var(--ch-font-sans);
   letter-spacing: 0.04em;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 0 0 2px var(--ch-bg-surface), inset 0 0 0 2.75px var(--ch-av-ring);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), 0 0 0 1px var(--ch-av-ring), 0 1px 2px rgb(28 25 18 / 0.14);
 }
 .ch-avatar[data-tone='stone'] {
   --ch-av-bg: #e5e2db;
@@ -180,6 +180,11 @@
     --ch-av-bg: var(--ch-avatar-neutral-bg);
     --ch-av-fg: var(--ch-avatar-neutral-fg);
     --ch-av-ring: var(--ch-avatar-neutral-ring);
+  }
+  /* The phone's 12px text floor (Q-141): a thread's 30px coin drew its initials at 10.2px (34% of the size). A coin too
+     small to hold 12px takes 42% of its size instead. Aesthetic audit M-T1. */
+  .ch-avatar {
+    font-size: max(calc(var(--ch-av-size, 32px) * 0.34), min(12px, calc(var(--ch-av-size, 32px) * 0.42)));
   }
 }
 .ch-avatar--ring {
@@ -443,21 +448,12 @@
   box-shadow: inset 0 1px 3px rgb(28 25 18 / 0.09), inset 0 0 0 1px rgb(28 25 18 / 0.05), 0 1px 0 rgb(255 255 255 / 0.7);
 }
 
-/* Popover panel (design system: overlays/PopoverPanel, strong glass) */
+/* Popover panel: an overlay over content, opaque (owner 2026-10-01: glass only on the floating navigation). */
 .ch-popover {
   padding: 5px;
   border-radius: 14px;
-  background: rgb(250 248 242 / 0.82);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 8px 16px -6px rgb(28 25 18 / 0.12), 0 24px 48px -16px rgb(28 25 18 / 0.28);
-}
-@media (prefers-reduced-transparency: reduce) {
-  .ch-popover {
-    background: #faf8f2;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+  background: #faf8f2;
+  box-shadow: var(--ch-elevation-overlay);
 }
 .ch-popover__label {
   padding: 8px 10px 6px;
@@ -516,4 +512,15 @@
 }
 .ch-nine b {
   font: 600 14px/1 var(--ch-font-sans);
+}
+
+/* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
+   under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+@media (max-width: 820px) {
+  .ch-badge,
+  .ch-score--sm,
+  .ch-nine thead th {
+    font-size: 12px;
+  }
 }

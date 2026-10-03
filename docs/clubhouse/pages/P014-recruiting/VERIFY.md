@@ -152,6 +152,13 @@ that doc (taken out: it says "the Clubhouse flag"); and the document inventory, 
 needed regenerating for the new docs and the registry entry (`knowledge:doc-inventory`, `knowledge:feature-map`,
 `knowledge:world-model`, committed separately from the feature).
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+
 ## Open verification gaps
 
 - `npm run build` was not run: it writes the `.next` folder the shared dev server reads, and the feature registry

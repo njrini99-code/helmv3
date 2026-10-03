@@ -5,9 +5,9 @@ import type { Transition } from 'framer-motion';
  * mirrored from the tokens:
  *   press 110ms, quick 180ms (hover, toggles, the tab underline), base 260ms
  *   (sheets, panels, pushes, crossfades), release 280ms on the spring,
- *   reveal 520ms (first paint only, in CSS: `.ch-reveal`).
+ *   reveal 520ms (a single deliberate rise; the routine staggered page reveal was retired 2026-10-01).
  *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1), spring (.34,1.3,.64,1).
- * Banned: count-ups, and any stagger other than the first-paint reveal.
+ * Banned: count-ups and staggers.
  */
 export const CH_EASE = [0.22, 1, 0.36, 1] as const;
 export const CH_EASE_IO = [0.65, 0, 0.35, 1] as const;
@@ -33,7 +33,7 @@ export const CH_ROUTE = {
   transition: chTween('base'),
 } as const;
 
-/** Popovers and menus: scale from the anchor edge. */
+/** Popovers and menus: scale from the anchor edge (CH-1603). */
 export const CH_POP = {
   initial: { opacity: 0, scale: 0.97, y: -4 },
   animate: { opacity: 1, scale: 1, y: 0 },

@@ -1,4 +1,4 @@
-import { isCountableRound } from '@/lib/golf/round-countable';
+import { isScoreCountable } from './round-scope';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
 /**
@@ -29,7 +29,7 @@ export interface ChLibraryRound {
   fairways: { hit: number; of: number } | null;
   greens: { hit: number; of: number } | null;
   putts: number | null;
-  /** Counts toward averages (isCountableRound). */
+  /** Counts toward the score figures (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123). */
   countable: boolean;
 }
 
@@ -50,6 +50,13 @@ export interface ChUnfinishedRound {
   nextHole: number | null;
   /** Every hole already has a score: the round only needs submitting (legacy R8). */
   readyToSubmit: boolean;
+  /**
+   * The holes read failed: `played`, `toParThru` and the strip say nothing about the holes (they are not "none scored"), and the
+   * card says the scores didn't load. `nextHole` is then the round's saved current hole.
+   */
+  holesError?: boolean;
+  /** Every hole is scored but the posted rounds didn't load, so "already submitted" can't be judged: Submit is not offered on this card. */
+  submitUnchecked?: boolean;
 }
 
 export interface ChRoundsSeason {
@@ -69,7 +76,11 @@ export interface ChRoundsSeason {
 
 export interface ChRoundsLibrary {
   todayIso: string;
-  rounds: { list: ChLibraryRound[]; error: boolean };
+  /**
+   * `unscored`: completed rounds with no score at all (no total and no nines), which the list can't draw. They never counted in a
+   * figure (no total is never countable), and the page says how many are left out instead of hiding them. Absent when none.
+   */
+  rounds: { list: ChLibraryRound[]; error: boolean; unscored?: number };
   season: ChRoundsSeason;
   unfinished: { list: ChUnfinishedRound[]; error: boolean };
 }
@@ -146,11 +157,11 @@ export function toLibraryRound(raw: ChRoundListRow): ChLibraryRound | null {
     fairways: r.total_fairways ? { hit: r.total_fairways_hit ?? 0, of: r.total_fairways } : null,
     greens: r.total_gir_possible ? { hit: r.total_gir ?? 0, of: r.total_gir_possible } : null,
     putts: r.total_putts,
-    countable: isCountableRound(r),
+    countable: isScoreCountable(r),
   };
 }
 
-/** The season figures from the listed rounds: countable, 18 holes, since `since`. */
+/** The season figures from the listed rounds: countable (a total-only round included, Q-123: a score), 18 holes, since `since`. */
 export function seasonFrom(list: ChLibraryRound[], since: string): ChRoundsSeason {
   const s = list.filter((r) => r.countable && r.holes === 18 && r.date >= since);
   const nums = (pick: (r: ChLibraryRound) => number | null) => s.map(pick).filter((v): v is number => v != null);

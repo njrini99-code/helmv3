@@ -23,16 +23,32 @@ const REPLIES: Array<[Exclude<ChRsvp, 'pending'>, string]> = [
   ['declined', 'Can’t'],
 ];
 
+/** The phone's reply line names only what is there ("4 going · 1 no reply", the board's); desktop spells out every count. */
+function repliesLine(c: { going: number; maybe: number; no: number; none: number }, compact: boolean): string {
+  if (!compact) return `${c.going} going · ${c.maybe} maybe · ${c.no} can’t · ${c.none} no reply`;
+  const terms = [
+    [c.going, 'going'],
+    [c.maybe, 'maybe'],
+    [c.no, 'can’t'],
+    [c.none, 'no reply'],
+  ] as const;
+  const said = terms.filter(([n]) => n > 0).map(([n, label]) => `${n} ${label}`);
+  return said.length ? said.join(' · ') : 'No one invited yet';
+}
+
 export function Rsvps({
   role,
   data,
   replies,
   onReply,
+  compact = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['rsvps'];
   replies: Map<string, ChRsvp>;
   onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => void;
+  /** The phone build: a reply line that leaves out the counts that are zero. */
+  compact?: boolean;
 }) {
   const coach = role === 'coach';
   const mine = (r: ChHubRsvp) => replies.get(r.eventId) ?? r.mine ?? 'pending';
@@ -80,12 +96,11 @@ export function Rsvps({
               {coach ? (
                 r.counts ? (
                   <span className="ch-hb-rsvp__c">
-                    <span className="ch-hb-rsvp__bar" aria-hidden="true">
+                    {/* No bar over nothing: with no one invited it was an empty grey track (F-53). */}
+                    {r.counts.going + r.counts.maybe + r.counts.no + r.counts.none > 0 && <span className="ch-hb-rsvp__bar" aria-hidden="true">
                       {(['going', 'maybe', 'no', 'none'] as const).map((k) => (r.counts![k] ? <i key={k} className={`is-${k}`} style={{ flex: r.counts![k] }} /> : null))}
-                    </span>
-                    <em className="ch-num">
-                      {r.counts.going} going · {r.counts.maybe} maybe · {r.counts.no} can’t · {r.counts.none} no reply
-                    </em>
+                    </span>}
+                    <em className="ch-num">{repliesLine(r.counts, compact)}</em>
                   </span>
                 ) : (
                   <span className="ch-hb-muted">Replies didn’t load</span>
@@ -182,7 +197,24 @@ export function Announcement({
 const TRANSPORT: Record<string, string> = { bus: 'Bus', van: 'Van', flight: 'Flight', carpool: 'Carpool' };
 
 /** The trip as a boarding pass (typographic: the owner rejected imagery, so no course photo). */
-export function TripPass({ t, big = false, role }: { t: ChHubTrip; big?: boolean; role: ChTeamHub['role'] }) {
+export function TripPass({
+  t,
+  big = false,
+  later = false,
+  role,
+  onEdit,
+  onDelete,
+}: {
+  t: ChHubTrip;
+  big?: boolean;
+  /** A trip after the next one: it is a trip, not "Next trip". */
+  later?: boolean;
+  role: ChTeamHub['role'];
+  /** A coach's Edit and Delete; a player's pass has neither. */
+  onEdit?: (t: ChHubTrip) => void;
+  onDelete?: (t: ChHubTrip) => void;
+}) {
+  const manage = role === 'coach' && (onEdit || onDelete);
   const plan = [
     t.depart && ([t.depart, `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
     t.hotel && (['Stay', t.hotel] as const),
@@ -191,10 +223,27 @@ export function TripPass({ t, big = false, role }: { t: ChHubTrip; big?: boolean
   return (
     <article className={'ch-hb-pass' + (big ? ' is-big' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
-        <span className="ch-hb-eyebrow ch-num">
-          <Icon icon={t.transport === 'flight' ? Plane : Bus} size={13} />
-          {t.upcoming ? 'Next trip' : 'Trip'} · {t.dates}
-        </span>
+        <div className="ch-hb-pass__top">
+          <span className="ch-hb-eyebrow ch-num">
+            <Icon icon={t.transport === 'flight' ? Plane : Bus} size={13} />
+            {t.upcoming && !later ? 'Next trip' : 'Trip'} · {t.dates}
+          </span>
+          {manage && (
+            <Menu
+              label={`More for ${t.name}`}
+              align="end"
+              items={[
+                ...(onEdit ? [{ label: 'Edit trip', icon: Pencil, onSelect: () => onEdit(t) }] : []),
+                ...(onDelete ? [{ label: 'Delete trip', icon: Trash2, danger: true, onSelect: () => onDelete(t) }] : []),
+              ]}
+              trigger={(p) => (
+                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
+                  <Icon icon={MoreHorizontal} size={16} />
+                </button>
+              )}
+            />
+          )}
+        </div>
         <b id={`ch-hb-trip-${t.id}`}>{t.name}</b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
         <dl className="ch-hb-pass__f">
@@ -366,6 +415,12 @@ export function Tasks({
               </div>
             );
           })}
+          {data.total != null && data.total > data.rows.length && (
+            // C-20: the list is capped; it says so rather than passing for every task.
+            <p className="ch-hb-muted ch-num">
+              Showing the {data.rows.length} latest due of {data.total} tasks.
+            </p>
+          )}
         </div>
       )}
     </section>

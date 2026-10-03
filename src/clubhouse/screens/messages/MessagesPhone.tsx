@@ -25,7 +25,6 @@ import {
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -76,6 +75,7 @@ import {
   personOf,
   type ChMessagesApi,
 } from "./MessagesView";
+import { useThreadAnchor } from "./use-thread-anchor";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
@@ -208,29 +208,34 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   ];
   return (
     <div className="ch-msp-page">
-      <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
-      <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
-        {(
-          [
-            ["all", "All"],
-            ["unread", `Unread · ${unread}`],
-            ["groups", "Groups"],
-          ] as Array<[ChConvFilter, string]>
-        ).map(([k, l]) => (
-          <button
-            key={k}
-            type="button"
-            className="ch-msp-chip ch-num"
-            aria-pressed={filter === k}
-            onClick={() => {
-              if (filter !== k) haptic("select");
-              setFilter(k);
-            }}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
+      {/* With nothing to search or filter the page is the first-run empty alone (board: Empty state), not controls over nothing. */}
+      {!isMessagesFirstRun(api) && (
+        <>
+          <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
+          <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
+            {(
+              [
+                ["all", "All"],
+                ["unread", `Unread · ${unread}`],
+                ["groups", "Groups"],
+              ] as Array<[ChConvFilter, string]>
+            ).map(([k, l]) => (
+              <button
+                key={k}
+                type="button"
+                className="ch-msp-chip ch-num"
+                aria-pressed={filter === k}
+                onClick={() => {
+                  if (filter !== k) haptic("select");
+                  setFilter(k);
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {api.convsError ? (
         <InlineNotice
           code="CH-7201"
@@ -238,7 +243,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           body="Your messages are safe. Try again; the error has been reported."
           onRetry={api.refetchConvs}
         />
-      ) : api.convsLoading && !api.convs.length ? (
+      ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
         <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
           {Array.from({ length: 5 }, (_, i) => (
             <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
@@ -326,10 +331,8 @@ function PhoneThread({
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
-  useLayoutEffect(() => {
-    const s = scroller.current;
-    if (s) s.scrollTop = s.scrollHeight;
-  }, [conv.id, api.msgs.length, api.typing]);
+  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
+  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
   useEffect(() => {
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
@@ -366,6 +369,14 @@ function PhoneThread({
       <SectionBoundary surface="messages.thread" label="This conversation" code="CH-7212">
         <div className="ch-msp-scroll ch-ms-scroll" ref={scroller} aria-live="polite" aria-relevant="additions">
           <div className="ch-ms-msgs">
+            {api.msgsStale && (
+              <InlineNotice
+                code="CH-7216"
+                title="This conversation may be out of date."
+                body="It didn't refresh. What's here is what was last loaded. Try again; the error has been reported."
+                onRetry={api.refetchMsgs}
+              />
+            )}
             {api.msgsError ? (
               <InlineNotice
                 code="CH-7202"
@@ -423,6 +434,11 @@ function PhoneThread({
           </div>
         </div>
       </SectionBoundary>
+      {anchor.unseen > 0 && (
+        <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
+          {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
+        </button>
+      )}
       <Composer
         key={conv.id}
         api={api}

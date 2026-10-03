@@ -135,6 +135,9 @@ const SOURCE_INSIGHT_ROW = {
  */
 function makeTables() {
   return {
+    // acceptFocusArea resolves the CALLER's own player row (C-11) so only the
+    // player a prescription belongs to can answer it.
+    golf_players: [{ id: PLAYER_ID, user_id: PLAYER_USER_ID }],
     golf_team_members: [{ player_id: PLAYER_ID, team_id: TEAM_ID, status: 'active' }],
     golf_team_coach_staff: [{ team_id: TEAM_ID, coach_id: COACH_ID }],
     golf_coach_insights: [SOURCE_INSIGHT_ROW],

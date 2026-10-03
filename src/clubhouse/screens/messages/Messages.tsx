@@ -29,6 +29,7 @@ import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-act
 import { haptic } from '../../lib/haptics';
 import type { ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
+import { DraftStore } from './drafts';
 import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
@@ -53,8 +54,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
   const handledParams = useRef(false);
-  /** Unsent drafts by conversation, so switching threads never loses what was written (71202). */
-  const drafts = useRef(new Map<string, string>());
+  /** Unsent drafts by conversation, so switching threads (71202) or reloading (F-12) never loses what was written. */
+  const [drafts] = useState<Map<string, string>>(() => new DraftStore(data.viewerUserId));
   const [paramsDone, setParamsDone] = useState(false);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
@@ -140,6 +141,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const fail = useCallback(
     (surface: string, err: unknown, title: string, hint: string, code: string) => {
       chReport(err, { surface: `messages.${surface}`, action: `messages.${surface}` });
+      // CH-7701: a change that fails gives the error pattern; CH-7702: one that lands, the success pattern (each write below).
       haptic('error');
       const reason = err instanceof Error ? friendlyReason(err.message) : null;
       toast({ tone: 'error', title, body: reason ?? hint, code });
@@ -291,6 +293,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
   // Announcements: the team feed, pinned above conversations.
   const [anns, setAnns] = useState<ChAnnouncement[]>([]);
   const [annError, setAnnError] = useState(false);
+  // Announcements sit above the conversations: until their first read answers, the inbox keeps its skeleton.
+  const [annLoaded, setAnnLoaded] = useState(false);
   const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
   const loadAnns = useCallback(async () => {
     try {
@@ -316,6 +320,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     } catch (err) {
       chReport(err, { surface: 'messages.announcements', severity: 'low' });
       setAnnError(true);
+    } finally {
+      setAnnLoaded(true);
     }
   }, [data.teamId, data.viewerUserId, data.role, data.viewerPlayerId]);
   useEffect(() => {
@@ -447,12 +453,14 @@ export function Messages({ data }: { data: ChMessagesData }) {
     convsLoading: loading,
     convsError: !!error && !conversations.length,
     refetchConvs: () => void refetch(),
-    drafts: drafts.current,
+    drafts,
     selectedId,
     select,
     msgs: chMsgs,
     msgsLoading: msgs.loading,
     msgsError: !!msgs.error && !chMsgs.length,
+    // The read failed but an earlier copy is on screen: it stays, marked as possibly out of date (PAGE_PERFORMANCE.md rule 4).
+    msgsStale: !!msgs.error && chMsgs.length > 0,
     refetchMsgs: () => void msgs.refetch(),
     typing: msgs.isOtherTyping,
     onTyping: (on) => msgs.sendTypingStatus(on),
@@ -463,7 +471,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return true;
       } catch (err) {
         const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
-        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'Check the thread before sending again.' : 'Your message is still in the box. Try again.', unknown ? 'CH-7005' : 'CH-7004');
+        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'It is in the thread: check it, then Retry from there if it did not arrive.' : 'It is in the thread, marked Not sent. Retry from there.', unknown ? 'CH-7005' : 'CH-7004');
         return false;
       }
     },
@@ -515,9 +523,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
     reactions: reactionMap,
     react: (messageId, key, active) => {
       const emoji = EMOJI_BY_KEY[key];
-      if (!emoji) return;
+      // The hook takes one reaction at a time; a tap while one is saving is dropped, not reported as a failure.
+      if (!emoji || reactions.pending) return;
       void attempt('react', { failed: "Couldn't save the reaction", hint: 'Try again in a moment.', code: 'CH-7009' }, async () => {
-        await reactions.setReaction(messageId, emoji, active);
+        // setReaction answers false (session gone, write refused) and never throws: that is a failure too.
+        if ((await reactions.setReaction(messageId, emoji, active)) === false) throw new Error('Reaction was not saved');
       });
     },
     attachments: loadAttachments,
@@ -571,6 +581,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     },
 
     announcements: anns,
+    annLoading: !annLoaded,
     annError,
     refetchAnns: () => void loadAnns(),
     selectedAnnId,

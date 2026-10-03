@@ -6,7 +6,7 @@ import type { ChPlayerHelm, ChProposal } from '../../data/coachhelm-shape';
 import { normalise, useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
-import { InlineNotice } from '../../ui/Notices';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import type { ChPlayerWrites } from './writes';
 
@@ -80,9 +80,9 @@ function ProposalSection({ list, writes }: { list: ChProposal[]; writes: ChPlaye
  * The focus areas a coach proposed to this player, above their insights (Q-77). A read that failed is its own notice (CH-13205),
  * never "nothing proposed"; with nothing proposed there is no section. A section that crashes is contained (CH-13204).
  */
-export function Proposals({ proposals, writes, onRetry }: { proposals: ChPlayerHelm['proposals']; writes: ChPlayerWrites; onRetry: () => void }) {
+export function Proposals({ proposals, writes }: { proposals: ChPlayerHelm['proposals']; writes: ChPlayerWrites }) {
   if (proposals.error) {
-    return <InlineNotice code="CH-13205" title="Your proposed focus areas didn’t load" body="Nothing is lost. Anything your coach proposed is still waiting for you; try again in a moment." onRetry={onRetry} />;
+    return <RefreshNotice code="CH-13205" title="Your proposed focus areas didn’t load" body="Nothing is lost. Anything your coach proposed is still waiting for you; try again in a moment." />;
   }
   if (proposals.list.length === 0) return null;
   return (

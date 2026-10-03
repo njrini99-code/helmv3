@@ -29,7 +29,7 @@ Every screen opens final on first paint, read on the server in one pass. The lis
 | 90106 | — | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | /my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there). |
 | 90107 | — | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -44,6 +44,8 @@ Three route skeletons in the page's own shapes: the list (90201: head, tools, he
 | 90203 | CH-09403 | `THE_FORM_IS_LOADING` | The form is loading |
 | 90204 | CH-09407 | `COURSES_OR_TEES_ARE_LOADING_IN_THE` | Courses or tees are loading in the picker |
 | 90205 | CH-09408 | `A_SELECTION_WRITE_IS_IN_FLIGHT` | A selection write is in flight |
+| 90206 | CH-09409 | `MANAGE_SELECTIONS_IS_LOADING` | Manage selections is loading |
+| 90207 | CH-09410 | `A_QUALIFIERS_COURSES_AND_SCORECARDS_ARE_STILL` | A qualifier's courses and scorecards are still streaming in behind its standings |
 
 From the shell (P001): 10201 CH-1401.
 
@@ -80,6 +82,7 @@ First-run and filtered are distinct, and a failed read is never drawn as empty. 
 | 90410 | CH-09314 | `A_COURSE_HAS_NO_TEE_SETS` | A course has no tee sets |
 | 90411 | CH-09315 | `NOBODY_CAN_BE_A_COACHS_PICK` | Nobody can be a coach's pick |
 | 90412 | CH-09316 | `NO_PLACE_ON_SCORE_IS_FILLED` | No place on score is filled |
+| 90413 | CH-09318 | `PLAYERS_ARE_LEVEL_AT_THE_LAST_PLACE` | Players are level at the last place on score (Q-114) |
 
 ## 05 — Validation
 
@@ -120,9 +123,9 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90606 | CH-09202 | `ENTRIES_OR_ROUNDS_DONT_LOAD_ON_THE` | Entries or rounds don't load on the list |
 | 90607 | CH-09203 | `A_QUALIFIERS_ENTRANTS_DONT_LOAD` | A qualifier's entrants don't load |
 | 90608 | CH-09204 | `A_QUALIFIERS_ROUNDS_DONT_LOAD` | A qualifier's rounds don't load |
-| 90609 | CH-09205 | `THE_SCORECARDS_DONT_LOAD` | The scorecards don't load |
-| 90610 | CH-09206 | `THE_ROUND_COURSES_DONT_LOAD` | The round courses don't load (detail) |
-| 90611 | CH-09207 | `THE_CONFIRMED_SQUAD_DOESNT_LOAD` | The confirmed squad doesn't load |
+| 90609 | CH-09205 | `THE_SCORECARDS_DONT_LOAD` | The scorecards don't load (or the stream that carries them is cut off) |
+| 90610 | CH-09206 | `THE_ROUND_COURSES_DONT_LOAD` | The round courses don't load (detail), or the stream that carries them is cut off |
+| 90611 | CH-09207 | `THE_CONFIRMED_SQUAD_DOESNT_LOAD` | The confirmed squad doesn't load, or the entries it takes its names from don't |
 | 90612 | CH-09208 | `THE_ROSTER_DOESNT_LOAD_IN_THE_FORM` | The roster (or, editing, the entrants or their rounds) doesn't load in the form |
 | 90613 | CH-09209 | `THE_COURSE_LIST_DOESNT_LOAD_IN_THE` | The course list doesn't load in the picker |
 | 90614 | CH-09210 | `A_COURSES_TEES_DONT_LOAD_IN_THE` | A course's tees don't load in the picker |
@@ -140,6 +143,11 @@ Every write has its own failure toast naming what did not happen and what to do:
 | 90626 | CH-09008 | `CONFIRMING_THE_SQUAD_FAILS` | Confirming the squad fails |
 | 90627 | CH-09218 | `MANAGE_SELECTIONS_DOESNT_LOAD` | Manage selections doesn't load |
 | 90628 | CH-09219 | `MANAGE_SELECTIONS_CRASHES` | Manage selections crashes |
+| 90629 | CH-09009 | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | The squad is confirmed but telling the players failed |
+| 90630 | CH-09010 | `GIVING_OR_TAKING_BACK_A_PLACE_AT` | Giving or taking back a place at a tied cut fails |
+| 90631 | CH-09221 | `THE_COACHS_PICK_NOTES_DONT_LOAD` | The coach's pick notes don't load (detail, coach, confirmed squad) |
+| 90632 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
+| 90633 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 
 ## 07 — Network / offline
 
@@ -151,6 +159,8 @@ Offline, no write is sent: the shell's toast names what did not happen, the erro
 | --- | --- | --- | --- |
 | 90701 | CH-09903 | `THE_SQUAD_IS_CONFIRMED` | The squad is confirmed (Manage selections) |
 | 90702 | — | `WRITES_REFUSED_OFFLINE` | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
+| 90703 | CH-09904 | `THE_LISTS_FILTER_AND_SEARCH` | The list's filter and search |
+| 90704 | CH-09905 | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | Returning to the list from a qualifier |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
 
@@ -183,7 +193,7 @@ Not covered by a test here (read in this pass, not run): `createGolfQualifier` s
 | 90811 | — | `SETUP_ACTIONS_RECHECK_THE_COACH` | The squad-size and entrants actions behind Edit check that the caller coaches the qualifier's team before any write, and refuse a signed-out caller and a malformed id. |
 | 90812 | — | `STATUS_ACTION_RECHECKS_THE_COACH` | Close and Reopen check on the server that the caller's organisation owns the qualifier's team, so a player or another organisation's coach is refused as Unauthorized before anything is updated. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -292,7 +302,7 @@ Qualifiers' own haptics (91701 to 91703) on the v2 grammar (D-70): select for a 
 | 91702 | CH-09702 | `CLOSE_QUALIFIER_DISCARD` | Close qualifier, Discard |
 | 91703 | CH-09703 | `START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK` | Start selecting, Confirm squad, Remove a pick |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -307,7 +317,7 @@ The leaderboard and round-by-round are tables (rows, column headers, a row heade
 | 91803 | CH-09803 | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | A live update to the standings is announced |
 | 91804 | — | `FIELD_PROBLEMS_ARE_ALERTS` | Each problem in the form or the pick dialog is an alert tied to its field by aria-describedby, the field is marked aria-invalid, and a field with no problem is not. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

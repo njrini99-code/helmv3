@@ -163,6 +163,23 @@ One filter for every figure, shared with the player profile (P005) and kept in t
   player's ten newest matching rounds) and to the team's figures pooled from them; "vs. previous 10" is the ten matching
   rounds before, for a range or picked rounds there is none. Season bests stays the whole season's and says so while a
   filter is on (CH-4317).
+- **Last 10 across seasons (owner, 2026-09-30; Q-122).** "Last 10" is each
+  player's ten newest countable rounds in any season (the legacy app's rule),
+  and "vs. previous 10" the ten before them. Season and Qualifiers stay this
+  season. The read behind Last 10 goes back a rolling 12 months
+  (`lastTenFloor`), so a team page never loads whole histories; a player with
+  fewer than twenty rounds in the year has them all. The shot-level reads
+  (the round cache and the putts) are for the rounds a figure reads only.
+- **Rounds posted as a total only (owner, 2026-09-30; Q-123).** A round with
+  18 holes, no nines and no holes (a qualifier posted as a total) counts in
+  the scoring: the Scoring average card, the trend and by-day line, the
+  player grid's average and rounds, the weekly scoring lines and the season's
+  low round. It counts in no hole-level figure: greens, putts per round,
+  scrambling, birdies, strokes gained, the legs and the putting rings. Each of
+  those cards says how many rounds it covers when that is fewer than the
+  window's: "Hole stats from 8 of 10 rounds" under the card (the phone, which
+  draws no card caption, says it under the figures), and its own count in
+  place of the window's ("3 rounds"). `ChTeamStats.holeRoundCount` carries it.
 - **The control.** As on the profile: a Filter button with the count of filters on, removable chips, Clear, the count
   line ("12 rounds: tournaments, Sep 1 to Sep 29") and the sheet. "Pick rounds" lists every player's rounds (newest 200,
   with the player named) and "Only these" / "Exclude these" choose among the ones matching the other choices.

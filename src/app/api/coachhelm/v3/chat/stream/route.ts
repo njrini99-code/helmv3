@@ -83,6 +83,7 @@ import {
 import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
 import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import { isFlagEnabled } from '@/lib/flags';
+import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
   appendMessage,
@@ -335,6 +336,14 @@ export async function POST(req: NextRequest) {
     }
     await logServerError(`chat/stream: context resolution failed`, { action: 'v3.chat.stream.ctx' });
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+
+  // CoachHelm switched off (globally, for the coach or for the team) answers nothing here either: the Ask tab and route
+  // are gated, and the endpoint must not be the way around them (swap audit CH13-20). The gate fails closed on a
+  // lookup error.
+  const helmGate = await isCoachHelmEnabledForCoach(ctx.coach_id);
+  if (!helmGate.effectivelyEnabled) {
+    return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
   }
 
   const parsed = Body.safeParse(await req.json().catch(() => null));

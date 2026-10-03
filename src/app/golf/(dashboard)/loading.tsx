@@ -1,5 +1,7 @@
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/FairwayDashboardSkeleton';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 
 /**
  * Loading UI for the golf dashboard layout (initial navigation into any
@@ -12,9 +14,15 @@ import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/F
  * loading.tsx still override this on direct navigation.
  */
 export default function GolfDashboardLoading() {
+  // Inside the Clubhouse shell, Clubhouse's own skeleton (swap audit F-30), as dashboard/loading.tsx does.
   return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayDashboardSkeleton />
-    </div>
+    <ClubhouseSwitch
+      clubhouse={<HomeSkeleton />}
+      fallback={
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayDashboardSkeleton />
+        </div>
+      }
+    />
   );
 }

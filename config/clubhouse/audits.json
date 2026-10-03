@@ -1,0 +1,105 @@
+[
+  {
+    "file": "AUDIT_PLAN.md",
+    "title": "Swap audit: execution plan",
+    "kind": "plan",
+    "date": "2026-09-30",
+    "scope": "How the owner's complete swap audit is run against the released code: baselines, ground rules, runtime journeys, visual, code and performance phases.",
+    "status": "done",
+    "note": "findings are in SWAP_AUDIT.md",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "SWAP_AUDIT.md",
+    "title": "Complete-swap audit: findings",
+    "kind": "audit",
+    "date": "2026-09-30",
+    "scope": "Finding register for the owner's complete swap audit: role by route table, scorecard, findings with evidence labels, schema compatibility, release package.",
+    "status": "in_progress",
+    "note": "fix as I go; section 7 lists what is done",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "CLICKABLES.md",
+    "title": "Clickable inventory",
+    "kind": "inventory",
+    "date": "2026-09-30",
+    "scope": "Every clickable on the v2 boards against the built Clubhouse, with the GAP list ranked by how often a real user would hit it.",
+    "status": "in_progress",
+    "note": "the owner's build-it rule reopens decided rows",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "ROUNDS_PLAN.md",
+    "title": "Rounds (P011): the plan",
+    "kind": "plan",
+    "date": "2026-09-30",
+    "scope": "The four Rounds surfaces over one engine: order, the engine seam, board to source, the coach side.",
+    "status": "in_progress",
+    "note": "Q-72 in PROGRESS.md",
+    "allPages": false,
+    "pages": [
+      "P011"
+    ]
+  },
+  {
+    "file": "HIGH_FIDELITY_AUDIT.md",
+    "title": "High-fidelity audit",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The owner's high-fidelity app audit: findings F01 to F12, acceptance tests T01 to T32, and the phone audit at 390px.",
+    "status": "in_progress",
+    "note": "some items blocked on a real iPhone; owner decisions Q-139, Q-140",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "DEPTH_AUDIT.md",
+    "title": "Component depth audit",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The owner's component depth and native fidelity audit: one depth ladder by role (cards, controls, overlays, bubbles, switches), Messages as the worked example.",
+    "status": "in_progress",
+    "note": "owner decision Q-142",
+    "allPages": true,
+    "pages": [
+      "P007"
+    ]
+  },
+  {
+    "file": "PAGE_PERFORMANCE.md",
+    "title": "Page transitions, loading and performance",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The working standard for how Clubhouse moves, loads and saves, with where each rule stands and the iPhone layout brief.",
+    "status": "in_progress",
+    "note": "measurements in PROGRESS.md, Page performance",
+    "allPages": true,
+    "pages": [
+      "P009",
+      "P011",
+      "P013"
+    ]
+  },
+  {
+    "file": "AESTHETIC_AUDIT.md",
+    "title": "Targeted aesthetic audit",
+    "kind": "audit",
+    "date": "2026-10-01",
+    "scope": "The owner's targeted aesthetic audit: Messages list and thread, Home, shot tracking, Calendar, Qualifiers and CoachHelm, with before and after screenshots, measured and design-judgment verdicts, and the external tools' results.",
+    "status": "in_progress",
+    "note": "owner questions Q-147 to Q-152; a real iPhone is not tested",
+    "allPages": false,
+    "pages": [
+      "P002",
+      "P006",
+      "P007",
+      "P009",
+      "P011",
+      "P013"
+    ]
+  }
+]

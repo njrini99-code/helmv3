@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,6 +26,7 @@ import { scoringNote } from '../screens/home/PlayerGame';
 import { Countdown } from '../screens/home/Countdown';
 import { chReport, chTrail } from '../lib/track';
 import { PhoneChromeProvider } from '../shell/phone-chrome';
+import { markAppRunning, RouteScope } from '../lib/session-state';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HOME_NOW } from '../preview/fixtures';
@@ -59,7 +60,8 @@ function round(i: number, over: Partial<ChRound> = {}): ChRound {
     round_type: 'practice',
     total_score: 72 - (i % 3),
     score_to_par: -(i % 3),
-    front_nine: 36,
+    // The nines add up to the total: the season read takes the total from them (C-15).
+    front_nine: 36 - (i % 3),
     back_nine: 36,
     holes_played: 18,
     total_putts: 30,
@@ -142,6 +144,24 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(figs()[3]).toBe('5 of 5');
   });
 
+  it('21703 the span of rounds comes back when the player returns to Home; another team starts on the last 10', async () => {
+    markAppRunning();
+    sessionStorage.clear();
+    const user = userEvent.setup();
+    const at = (scope: string) => wrap(<RouteScope value={scope}><PlayerHome data={home()} now={PREVIEW_HOME_NOW} /></RouteScope>);
+    const spanOf = () => screen.getAllByRole('radio').find((r) => r.getAttribute('aria-checked') === 'true')!.textContent;
+    const first = at('/golf/dashboard\u0000t1');
+    expect(spanOf()).toBe('Last 10');
+    await user.click(screen.getByRole('radio', { name: 'Last 5' }));
+    first.unmount();
+    const back = at('/golf/dashboard\u0000t1');
+    expect(spanOf()).toBe('Last 5');
+    expect(screen.getByRole('img', { name: /Your scores over the last 5 rounds/ })).toBeTruthy();
+    back.unmount();
+    at('/golf/dashboard\u0000t2');
+    expect(spanOf()).toBe('Last 10');
+  });
+
   it('the parts of the game: strokes gained, a Tour mark only where a benchmark exists', () => {
     show();
     const legs = [...document.querySelectorAll('.ch-ph-leg')];
@@ -163,6 +183,18 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     show(home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, cacheError: true } }));
     expect(code('CH-2216')!.textContent).toMatch(/scrambling is missing/);
     expect(document.querySelectorAll('.ch-ph-leg')).toHaveLength(4);
+  });
+
+  it('CH-2216 CH-2311 the figures did not load and none of the four has a value: the notice alone, never "Nothing to break down yet"', () => {
+    const none = PREVIEW_PLAYER_HOME_EMPTY.legs!;
+    show(home({ legs: { ...none, cacheError: true } }));
+    expect(code('CH-2216')).not.toBeNull();
+    expect(code('CH-2311')).toBeNull();
+    cleanup();
+    // A read that worked and found nothing is the other answer.
+    show(home({ legs: { ...none, cacheError: false } }));
+    expect(code('CH-2216')).toBeNull();
+    expect(code('CH-2311')).not.toBeNull();
   });
 
   it('CH-2310 CH-2311 one round: the line waits for the second; nothing to break down says so', () => {

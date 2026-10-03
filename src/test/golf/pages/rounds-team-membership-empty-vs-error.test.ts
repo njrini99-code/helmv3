@@ -35,6 +35,9 @@ vi.mock('next/navigation', () => ({
     throw new Error('NOT_FOUND');
   }),
 }));
+// This is Fairway's coach Rounds list. The Clubhouse flag is on in tests, and a Clubhouse coach is sent to team Stats
+// (Q-130 alias), so the gate is pinned off here, as the other Fairway page tests do (swap audit F-19).
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: async () => false }));
 vi.mock('@/lib/golf/resolve-team-server', () => ({
   resolveCoachTeamIdWithCookie: vi.fn(async () => 'team-1'),
 }));

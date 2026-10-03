@@ -13,6 +13,8 @@ export interface ChAssignArgs {
   areaType: string;
   /** The insight's own metric, so the duplicate-active-focus guard can see it. */
   targetMetric: string;
+  /** The player's value now: the focus's starting point (CH13-22, owner: starting value only). */
+  currentValue?: number | null;
 }
 
 /**
@@ -31,7 +33,7 @@ export const LIVE_COACHHELM_WRITES: ChCoachHelmWrites = {
   assign: (a) => createFocusAreaFromInsightV2(a),
   dismiss: (insightId) => dismissInsight(insightId),
   // Back to the state it had, so it returns to the feed where it was.
-  undo: (insightId, lifecycle) => reactivateInsight(insightId, lifecycle),
+  undo: (insightId, lifecycle) => reactivateInsight(insightId, lifecycle, 'dismiss'),
 };
 
 /**

@@ -336,8 +336,6 @@ GRANT ALL ON TABLE "public"."golf_learned_behavior" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_learned_behavior" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_message_attachments" TO "anon";
-
 GRANT ALL ON TABLE "public"."golf_message_attachments" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_message_attachments" TO "service_role";

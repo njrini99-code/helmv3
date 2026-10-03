@@ -2,6 +2,7 @@
 
 import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
@@ -53,10 +54,11 @@ export function Roster({ data }: { data: ChRoster }) {
     setSeen(data.players);
     setPlayers(data.players);
   }
-  const [q, setQ] = useState('');
-  const [show, setShow] = useState<Show>('active');
-  const [sort, setSort] = useState<Sort>('avg');
-  const [view, setView] = useState<View>('faces');
+  // Search, filter, sort and layout come back when the coach returns to Roster (PAGE_PERFORMANCE.md rule 1).
+  const [q, setQ] = useChSessionState('q', '');
+  const [show, setShow] = useChSessionState<Show>('show', 'active');
+  const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
+  const [view, setView] = useChSessionState<View>('view', 'faces');
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
@@ -76,6 +78,7 @@ export function Roster({ data }: { data: ChRoster }) {
   }, [phone]);
   const openPlayer = useCallback((id: string) => {
     chTrail('roster open player');
+    // CH-3701: a tick on opening a player, changing a filter, layout or sort.
     haptic('select');
     setOpenId(id);
   }, []);
@@ -87,7 +90,8 @@ export function Roster({ data }: { data: ChRoster }) {
     } catch {
       /* private mode: the default view is fine */
     }
-  }, []);
+    // setView is useChSessionState's useState setter (stable), so this still runs once.
+  }, [setView]);
   const changeView = (v: View) => {
     setView(v);
     try {
@@ -167,6 +171,7 @@ export function Roster({ data }: { data: ChRoster }) {
       a.download = `${data.teamName.replace(/\W+/g, '-').toLowerCase()}-roster.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
+      // CH-3702: an export lands with the success tap.
       haptic('success');
       toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
     } catch {
@@ -478,6 +483,7 @@ function RosterList({
             >
               <span className="ch-rs-face__top">
                 <span />
+                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: the card lifts on hover and presses in. */}
                 <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
                 <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
               </span>
@@ -508,7 +514,7 @@ function RosterList({
           ))}
         </div>
       ) : (
-        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster">
+        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
           <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
             <span role="columnheader">Player</span>
             <span role="columnheader">Status</span>

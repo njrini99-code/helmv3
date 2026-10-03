@@ -48,6 +48,8 @@ export function TermBar({
   weekDates,
   overlaps,
   overlapsError,
+  compact = false,
+  onOverlaps,
 }: {
   term: ChTerm;
   classes: readonly ChClass[];
@@ -55,6 +57,10 @@ export function TermBar({
   weekDates: readonly string[];
   overlaps: number;
   overlapsError: boolean;
+  /** Phone: one line for the term and a row for this week's overlaps; the credit bar and the term line stay on desktop. */
+  compact?: boolean;
+  /** Phone: the overlaps row takes the coach's eye to the overlaps themselves. */
+  onOverlaps?: () => void;
 }) {
   const mine = classes.filter((c) => inTerm(c, term));
   const fig = termFigures(mine);
@@ -64,6 +70,24 @@ export function TermBar({
   const weekFrom = pos(weekDates[0] ?? todayIso);
   const weekTo = pos(weekDates[6] ?? todayIso);
   const where = term.week != null ? `week ${term.week} of ${term.weeks}` : `starts in ${term.startsIn} ${term.startsIn === 1 ? 'day' : 'days'}`;
+  if (compact) {
+    // The owner's iPhone brief (2026-10-01): today and the overlaps lead; the term is context, in one quiet line.
+    return (
+      <section className="ch-cl-tb is-compact" aria-label={`${term.label}, ${where}, ${fig.text}`}>
+        <p className="ch-cl-tb__one ch-num">
+          {term.week != null ? `Week ${term.week} of ${term.weeks}` : `Starts in ${term.startsIn} ${term.startsIn === 1 ? 'day' : 'days'}`} · {mine.length ? fig.text : `No classes in ${term.label}`}
+        </p>
+        {!overlapsError && overlaps > 0 && (
+          <button type="button" className="ch-cl-tb__over has-any" onClick={onOverlaps}>
+            <Icon icon={TriangleAlert} size={15} />
+            <span>
+              <b className="ch-num">{overlaps}</b> {overlaps === 1 ? 'overlap with the team this week' : 'overlaps with the team this week'}
+            </span>
+          </button>
+        )}
+      </section>
+    );
+  }
   return (
     // CH-12803: one labelled group for the whole overview; the bars and the line are drawing, and the label says the same in words.
     <section className="ch-cl-tb" aria-label={`${term.label}, ${where}, ${fig.text}, ends ${shortDay(term.end)}`}>
@@ -345,5 +369,44 @@ export function SyncStatus({ failed, syncing, onRetry }: { failed: number; synci
         Retry sync
       </Button>
     </div>
+  );
+}
+
+/**
+ * Phone: what meets today, first (the owner's iPhone brief, 2026-10-01). Name, time and room lead; the code is metadata.
+ * With nothing today it names the next day that has a class, so the list never just says "nothing".
+ */
+export function TodayClasses({ classes, term, todayIso, onOpen }: { classes: readonly ChClass[]; term: ChTerm; todayIso: string; onOpen: (c: ChClass) => void }) {
+  const meeting = (iso: string) =>
+    classes.filter((c) => inTerm(c, term) && !hasNoDays(c) && c.days.includes(dayToken(iso))).sort((a, b) => (a.start ?? '99').localeCompare(b.start ?? '99'));
+  const today = meeting(todayIso);
+  let next: { iso: string; list: ChClass[] } | null = null;
+  if (!today.length) {
+    for (let i = 1; i <= 7 && !next; i++) {
+      const d = dateOf(todayIso);
+      d.setDate(d.getDate() + i);
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const list = meeting(iso);
+      if (list.length) next = { iso, list };
+    }
+  }
+  const rows = today.length ? today : (next?.list ?? []);
+  return (
+    <section className="ch-cl-today" aria-labelledby="ch-cl-today-h" data-ch-code={today.length ? undefined : "CH-12308"}>
+      <h2 id="ch-cl-today-h">{today.length ? 'Today' : next ? `No classes today · next ${longDay(next.iso)}` : 'No classes this week'}</h2>
+      {rows.length > 0 && (
+        <ul>
+          {rows.map((c) => (
+            <li key={c.id}>
+              <button type="button" className={`ch-cl-today__row ch-cl-t-${c.tone}`} onClick={() => onOpen(c)}>
+                <span className="ch-cl-today__t ch-num">{timeRange(c.start, c.end) ?? 'No time set'}</span>
+                <span className="ch-cl-today__n">{c.name}</span>
+                <span className="ch-cl-today__m">{[c.location, c.code].filter(Boolean).join(' · ')}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

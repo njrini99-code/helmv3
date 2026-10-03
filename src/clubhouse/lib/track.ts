@@ -10,6 +10,10 @@ import { logError } from '@/lib/error-logging';
  *   ui=clubhouse        - split Clubhouse from Fairway in Sentry
  *   surface=<screen.section>  - which part of which screen, for example home.leaderboard
  * Server-side reads use chLogServer in ./track-server.
+ *
+ * What the coach never sees is watched app-wide (src/instrumentation-client.ts), and Clubhouse inherits it: Sentry
+ * Replay flags rage clicks (CH-1951), dead clicks (CH-1952) and slow clicks (CH-1953) in the sessions it records, and
+ * browser tracing reports INP, CLS and LCP (CH-1954).
  */
 export type ChSeverity = 'low' | 'medium' | 'high';
 

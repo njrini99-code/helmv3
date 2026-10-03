@@ -12,12 +12,13 @@ names them where they carry a category. `clubhouse:check` holds this file to the
 
 Status: DEFINED
 
-The frame around every page (10102), and a page change that opens the new page at the top (10101).
+The frame around every page (10102), a page change that opens the new page at the top (10101), and a team switch that reads every screen again for the new team (10103).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 10101 | CH-1904 | `MOVING_TO_ANOTHER_PAGE_2` | Moving to another page |
 | 10102 | — | `SHELL_READY` | Every Clubhouse page opens in the frame: on wide screens the sidebar, the top bar with the bell and the page; on a phone the page with the role's tab bar and More sheet. |
+| 10103 | — | `TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN` | Switching teams sets the active team on the server (the same action Fairway uses), then refreshes the page so the layout, the sidebar's next event and Roster badge, and the page itself read for the new team; the route remounts for the new team, so a search, an open panel or a live feed the old team's screen held does not carry over, while a refresh for the same team keeps its state. |
 
 ## 02 — Initial loading / skeleton
 
@@ -43,7 +44,7 @@ The bell reads its list again on every open, and a list already shown stays whil
 
 Status: DEFINED
 
-A page not rebuilt yet (10401), an empty bell (10402), a bell filter with nothing (10403), and no next event (10404, the card is left out). Each page's own first-run and filtered empties are in its contract.
+A page not rebuilt yet (10401), an empty bell (10402), a bell filter with nothing (10403), no next event (10404, the card is left out), and a team that is a plain label because there is nothing to switch to (10405). Each page's own first-run and filtered empties are in its contract.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -51,6 +52,7 @@ A page not rebuilt yet (10401), an empty bell (10402), a bell filter with nothin
 | 10402 | CH-1302 | `THE_BELL_HAS_NOTHING` | The bell has nothing |
 | 10403 | CH-1303 | `THE_BELLS_FILTER_HAS_NOTHING` | The bell's filter has nothing |
 | 10404 | CH-1304 | `NOTHING_IS_SCHEDULED` | Nothing is scheduled |
+| 10405 | CH-1305 | `A_COACH_WITH_ONE_TEAM_A_COACH` | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
 
 ## 05 — Validation
 
@@ -60,7 +62,7 @@ Status: N/A — the shell takes no typed input. Fields and their validation belo
 
 Status: DEFINED
 
-Mark all read fails (10601); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery; and the two sidebar reads that hide rather than show something wrong (10608, 10609).
+Mark all read fails (10601); a team switch fails (10611); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery; and the two sidebar reads that hide rather than show something wrong (10608, 10609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -74,6 +76,7 @@ Mark all read fails (10601); the bell's list doesn't load (10602); the five rout
 | 10608 | CH-1207 | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | The sidebar's next event doesn't load |
 | 10609 | CH-1208 | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | The Roster badge's join requests don't load |
 | 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's More sheet fails |
+| 10611 | CH-1003 | `SWITCHING_TEAM_FAILS` | Switching team fails (a head coach on more than one team) |
 
 ## 07 — Network / offline
 
@@ -92,12 +95,13 @@ The banner under the top bar (10701), a save over five seconds says so once (107
 
 Status: DEFINED
 
-Clubhouse renders only for a coach or a player with the flag on (10801); the same check guards the held server actions. Each role sees only its own navigation, and an address not rebuilt for that role shows the not-rebuilt notice, never another role's page (10802). Who may read or change what is decided by the server actions and RLS, never by the frame; the pages name their own gates.
+Clubhouse renders only for a coach or a player with the flag on (10801); the same check guards the held server actions. Each role sees only its own navigation, and an address not rebuilt for that role shows the not-rebuilt notice, never another role's page (10802). Only a head coach staffed on more than one team is offered the team switch, and the server refuses anyone else (10803). Who may read or change what is decided by the server actions and RLS, never by the frame; the pages name their own gates.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 10801 | — | `CLUBHOUSE_GATE` | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 | — | `ROLE_SCOPED_NAV` | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
+| 10803 | — | `TEAM_SWITCH_IS_A_HEAD_COACHS` | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
 
 ## 09 — Success
 
@@ -171,7 +175,7 @@ v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
 
 Status: DEFINED
 
-v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, the More sheet, the bell and menus, and the connection dropping (11701 to 11706).
+v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, the More sheet, the bell and menus, the connection dropping, and picking another team (11701 to 11707).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -181,12 +185,13 @@ v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, th
 | 11704 | CH-1704 | `OPENING_MORE_SWIPING_THE_SHEET_AWAY` | Opening More; swiping the sheet away |
 | 11705 | CH-1705 | `OPENING_THE_BELL_A_NOTIFICATION_OR_A` | Opening the bell, a notification, or a menu item |
 | 11706 | CH-1706 | `THE_CONNECTION_DROPS` | The connection drops |
+| 11707 | CH-1707 | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | Picking another team in the switcher |
 
 ## 18 — Accessibility
 
 Status: DEFINED
 
-Skip to content, the modal More sheet, the current page and named landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab bar, pushed screens named and focused, the phone top bar, and the phone bell as a modal sheet (11801 to 11811).
+Skip to content, the modal More sheet, the current page and named landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab bar, pushed screens named and focused, the phone top bar, the phone bell as a modal sheet, and the team switcher on desktop and on the phone (11801 to 11814).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -202,6 +207,8 @@ Skip to content, the modal More sheet, the current page and named landmarks, ann
 | 11810 | CH-1810 | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
 | 11811 | CH-1811 | `ON_THE_PHONE_THE_BELL_OPENS_AS` | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up |
 | 11812 | CH-1812 | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
+| 11813 | CH-1813 | `ON_A_DESKTOP_A_HEAD_COACH_ON` | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
+| 11814 | CH-1814 | `ON_THE_PHONE_THE_SAME_COACH_SEES` | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
 
 ## 19 — Responsive layout
 

@@ -7,7 +7,11 @@ import { getValidTimezone } from '@/lib/calendar/timezone';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, summarizePlayer, type ChForm, type ChRound } from './season';
+import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChForm, type ChRound } from './season';
+import { hasHoleScores } from './round-scope';
+import { previousInFilter, roundsInFilter, seasonOnly } from './stats-common';
+import { filterFor } from './stats-filter';
+import { weightedMean } from './stats-weight';
 import { rsvpOf } from './calendar';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 
@@ -104,14 +108,20 @@ export interface ChHomeEvent {
   conflict: boolean;
 }
 
-/** The team's scoring form (phone Home): the last ten 18-hole rounds against the ten before. */
+/**
+ * The team's scoring form (phone Home), on the Stats page's Last 10 basis: each player's newest ten 18-hole
+ * rounds this season against each player's ten before (`teamForm`).
+ */
 export interface ChTeamForm {
   avg: number;
-  /** Against the previous ten; null with fewer than five rounds to compare. */
+  /** Against each player's previous ten; null when no player has three rounds before their newest ten. */
   delta: number | null;
-  /** A five-round moving average, oldest to newest, for the line. */
+  /** The team's average on each of its last ten round days (the rounds the average rests on), oldest to newest, for the line. */
   line: number[];
+  /** Countable rounds of either length in the team-local Monday-to-Sunday week: a count on its own basis, not the figures'. */
   roundsThisWeek: number;
+  /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
+  basis: { rounds: number; from: string; to: string; girRounds: number; puttsRounds: number };
   /** Greens in regulation, percent; delta in points. */
   gir: { pct: number | null; delta: number | null };
   putts: { avg: number | null; delta: number | null };
@@ -162,16 +172,37 @@ function weekdayIndexMonFirst(date: string): number {
   return (new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1)).getUTCDay() + 6) % 7;
 }
 
+/**
+ * The week a team-local date falls in (Monday to Sunday), and the instants its events are read between: a day of slack either side
+ * covers every UTC offset (rows are bucketed by team-local date afterwards).
+ */
+export function weekWindow(today: string): { weekStart: string; weekEnd: string; from: number; to: number } {
+  const weekStart = addDays(today, -weekdayIndexMonFirst(today));
+  const weekEnd = addDays(weekStart, 6);
+  return { weekStart, weekEnd, from: new Date(`${addDays(weekStart, -1)}T00:00:00Z`).getTime(), to: new Date(`${addDays(weekEnd, 2)}T00:00:00Z`).getTime() };
+}
+
+/**
+ * The widest window any timezone's `weekWindow` can be at `now`, so the events can be asked for before the zone is known. A zone's local date
+ * is at most a day from the UTC date, so its week starts no earlier than 7 days before the UTC date and its window ends no later than 9
+ * days after it: eight days back and ten forward hold every one (home-reads.test.ts walks every zone offset).
+ */
+export function wideEventWindow(now: Date): { from: string; to: string } {
+  const utcToday = ymd(now, 'UTC');
+  return { from: `${addDays(utcToday, -8)}T00:00:00Z`, to: `${addDays(utcToday, 10)}T00:00:00Z` };
+}
+
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export async function loadCoachHome(input: { teamId: string; coachName: string }): Promise<ChCoachHome> {
   const supabase = await createClient();
   const now = new Date();
 
-  const { tz, greeting, todayLabel } = await homeClock(supabase, input.teamId, now);
+  // Everything that can start now does, and each later read starts the moment the one it needs has answered, not when its siblings
+  // have: the timezone, the roster, the team chat and the week's events go together; the season's rounds follow the roster alone
+  // (they used to wait for the events and their replies too); the newest rounds' cards follow the rounds.
+  const clockRead = homeClock(supabase, input.teamId, now);
   const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
-
-  // The roster, the team chat and the week load together; the week waits for the roster's names only to label invitees.
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const rosterRead = Promise.resolve(
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
@@ -179,41 +210,52 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const rosterOf = (res: Awaited<typeof rosterRead>) =>
     ((res.data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => p !== null);
   const nameOf = fullName;
-  const [rosterRes, chatRes, wk] = await Promise.all([
-    rosterRead,
+  const chatRead = Promise.resolve(
     supabase.from('golf_conversations').select('id').eq('team_id', input.teamId).eq('is_team_chat', true).order('created_at', { ascending: true }).limit(1),
-    loadHomeWeek(supabase, { teamId: input.teamId, tz, now, names: rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, nameOf(p)]))) }),
-  ]);
+  );
+  // The week waits for the roster's names only to label invitees.
+  const weekRead = loadHomeWeek(supabase, {
+    teamId: input.teamId,
+    tz: clockRead.then((c) => c.tz),
+    now,
+    names: rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, nameOf(p)]))),
+  });
+  const roundsRead = rosterRead.then(async (res): Promise<Awaited<ReturnType<typeof loadSeasonRounds>>> => {
+    const players = rosterOf(res);
+    if (res.error || players.length === 0) return { rounds: [], error: !!res.error };
+    // The team's form is Stats' Last 10, which reaches back across seasons (Q-122): read as far as it does; the rest of Home is this season.
+    return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
+  });
+  const playerById = rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, p])));
+  const latestRead = Promise.all([roundsRead, playerById]).then(([res, byId]) =>
+    latestWithHoles(supabase, seasonOnly(res.rounds.filter(isFull18)), (id) => {
+      const p = byId.get(id);
+      return p ? nameOf(p) : 'Former player';
+    }),
+  );
+  const [{ greeting, todayLabel }, rosterRes, chatRes, wk, seasonRead, latest] = await Promise.all([clockRead, rosterRead, chatRead, weekRead, roundsRead, latestRead]);
   // CH-2208: without the team chat, Message team opens Messages instead.
   if (chatRes.error) log('team chat', chatRes.error);
 
   // ── Roster ──
   if (rosterRes.error) log('roster', rosterRes.error);
   const roster = rosterOf(rosterRes);
-  const playerById = new Map(roster.map((p) => [p.id, p]));
   const { today, weekStart, weekEnd } = wk;
 
   // ── Season rounds ──
-  let roundsError = !!rosterRes.error;
-  let rounds: Awaited<ReturnType<typeof loadSeasonRounds>>['rounds'] = [];
-  if (!rosterRes.error && roster.length > 0) {
-    const res = await loadSeasonRounds(supabase, roster.map((p) => p.id), { surface: 'home' });
-    rounds = res.rounds;
-    roundsError = res.error;
-  }
+  const { rounds, error: roundsError } = seasonRead;
   const full = rounds.filter(isFull18);
+  const seasonRounds = seasonOnly(rounds);
+  const seasonFull = seasonOnly(full);
 
-  // ── Latest rounds with hole-by-hole ──
-  const { rounds: latestRounds, holesError } = await latestWithHoles(supabase, full, (id) => {
-    const p = playerById.get(id);
-    return p ? nameOf(p) : 'Former player';
-  });
+  // ── Latest rounds with hole-by-hole (read above, as soon as the rounds were in) ──
+  const { rounds: latestRounds, holesError } = latest;
 
   // ── Leaderboard ──
-  const byPlayer = groupByPlayer(full);
+  const byPlayer = groupByPlayer(seasonFull);
   // Recency counts any countable round, nine holes included.
   const lastPlayed = new Map<string, string>();
-  for (const r of rounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
+  for (const r of seasonRounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
   const rows: ChLeaderRow[] = [];
   for (const p of roster) {
     const list = byPlayer.get(p.id);
@@ -232,7 +274,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
     });
   }
-  rows.sort((a, b) => a.avg - b.avg || b.rounds - a.rounds);
+  // C-24(d): an early read (fewer than three 18-hole rounds) never outranks a player with a sample; ties go to more rounds, then the name.
+  const early = (r: ChLeaderRow) => (r.status === 'early' ? 1 : 0);
+  rows.sort((a, b) => early(a) - early(b) || a.avg - b.avg || b.rounds - a.rounds || a.name.localeCompare(b.name));
 
   // ── Phone: the team's form ──
   const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
@@ -244,7 +288,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     todayLabel,
     week: wk.week,
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
-    leaderboard: { rows, scorecards: full.length, rosterSize: roster.length, error: roundsError },
+    leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
     phone: { next: wk.next, today: wk.todayEvents, form, weekNote: wk.weekNote },
   };
 }
@@ -341,26 +385,29 @@ export interface ChHomeWeek {
  */
 export async function loadHomeWeek(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  input: { teamId: string; tz: string; now: Date; names: Map<string, string> | Promise<Map<string, string>> },
+  input: { teamId: string; tz: string | Promise<string>; now: Date; names: Map<string, string> | Promise<Map<string, string>> },
 ): Promise<ChHomeWeek> {
-  const { tz, now } = input;
-  const today = ymd(now, tz);
-  const weekStart = addDays(today, -weekdayIndexMonFirst(today));
-  const weekEnd = addDays(weekStart, 6);
-  // A day of slack either side covers every UTC offset; rows are bucketed by team-local date below.
-  const windowStart = `${addDays(weekStart, -1)}T00:00:00Z`;
-  const windowEnd = `${addDays(weekEnd, 2)}T00:00:00Z`;
-
-  const eventsRes = await supabase
+  const { now } = input;
+  // The events are asked for before the team's timezone is known, over a window that holds the week of any zone (`wideEventWindow`),
+  // and cut to the exact window below. The window used to wait for the timezone read, which put a round trip in front of the events
+  // and the replies after them.
+  const wide = wideEventWindow(now);
+  const eventsRead = Promise.resolve(
+    supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, end_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
-      .gte('start_time', windowStart)
-      .lt('start_time', windowEnd)
+      .gte('start_time', wide.from)
+      .lt('start_time', wide.to)
       .order('start_time', { ascending: true })
-      .limit(500);
+      .limit(500),
+  );
+  const [tz, wideRes] = await Promise.all([input.tz, eventsRead]);
+  const today = ymd(now, tz);
+  const { weekStart, weekEnd, from, to } = weekWindow(today);
+  const eventsRes = wideRes.error ? wideRes : { ...wideRes, data: (wideRes.data ?? []).filter((e) => new Date(e.start_time).getTime() >= from && new Date(e.start_time).getTime() < to) };
 
   // ── Week ──
   if (eventsRes.error) log('events', eventsRes.error);
@@ -391,10 +438,15 @@ export async function loadHomeWeek(
   const invited = new Map<string, string[]>();
   const accepted = new Map<string, number>();
   let attendanceError = false;
-  for (const ids of chunkIds([...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))])) {
-    const { data, error } = await fetchAllRowsResult((from, to) =>
-      supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
-    );
+  // The chunks are independent, so they are read together.
+  const attendance = await Promise.all(
+    chunkIds([...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))]).map((ids) =>
+      fetchAllRowsResult((from, to) =>
+        supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
+      ),
+    ),
+  );
+  for (const { data, error } of attendance) {
     if (error) {
       // CH-2209: without replies, agenda rows drop who is invited and the confirmed count, never "0 players".
       log('attendance', error);
@@ -474,42 +526,65 @@ export async function loadHomeWeek(
 
 const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other']);
 
-const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
-
 /**
- * The team's form from its 18-hole rounds, newest first: the scoring average
- * of the last ten against the ten before, greens and putts the same way, and
- * a five-round moving average for the line. Exported for the tests.
+ * The team's form on the Stats page's own basis, so Home and Stats (Last 10, Team) read the same: each
+ * player's newest ten 18-hole rounds (in any season, Q-122), pooled, against each player's ten before them
+ * (`roundsInFilter` / `previousInFilter`, as `loadTeamStats` reads them). Scoring is a per-round mean over every
+ * round, a total-only one included; putts are a per-round mean and greens pool the holes (never a mean of percentages),
+ * both over the rounds with their holes (Q-123). The line is the team's average on each of its last ten round days
+ * (as Stats' scoring trend draws it), oldest to newest: one point a day, not one a round. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
+ * rounds says so. Exported for the tests.
  */
-export function teamForm(
-  full: Array<{ total_score: number | null; total_gir: number | null; total_gir_possible: number | null; total_putts: number | null }>,
-  roundsThisWeek: number,
-): ChTeamForm | null {
-  const scored = full.filter((r) => r.total_score != null);
-  if (!scored.length) return null;
-  const last = scored.slice(0, 10);
-  const prev = scored.slice(10, 20);
-  const avgOf = (list: typeof scored) => mean(list.map((r) => r.total_score as number));
-  const girOf = (list: typeof scored) => {
-    const withGir = list.filter((r) => r.total_gir != null && r.total_gir_possible);
+export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | null {
+  const f = filterFor('last10');
+  const last: ChRound[] = [];
+  const prev: ChRound[] = [];
+  // Q-112: a change compares the same players: the newest ten of those who also have a previous ten, against that ten.
+  const lastPaired: ChRound[] = [];
+  for (const list of groupByPlayer(full).values()) {
+    const cur = roundsInFilter(list, f);
+    const before = previousInFilter(list, f) ?? [];
+    last.push(...cur);
+    if (before.length) {
+      prev.push(...before);
+      lastPaired.push(...cur);
+    }
+  }
+  if (!last.length) return null;
+  // Greens and putts are hole-level: a round posted as a total only has none (Q-123), whatever its row holds.
+  const hasGir = (r: ChRound) => hasHoleScores(r) && r.total_gir != null && !!r.total_gir_possible;
+  const girOf = (list: ChRound[]) => {
+    const withGir = list.filter(hasGir);
     const possible = withGir.reduce((a, r) => a + (r.total_gir_possible as number), 0);
     return possible ? (withGir.reduce((a, r) => a + (r.total_gir as number), 0) / possible) * 100 : null;
   };
-  const puttsOf = (list: typeof scored) => mean(list.filter((r) => r.total_putts != null).map((r) => r.total_putts as number));
-  const avg = avgOf(last) as number;
-  const comparable = prev.length >= 5;
+  const scoreOf = (r: ChRound) => r.total_score;
+  const puttsOf = (r: ChRound) => (hasHoleScores(r) ? r.total_putts : null);
+  const comparable = prev.length > 0;
+  const avg = weightedMean(last, scoreOf) as number;
+  const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
+  const pairedAvg = comparable ? weightedMean(lastPaired, scoreOf) : null;
   const gir = girOf(last);
   const prevGir = comparable ? girOf(prev) : null;
-  const putts = puttsOf(last);
-  const prevPutts = comparable ? puttsOf(prev) : null;
-  const window = scored.slice(0, 20).reverse();
-  const line = window.length >= 5 ? window.slice(4).map((_, i) => mean(window.slice(i, i + 5).map((r) => r.total_score as number)) as number) : window.map((r) => r.total_score as number);
+  const pairedGir = comparable ? girOf(lastPaired) : null;
+  const putts = weightedMean(last, puttsOf);
+  const prevPutts = comparable ? weightedMean(prev, puttsOf) : null;
+  const pairedPutts = comparable ? weightedMean(lastPaired, puttsOf) : null;
+  const byDate = (a: ChRound, b: ChRound) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id));
+  const byDay = new Map<string, number[]>();
+  for (const r of [...last].sort(byDate)) {
+    const d = r.round_date.slice(0, 10);
+    byDay.set(d, [...(byDay.get(d) ?? []), r.total_score as number]);
+  }
+  const line = [...byDay.values()].slice(-10).map((scores) => mean(scores) as number);
+  const dates = last.map((r) => r.round_date.slice(0, 10)).sort();
   return {
     avg,
-    delta: comparable ? avg - (avgOf(prev) as number) : null,
+    delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
     line,
     roundsThisWeek,
-    gir: { pct: gir, delta: gir != null && prevGir != null ? gir - prevGir : null },
-    putts: { avg: putts, delta: putts != null && prevPutts != null ? putts - prevPutts : null },
+    basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
+    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null },
+    putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null },
   };
 }

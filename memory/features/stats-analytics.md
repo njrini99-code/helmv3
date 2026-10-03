@@ -91,6 +91,12 @@ still use `getPlayerStatsDashboardBundle`.
   the Intelligence page filter it too, and `isCountableRound` takes an optional
   `is_test` (reason `test_round`) so a loader that selects the flag cannot let a
   test round into an average.
+- Rounds posted as a total only (Q-123, Q-128): Stats counts a completed,
+  plausible 18-hole total in the score figures and in no hole figure. Held
+  migration `20260924120000` (OD-01) follows the same split for the player
+  cache and Standing: a score rule feeds the scoring average, to par, best
+  and worst round, last 5/10 and the pressure gap; the hole rule (every hole
+  scored) stays for hole figures.
 - Putt leak-map bands (`stats-leak-maps.ts`) are upper-inclusive: "3-5 ft" is
   (3, 5], the same edges as the cache writer (`putt_make_pct_3_5ft`) and the
   calculator's `getPuttDistanceBucket`, so the chart and the Putting-by-distance

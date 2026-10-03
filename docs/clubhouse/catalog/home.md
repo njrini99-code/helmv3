@@ -29,7 +29,7 @@ or confirmations (25xx). Offline, slow and full-page errors are the shell's
 | CH-2213 | Up next crashes while drawing (phone) | "Up next couldn't be shown." inside the hero; the greeting stays | `SectionBoundary home.upNext` | home.test › CH-2213 |
 | CH-2214 | Today crashes while drawing (phone) | "Today couldn't be shown." | `SectionBoundary home.today` | home.test › CH-2214 |
 | CH-2215 | A player's own rounds don't load (player Home) | "Your rounds didn't load." + "Posted rounds are safe. Try again; the error has been reported." in Scoring's place; no brief, no parts of the game, never an empty line | `PlayerGame` Scoring, `RefreshNotice` | player-home.test › CH-2215 |
-| CH-2216 | Scrambling and three-putts don't load (player Home) | "Some of your figures didn't load." + "Scores, greens and putts are right; scrambling is missing." above the four parts, which stay | `PlayerGame` Legs | player-home.test › CH-2216 |
+| CH-2216 | Scrambling and three-putts don't load (player Home) | "Some of your figures didn't load." + "Scores, greens and putts are right; scrambling is missing." above the four parts, which stay (when none of the four has a value to show, the notice is the whole answer: "Nothing to break down yet" is not said over a read that failed) | `PlayerGame` Legs | player-home.test › CH-2216 |
 | CH-2217 | The player's scoring or parts of the game crash while drawing | "Your scoring couldn't be shown." The rest of Home stays | `SectionBoundary home.game` | player-home.test › CH-2217 |
 
 ## 23xx Empty

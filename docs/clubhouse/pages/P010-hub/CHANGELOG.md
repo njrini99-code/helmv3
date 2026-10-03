@@ -3,6 +3,25 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-01 — A trip can be edited and deleted (swap audit §14 D2)
+
+```text
+PR/commit:      agent/swap-audit (#2111): 12f07da99, 9fb7ad0b9
+Design package: none (a More menu on the trip row; phone sign-off Q-133)
+Contract IDs:   CH-10013, CH-10504 (new); CH-10009, CH-10103 to CH-10106 widened to trips
+Actions:        hub.editTrip, hub.delete (trips)
+Data impact:    reuses updateGolfTravelItinerary and deleteGolfTravelItinerary; ChHubTrip carries the raw departure time, return date and return time
+Held items:     none
+```
+
+- **Issue.** Team Hub could only create a trip; a mistyped one could not be
+  fixed or removed with Clubhouse on.
+- **Fix.** Edit trip (every field, dates and times included; only changed
+  values are sent) and Delete trip (asks first; expenses and budgets go with
+  it). Expenses, budgets, CSV, recurring tasks and document versions stay
+  Fairway-only (Q-130).
+- **Checked.** `hub-trip-manage.test.tsx`, `hub.test.tsx`.
+
 ## 2026-09-30 — Attendance and task counts read every row (swap audit F-21)
 
 ```text

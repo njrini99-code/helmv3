@@ -21,6 +21,6 @@ export default async function QualifierSelectionPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
-  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) return <ClubhouseQualifiersRoute view="selection" id={id} />;
+  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) return <ClubhouseQualifiersRoute view="selection" id={id} />;
   redirect(session.coach ? `/golf/dashboard/coachhelm/qualifying/${id}` : `/golf/dashboard/qualifiers/${id}`);
 }

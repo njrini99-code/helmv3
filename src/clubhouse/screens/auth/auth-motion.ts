@@ -24,6 +24,7 @@ type Bezier = readonly [number, number, number, number];
 const OUT: Bezier = [0.2, 0.8, 0.2, 1];
 const SMOOTH: Bezier = [0.32, 0.72, 0, 1];
 
+/** CH-15601 first paint and the sign-in landing, CH-15602 the welcome drawing, CH-15603 its scene; CH-15605 reduced motion is a millisecond. */
 export const WELCOME_AT = { scrim: 0.2, mark: 0.3, date: 0.5, line1: 0.64, name: 1.05, card: 2.25, items: 2.55, itemStep: 0.14, hint: 2.8 } as const;
 export const WELCOME_TAKES = { scrim: 1.4, mark: 0.7, date: 0.7, line1: 1.0, name: 1.1, card: 0.9, item: 0.6, hint: 0.7, leave: 0.42 } as const;
 
@@ -78,5 +79,10 @@ export const welcomeHint: Variants = {
 
 /** The hand-off's timeline, in milliseconds (the lift, then the fold; the destination is asked for as the fold lands). */
 export const HANDOFF_MS = { lift: 420, navigate: 1000, plain: 520, reducedNavigate: 240 } as const;
+/**
+ * Phone: the welcome carries on by itself once the greeting and the card have landed (the hint lands at 2.8s and takes
+ * 0.7s), so sign-in flows into the dashboard with the fold and no tap (owner, 2026-10-01, Q-137). Continue still goes sooner.
+ */
+export const WELCOME_PHONE_AUTO_MS = 3600;
 /** The form leaving on the sign-in page, before the welcome route takes over. */
 export const OPENING_MS = 720;

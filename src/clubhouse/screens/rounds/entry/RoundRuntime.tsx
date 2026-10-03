@@ -271,6 +271,7 @@ export function RoundRuntime({
   return (
     <>
       <RoundTracking
+        key={session.restoreEpoch ?? 0}
         round={session.round}
         holes={session.holes}
         currentHoleIndex={session.currentHoleIndex}
@@ -300,6 +301,7 @@ export function RoundRuntime({
         holes={card}
         currentNumber={current}
         discarding={running === 'exit-discard'}
+        saving={save.pending}
         discardError={failed?.kind === 'exit-discard' ? failed.error : null}
         onSave={() => void save.run('exit')}
         onKeep={closeExit}
@@ -357,6 +359,7 @@ export function RecoveryHost({
   onRestore,
   onDiscard,
   onClose,
+  restoreHint,
 }: {
   recovery: ChRecovery;
   error: string;
@@ -364,6 +367,8 @@ export function RecoveryHost({
   onRestore: () => Promise<unknown> | void;
   onDiscard: () => void;
   onClose: () => void;
+  /** Restore's hint, when the engine's restore is not a server write (see `RecoveryDialog`). */
+  restoreHint?: string;
 }) {
   const busy = useRef(false);
   const facts = recoveryFacts(recovery.data);
@@ -378,6 +383,7 @@ export function RecoveryHost({
       savedAt={facts.savedAt}
       restoring={recovery.restoring}
       error={recovery.open && error ? error : null}
+      restoreHint={restoreHint}
       onRestore={() => {
         if (busy.current) return;
         busy.current = true;

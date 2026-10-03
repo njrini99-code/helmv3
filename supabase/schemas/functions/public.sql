@@ -4982,6 +4982,49 @@ ALTER FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_pl
 
 COMMENT ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) IS 'W13 / OD-01 (2026-09-24). The DB copy of isCountableRound (src/lib/golf/round-countable.ts). Keep the two in step; supabase/tests/rls/golf_round_is_countable.sql pins the shared cases.';
 
+CREATE OR REPLACE FUNCTION "public"."golf_round_is_score_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) RETURNS boolean
+    LANGUAGE "sql" IMMUTABLE PARALLEL SAFE
+    SET "search_path" TO ''
+    AS $$
+  -- Q-128. Mirrors isScoreCountable / isTotalOnlyCountable in
+  -- src/lib/golf/round-score-countable.ts: a round counts in a SCORE when it
+  -- is hole-countable (golf_round_is_countable) OR is an 18-hole round
+  -- posted as a total only. For the total-only case the holes check is the
+  -- only rule waived; the others stay:
+  --   not_completed      status <> 'completed'
+  --   unsupported_length holes (default 18) not 18: a nine-hole total has no
+  --                      holes to tell it from half of one
+  --   total-only shape   no nine recorded, total_score set
+  --   implausible_score  total below max(50, 18 + max(putts, 0))
+  --   implausible_sg     SG: Total above +15 (one-sided; NaN is ignored)
+  -- A test round is excluded by the is_test guard 20260928150000 adds, as
+  -- for golf_round_is_countable (neither has an is_test input).
+  SELECT
+    public.golf_round_is_countable(
+      p_status, p_holes_played, p_total_score, p_front_nine, p_back_nine,
+      p_total_putts, p_strokes_gained_total
+    )
+    OR (
+      p_status IS NOT DISTINCT FROM 'completed'
+      AND p_front_nine IS NULL
+      AND p_back_nine IS NULL
+      AND p_total_score IS NOT NULL
+      AND COALESCE(p_holes_played, 18) = 18
+      AND p_total_score >= GREATEST(
+        50, 18 + GREATEST(COALESCE(p_total_putts, 0), 0)
+      )
+      AND NOT COALESCE(
+        p_strokes_gained_total > 15
+        AND p_strokes_gained_total <> 'NaN'::numeric,
+        false
+      )
+    );
+$$;
+
+ALTER FUNCTION "public"."golf_round_is_score_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_round_is_score_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) IS 'Q-128 (2026-10-01). The DB copy of isScoreCountable (src/lib/golf/round-score-countable.ts): golf_round_is_countable, or an 18-hole round posted as a total only (completed, plausible total, SG not above +15). Used by the SCORE figures; hole figures keep golf_round_is_countable. Keep the two in step; supabase/tests/rls/golf_round_is_countable.sql pins the shared cases.';
+
 CREATE OR REPLACE FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") RETURNS TABLE("player_id" "uuid", "coach_reasoning" "text")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -8008,6 +8051,8 @@ BEGIN
   END IF;
   -- NUM-24: pressure gap per src/lib/golf/metrics/pressure-gap.ts: 18-hole
   -- to-par basis and the legacy 'qualifying' spelling. Floors stay 3/3/5.
+  -- Q-128: the pressure gap is a score figure (round to par), so a round
+  -- posted as a total only counts in it: golf_round_is_score_countable.
   WITH team_values AS (
     SELECT
       p.id AS player_id,
@@ -8024,7 +8069,7 @@ BEGIN
       ON t.id = tm.team_id
     JOIN public.golf_rounds r
       ON r.player_id = p.id
-     AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
+     AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
      AND r.round_date > (CURRENT_DATE - (v_window_days || ' days')::interval)
     WHERE tm.team_id = ANY(p_team_ids)
     GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
@@ -8069,7 +8114,7 @@ BEGIN
         ON t.id = tm.team_id
       JOIN public.golf_rounds r
         ON r.player_id = p.id
-       AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
+       AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
        AND r.round_date > (CURRENT_DATE - (v_window_days || ' days')::interval)
       GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
       HAVING
@@ -8136,6 +8181,8 @@ BEGIN
   out_metric_id := 'practice_tournament_delta';
   out_rows_upserted := v_rows;
   RETURN NEXT;
+  -- Q-128: the opening-hole gap reads holes, so it keeps the hole rule
+  -- (golf_round_is_countable); a total-only round has no holes to read.
   WITH team_values AS (
     SELECT
       p.id AS player_id,
@@ -8715,6 +8762,8 @@ BEGIN
         SELECT 1 FROM golf_holes h
         WHERE h.round_id = r.id AND h.score IS NOT NULL
       )
+      -- Q-123: a total-only round has no holes by design.
+      AND NOT (r.front_nine IS NULL AND r.back_nine IS NULL AND r.total_score IS NOT NULL)
   ) q;
   v := v || jsonb_build_object('check', 'completed_round_zero_scored_holes',
     'status', CASE WHEN n = 0 THEN 'pass' ELSE 'fail' END, 'count', n, 'sample', sample);
@@ -9696,6 +9745,14 @@ BEGIN
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Round not found, already completed, or no permission.');
+  END IF;
+
+  -- Optimistic lock (swap audit C-6): the caller's last acknowledged
+  -- updated_at. The row is already locked above, so this read is current.
+  IF NULLIF(p_round_data->>'expected_updated_at', '') IS NOT NULL
+     AND (SELECT updated_at FROM golf_rounds WHERE id = p_round_id)
+         > (p_round_data->>'expected_updated_at')::timestamptz THEN
+    RETURN jsonb_build_object('success', false, 'error', 'conflict');
   END IF;
 
   IF p_holes IS NULL OR jsonb_typeof(p_holes) <> 'array' THEN
@@ -10686,6 +10743,10 @@ BEGIN
   -- W13 / OD-01: only COUNTABLE rounds feed the player cache (mirrors
   -- isCountableRound in src/lib/golf/round-countable.ts). Columns are
   -- rsc-qualified because golf_rounds shares several names.
+  -- Q-128: the score figures below (18-hole scoring average and to par,
+  -- best and worst round, last 5/10) read golf_round_is_score_countable
+  -- instead: a round posted as a total only counts there and in no hole
+  -- figure (src/lib/golf/round-score-countable.ts).
   SELECT COUNT(*), SUM(rsc.total_score), SUM(rsc.score_to_par), MIN(rsc.total_score), MAX(rsc.total_score),
     SUM(rsc.eagles), SUM(rsc.birdies), SUM(rsc.pars), SUM(rsc.bogeys), SUM(rsc.double_bogeys), SUM(rsc.triple_plus),
     SUM(rsc.fairways_hit), SUM(rsc.fairways_total), SUM(rsc.greens_hit), SUM(rsc.greens_total),
@@ -10720,9 +10781,10 @@ BEGIN
 
   -- Hole-summed totals (src/lib/golf/round-total.ts deriveRoundTotal /
   -- deriveScoreToPar), same as every TS surface.
+  -- Q-128: a score figure, so a total-only round counts (score rule).
   SELECT COUNT(*), SUM(public.golf_round_canonical_total(r.total_score, r.front_nine, r.back_nine)), SUM(r.score_to_par + (public.golf_round_canonical_total(r.total_score, r.front_nine, r.back_nine) - r.total_score))
   INTO v_rounds_18, v_total_score_18, v_score_to_par_18
-  FROM golf_rounds r WHERE r.player_id = v_player_id AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
+  FROM golf_rounds r WHERE r.player_id = v_player_id AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total)
     AND r.total_score IS NOT NULL AND COALESCE(r.holes_played, 18) = 18;
 
   IF v_total_fairways > 0 THEN v_driving_accuracy := (v_total_fairways_hit::NUMERIC / v_total_fairways) * 100; END IF;
@@ -10740,11 +10802,14 @@ BEGIN
     v_penalty_per_round := v_total_penalties::NUMERIC / v_rounds_played;
   END IF;
 
+  -- Q-128: best and worst round are score figures (score rule).
   SELECT MIN(public.golf_round_canonical_total(r.total_score, r.front_nine, r.back_nine) * (18.0 / COALESCE(r.holes_played, 18))), MAX(public.golf_round_canonical_total(r.total_score, r.front_nine, r.back_nine) * (18.0 / COALESCE(r.holes_played, 18)))
   INTO v_best_round_normalized, v_worst_round_normalized
-  FROM golf_rounds r WHERE r.player_id = v_player_id AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total) AND r.total_score IS NOT NULL;
+  FROM golf_rounds r WHERE r.player_id = v_player_id AND public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total) AND r.total_score IS NOT NULL;
 
-  IF v_rounds_played = 0 OR v_rounds_played IS NULL THEN
+  -- Q-128: a player whose only rounds are totals posted without holes has
+  -- score figures but no hole rounds (v_rounds_played = 0); keep that row.
+  IF COALESCE(v_rounds_played, 0) = 0 AND COALESCE(v_rounds_18, 0) = 0 THEN
     DELETE FROM golf_player_stats_cache WHERE player_id = v_player_id;
     RETURN COALESCE(NEW, OLD);
   END IF;
@@ -10754,9 +10819,10 @@ BEGIN
   SELECT COUNT(*), ARRAY_AGG(rsc.round_id ORDER BY r.round_date DESC) INTO v_rounds_this_season, v_round_ids
   FROM golf_round_stats_cache rsc JOIN golf_rounds r ON r.id = rsc.round_id WHERE rsc.player_id = v_player_id AND r.round_date >= v_season_start AND public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total);
 
-  SELECT AVG(r.total_score) INTO v_last_5_avg FROM (SELECT public.golf_round_canonical_total(r2.total_score, r2.front_nine, r2.back_nine) AS total_score FROM golf_rounds r2 WHERE r2.player_id = v_player_id AND public.golf_round_is_countable(r2.status, r2.holes_played, r2.total_score, r2.front_nine, r2.back_nine, r2.total_putts, r2.strokes_gained_total) AND r2.total_score IS NOT NULL AND COALESCE(r2.holes_played, 18) = 18 ORDER BY r2.round_date DESC LIMIT 5) r;
-  SELECT AVG(r.total_score) INTO v_last_10_avg FROM (SELECT public.golf_round_canonical_total(r2.total_score, r2.front_nine, r2.back_nine) AS total_score FROM golf_rounds r2 WHERE r2.player_id = v_player_id AND public.golf_round_is_countable(r2.status, r2.holes_played, r2.total_score, r2.front_nine, r2.back_nine, r2.total_putts, r2.strokes_gained_total) AND r2.total_score IS NOT NULL AND COALESCE(r2.holes_played, 18) = 18 ORDER BY r2.round_date DESC LIMIT 10) r;
-  SELECT AVG(r.total_score) INTO v_prev_5_avg FROM (SELECT public.golf_round_canonical_total(r2.total_score, r2.front_nine, r2.back_nine) AS total_score FROM golf_rounds r2 WHERE r2.player_id = v_player_id AND public.golf_round_is_countable(r2.status, r2.holes_played, r2.total_score, r2.front_nine, r2.back_nine, r2.total_putts, r2.strokes_gained_total) AND r2.total_score IS NOT NULL AND COALESCE(r2.holes_played, 18) = 18 ORDER BY r2.round_date DESC LIMIT 5 OFFSET 5) r;
+  -- Q-128: last 5, last 10 and previous 5 are score figures (score rule).
+  SELECT AVG(r.total_score) INTO v_last_5_avg FROM (SELECT public.golf_round_canonical_total(r2.total_score, r2.front_nine, r2.back_nine) AS total_score FROM golf_rounds r2 WHERE r2.player_id = v_player_id AND public.golf_round_is_score_countable(r2.status, r2.holes_played, r2.total_score, r2.front_nine, r2.back_nine, r2.total_putts, r2.strokes_gained_total) AND r2.total_score IS NOT NULL AND COALESCE(r2.holes_played, 18) = 18 ORDER BY r2.round_date DESC LIMIT 5) r;
+  SELECT AVG(r.total_score) INTO v_last_10_avg FROM (SELECT public.golf_round_canonical_total(r2.total_score, r2.front_nine, r2.back_nine) AS total_score FROM golf_rounds r2 WHERE r2.player_id = v_player_id AND public.golf_round_is_score_countable(r2.status, r2.holes_played, r2.total_score, r2.front_nine, r2.back_nine, r2.total_putts, r2.strokes_gained_total) AND r2.total_score IS NOT NULL AND COALESCE(r2.holes_played, 18) = 18 ORDER BY r2.round_date DESC LIMIT 10) r;
+  SELECT AVG(r.total_score) INTO v_prev_5_avg FROM (SELECT public.golf_round_canonical_total(r2.total_score, r2.front_nine, r2.back_nine) AS total_score FROM golf_rounds r2 WHERE r2.player_id = v_player_id AND public.golf_round_is_score_countable(r2.status, r2.holes_played, r2.total_score, r2.front_nine, r2.back_nine, r2.total_putts, r2.strokes_gained_total) AND r2.total_score IS NOT NULL AND COALESCE(r2.holes_played, 18) = 18 ORDER BY r2.round_date DESC LIMIT 5 OFFSET 5) r;
 
   IF v_last_5_avg IS NOT NULL AND v_prev_5_avg IS NOT NULL THEN
     v_improvement := v_prev_5_avg - v_last_5_avg;
