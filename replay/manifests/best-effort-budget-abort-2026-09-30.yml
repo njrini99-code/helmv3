@@ -7,7 +7,7 @@ title: >-
   'warning', so NOT A DEFECT closes of 8ff00f0e / 20ed2ddd were reopened as
   REGRESSED by the next abort.
 bad_version: 368f7bef8e65b5d95276ea972b1a31a0c306b2a8
-fixed_version: 0e1abb150e9fc460b9b64547dd7c82372f6ec6be
+fixed_version: c706fc80eb2f362d65c85064c3abfb9672aabc52
 fixture:
   - source: best-effort-miss.test.ts
     target: src/lib/coachhelm/__tests__/best-effort-miss.test.ts

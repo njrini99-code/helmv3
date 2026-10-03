@@ -359,11 +359,65 @@ items:
       their own abort-budget trips at 'warning', so NOT A DEFECT closes of
       8ff00f0e / 20ed2ddd were reopened as REGRESSED by the next abort.
     incident_id: memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md
-    status: verified
+    status: verified_in_production
     risk: R1
-    sha: 0e1abb150e9fc460b9b64547dd7c82372f6ec6be
-    pr: null
+    sha: c706fc80eb2f362d65c85064c3abfb9672aabc52
+    pr: 2106
     regression_tests:
       - src/lib/coachhelm/__tests__/best-effort-miss.test.ts
     queued_for_release: false
     first_seen: '2026-09-02T01:01:46Z'
+  - id: retired-runner-prefix-heartbeat-2026-10-01
+    feature_id: admin_selfheal
+    root_cause: >-
+      The retired cloud Diagnose task wrote its failed heartbeat as
+      method='claude-code-scheduled-session', a third spelling the exact-match
+      retiredMethods list missed, so Diagnose read FAILED for six hours.
+    incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/lib/admin/__tests__/selfheal-registry.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-01T09:18:00Z'
+  - id: pattern-miner-starvation-info-2026-10-01
+    feature_id: coachhelm_ai
+    root_cause: >-
+      PatternMiner wrote its "0 patterns produced" starvation telemetry to
+      admin_events at warning for players with 16+ rounds; the Bridge treats
+      .starvation as telemetry, so each per-player incident was closed and
+      reopened within the hour (~200 rows/24h on 2026-10-01).
+    incident_id: null
+    no_incident_reason: >-
+      Telemetry severity drift, fixed by the health routine from the Bridge
+      FIX HERE analysis on /admin/errors/pattern-miner-starvation:e61da37b…;
+      the replay manifest pattern-miner-starvation-info-2026-10-01 is the record.
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/lib/coachhelm/v2/mining/__tests__/pattern-miner.starvation-fingerprint.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-01T21:17:00Z'
+  - id: safety-net-wake-reads-batched-2026-10-03
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The safety-net reconcile's wake decisions (hasActiveMembership,
+      meetsRoundFloor) read golf_team_members and counted golf_rounds once per
+      parked player; #2078 only batched the coverage read, so Sentry N+1 15E
+      and 107 kept firing every tick on ef6e017a2.
+    incident_id: null
+    no_incident_reason: >-
+      Performance (Sentry N+1, info level, no user-facing failure); the replay
+      manifest safety-net-wake-reads-batched-2026-10-03 is the record.
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-01T06:00:27Z'
