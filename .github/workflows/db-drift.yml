@@ -81,6 +81,18 @@ jobs:
           set -o pipefail
           npm run db:ledger-vs-catalog 2>&1 | tee "$RUNNER_TEMP/drift-ledger.log"
 
+      # Config drift: production Auth/API/DB/Storage settings vs the
+      # [remotes.production] block in supabase/config.toml (`supabase config
+      # diff`, read-only). Accepted dashboard-only paths live in
+      # supabase/config-drift-baseline.json.
+      - name: Check production config against config.toml
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          set -o pipefail
+          npm run db:config-drift 2>&1 | tee "$RUNNER_TEMP/drift-config.log"
+
       # Alert the owner within the hour of a failure above, instead of
       # waiting for someone to notice a red scheduled run. Two channels,
       # both owner-only, never customer mail:

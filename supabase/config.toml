@@ -35,8 +35,8 @@ shadow_port = 54320
 # this file before this pass (not independently re-verified against
 # production this session; see `.claude/rules/database.md` for how to check
 # `SHOW server_version;` there directly if it's ever in doubt). The
-# repo-pinned CLI (package.json "supabase": "^2.115.0",
-# `./node_modules/.bin/supabase --version` reports 2.115.0 as of this pin)
+# repo-pinned CLI (package.json "supabase": "^2.119.0",
+# `./node_modules/.bin/supabase --version` reports 2.119.0 as of this pin)
 # ships a Postgres 17 local image, so no CLI bump was needed to match.
 major_version = 17
 
@@ -549,3 +549,43 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+[remotes.production]
+project_id = "qmnssrrolpinvwjjnufo"
+
+[remotes.production.auth]
+additional_redirect_urls = ["https://helmv3-nick-rinis-projects.vercel.app/", "https://helmv3-nick-rinis-projects.vercel.app/**", "https://helmv3-*-nick-rinis-projects.vercel.app", "https://helmv3-*-nick-rinis-projects.vercel.app/**", "https://helmv3-njrini99-3085-nick-rinis-projects.vercel.app/", "https://helmv3-njrini99-3085-nick-rinis-projects.vercel.app/**", "https://helmv3-*-njrini99-3085-nick-rinis-projects.vercel.app", "https://helmv3-*-njrini99-3085-nick-rinis-projects.vercel.app/**"]
+site_url = "https://helmv3-nick-rinis-projects.vercel.app/"
+
+[remotes.production.auth.email]
+otp_length = 8
+
+[remotes.production.auth.rate_limit]
+email_sent = 25
+
+[remotes.production.db.pooler]
+default_pool_size = 30
+max_client_conn = 200
+
+[remotes.production.storage.analytics]
+enabled = true
+max_namespaces = 10
+
+[remotes.production.storage.image_transformation]
+enabled = true
+
+[remotes.production.storage.vector]
+enabled = true
+
+[remotes.production.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[remotes.production.auth.email.template.confirmation]
+subject = "Confirm Your Signup"
+
+[remotes.production.auth.email.template.email_change]
+subject = "Confirm Email Change"
+
+[remotes.production.auth.email.template.recovery]
+subject = "Reset Your Password"
