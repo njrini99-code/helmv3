@@ -70,7 +70,7 @@
   --ch-chart-rough: #e4e6d6;
 
   /* Semantic */
-  --ch-bg-page: var(--ch-ivory-100);
+  --ch-bg-page: var(--ch-ivory-150);
   --ch-bg-surface: var(--ch-ivory-25);
   --ch-bg-subtle: var(--ch-ivory-50);
   --ch-bg-inset: var(--ch-ivory-150);
@@ -88,14 +88,15 @@
   --ch-border-subtle: rgb(28 25 18 / 0.1);
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
-  --ch-border-focus: var(--ch-ink-900);
+  /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
+  --ch-border-focus: var(--ch-green-600);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
   --ch-green-ring: rgb(21 90 57 / 0.28);
   --ch-green-rule: rgb(21 90 57 / 0.4);
   --ch-ink-rule: rgb(28 25 18 / 0.2);
   --ch-champagne-ring: rgb(110 84 36 / 0.14);
   --ch-champagne-rule: rgb(176 149 96 / 0.25);
-  --ch-focus-halo: rgb(28 25 18 / 0.1);
+  --ch-focus-halo: rgb(21 90 57 / 0.13);
 
   /* Type */
   --ch-font-sans: var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
@@ -128,33 +129,70 @@
   --ch-radius-xl: 20px;
 
   /* Elevation */
-  --ch-shadow-sm: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.04), 0 2px 4px -2px rgb(28 25 18 / 0.04);
-  --ch-shadow-md: 0 0 0 1px rgb(28 25 18 / 0.06), 0 2px 4px -1px rgb(28 25 18 / 0.04), 0 10px 24px -8px rgb(28 25 18 / 0.1);
-  --ch-shadow-lg: 0 0 0 1px rgb(28 25 18 / 0.06), 0 8px 16px -6px rgb(28 25 18 / 0.08), 0 28px 56px -16px rgb(28 25 18 / 0.2);
+  /* The older names, kept for their many uses, now read their role on the depth ladder below. */
+  --ch-shadow-sm: var(--ch-elevation-reading);
+  --ch-shadow-md: 0 0 0 1px var(--ch-edge), 0 2px 6px rgb(28 25 18 / 0.06), 0 14px 32px -12px rgb(28 25 18 / 0.18);
+  --ch-shadow-lg: var(--ch-elevation-overlay);
   --ch-glass-bg: rgb(250 248 241 / 0.7);
-  --ch-glass-blur: 34px;
+  /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
+  --ch-glass-blur: 20px;
+  --ch-glass-saturate: 110%;
+
+  /* Depth (component depth audit, owner 2026-10-01, Q-142: "everything is flat and looks basic"). Depth follows a
+     component's role. A reading surface (card, panel, list) sits on the canvas with a crisp edge, a tight contact
+     shadow and a soft ambient one. A raised control adds a top highlight. A floating surface (composer, floating
+     action) lifts further; an overlay (menu, sheet) is the highest. The canvas is a step darker than every surface. */
+  --ch-edge: rgb(28 25 18 / 0.08);
+  --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  --ch-elevation-reading: 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 2px rgb(28 25 18 / 0.07),
+    0 4px 8px -2px rgb(28 25 18 / 0.06), 0 16px 36px -14px rgb(28 25 18 / 0.26);
+  --ch-elevation-control: var(--ch-highlight), 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 2px rgb(28 25 18 / 0.08),
+    0 4px 10px -4px rgb(28 25 18 / 0.14);
+  --ch-elevation-floating: var(--ch-highlight), 0 0 0 1px var(--ch-edge), 0 2px 6px rgb(28 25 18 / 0.06),
+    0 18px 44px -14px rgb(28 25 18 / 0.24);
+  --ch-elevation-floating-focus: var(--ch-highlight), 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
+    0 2px 6px rgb(28 25 18 / 0.06), 0 18px 44px -14px rgb(28 25 18 / 0.24);
+  --ch-elevation-overlay: 0 0 0 1px var(--ch-edge), 0 6px 16px rgb(28 25 18 / 0.08),
+    0 28px 64px -20px rgb(28 25 18 / 0.3);
+  /* A bottom sheet: a fine top edge and a long soft shadow cast up over the page. */
+  --ch-elevation-sheet: 0 -1px 0 rgb(28 25 18 / 0.06), 0 -12px 40px -8px rgb(28 25 18 / 0.24);
+  --ch-elevation-bubble: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.06),
+    0 3px 8px -3px rgb(28 25 18 / 0.1);
+  --ch-elevation-bubble-mine: 0 1px 2px rgb(11 58 37 / 0.22), 0 4px 12px -4px rgb(11 58 37 / 0.35);
+  --ch-control-bg: var(--ch-raised-bg);
+  --ch-field-pill-edge: inset 0 0 0 1px rgb(28 25 18 / 0.14);
+  --ch-field-pill-edge-focus: inset 0 0 0 1.5px var(--ch-border-focus);
+  /* Switches: a solid track with one inner edge, a white thumb with one contact and one soft shadow. */
+  --ch-switch-track-bg: #d3cdbf;
+  --ch-switch-track-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 1px 2px rgb(28 25 18 / 0.1);
+  --ch-switch-on-bg: var(--ch-green-600);
+  --ch-switch-on-shadow: inset 0 0 0 1px rgb(4 30 18 / 0.2), inset 0 1px 2px rgb(4 30 18 / 0.2);
+  --ch-switch-thumb-bg: #fff;
+  --ch-switch-thumb-shadow: 0 0 0 0.5px rgb(28 25 18 / 0.12), 0 1px 2px rgb(28 25 18 / 0.18),
+    0 3px 8px -2px rgb(28 25 18 / 0.2);
   --ch-phone-bar-bg: rgb(247 245 239 / 0.9);
   --ch-phone-tabbar-bg: rgb(253 252 248 / 0.92);
   --ch-phone-composer-bg: rgb(253 252 248 / 0.94);
   /* The one neutral coin: every avatar on the phone (D-43), and the default tone on desktop. */
-  --ch-avatar-neutral-bg: #e9e3d3;
-  --ch-avatar-neutral-fg: #5a4e36;
-  --ch-avatar-neutral-ring: rgb(90 78 54 / 0.22);
+  --ch-avatar-neutral-bg: #d9e4d8;
+  --ch-avatar-neutral-fg: #23402f;
+  --ch-avatar-neutral-ring: rgb(35 64 47 / 0.18);
 
-  /* Depth vocabulary ("depth like the toggles") */
+  /* Depth vocabulary. Owner 2026-10-01 (high-fidelity audit F04): reading surfaces are flat, a hairline and one light
+     lift; tactile depth stays on real controls (the well under a segmented control, a raised pill or thumb). */
   --ch-well-bg: linear-gradient(180deg, #dcd7ca 0%, #e6e2d7 55%, #ece8de 100%);
   --ch-well-shadow: inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16),
     inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 0 #fff,
     0 0 0 1px rgb(255 255 255 / 0.35);
-  --ch-well-soft-bg: linear-gradient(180deg, #e9e5da 0%, #efece3 60%, #f2efe7 100%);
-  --ch-well-soft-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),
-    inset 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 0 rgb(255 255 255 / 0.9);
+  /* A content well (figures, a header row): a flat tint and a hairline, not a carved recess. */
+  --ch-well-soft-bg: #eeebe2;
+  --ch-well-soft-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
   --ch-raised-bg: linear-gradient(180deg, #fffefb 0%, #f7f5ef 60%, #efece4 100%);
   --ch-raised-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 1px rgb(28 25 18 / 0.14), 0 3px 6px -2px rgb(28 25 18 / 0.22),
     0 8px 14px -8px rgb(28 25 18 / 0.28), inset 0 1px 0 #fff, inset 0 -1px 0 rgb(28 25 18 / 0.06);
-  --ch-sheet-bg: linear-gradient(180deg, #fffefb 0%, #fdfcf8 40%, #faf8f2 100%);
-  --ch-sheet-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.06), 0 6px 14px -6px rgb(28 25 18 / 0.12),
-    0 22px 40px -22px rgb(28 25 18 / 0.22), inset 0 1px 0 #fff;
+  /* A card is a reading surface: flat ivory, a hairline and one light lift. */
+  --ch-sheet-bg: #fcfbf7;
+  --ch-sheet-shadow: var(--ch-elevation-reading);
   --ch-green-raised-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 55%, #0f4a2f 100%);
   --ch-green-raised-shadow: 0 0 0 1px rgb(8 43 28 / 0.6), 0 1px 1px rgb(8 43 28 / 0.3), 0 4px 8px -3px rgb(8 43 28 / 0.4),
     inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);
@@ -175,13 +213,48 @@
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
   --ch-dur-shimmer: 1.9s;
+  /* The pending hairline's sweep (LinkPending, shell.css). */
+  --ch-dur-sweep: 900ms;
   /* Skeletons wait this long before showing, then fade in over base. */
-  --ch-skel-delay: 150ms;
+  /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
+  --ch-skel-delay: 0ms;
 
   /* Z */
   --ch-z-sticky: 40;
   --ch-z-overlay: 80;
   --ch-z-toast: 100;
+}
+
+/* Phone: a deeper ivory page and ivory (not near-white) cards. The owner's call
+   on the phone build (2026-09-30): the board's #fdfcf8 cards on #f4f2ea read as
+   white at arm's length. Desktop keeps the board values. */
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] {
+    /* Owner (2026-09-30, twice): the phone reads as white. Every light surface is a clear ivory, never near-white:
+       the ramp's light end, the page, cards, raised cards, sheets, chart paper and the bars. Desktop keeps the board. */
+    --ch-ivory-0: #fdfbf7;
+    --ch-ivory-25: #fbf9f4;
+    --ch-ivory-50: #f3efe6;
+    --ch-bg-page: #ede8dc;
+    --ch-bg-surface: var(--ch-ivory-25);
+    --ch-bg-subtle: var(--ch-ivory-50);
+    --ch-bg-hover: var(--ch-ivory-50);
+    --ch-bg-inset: #e6e0d3;
+    --ch-raised-bg: linear-gradient(180deg, #fefdfa 0%, #faf8f2 60%, #f4f1e9 100%);
+    --ch-sheet-bg: #fbf9f4;
+    --ch-well-soft-bg: #ebe6da;
+    --ch-chart-paper: #fbf9f4;
+    --ch-phone-bar-bg: rgb(237 232 220 / 0.94);
+    /* Glass, not a lid: the page shows through as it slides under (F-49). */
+    --ch-phone-tabbar-bg: rgb(246 243 236 / 0.86);
+    --ch-phone-composer-bg: #fbf9f4;
+    --ch-glass-bg: rgb(246 243 236 / 0.86);
+    /* Tertiary text holds 4.5:1 on the darker page. Raising it to #5f5c55 left secondary and tertiary 1.1 contrast points apart on
+       a card (7.4 against 6.3), so captions, previews and times read as one gray; secondary steps darker to restore the
+       ramp (9.3 against 6.3; the desktop ramp is 7.4 against 5.3). Aesthetic audit M-L1. */
+    --ch-ink-500: #5f5c55;
+    --ch-ink-600: #46433d;
+  }
 }
 
 /* Settings > Preferences > Animations off: every Clubhouse transition becomes
@@ -197,4 +270,44 @@
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
   --ch-skel-delay: 0ms;
+}
+
+/* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off
+   <html>, so they read these from there: the old page leaves fast, the new one arrives a beat later. Scoped to a
+   document showing Clubhouse. */
+html:has([data-ui='clubhouse']) {
+  --ch-dur-vt-out: 120ms;
+  --ch-dur-vt-in: 200ms;
+  --ch-dur-vt-gap: 60ms;
+  --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
+  --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show
+   <html> and <body>, which carry Fairway's canvas. Where Clubhouse is on screen they take its own colour: the frame on
+   desktop, the page on a phone. The native launch colour (#F2E6D2, capacitor.config.ts) is Q-140. */
+html:has([data-ui='clubhouse']),
+html:has([data-ui='clubhouse']) body {
+  background: #0a331f;
+}
+@media (max-width: 820px) {
+  html:has([data-ui='clubhouse']),
+  html:has([data-ui='clubhouse']) body {
+    background: #ede8dc;
+  }
+}
+
+/* Phone reading sizes (owner 2026-10-01, high-fidelity audit F09: "Phone 16 / 14"). Per role, never a page scale:
+   reading text 16px, important secondary text 14px, labels 13-14px; captions only to 13px, because chart axes and chips
+   use them. Desktop keeps the compact board sizes for dense tables. */
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] {
+    --ch-type-title: 600 16px/1.35 var(--ch-font-sans);
+    --ch-type-body-l: 400 17px/1.5 var(--ch-font-sans);
+    --ch-type-body: 400 16px/1.5 var(--ch-font-sans);
+    --ch-type-body-s: 400 14px/1.45 var(--ch-font-sans);
+    --ch-type-label: 500 14px/1.3 var(--ch-font-sans);
+    --ch-type-label-s: 500 13px/1.3 var(--ch-font-sans);
+    --ch-type-caption: 400 13px/1.4 var(--ch-font-sans);
+  }
 }

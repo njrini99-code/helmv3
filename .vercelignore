@@ -64,9 +64,11 @@ coverage/
 # Neither has ever been part of a build. `audit/` alone was two thirds of the
 # upload. The deploy that stalled on it produced a Canceled PREVIEW and never
 # moved the production alias — i.e. it looked like a deploy and shipped nothing,
-# which is the exact failure this repo keeps re-learning.
-audit/
-tools/
+# which is the exact failure this repo keeps re-learning. Both are anchored to
+# the root: a bare `audit/` also dropped src/app/baseball/.../settings/audit/
+# (a live page) from every upload (2026-10-02).
+/audit/
+/tools/
 
 # More untracked local artifact directories — the SAME trap as audit/ and
 # tools/ above, at new addresses. Every one of these is in .gitignore and
@@ -80,10 +82,11 @@ tools/
 #   .ruff_cache       linter cache
 #   .momentic-mcp     tooling state
 #
-# None has ever been a build input.
+# None has ever been a build input. `routes` is anchored to the root: a bare
+# `routes/` also matched src/clubhouse/routes/ and broke the build (2026-10-02).
 .playwright-mcp/
 .agents/
-routes/
+/routes/
 .ruff_cache/
 .momentic-mcp/
 # Tracked, unlike the five above, but still pure test artifacts (jpegs from

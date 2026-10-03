@@ -1,7 +1,8 @@
 # Roster checklist
 
-Reference: design/handoff/Roster.html, roster.jsx, roster.css, screenshots/roster-01..05
-Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek>`
+Reference: design/handoff/Roster.html, roster.jsx, roster.css,
+screenshots/roster-01..05 Route: /golf/dashboard/roster (coach)   Surface tag:
+`roster.<requests|list|peek>`
 
 ## spec
 
@@ -55,7 +56,10 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 
 ## phone-spec
 
-Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/handoff/mobile/Roster Mobile.html`, `m-roster.jsx`: list, profile, join requests sheet). The design boards were captured at 390 × 844, as was the current preview at 390px.
+Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design
+(`design/handoff/mobile/Roster Mobile.html`, `m-roster.jsx`: list, profile, join
+requests sheet). The design boards were captured at 390 × 844, as was the
+current preview at 390px.
 
 - [x] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop. It adds a pushed profile, a requests sheet and a list with sections, and maps every element to a component and to a loader field or action.
 - [x] The owner approved it: the file says `Status: approved`. Handing over the design is the approval (D-22, `design/handoff/mobile/README.md`).
@@ -64,7 +68,10 @@ Evidence: `docs/clubhouse/phone/roster.md` maps the owner's design (`design/hand
 
 ## phone
 
-Evidence so far (2026-09-29): built on the foundation, and the preview captured at 390 × 844 (roster-34 to 44 in the session scratchpad) against the design boards roster-01 to 14. `clubhouse:a11y roster` is clean on 15 pages, at 390px and 1280px, including the requests sheet, the profile and its ⋯ sheet.
+Evidence so far (2026-09-29): built on the foundation, and the preview captured
+at 390 × 844 (roster-34 to 44 in the session scratchpad) against the design
+boards roster-01 to 14. `clubhouse:a11y roster` is clean on 15 pages, at 390px
+and 1280px, including the requests sheet, the profile and its ⋯ sheet.
 
 - [ ] Built at 390px and 430px, respecting the safe areas. 390 is checked in the preview (d9b1c81fc). Open: 430px, owned by the merge pass (D-27); safe areas on a device, owned by the owner's iPhone pass.
 - [x] Touch targets are at least 44px, and hover-only affordances have a tap equivalent. Rows are 64px; buttons, the sort hit area and the "All N" link are 44px. The desktop row menu is the profile's ⋯ sheet. The axe target-size check is clean.
@@ -83,7 +90,8 @@ Evidence so far (2026-09-29): built on the foundation, and the preview captured 
 
 ## accessibility
 
-Verified by `roster.test.tsx` (CH-38xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/roster.md`.
+Verified by `roster.test.tsx` (CH-38xx) and `npm run clubhouse:a11y`; states
+catalogued in `docs/clubhouse/catalog/roster.md`.
 
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays. CH-3803 covers Esc, and `<dialog>` traps focus in sheets. Open because the path hasn't been walked in a browser end to end. Owner: the merge pass (D-27).
 - [x] Landmarks, headings in order, table roles, and labels on icon buttons

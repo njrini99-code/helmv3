@@ -40,11 +40,15 @@ export interface ChCalendarData {
   rsvpError: boolean;
   classesError: boolean;
   settingsError: boolean;
+  /** The roster didn't load: `people` is unknown, not an empty team (C-21). */
+  membersError?: boolean;
   /** Coach only: their own blocked time failed to load (shown as a notice, never as "free"). */
   busyError: boolean;
 }
 
 type ClassRow = { id: string; player_id: string; instructor: string | null; days: string[] | null; semester: string | null; building: string | null; room: string | null };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const TYPES: ReadonlySet<string> = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'class', 'other']);
 
@@ -128,6 +132,11 @@ export async function loadCalendar(input: {
   coachId?: string | null;
   view: ChCalView;
   date?: string;
+  /**
+   * `?event=<id>` without a date (every notification, reminder and the shell's next-event card link that way): the
+   * calendar opens on that event's own day, so an event weeks out is in the loaded window and opens (CAL-03).
+   */
+  event?: string;
 }): Promise<ChCalendarData> {
   const supabase = await createClient();
 
@@ -148,7 +157,14 @@ export async function loadCalendar(input: {
   const timezone = getValidTimezone(settingsRes.data?.timezone ?? null);
   const nowZ = zoned(new Date().toISOString(), timezone);
   const today = nowZ.date;
-  const anchor = parseDate(input.date, today);
+  let eventDate: string | undefined;
+  if (!input.date && input.event && UUID.test(input.event)) {
+    // Only its day is read, from the same team-scoped table the window reads, so it shows nothing the window wouldn't.
+    const { data: target, error } = await supabase.from('golf_events').select('start_time, all_day').eq('id', input.event).eq('team_id', input.teamId).maybeSingle();
+    if (error) chLogServer('calendar', 'deepLinkEvent', error, 'calendar');
+    if (target?.start_time) eventDate = target.all_day ? target.start_time.slice(0, 10) : zoned(target.start_time, timezone).date;
+  }
+  const anchor = parseDate(input.date ?? eventDate, today);
   const range = windowFor(anchor);
 
   type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
@@ -349,5 +365,6 @@ export async function loadCalendar(input: {
     rsvpError,
     classesError: !!classesRes.error,
     settingsError: !!settingsRes.error,
+    membersError: !!membersRes.error,
   };
 }

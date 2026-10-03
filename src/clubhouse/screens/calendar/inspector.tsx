@@ -298,7 +298,14 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     async (status: 'accepted' | 'tentative' | 'declined') => {
       const chosen: ChRsvp = status === 'accepted' ? 'accepted' : status === 'tentative' ? 'maybe' : 'declined';
       setValue(chosen);
-      const r = await respondToEvent(e.id, status);
+      let r: Awaited<ReturnType<typeof respondToEvent>>;
+      try {
+        r = await respondToEvent(e.id, status);
+      } catch (err) {
+        // A reply that never reached the server (a dropped connection) goes back too, never left showing as sent.
+        setValue(confirmed.current);
+        throw err;
+      }
       // Lock reasons (deadline, started, cancelled) come back as codes; say which one.
       const res = r.success ? r : { success: false, error: rsvpLockMessage(readRsvpLockCode(r), r.error).replace(' — ', '. ').replace(/^RSVPs/, 'Replies') };
       if (normalise(res).success) {
@@ -371,6 +378,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/golf/dashboard/calendar?event=${e.id}&date=${e.date}`);
+      // CH-6703: a copied link lands with the success pattern.
       haptic('success');
       toast({ title: 'Link copied' });
     } catch (err) {
@@ -461,9 +469,14 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           )}
         </div>
       )}
+      {/* The invite list comes from the replies read: when that failed, an empty list is unknown, not "no one" (CAL-09). */}
       {coach && e.people.length === 0 && (
         <div className="ch-in__sec">
-          <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
+          {ctx.rsvpError ? (
+            <InlineNotice code="CH-6205" title="Replies didn't load." body="Try again to see who's going." onRetry={ctx.refresh} />
+          ) : (
+            <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
+          )}
         </div>
       )}
       <EventFiles eventId={e.id} teamId={ctx.teamId} canEdit={coach && e.canEdit && !e.cancelled} preview={ctx.preview} />
@@ -571,20 +584,28 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
   }, [id, attempt, ctx.preview]);
 
   const changed = useMemo(() => Object.entries(marks).filter(([p, m]) => saved?.[p] !== m), [marks, saved]);
+  // The toast's Retry runs the action from the render that failed: it reads what is still unsaved now, so marks that
+  // landed the first time are never sent again (CAL-24).
+  const unsaved = useRef(changed);
+  useEffect(() => {
+    unsaved.current = changed;
+  }, [changed]);
   const save = useAction(
     'calendar.attendance',
     async () => {
-      const results = await Promise.all(changed.map(([p, m]) => markAttendance(id, p, m).then((r) => ({ p, m, ok: r.success, error: r.error }))));
+      const results = await Promise.all(unsaved.current.map(([p, m]) => markAttendance(id, p, m).then((r) => ({ p, m, ok: r.success, error: r.error }))));
       const failed = results.filter((r) => !r.ok);
-      setSaved((s) => ({ ...s, ...Object.fromEntries(results.filter((r) => r.ok).map((r) => [r.p, r.m])) }));
+      const landed = Object.fromEntries(results.filter((r) => r.ok).map((r) => [r.p, r.m]));
+      setSaved((s) => ({ ...s, ...landed }));
+      unsaved.current = unsaved.current.filter(([p]) => !(p in landed));
       return failed.length ? { success: false, error: failed.length === results.length ? failed[0]?.error : `${failed.length} of ${results.length} marks didn’t save` } : { success: true };
     },
-    {
-      done: `${changed.length} attendance ${changed.length === 1 ? 'mark' : 'marks'} saved`,
+    () => ({
+      done: `${unsaved.current.length} attendance ${unsaved.current.length === 1 ? 'mark' : 'marks'} saved`,
       failed: "Couldn't save attendance",
       hint: 'The marks that saved are kept. Try again for the rest.',
       code: 'CH-6011',
-    },
+    }),
   );
 
   if (!e) return null;
@@ -618,7 +639,8 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
               variant="ghost"
               onClick={() => {
                 haptic('select');
-                setMarks(Object.fromEntries(e.people.map((p) => [p, 'present' as const])));
+                // Only players with no mark yet: a saved or chosen Late or No-show is the coach's call and stays (CAL-23).
+                setMarks((s) => ({ ...Object.fromEntries(e.people.filter((p) => !saved[p]).map((p) => [p, 'present' as const])), ...s }));
               }}
             >
               Mark all present

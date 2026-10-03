@@ -1,6 +1,12 @@
 import type { ChTeamStats } from '../../data/stats-team';
 import { roundsWord } from '../../data/stats-filter';
 
+/** C-24(f), CH-5213: the profile's round cache didn't load, so its figures are missing, never "no data" (a dash read as an empty sample). */
+export const CACHE_ERROR = {
+  title: "Some round figures didn't load.",
+  body: 'Scores and strokes gained are correct; fairways, greens, putts and scrambling are missing. Try again; the error has been reported.',
+};
+
 /** "2 countable rounds", or with nine-hole rounds in, "3 countable rounds, 2.5 counting 9-hole rounds as half" (the early-read floors count whole rounds). */
 export function countWords(raw: number, whole: number): string {
   const base = `${raw} countable ${raw === 1 ? 'round' : 'rounds'}`;

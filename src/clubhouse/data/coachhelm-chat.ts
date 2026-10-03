@@ -9,6 +9,7 @@ import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import type { ChatMessage, ChatMessageStatus, ChatRole, ToolCallRecord, ToolResultRecord } from '@/lib/coachhelm/v3/chat/types';
 import { chLogServer } from '../lib/track-server';
 import { rebuiltHref } from '../shell/nav';
+import { pulseItemsThatStand, pulseMissing } from './coachhelm-shape';
 import {
   buildAskSuggestions,
   conversationTitle,
@@ -120,6 +121,12 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
     log('context', err);
     return { status: 'failed' };
   }
+  // A roster that did not read is empty because it could not be read, not because nobody is on the team: it is the context that
+  // failed ("Ask couldn't load your program", with Try again), never "Add players to ask CoachHelm".
+  if (ctx.roster_failed) {
+    log('roster', new Error('the active roster did not read'));
+    return { status: 'failed' };
+  }
   if (ctx.roster.length === 0) return { status: 'noRoster', teamName: ctx.team_name };
 
   const asked = conversationId?.trim() || null;
@@ -131,22 +138,30 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
     wanted ? readThread(sb, wanted) : Promise.resolve(null),
   ]);
 
+  // A pulse some of whose reads failed: an item made from a failed read is not drawn (no rounds read is "no player has a round"), the
+  // coverage line and the counts behind the openers come from rounds that were not read, and what is left says what is missing.
+  const missing = pulseMissing(pulse?.failed);
+  const roundsFailed = !!pulse?.failed?.includes('rounds');
   const pulseData: ChAskPulse | null = pulse
     ? {
-        findings: pulseToFindings(pulse.items, (href) => rebuiltHref(href, 'coach')),
-        coverage: coverageLine(pulse),
+        findings: pulseToFindings(pulseItemsThatStand(pulse.items, pulse.failed), (href) => rebuiltHref(href, 'coach')),
+        coverage: roundsFailed ? null : coverageLine(pulse),
         // Formatted here, in the team's zone: a browser-side format of the same instant disagrees with the server render.
         asOfLabel: new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: ctx.timezone }).format(new Date(pulse.as_of)),
+        ...(missing.length > 0 ? { missing } : {}),
       }
     : null;
+  // The openers read the rounds counts; with the rounds unread they are the ones that assert nothing ("Brief me"), not "no rounds yet".
+  const counted = pulse && roundsFailed ? { ...pulse, players_without_rounds: 0, players_with_recent_rounds: 0 } : pulse;
 
   const data: ChAskData = {
+    coachId: ctx.coach_id,
     teamName: ctx.team_name,
     timezone: ctx.timezone,
     nowIso: new Date().toISOString(),
     players: ctx.roster.map((p) => ({ id: p.id, name: p.name })),
-    suggestions: pulse
-      ? buildAskSuggestions({ openers: generalOpeners(pulse, ctx.team_name), recentCovered: pulse.players_with_recent_rounds, rosterCount: ctx.roster.length })
+    suggestions: counted
+      ? buildAskSuggestions({ openers: generalOpeners(counted, ctx.team_name), recentCovered: counted.players_with_recent_rounds, rosterCount: ctx.roster.length })
       : buildAskSuggestions({ openers: [], recentCovered: 0, rosterCount: ctx.roster.length }),
     pulse: pulseData,
     noRounds: noRoundsFrom(pulse),

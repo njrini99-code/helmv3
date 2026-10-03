@@ -97,6 +97,45 @@ Animation:         v2 tokens only
 Notes:             first-load JS and LCP are open (CH-1954)
 ```
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+| `P002__dashboard__coach__1440__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__before__f724065.png` | before | f724065 | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__375__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 375px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__375__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 375px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__375__default__before__f724065.png` | before | f724065 | dashboard (coach), 375px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__before__f724065.png` | before | f724065 | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__430__default__after__4e01c43.png` | after | 4e01c43 | dashboard (coach), 430px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__430__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (coach), 430px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__430__default__before__f724065.png` | before | f724065 | dashboard (coach), 430px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__before__f724065.png` | before | f724065 | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__375__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 375px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__375__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 375px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__375__default__before__f724065.png` | before | f724065 | dashboard (player), 375px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__before__f724065.png` | before | f724065 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__430__default__after__4e01c43.png` | after | 4e01c43 | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__430__default__before__f724065.png` | before | f724065 | dashboard (player), 430px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__after__d4367ee.png` | after | d4367ee | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__1440__default__before__d3a6483.png` | before | d3a6483 | dashboard (coach), 1440px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__after__d4367ee.png` | after | d4367ee | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__coach__390__default__before__d3a6483.png` | before | d3a6483 | dashboard (coach), 390px, default; /clubhouse-preview/home, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__after__d4367ee.png` | after | d4367ee | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__1440__default__before__d3a6483.png` | before | d3a6483 | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__after__d4367ee.png` | after | d4367ee | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__dashboard__player__390__default__before__d3a6483.png` | before | d3a6483 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+
 ## Open verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 1280, 390 and 430 with a real coach and a real player account.

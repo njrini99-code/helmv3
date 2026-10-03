@@ -7,7 +7,8 @@
     "/golf/dashboard/roster"
   ],
   "roles": [
-    "coach"
+    "coach",
+    "player"
   ],
   "semanticFeatures": [
     "roster_team"
@@ -39,9 +40,11 @@
     "root": "src/clubhouse/screens/roster",
     "loader": "src/clubhouse/data/roster.ts",
     "route": "src/clubhouse/routes/roster.tsx",
+    "playerLoader": "src/clubhouse/data/roster-player.ts",
     "styles": "src/clubhouse/styles/roster.css",
     "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
+      "src/clubhouse/__tests__/roster.test.tsx",
+      "src/clubhouse/__tests__/roster-player.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/roster.md",
@@ -273,6 +276,38 @@
       },
       "tests": [
         "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-PLAYER-VIEW",
+      "label": "Search, change the layout and sort the teammates (a player's read-only roster)",
+      "component": "src/clubhouse/screens/roster/TeamRoster.tsx#TeamRoster",
+      "handler": "setQ, changeView, setSort",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "readOnly": 30804,
+        "empty": 30402,
+        "haptic": 31701,
+        "text": 31807
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster-player.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P003-PLAYER-TRY-AGAIN",
+      "label": "Try again on a player's roster that did not load",
+      "component": "src/clubhouse/screens/roster/TeamRoster.tsx#TeamRoster",
+      "handler": "router.refresh",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "rosterFailed": 30617,
+        "crash": 30618
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster-player.test.tsx"
       ]
     }
   ],

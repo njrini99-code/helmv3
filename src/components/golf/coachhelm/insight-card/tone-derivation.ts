@@ -30,7 +30,7 @@ export type DerivedTone =
  *  5. Positive metric and the player is ahead of comparison → encouraging
  *  6. Otherwise → neutral
  */
-export function deriveTone(insight: EvidenceInsight): DerivedTone {
+export function deriveTone(insight: Pick<EvidenceInsight, 'lifecycle_state' | 'priority' | 'category' | 'evidence'>): DerivedTone {
   if (insight.lifecycle_state === 'resolved') return 'celebratory';
 
   const priority = insight.priority;
@@ -58,8 +58,12 @@ export function deriveTone(insight: EvidenceInsight): DerivedTone {
   // Encouraging: positive-polarity metric where the player beats the comp.
   // The movement `direction` is irrelevant here — we're looking at a level
   // check (your_value vs comparison_value) not a delta.
+  // A value that is missing is not zero: with no comparison (or no value of the player's own) there is nothing to be ahead of, so
+  // the row is not encouraging. `Number(undefined ?? 0)` used to read "ahead of 0" on every higher-is-better row with no comparison.
   if (evidence) {
-    const yourAhead = Number(evidence.your_value ?? 0) > Number(evidence.comparison_value ?? 0);
+    const yours = evidence.your_value == null ? Number.NaN : Number(evidence.your_value);
+    const theirs = evidence.comparison_value == null ? Number.NaN : Number(evidence.comparison_value);
+    const yourAhead = Number.isFinite(yours) && Number.isFinite(theirs) && yours > theirs;
     if (yourAhead && isPositivePolarityMetric(metric, evidence)) return 'encouraging';
   }
 

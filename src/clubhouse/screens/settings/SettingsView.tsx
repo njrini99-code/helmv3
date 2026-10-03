@@ -43,6 +43,11 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
  * On a phone (820px or less) it is a different screen, not this page reflowed:
  * a grouped list that pushes to each section (phone/SettingsPhone, owner
  * design docs/clubhouse/phone/settings.md), over the same data and writes.
+ *
+ * Feedback it shares with the shell: toasts slide and fade (CH-8605, ToastProvider), every control presses in
+ * (CH-8607, useChPress), a primary button taps lightly (CH-8706, Button's default feel), a Save changes that lands
+ * gives the success pattern and a failed save the error pattern (CH-8702, CH-8703, useAction and the instant saves in
+ * parts.tsx), and Animations off makes every transition instant (CH-8608, data-motion and useChReducedMotion).
  */
 export function SettingsView({
   data: served,
@@ -82,6 +87,7 @@ export function SettingsView({
 
   const show = (next: ChSettingsSection) => {
     if (next === section) return;
+    // CH-8701: a selection tick on picking a section (switches, segments and slider steps tick the same way).
     haptic('select');
     chTrail(`settings section ${next}`);
     setSection(next);
@@ -115,6 +121,7 @@ export function SettingsView({
           </p>
         </header>
         <div className="ch-set-layout">
+          {/* CH-8801: the section list is a navigation landmark; the open section is marked current. */}
           <nav className="ch-set-rail" aria-label="Settings sections">
             {sections.map((s) => (
               <button
@@ -133,6 +140,7 @@ export function SettingsView({
             ))}
           </nav>
           <div className="ch-set-body">
+            {/* CH-8601: the old section fades out, the new one settles in. */}
             <AnimatePresence mode="wait" initial={false}>
               <m.div
                 key={section}

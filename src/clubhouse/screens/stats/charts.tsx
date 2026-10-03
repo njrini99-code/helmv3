@@ -29,7 +29,10 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
 /** Figure cards with a change chip; the chip colour follows direction and whether lower is better. */
 export function FigureCards({
   items,
+  hold = false,
 }: {
+  /** Team stats: the cards keep the height of their fullest layout in every window (`.ch-fg--hold`), so a window change does not move the page below. */
+  hold?: boolean;
   items: Array<{
     label: string;
     value: string;
@@ -47,7 +50,7 @@ export function FigureCards({
   }>;
 }) {
   return (
-    <div className="ch-fg" style={{ ['--ch-fg-n' as string]: items.length }}>
+    <div className={'ch-fg' + (hold ? ' ch-fg--hold' : '')} style={{ ['--ch-fg-n' as string]: items.length }}>
       {items.map((it) => {
         const d = it.delta;
         const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
@@ -381,7 +384,10 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
         <div key={r.par} className="ch-par3__t">
           <span className="ch-par3__l">Par {r.par}s</span>
           <span className="ch-par3__v ch-num">{r.avg == null ? NO_DATA : r.avg.toFixed(2)}</span>
-          <span className="ch-par3__to ch-num">{r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}</span>
+          {/* Against the Tour's average for the par when there is one (lower is better), so the colour says how it compares (F-54). */}
+          <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
+            {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}
+          </span>
           {r.bench != null && <span className="ch-par3__d ch-num">Tour {r.bench.toFixed(2)}</span>}
         </div>
       ))}
@@ -389,7 +395,16 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
   );
 }
 
-export function FairwayStrip({ left, fw, right }: { left: number; fw: number; right: number }) {
+/**
+ * Where drives finish, every zone a share of the same tee shots (the fairway opportunities, par 4s and 5s with a known result):
+ * left, fairway and right from their counts, and the misses with no side logged as "Other", so the zones add up to the whole.
+ */
+export function FairwayStrip({ opportunities, hit, left: leftN, right: rightN }: { opportunities: number; hit: number; left: number; right: number }) {
+  const share = (n: number) => (n / opportunities) * 100;
+  const fw = share(hit);
+  const left = share(leftN);
+  const right = share(rightN);
+  const other = share(Math.max(0, opportunities - hit - leftN - rightN));
   const bias = left - right;
   return (
     <div className="ch-fws">
@@ -406,6 +421,12 @@ export function FairwayStrip({ left, fw, right }: { left: number; fw: number; ri
           <b className="ch-num">{Math.round(right)}%</b>
           <em>Right</em>
         </span>
+        {other > 0 && (
+          <span className="ch-fws__z is-rough" style={{ flex: Math.max(other, 1) }}>
+            <b className="ch-num">{Math.round(other)}%</b>
+            <em>Other</em>
+          </span>
+        )}
       </div>
       <div className="ch-fws__cap">
         <span>Miss bias</span>
@@ -428,25 +449,81 @@ export function Compare({ rows, unit = '', max }: { rows: Array<{ label: string;
           <span className="ch-cmp__bar" aria-hidden="true">
             {r.value != null && <span style={{ width: `${Math.min(100, (r.value / m) * 100)}%` }} />}
           </span>
-          <b className="ch-num">{r.value == null ? NO_DATA : `${Math.round(r.value * 10) / 10}${unit}`}</b>
+          {/* Percentages are whole numbers everywhere else in Stats ("55.6%" beside "50%" read as noise, F-54). */}
+          <b className="ch-num">{r.value == null ? NO_DATA : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
         </div>
       ))}
     </div>
   );
 }
 
-/** Bars by distance band with a dashed benchmark tick; bars are the player, ticks are the Tour. */
+export interface LadderRow {
+  band: string;
+  value: number | null;
+  bench: number | null;
+  /** The shots behind the band, when the source keeps a count per band (the calculator's GIR and finish bands keep only the averages). */
+  n?: number | null;
+  /** The sample a band needs before it is graded: a band with shots under it reads "Needs 10", not "No shots". */
+  floor?: number | null;
+}
+
+/**
+ * One row per distance band, for a phone (a seven-band column chart is cramped there and its labels wrap): the band, a bar on a track,
+ * the exact value, and the shots behind it when they are known. A band with no shots says "No shots", which is not 0%. A percentage
+ * bar is on the 0 to 100 scale, so a 100% bar fills its track; a distance in feet is on the largest value and tick, and shorter is better.
+ */
+export function BandRows({ rows, unit, label, invert = false, none = 'No shots', code }: { rows: LadderRow[]; unit: string; label: string; invert?: boolean; none?: string; code?: string }) {
+  const max = unit === '%' ? 100 : Math.max(1, ...rows.flatMap((r) => [r.value ?? 0, r.bench ?? 0])) * 1.1;
+  return (
+    <div className="ch-brows" data-ch-code={code && rows.some((r) => r.value == null) ? code : undefined}>
+      <p className="ch-brows__axis">{label}</p>
+      <ul aria-label={label}>
+        {rows.map((r) => {
+          const tone = r.value == null || r.bench == null ? '' : (invert ? r.value <= r.bench : r.value >= r.bench) ? ' is-gain' : ' is-loss';
+          return (
+            <li key={r.band} className="ch-brow">
+              <span className="ch-brow__b ch-num">{r.band}</span>
+              <span className="ch-brow__bar" aria-hidden="true">
+                {r.value != null && <i className={tone.trim()} style={{ width: `${Math.min(100, (r.value / max) * 100)}%` }} />}
+                {r.bench != null && <em style={{ left: `${Math.min(100, (r.bench / max) * 100)}%` }} />}
+              </span>
+              <span className={'ch-brow__v' + (r.value == null ? ' is-none' : '')}>
+                {r.value == null ? (
+                  r.n && r.floor ? `Needs ${r.floor}` : none
+                ) : (
+                  <b className={'ch-num' + (tone === ' is-loss' ? ' ch-loss' : tone === ' is-gain' ? ' ch-gain' : '')}>{`${Math.round(r.value)}${unit}`}</b>
+                )}
+                {r.n != null && r.n > 0 && <small className="ch-num">{`${r.n} ${r.n === 1 ? 'shot' : 'shots'}`}</small>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Bars by distance band with a dashed benchmark tick; bars are the player, ticks are the Tour. On a phone the bands are rows (BandRows). */
 export function Ladder({
   rows,
   unit,
   label,
   invert = false,
+  phone = false,
+  none,
+  code,
 }: {
-  rows: Array<{ band: string; value: number | null; bench: number | null }>;
+  rows: LadderRow[];
   unit: string;
   label: string;
   invert?: boolean;
+  phone?: boolean;
+  /** What an empty band reads on a phone ("No shots"). */
+  none?: string;
+  /** The catalog code a phone's rows carry when a band has no value (the screen's line under the chart says so on desktop). */
+  code?: string;
 }) {
+  if (phone) return <BandRows rows={rows} unit={unit} label={label} invert={invert} none={none} code={code} />;
   const max = Math.max(1, ...rows.flatMap((r) => [r.value ?? 0, r.bench ?? 0])) * 1.1;
   return (
     <div className="ch-lad" style={{ ['--ch-n' as string]: rows.length }}>
@@ -503,6 +580,31 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
 }
 
 /** Make rate by distance: the player's line against the Tour's dashed line. Bands under 10 putts aren't graded. */
+/**
+ * Make rate by distance on the phone, as the board draws it (m-stats.jsx Putting, m.css .m-putt): a row per band, the
+ * bar in green or amber under the Tour's tick, the rate on the right. The desktop curve's labels are unreadable at
+ * phone width (F-54). A band grades only with 10 or more putts, as on desktop.
+ */
+export function MakeRows({ bands }: { bands: Array<{ band: string; value: number | null; bench: number | null; n: number }> }) {
+  return (
+    <div className="ch-stm-putt">
+      {bands.map((b) => {
+        const low = b.value != null && b.bench != null && b.n >= 10 && b.value < b.bench;
+        return (
+          <div key={b.band} className="ch-stm-putt__r">
+            <span className="ch-num">{b.band} ft</span>
+            <span className="ch-stm-putt__bar" aria-hidden="true">
+              {b.value != null && <i className={low ? 'is-low' : ''} style={{ width: `${Math.min(100, b.value)}%` }} />}
+              {b.bench != null && <em style={{ left: `${b.bench}%` }} />}
+            </span>
+            <b className={'ch-num' + (low ? ' ch-loss' : '')}>{b.value == null ? NO_DATA : `${Math.round(b.value)}%`}</b>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MakeCurve({ bands }: { bands: Array<{ band: string; value: number | null; bench: number | null; n: number }> }) {
   const w = 760;
   const h = 210;

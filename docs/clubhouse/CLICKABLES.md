@@ -56,8 +56,8 @@ Every page in the requested order was reached; nothing was left out.
 | CoachHelm | 3 | 24 | 17 | 0 | 5 | 0 | 2 |
 | Classes | 2 | 61 | 47 | 0 | 14 | 0 | 0 |
 | Settings (no v2 board) | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| Shell | 4 | 58 | 40 | 0 | 12 | 0 | 6 |
-| **All pages** | 30 | **666** | **404** | **13** | **206** | **2** | **41** |
+| Shell | 4 | 58 | 41 | 0 | 11 | 0 | 6 |
+| **All pages** | 30 | **666** | **405** | **13** | **205** | **2** | **41** |
 
 `hidden-until-rebuilt`: 13 rows, all held by one thing, round entry (Q-78, below).
 Of the `decided` rows, 121 are Rounds setup and shot tracking controls that are built
@@ -166,8 +166,8 @@ owner, so none is a GAP above. Grouped by record.
 - **Calendar** phone (Q-67), D-11, D-12: Message invitees, the compact New event form, Workout type,
   the competition-only feed.
 - **Roster** status pill popover (Q-1, the availability migration is written and unapplied).
-- **Home and shell** (Q-66, `P001-shell/DESIGN.md:119`): the team switcher chevrons, the Workout
-  chip.
+- **Home and shell** (Q-66): the team chip on the Home hero bar (the switcher itself is built, in the
+  sidebar and the More sheet), the Workout chip.
 
 ## Records that are stale (fix when building)
 
@@ -216,7 +216,7 @@ Built counterpart: src/clubhouse/screens/home/HomePhone.tsx (rendered when useCh
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
-| Varsity (team button with chevron) | Hero bar, left | Team name shown as a label, not a switcher, src/clubhouse/shell/TopBar.tsx:45; Q-66 docs/clubhouse/PROGRESS.md:292, docs/clubhouse/phone/home.md:25 | `decided` | No handler on the board. One team per coach in Clubhouse. |
+| Varsity (team button with chevron) | Hero bar, left | Team name shown as a label, src/clubhouse/shell/TopBar.tsx:45; Q-66 docs/clubhouse/PROGRESS.md:292, docs/clubhouse/phone/home.md:25 | `decided` | No handler on the board. The switcher is the sidebar's team line (desktop) and the More sheet (phone), CH-1813, CH-1814. |
 | Up next card | Hero, Up next (practice day and competition day boards) | Link to Calendar at that event `?date=&event=`, src/clubhouse/screens/home/HomePhone.tsx:125 (href :25); Calendar opens it at src/clubhouse/screens/calendar/Calendar.tsx:207 | `works` | Board's go handler is a no-op (m-home.jsx:114). |
 | Practice / Qualifier / Tournament quick chips (x3) | Hero, Up next, No events board, chip row | Each links to the Calendar editor on that type `?new=1&type=`, src/clubhouse/screens/home/HomePhone.tsx:176; type parsed at src/clubhouse/data/calendar.ts:55 | `works` | No handler on the board. |
 | Workout quick chip | Hero, Up next, No events board, chip row, fourth | Meeting chip in its place (no workout event type), src/clubhouse/screens/home/HomePhone.tsx:153; Q-66 docs/clubhouse/PROGRESS.md:292, docs/clubhouse/phone/home.md:26 | `decided` | No handler on the board. |
@@ -1107,7 +1107,7 @@ Built counterpart: src/clubhouse/shell/Sidebar.tsx, NextEventCard.tsx, TopBar.ts
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
-| Varsity · Fall 2026 (chevrons-up-down team chip) | Sidebar, brand block | Team name as a plain label, no switcher, src/clubhouse/shell/Sidebar.tsx:49 | `decided` | No handler on the board. Team switcher is an explicit non-goal, docs/clubhouse/pages/P001-shell/DESIGN.md:119 (one team per coach, Q-66 PROGRESS.md:292) |
+| Varsity · Fall 2026 (chevrons-up-down team chip) | Sidebar, brand block | Menu button for a head coach on two or more teams (a listbox of the teams, `setActiveTeam` then `router.refresh()`), plain label otherwise, src/clubhouse/shell/TeamSwitch.tsx (`BrandTeamSwitch`), Sidebar.tsx | `works` | No handler on the board. Built 2026-10-01 on the owner's answer to Q-130; gate `canSwitchTeams` and two or more teams, catalog CH-1813, CH-1305 |
 | Home | Sidebar, main group | Link to /golf/dashboard, src/clubhouse/shell/Sidebar.tsx:65 (href from nav.ts:35) | `works` | Board GH.go (gh-nav.js:29) |
 | CoachHelm | Sidebar, main group | Link to /golf/dashboard/coachhelm, src/clubhouse/shell/Sidebar.tsx:65 (nav.ts:36), rebuilt for coach nav.ts:113 | `works` | nav.ts:30 comment calling it not rebuilt is stale (D-66) |
 | Calendar | Sidebar, main group | Link to /golf/dashboard/calendar, src/clubhouse/shell/Sidebar.tsx:65 (nav.ts:37) | `works` | |
@@ -1156,12 +1156,12 @@ Built counterpart: src/clubhouse/shell/TabBar.tsx, TopBar.tsx, Bell.tsx, phone-c
 | Home, CoachHelm, Calendar, Stats (x4) | Tab bar | Links to each rebuilt route, src/clubhouse/shell/TabBar.tsx:99, set nav.ts:70 | `works` | No handler on the board (MTabs buttons, m-shell.jsx:15). Select haptic on change |
 | More (badge 3) | Tab bar, right | Opens the More sheet, src/clubhouse/shell/TabBar.tsx:127; badge is the Messages unread count, TabBar.tsx:56 | `works` | No handler on the board. D-40 roll-up |
 | Home, Helm, Rounds, Stats, More (older set, Rounds active) | Tab bar on Coach - Qualifiers - Mobile (qual-mobile.jsx:155) | Not drawn; coach tabs per nav.ts:70 | `decided` | Superseded by D-66, PROGRESS.md:239 |
-| Varsity (team chip, chevron-down) | Home hero bar, left (m-home.jsx:110) | Team label, no switcher, src/clubhouse/shell/TopBar.tsx:45 | `decided` | No handler on the board. Q-66, PROGRESS.md:292: the team is a label (one team per coach) |
+| Varsity (team chip, chevron-down) | Home hero bar, left (m-home.jsx:110) | Team label, no switcher, src/clubhouse/shell/TopBar.tsx:45 | `decided` | No handler on the board. The phone switcher is in the More sheet (CH-1814), not on the hero bar |
 | Notifications (bell) | Home hero bar right; tab-root top bar right on Stats | Bell opens a modal sheet, src/clubhouse/shell/Bell.tsx:318 and :346 | `works` | No handler on the board. Sheet has filter, Mark all read, rows (foundation.md:81) |
 | Notifications (bell) on CoachHelm tab root | Top bar right, Coach and Player - CoachHelm - Mobile (MTop default) | Hidden: CoachBoard.tsx:259 renders PhoneTop start, and shell.css:812 hides the bell for any page top | `GAP` | Build in src/clubhouse/shell/TopBar.tsx (and shell.css:812): keep the bell for a `start` PhoneTop with no action. Reach medium: CoachHelm is a tab. Spec: tab root has the bell, foundation.md:74 |
 | Notifications (bell) on Team Hub and Qualifiers | Top bar right, Team Hub - Mobile and Qualifiers - Mobile (MTop default) | Replaced by "‹ More" back link, TeamHub.tsx:271, QualifiersList.tsx:65 | `decided` | A page top swaps the bell for the back link, catalog/shell.md:90 (CH-1810), D-41 PROGRESS.md:189 |
 | ‹ More (back) | Top bar left, Roster, Messages (and Calendar) boards | Back via useBackFromMore, src/clubhouse/shell/phone-chrome.tsx:117 (RosterPhone.tsx:94, MessagesPhone.tsx:120) | `works` | Returns to where the user came from (D-41). Calendar is a coach tab root instead (CalendarPhone.tsx:70), per D-66 |
-| Maya Reyes, Head coach · Varsity (me card, chevrons-up-down) | More, top | Link to Settings, src/clubhouse/shell/TabBar.tsx:180 | `works` | No handler on the board; the chevron hints a switcher, a non-goal (P001 DESIGN.md:119) |
+| Maya Reyes, Head coach · Varsity (me card, chevrons-up-down) | More, top | Link to Settings, src/clubhouse/shell/TabBar.tsx:180; a head coach on two or more teams also gets a Team list under it (`MoreTeamSwitch`, CH-1814) | `works` | No handler on the board; the chevron hints a switcher, which is that Team list |
 | Calendar (Pinehurst qualifier Thursday) | More, list | Not in the coach sheet: Calendar is a tab, nav.ts:70 | `decided` | D-66, PROGRESS.md:239. The next-event subline is built on the Calendar row when it is under More (TabBar.tsx:203, player) |
 | Messages (4 unread, badge 3) | More, list | Link with unread count, src/clubhouse/shell/TabBar.tsx:193 and :214 | `works` | No handler on the board. The "4 unread" subline is shown as the count only |
 | Roster (7 active · 2 join requests) | More, list | Link with join-request count, src/clubhouse/shell/TabBar.tsx:193 | `works` | No handler on the board. Subline not drawn; the count is |

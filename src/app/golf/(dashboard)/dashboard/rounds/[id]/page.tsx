@@ -96,7 +96,7 @@ export default async function RoundDetailPage({
 
   const { coach, player } = session;
   // Clubhouse round review (golf_clubhouse_ui), for the player and their coaches.
-  if ((coach && isClubhouseFor('coach')) || (player && isClubhouseFor('player'))) return <ClubhouseRoundReviewRoute id={id} />;
+  if ((coach && (await isClubhouseFor('coach'))) || (player && (await isClubhouseFor('player')))) return <ClubhouseRoundReviewRoute id={id} />;
   const supabase = await createClient();
 
   // Fetch round with player avatar

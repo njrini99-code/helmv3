@@ -60,7 +60,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
 
   // Clubhouse Calendar (golf_clubhouse_ui): coaches and players, each with the
   // permissions they already have.
-  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) {
+  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) {
     return <ClubhouseCalendarRoute view={view} date={date} event={initialEventId} isNew={isNew === '1'} withPlayer={withPlayer} newType={newType} />;
   }
 

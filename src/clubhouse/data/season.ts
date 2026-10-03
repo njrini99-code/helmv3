@@ -3,14 +3,18 @@ import type { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { chLogServer } from '../lib/track-server';
+import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
 
 /**
  * Season rounds, shared by every Clubhouse screen so a player's average,
  * form and strokes gained read the same on Home, Roster and Stats.
  *
  * Season: 1 August to 31 July (the college golf year, same as dashboard-data).
- * Countable: isCountableRound. Averages and form use 18-hole rounds only.
+ * Countable: isCountableRound (every hole scored), plus rounds posted as a total only (Q-123, round-scope.ts), which count in
+ * the score figures and carry `total_only` so the hole-level ones leave them out. Averages and form use 18-hole rounds only.
+ * "Last 10" reads past the season start (Q-122): `lastTenFloor`, the bound `loadSince` gives the loader.
  */
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -37,6 +41,11 @@ export interface ChRound {
   strokes_gained_approach: number | null;
   strokes_gained_around_green: number | null;
   strokes_gained_putting: number | null;
+  /**
+   * Posted as a total only (no nines, no holes): counts in the score figures, never in a hole-level one (Q-123). Set by
+   * `loadSeasonRounds`; a round without it has its holes (every other round row, including a fixture, is read that way).
+   */
+  total_only?: true;
 }
 
 const ROUND_COLUMNS =
@@ -48,6 +57,18 @@ export const MIN_SG_ROUNDS = 3;
 export function seasonStartDate(now = new Date()): string {
   const y = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
   return `${y}-08-01`;
+}
+
+/** How far back "Last 10" reads (Q-122): a rolling year, which always reaches the season start (1 August is never more than 365 days back). */
+export const LAST_TEN_MONTHS = 12;
+
+/**
+ * Where a Last 10 read starts: twelve months back from `now`, a bound so the team page never loads whole histories. The ten newest
+ * rounds and the ten before them are found inside it unless a player has fewer than twenty in the year (then they are all the player has had).
+ */
+export function lastTenFloor(now = new Date()): string {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - LAST_TEN_MONTHS, now.getUTCDate()));
+  return d.toISOString().slice(0, 10);
 }
 
 /** Newest first. `error` is true when any page failed; rounds then holds what loaded before it. */
@@ -80,7 +101,13 @@ export async function loadSeasonRounds(
     }
     rounds.push(...(res.data ?? []));
   }
-  const countable = rounds.filter((r) => isCountableRound(r));
+  // C-15: the total and to-par from the holes (front + back nine), never a stale total_score column (round-total.ts).
+  // Q-123: a total-only round counts too, marked so the hole-level figures leave it out.
+  const countable = rounds.flatMap((r): ChRound[] => {
+    if (r.total_score == null) return [];
+    if (isCountableRound(r)) return [withCanonicalRoundTotal(r)];
+    return isTotalOnlyCountable(r) ? [{ ...withCanonicalRoundTotal(r), total_only: true }] : [];
+  });
   countable.sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id.localeCompare(b.id)));
   return { rounds: countable, error: false };
 }
@@ -107,7 +134,7 @@ export function mean(xs: number[]): number | null {
 }
 
 export interface ChPlayerSeason {
-  /** 18-hole countable rounds this season. */
+  /** 18-hole countable rounds this season (rounds posted as a total only included: they are scores). */
   rounds: number;
   avg: number | null;
   toPar: number | null;
@@ -129,11 +156,13 @@ export function summarizePlayer(all: ChRound[]): ChPlayerSeason {
   const list = all.filter(isFull18);
   const scores = list.map((r) => r.total_score as number);
   const nums = (pick: (r: ChRound) => number | null) => list.map(pick).filter((v): v is number => v != null);
-  const sg = nums((r) => r.strokes_gained_total);
+  // Strokes gained is a hole-level figure: a round posted as a total only never feeds it (Q-123).
+  const holeNums = (pick: (r: ChRound) => number | null) => list.filter(hasHoleScores).map(pick).filter((v): v is number => v != null);
+  const sg = holeNums((r) => r.strokes_gained_total);
   const trend = scores.slice(0, TREND_LENGTH).reverse();
   const half = Math.floor(trend.length / 2);
   const legs = (pick: (r: ChRound) => number | null) => {
-    const v = nums(pick);
+    const v = holeNums(pick);
     return v.length >= MIN_SG_ROUNDS ? mean(v) : null;
   };
   return {
@@ -152,7 +181,8 @@ export function summarizePlayer(all: ChRound[]): ChPlayerSeason {
     },
     status: formStatus(trend),
     recent: list.slice(0, 10),
-    lastRoundDate: list[0]?.round_date ?? all[0]?.round_date ?? null,
+    // C-24(e): the newest countable round of either length (a nine-hole round yesterday is a round yesterday), whatever the order given.
+    lastRoundDate: all.reduce<string | null>((a, r) => (a == null || r.round_date > a ? r.round_date : a), null),
   };
 }
 

@@ -40,6 +40,10 @@
     "9": { "category": 7, "kind": "Network and UX" }
   },
   "overrides": {
+    "CH-13903": { "category": 15, "why": "A read older than the newest round: data freshness, drawn as out of date, never as current." },
+    "CH-13904": { "category": 1, "why": "A card that states no finding is core UI: it draws no number and offers no Assign." },
+    "CH-13905": { "category": 15, "why": "When the read was made: data freshness." },
+    "CH-13906": { "category": 15, "why": "An out-of-date read cannot be assigned: data freshness." },
     "CH-7001": { "category": 8, "why": "The linked player isn't on the caller's team: an authorization outcome, not a failed write." },
     "CH-7005": { "category": 7, "why": "The network dropped mid-send." },
     "CH-7015": { "category": 8, "why": "The open conversation is no longer the caller's to see (left, or another team's)." },

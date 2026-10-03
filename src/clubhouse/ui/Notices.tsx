@@ -11,11 +11,14 @@ export function InlineNotice({
   title,
   body,
   onRetry,
+  retrying = false,
   code,
 }: {
   title: string;
   body?: ReactNode;
   onRetry?: () => void;
+  /** The retry is in flight (`useRefresh().refreshing`): the control says so and does nothing on a second tap. */
+  retrying?: boolean;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
 }) {
@@ -28,6 +31,7 @@ export function InlineNotice({
     return () => window.removeEventListener('online', back);
   }, [offline]);
   const retry = () => {
+    if (retrying) return;
     if (isOffline()) {
       haptic('warning');
       setOffline(true);
@@ -36,7 +40,7 @@ export function InlineNotice({
     onRetry?.();
   };
   return (
-    <div className="ch-notice ch-notice--danger" role="alert" data-ch-code={code}>
+    <div className="ch-notice ch-notice--danger" role="alert" data-ch-code={code} aria-busy={retrying || undefined}>
       <Icon icon={CircleAlert} size={16} className="ch-notice__icon" />
       <div className="ch-notice__txt">
         <p className="ch-notice__title">{title}</p>
@@ -48,8 +52,8 @@ export function InlineNotice({
         )}
       </div>
       {onRetry && (
-        <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry}>
-          Try again
+        <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry} disabled={retrying}>
+          {retrying ? 'Trying again' : 'Try again'}
         </Button>
       )}
     </div>

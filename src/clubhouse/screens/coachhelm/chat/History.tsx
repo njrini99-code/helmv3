@@ -2,12 +2,13 @@
 
 import { MessagesSquare, PanelLeftClose, SquarePen } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { filterConversations, groupConversations, type ChAskConversation } from '../../../data/coachhelm-chat-shape';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
-import { InlineNotice } from '../../../ui/Notices';
+import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SearchField } from '../../../ui/SearchField';
+import { useAskKept } from './drafts';
 import { COACHHELM_HREF } from './SubTabs';
 
 export interface AskHistoryProps {
@@ -20,8 +21,11 @@ export interface AskHistoryProps {
   onNew: () => void;
   /** A conversation was chosen (closes the phone drawer). */
   onNavigate?: () => void;
-  /** The list didn't load: Try again. */
-  onRetry: () => void;
+  /**
+   * Open a conversation in place: the page's own switch (`useViewSwitch`), so the row takes the selected look on the tap and the chat
+   * dims until the next one lands. A plain tap goes through it; a modified one (a new tab) is still the link.
+   */
+  onOpen?: (id: string) => void;
 }
 
 /** The address of a saved conversation. */
@@ -33,12 +37,13 @@ export function conversationHref(id: string): string {
  * The chats: a search, then Today, This week and Earlier, each row a real link (so it opens in a new tab and the
  * open one is `aria-current`). A failed read is its own notice with Try again, never "No chats yet".
  */
-function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onRetry }: AskHistoryProps) {
-  const [q, setQ] = useState('');
+function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onOpen }: AskHistoryProps) {
+  // The search comes back when the coach returns to the page (owner rule 8), restored after mount (`drafts.ts`).
+  const [q, setQ] = useAskKept<string>('askHistorySearch', '');
   const groups = useMemo(() => groupConversations(filterConversations(conversations.list, q), nowIso, timezone), [conversations.list, q, nowIso, timezone]);
 
   if (conversations.error) {
-    return <InlineNotice code="CH-13222" title="Your chats didn’t load" body="Nothing is lost. Your past chats are still saved; try again in a moment." onRetry={onRetry} />;
+    return <RefreshNotice code="CH-13222" title="Your chats didn’t load" body="Nothing is lost. Your past chats are still saved; try again in a moment." />;
   }
   if (conversations.list.length === 0) {
     return (
@@ -76,7 +81,12 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
                         className={'ch-ask-hist__row' + (on ? ' is-on' : '')}
                         aria-current={on ? 'page' : undefined}
                         data-ch-code={on ? 'CH-13823' : undefined}
-                        onClick={onNavigate}
+                        onClick={(e) => {
+                          onNavigate?.();
+                          if (!onOpen || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                          e.preventDefault();
+                          onOpen(c.id);
+                        }}
                       >
                         {c.title}
                       </Link>

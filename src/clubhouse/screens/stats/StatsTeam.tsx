@@ -12,6 +12,7 @@ import { formatSigned, NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
+import { LinkPending } from '../../shell/LinkPending';
 import { StatsTeamPhone } from './StatsTeamPhone';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
 
@@ -35,7 +36,15 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
           <div>
             <h1 className="ch-display">Team stats</h1>
             <p>
-              {data.teamName} &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'} &middot; countable rounds only
+              {data.teamName}
+              {/* A roster that did not load is not "0 active players". */}
+              {!data.roundsError && (
+                <>
+                  {' '}
+                  &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
+                </>
+              )}{' '}
+              &middot; countable rounds only
             </p>
           </div>
           {/* Never export a half-loaded window. */}
@@ -93,7 +102,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
                 <TeamPutting putting={data.putting} failed={data.puttsError} />
               </SectionBoundary>
               <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
-                <SeasonBests bests={data.bests} filter={data.filter} />
+                <SeasonBests bests={data.bests} filter={data.filter} longestError={data.longestError} />
               </SectionBoundary>
             </div>
           </>
@@ -109,6 +118,10 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  */
 
 function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures']; cacheError: boolean }) {
+  // A note repeated under two or more cards is said once under the row; a card's own note stays on the card.
+  const counts = new Map<string, number>();
+  for (const x of figures) if (x.note) counts.set(x.note, (counts.get(x.note) ?? 0) + 1);
+  const shared = [...counts].filter(([, n]) => n > 1).map(([note]) => note);
   return (
     <>
       {cacheError && (
@@ -119,6 +132,7 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
         />
       )}
       <FigureCards
+        hold
         items={figures.map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
@@ -127,11 +141,18 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
           deltaDigits: x.digits,
           lowerIsBetter: x.lowerIsBetter,
           context: x.context,
-          note: x.note,
+          note: x.note && shared.includes(x.note) ? undefined : x.note,
           tone: x.signed && x.value != null ? (x.value >= 0 ? ('gain' as const) : ('loss' as const)) : undefined,
           code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
         }))}
       />
+      {/* The line is there in every window (empty when no note is shared), so a window with a note and one without leave the page below where it was. */}
+      {shared.length === 0 && <p className="ch-st-cover" aria-hidden="true" />}
+      {shared.map((note) => (
+        <p key={note} className="ch-st-cover">
+          {note}
+        </p>
+      ))}
     </>
   );
 }
@@ -153,7 +174,7 @@ function TeamPutting({ putting, failed }: { putting: ChTeamStats['putting']; fai
   );
 }
 
-function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: ChFilter }) {
+function SeasonBests({ bests, filter, longestError }: { bests: ChTeamStats['bests']; filter: ChFilter; longestError: boolean }) {
   const filtered = isFiltered(filter);
   return (
     <section className="ch-st-card">
@@ -164,7 +185,7 @@ function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: C
           <span data-ch-code={filtered ? 'CH-4317' : undefined}>{filtered ? 'Countable rounds since August · the filter does not apply here' : 'Countable rounds since August'}</span>
         </div>
       </div>
-      {bests.length === 0 ? (
+      {bests.length === 0 && !longestError ? (
         <EmptyState code="CH-4307" compact title="No season bests yet." body="Low round, most birdies and the rest appear once rounds are posted." />
       ) : (
         bests.map((b) => (
@@ -176,11 +197,14 @@ function SeasonBests({ bests, filter }: { bests: ChTeamStats['bests']; filter: C
                 <b>{b.name}</b>
                 <span className="ch-who__m">{b.meta}</span>
               </span>
+              <LinkPending />
             </Link>
             <span className={'ch-num ch-best__v' + (b.under ? ' is-under' : '')}>{b.value}</span>
           </div>
         ))
       )}
+      {/* A best that could not be read is said so, not left out: the line would read as "nobody holed a long putt" (CH-4211). */}
+      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn't load." body="The other bests are right. Try again; the error has been reported." />}
     </section>
   );
 }

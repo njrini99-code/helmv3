@@ -41,7 +41,8 @@ export function RosterPeek({
   useEffect(() => {
     if (!p) return;
     const onKey = (e: KeyboardEvent) => {
-      // Esc inside an open dialog (Remove, Invite) closes that dialog and leaves the panel alone.
+      // CH-3803: Esc closes the panel, but not while typing a note. Esc inside an open dialog (Remove, Invite) closes that
+      // dialog and leaves the panel alone.
       if (e.key === 'Escape' && !(e.target instanceof HTMLTextAreaElement) && !document.querySelector('dialog[open]')) onClose();
     };
     window.addEventListener('keydown', onKey);
@@ -49,6 +50,7 @@ export function RosterPeek({
   }, [p, onClose]);
 
   return (
+    // CH-3601: the panel slides in on open and crossfades between players.
     <AnimatePresence mode="popLayout" initial={false}>
       {p && (
         <m.aside
@@ -259,6 +261,7 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
         }}
         aria-busy={save.pending}
       />
+      {/* CH-3804: the counter is read politely; a locked note says why. */}
       {locked ? (
         <span id={helpId} className="ch-field__help" data-ch-code="CH-3209">
           Your notes didn&rsquo;t load, so this one can&rsquo;t be edited right now. Refresh the page to try again.

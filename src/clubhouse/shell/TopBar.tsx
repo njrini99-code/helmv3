@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ChevronRight, Settings } from 'lucide-react';
 import { Icon } from '../ui/Icon';
-import type { ChNavItem } from './nav';
+import { routeLabel, type ChNavItem } from './nav';
 import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
 import { usePhoneChromeState } from './phone-chrome';
@@ -35,9 +35,11 @@ export function TopBar({ item, pathname, teamName = null }: { item: ChNavItem | 
     pageTrail ??
     (pathname.startsWith('/golf/dashboard/settings')
       ? ['Settings']
-      : !item || item.id === 'home'
-        ? ['Home']
-        : ([item.section, item.label].filter(Boolean) as string[]));
+      : !item
+        ? [routeLabel(pathname) ?? 'Home']
+        : item.id === 'home'
+          ? ['Home']
+          : ([item.section, item.label].filter(Boolean) as string[]));
   return (
     <header className="ch-topbar" data-phone={rootTitle ? 'start' : pageTop ? 'page' : 'root'} inert={immersive || undefined}>
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">

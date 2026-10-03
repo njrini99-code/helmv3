@@ -1290,6 +1290,8 @@ REVOKE ALL ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_
 GRANT EXECUTE ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) TO "authenticated", "service_role";
 REVOKE ALL ON FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) FROM PUBLIC, "anon";
 GRANT EXECUTE ON FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) TO "authenticated", "service_role";
+REVOKE ALL ON FUNCTION "public"."golf_round_is_score_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) FROM PUBLIC, "anon";
+GRANT EXECUTE ON FUNCTION "public"."golf_round_is_score_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) TO "authenticated", "service_role";
 
 REVOKE ALL ON FUNCTION "public"."update_player_stats_complete"() FROM PUBLIC;
 

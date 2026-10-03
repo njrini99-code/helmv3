@@ -31,8 +31,8 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
 
 /** What each row on the list says about its section (the design's short summaries). */
 const SUMMARY: Record<'coach' | 'player', Partial<Record<ChSettingsSection, string>>> = {
-  coach: { account: 'Profile, email', notifications: 'Email, Push', team: 'Scoring, invites', coachhelm: 'Priorities, alerts', preferences: 'Motion, haptics' },
-  player: { account: 'Profile, email', golf: 'Handicap, team', notifications: 'Push, CoachHelm', preferences: 'Motion, haptics' },
+  coach: { account: 'Profile, email', notifications: 'Email, Push', team: 'Scoring, invites', coachhelm: 'Priorities, alerts', preferences: 'Motion, units' },
+  player: { account: 'Profile, email', golf: 'Handicap, team', notifications: 'Push, CoachHelm', preferences: 'Motion, units' },
 };
 
 /**

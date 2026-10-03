@@ -30,8 +30,10 @@ import { DiscardConfirm, Opt, Opts, RoundFacts, useAgo, useErrorHaptic } from '.
  * more (CH-11513, the exit sheet's discard question) and the warning haptic
  * fires on that second tap, before `onDiscard` (D-70). Closing without
  * choosing (Esc, the backdrop, the close button) hides the dialog and keeps
- * the saved copy, as the legacy dialog does; it can't close while a restore
- * runs.
+ * the saved copy, as the legacy dialog does, until the player records a shot:
+ * that shot's own device save replaces it (the engine's first auto-save of the
+ * server's shots leaves it alone, swap audit R-2). It can't close while a
+ * restore runs.
  */
 export function RecoveryDialog({
   open,
@@ -44,10 +46,16 @@ export function RecoveryDialog({
   now,
   restoring,
   error,
+  restoreHint = 'Saves it, then opens the round where you left off.',
   onRestore,
   onDiscard,
   onClose,
 }: {
+  /**
+   * What Restore does, under its label. The new-round engine writes the copy to the server first; the continue engine
+   * restores it on the device and the round's next save sends it (R-11), so that screen says so.
+   */
+  restoreHint?: string;
   open: boolean;
   /** The saved round's course (`setupData.courseName`); null or empty when the snapshot has none. */
   course: string | null;
@@ -122,7 +130,7 @@ export function RecoveryDialog({
             tone="primary"
             icon={History}
             label={restoring ? 'Restoring…' : 'Restore round'}
-            hint={restoring ? 'Keep this screen open.' : 'Saves it, then opens the round where you left off.'}
+            hint={restoring ? 'Keep this screen open.' : restoreHint}
             disabled={restoring}
             onClick={() => {
               haptic('press');

@@ -15,7 +15,7 @@ function subscribe(onChange: () => void) {
  * Hydration-safe reduced-motion read. The server snapshot is `false` and the
  * client reads the real media query, so the first client render matches the
  * server and nothing flips mid-hydration (framer's useReducedMotion returns
- * null before hydration, which is the #418 class).
+ * null before hydration, which is the #418 class). CH-1608: with it, every Clubhouse transition is instant.
  */
 export function useChReducedMotion(): boolean {
   const os = useSyncExternalStore(

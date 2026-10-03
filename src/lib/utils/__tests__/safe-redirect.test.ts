@@ -1,5 +1,28 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
+import { isSafeInternalPath, toSameOriginPath } from '@/lib/utils/safe-redirect';
+
+describe('toSameOriginPath (push taps, swap audit §14 D5)', () => {
+  const origin = 'https://helmsportslabs.com';
+
+  it('reduces a same-origin push URL to a path the guard accepts', () => {
+    const path = toSameOriginPath(`${origin}/golf/dashboard/messages?conversation=abc#m1`, origin);
+    expect(path).toBe('/golf/dashboard/messages?conversation=abc#m1');
+    expect(isSafeInternalPath(path)).toBe(true);
+    // The absolute form is what the guard rejects: every tap used to be dropped.
+    expect(isSafeInternalPath(`${origin}/golf/dashboard/messages`)).toBe(false);
+  });
+
+  it('passes a relative path through and refuses other origins and junk', () => {
+    expect(toSameOriginPath('/golf/dashboard/calendar', origin)).toBe('/golf/dashboard/calendar');
+    expect(toSameOriginPath('https://evil.example/golf/dashboard', origin)).toBeNull();
+    expect(toSameOriginPath('https://www.helmsportslabs.com/golf/dashboard', origin)).toBe('/golf/dashboard');
+    expect(toSameOriginPath('https://www.evil.example/golf/dashboard', origin)).toBeNull();
+    expect(toSameOriginPath('http://helmsportslabs.com/golf/dashboard', origin)).toBeNull();
+    expect(toSameOriginPath('javascript:alert(1)', origin)).toBeNull();
+    expect(toSameOriginPath('not a url', origin)).toBeNull();
+    expect(toSameOriginPath(null, origin)).toBeNull();
+  });
+});
 
 describe('isSafeInternalPath', () => {
   it('accepts golf and baseball app paths', () => {

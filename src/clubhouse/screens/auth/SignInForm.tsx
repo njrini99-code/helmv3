@@ -66,6 +66,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   // /golf/login?returnTo=/golf/join/ABC123, and ?ref=coach_nick_rini for demo-login tracing: kept for the round trip.
   const returnTo = useQueryParam('returnTo');
   const refParam = useQueryParam('ref');
+  // CH-15901: an invite or demo link's returnTo and ref are kept through the round trip.
   useEffect(() => {
     if (returnTo) sessionStorage.setItem('golf_login_returnTo', returnTo);
   }, [returnTo]);
@@ -110,6 +111,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   };
 
   const fail = (f: SignInFailure) => {
+    // CH-15703 a warning-toned refusal, CH-15704 a danger-toned one (failureFor picks the tone); CH-15802 it is read out.
     haptic(f.haptic);
     setFailure(f);
     setErrorNonce((n) => n + 1);
@@ -127,6 +129,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
 
     setBusy(true);
     setFailure(null);
+    // CH-15701: Sign in is tapped.
     haptic('press');
 
     try {
@@ -139,10 +142,11 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
         return;
       }
 
+      // CH-15702: a sign-in lands; CH-15902: where it goes is decided once, for both forms (below).
       haptic('success');
-      // After login, refresh first so the session cookies are recognised by the router cache before navigating, and
-      // give them a beat to propagate.
-      if (!navigate) router.refresh();
+      // No router.refresh() here: refreshing /golf/login with the new session makes the proxy redirect the signed-in
+      // user to /golf/dashboard, which painted the dashboard skeleton and a blank Home before the welcome (swap audit
+      // F-29). The push below is a fresh dynamic request, so it carries the new cookies; give them a beat to settle.
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const storedReturnTo = sessionStorage.getItem('golf_login_returnTo');
@@ -165,6 +169,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
       // holding something it cannot use, and one reload replaces it (once per tab, so a broken deploy cannot loop).
       const message = err instanceof Error ? err.message : String(err);
       const stale = isStaleBundleError(message);
+      // CH-15906: a stale bundle reloads the page once per tab, silently.
       if (stale && !hasReloadedForStaleBundle()) {
         markReloadedForStaleBundle();
         logError(err instanceof Error ? err : new Error(message), { component: 'ClubhouseSignInForm', action: 'loginAction.staleBundle', sport: 'golf' }, 'low');
@@ -232,6 +237,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
+              // CH-15910: Enter in Email moves to Password; Enter in Password signs in.
               enterKeyHint="next"
               required
               aria-required="true"
@@ -275,6 +281,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
               onChange={(e) => setPassword(e.target.value)}
               onFocus={revealSubmit}
             />
+            {/* CH-15805: a named, pressed-state button with a hit area past 44px. */}
             <button type="button" className="ch-au-eye" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="golf-signin-password" onClick={() => setShowPassword((v) => !v)}>
               <Icon icon={showPassword ? EyeOff : Eye} size={16} />
             </button>

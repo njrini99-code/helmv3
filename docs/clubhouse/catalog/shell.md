@@ -17,6 +17,7 @@ D-40 to D-43).
 | --- | --- | --- | --- | --- |
 | CH-1001 | "Mark all read" in the bell fails | "Couldn't mark your notifications read", Retry; the unread dots come back. On success: "All notifications marked read" | `useAction('shell.markAllRead')` in `Bell` | shell.test › CH-1001 |
 | CH-1002 | Signing out from the phone's More sheet fails | "Couldn't sign out" + "You are still signed in. Try again." Retry; error haptic | `TabBar` → `chSignOut` (lib/sign-out.ts, shared with Settings) | shell.test › CH-1002 |
+| CH-1003 | Switching team fails (a head coach on more than one team) | "Couldn't switch to UNCW Women's Golf" + why when the server said ("Only a head coach staffed on more than one team can switch.", "You aren't staffed on that team.", "Your session ended. Sign in again.") with no Retry, or "You're still on UNCW Men's Golf. Try again." with Retry when it was the network; error haptic. The team on screen goes back to the one they were on | `useTeamSwitch` → `useAction('shell.switchTeam')` over `setActiveTeam` | team-switch.test › CH-1003 |
 
 ## 12xx Didn't load
 
@@ -39,6 +40,7 @@ D-40 to D-43).
 | CH-1302 | The bell has nothing | "You're all caught up." + what shows up here | `Bell` | shell.test › CH-1302 |
 | CH-1303 | The bell's filter has nothing | "Nothing of this kind." + Show all | `Bell` | shell.test › CH-1303 |
 | CH-1304 | Nothing is scheduled | No next-event card in the sidebar; with an event it shows "2 of 3 confirmed" and a bar | `Sidebar`, `NextEventCard` | shell.test › CH-1304 |
+| CH-1305 | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player | The team name under GolfHelm is a plain label: no chevrons, no button, no team list in the phone More sheet | `Sidebar`, `teamSwitchFor` (the gate is `canSwitchTeams` and two or more teams, the rule `setActiveTeam` enforces) | team-switch.test › CH-1305 |
 
 ## 14xx Loading
 
@@ -50,11 +52,11 @@ D-40 to D-43).
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-1601 | Moving to another page, or its first load | The page's sections rise 10px into place once, 55ms apart (520ms each, at most 10 steps); a refresh with new data never replays it; none when motion is reduced or Animations is off (D-64) | `RouteFrame`, `.ch-reveal` in `base.css` | preview |
+| CH-1601 | Moving to another page, or its first load | A navigation crossfades the page while the shell stays put (owner 2026-10-01; React `ViewTransition`); The page's sections rise 10px into place once, 55ms apart (520ms each, at most 10 steps); a refresh with new data never replays it; none when motion is reduced or Animations is off (D-64) | `RouteFrame`, `.ch-reveal` in `base.css` | preview |
 | CH-1602 | Opening More on a phone | The sheet slides up (260ms) over a fading scrim (260ms); dragging it down closes it (CH-1611) | `TabBar`, `chTween('base')` | preview |
 | CH-1603 | Opening the bell or any menu | It scales out of its button (180ms) | `CH_POP` | preview |
 | CH-1604 | A toast arrives or leaves | Slides up 10px and fades (260ms); the stack reflows | `ToastProvider` | preview |
-| CH-1605 | Going offline or back online | The banner fades in and out (260ms) | `OfflineBanner` | preview |
+| CH-1605 | Going offline or back online | The banner fades in and out (260ms) | `OfflineBanner` | shell.test › CH-1605 |
 | CH-1606 | Pressing any button, row, tab or link | It shrinks about 6px (110ms) and springs back (280ms); none when motion is reduced or Animations is off (D-64) | `useChPress` (`lib/press.ts`), mounted by `RouteFrame` | preview |
 | CH-1607 | The first Tab on a page | Skip to content slides into view (180ms) | `.ch-skip` | preview |
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
@@ -70,9 +72,10 @@ D-40 to D-43).
 | CH-1701 | Changing tabs (not tapping the tab they're on) | A selection tick | `haptic('select')` in `TabBar` | shell.test › CH-1701 |
 | CH-1702 | Any save or send lands | The OS success pattern (D-70) | `useAction` → `haptic('commit')` | shell.test › CH-1702 |
 | CH-1703 | Any save or send fails | The OS error pattern | `useAction` → `haptic('error')` | shell.test › CH-1703 |
-| CH-1704 | Opening More; swiping the sheet away | A tick; a medium tap as the sheet settles shut (D-70) | `TabBar`, `useSheetDrag` | shell.test › CH-1611 (the swipe); preview (the tick) |
-| CH-1705 | Opening the bell, a notification, or a menu item | A selection tick | `Bell`, `Menu` | preview |
-| CH-1706 | The connection drops | The OS warning pattern | `OfflineBanner` | shell.test › CH-1901 |
+| CH-1704 | Opening More; swiping the sheet away | A tick; a medium tap as the sheet settles shut (D-70) | `TabBar`, `useSheetDrag` | shell.test › CH-1611 (the swipe), CH-1704 (the tick) |
+| CH-1705 | Opening the bell, a notification, or a menu item | A selection tick | `Bell`, `Menu` | shell.test › CH-1705 |
+| CH-1706 | The connection drops | The OS warning pattern | `OfflineBanner` | shell.test › CH-1706 |
+| CH-1707 | Picking another team in the switcher | A selection tick; nothing more when it lands (the new team is the confirmation), the error pattern when it fails | `BrandTeamSwitch`, `MoreTeamSwitch`, `useAction` | team-switch.test › CH-1707 |
 
 ## 18xx Accessibility
 
@@ -82,7 +85,7 @@ D-40 to D-43).
 | CH-1802 | The phone More sheet is modal: focus moves in, Tab stays inside, Esc closes it and focus returns to More | `TabBar` | shell.test › CH-1802 |
 | CH-1803 | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page | `aria-current="page"`, `aria-label` | shell.test › CH-1803 |
 | CH-1804 | Toasts are announced: confirmations politely, errors right away | `aria-live="polite"`, `role="alert"` on errors | shell.test › CH-1804 |
-| CH-1805 | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard | `Bell`, `Menu` (arrow keys, Home, End, Esc) | preview |
+| CH-1805 | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard | `Bell`, `Menu` (arrow keys, Home, End, Esc) | shell.test › CH-1805 (opens as a dialog); preview (keyboard) |
 | CH-1806 | Every control shows a focus ring on keyboard focus; text fields show their own green or ink ring instead, never two | `base.css` `:focus-visible` | preview |
 | CH-1807 | No axe violations (WCAG 2.2 AA, contrast included) with the bell open (a sheet on the phone) and the More sheet open | `npm run clubhouse:a11y` | a11y scan |
 | CH-1808 | The phone tab bar lists the role's tabs (coach: Home, CoachHelm, Calendar, Stats, More; player: Home, CoachHelm, Rounds, Team Hub, More; D-66), and when Messages is under More, More is named with its unread count ("More, 3 unread messages") | `TabBar`, `phoneTabsFor` | shell.test › CH-1808 |
@@ -90,6 +93,8 @@ D-40 to D-43).
 | CH-1810 | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell | `TopBar`, `PhoneTop` | shell.test › CH-1810 |
 | CH-1811 | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up | `Bell` (`aria-modal`, `data-state="open"`) | shell.test › CH-1811 |
 | CH-1812 | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page | `ToastProvider` follows the open dialog (`useToastHost`) | shell.test › CH-1812 |
+| CH-1813 | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team | `BrandTeamSwitch` (`aria-haspopup="listbox"`, `role="listbox"`/`option`), `useTeamSwitch` → `setActiveTeam` + `router.refresh()` | team-switch.test › CH-1813 |
+| CH-1814 | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason | `MoreTeamSwitch` in `TabBar` | team-switch.test › CH-1814 |
 
 ## 19xx Network and UX
 

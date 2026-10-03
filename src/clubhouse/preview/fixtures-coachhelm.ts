@@ -139,20 +139,20 @@ export const breakBias = (playerId: string, id = 'in-brk'): EvidenceInsight =>
     }),
   });
 
-/** Double bogey or worse (course-mgmt.ts, the big-number variant): ahead of the cohort at low priority, so it is working. */
+/** Double bogey or worse (course-mgmt.ts, the big-number variant): ahead of the Tour value it is drawn against (the college cohort's 4.8% is not drawn) at low priority, so it is working. */
 export const bigNumber = (playerId: string, id = 'in-dbl'): EvidenceInsight =>
   insight(playerId, {
     id,
     category: 'course_management',
     priority: 'low',
-    title: 'Double bogey-or-worse rate: 3.1%',
-    content: 'Across all 21 rounds on file, 3.1% of holes ended in double bogey or worse. College players in our data average ~4.8%. This is the #1 separator between 70s and 80s rounds.',
+    title: 'Double bogey-or-worse rate: 1.6%',
+    content: 'Across all 21 rounds on file, 1.6% of holes ended in double bogey or worse. College players in our data average ~4.8%. This is the #1 separator between 70s and 80s rounds.',
     evidence: evidence({
       metric: 'big_number_rate',
       metric_label: 'Double Bogey-or-Worse Rate',
       unit: 'percent',
-      your_value: 3.1,
-      your_value_display: '3.1%',
+      your_value: 1.6,
+      your_value_display: '1.6%',
       comparison_value: 4.8,
       comparison_label: 'College cohort avg',
       comparison_source: 'cohort_avg',
@@ -163,6 +163,80 @@ export const bigNumber = (playerId: string, id = 'in-dbl'): EvidenceInsight =>
       window_basis: 'lifetime',
       window_days: 118,
       confidence: 0.74,
+    }),
+  });
+
+/**
+ * Cards that state no finding: what the generators write when they looked and found nothing to fix (tee-strategy.ts "inconclusive",
+ * putt-bias.ts "balanced") or a standing description (par-type.ts, stamped `feed_exempt`). Stored signatures carry the `v3:` prefix.
+ */
+export const teeInconclusive = (playerId: string, id = 'in-tee'): EvidenceInsight =>
+  insight(playerId, {
+    id,
+    category: 'tee',
+    priority: 'low',
+    signature: 'v3:tee_strategy:inconclusive',
+    title: 'Driver vs layback: no clear preference',
+    content: 'Across 12 rounds your driver (61% fw, 84 attempts) and tee fairway clubs (63% fw, 30 attempts) are tracking close enough that neither insight crosses the evidence threshold.',
+    evidence: evidence({
+      metric: 'sg_tee_total',
+      metric_label: 'Tee Strategy',
+      unit: 'percent',
+      polarity: 'higher_better',
+      your_value: 61,
+      your_value_display: '61%',
+      comparison_value: 63,
+      comparison_label: 'Non-driver fairway% (n=30)',
+      comparison_source: 'your_baseline',
+      sample_n: 84,
+      confidence: 0.3,
+    }),
+  });
+
+export const puttBalanced = (playerId: string, id = 'in-bal'): EvidenceInsight =>
+  insight(playerId, {
+    id,
+    category: 'putting',
+    priority: 'low',
+    signature: 'v3:putt_bias:balanced',
+    title: 'Putting break check: no directional bias detected',
+    content: 'Across your last 14 rounds, no break direction stands out once distance and slope are controlled for. Keep working both ways on the practice green.',
+    evidence: evidence({
+      metric: 'putt_miss_bias_left_pct',
+      metric_label: 'Left-to-right make % (distance-controlled)',
+      unit: 'percent',
+      your_value: 48,
+      your_value_display: '48%',
+      comparison_value: 52,
+      comparison_label: 'Your right-to-left make % (same groups)',
+      comparison_source: 'your_baseline',
+      sample_n: 60,
+      confidence: 0,
+    }),
+  });
+
+/** The collapsed "Scoring by par type" card: the par-3 row's evidence under a title that covers all three (collapseParScoring). */
+export const parType = (playerId: string, id = 'in-par'): EvidenceInsight =>
+  insight(playerId, {
+    id,
+    category: 'scoring',
+    priority: 'low',
+    signature: 'v3:par_scoring:par3',
+    title: 'Scoring by par type',
+    content: 'Par 3: 3.27 (24.0% bogey, 3.0% double+) · Par 4: 4.19 (31.0% bogey, 6.0% double+) · Par 5: 4.91 (20.0% bogey, 2.0% double+)',
+    evidence: evidence({
+      metric: 'scoring_par_3',
+      metric_label: 'Par 3 Scoring',
+      unit: 'strokes',
+      your_value: 3.27,
+      your_value_display: '3.27',
+      comparison_value: 3,
+      comparison_label: 'Par',
+      comparison_source: 'absolute_target',
+      sample_n: 26,
+      confidence: 0.8,
+      feed_exempt: true,
+      detail: { sample_unit: 'rounds', window_kind: 'lifetime', bogey_rate: 24, double_plus_rate: 3 },
     }),
   });
 
@@ -216,7 +290,8 @@ const COACH_PLAYERS: ChCoachPlayer[] = sortCoachPlayers([
   player(HELM_PLAYERS.jonah, chSlope(jonah), 3),
   player(HELM_PLAYERS.eli, chTour(penalties(HELM_PLAYERS.eli.id, 'in-pen-eli')), 2),
   player(HELM_PLAYERS.priya, toChInsight(breakBias(HELM_PLAYERS.priya.id, 'in-brk-priya')), 1),
-  player(HELM_PLAYERS.theo, chTour(bigNumber(HELM_PLAYERS.theo.id, 'in-dbl-theo')), 1),
+  // What is working is not an open signal: Theo's top card is a strength, so he has none open.
+  player(HELM_PLAYERS.theo, chTour(bigNumber(HELM_PLAYERS.theo.id, 'in-dbl-theo')), 0),
 ]);
 
 /** The coach's board: the pulse, four players with signals, one without. */

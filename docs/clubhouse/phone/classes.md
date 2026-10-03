@@ -48,7 +48,9 @@ Loading: a route skeleton (CH-12401), "Reading your schedule…" while a file is
 
 `Player - Classes - Mobile.html`.
 
-- The top bar is the shell's: "Classes" with "‹ More". The page keeps its own header (the term line, "Classes", Import schedule and Add class, which share the row).
-- Below 640px the deck is one column, the term overview stacks (the week tile beside the credits and the bar; the overlap count on its own row), and the side cards go under the deck.
+- The top bar is the shell's: "Classes" with "‹ More", and it is the page's one heading. The page header keeps the term line and Import schedule and Add class, which share the row; it draws no second "Classes" (owner's iPhone brief, 2026-10-01).
+- Order, from the same brief: the term in one quiet line on the green card ("Week 7 of 16 · 15 credits"), this week's overlaps as a row that scrolls to them (drawn only when there are any), then **Today**: the classes that meet today, by start, each showing time, name, and room · code, and opening its class. With none today it names the next day that has a class (CH-12308). The overlap cards come next, then the deck. The credit bar and the term line with its Today and This week markers stay on desktop; on the phone the Today marker crowded the warning.
+- On a card the course code is metadata (15px, secondary ink); the class name leads.
+- Below 640px the deck is one column.
 - The tab bar stays (More is on). The class's sheet, the form, the import and the three questions (remove, delete all and discard) are bottom sheets that drag to close; the delete-all question does not close while its delete is running.
 - Not yet: a measured touch-target pass (the day picker, the week strip's cards) and a pass on a real iPhone (keyboard with the form open, swipe-back with a sheet open, haptics felt).

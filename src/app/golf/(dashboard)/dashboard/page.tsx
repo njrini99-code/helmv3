@@ -194,7 +194,7 @@ export default async function GolfDashboardPage({
         }
 
         // Clubhouse Home: its own loader and screen, no Fairway payload.
-        if (isClubhouseFor('coach')) {
+        if ((await isClubhouseFor('coach'))) {
             if (!teamId) return <CoachHomeNoTeam />;
             const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach' });
             return <CoachHome data={home} />;
@@ -271,7 +271,7 @@ export default async function GolfDashboardPage({
 
     // ── Player dashboard ──
     // Clubhouse player Home: its own loader and screen, no Fairway payload.
-    if (player && isClubhouseFor('player')) {
+    if (player && (await isClubhouseFor('player'))) {
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
         const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' });

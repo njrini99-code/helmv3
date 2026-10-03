@@ -7,6 +7,7 @@ import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
+import { BackToList } from '../screens/qualifiers/BackToList';
 import { RefreshNotice } from '../ui/RefreshNotice';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
@@ -55,7 +56,10 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
     return form ? <QualifierForm data={form} /> : <NotFound />;
   }
   const detail = await loadQualifierDetail({ role: team.role, teamId: team.teamId, playerId, qualifierId: id });
-  return detail ? <QualifierDetail data={detail} /> : <NotFound />;
+  if (!detail) return <NotFound id={id} />;
+  // The standings, facts and squad are sent now; the courses and the scorecards follow as a promise the sections read in place (owner rule 6).
+  const { secondary, ...core } = detail;
+  return <QualifierDetail data={core} secondary={secondary} />;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -78,7 +82,8 @@ export function QualifiersNoTeam({ coach }: { coach: boolean }) {
   );
 }
 
-function NotFound() {
+/** `id` is a qualifier the list opened (the detail's address): its Back steps back to the list when the list is the entry before it. */
+function NotFound({ id }: { id?: string }) {
   return (
     <Frame>
       <EmptyState
@@ -87,11 +92,7 @@ function NotFound() {
         icon={SearchX}
         title="That qualifier isn’t on your team"
         body="It may have been deleted, or the link is from another team."
-        action={
-          <Button size="sm" href="/golf/dashboard/qualifiers">
-            Back to qualifiers
-          </Button>
-        }
+        action={<BackToList id={id}>Back to qualifiers</BackToList>}
       />
     </Frame>
   );
@@ -130,7 +131,12 @@ function CoachOnly({ view, id }: { view: 'new' | 'edit' | 'selection'; id?: stri
 function SelectionDidNotLoad() {
   return (
     <Frame>
-      <RefreshNotice code="CH-09218" title="Selections didn’t load." body="Nothing has changed. Try again; the error has been reported." />
+      {/* This page also follows a pick or a confirm whose re-read failed, under a toast that says it was made: never "nothing has changed". */}
+      <RefreshNotice
+        code="CH-09218"
+        title="Selections didn’t load."
+        body="They couldn’t be read, so none are shown rather than a wrong list. Anything already saved is still saved. Try again; the error has been reported."
+      />
     </Frame>
   );
 }

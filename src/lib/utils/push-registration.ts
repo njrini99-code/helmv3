@@ -3,7 +3,7 @@
 import { describeError } from '@/lib/utils/describe-error';
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './capacitor';
-import { isSafeInternalPath } from './safe-redirect';
+import { isSafeInternalPath, toSameOriginPath } from './safe-redirect';
 import { fwHaptic } from '@/lib/fairway/haptics';
 
 /**
@@ -290,7 +290,8 @@ export async function initPushListeners(): Promise<void> {
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       if (typeof window === 'undefined') return;
       const data = action.notification.data as Record<string, unknown> | undefined;
-      const rawUrl = typeof data?.url === 'string' ? data.url : null;
+      // Senders store an absolute URL; keep only a same-origin one, as a path.
+      const rawUrl = toSameOriginPath(typeof data?.url === 'string' ? data.url : null, window.location.origin);
 
       // SECURITY: the payload is attacker-influenceable in any scenario where a
       // send path can be tricked into echoing user input, and this assignment

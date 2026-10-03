@@ -23,6 +23,7 @@ export function OfflineBanner() {
       setOffline((was) => {
         if (was !== now) {
           chTrail(now ? 'went offline' : 'back online');
+          // CH-1706: the OS warning as the connection drops; CH-1605: the banner fades in and out.
           if (now) haptic('warning');
         }
         return now;

@@ -102,19 +102,26 @@ async function completeTaskImpl(
 
     if (existingAssignment) {
       // Update existing assignment
+      // `.select('id')`: an UPDATE that a policy (or a concurrent unassign)
+      // filters to zero rows is not an error, and used to be reported as done
+      // while the assignment stayed pending.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateError } = await (supabase as any)
+      const { data: completed, error: updateError } = await (supabase as any)
         .from('golf_task_assignments')
         .update({
           status: 'completed',
           completed_at: now,
           notes: notes || null,
         })
-        .eq('id', existingAssignment.id);
+        .eq('id', existingAssignment.id)
+        .select('id') as { data: Array<{ id: string }> | null; error: { message: string } | null };
 
       if (updateError) {
         await logServerError(`[completeTask Update Error]: ${describeError(updateError)}`, { action: 'tasks.completeTask' });
         return { success: false, error: updateError.message };
+      }
+      if (!completed || completed.length === 0) {
+        return { success: false, error: "Couldn't mark this task done. It may no longer be assigned to you." };
       }
     } else {
       // If no assignment exists but player is on the team, create one and mark complete
@@ -422,8 +429,28 @@ async function createTaskImpl(
         .insert(assignments);
 
       if (assignError) {
-        await logServerError(`[createTask Assignment Error]: ${describeError(assignError)}`, { action: 'tasks.createTask' });
-        // Task was created but assignments failed - still return success with warning
+        // This used to log and fall through to `success: true`: the coach was told
+        // the task went out, it existed on their list assigned to nobody, nobody
+        // was asked to do it, and the players were still notified about it. The
+        // insert is one statement, so none of the assignments landed. Take the
+        // task back out so a failure leaves nothing and Retry cannot duplicate it,
+        // and do not notify anyone about a task they do not have.
+        const { data: removed, error: rollbackError } = await supabase
+          .from('golf_tasks')
+          .delete()
+          .eq('id', task.id)
+          .select('id');
+        const rolledBack = !rollbackError && (removed?.length ?? 0) === 1;
+        await logServerError(
+          `[createTask Assignment Error]: ${describeError(assignError)}; ${rolledBack ? 'the task was removed' : 'ROLLBACK ALSO FAILED, the task exists assigned to nobody'} (task ${task.id})`,
+          { action: 'tasks.createTask', featureArea: 'tasks' },
+        );
+        return {
+          success: false,
+          error: rolledBack
+            ? "Couldn't assign the task to those players, so it wasn't created. Please try again."
+            : 'The task was created but could not be assigned. Open it from Tasks and assign it there; do not create it again.',
+        };
       }
 
       // Notify assigned players (fire-and-forget)

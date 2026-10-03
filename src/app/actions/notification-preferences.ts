@@ -48,22 +48,38 @@ export async function updateNotificationPreferences(
     // .maybeSingle() so an orphaned auth.users (no public.users row) returns
     // {data:null} instead of throwing PGRST116 — the merge below then writes the
     // first prefs row cleanly. Matches the read in getNotificationPreferences.
-    const { data: currentUser } = await supabase
+    const { data: currentUser, error: currentError } = await supabase
       .from('users')
       .select('notification_preferences')
       .eq('id', user.id)
       .maybeSingle();
 
+    // A failed read is not "no preferences yet". The merge below writes the WHOLE
+    // object back, so merging onto `{}` after a failed read replaced every other
+    // saved preference with just the switch that was flipped.
+    if (currentError) {
+      await logServerError(`Failed to read notification preferences before saving: ${describeError(currentError)}`, { action: 'notification_preferences.updateNotificationPreferences' });
+      return { success: false, error: 'Failed to update notification preferences' };
+    }
+
     const currentPrefs = (currentUser?.notification_preferences as Record<string, unknown>) || {};
     const mergedPrefs = { ...currentPrefs, ...validatedPrefs };
 
-    const { error } = await supabase
+    // `.select('id')`: an UPDATE that matches no row (no public.users row for an
+    // orphaned auth user, or a policy that hides it) raises no error, and used to
+    // answer success while nothing was saved.
+    const { data: saved, error } = await supabase
       .from('users')
       .update({ notification_preferences: mergedPrefs })
-      .eq('id', user.id);
+      .eq('id', user.id)
+      .select('id');
 
     if (error) {
       await logServerError(`Failed to update notification preferences: ${describeError(error)}`, { action: 'notification_preferences.updateNotificationPreferences' });
+      return { success: false, error: 'Failed to update notification preferences' };
+    }
+    if (!saved || saved.length === 0) {
+      await logServerError(`Notification preferences update matched no users row for ${user.id}`, { action: 'notification_preferences.updateNotificationPreferences' }, 'warning');
       return { success: false, error: 'Failed to update notification preferences' };
     }
 

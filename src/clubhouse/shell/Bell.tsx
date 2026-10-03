@@ -316,6 +316,7 @@ export function Bell() {
         aria-expanded={open}
         aria-controls={id}
         onClick={() => {
+          // CH-1705: a tick as the bell opens; CH-1612: on the phone its sheet rises over a scrim; CH-1805: it is a dialog.
           haptic('select');
           if (!open) chTrail('bell open');
           setOpen((o) => !o);

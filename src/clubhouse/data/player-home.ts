@@ -3,12 +3,18 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
-import { isFull18, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
-import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } from './stats-common';
+import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
+import { holeRounds } from './round-scope';
+import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 
 /**
  * Player Home (Clubhouse; design/handoff/Player - Home.html and
  * Player - Home - Mobile.html). One server read, final data on first paint.
+ *
+ * Rounds posted as a total only count in the scores here (the brief, the
+ * scoring chart) and in none of the leg figures (Q-123). The scoring card, the
+ * legs and the brief are the newest rounds in any season (Q-122); strokes
+ * gained is the season's.
  *
  * The player's own rounds only: nothing here reads a teammate's scores (a
  * player is compared against the Tour, never against teammates, as on Stats). The
@@ -17,7 +23,7 @@ import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } 
  * approximated.
  */
 
-/** Rounds in the leg figures and the brief's form. */
+/** Rounds in the leg figures (the newest with their holes scored) and the brief's form. */
 export const LEG_WINDOW = 10;
 /** Points in a leg's spark line. */
 const LEG_TREND = 7;
@@ -94,30 +100,47 @@ const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'sh
 export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string }): Promise<ChPlayerHome> {
   const supabase = await createClient();
   const now = new Date();
-  const { tz, greeting, todayLabel } = await homeClock(supabase, input.teamId, now);
 
-  const [wk, roundsRes, playerRes, teamRes] = await Promise.all([
-    // No names: a player's Home never lists who else is invited.
-    loadHomeWeek(supabase, { teamId: input.teamId, tz, now, names: new Map() }),
-    loadSeasonRounds(supabase, [input.playerId], { surface: 'home' }),
-    supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle(),
-    supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle(),
+  // Everything that can start now does, and each later read starts when the one it needs has answered, not when its siblings have:
+  // the timezone, the week, the rounds, the player and the team go together; the newest rounds' cards and the leg figures follow the
+  // rounds, the Tour's averages and the coach follow the team (they used to wait for the week's events and replies too).
+  const clockRead = homeClock(supabase, input.teamId, now);
+  // No names: a player's Home never lists who else is invited.
+  const weekRead = loadHomeWeek(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, names: new Map() });
+  // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
+  const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: lastTenFloor() });
+  const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle());
+  const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : res.rounds.filter(isFull18));
+  // The leg figures are hole-level: the newest rounds with their holes (a round posted as a total only has none, Q-123). The brief and the scoring chart are scores and count every round.
+  const windowOf = (res: Awaited<typeof roundsRead>) => holeRounds(fullOf(res)).slice(0, LEG_WINDOW);
+  const latestRead = roundsRead.then((res) => latestWithHoles(supabase, fullOf(res), () => input.firstName));
+  const cacheRead = roundsRead.then((res) => {
+    const window = windowOf(res);
+    return window.length ? loadRoundCache(supabase, window.map((r) => r.id), 'home') : { byRound: new Map<string, ChRoundCache>(), error: false };
+  });
+  // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
+  const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
+  const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
+  const [{ greeting, todayLabel }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId] = await Promise.all([
+    clockRead,
+    weekRead,
+    roundsRead,
+    playerRead,
+    teamRead,
+    latestRead,
+    cacheRead,
+    benchRead,
+    coachRead,
   ]);
   if (playerRes.error) log('player', playerRes.error);
   if (teamRes.error) log('team', teamRes.error);
 
-  const full = roundsRes.error ? [] : roundsRes.rounds.filter(isFull18);
-  const window = full.slice(0, LEG_WINDOW);
+  const full = fullOf(roundsRes);
+  const window = windowOf(roundsRes);
 
-  const [latest, cache, bench, coachUserId] = await Promise.all([
-    latestWithHoles(supabase, full, () => input.firstName),
-    window.length ? loadRoundCache(supabase, window.map((r) => r.id), 'home') : Promise.resolve({ byRound: new Map<string, ChRoundCache>(), error: false }),
-    // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
-    teamRes.data ? loadTourBenchmarks(supabase, tourForGender(teamRes.data.gender), 'home') : Promise.resolve(null),
-    coachFor(supabase, teamRes.data ?? null),
-  ]);
-
-  const season = summarizePlayer(full);
+  // Strokes gained is the season's ("Season, per round"; each leg's "this season").
+  const season = summarizePlayer(seasonOnly(full));
   const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full

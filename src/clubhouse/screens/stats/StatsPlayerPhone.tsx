@@ -24,11 +24,12 @@ import { SgBars, SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
-import { countWords, shotsWords } from './notes';
+import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { ScoreLine } from './StatsTeamPhone';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
+import { devProgress, devTitle, goalLine } from './dev-format';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -46,6 +47,7 @@ export function StatsPlayerPhone({
   initialTab,
   playerHref,
   messageHref,
+  windowShown,
   onWindow,
   onFilter,
   onBackToTeam,
@@ -57,6 +59,8 @@ export function StatsPlayerPhone({
   /** This page's own address (player and window), for Share. */
   playerHref: string;
   messageHref: string | null;
+  /** The window the switch shows: the one being loaded once tapped (F-55). */
+  windowShown?: ChWindow;
   onWindow: (w: ChWindow) => void;
   /** Any change of the round filter: the page's offline refusal, slow notice, then the new address. */
   onFilter: (next: ChFilter) => void;
@@ -73,8 +77,10 @@ export function StatsPlayerPhone({
   // A filter that leaves no round says so in place of the figures (CH-5320), not as an early read of nothing.
   const filtered = isFiltered(data.filter);
   const emptyFilter = filtered && w.rounds === 0 && !data.roundsError;
-  const early = w.effRounds < 3 && !emptyFilter;
-  const noShots = !early && !emptyFilter && w.effSgRounds < 3;
+  // Rounds that did not load are not "0 rounds": every figure, count and early-read note drawn from them waits for the retry.
+  const failed = data.roundsError;
+  const early = !failed && w.effRounds < 3 && !emptyFilter;
+  const noShots = !failed && !early && !emptyFilter && w.effSgRounds < 3;
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
 
   const share = async () => {
@@ -118,7 +124,7 @@ export function StatsPlayerPhone({
         <span className="ch-spm-head__id">
           <h1>{data.name}</h1>
           <p className="ch-num">
-            {[data.classYear, `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'}`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
+            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'}`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`].filter(Boolean).join(' · ')}
           </p>
         </span>
         {coach && messageHref && (
@@ -128,8 +134,10 @@ export function StatsPlayerPhone({
         )}
       </header>
 
-      <WindowSwitch value={data.window} onChange={onWindow} custom={hasRange(data.filter)} />
-      {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone />}
+      <div className="ch-stm-controls">
+        <WindowSwitch value={windowShown ?? data.window} onChange={onWindow} custom={hasRange(data.filter)} />
+        {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone />}
+      </div>
 
       {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
       {early && (
@@ -145,13 +153,14 @@ export function StatsPlayerPhone({
           Strokes gained needs three rounds posted with shots. {coach ? `${first} has` : 'You have'} {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
         </div>
       )}
-      {data.roundsError && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." onRetry={onRetry} />}
+      {failed && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={onRetry} />}
 
       {emptyFilter && <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />}
 
-      {!emptyFilter && (
+      {!emptyFilter && !failed && (
         <>
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
+        {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={onRetry} />}
         <Figures data={data} />
       </SectionBoundary>
 
@@ -194,12 +203,17 @@ export function StatsPlayerPhone({
   );
 }
 
-/** Scoring average, strokes gained a round, and form (the newer half of the rounds against the older half; lower is better). */
+/**
+ * The board's three figures (m-stats.jsx Player, m.css .m-figs): scoring average, strokes gained a round in green or
+ * amber, and the trend in words ("down 1.4", lower scores are better). One caption line each, never a stack (F-54).
+ */
 function Figures({ data }: { data: ChPlayerProfile }) {
   const w = data.win;
   const sgTone = w.sgPerRound == null ? '' : w.sgPerRound >= 0 ? ' ch-gain' : ' ch-loss';
   const form = w.formChange;
-  const formTone = form == null || Math.abs(form) < 0.05 ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
+  const flat = form != null && Math.abs(form) < 0.05;
+  const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
+  const d = data.sgChange.delta;
   return (
     <dl className="ch-stm-figs is-three">
       <div>
@@ -210,14 +224,15 @@ function Figures({ data }: { data: ChPlayerProfile }) {
       <div>
         <dt>SG / round</dt>
         <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound)}</dd>
-        <dd>
+        {/* The baseline is always named (ST-16); the change chip only when there is a change. "No earlier rounds" was filler. */}
+        <dd className="ch-stm-sgsub">
           {w.sgPerRound == null ? 'After three rounds' : sgBaseline(data.tour).vs}
-          {w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) && <SgChangeChip change={data.sgChange} code="CH-5310" />}
+          {w.sgPerRound != null && d != null && <SgChangeChip change={data.sgChange} code="CH-5310" />}
         </dd>
       </div>
       <div>
-        <dt>Form</dt>
-        <dd className={'ch-num' + formTone}>{form == null ? NO_DATA : formatSigned(form)}</dd>
+        <dt>Trend</dt>
+        <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${form < 0 ? 'down' : 'up'} ${Math.abs(form).toFixed(1)}`}</dd>
         <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
       </div>
     </dl>
@@ -237,7 +252,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
   const known = legs.filter((l): l is { label: string; value: number } => l.value != null);
   if (!known.length && w.sgPerRound == null)
     return (
-      <section className="ch-stm-panel" aria-labelledby="ch-spm-sg">
+      <section className="ch-stm-panel ch-stm-panel--bars" aria-labelledby="ch-spm-sg">
         <div className="ch-stm-panel__h">
           <h2 id="ch-spm-sg">Strokes gained</h2>
         </div>
@@ -280,9 +295,11 @@ function Trend({ data }: { data: ChPlayerProfile }) {
       </div>
       {/* A line needs two rounds; with one the panel says what there is instead of vanishing. */}
       {rounds.length === 1 ? (
-        <p className="ch-stm-note">
-          One round so far: <span className="ch-num">{rounds[0]!.score}</span> on {rounds[0]!.date}. The trend draws from the second.
-        </p>
+        <div className="ch-stm-chart-hold">
+          <p className="ch-stm-note">
+            One round so far: <span className="ch-num">{rounds[0]!.score}</span> on {rounds[0]!.date}. The trend draws from the second.
+          </p>
+        </div>
       ) : (
         <ScoreLine
           values={rounds.map((r) => r.score)}
@@ -375,10 +392,8 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
         <ul className="ch-spm-dev">
           {data.focusAreas.map((f) => (
             <li key={f.id}>
-              <b>{f.title}</b>
-              <span className="ch-num">
-                {f.status === 'proposed' ? 'Proposed, waiting to be accepted' : f.target != null ? `${f.current ?? f.baseline ?? NO_DATA} → target ${f.target}` : 'No target set'}
-              </span>
+              <b>{devTitle(f.title)}</b>
+              <span className="ch-num">{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
               {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
             </li>
           ))}
@@ -397,9 +412,9 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
               <li key={g.id} className={done ? 'is-done' : undefined}>
                 <b>
                   <span className="ch-sr-only">{done ? 'Achieved: ' : 'In progress: '}</span>
-                  {g.title}
+                  {devTitle(g.title)}
                 </b>
-                <span className="ch-num">{g.current != null ? `Now ${g.current}${g.target != null ? ` · target ${g.target}` : ''}` : (g.state ?? 'Active')}</span>
+                <span className="ch-num">{goalLine(g)}</span>
               </li>
             );
           })}

@@ -36,6 +36,8 @@ function makeInitialState(overrides: Partial<ShotTrackingState> = {}): ShotTrack
     distanceAfterShot: '',
     distanceAfterUnit: 'yards',
     autoSaveStatus: 'idle',
+    autoSaveHeldOnDevice: false,
+    autoSaveSyncing: false,
     showPenaltyModal: false,
     penaltyType: null,
     penaltyOrigin: 'here',

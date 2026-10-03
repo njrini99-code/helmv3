@@ -5,7 +5,7 @@ import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } fr
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/golf';
 import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
-import { createGolfTravelItinerary, getTravelerClassConflicts } from '@/app/golf/actions/travel';
+import { createGolfTravelItinerary, deleteGolfTravelItinerary, getTravelerClassConflicts, updateGolfTravelItinerary } from '@/app/golf/actions/travel';
 import type { ChHubUrgency } from '../../data/hub';
 import type { ChTravelerClass, ChTripWindow } from '../../data/hub-shape';
 import type { ServerResult } from '../../lib/use-action';
@@ -44,6 +44,26 @@ export interface ChHubWrites {
   travelerClasses(input: ChTripWindow & { teamId: string; playerIds: string[] }): Promise<ServerResult<{ classes: ChTravelerClass[]; partial: boolean }>>;
   uploadDocument(input: { teamId: string; file: File; folder: string | null }): Promise<ServerResult>;
   deleteDocument(id: string): Promise<ServerResult>;
+  /** Saves what Edit shows: the trip's fields and its dates and times, a blank clearing one. */
+  editTrip(input: ChTripEdit): Promise<ServerResult>;
+  /** Deletes the itinerary (its expenses and budgets go with it; the calendar event stays). */
+  deleteTrip(id: string): Promise<ServerResult>;
+}
+
+/** What Edit sends: every field the sheet shows, as typed. A blank string clears the field. */
+export interface ChTripEdit {
+  id: string;
+  name: string;
+  destination: string;
+  /** `null` when the trip has none and the coach hasn't picked one: the trip's own is then left as it is. */
+  transport: ChTripInput['transport'] | null;
+  departDate: string;
+  departTime: string;
+  from: string;
+  returnDate: string;
+  returnTime: string;
+  hotel: string;
+  notes: string;
 }
 
 export interface ChTripInput {
@@ -113,4 +133,19 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
     });
   },
   deleteDocument: (id) => deleteGolfDocument(id),
+  editTrip: (i) =>
+    updateGolfTravelItinerary({
+      id: i.id,
+      event_name: i.name.trim(),
+      destination: i.destination.trim(),
+      ...(i.transport && { transportation_type: i.transport }),
+      departure_date: i.departDate,
+      departure_time: i.departTime,
+      departure_location: i.from.trim(),
+      return_date: i.returnDate,
+      return_time: i.returnTime,
+      hotel_name: i.hotel.trim(),
+      notes: i.notes.trim(),
+    }) as Promise<ServerResult>,
+  deleteTrip: (id) => deleteGolfTravelItinerary(id),
 };

@@ -108,6 +108,45 @@ Animation:         v2 tokens only
 Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 ```
 
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+| `P006__calendar__coach__1440__default__after__2b04867.png` | after | 2b04867 | calendar (coach), 1440px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__1440__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (coach), 1440px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__1440__default__before__cee8548.png` | before | cee8548 | calendar (coach), 1440px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__375__default__after__2b04867.png` | after | 2b04867 | calendar (coach), 375px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__375__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (coach), 375px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__375__default__before__cee8548.png` | before | cee8548 | calendar (coach), 375px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__390__default__after__2b04867.png` | after | 2b04867 | calendar (coach), 390px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__390__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (coach), 390px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__390__default__before__cee8548.png` | before | cee8548 | calendar (coach), 390px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__430__default__after__2b04867.png` | after | 2b04867 | calendar (coach), 430px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__430__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (coach), 430px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__430__default__before__cee8548.png` | before | cee8548 | calendar (coach), 430px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__player__1440__default__after__2b04867.png` | after | 2b04867 | calendar (player), 1440px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__1440__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (player), 1440px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__1440__default__before__cee8548.png` | before | cee8548 | calendar (player), 1440px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__375__default__after__2b04867.png` | after | 2b04867 | calendar (player), 375px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__375__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (player), 375px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__375__default__before__cee8548.png` | before | cee8548 | calendar (player), 375px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__390__default__after__2b04867.png` | after | 2b04867 | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__390__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__390__default__before__cee8548.png` | before | cee8548 | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__430__default__after__2b04867.png` | after | 2b04867 | calendar (player), 430px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | calendar (player), 430px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__430__default__before__cee8548.png` | before | cee8548 | calendar (player), 430px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__coach__1440__default__after__d4367ee.png` | after | d4367ee | calendar (coach), 1440px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__1440__default__before__d3a6483.png` | before | d3a6483 | calendar (coach), 1440px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__390__default__after__d4367ee.png` | after | d4367ee | calendar (coach), 390px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__coach__390__default__before__d3a6483.png` | before | d3a6483 | calendar (coach), 390px, default; /clubhouse-preview/calendar, synthetic preview fixture |
+| `P006__calendar__player__1440__default__after__d4367ee.png` | after | d4367ee | calendar (player), 1440px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__1440__default__before__d3a6483.png` | before | d3a6483 | calendar (player), 1440px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__390__default__after__d4367ee.png` | after | d4367ee | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+| `P006__calendar__player__390__default__before__d3a6483.png` | before | d3a6483 | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
+
 ## Open verification gaps
 
 - A browser pass with a real coach account and a real player account, desktop and phone (owner or merge pass).

@@ -67,11 +67,17 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   // A new round is a full-screen flow on the phone: the dock holds Start, and Back is in the band.
   usePhoneTabsHidden(true);
 
+  // The holes of the tee the player chose last (CoursePicker's `useRead` does the same): a slow read for a tee left behind must never
+  // put its holes under the new tee, nor over holes the player typed in by hand (Add a course). Each choice takes a number; an answer
+  // that is not the latest is dropped.
+  const holesSeq = useRef(0);
   const loadHoles = useCallback(
     async (teeId: string) => {
+      const n = ++holesSeq.current;
       setLastTee(teeId);
       setHolesLoad({ state: 'loading' });
       const r = await ports.teeHoles(teeId).catch((e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : String(e) }));
+      if (n !== holesSeq.current) return;
       if (!r.ok) return setHolesLoad({ state: 'failed', error: r.error });
       setHolesLoad({ state: 'idle' });
       setForm((f) => ({ ...f, holes: r.data, baseline: r.data.map((h) => ({ ...h })), count: r.data.length < 18 ? 9 : f.count, nine: 'front' }));
@@ -408,6 +414,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
         }}
         onDone={(pick, holes: ChSetupHole[], count, saveCourse) => {
           setAdding(false);
+          // The course typed in by hand is the latest choice: a tee read still on its way no longer applies.
+          holesSeq.current++;
           setHolesLoad({ state: 'idle' });
           set({ pick, holes, baseline: null, count, nine: 'front', saveCourse });
         }}

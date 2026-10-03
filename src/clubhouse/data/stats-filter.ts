@@ -17,6 +17,9 @@ import { isUuid } from '@/lib/utils/uuid';
  * Order of selection: type, holes, course and time first, then the picks, then the last-10 cut. So "Last 10"
  * is the ten newest MATCHING rounds (per player on the team page), "Only these" is exactly the picked
  * rounds among the matching ones (no cut), and "Exclude these" removes them before the cut.
+ *
+ * Time: Season and Qualifiers are this season (from `seasonStart`); Last 10 is not bounded by the season (Q-122, the legacy
+ * app's rule: a player's ten newest rounds, whenever they were played), only by how far back the loader reads (`lastTenFloor`).
  */
 
 export type ChWindow = 'last10' | 'season' | 'qualifiers';
@@ -217,7 +220,10 @@ export function effectiveWindow(f: ChFilter): ChWindow {
   return hasPrevious(f) ? 'last10' : f.window === 'last10' ? 'season' : f.window;
 }
 
-/** Does a round match the filter's type, course and time (not yet the picks or the cut)? `seasonStart` bounds every window but a custom range. */
+/**
+ * Does a round match the filter's type, course and time (not yet the picks or the cut)? `seasonStart` bounds Season and Qualifiers;
+ * Last 10 reaches back across seasons and a custom range is its own time (Q-122).
+ */
 export function matchesFilter(row: ChFilterRow, f: ChFilter, seasonStart: string): boolean {
   if (f.types.length && (!row.kind || !f.types.includes(row.kind))) return false;
   if (f.holes !== 'all' && row.holes !== Number(f.holes)) return false;
@@ -227,6 +233,7 @@ export function matchesFilter(row: ChFilterRow, f: ChFilter, seasonStart: string
     if (f.to && row.date > f.to) return false;
     return true;
   }
+  if (f.window === 'last10') return true;
   if (row.date < seasonStart) return false;
   return f.window !== 'qualifiers' || row.kind === 'qualifier';
 }
@@ -263,7 +270,7 @@ export function nineRoundsInWindow(f: ChFilter, options: { rounds: ChFilterRow[]
   return candidates(options.rounds, withHoles(f, 'all'), options.seasonStart, (r) => r).some((r) => r.holes === 9);
 }
 
-/** The ten matching rounds before the newest ten, for "vs. previous 10"; null with no previous window or fewer than three whole rounds. */
+/** The ten matching rounds before the newest ten, for "vs. previous 10" (across seasons, as the newest ten are); null with no previous window or fewer than three whole rounds. */
 export function previousRounds<T>(rows: T[], f: ChFilter, seasonStart: string, toRow: (t: T) => ChFilterRow): T[] | null {
   if (!hasPrevious(f)) return null;
   const prev = candidates(rows, f, seasonStart, toRow).slice(10, 20);
@@ -367,7 +374,7 @@ export interface ChFilterOptions {
   /** How many rounds the page has loaded (more than `rounds` when the list is cut). */
   total: number;
   courses: Array<{ name: string; count: number }>;
-  /** The first day of the season: every window but a custom range starts here (and a range before it loads earlier rounds). */
+  /** The first day of the season: Season and Qualifiers start here (Last 10 reaches back past it, and so does a range). */
   seasonStart: string;
 }
 

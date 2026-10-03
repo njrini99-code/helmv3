@@ -2,7 +2,9 @@
 
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useChSessionState } from '../../lib/session-state';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { holeCoverage } from '../../data/round-scope';
 import type { ChPuttBand, ChWindow } from '../../data/stats-common';
 import type { ChHoles } from '../../data/stats-filter';
 import type { ChProfileExtra } from '../../data/stats-player';
@@ -10,7 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { haptic } from '../../lib/haptics';
 import { NO_DATA } from '../../lib/format';
-import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, ParTiles, ScoreMix } from './charts';
+import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 
@@ -29,6 +31,30 @@ const SECTIONS = [
   ['putting', 'Putting'],
 ] as const;
 
+/** What a figure that has nothing behind it says in place of a bare dash (the phone's brief): the reason, in a few words. */
+const NONE_REASON: Record<string, string> = {
+  'scoring:Scoring average': 'No scores yet',
+  'scoring:Birdies / round': 'No holes scored',
+  'scoring:Bogeys / round': 'No holes scored',
+  'scoring:Doubles or worse': 'No holes scored',
+  'tee:Fairways hit': 'No drives logged',
+  'tee:Driver distance': 'No driver shots',
+  'tee:Penalties / round': 'No rounds with shots',
+  'tee:Fairways par 5': 'No par 5 drives',
+  'approach:Greens in regulation': 'No approach shots',
+  'approach:Proximity · all': 'No finish distances',
+  'approach:Missed short': 'No missed greens',
+  'approach:From the rough': 'No rough approaches',
+  'short:Scrambling': 'No chances yet',
+  'short:Sand saves': 'No bunker shots',
+  'short:Inside 10 yds': 'No chances this close',
+  'short:From the rough': 'No rough chances',
+  'putting:Putts / GIR': 'No putts tracked',
+  'putting:3-putts / round': 'No putts tracked',
+  'putting:One-putt rate': 'No putts tracked',
+  'putting:First putt': 'No putts tracked',
+};
+
 function Sec({
   id,
   hide = false,
@@ -38,6 +64,7 @@ function Sec({
   sub,
   figs,
   rule,
+  how,
   more,
   children,
 }: {
@@ -51,6 +78,8 @@ function Sec({
   figs: Array<[string, string, string | null, Tone]>;
   /** The window and the rounds this section counts, under its figures. */
   rule: string;
+  /** The phone's long account of what the rule line counts, behind "How this is measured" (the line above is then the short one). */
+  how?: string;
   /** The figures below the headline: a "More detail" disclosure. */
   more: ReactNode;
   children: ReactNode;
@@ -69,15 +98,18 @@ function Sec({
         <span className="ch-gm__sub">{sub}</span>
       </header>
       <dl className="ch-gm__figs">
-        {figs.map(([l, v, n, t]) => (
-          <div key={l}>
-            <dt>{l}</dt>
-            <dd className={`ch-num${t ? ` ch-${t}` : ''}`}>{v}</dd>
-            {n && <dd className="ch-gm__sub">{n}</dd>}
-          </div>
-        ))}
+        {figs.map(([l, v, n, t]) => {
+          const reason = v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined;
+          return (
+            <div key={l}>
+              <dt>{l}</dt>
+              <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
+              {n && <dd className="ch-gm__sub">{n}</dd>}
+            </div>
+          );
+        })}
       </dl>
-      <Rule>{rule}</Rule>
+      <Rule how={how}>{rule}</Rule>
       <div className="ch-gm__body">{children}</div>
       {more}
     </section>
@@ -122,7 +154,16 @@ export function GameDetail({
   onRetry?: () => void;
   phone?: boolean;
 }) {
-  const [on, setOn] = useState<string>('scoring');
+  // The player reading their own stats is "You": the verb agrees and mid-sentence it is lower case (F-45).
+  const you = first === 'You';
+  const verb = (third: string, base: string) => (you ? base : third);
+  const mid = you ? 'you' : first;
+  // On the phone `on` is a choice (one section at a time) and comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1);
+  // on desktop it only follows the scroll, so it is not kept.
+  const [chosen, setChosen] = useChSessionState<string>('game-section', 'scoring');
+  const [spied, setSpied] = useState<string>('scoring');
+  const on = phone ? chosen : spied;
+  const setOn = phone ? setChosen : setSpied;
   const show = (id: string) => !phone || on === id;
 
   useEffect(() => {
@@ -131,7 +172,7 @@ export function GameDetail({
     const io = new IntersectionObserver(
       (entries) => {
         const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (top) setOn(top.target.id.replace('gm-', ''));
+        if (top) setSpied(top.target.id.replace('gm-', ''));
       },
       { rootMargin: '-140px 0px -55% 0px' },
     );
@@ -220,20 +261,34 @@ export function GameDetail({
     .filter((b) => b.value != null && b.bench != null && b.n >= 10)
     .sort((a, b) => (a.value! - a.bench!) - (b.value! - b.bench!))[0];
   const onePuttRate = s.holesPlayed ? (s.onePuttsTotal / s.holesPlayed) * 100 : null;
-  const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {}).filter(([, v]) => v != null);
+  // Nearest band first ("0_3", "3_5", ... "35_plus"), whatever order the cache keeps them in (F-54).
+  const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {})
+    .filter(([, v]) => v != null)
+    .sort(([a], [b]) => parseFloat(a) - parseFloat(b));
   const brk = (['straight', 'left_to_right', 'right_to_left'] as const).map((k) => ({
     label: k === 'straight' ? 'Straight' : k === 'left_to_right' ? 'Left to right' : 'Right to left',
     value: avgMake(s.puttingByBreak[k]),
     sub: `${s.puttingByBreak[k].count0_3 + s.puttingByBreak[k].count3_5 + s.puttingByBreak[k].count5_10} putts inside 10 ft`,
   }));
 
-  const sample = `${rounds} ${rounds === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
+  // Every figure below but the scoring average reads the rounds with their holes scored; a round posted as a total only is a score and nothing else (Q-123).
+  const holeCount = x.holeRounds ?? rounds;
+  const sample = `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
   // What every section counts: the window's own rounds, of the lengths the filter chose, the same ones the Rounds table lists.
   const lengths =
     holes === '18'
       ? '18 holes only (9-hole rounds are left out)'
       : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
-  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}`;
+  const coverage = holeCoverage(holeCount, rounds);
+  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
+  // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read.
+  const fewer = win === 'last10' && (basis ?? RULE_WINDOW[win]) === 'Last 10 rounds' && rounds < 10;
+  const kept = /hole/i.test(basis ?? '') ? null : holes === '18' ? '18 holes only' : holes === '9' ? '9 holes only' : '18 and 9 holes';
+  const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${rounds} ${rounds === 1 ? 'round qualifies' : 'rounds qualify'}` : `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`}${kept ? `, ${kept}` : ''}`;
+  /** The rule under a section's figures: the long line on a screen; on the phone the short line, and the rest behind "How this is measured". */
+  const ruleOf = (tail: string) => (phone ? { rule: shortBasis, how: `${basisLine}. ${tail}` } : { rule: `${basisLine}. ${tail}` });
+  /** A panel's note: the whole paragraph on a screen; on the phone one short line, and the paragraph behind "How this is measured". */
+  const noteOf = (long: string, short: string) => (phone ? { note: short, how: long } : { note: long });
   const open = !phone;
 
   return (
@@ -258,10 +313,10 @@ export function GameDetail({
         icon={Flag}
         title="Scoring"
         sub={`${s.roundsPlayed} rounds`}
-        rule={`${basisLine}. Every scored hole of those rounds.`}
+        {...ruleOf('Every scored hole of those rounds.')}
         lead={
           s.roundsPlayed
-            ? `${first} makes ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
+            ? `${first} ${verb('makes', 'make')} ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
                 p5.avg != null ? ` Par 5s ${p5.avg < 5 ? 'are a scoring chance' : 'are giving shots back'}, playing ${p5.avg.toFixed(2)} on average.` : ''
               }`
             : `No hole-by-hole scores in this window yet.`
@@ -278,7 +333,7 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="What an average round looks like" wide note="Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.">
+        <Panel title="What an average round looks like" wide {...noteOf('Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
           <ScoreMix d={dist} totals={totals} />
         </Panel>
         <Panel title="Scoring by par" wide>
@@ -292,11 +347,11 @@ export function GameDetail({
         icon={MoveUpRight}
         title="Off the tee"
         sub={`${s.fairwayOpportunities} drives`}
-        rule={`${basisLine}. Par 4 and par 5 tee shots; penalties are logged penalty shots.`}
+        {...ruleOf('Par 4 and par 5 tee shots; penalties are logged penalty shots.')}
         lead={
           fw == null
             ? 'No tee shots are logged in this window, so fairways and distance can’t be read yet.'
-            : `${first} finds ${Math.round(fw)}% of fairways.${
+            : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
                 left != null && right != null && Math.abs(left - right) >= 1 ? ` When the drive misses it goes ${left > right ? 'left' : 'right'} more often` : ''
               }${s.penaltiesPerRound ? `, and ${s.penaltiesPerRound.toFixed(1)} penalty strokes a round come from the tee` : ''}.`
         }
@@ -313,7 +368,11 @@ export function GameDetail({
         }
       >
         <Panel title="Where drives finish" note="Share of tee shots on par 4s and 5s.">
-          {fw != null && left != null && right != null ? <FairwayStrip left={left} fw={fw} right={right} /> : <p className="ch-gm-p__empty">No drive results logged.</p>}
+          {s.fairwayOpportunities > 0 ? (
+            <FairwayStrip opportunities={s.fairwayOpportunities} hit={s.fairwaysHit} left={s.missLeftCount} right={s.missRightCount} />
+          ) : (
+            <p className="ch-gm-p__empty">No drive results logged.</p>
+          )}
         </Panel>
         <Panel title="Distance by club">
           <Compare
@@ -334,13 +393,13 @@ export function GameDetail({
         icon={Crosshair}
         title="Approach"
         sub={`${s.girOpportunities} approach shots`}
-        rule={`${basisLine}. Every approach, whether the green is hit or missed.`}
+        {...ruleOf('Every approach, whether the green is hit or missed.')}
         lead={
           s.girPercentage == null
             ? 'No approach shots are logged in this window.'
             : worstProx && worstProx.value! > worstProx.bench!
-              ? `${first} hits ${Math.round(s.girPercentage)}% of greens. The biggest gap to the Tour is from ${worstProx.band} yards, finishing ${Math.round(worstProx.value!)} feet away against ${Math.round(worstProx.bench!)}.`
-              : `${first} hits ${Math.round(s.girPercentage)}% of greens in regulation.`
+              ? `${first} ${verb('hits', 'hit')} ${Math.round(s.girPercentage)}% of greens. The biggest gap to the Tour is from ${worstProx.band} yards, finishing ${Math.round(worstProx.value!)} feet away against ${Math.round(worstProx.bench!)}.`
+              : `${first} ${verb('hits', 'hit')} ${Math.round(s.girPercentage)}% of greens in regulation.`
         }
         figs={[
           ['Greens in regulation', pct(s.girPercentage), bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)],
@@ -355,15 +414,23 @@ export function GameDetail({
         }
       >
         <Panel title="Greens hit by distance" wide note="Bars are the GIR rate from each band.">
-          <Ladder rows={girBands.map(([band, value]) => ({ band, value, bench: null }))} unit="%" label="Yards to the pin" />
+          <Ladder rows={girBands.map(([band, value]) => ({ band, value, bench: null }))} unit="%" label="Yards to the pin" phone={phone} />
         </Panel>
-        <Panel title="Proximity against the Tour" wide note="Average finish in feet from every approach, hit or missed, lay-ups left out; shorter is better. The dashed tick is the Tour average for that range. A range needs 10 shots.">
+        <Panel
+          title="Proximity against the Tour"
+          wide
+          {...noteOf(
+            'Average finish in feet from every approach, hit or missed, lay-ups left out; shorter is better. The dashed tick is the Tour average for that range. A range needs 10 shots.',
+            'Shorter is better. The tick is the Tour.',
+          )}
+        >
           {x.approachError ? (
             <InlineNotice code="CH-5210" title="Proximity against the Tour didn't load." body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />
           ) : tourProx.length ? (
             <>
-              <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench }))} unit={'′'} label="Yards to the pin" invert />
-              {tourProx.some((b) => b.value == null) && (
+              <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit={'′'} label="Yards to the pin" invert phone={phone} code="CH-5316" />
+              {/* On a phone each band's own row says it ("Needs 10", with its shots); a screen says it in a line under the chart. */}
+              {!phone && tourProx.some((b) => b.value == null) && (
                 <p className="ch-gm-p__empty" data-ch-code="CH-5316">
                   {tourProx
                     .filter((b) => b.value == null)
@@ -376,8 +443,12 @@ export function GameDetail({
             <Empty code="CH-5316">No approach shots with a finish distance are logged in this window.</Empty>
           )}
         </Panel>
-        <Panel title="Finish when the green is hit" wide note="Average finish in feet by the distance hit from; shorter is better. Counts greens found only, so it has no Tour tick.">
-          <Ladder rows={proxBands.map(([band, value]) => ({ band, value, bench: null }))} unit={'′'} label="Yards to the pin" invert />
+        <Panel
+          title="Finish when the green is hit"
+          wide
+          {...noteOf('Average finish in feet by the distance hit from; shorter is better. Counts greens found only, so it has no Tour tick.', 'Shorter is better. Greens found only.')}
+        >
+          <Ladder rows={proxBands.map(([band, value]) => ({ band, value, bench: null }))} unit={'′'} label="Yards to the pin" invert phone={phone} none="No greens hit" />
         </Panel>
         <Panel title="Where missed greens finish" note={hasMiss ? `Most misses finish ${missShort >= missLong ? 'short' : 'long'}. ${missShort >= missLong ? 'Taking one more club is the simplest change.' : 'Clubbing down is worth a look.'}` : undefined}>
           {hasMiss ? (
@@ -416,11 +487,11 @@ export function GameDetail({
         icon={FlagTriangleRight}
         title="Short game"
         sub={`${s.scrambleAttempts} chances`}
-        rule={`${basisLine}. Chances are greens missed; chips and pitches are counted by the lie they were played from.`}
+        {...ruleOf('Chances are greens missed; chips and pitches are counted by the lie they were played from.')}
         lead={
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
-            : `${first} gets up and down ${Math.round(s.scramblingPercentage)}% of the time.${
+            : `${first} ${verb('gets', 'get')} up and down ${Math.round(s.scramblingPercentage)}% of the time.${
                 s.scramblingPctRough != null ? ` From the rough it's ${Math.round(s.scramblingPctRough)}%` : ''
               }${s.sandSavePercentage != null ? `, and sand saves are ${Math.round(s.sandSavePercentage)}%` : ''}.`
         }
@@ -467,13 +538,13 @@ export function GameDetail({
         icon={CircleDot}
         title="Putting"
         sub={`${s.totalPutts} putts`}
-        rule={`${basisLine}. Putts per round are per 18 holes; make rates count the putts logged with a distance.`}
+        {...ruleOf('Putts per round are per 18 holes; make rates count the putts logged with a distance.')}
         lead={
           s.totalPutts === 0
             ? 'No putts are logged in this window.'
             : worstPutt && worstPutt.value! < worstPutt.bench!
-              ? `From ${worstPutt.band} feet ${first} makes ${Math.round(worstPutt.value!)}%. The Tour rate is ${Math.round(worstPutt.bench!)}%, so that range costs the most.`
-              : `${first} averages ${num(s.puttsPerGir, 2)} putts per green hit and ${num(s.threePuttsPerRound)} three-putts a round.`
+              ? `From ${worstPutt.band} feet ${mid} ${verb('makes', 'make')} ${Math.round(worstPutt.value!)}%. The Tour rate is ${Math.round(worstPutt.bench!)}%, so that range costs the most.`
+              : `${first} ${verb('averages', 'average')} ${num(s.puttsPerGir, 2)} putts per green hit and ${num(s.threePuttsPerRound)} three-putts a round.`
         }
         figs={[
           ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],
@@ -487,18 +558,30 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="Make rate by distance" wide note={`Green line is the player, dashed champagne is the Tour. Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`}>
+        <Panel
+          title="Make rate by distance"
+          wide
+          {...noteOf(
+            `${phone ? 'Bars are the make rate; the tick is the Tour. Amber is below it.' : 'Green line is the player, dashed champagne is the Tour.'} Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`,
+            'Bars are the make rate; the tick is the Tour. Amber is below it.',
+          )}
+        >
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn't load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
-          <MakeCurve bands={curve} />
+          {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
         </Panel>
         <Panel title="How putts miss" wide>
-          <CupMiss
-            m={{ left: s.puttMissLeftPct, right: s.puttMissRightPct, short: s.puttMissShortPct, long: s.puttMissLongPct, low: s.puttMissLowPct, high: s.puttMissHighPct }}
-          />
+          {/* Four zeros and "100% low side" claimed a pattern that was never logged (F-54). */}
+          {[s.puttMissLeftPct, s.puttMissRightPct, s.puttMissShortPct, s.puttMissLongPct].some((v) => v != null && v > 0) ? (
+            <CupMiss
+              m={{ left: s.puttMissLeftPct, right: s.puttMissRightPct, short: s.puttMissShortPct, long: s.puttMissLongPct, low: s.puttMissLowPct, high: s.puttMissHighPct }}
+            />
+          ) : (
+            <p className="ch-gm-p__empty">No missed-putt directions logged.</p>
+          )}
         </Panel>
         <Panel title="Lag leave">
           {lag.length ? (
-            <Compare unit=" ft" max={8} rows={lag.map(([b, v]) => ({ label: `From ${b.replace('_', '–')} ft`, value: v, sub: 'Left for the next putt' }))} />
+            <Compare unit=" ft" max={8} rows={lag.map(([b, v]) => ({ label: `From ${b.replace('_plus', '+').replace('_', '–')} ft`, value: v, sub: 'Left for the next putt' }))} />
           ) : (
             <p className="ch-gm-p__empty">No long first putts logged.</p>
           )}

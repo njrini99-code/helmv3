@@ -60,7 +60,8 @@ import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/componen
 import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
 import { Ask, type ChAskChat } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
-import { CoachHelmTabs } from '../screens/coachhelm/chat/SubTabs';
+import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from '../screens/coachhelm/chat/SubTabs';
+import { useViewSwitch } from '../screens/coachhelm/use-view-switch';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
@@ -145,12 +146,22 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** The strip as its owners (the Board, Ask) draw it: controlled by `useViewSwitch`, which is what makes a tap a route change. */
+function Strip({ at }: { at: CoachHelmView }) {
+  const sw = useViewSwitch<CoachHelmView>(at, (v) => COACHHELM_HREF[v]);
+  return (
+    <main aria-busy={sw.pending || undefined}>
+      <CoachHelmTabs active={sw.shown} onGo={sw.go} />
+    </main>
+  );
+}
+
 describe('CH-13923 the sub-tab strip', () => {
   it('draws Board and Ask as one radiogroup with Ask on, and Board is a route change with the select haptic', async () => {
     render(
       <LazyMotion features={domAnimation}>
         <div className="ch-root" data-ui="clubhouse">
-          <CoachHelmTabs active="ask" />
+          <Strip at="ask" />
         </div>
       </LazyMotion>,
     );
@@ -163,12 +174,33 @@ describe('CH-13923 the sub-tab strip', () => {
     render(
       <LazyMotion features={domAnimation}>
         <div className="ch-root" data-ui="clubhouse">
-          <CoachHelmTabs active="board" />
+          <Strip at="board" />
         </div>
       </LazyMotion>,
     );
     await userEvent.click(screen.getByRole('radio', { name: 'Ask' }));
     expect(router.push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm?view=ask');
+  });
+
+  it('a tap moves the strip at once and marks the page busy until the other view is on screen (the page stays, nothing blanks)', async () => {
+    router.push.mockImplementationOnce(() => new Promise(() => {}));
+    try {
+      render(
+        <LazyMotion features={domAnimation}>
+          <div className="ch-root" data-ui="clubhouse">
+            <Strip at="board" />
+          </div>
+        </LazyMotion>,
+      );
+      const main = document.querySelector('main')!;
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+      await userEvent.click(screen.getByRole('radio', { name: 'Ask' }));
+      await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
+      expect(screen.getByRole('radio', { name: 'Ask' })).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('radio', { name: 'Board' })).toHaveAttribute('aria-checked', 'false');
+    } finally {
+      router.push.mockReset();
+    }
   });
 
   it('is on the Ask view, above the chat, with the team beside it (desktop) and without a team label on the phone', () => {
@@ -483,6 +515,30 @@ describe('History: the standing panel (desktop)', () => {
     expect(open).toHaveAttribute('aria-current', 'page');
     expect(code('CH-13823')).toBe(open);
     expect(panel.getByRole('link', { name: 'Weekly brief, Sept 29' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('choosing a chat takes the selected look on the tap and dims the conversation until it lands; a click for a new tab is still just the link', async () => {
+    router.push.mockImplementationOnce(() => new Promise(() => {}));
+    try {
+      show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
+      const panel = within(screen.getByRole('complementary', { name: 'Chats' }));
+      const main = document.querySelector('main.ch-ask')!;
+      const other = panel.getByRole('link', { name: 'Weekly brief, Sept 29' });
+      // A modified click is the browser's (a new tab): nothing is switched.
+      other.addEventListener('click', (e) => e.preventDefault(), { once: true });
+      fireEvent.click(other, { ctrlKey: true });
+      expect(router.push).not.toHaveBeenCalled();
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+
+      await userEvent.click(other);
+      expect(router.push).toHaveBeenCalledWith(other.getAttribute('href'));
+      await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
+      expect(main.getAttribute('data-switch')).toBe('chat');
+      expect(other).toHaveAttribute('aria-current', 'page');
+      expect(panel.getByRole('link', { name: 'Putting inside 6 feet' })).not.toHaveAttribute('aria-current');
+    } finally {
+      router.push.mockReset();
+    }
   });
 
   it('CH-13324 Search chats filters by title, and a search with no match says so', async () => {

@@ -42,6 +42,7 @@ export async function ClubhouseCalendarRoute({
     coachId: team.role === 'coach' ? team.coachId : null,
     view: parseView(view),
     date,
+    event,
   });
   return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} />;
 }

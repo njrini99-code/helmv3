@@ -1,7 +1,7 @@
 # P001 — Shell: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row "Foundation"); the per-gate
-checklist is `docs/clubhouse/screens/foundation.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row
+"Foundation"); the per-gate checklist is `docs/clubhouse/screens/foundation.md`.
 
 ## Current verification status
 
@@ -30,8 +30,9 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/motion.test.tsx`, `native.test.tsx` | 11606, 11608 and the native bridge | pass |
 | `scripts/clubhouse/__tests__/check.test.mjs` | 12401 | pass |
 
-Mutation checks (2026-09-30): with Mark all read's rollback removed, 11301 fails; with the frame
-ignoring the viewer's role, 10102/10802 fails. Both were restored.
+Mutation checks (2026-09-30): with Mark all read's rollback removed, 11301
+fails; with the frame ignoring the viewer's role, 10102/10802 fails. Both were
+restored.
 
 ## Visual verification
 
@@ -64,7 +65,8 @@ Result:       tab bars per role and the More sheet checked 2026-09-29; the iPhon
 | Not rebuilt / role | 10401, 10802 | tests | the notice, never the page |
 | Sidebar reads fail | 10608, 10609 | tests (loader against a fake client) | card and badge hide; logged |
 
-Not forced against a live session: a real chunk-load after a deploy, and a real 5xx.
+Not forced against a live session: a real chunk-load after a deploy, and a real
+5xx.
 
 ## Accessibility
 
@@ -85,6 +87,13 @@ Request waterfall: the shell's three reads run in parallel; the attendance read 
 Animation:         v2 tokens only; the animation features load after first paint (D-25)
 Notes:             LCP and INP come only from sampled Sentry tracing (12101)
 ```
+
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
 
 ## Open verification gaps
 

@@ -1,5 +1,6 @@
 import type { UIMessage } from 'ai';
 import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
+import type { ChPulseMissing } from './coachhelm-shape';
 
 /**
  * Ask CoachHelm's frame data (Clubhouse P013, the Ask sub-tab): the shapes the loader
@@ -44,9 +45,12 @@ export function findingCategory(id: string): string {
   return CATEGORY_BY_PREFIX.find(([prefix]) => id.startsWith(prefix))?.[1] ?? 'Program';
 }
 
-/** The pulse's items as findings: at most `limit`, each link kept only when `rebuilt` gives its screen back. */
+/**
+ * The pulse's items as findings: at most `limit`, each link kept only when `rebuilt` gives its screen back. The "N open signals across M
+ * players" item is left out, as it is from the board's pulse: it counts every active row, which the board never draws (CH13-4).
+ */
 export function pulseToFindings(items: readonly PulseItem[], rebuilt: (href: string) => string | null, limit = 3): ChAskFinding[] {
-  return items.slice(0, limit).map((item) => {
+  return items.filter((item) => item.id !== 'signals-open').slice(0, limit).map((item) => {
     const href = item.action ? rebuilt(item.action.href) : null;
     return {
       id: item.id,
@@ -156,6 +160,8 @@ export interface ChAskPulse {
   coverage: string | null;
   /** "as of 3:05 PM", formatted in the team's zone on the server. */
   asOfLabel: string | null;
+  /** A read the pulse is made from failed: the findings are what was found, and an empty list is never "nothing is flagged". Absent when every read landed. */
+  missing?: ChPulseMissing[];
 }
 
 export interface ChAskThread {
@@ -165,6 +171,8 @@ export interface ChAskThread {
 }
 
 export interface ChAskData {
+  /** The signed-in coach, so an unsent message is kept for this coach alone (`chat/drafts.ts`); absent in a preview, which then keeps none. */
+  coachId?: string;
   teamName: string;
   timezone: string;
   /** The server's clock, so History groups the same on the server and in the browser. */
@@ -191,9 +199,12 @@ export type ChAskLoad =
   /** The chat context did not load (no active team, a dropped read): nothing to ask against. */
   | { status: 'failed' };
 
-/** Whether the roster has players and not one round between them. */
-export function noRoundsFrom(pulse: { active_roster: number; players_without_rounds: number } | null): boolean {
-  return !!pulse && pulse.active_roster > 0 && pulse.players_without_rounds >= pulse.active_roster;
+/**
+ * Whether the roster has players and not one round between them. A rounds read that failed answers false: it leaves every player
+ * "without a round", and that is not a fact about the team (`ProgramPulse.failed`).
+ */
+export function noRoundsFrom(pulse: { active_roster: number; players_without_rounds: number; failed?: readonly string[] } | null): boolean {
+  return !!pulse && !pulse.failed?.includes('rounds') && pulse.active_roster > 0 && pulse.players_without_rounds >= pulse.active_roster;
 }
 
 /** The `+` menu's seven starters. Each seeds the composer and never sends. */

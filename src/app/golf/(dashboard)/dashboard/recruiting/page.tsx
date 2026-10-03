@@ -31,7 +31,7 @@ export default async function RecruitingPage() {
 
   // Clubhouse Recruiting (golf_clubhouse_ui): coaches only, with its own route, loader and screen. A player never gets here:
   // the redirect above sends them Home, and RLS on golf_recruits and golf_recruit_documents is the lock behind it.
-  if (isClubhouseFor('coach')) return <ClubhouseRecruitingRoute />;
+  if ((await isClubhouseFor('coach'))) return <ClubhouseRecruitingRoute />;
 
   const result = await getRecruits();
 

@@ -42,6 +42,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { useThreadAnchor } from "./use-thread-anchor";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
@@ -119,6 +120,8 @@ export interface ChMessagesApi {
   msgs: ChMsg[];
   msgsLoading: boolean;
   msgsError: boolean;
+  /** The thread's refresh failed while an earlier copy is shown (CH-7216). */
+  msgsStale?: boolean;
   refetchMsgs: () => void;
   typing: boolean;
   onTyping: (on: boolean) => void;
@@ -158,6 +161,8 @@ export interface ChMessagesApi {
   setMute: (muted: boolean, hours: number | null) => Promise<boolean>;
 
   announcements: ChAnnouncement[];
+  /** The first announcements read hasn't answered: the list waits, so they don't push it down when they land (CLS). */
+  annLoading?: boolean;
   annError: boolean;
   refetchAnns: () => void;
   selectedAnnId: string | null;
@@ -206,6 +211,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
     <section
       className="ch-ms-sec"
       aria-label="Messages matching your search"
+      // CH-7802: results are announced as they arrive.
       aria-live="polite"
     >
       <div className="ch-ms-sec__l">In messages</div>
@@ -235,6 +241,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
               type="button"
               className="ch-ms-row is-hit"
               onClick={() => {
+                // CH-7703: a tick on picking a reaction, a filter or a conversation.
                 haptic("select");
                 chTrail("messages open search hit");
                 api.openHit(h);
@@ -386,7 +393,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             body="Your messages are safe. Try again; the error has been reported."
             onRetry={api.refetchConvs}
           />
-        ) : api.convsLoading && !api.convs.length ? (
+        ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
           <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
@@ -696,7 +703,7 @@ export function Bubble({
             </div>
           )}
           {picking && (
-            <div className="ch-ms-reactbar" role="menu" aria-label="Reactions">
+            <div className="ch-ms-reactbar" role="menu" aria-label="Reactions" /* CH-7603: it pops from the bubble */>
               {REACTIONS.map((r) => {
                 const on = reacts.some((x) => x.key === r.key && x.mine);
                 return (
@@ -899,9 +906,15 @@ export function Composer({
     if (ok) haptic("success");
     else {
       haptic("error");
-      // Keep what they wrote: a failed send never eats the draft.
-      setDraft(text);
-      setFiles(pending);
+      // A failed text stays in the thread as its own bubble, marked, with Retry (same id, so never a duplicate) and
+      // Discard: putting it back in the box as well made a second send under a new id easy (owner 2026-10-01). A failed
+      // attachment send has no bubble, so its text and files go back in the box, in front of anything typed since,
+      // never over it (MSG-26). The drafts map mirrors the box and outlives it when the thread was switched meanwhile.
+      if (pending.length) {
+        const since = api.drafts.get(conv.id) ?? "";
+        setDraft(since ? (text ? `${text}\n${since}` : since) : text);
+        setFiles((now) => [...pending, ...now]);
+      }
     }
     ta.current?.focus();
   };
@@ -933,6 +946,7 @@ export function Composer({
         <textarea
           ref={ta}
           rows={1}
+          // CH-7801: the composer is named for the conversation. CH-7802: Enter sends, Shift+Enter adds a line (onKey).
           aria-label={`Message ${label}`}
           placeholder={`Message ${label}`}
           value={draft}
@@ -997,10 +1011,8 @@ function Thread({
     api.viewer.role,
   );
 
-  useLayoutEffect(() => {
-    const s = scroller.current;
-    if (s) s.scrollTop = s.scrollHeight;
-  }, [conv.id, api.msgs.length, api.typing]);
+  // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
+  const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
   useEffect(() => setPicking(null), [conv.id]);
   useEffect(() => {
     if (!picking) return;
@@ -1087,10 +1099,19 @@ function Thread({
       <div
         className="ch-ms-scroll"
         ref={scroller}
+        // CH-7601: a message that arrives or is sent eases in at the end of the thread, and is announced.
         aria-live="polite"
         aria-relevant="additions"
       >
         <div className="ch-ms-msgs">
+          {api.msgsStale && (
+            <InlineNotice
+              code="CH-7216"
+              title="This conversation may be out of date."
+              body="It didn't refresh. What's here is what was last loaded. Try again; the error has been reported."
+              onRetry={api.refetchMsgs}
+            />
+          )}
           {api.msgsError ? (
             <InlineNotice
               code="CH-7202"
@@ -1138,7 +1159,7 @@ function Thread({
             )
           )}
           {api.typing && (
-            <div className="ch-ms-msg is-first">
+            <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
               <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
               <div className="ch-ms-msg__col">
@@ -1156,6 +1177,11 @@ function Thread({
           )}
         </div>
       </div>
+      {anchor.unseen > 0 && (
+        <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
+          {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
+        </button>
+      )}
       <Composer key={conv.id} api={api} conv={conv} />
 
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />

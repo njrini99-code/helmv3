@@ -49,6 +49,12 @@ export interface CoachChatContext {
    * from how many rows a later join happened to succeed on.
    */
   roster: RosterPlayer[];
+  /**
+   * Set only when the membership read failed: `roster` is then empty because it could
+   * not be read, not because the team has no players. Absent otherwise, so every
+   * existing caller (which never looks at it) is unchanged.
+   */
+  roster_failed?: boolean;
 }
 
 /** Raised when the caller is not a coach, or has no resolvable active team. */
@@ -92,7 +98,7 @@ export async function resolveCoachChatContext(sb: Sb): Promise<CoachChatContext>
     .maybeSingle();
   if (!team) throw new CoachContextError('Active team not found', 404);
 
-  const roster = await loadActiveRoster(sb, teamId);
+  const { roster, failed } = await loadActiveRosterResult(sb, teamId);
 
   return {
     coach_id: coach.id,
@@ -101,6 +107,7 @@ export async function resolveCoachChatContext(sb: Sb): Promise<CoachChatContext>
     team_name: team.name,
     timezone: team.timezone,
     roster,
+    ...(failed ? { roster_failed: true } : {}),
   };
 }
 
@@ -121,16 +128,30 @@ export async function resolveCoachChatContext(sb: Sb): Promise<CoachChatContext>
  * profile", never "this player does not exist".
  */
 export async function loadActiveRoster(sb: Sb, teamId: string): Promise<RosterPlayer[]> {
-  const { data: members } = await sb
+  return (await loadActiveRosterResult(sb, teamId)).roster;
+}
+
+/**
+ * {@link loadActiveRoster} that also says when the membership read failed. A failed read
+ * answers an empty roster, which a caller cannot tell from a team with nobody on it; this
+ * is for the caller that must (the Clubhouse Ask page would otherwise say "Add players").
+ * A profile read that fails is not a failure here: the members still appear, by placeholder.
+ */
+export async function loadActiveRosterResult(
+  sb: Sb,
+  teamId: string,
+): Promise<{ roster: RosterPlayer[]; failed: boolean }> {
+  const { data: members, error: membersError } = await sb
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamId)
     .eq('status', 'active');
+  if (membersError) return { roster: [], failed: true };
 
   const memberIds = (members ?? [])
     .map((m) => m.player_id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
-  if (memberIds.length === 0) return [];
+  if (memberIds.length === 0) return { roster: [], failed: false };
 
   const { data: profiles } = await sb
     .from('golf_players')
@@ -139,7 +160,7 @@ export async function loadActiveRoster(sb: Sb, teamId: string): Promise<RosterPl
 
   const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
 
-  return memberIds.map((id) => {
+  const roster = memberIds.map((id) => {
     const p = byId.get(id);
     const name = `${p?.first_name ?? ''} ${p?.last_name ?? ''}`.trim();
     return {
@@ -151,6 +172,7 @@ export async function loadActiveRoster(sb: Sb, teamId: string): Promise<RosterPl
       graduation_year: p?.graduation_year ?? null,
     };
   });
+  return { roster, failed: false };
 }
 
 /**

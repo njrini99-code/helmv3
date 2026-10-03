@@ -24,8 +24,8 @@ import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { SettingsView } from '../screens/settings/SettingsView';
 import { SettingsSkeleton } from '../screens/settings/SettingsSkeleton';
-import { parseSection, PRIORITY_LABEL, SECTIONS, type ChCoachHelmSettings, type ChDevice, type ChResult, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../screens/settings/model';
-import { coachData, failedRead, playerData } from '../preview/fixtures-settings';
+import { parseSection, PRIORITY_LABEL, SECTIONS, type ChCoachHelmSettings, type ChDevice, type ChResult, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites, type ChStaffWrites } from '../screens/settings/model';
+import { coachData, failedRead, playerData, PREVIEW_STAFF } from '../preview/fixtures-settings';
 import './dialog-polyfill';
 
 beforeEach(() => {
@@ -63,6 +63,14 @@ function makeWrites(over: Partial<ChSettingsWrites> = {}): ChSettingsWrites {
     signOut: vi.fn(() => Promise.resolve()),
     cleanupAfterDelete: vi.fn(() => Promise.resolve()),
     refresh: vi.fn(),
+    // The staff cards have their own tests (settings-staff.test.tsx); here a team of one, with nobody waiting.
+    staff: {
+      list: vi.fn(() => Promise.resolve({ success: true, data: PREVIEW_STAFF.slice(0, 1) })),
+      pending: vi.fn(() => Promise.resolve({ success: true, data: [] })),
+      invite: vi.fn(() => Promise.resolve({ success: true, data: { token: 't', code: 'STAFF7QX', role: 'coach' as const, hours: 72 } })),
+      approve: vi.fn(okw),
+      decline: vi.fn(okw),
+    },
     ...over,
   };
 }
@@ -936,6 +944,35 @@ describe('Settings · what the person is told about standing conditions', () => 
   });
 });
 
+// The coaching staff's own checks (what is read, sent and shown, on desktop and phone) are in settings-staff.test.tsx.
+describe('Settings · Team · the coaching staff', () => {
+  it('CH-8026 CH-8027 CH-8028 CH-8213 an approval, a decline and a staff invite that are refused are toasts; a requests read that fails is a notice', async () => {
+    const user = userEvent.setup();
+    const pending = [{ coachId: 'avery', fullName: 'Avery Lee', email: 'avery@unc.edu' }];
+    const refused = (error: string) => Promise.resolve({ success: false, error });
+    const staff = {
+      list: vi.fn<ChStaffWrites['list']>(() => Promise.resolve({ success: true, data: PREVIEW_STAFF })),
+      pending: vi.fn<ChStaffWrites['pending']>().mockImplementationOnce(() => refused('We could not load pending requests.')).mockImplementation(() => Promise.resolve({ success: true, data: pending })),
+      invite: vi.fn<ChStaffWrites['invite']>(() => refused('Only a head coach of this team can invite staff.')),
+      approve: vi.fn<ChStaffWrites['approve']>(() => refused('Only a head coach of this team can do that.')),
+      decline: vi.fn<ChStaffWrites['decline']>(() => refused('We could not decline that request.')),
+    };
+    setup({ section: 'team', writes: { staff } });
+    await expectCode('CH-8213', /Requests didn't load/);
+    await user.click(within(code('CH-8213') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    const requests = await screen.findByRole('region', { name: 'Assistant coach requests' });
+    await user.click(within(requests).getByRole('button', { name: 'Approve' }));
+    await expectCode('CH-8026', /Couldn't approve Avery Lee/);
+    expect(staff.approve).toHaveBeenCalledWith('avery');
+    await user.click(within(requests).getByRole('button', { name: 'Decline' }));
+    await expectCode('CH-8027', /Couldn't decline Avery Lee/);
+    expect(staff.decline).toHaveBeenCalledWith('avery');
+    await user.click(within(await screen.findByRole('region', { name: 'Staff invitations' })).getByRole('button', { name: 'Create invite' }));
+    await expectCode('CH-8028', /Couldn't make the assistant coach invite/);
+    expect(staff.invite).toHaveBeenCalledWith('coach');
+  });
+});
+
 describe('Settings · what a saved value does when the person leaves the section', () => {
   it('81204 a value saved in Team is still there when the person leaves the section and comes back', async () => {
     const { user } = setup({ section: 'team' });
@@ -1203,7 +1240,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Maya Reyes Head coach · Varsity' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Notifications', 'Team', 'CoachHelm', 'Preferences']);
-    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Email, Push', 'Scoring, invites', 'Priorities, alerts', 'Motion, haptics']);
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Email, Push', 'Scoring, invites', 'Priorities, alerts', 'Motion, units']);
     expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
@@ -1217,7 +1254,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP 2.4' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Golf profile', 'Notifications', 'Preferences']);
-    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Handicap, team', 'Push, CoachHelm', 'Motion, haptics']);
+    expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Handicap, team', 'Push, CoachHelm', 'Motion, units']);
   });
 
   it('81901 CH-8801 a row pushes its section, the bar reads "Settings", and Back and the edge swipe pop it (CH-1906)', async () => {

@@ -56,7 +56,7 @@ export function HoleReview({
         <span>Tap a shot to change it</span>
       </div>
       {saving && (
-        <p className="ch-rt-note ch-rt-note--flat" role="status" data-ch-code="CH-11402">
+        <p className="ch-rt-note ch-rt-note--flat is-saving" role="status" data-ch-code="CH-11402">
           <span className="ch-rt-spin" aria-hidden="true" />
           <span>Saving hole {hole.number}…</span>
         </p>

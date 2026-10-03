@@ -13,12 +13,17 @@ Clubhouse route adapter: src/clubhouse/routes/qualifiers.tsx ClubhouseQualifiers
                          no team -> QualifiersNoTeam, CH-09309; a player on new/edit/selection -> CoachOnly, CH-09311;
                          a bad or other-team id -> NotFound, CH-09310; a failed selection read -> CH-09218)
 Server loaders:          src/clubhouse/data/qualifiers.ts loadQualifierList, loadQualifierDetail, loadQualifierForm,
-                         loadQualifierSelection (each read that fails logs through chLogServer('qualifiers', …))
+                         loadQualifierSelection (each read that fails logs through chLogServer('qualifiers', …)).
+                         loadQualifierDetail returns the core (the qualifier, its entries, rounds, squad and pick notes: what the
+                         standings, facts and squad need) and `secondary`, a promise that never rejects (the round courses with
+                         their tees and pars, and the scorecards; each has its own failure flag). The route passes the core as
+                         `data` and the promise as `secondary`; the sections read it through `Streamed` (streamed.tsx).
 Screens:                 src/clubhouse/screens/qualifiers/ QualifiersList, QualifierDetail (+ QualifierSections,
-                         QualifierDetailPhone), QualifierForm (+ CoursePicker), QualifierSelection
+                         QualifierDetailPhone, streamed.tsx), QualifierForm (+ CoursePicker), QualifierSelection
 Skeletons:               QualifiersSkeleton.tsx: QualifiersSkeleton (CH-09401), QualifierDetailSkeleton (CH-09402),
                          QualifierFormSkeleton (CH-09403), through ClubhouseSwitch in each loading.tsx.
-                         qualifiers, my-qualifiers, [id], new and [id]/edit have a loading.tsx. [id]/selection has none.
+                         QualifierSelectionSkeleton (CH-09409) for [id]/selection.
+                         qualifiers, my-qualifiers, [id], new, [id]/edit and [id]/selection each have a loading.tsx.
 ```
 
 ## End-to-end graph
@@ -36,6 +41,8 @@ Server actions: src/app/golf/actions/golf.ts, qualifier-setup.ts (HELD gate), v3
 ↓
 Data: golf_qualifiers, golf_qualifier_entries, golf_qualifier_round_courses, golf_qualifier_selections,
       golf_rounds, golf_holes, golf_team_members, golf_courses, golf_course_tees, golf_team_saved_courses
+      (the detail reads them in two waves: the qualifier, then entries, rounds, round courses and squad together; the tees start
+      when the round courses are in and the scorecards when the rounds are, and stream behind the first paint)
 ↓
 Realtime: ch-qualifier-<id> (golf_rounds for the qualifier; live qualifiers only) -> router.refresh() after 800ms of quiet
 ↓
@@ -76,13 +83,15 @@ eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
 
 | Path | Purpose | States |
 | --- | --- | --- |
-| `screens/qualifiers/QualifiersList.tsx` | The list: pills, search, hero, Active and Concluded cards, the player's own first, `/my-qualifiers` | 90101, 90401 to 90403, 90406, 90605, 90606, 90615, 91904 |
+| `screens/qualifiers/QualifiersList.tsx` | The list: pills, search (filter and search kept by the shell's `useChSessionState`), hero, Active and Concluded cards, the player's own first, `/my-qualifiers` | 90101, 90401 to 90403, 90406, 90605, 90606, 90615, 91904 |
 | `screens/qualifiers/QualifierDetail.tsx` | One qualifier: head, facts, `Leaderboard` (scorecard tray), round-by-round, Close and Reopen, the live listener | 90102, 90302, 90303, 90404, 90407, 90603, 90604, 90607, 90608, 90609, 90616 to 90619, 91001, 91101, 91803 |
-| `screens/qualifiers/QualifierSections.tsx` | Selections and Course per round | 90610, 90611 |
+| `screens/qualifiers/QualifierSections.tsx` | Selections, Course per round (streamed) and the stale-standings notice | 90610, 90611 |
+| `screens/qualifiers/streamed.tsx` | `Streamed` (`use()` of the loader's `secondary` inside its own `Suspense`), `SecondaryProvider`, the placeholders `CoursesSkeleton`, `CardBodySkeleton`, `NinesSkeleton`, `ParLineSkeleton` | CH-09410 |
 | `screens/qualifiers/QualifierDetailPhone.tsx` | The phone qualifier: three facts, leaderboard cards, `PlayerRounds` sheet, Edit sheet | 91901, 91001, 90404, 90407, 90607 to 90609, 90616, 90618, 90619, 90806, 90808, 91803 |
 | `screens/qualifiers/QualifierForm.tsx` | Create and edit, validation, dirty-leave guard, phone top bar | 90103, 90301, 90405, 90501 to 90514, 90601, 90602, 90612, 90620, 90621, 90622, 91201, 91202, 91902, 92001, 92002 |
 | `screens/qualifiers/CoursePicker.tsx` | Course and tee lookup for a round | 90204, 90409, 90410, 90613, 90614, 92102 |
 | `screens/qualifiers/QualifierSelection.tsx` | Manage selections: steps, lists, picks, `PickDialog`, the foot | 90104, 90205, 90411, 90412, 90511, 90512, 90623 to 90626, 90628, 90701, 91102 to 91104, 91203, 91903 |
+| `screens/qualifiers/return-state.ts`, `BackToList.tsx` | The Back notes (`sessionStorage`, this tab, read once and spent as the screen mounts) and `useStepBack`: a qualifier opened from the list, and Manage selections opened from the qualifier, step back in history on Back; with no note Back goes to the address. `BackToList` is the not-found page's Back | CH-09904, CH-09905, CH-09310 |
 | `screens/qualifiers/QualifiersSkeleton.tsx` | The three route skeletons | 90201, 90202, 90203 |
 | `screens/qualifiers/model.ts` | Pure: ranking, ties, cut lines, form rules | (unit-level, through the screens' tests) |
 | `screens/qualifiers/writes.ts` | Every write and lookup behind `ChQWrites` and `ChQSelectionWrites`; `selectionReason` | 90809, 92303, 92304 |
@@ -95,7 +104,11 @@ eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
 | Path | Type | Used by |
 | --- | --- | --- |
 | `screens/qualifiers/live.ts` (`useLiveStandings`) | Clubhouse, realtime (browser Supabase client) | QualifierDetail |
-| `src/clubhouse/lib/use-action.ts` (`useAction`, `normalise`) | Clubhouse | QualifierDetail, QualifierForm, QualifierSelection |
+| `src/clubhouse/lib/use-action.ts` (`useAction`, `normalise`) | Clubhouse | QualifierDetail, QualifierForm, QualifierSelection (`TieRow` has its own) |
+| `src/clubhouse/lib/use-refresh.ts` (`useRefresh`) | Clubhouse | every Try again on these pages |
+| `src/clubhouse/lib/use-last-good.ts` (`useLastGood`) | Clubhouse | QualifierDetail: the last good standings of a qualifier while a refresh of them fails (CH-09220) |
+| `src/clubhouse/lib/session-state.ts` (`useChSessionState`) | Clubhouse shell | QualifiersList: the filter and the search, per page and team (CH-09904) |
+| `src/clubhouse/shell/RouteFrame.tsx` (scroll per page and team, restored on Back or Forward) | Clubhouse shell | every page, so the list's place (CH-09905); these screens keep no scroll of their own |
 | `src/clubhouse/lib/use-phone.ts` (`useChPhone`, 820px) | Clubhouse | the screens |
 | `src/clubhouse/shell/phone-chrome.tsx` (`PhoneTop`, `usePhoneTabsHidden`, `useBackFromMore`) | Clubhouse | the phone screens |
 | `src/clubhouse/lib/haptics.ts`, `track.ts` (`chReport`, `chTrail`), `press.ts` | Clubhouse | throughout |
@@ -110,7 +123,7 @@ eight writes. Until 2026-09-30 it re-sent only the write (CHANGELOG).
 | setQualifierSquadSize, setQualifierEntrants | actions/qualifier-setup.ts | **Held** (D-61; refuses unless `isClubhouseFor('coach')`) | Edit's squad and players |
 | advanceSelectionState, setQualifierCoachPick, removeQualifierCoachPick, confirmQualifierSelection | actions/v3/qualifying.ts | Existing (shared with the CoachHelm qualifying workspace) | Manage selections; `getAuthedCoachContext` and `verifyPlayersOnTeam` gate them |
 | listCoursesStrict, getTeamSavedCourses, getCourseDetail | actions/course-library.ts | Existing | the course picker |
-| loadQualifyingWorkspace | lib/coachhelm/v3/qualifying/loader.ts | Existing (same loader the confirm uses) | Manage selections' read |
+| loadQualifyingWorkspace | lib/coachhelm/v3/qualifying/loader.ts | Existing (same loader the confirm and the tie places use) | Manage selections' read. A failed qualifier, picks, reasons or rounds read returns null (callers: the Fairway workspace page, the Clubhouse loader, `chooseTiePlace`, `confirmSelection`), never a workspace that looks empty |
 | readQualifierSelectionReasons | lib/golf/qualifier-selection-reasons.ts | Existing | pick reasons for a coach, working before and after the D-35 apply |
 
 ## Data resources
@@ -125,6 +138,10 @@ RPCs:     golf_qualifier_selection_reasons (via readQualifierSelectionReasons; t
 Storage:  none
 Realtime: ch-qualifier-<id>: golf_rounds filtered to the qualifier, live qualifiers only
 Cache:    none on the Clubhouse side. The Fairway page sets revalidate 300; the Clubhouse route is a server render.
+Refresh:  a live `router.refresh()` is a transition: the page on screen (standings, courses, cards) stays until the new render,
+          including its streamed part, has landed, and then changes in one commit. Where a refresh is not a transition (a
+          test), the streamed places show their placeholders and the standings are the new ones at once. A refresh whose
+          rounds or entries read fails keeps the last good standings of the same qualifier with CH-09220.
 RLS:      team coaches and active team players read; coaches write (checklist "Role permissions", read 2026-09-29,
           not read again for this pass). The server actions check first and RLS is the second gate.
 Read path:  the four loaders (server); the course picker (server actions on demand); the live channel (client)

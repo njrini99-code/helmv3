@@ -20,7 +20,7 @@ vi.mock('@/lib/supabase/server', () => ({
     from: (table: string) => {
       const res = { data: null, error: null, count: null, ...supabaseTables.current[table] };
       const chain: Record<string, unknown> = {};
-      for (const k of ['select', 'eq', 'gte', 'is', 'order', 'limit', 'in']) chain[k] = () => chain;
+      for (const k of ['select', 'eq', 'neq', 'gte', 'is', 'order', 'limit', 'in']) chain[k] = () => chain;
       chain.maybeSingle = () => Promise.resolve(res);
       chain.then = (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => Promise.resolve(res).then(ok, bad);
       return chain;
@@ -104,6 +104,14 @@ function bell(api: Partial<ChBellApi>) {
 beforeEach(() => hapticSpy.mockClear());
 
 describe('Shell · bell', () => {
+  it('CH-1705 CH-1805 opening the bell ticks, and it opens as a dialog', async () => {
+    const user = userEvent.setup();
+    bell({});
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+  });
+
   it('CH-1001 mark all read fails', async () => {
     const user = userEvent.setup();
     bell({ markAll: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) });
@@ -248,7 +256,7 @@ describe('Shell · network', () => {
     vi.useRealTimers();
   });
 
-  it('CH-1901 the offline banner comes and goes', async () => {
+  it('CH-1901 CH-1605 CH-1706 the offline banner comes and goes, with the warning pattern as the connection drops', async () => {
     wrap(<OfflineBanner />);
     expect(code('CH-1901')).toBeNull();
     setOnline(false);
@@ -336,12 +344,20 @@ describe('Shell · sidebar data', () => {
     const none = await loadClubhouseShell('t1');
     expect(none.nextEvent).toBeNull();
     supabaseTables.current = {
-      golf_events: { data: upcoming },
+      golf_events: { data: [upcoming] },
       golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'accepted' }, { status: 'pending' }] },
     };
     const shell = await loadClubhouseShell('t1');
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
     expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
+  });
+
+  it('F-40 a player\'s synced class is never the team\'s next event', async () => {
+    const klass = { ...upcoming, id: 'c1', title: 'GEOG 110', event_type: 'class', description: null };
+    const tagged = { ...upcoming, id: 'c2', title: 'CHEM 101', event_type: 'practice', description: '[class:abc]' };
+    supabaseTables.current = { golf_events: { data: [klass, tagged, upcoming] }, golf_event_attendance: { data: [] } };
+    const shell = await loadClubhouseShell('t1');
+    expect(shell.nextEvent?.id).toBe('e1');
   });
 
   it('D-66 10802 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {
@@ -361,6 +377,7 @@ describe('Shell · sidebar data', () => {
     wrap(<Sidebar userData={player} shell={shell} pathname="/golf/dashboard" />);
     expect(read()).toEqual([
       ['', ['Home', 'CoachHelm', 'Calendar', 'Team Hub', 'Messages']],
+      ['Team', ['Roster']],
       ['My game', ['Rounds', 'My stats', 'Qualifiers']],
       ['School', ['Classes']],
     ]);
@@ -607,6 +624,14 @@ describe('Shell · navigation and accessibility', () => {
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeTruthy();
   });
 
+  it('CH-1704 opening More ticks', async () => {
+    const user = userEvent.setup();
+    // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
+    wrap(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+    await user.click(screen.getByRole('button', { name: /^More/ }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+  });
+
   it('CH-1701 changing tabs ticks; the current tab does not', async () => {
     const user = userEvent.setup();
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
@@ -808,13 +833,13 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(code('CH-1808')).not.toBeNull();
     expect(document.getElementById('ch-content')!.textContent).toMatch(/Roster body/);
     unmount();
-    // Roster is rebuilt for coaches only: a player on the same address gets the notice.
+    // Lineups is rebuilt for neither role yet: a player on that address gets the notice.
     render(
-      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/roster">
-        <p>Roster body</p>
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/lineups">
+        <p>Lineups body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.queryByText('Roster body')).toBeNull();
+    expect(screen.queryByText('Lineups body')).toBeNull();
     expect(code('CH-1301')).not.toBeNull();
   });
 

@@ -22,7 +22,7 @@ Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag 
 | 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -38,7 +38,7 @@ One route skeleton (20201) in Coach Home's shape: the header, two panes and five
 
 Status: DEFINED
 
-Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. Read from the code, not tested: the phone's Today marks (Now, past) follow the same clock. The desktop agenda's Next badge is set on the server when the page loads and does not move. A page left open past midnight in the team's timezone keeps the day it loaded until the next visit or Try again.
+Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. The phone's Today marks (Now, past, and for a player Next) follow the same clock; the player's are tested (`player-home-phone.test`), the coach's are read from the code. The desktop agenda's Next badge is set on the server when the page loads and does not move. A page left open past midnight in the team's timezone keeps the day it loaded until the next visit or Try again.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -132,7 +132,7 @@ Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the c
 | 20805 | — | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
 | 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -204,7 +204,7 @@ Home's catalogued haptics: a selection tick when paging the latest round (21701)
 | 21702 | CH-2702 | `NEW_EVENT` | New event (button or the N key) |
 | 21703 | — | `TAPS_FOLLOW_THE_GRAMMAR` | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -222,7 +222,7 @@ Home's own (21801 to 21806): N opens a new event but never while typing or in a 
 | 21806 | CH-2806 | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 | — | `COUNTDOWN_IS_A_NAMED_TIMER` | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

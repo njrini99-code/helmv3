@@ -3,18 +3,31 @@
 --
 -- Apply only AFTER 20260924120000 (OD-01), 20260924140000 and 20260925120000.
 -- OD-01 routes every cache and standing aggregate through
--- public.golf_round_is_countable(r.status, ...), which has no is_test input,
--- and 20260924140000's DO block checks the md5 of OD-01's
+-- public.golf_round_is_countable(r.status, ...) (the hole rule) or
+-- public.golf_round_is_score_countable(r.status, ...) (the score rule, added
+-- by the Q-128 amendment), neither of which has an is_test input, and
+-- 20260924140000's DO block checks the md5 of OD-01's
 -- refresh_player_standing_round_metrics body, so this file must come last.
 --
 -- Change. In the four OD-01 functions, every
---   public.golf_round_is_countable(r.status
+--   public.golf_round_is_countable(<alias>.status
+--   public.golf_round_is_score_countable(<alias>.status
 -- becomes
---   (NOT r.is_test) AND public.golf_round_is_countable(r.status
--- Nothing else in any body changes. The rewrite reads the LIVE definition
--- (pg_get_functiondef), so it applies to whatever OD-01 installed, and it
--- refuses to run if OD-01 is absent or a body has no countable call.
--- Idempotent: a body that already carries the guard is skipped.
+--   (NOT <alias>.is_test) AND public.<same helper>(<alias>.status
+-- whatever the alias (update_player_stats_complete's trend subqueries use r2;
+-- swap audit §16, 2026-10-01: a needle on "r." alone left last_5, last_10 and
+-- prev_5 counting test rounds). Nothing else in any body changes. The rewrite
+-- reads the LIVE definition (pg_get_functiondef), so it applies to whatever
+-- OD-01 installed. It refuses to run if OD-01 is absent, a body has no
+-- countable call, any call is still unguarded after the rewrite, or a body
+-- calls a golf_round_is_* helper this file does not know (a name the pattern
+-- misses would otherwise pass the calls = guarded check and leave test
+-- rounds in the figures).
+-- Idempotent: existing guards are removed first, then every call is guarded.
+--
+-- Q-128: the four 0b000000-... hole-less fixture rounds are is_test = true
+-- on production but total-only shaped, so OD-01 as amended counts them in
+-- score figures until this file runs. Apply it in the same session as OD-01.
 --
 -- After apply (service role):
 --   SELECT public.refresh_player_stats_cache(p.id) FROM public.golf_players p;
@@ -29,13 +42,30 @@ DECLARE
   fn_oid oid;
   def text;
   new_def text;
-  needle constant text := 'public.golf_round_is_countable(r.status';
-  guarded constant text := '(NOT r.is_test) AND public.golf_round_is_countable(r.status';
+  calls int;
+  any_calls int;
+  guarded_calls int;
+  -- Both helpers: the hole rule and (Q-128) the score rule. In call_re \1 is
+  -- the helper and \2 the table alias; in guard_re \1 is the alias, \2 the
+  -- helper.
+  call_re constant text :=
+    'public\.(golf_round_is_(?:score_)?countable)\((\w+)\.status';
+  guard_re constant text :=
+    '\(NOT (\w+)\.is_test\) AND '
+    || 'public\.(golf_round_is_(?:score_)?countable)\(';
+  any_re constant text := 'public\.golf_round_is_\w+\(';
+  plain constant text := 'public.\2(';
+  guarded constant text :=
+    '(NOT \2.is_test) AND public.\1(\2.status';
 BEGIN
   IF to_regproc('public.golf_round_is_countable') IS NULL
-     AND NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-                     WHERE n.nspname = 'public' AND p.proname = 'golf_round_is_countable') THEN
-    RAISE EXCEPTION 'golf_round_is_countable missing: apply 20260924120000 (OD-01) first';
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_proc p
+       JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'public' AND p.proname = 'golf_round_is_countable'
+     ) THEN
+    RAISE EXCEPTION
+      'golf_round_is_countable missing: apply 20260924120000 (OD-01) first';
   END IF;
 
   FOREACH fn IN ARRAY ARRAY[
@@ -44,20 +74,48 @@ BEGIN
     'refresh_player_stats_cache',
     'refresh_player_standing_round_metrics'
   ] LOOP
-    SELECT p.oid INTO fn_oid FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    SELECT p.oid INTO fn_oid FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
       WHERE n.nspname = 'public' AND p.proname = fn;
     IF fn_oid IS NULL THEN
       RAISE EXCEPTION 'function public.% not found', fn;
     END IF;
     def := pg_get_functiondef(fn_oid);
-    IF position(guarded IN def) > 0 THEN
-      CONTINUE; -- already guarded
+    -- Strip any guard already present, so a re-run never doubles one.
+    def := regexp_replace(def, guard_re, plain, 'g');
+    SELECT count(*) INTO calls FROM regexp_matches(def, call_re, 'g');
+    IF calls = 0 THEN
+      RAISE EXCEPTION
+        'public.% has no countable-round call; is OD-01 applied?', fn;
     END IF;
-    IF position(needle IN def) = 0 THEN
-      RAISE EXCEPTION 'public.% has no countable-round call; is OD-01 applied?', fn;
+    SELECT count(*) INTO any_calls FROM regexp_matches(def, any_re, 'g');
+    IF any_calls <> calls THEN
+      RAISE EXCEPTION
+        'public.%: % golf_round_is_* calls but % recognized',
+        fn, any_calls, calls;
     END IF;
-    new_def := replace(def, needle, guarded);
+    new_def := regexp_replace(def, call_re, guarded, 'g');
+    SELECT count(*) INTO guarded_calls
+      FROM regexp_matches(new_def, guard_re, 'g');
+    IF guarded_calls <> calls THEN
+      RAISE EXCEPTION 'public.%: % countable calls but % guarded',
+        fn, calls, guarded_calls;
+    END IF;
     EXECUTE new_def;
   END LOOP;
 END
 $$;
+
+-- VERIFY (read-only, after apply): every countable call is guarded, hole
+-- rule and score rule alike.
+--   SELECT p.proname,
+--     (SELECT count(*) FROM regexp_matches(pg_get_functiondef(p.oid),
+--        'golf_round_is_(score_)?countable\(', 'g')) AS calls,
+--     (SELECT count(*) FROM regexp_matches(pg_get_functiondef(p.oid),
+--        '\(NOT \w+\.is_test\) AND public\.golf_round_is_(score_)?countable\(',
+--        'g')) AS guarded
+--   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+--   WHERE n.nspname = 'public' AND p.proname IN (
+--     'update_player_stats_complete', 'update_player_stats_strokes_gained',
+--     'refresh_player_stats_cache', 'refresh_player_standing_round_metrics');
+--   -- expect calls = guarded on every row

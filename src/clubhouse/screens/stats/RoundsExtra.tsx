@@ -3,7 +3,7 @@ import { HOLES_ADJ, hasPrevious, hasRange, isFiltered, type ChFilter } from '../
 import type { ChBests } from '../../data/stats-figures';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
-import { DataTable, Empty, RoundLine, Tiles } from './detail';
+import { DataTable, Empty, RoundLine, Rule, Tiles } from './detail';
 
 /**
  * The Rounds tab's parity figures (PARITY.md SC12 to SC14): the score of every
@@ -58,7 +58,7 @@ export function RoundsExtra({ x, filter, phone = false }: { x: ChProfileExtra; f
       ? 'Needs 3 earlier rounds before the newest 10 that match these filters, counting a 9-hole round as half.'
       : isFiltered(filter)
         ? 'Needs 3 earlier 18-hole rounds: fewer than 13 match these filters.'
-        : 'Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the season.'
+        : 'Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the last 12 months.'
     : hasRange(filter)
       ? 'A date range has no earlier window to compare with.'
       : filter.pick?.mode === 'only'
@@ -94,19 +94,27 @@ export function RoundsExtra({ x, filter, phone = false }: { x: ChProfileExtra; f
       )}
       <Card id="rx-compare" title="This window against the one before" meta="Latest 10 rounds and the 10 before them" phone={phone}>
         {c ? (
-          <DataTable
-            label="This window against the one before"
-            cols={['Stat', `Latest ${c.lastRounds}`, `Before ${c.previousRounds}`, 'Change']}
-            rows={c.rows.map((r) => ({
-              key: r.label,
-              head: r.label,
-              cells: [
-                r.last == null ? NO_DATA : `${r.last.toFixed(r.digits)}${r.unit}`,
-                r.previous == null ? NO_DATA : `${r.previous.toFixed(r.digits)}${r.unit}`,
-                change(r.last, r.previous, r.digits, r.lowerIsBetter),
-              ],
-            }))}
-          />
+          <>
+            <DataTable
+              label="This window against the one before"
+              cols={['Stat', `Latest ${c.lastRounds}`, `Before ${c.previousRounds}`, 'Change']}
+              rows={c.rows.map((r) => ({
+                key: r.label,
+                head: r.label,
+                cells: [
+                  r.last == null ? NO_DATA : `${r.last.toFixed(r.digits)}${r.unit}`,
+                  r.previous == null ? NO_DATA : `${r.previous.toFixed(r.digits)}${r.unit}`,
+                  change(r.last, r.previous, r.digits, r.lowerIsBetter),
+                ],
+              }))}
+            />
+            {/* Greens, fairways and putts read the rounds with their holes scored; a round posted as a total only is a score and nothing else (Q-123). */}
+            {(c.lastHoleRounds < c.lastRounds || c.previousHoleRounds < c.previousRounds) && (
+              <Rule>
+                Greens, fairways and putts: hole stats from {c.lastHoleRounds} of {c.lastRounds} latest rounds and {c.previousHoleRounds} of {c.previousRounds} before them.
+              </Rule>
+            )}
+          </>
         ) : (
           <Empty code="CH-5313">{why}</Empty>
         )}

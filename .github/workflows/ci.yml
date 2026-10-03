@@ -381,6 +381,17 @@ jobs:
         continue-on-error: true
         run: npm run docs:path-drift
 
+      # Clubhouse tracker, page docs, Bridge registry, screenshot-log labels and
+      # the changelog gate (a page's code changed on the branch => its
+      # CHANGELOG.md changed too). Added 2026-10-01 (owner): the gate existed
+      # only as a local command, which is not a gate. Lives in this job, not
+      # Lint, because the changelog gate diffs against the merge-base with
+      # origin/main and needs this job's full-history checkout.
+      - name: Clubhouse docs and changelog gate
+        id: clubhouse_check
+        continue-on-error: true
+        run: npm run clubhouse:check
+
       # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
       # 2026-09-02 alongside the generator itself. Without this step the
       # committed artifact could go stale on the very next registry.yml edit

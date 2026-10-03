@@ -40,7 +40,7 @@ export function PreviewQualifierSelection({ data, state }: { data: ChQSelectionD
   const fail = state === 'failwrites';
   const writes = useMemo<ChQSelectionWrites>(() => {
     const r = () => wait(fail ? { success: false, error: 'Every pick is taken. Remove one first.' } : { success: true });
-    return { advance: r, setPick: r, removePick: r, confirm: r };
+    return { advance: r, setPick: r, removePick: r, chooseTie: r, confirm: r };
   }, [fail]);
   return <QualifierSelection data={data} writes={writes} />;
 }

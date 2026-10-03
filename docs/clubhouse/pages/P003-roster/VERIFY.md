@@ -1,7 +1,7 @@
 # P003 — Roster: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/roster.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/roster.md`.
 
 ## Current verification status
 
@@ -28,15 +28,20 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/roster.test.tsx` (63 cases, each named by the codes and Bridge IDs it forces) | every catalog row of kinds 0 to 5 that is not preview, CH-3306, and the 22 hand contracts (30101 to 32401) | pass (`npx vitest run src/clubhouse` 536/536, 2026-09-30) |
 | `src/clubhouse/__tests__/shell.test.tsx` | the shell contracts this page inherits (10703, 10802, 12001 and the rest) | pass |
 
-Mutation checks (2026-09-30): each new test was watched to fail with the code it guards broken, and pass again
-with it restored (only Roster's own files were broken). Checked: 30101, 30102 (phone, and desktop ignoring the link),
-30303 (players and requests), 30502, 30701 (approve, Approve all, remove and note sent without `useAction`), 30801,
-30802 (members by team, notes by coach), 30803, 30901, 31202 (storage write, and its try/catch), 31203 (desktop and
-phone), 31301 (hide at once, restore on refusal, other decisions wait), 31403 (the dialog, the note, the request),
-31704, 32001 (trim, skip an unchanged note), 32101, 32301 (action name, breadcrumb), 32401, CH-3306 (copy, and the class
-the phone hides), CH-3703 Share (dismissed, and the fallback), CH-3803 Esc inside a dialog. Not mutation-checked: the
-success haptic and the offline refusal themselves, which live in shared `useAction` (not touched; 30701 was checked by
-taking `useAction` out of each Roster caller in turn), and the existing tests that only gained an ID in their title.
+Mutation checks (2026-09-30): each new test was watched to fail with the code it
+guards broken, and pass again with it restored (only Roster's own files were
+broken). Checked: 30101, 30102 (phone, and desktop ignoring the link), 30303
+(players and requests), 30502, 30701 (approve, Approve all, remove and note sent
+without `useAction`), 30801, 30802 (members by team, notes by coach), 30803,
+30901, 31202 (storage write, and its try/catch), 31203 (desktop and phone),
+31301 (hide at once, restore on refusal, other decisions wait), 31403 (the
+dialog, the note, the request), 31704, 32001 (trim, skip an unchanged note),
+32101, 32301 (action name, breadcrumb), 32401, CH-3306 (copy, and the class the
+phone hides), CH-3703 Share (dismissed, and the fallback), CH-3803 Esc inside a
+dialog. Not mutation-checked: the success haptic and the offline refusal
+themselves, which live in shared `useAction` (not touched; 30701 was checked by
+taking `useAction` out of each Roster caller in turn), and the existing tests
+that only gained an ID in their title.
 
 ## Visual verification
 
@@ -74,8 +79,9 @@ Result:       built to the approved spec and compared with the boards on 2026-09
 | Retry | 31401 to 31403 | tests | Retry finishes the change on screen |
 | Refresh | 30303, 31402 | test | new data replaces the first copy |
 
-Not forced against a live session: removal, approval, decline and note failures. A state never observed in a
-browser is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
+Not forced against a live session: removal, approval, decline and note failures.
+A state never observed in a browser is not verified
+(08_CI_PROGRESS_AND_VERIFICATION.md).
 
 ## Accessibility
 
@@ -101,6 +107,13 @@ Large list:        not measured. The member read has no pagination (one team); s
 Animation:         v2 tokens only
 Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 ```
+
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
 
 ## Open verification gaps
 

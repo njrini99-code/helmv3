@@ -279,7 +279,7 @@ CREATE POLICY "Users can update their golf notifications" ON "public"."golf_cale
 CREATE POLICY "Users can view attachments in their conversations" ON "public"."golf_message_attachments" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM ("public"."golf_messages" "m"
      JOIN "public"."golf_conversation_participants" "cp" ON (("cp"."conversation_id" = "m"."conversation_id")))
-  WHERE (("m"."id" = "golf_message_attachments"."message_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
+  WHERE (("m"."id" = "golf_message_attachments"."message_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("m"."is_deleted" IS NOT TRUE)))));
 
 CREATE POLICY "Users can view relevant review events" ON "public"."golf_review_events" FOR SELECT USING (((EXISTS ( SELECT 1
    FROM (("public"."golf_coaches" "gc"

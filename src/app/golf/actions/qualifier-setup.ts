@@ -48,7 +48,7 @@ const SQUAD_MAX = 12;
 async function coachOfQualifier(qualifierId: string, action: string): Promise<Gate> {
   if (!isUuid(qualifierId)) return { ok: false, error: 'That qualifier link isn’t valid.' };
   // HELD gate (D-61): the coach check below still decides who may edit.
-  if (!isClubhouseFor('coach')) return { ok: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
+  if (!(await isClubhouseFor('coach'))) return { ok: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
   const supabase = await createClient();
   const {
     data: { user },

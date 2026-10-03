@@ -673,6 +673,38 @@ green? Tap to confirm."), and the server accepts it.
 Submit failure codes: `hole_invalid` (the issue names a hole) or
 `round_implausible` (round total), with the human message in `error`.
 
+## Held saves, idempotent discard, missing parent (swap audit, 2026-09-30)
+
+- **Held, not saved.** When an autosave or completed-hole checkpoint does not
+  reach the server (offline, conflict-blocked, queued behind another save,
+  `busy`, a refused hole, or the round was discarded), both engines throw
+  `AutoSaveHeldError(reason, onDevice)` instead of resolving. The state
+  machine keeps that fingerprint unsaved, never counts it toward the circuit
+  breaker, exposes `autoSaveHeldOnDevice`, and resends on `online` or after
+  20s (offline, queued, busy). Clubhouse shows "Saved on this phone"; "Round
+  saved" means a server acknowledgement only. Fairway's status union is
+  unchanged, so a held save shows nothing there rather than a false "Saved".
+- **Recovery.** While a device copy is undecided, an autosave of the server's
+  own shots neither writes nor clears it. Restore bumps `restoreEpoch`; both
+  renderers key the tracker by it so the restored shots load on the same
+  hole. A copy is retired by a newer server row only when the server covers
+  every hole and shot in it (`isEmergencySaveCoveredByProgress`), not by
+  comparing device and server clocks. Restoring a fully scored copy opens the
+  submit step.
+- **Discard is idempotent.** A zero-row in-progress delete probes the row: if
+  it is gone, the action succeeds (`already_removed`); if it still exists in
+  another state, it refuses as before (`stale_round_state`). Each discard
+  path (both engines, the Library) writes a device tombstone
+  (`markRoundDiscarded`) that blocks re-creation from other tabs, the recreate
+  paths and the v1 failed-submit queue. A discard on another device can still
+  be resurrected until a server tombstone exists (owner decision Q-119).
+- **Missing parent on submit.** The submit preflight answers `round_missing`
+  when no row with that id exists anywhere (an id-only service-role check),
+  so `writeRoundRecreatingIfMissing` re-creates and completes it; a row that
+  exists under another player keeps the permission refusal.
+- **Version check on submit** is a HELD draft
+  (`20261001000000_submit_round_expected_updated_at.sql`, R-6).
+
 ## Save and submit result contract (updated 2026-09-02)
 
 `savePartialRound` and `submitGolfRoundComprehensive` return

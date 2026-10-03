@@ -69,6 +69,7 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
           <span>A square photo works best. JPEG, PNG or WebP, up to 2 MB.</span>
           <div className="ch-set-photo__acts">
             <Button size="sm" leftIcon={Camera} disabled={uploading} onClick={() => file.current?.click()}>
+              {/* CH-8404: the photo dims and the button says so while it uploads. */}
               {uploading ? 'Uploading…' : f.draft.avatarUrl ? 'Replace photo' : 'Add photo'}
             </Button>
             {f.draft.avatarUrl && !uploading && (
@@ -276,6 +277,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
             variant="danger"
             leftIcon={Trash2}
             onClick={() => {
+              // CH-8704: the warning pattern as Delete account opens.
               haptic('warning');
               chTrail('settings delete account open');
               setTyped('');
@@ -286,6 +288,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
           </Button>
         </div>
       </Card>
+      {/* CH-8604: a confirm rises and fades in; CH-8806: it traps focus, Esc closes, focus returns (native dialog). */}
       <Modal
         open={confirming}
         code="CH-8501"

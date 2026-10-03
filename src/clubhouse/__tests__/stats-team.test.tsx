@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,6 +27,7 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadTeamStats, type ChTeamStats } from '../data/stats-team';
+import { markAppRunning, RouteScope } from '../lib/session-state';
 import { loadPlayerProfile } from '../data/stats-player';
 import { resolveClubhouseTeam } from '../routes/team';
 import { ClubhouseStatsRoute, StatsNoTeam } from '../routes/stats';
@@ -125,6 +126,33 @@ describe('Stats team · reads that fail', () => {
     wrap(data);
     await expectCode('CH-4201', /Team rounds didn't load/);
     expect(code('CH-4301')).toBeNull();
+    // A roster that did not load is not "0 active players".
+    expect(document.querySelector('.ch-st-head p')!.textContent).toBe('Varsity · countable rounds only');
+    expect(document.querySelector('.ch-st-head')!.textContent).not.toMatch(/\b0 active/);
+  });
+
+  it('CH-4211 the season’s longest putt does not load: Season bests says so beside the other bests, never "No season bests yet" and never a quiet gap', async () => {
+    const isLongest = (f: Array<[string, unknown[]]>) => f.some(([k]) => k === 'limit');
+    const day = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    tables.current = {
+      ...seasonTables(),
+      golf_rounds: { data: [{ id: 'r1', player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' }] },
+      golf_shots: (f) => (isLongest(f) ? { error: { message: 'boom' } } : { data: [{ round_id: 'r1', putt_distance_feet: 8, putt_made: true }] }),
+    };
+    const data = await load();
+    expect(data.longestError).toBe(true);
+    expect(data.roundsError).toBe(false);
+    wrap(data);
+    await expectCode('CH-4211', /The longest putt didn't load/);
+    expect(code('CH-4307')).toBeNull();
+    expect(screen.getByText('Low round')).toBeTruthy();
+    await userEvent.setup().click(within(code('CH-4211') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+    // When it loads there is no notice.
+    cleanup();
+    tables.current = seasonTables();
+    wrap(await load());
+    expect(code('CH-4211')).toBeNull();
   });
 
   it('CH-4202 round figures do not load: scoring stays, the rest say so', async () => {
@@ -305,6 +333,93 @@ describe('Stats team · network', () => {
   });
 });
 
+describe('Stats team · a change in flight, and the last choice wins', () => {
+  const checked = () =>
+    within(screen.getByRole('radiogroup', { name: 'Window' }))
+      .getAllByRole('radio')
+      .filter((r) => r.getAttribute('aria-checked') === 'true')
+      .map((r) => r.textContent);
+  afterEach(() => router.push.mockReset());
+
+  it('CH-4903 4403 while a window loads, the switch is on the new choice and a note names the figures still shown (the last 10 rounds), never the new period', async () => {
+    const user = userEvent.setup();
+    router.push.mockImplementation(() => new Promise(() => {}));
+    wrap(stats({ window: 'last10' }));
+    expect(code('CH-4903')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Season' }));
+    await expectCode('CH-4903', /^Showing the last 10 rounds, loading the season$/);
+    expect(code('CH-4903')!.getAttribute('role')).toBe('status');
+    expect(checked()).toEqual(['Season']);
+    // The note is outside the dimmed page, so it is not dimmed with it.
+    expect(document.querySelector('.ch-st')!.contains(code('CH-4903'))).toBe(false);
+    expect(screen.getByText('Scoring average')).toBeTruthy();
+  });
+
+  it('CH-4903 CH-4902 a quick Season, Qualifiers, Season ends where it started: the switch, the note and the slow notice follow the last tap (the last choice wins)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      router.push.mockImplementation(() => new Promise(() => {}));
+      wrap(stats({ window: 'season' }));
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      // Two choices in flight: the last one is what the note and the switch say.
+      expect(code('CH-4903')!.textContent).toBe('Showing the season, loading the last 10 rounds');
+      expect(checked()).toEqual(['Last 10']);
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      expect(router.push.mock.calls.map((c) => c[0])).toEqual(['/golf/dashboard/stats?window=qualifiers', '/golf/dashboard/stats', '/golf/dashboard/stats?window=season']);
+      // Back on what is on screen: nothing left to wait for.
+      expect(code('CH-4903')).toBeNull();
+      expect(checked()).toEqual(['Season']);
+      vi.advanceTimersByTime(7000);
+      expect(code('CH-4902')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('CH-4902 two choices in flight: the slow notice names the last one only', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      router.push.mockImplementation(() => new Promise(() => {}));
+      wrap(stats({ window: 'season' }));
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      vi.advanceTimersByTime(3000);
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      // The first choice's five seconds would end here; it was replaced, so nothing is said about it.
+      vi.advanceTimersByTime(2500);
+      expect(code('CH-4902')).toBeNull();
+      vi.advanceTimersByTime(2600);
+      await expectCode('CH-4902', /Still loading the last 10 rounds…/);
+      expect(document.querySelectorAll('[data-ch-code="CH-4902"]')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('Stats team · what the coach chose comes back (PAGE_PERFORMANCE.md rule 1)', () => {
+  const lensOf = () => screen.getAllByRole('radio').find((r) => /^(Scoring|Strokes gained)$/.test(r.textContent ?? '') && r.getAttribute('aria-checked') === 'true')!.textContent;
+  beforeEach(() => sessionStorage.clear());
+
+  it('4404 the trend’s lens comes back on a return to the page, and another team starts on strokes gained', async () => {
+    markAppRunning();
+    const user = userEvent.setup();
+    const at = (scope: string) => render(<RouteScope value={scope}>{tree(stats())}</RouteScope>);
+    const first = at('/golf/dashboard/stats\u0000t1');
+    expect(lensOf()).toBe('Strokes gained');
+    await user.click(screen.getByRole('radio', { name: 'Scoring' }));
+    expect(lensOf()).toBe('Scoring');
+    first.unmount();
+    const back = at('/golf/dashboard/stats\u0000t1');
+    expect(lensOf()).toBe('Scoring');
+    back.unmount();
+    at('/golf/dashboard/stats\u0000t2');
+    expect(lensOf()).toBe('Strokes gained');
+  });
+});
+
 describe('Stats team · loading, haptics, accessibility', () => {
   it('CH-4401 the route skeleton is busy', () => {
     render(<StatsSkeleton />);
@@ -357,7 +472,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(deltas[0]!.className).toMatch(/ch-gain/);
     expect(deltas[2]!.className).toMatch(/ch-loss/);
     for (const h of ['Scoring trend', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
-    expect(screen.getByRole('img', { name: /Team scoring average by week, from 74\.8 to 73\.4\. Down 1\.4 strokes/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
   });
 
@@ -382,10 +497,12 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
 
-  it('CH-4201 rounds do not load: the notice, never an empty team', () => {
-    wrap(stats({ roundsError: true }));
+  it('CH-4201 rounds do not load: the notice, never an empty team, and no count of active players', () => {
+    wrap(stats({ roundsError: true, activeCount: 0 }));
     expect(code('CH-4201')).not.toBeNull();
     expect(document.querySelector('.ch-stm-figs')).toBeNull();
+    expect(document.querySelector('.ch-stm-head')!.textContent).toMatch(/countable rounds/);
+    expect(document.querySelector('.ch-stm-head')!.textContent).not.toMatch(/active/);
   });
 
   it('CH-4301 no rounds in the window: offers the season', () => {
@@ -642,7 +759,7 @@ describe('Stats team · the page', () => {
 /* ── The loader ── */
 
 describe('Stats team · the loader', () => {
-  it('42101 the loader reads each source once, starts the benchmarks before the rounds come back, and reads the round figures and putts after the rounds', async () => {
+  it('42101 the loader reads each source once (shots twice: the window’s putts and the season’s longest putt), starts the benchmarks before the rounds come back, and reads the round figures and putts after the rounds', async () => {
     const order: string[] = [];
     const count = (table: string, answer: import('./supabase-fake').ChFakeTables[string]) => (f: Filters) => {
       order.push(table);
@@ -650,7 +767,7 @@ describe('Stats team · the loader', () => {
     };
     tables.current = Object.fromEntries(Object.entries(seasonTables()).map(([table, answer]) => [table, count(table, answer)]));
     const data = await load();
-    expect(order.slice().sort()).toEqual(['golf_pga_standards', 'golf_round_stats_cache', 'golf_rounds', 'golf_shots', 'golf_team_members', 'golf_teams']);
+    expect(order.slice().sort()).toEqual(['golf_pga_standards', 'golf_round_stats_cache', 'golf_rounds', 'golf_shots', 'golf_shots', 'golf_team_members', 'golf_teams']);
     const at = (t: string) => order.indexOf(t);
     expect(Math.max(at('golf_teams'), at('golf_team_members'))).toBeLessThan(at('golf_rounds'));
     // The benchmarks are already on their way before the rounds are back, and the figures need the rounds' ids.
@@ -704,5 +821,93 @@ describe('Stats team · tests', () => {
     // The hand contracts: each one this file claims is named in a test title.
     const ids = ['40101', '40102', '40501', '40801', '40802', '40901', '41201', '41401', '41901', '42001', '42101', '42301', '42401'];
     expect(ids.filter((id) => !titles.includes(id))).toEqual([]);
+  });
+});
+
+// Swap audit §10: the team figures worked by hand from two players' rounds.
+describe('Stats team · the figures by hand (swap audit §10)', () => {
+  const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+  const round = (id: string, player: string, n: number, score: number, sg: number) => ({
+    id,
+    player_id: player,
+    round_date: day(n),
+    total_score: score,
+    score_to_par: score - 72,
+    front_nine: Math.floor(score / 2),
+    back_nine: Math.ceil(score / 2),
+    holes_played: 18,
+    status: 'completed',
+    round_type: 'practice',
+    course_name: 'Home',
+    strokes_gained_total: sg,
+  });
+  it('scoring, greens, putts, scrambling, birdies and strokes gained over both players’ rounds', async () => {
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: { data: [round('r1', 'p1', 1, 72, 1.0), round('r2', 'p1', 2, 76, -2.0), round('r3', 'p2', 3, 70, 2.5)] },
+      golf_round_stats_cache: {
+        data: [
+          { round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 },
+          { round_id: 'r2', greens_hit: 9, greens_total: 18, total_putts: 34, scramble_attempts: 4, scrambles_converted: 1, birdies: 0, eagles: 0 },
+          { round_id: 'r3', greens_hit: 15, greens_total: 18, total_putts: 28, scramble_attempts: 2, scrambles_converted: 2, birdies: 3, eagles: 1 },
+        ],
+      },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const fig = (label: string) => data.figures.find((f) => f.label === label)!.value;
+    expect(fig('Scoring average')).toBeCloseTo((72 + 76 + 70) / 3, 10);
+    // Greens and scrambling pool the holes and chances (36 of 54, 6 of 12), never a mean of percentages (66.7 and 63.9).
+    expect(fig('Greens in regulation')).toBeCloseTo((36 / 54) * 100, 10);
+    expect(fig('Scrambling')).toBe(50);
+    expect(fig('Putts per round')).toBeCloseTo((30 + 34 + 28) / 3, 10);
+    // Birdies and eagles together.
+    expect(fig('Birdies per round')).toBeCloseTo((2 + 0 + 4) / 3, 10);
+    expect(fig('Team SG per round')).toBeCloseTo((1.0 - 2.0 + 2.5) / 3, 10);
+  });
+
+  // Swap audit C-24(a): a cache row with no hole scored holds zero birdies; it is no figure, not a round without a birdie.
+  it('C-24 a round whose cache scored no hole is left out of birdies and scrambling, not counted as zero', async () => {
+    const zero = { greens_hit: 10, greens_total: 18, total_putts: 31, scramble_attempts: 0, scrambles_converted: 0, birdies: 0, eagles: 0, pars: 0, bogeys: 0, double_bogeys: 0, triple_plus: 0 };
+    tables.current = {
+      ...seasonTables(),
+      golf_rounds: { data: [round('r1', 'p1', 1, 72, 0), round('r2', 'p1', 2, 74, 0)] },
+      golf_round_stats_cache: {
+        data: [
+          { round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0, pars: 12, bogeys: 4, double_bogeys: 0, triple_plus: 0 },
+          { round_id: 'r2', ...zero },
+        ],
+      },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const fig = (label: string) => data.figures.find((f) => f.label === label)!.value;
+    expect(fig('Birdies per round')).toBe(2);
+    // Its round-level totals still count: greens 22 of 36, putts (30 + 31) / 2.
+    expect(fig('Greens in regulation')).toBeCloseTo((22 / 36) * 100, 10);
+    expect(fig('Putts per round')).toBe(30.5);
+  });
+
+  // Q-112 (owner, 2026-10-01): "vs. previous 10" compares the same players. Theo shot 72 in both windows; Jonah's three 80s
+  // have no previous ten, so they raise the window's average but not the change.
+  it('Q-112 the change compares only players with a previous ten', async () => {
+    const theo = Array.from({ length: 13 }, (_, i) => round(`t${i}`, 'p1', i + 1, 72, 0));
+    const jonah = [round('j1', 'p2', 1, 80, 0), round('j2', 'p2', 2, 80, 0), round('j3', 'p2', 3, 80, 0)];
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: { data: [...theo, ...jonah] },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const scoring = data.figures.find((f) => f.label === 'Scoring average')!;
+    expect(scoring.value).toBeCloseTo((10 * 72 + 3 * 80) / 13, 10);
+    expect(scoring.delta).toBe(0);
+  });
+
+  // Swap audit C-15: total_score is written once at submission and can drift from the holes (round-total.ts); the season read
+  // takes the total and to-par from the nines, once, for every screen after it.
+  it('C-15 a round whose stored total drifted from its holes counts at the holes’ total', async () => {
+    tables.current = { ...seasonTables(), golf_rounds: { data: [{ ...round('r1', 'p1', 1, 72, 0), total_score: 73, score_to_par: 1 }] } };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    expect(data.figures.find((f) => f.label === 'Scoring average')!.value).toBe(72);
   });
 });

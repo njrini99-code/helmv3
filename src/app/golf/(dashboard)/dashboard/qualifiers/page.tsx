@@ -27,7 +27,7 @@ export default async function GolfQualifiersPage() {
   if (!session) redirect('/golf/login');
 
   // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
-  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) return <ClubhouseQualifiersRoute view="list" />;
+  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) return <ClubhouseQualifiersRoute view="list" />;
 
   const { role, coach, player } = session;
   const isCoach = role === 'coach';

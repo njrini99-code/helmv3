@@ -97,6 +97,7 @@ export function useAction<A extends unknown[], T>(
       // Another surface owns this outcome (a dialog, the page that took over): nothing to say twice.
       if (c.quiet) return result;
       if (result.success) {
+        // CH-1702: a save or send that lands gives the success pattern; CH-1703: a failure the error pattern (below).
         haptic('success');
         if (c.done) toast({ title: c.done });
       } else {

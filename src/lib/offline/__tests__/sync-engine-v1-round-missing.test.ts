@@ -12,6 +12,7 @@
  * and mark the v1 record synced under the id that now exists.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setSyncSessionPlayer } from '../session-player';
 
 const submitCalls: Array<[unknown, string | undefined]> = [];
 const legacy = vi.hoisted(() => ({
@@ -57,6 +58,7 @@ const terminalSubmission = {
 };
 
 beforeEach(() => {
+  setSyncSessionPlayer('player-1');
   submitCalls.length = 0;
   legacy.pending = [{
     id: 'v1-local-id',
@@ -91,5 +93,23 @@ describe('SyncEngine v1 drain — a terminal submission whose round is gone', ()
     expect(result.failed).toBe(0);
     expect(legacy.synced).toEqual([['v1-local-id', 'new-round-id']]);
     expect(legacy.failures).toEqual([]);
+  });
+
+  it("never submits another account's queued scorecard, and leaves it queued (security review of R-5)", async () => {
+    setSyncSessionPlayer('player-2');
+    const result = await (getSyncEngine() as unknown as {
+      syncV1Rounds: () => Promise<{ synced: number; failed: number; errors: string[] }>;
+    }).syncV1Rounds();
+
+    expect(submitCalls).toEqual([]);
+    expect(result).toMatchObject({ synced: 0, failed: 0 });
+    expect(legacy.synced).toEqual([]);
+    expect(legacy.failures).toEqual([]);
+  });
+
+  it('drains nothing while no player is signed in', async () => {
+    setSyncSessionPlayer(null);
+    await (getSyncEngine() as unknown as { syncV1Rounds: () => Promise<unknown> }).syncV1Rounds();
+    expect(submitCalls).toEqual([]);
   });
 });

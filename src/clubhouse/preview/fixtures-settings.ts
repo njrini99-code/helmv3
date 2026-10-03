@@ -1,6 +1,6 @@
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
-import type { ChSettingsData } from '../screens/settings/model';
+import type { ChPendingCoach, ChSettingsData, ChStaffMember } from '../screens/settings/model';
 
 /** Settings sample data (the handoff's people), shared by the preview and the Settings tests. */
 const phil = {
@@ -25,6 +25,18 @@ const phil = {
 };
 
 const ok = <T,>(value: T) => ({ value, error: false as const });
+
+/** Team, coach: the staff the preview and the tests share (the viewer, `maya`, is the head coach). */
+export const PREVIEW_STAFF: ChStaffMember[] = [
+  { coachId: 'maya', fullName: 'Maya Reyes', title: 'Head Coach', role: 'head_coach' },
+  { coachId: 'dan', fullName: 'Dan Whitfield', title: 'Director of Golf', role: 'assistant_coach' },
+];
+/** The same team seen by an assistant: the viewer is `maya` again, no longer the head. */
+export const PREVIEW_STAFF_AS_ASSISTANT: ChStaffMember[] = [
+  { coachId: 'ines', fullName: 'Ines Cho', title: null, role: 'head_coach' },
+  { coachId: 'maya', fullName: 'Maya Reyes', title: null, role: 'assistant_coach' },
+];
+export const PREVIEW_PENDING_COACHES: ChPendingCoach[] = [{ coachId: 'avery', fullName: 'Avery Lee', email: 'avery@unc.edu' }];
 export const failedRead = { value: null, error: true as const };
 
 const DELIVERY = {

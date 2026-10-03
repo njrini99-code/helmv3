@@ -299,11 +299,15 @@ async function updateRecruitImpl(
     if (updates.notes !== undefined) patch.notes = updates.notes?.trim() || null;
     if (updates.status !== undefined) patch.status = updates.status;
 
-    const { error } = await (ctx.supabase as any)
+    // `.select('id')`: an UPDATE that matches no row (a stale id, a recruit
+    // already removed, another team's) is not an error, and used to be reported
+    // as saved while nothing changed.
+    const { data: updated, error } = await (ctx.supabase as any)
       .from('golf_recruits')
       .update(patch)
       .eq('id', id)
-      .eq('team_id', ctx.teamId);
+      .eq('team_id', ctx.teamId)
+      .select('id');
 
     if (error) {
       await logServerError(`updateRecruit failed: ${error.message}`, {
@@ -312,6 +316,9 @@ async function updateRecruitImpl(
         extra: { code: error.code, id },
       });
       return { success: false, error: 'Failed to update recruit' };
+    }
+    if (!Array.isArray(updated) || updated.length === 0) {
+      return { success: false, error: 'Recruit not found' };
     }
 
     revalidatePath('/golf/dashboard/recruiting');
@@ -350,16 +357,35 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
     // cascade removes golf_recruit_documents rows, but storage objects are not
     // cascaded — without this they'd orphan in the private recruit-documents
     // bucket.
-    const { data: docRows } = await (ctx.supabase as any)
+    //
+    // Scoped to this team like the delete below: the read used to filter on the
+    // recruit id alone, so the storage purge could be pointed at a recruit that
+    // was not this team's. A failed read stops the delete: carrying on would
+    // remove the rows that name the files and orphan the files.
+    const { data: docRows, error: docsError } = await (ctx.supabase as any)
       .from('golf_recruit_documents')
       .select('storage_path')
-      .eq('recruit_id', id);
+      .eq('recruit_id', id)
+      .eq('team_id', ctx.teamId);
 
-    const { error } = await (ctx.supabase as any)
+    if (docsError) {
+      await logServerError(`deleteRecruit document read failed: ${docsError.message}`, {
+        action: 'recruiting.deleteRecruit',
+        featureArea: 'recruiting',
+        extra: { code: docsError.code, id },
+      });
+      return { success: false, error: 'Failed to remove recruit' };
+    }
+
+    // `.select('id')`: a DELETE that matches no row is not an error. Without
+    // this a miss (stale id, another team's recruit) went on to purge the
+    // storage objects of a recruit that still existed, and said success.
+    const { data: deleted, error } = await (ctx.supabase as any)
       .from('golf_recruits')
       .delete()
       .eq('id', id)
-      .eq('team_id', ctx.teamId);
+      .eq('team_id', ctx.teamId)
+      .select('id');
 
     if (error) {
       await logServerError(`deleteRecruit failed: ${error.message}`, {
@@ -368,6 +394,11 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
         extra: { code: error.code, id },
       });
       return { success: false, error: 'Failed to remove recruit' };
+    }
+    if (!Array.isArray(deleted) || deleted.length === 0) {
+      // Nothing was removed, so no document row is gone and nothing is purged.
+      revalidatePath('/golf/dashboard/recruiting');
+      return { success: false, error: "That recruit was already removed or isn't on your team." };
     }
 
     // Recruit (and its document rows) gone — now purge the storage objects.

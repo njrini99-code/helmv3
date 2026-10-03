@@ -217,6 +217,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   proving the feed, the Hub/PracticeRx pick, and the chat tool now agree on
   the same leading insight from one shared fixture.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
+- The enable gate (`src/lib/coachhelm/v2/gate.ts`) fails closed: a failed read
+  of the coach or player row (LIVE-17), the coach's settings, staffed teams, a
+  player's active memberships or the teams' settings answers
+  `effectivelyEnabled=false` ("CoachHelm settings lookup failed") and logs it; a
+  missing row still means the enabled default (Q-146, 2026-10-01;
+  `src/test/coachhelm/v2/gate-batching.test.ts`).
 - Post-round analysis returns a typed `AnalysisOutcome` (repair plan R3,
   2026-09-12; `src/lib/coachhelm/v3/engine/analysis-outcome.ts`):
   `succeeded | partial | waiting_for_data | not_applicable | disabled |

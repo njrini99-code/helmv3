@@ -58,7 +58,7 @@ export default async function NotificationPrefsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
   // Clubhouse: one Settings page; this link opens its Notifications section (both roles have one).
-  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) {
+  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) {
     return <ClubhouseSettingsRoute section="notifications" />;
   }
   if (!session.player) {

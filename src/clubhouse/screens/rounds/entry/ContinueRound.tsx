@@ -6,12 +6,11 @@ import { useContinueRoundSession, type ContinueRoundSessionProps } from '@/lib/g
 import { useRoundPorts } from './ports';
 import { QualifierRoundSheet } from './QualifierRoundSheet';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
+import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
 
 const LIBRARY = '/golf/dashboard/rounds';
 
-/** The recovery flow is Fairway's and has no Clubhouse screen: a submit that couldn't reach the server lands on Rounds (see `NewRound`). */
-const ENGINE_ROUTES = { recover: LIBRARY };
 const ROUTES: RoundRuntimeRoutes = { library: LIBRARY, review: (roundId) => `${LIBRARY}/${roundId}` };
 
 export interface ContinueRoundProps extends ContinueRoundSessionProps {
@@ -75,6 +74,7 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
     // The continue engine restores the device copy in one step, with nothing to wait for.
     recovery: { open: engine.showRecoveryDialog, data: engine.recoveryData, restoring: false },
     restoreRecovery: engine.handleRestoreRecovery,
+    restoreEpoch: engine.restoreEpoch,
     discardRecovery: engine.handleDiscardRecovery,
     closeRecovery: () => engine.setShowRecoveryDialog(false),
   };
@@ -89,6 +89,7 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
         onRestore={() => latest.current.handleRestoreRecovery()}
         onDiscard={() => latest.current.handleDiscardRecovery()}
         onClose={() => latest.current.setShowRecoveryDialog(false)}
+        restoreHint="Opens the round where you left off. It saves with your next shot."
       />
       <QualifierRoundSheet
         open={engine.showQualifierRoundNumberDialog}

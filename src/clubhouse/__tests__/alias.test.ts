@@ -49,7 +49,67 @@ describe('redirectToClubhouse', () => {
 
   it('never sends anyone to a screen not rebuilt for their role', async () => {
     session = { player: {} };
-    await redirectToClubhouse({ player: '/golf/dashboard/roster' });
+    await redirectToClubhouse({ player: '/golf/dashboard/lineups' });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+});
+
+describe('30806 an old /roster/[id] link', () => {
+  const PID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
+
+  it("opens the player's Stats for a coach and the roster for a player (a teammate has no page), only with Clubhouse on", async () => {
+    const { default: RosterIdLayout } = await import('@/app/golf/(dashboard)/dashboard/roster/[id]/layout');
+    const open = () => RosterIdLayout({ children: null, params: Promise.resolve({ id: PID }) });
+    await expect(open()).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}`);
+    session = { player: {} };
+    await expect(open()).rejects.toThrow('REDIRECT /golf/dashboard/roster');
+    flagOn = false;
+    await open();
+    expect(redirect).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('owner 2026-10-01: the remaining not-rebuilt addresses open the nearest Clubhouse screen', () => {
+  const PID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
+
+  it("a player's page, game, print and genome open their Stats profile; compare opens Team stats", async () => {
+    const { default: PlayerPagesLayout } = await import('@/app/golf/(dashboard)/dashboard/players/[playerId]/layout');
+    await expect(PlayerPagesLayout({ children: null, params: Promise.resolve({ playerId: PID }) })).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}`);
+    const { default: GenomeLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/[playerId]/layout');
+    await expect(GenomeLayout({ children: null, params: Promise.resolve({ playerId: PID }) })).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}`);
+    const { default: CompareLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/layout');
+    await expect(CompareLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/stats/team');
+  });
+
+  it('/team opens Settings (Team for a coach, Golf for a player); courses and What’s new open Home; a player’s chat opens CoachHelm', async () => {
+    const { default: TeamLayout } = await import('@/app/golf/(dashboard)/dashboard/team/layout');
+    await expect(TeamLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/settings?section=team');
+    const { default: CoursesLayout } = await import('@/app/golf/(dashboard)/dashboard/courses/layout');
+    await expect(CoursesLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard');
+    session = { player: {} };
+    await expect(TeamLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/settings?section=golf');
+    const { default: WhatsNewLayout } = await import('@/app/golf/(dashboard)/dashboard/whats-new/layout');
+    await expect(WhatsNewLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard');
+    const { default: ChatLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/chat/layout');
+    await expect(ChatLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/coachhelm');
+  });
+});
+
+describe('swap audit §14 aliases (D6, D8)', () => {
+  const QID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
+
+  it('/intelligence opens a coach on CoachHelm', async () => {
+    const { default: IntelligenceLayout } = await import('@/app/golf/(dashboard)/dashboard/intelligence/layout');
+    await expect(IntelligenceLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/coachhelm');
+  });
+
+  it("the old qualifying workspace opens a coach on that qualifier's selection; an id that isn't one stays on Fairway", async () => {
+    const { default: QualifyingWorkspaceLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/qualifying/[id]/layout');
+    await expect(QualifyingWorkspaceLayout({ children: null, params: Promise.resolve({ id: QID }) })).rejects.toThrow(
+      `REDIRECT /golf/dashboard/qualifiers/${QID}/selection`,
+    );
+    redirect.mockClear();
+    await QualifyingWorkspaceLayout({ children: null, params: Promise.resolve({ id: 'not-an-id' }) });
     expect(redirect).not.toHaveBeenCalled();
   });
 });

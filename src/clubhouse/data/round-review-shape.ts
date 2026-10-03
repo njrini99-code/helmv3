@@ -55,8 +55,13 @@ export interface ChReviewSg {
 export interface ChRoundReview {
   id: string;
   playerId: string;
-  /** The player's name, for a coach viewing; null for the player's own round. */
+  /** The player's name, for a coach viewing; null for the player's own round (or for a coach's view whose name didn't load: `playerError`). */
   playerName: string | null;
+  /**
+   * A coach is looking (Back to Stats, whose notes). Said outright, not read from `playerName`: a name that failed to load is null
+   * too. Absent in a fixture: then a name means a coach.
+   */
+  coachView?: boolean;
   date: string;
   course: string;
   tee: string | null;
@@ -65,7 +70,8 @@ export interface ChRoundReview {
   /** "6,984 yds · 73.1 / 133": whatever of yards, rating and slope is known. */
   teeFacts: string | null;
   holesPlayed: number;
-  score: number;
+  /** The round's total; null when none is recorded (the hero says so: never drawn as 0 strokes). */
+  score: number | null;
   toPar: number | null;
   front: { score: number | null; toPar: number | null };
   back: { score: number | null; toPar: number | null };
@@ -85,6 +91,12 @@ export interface ChRoundReview {
   holesError: boolean;
   /** The shots read failed: the card shows, each hole's shots don't. */
   shotsError: boolean;
+  /** The tee's read failed: the tee's yardage is missing from the hero, which says so. */
+  teeError?: boolean;
+  /** A coach's read of the player's name failed, or found no player row: the name is missing, and the page says so (never an invented "Player"). */
+  playerError?: boolean;
+  /** The team's read failed: which Tour the strokes gained is measured against is unknown, and the card says so (no team at all is not this). */
+  tourError?: boolean;
 }
 
 export type ChDistribution = Array<{ label: 'Eagle+' | 'Birdie' | 'Par' | 'Bogey' | 'Double+'; count: number }>;
@@ -219,10 +231,22 @@ export function sgOf(r: ChReviewRoundRow): ChReviewSg | null {
 
 export function toReview(
   r: ChReviewRoundRow,
-  input: { holes: ChReviewHole[]; holesError: boolean; shotsError: boolean; playerName: string | null; teeYards: number | null; tour?: ChSgTour },
+  input: {
+    holes: ChReviewHole[];
+    holesError: boolean;
+    shotsError: boolean;
+    playerName: string | null;
+    teeYards: number | null;
+    tour?: ChSgTour;
+    coachView?: boolean;
+    teeError?: boolean;
+    playerError?: boolean;
+    tourError?: boolean;
+  },
 ): ChRoundReview {
   const c = withCanonicalRoundTotal(r);
-  const score = c.total_score ?? 0;
+  // No total is no total: it is never drawn as 0 strokes.
+  const score = c.total_score;
   const facts = [input.teeYards ? `${input.teeYards.toLocaleString('en-US')} yds` : null, r.course_rating && r.course_slope ? `${r.course_rating} / ${r.course_slope}` : null].filter(Boolean);
   const front = input.holes.length ? nineOf(input.holes, 1, 9) : { score: r.front_nine, toPar: null };
   const back = input.holes.length ? nineOf(input.holes, 10, 18) : { score: r.back_nine, toPar: null };
@@ -230,6 +254,7 @@ export function toReview(
     id: r.id,
     playerId: r.player_id,
     playerName: input.playerName,
+    ...(input.coachView === undefined ? {} : { coachView: input.coachView }),
     date: r.round_date.slice(0, 10),
     course: r.course_name?.trim() || 'Course not recorded',
     tee: teeLabel(r.tees_played),
@@ -251,5 +276,8 @@ export function toReview(
     holes: input.holes,
     holesError: input.holesError,
     shotsError: input.shotsError,
+    ...(input.teeError ? { teeError: true } : {}),
+    ...(input.playerError ? { playerError: true } : {}),
+    ...(input.tourError ? { tourError: true } : {}),
   };
 }

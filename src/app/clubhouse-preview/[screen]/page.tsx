@@ -20,8 +20,10 @@ import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAI
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 import { PreviewError } from '@/clubhouse/preview/PreviewError';
 import { Roster } from '@/clubhouse/screens/roster/Roster';
+import { RosterNoTeam } from '@/clubhouse/screens/roster/RosterNoTeam';
+import { TeamRoster } from '@/clubhouse/screens/roster/TeamRoster';
 import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
-import { PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
+import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
 import { StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
@@ -96,8 +98,13 @@ import {
 } from '@/clubhouse/preview/fixtures-coachhelm';
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
+import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
+import '@/clubhouse/styles/coachhelm-views.css';
+import '@/clubhouse/styles/coachhelm-profile.css';
+import '@/clubhouse/styles/coachhelm-standing.css';
+import '@/clubhouse/styles/coachhelm-dive.css';
 
 /**
  * Dev-only Clubhouse preview: every screen and state rendered from the
@@ -113,6 +120,7 @@ import '@/clubhouse/styles/coachhelm-ask.css';
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail   (the shot screen)
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
+ *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in)
  *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
@@ -126,19 +134,23 @@ import '@/clubhouse/styles/coachhelm-ask.css';
  *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate   (the coach; Maya)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
+ *   /clubhouse-preview/coachhelm-views ?view=profile ?state=partial | empty | edge | failed | off | loading   (the player's Game profile; Jonah)
+ *   /clubhouse-preview/coachhelm-views ?view=standing ?state=early | empty | womens | nobaseline | failed | off | loading   (the player's Standing)
+ *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=young | partsfailed | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
+ *   any coach screen &teams=2   (a head coach on two teams: the team switcher; picking one fails here, there is no session)
  */
 export default async function ClubhousePreview({
   params,
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section, q, tab } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q, tab, teams } = await searchParams;
   const qDetail = (role: 'coach' | 'player') => {
     const d = previewDetail(DETAIL_INDEX[q ?? 'live'] ?? 0, role);
     if (state === 'failed') return { ...d, entriesError: true, board: null, entrants: 0 };
@@ -254,6 +266,17 @@ export default async function ClubhousePreview({
           <RosterSkeleton />
         ) : (
           <Roster data={state === 'empty' ? PREVIEW_ROSTER_EMPTY : state === 'failed' ? PREVIEW_ROSTER_FAILED : state === 'partial' ? PREVIEW_ROSTER_PARTIAL : PREVIEW_ROSTER} />
+        ),
+    },
+    'roster-player': {
+      path: '/golf/dashboard/roster',
+      node:
+        state === 'loading' ? (
+          <RosterSkeleton />
+        ) : state === 'noteam' ? (
+          <RosterNoTeam viewer="player" />
+        ) : (
+          <TeamRoster data={state === 'empty' ? PREVIEW_PLAYER_ROSTER_EMPTY : state === 'failed' ? PREVIEW_PLAYER_ROSTER_FAILED : PREVIEW_PLAYER_ROSTER} />
         ),
     },
     stats: {
@@ -416,14 +439,19 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/coachhelm',
       node: <PreviewAsk state={state} kind={q} />,
     },
+    'coachhelm-views': {
+      path: '/golf/dashboard/coachhelm',
+      node: <PreviewCoachHelmViews view={view} state={state} insight={q} />,
+    },
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const user = screen === 'home-player' || screen === 'hub-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'rounds' || screen === 'classes' || screen === 'track' || screen === 'setup' || (screen === 'round' && state !== 'coach') || screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const viewer = screen === 'home-player' || screen === 'hub-player' || screen === 'roster-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'rounds' || screen === 'classes' || screen === 'track' || screen === 'setup' || (screen === 'round' && state !== 'coach') || screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const user = teams === '2' && viewer.role === 'coach' ? { ...viewer, coachTeams: [{ id: 'preview-team', name: 'Varsity', gender: 'mens' }, { id: 'preview-team-w', name: 'Varsity Women', gender: 'womens' }], canSwitchTeams: true } : viewer;
 
   return (
     <PreviewBell state={bell}>
-      <ClubhouseFrame userData={screen === 'coachhelm-player' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
+      <ClubhouseFrame userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
         {entry.node}
       </ClubhouseFrame>
     </PreviewBell>

@@ -62,6 +62,7 @@ First run is the whole-page empty state (CH-12301), which offers Import schedule
 | 120405 | CH-12305 | `A_PLAYER_ON_NO_TEAM` | A player on no team |
 | 120406 | CH-12307 | `AN_IMPORT_WHERE_EVERY_CLASS_IS_ALREADY` | An import where every class is already on the schedule |
 | 120407 | — | `FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED` | The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, with no Add class or Import schedule beside it, and the header offers neither. Removing the last class returns to the first-run page. |
+| 120408 | CH-12308 | `PHONE_NO_CLASS_MEETS_TODAY` | Phone: no class meets today |
 
 ## 05 — Validation
 
@@ -135,7 +136,7 @@ Who may open the page: a player with `golf_clubhouse_ui` on for the player role 
 | 120802 | — | `A_PLAYER_CHANGES_ONLY_THEIR_OWN_CLASSES` | Every read and write the page makes is limited to the player's own rows: the classes are read with the session's player id, an edit updates and a remove deletes by the class's id and that player id, and a new class carries the player's id and team id. Row-level security is the gate that counts: the baseline policies let only the owning player insert, update or delete a class and let its player and an active coach of the team read it, and teammates cannot (read in the baseline migration; the policies were not run for this page). |
 | 120803 | — | `SERVER_ACTIONS_ARE_THE_GATE` | The calendar actions check the caller again, whatever the screen shows. syncClassToCalendar refuses a caller who is not signed in, whose player profile is not the player named, who is not a member of the team, or whose class row is not theirs. removeClassFromCalendar refuses a caller with no player profile, a team they are not on and a class that another player owns (looked up with the admin client on purpose, so a row the policies hide is not mistaken for an absent one), and cleans up an orphaned class's events only on the caller's own teams. Read in this pass, not run: the tests replace both actions, so no test here forces a refusal. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
 
 ## 09 — Success
 
@@ -235,7 +236,7 @@ On the v2 grammar (D-70): a tick for opening a class, choosing or clearing a day
 | 121704 | CH-12705 | `THE_IMPORT_SWITCHES_BETWEEN_A_FILE_AND` | The import switches between a file and pasted text |
 | 121705 | CH-12704 | `DELETE_ALL_CLASSES_IS_TAPPED` | Delete all classes is tapped |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 
 ## 18 — Accessibility
 
@@ -252,7 +253,7 @@ The page is labelled "Classes" and each class is one button named for its code, 
 | 121805 | CH-12805 | `THE_IMPORTS_DROP_ZONE` | The import's drop zone |
 | 121806 | — | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
 
 ## 19 — Responsive layout
 

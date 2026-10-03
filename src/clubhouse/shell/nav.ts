@@ -48,6 +48,9 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
  * Player navigation (D-66): v2's Home, CoachHelm, Team Hub, Rounds (My game)
  * and Classes (School), plus the player screens already built that v2 hasn't
  * designed yet (Calendar, Messages, My stats, Qualifiers), kept until it does.
+ * The Roster is the owner's addition (2026-10-01, Q-130): the coach's screen,
+ * read-only. The boards' player nav has no Roster; it is a sidebar entry under
+ * Team, and so a row in the phone More sheet.
  */
 export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
@@ -55,6 +58,7 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
   { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: UsersRound, badge: 'hub' },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
+  { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
   { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Medal, section: 'My game' },
@@ -91,6 +95,18 @@ export function navFor(role: ChRole): readonly ChNavItem[] {
 export const CH_NAV = CH_NAV_COACH;
 
 /** The item that owns a pathname: the longest matching href wins. */
+/**
+ * A readable name for a dashboard route with no nav item (a page not rebuilt
+ * for this role), so its top bar never says "Home" (swap audit F-39):
+ * /golf/dashboard/my-qualifiers -> "My qualifiers".
+ */
+export function routeLabel(pathname: string): string | null {
+  const seg = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/')[0];
+  if (!seg) return null;
+  const words = seg.split('-').join(' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavItem | undefined {
   let best: ChNavItem | undefined;
   for (const item of navFor(role)) {
@@ -123,7 +139,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/team-hub',
     ...SETTINGS_ROUTES,
   ],
-  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
+  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new', '/golf/dashboard/rounds/recover', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
 };
 
 /**
@@ -139,8 +155,7 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
  * Rebuilt addresses whose parent isn't rebuilt for that role. A coach has no
  * Rounds library in v2, but opens a player's round review from Stats. A player
  * also continues a round, /rounds/continue/[id] (P011, over the round engine;
- * /rounds/new is a rebuilt route above). /rounds/recover stays Fairway's, so it
- * is not rebuilt.
+ * /rounds/new and /rounds/recover are rebuilt routes above).
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i],

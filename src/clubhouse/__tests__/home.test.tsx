@@ -34,7 +34,15 @@ const flag = vi.hoisted(() => ({ coach: true, player: true }));
 const requestCache = vi.hoisted(() => ({ coachTeam: vi.fn(), playerTeam: vi.fn() }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => session.current }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: 'coach' | 'player') => flag[role] }));
-vi.mock('@/lib/golf/dashboard-request-cache', () => ({ resolveCoachActiveTeamIdForRequest: requestCache.coachTeam, getActivePlayerTeamMembership: requestCache.playerTeam }));
+vi.mock('@/lib/golf/dashboard-request-cache', () => ({
+  // Clubhouse reads the three-way resolution (a failed read is not "no team"); the stub's team id stands for 'ok'.
+  resolveCoachActiveTeamForRequest: async (...args: unknown[]) => {
+    const teamId = await (requestCache.coachTeam as (...a: unknown[]) => Promise<string | null>)(...args);
+    return teamId ? { status: 'ok', teamId } : { status: 'none' };
+  },
+  resolveCoachActiveTeamIdForRequest: requestCache.coachTeam,
+  getActivePlayerTeamMembership: requestCache.playerTeam,
+}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
 // The existing dashboards are stubs named for what they stand in for; the test only asks which one the page chose.
@@ -50,6 +58,11 @@ vi.mock('@/app/golf/actions/teams', () => ({ getTeamJoinRequests: async () => ({
 
 import GolfDashboardPage from '@/app/golf/(dashboard)/dashboard/page';
 import { loadCoachHome, teamForm, type ChCoachHome } from '../data/home';
+import { groupByPlayer, seasonStartDate, type ChRound } from '../data/season';
+import { previousInFilter, roundsInFilter } from '../data/stats-common';
+import { filterFor } from '../data/stats-filter';
+import { weightedMean } from '../data/stats-weight';
+import { formBasis } from '../screens/home/HomePhone';
 import { CoachHome, CoachHomeNoTeam, isFirstRun } from '../screens/home/CoachHome';
 import { HomeActions } from '../screens/home/HomeActions';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
@@ -305,7 +318,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
     // Putts up 0.3 is worse.
     expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
-    expect(screen.getByRole('img', { name: /Team scoring, a five-round average/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Team scoring, the team's average on each of its last \d+ round days/ })).toBeTruthy();
   });
 
   it('CH-2701 20103 21703 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
@@ -399,22 +412,128 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
 });
 
 describe('Home · the team’s form (teamForm)', () => {
-  const r = (score: number, gir = 10, putts = 30) => ({ total_score: score, total_gir: gir, total_gir_possible: 18, total_putts: putts });
+  const real = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  // Newest first, as loadSeasonRounds returns them: round i of a player is i days before the newest, all this season.
+  let seq = 0;
+  const day = (back: number) => {
+    const d = new Date(`${seasonStartDate()}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 40 - back);
+    return d.toISOString().slice(0, 10);
+  };
+  const r = (score: number, gir: number | null = 10, putts: number | null = 30, o: { player?: string; back?: number; date?: string } = {}): ChRound => ({
+    id: `r${String(++seq).padStart(4, '0')}`,
+    player_id: o.player ?? 'p1',
+    course_name: 'Home',
+    tees_played: null,
+    round_date: o.date ?? day(o.back ?? seq),
+    round_type: 'practice',
+    total_score: score,
+    score_to_par: score - 72,
+    front_nine: null,
+    back_nine: null,
+    holes_played: 18,
+    total_putts: putts,
+    total_gir: gir,
+    total_gir_possible: gir == null ? null : 18,
+    total_fairways_hit: null,
+    total_fairways: null,
+    strokes_gained_total: null,
+    strokes_gained_tee: null,
+    strokes_gained_approach: null,
+    strokes_gained_around_green: null,
+    strokes_gained_putting: null,
+  });
+  const newestFirst = (n: number, make: (i: number) => ChRound) => Array.from({ length: n }, (_, i) => make(i));
   it('averages the last ten against the ten before, and compares greens and putts the same way', () => {
-    const f = teamForm([...Array.from({ length: 10 }, () => r(72, 12, 29)), ...Array.from({ length: 10 }, () => r(74, 9, 31))], 3)!;
+    const f = teamForm(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
     expect(f.avg).toBe(72);
     expect(f.delta).toBe(-2);
     expect(Math.round(f.gir.pct!)).toBe(67);
     expect(Math.round(f.gir.delta!)).toBe(17);
     expect(f.putts.delta).toBe(-2);
     expect(f.roundsThisWeek).toBe(3);
-    // Oldest to newest, a five-round moving average.
-    expect(f.line[0]).toBe(74);
-    expect(f.line[f.line.length - 1]).toBe(72);
+    // One point a day: the team's average on each of the last ten round days the average rests on, oldest to newest.
+    expect(f.line).toEqual(Array(10).fill(72));
   });
-  it('makes no comparison with fewer than five rounds before, and nothing with no rounds', () => {
-    expect(teamForm(Array.from({ length: 12 }, () => r(73)), 0)!.delta).toBeNull();
+  it('draws the line as the team’s average on each round day, the last ten days, not a point a round', () => {
+    // Three players on each of twelve days: thirty-six rounds, but one point a day, and each player's newest ten reach back to day 2.
+    const rounds: ChRound[] = [];
+    for (let d = 0; d < 12; d++) ['a', 'b', 'c'].forEach((p, i) => rounds.push(r(70 + d + i, 10, 30, { player: p, back: 11 - d })));
+    const full = rounds.sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id < b.id ? 1 : -1));
+    const f = teamForm(full, 0)!;
+    expect(f.line).toHaveLength(10);
+    // Day d's three scores are 70+d, 71+d and 72+d: a mean of 71+d. Days 2 to 11.
+    expect(f.line).toEqual([73, 74, 75, 76, 77, 78, 79, 80, 81, 82]);
+    // Rounds on one day average into one point.
+    expect(teamForm([r(70, 10, 30, { player: 'a', date: day(0) }), r(74, 10, 30, { player: 'b', date: day(0) }), r(71, 10, 30, { player: 'a', date: day(1) })].sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!.line).toEqual([71, 72]);
+  });
+  it('colours a change that rounds to zero as shown plain: "0.0" is neither a gain nor a loss (F-54)', () => {
+    const p = PREVIEW_HOME.phone;
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...p, form: { ...p.form!, delta: 0.03, gir: { pct: 61, delta: 0.4 }, putts: { avg: 30.4, delta: -0.04 } } } }} now={PREVIEW_HOME_NOW} />);
+    const form = document.querySelector('.ch-hm-form')!;
+    expect(form.querySelector('.ch-hm-delta')!.className).not.toMatch(/is-gain|is-loss/);
+    expect(form.querySelectorAll('dd.is-gain, dd.is-loss')).toHaveLength(0);
+  });
+  it('makes no comparison with fewer than three rounds before (the Stats rule), and nothing with no rounds', () => {
+    expect(teamForm(newestFirst(12, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBeNull();
+    expect(teamForm(newestFirst(13, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBe(0);
     expect(teamForm([], 0)).toBeNull();
+  });
+
+  // Swap audit §10-1: Home's "last 10" was the team's newest ten rounds pooled, while Stats (Last 10, Team) pools each
+  // player's newest ten. One player posting fifteen rounds pushed everyone else out of Home's average.
+  it('§10-1 reads each player’s newest ten, as Stats does, not the team’s newest ten', () => {
+    const busy = newestFirst(15, (i) => r(70, 10, 30, { player: 'busy', back: i }));
+    const quiet = newestFirst(5, (i) => r(80, 10, 30, { player: 'quiet', back: 20 + i }));
+    const full = [...busy, ...quiet].sort((a, b) => (a.round_date < b.round_date ? 1 : -1));
+    const f = teamForm(full, 0)!;
+    // Hand count: busy's newest ten at 70 and quiet's five at 80 → (700 + 400) / 15.
+    expect(f.avg).toBeCloseTo(1100 / 15, 10);
+    expect(f.basis.rounds).toBe(15);
+    // The same rounds Stats' team loader reads (roundsInFilter per player, Last 10).
+    const stats = [...groupByPlayer(full).values()].flatMap((list) => roundsInFilter(list, filterFor('last10')));
+    expect(f.avg).toBe(weightedMean(stats, (x) => x.total_score));
+    // busy's five before their newest ten are the previous window (quiet has none), as Stats' "vs. previous 10" reads it.
+    const statsPrev = [...groupByPlayer(full).values()].flatMap((list) => previousInFilter(list, filterFor('last10')) ?? []);
+    expect(statsPrev).toHaveLength(5);
+    // Q-112 (owner, 2026-10-01): the change compares the same players. busy shot 70 in both windows, so the team is
+    // unchanged; quiet's 80s have no previous ten and no longer fake a +3.3 trend.
+    expect(f.delta).toBe(0);
+  });
+
+  // Swap audit §10-1, reproduced on production (Demo University Golf, 2026-09-30): three 18-hole rounds on Aug 2 (69, 70, 71,
+  // 54 of 54 greens, 37/38/39 putts) were the team's only countable rounds, and the strip read "70.0 · Rounds 0 this week · GIR 100%
+  // · Putts 38.0" with nothing saying the figures were three August rounds.
+  it('§10-1 says what the average, greens and putts rest on, apart from the week’s count', () => {
+    const aug2 = [r(69, 18, 37, { player: 'a', date: day(0) }), r(70, 18, 38, { player: 'b', date: day(0) }), r(71, 18, 39, { player: 'c', date: day(0) })];
+    const f = teamForm(aug2, 0)!;
+    expect(f.avg).toBe(70);
+    expect(f.gir.pct).toBe(100);
+    expect(f.putts.avg).toBe(38);
+    expect(f.basis).toEqual({ rounds: 3, from: day(0), to: day(0), girRounds: 3, puttsRounds: 3 });
+    expect(formBasis(f.basis)).toMatch(/^3 rounds · [A-Z][a-z]{2} \d{1,2}$/);
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
+    const form = document.querySelector('.ch-hm-form')!;
+    expect(form.querySelector('.ch-hm-form__basis')!.textContent).toBe(formBasis(f.basis));
+    expect(form.textContent).not.toMatch(/vs previous 10/);
+  });
+
+  it('§10-1 a figure resting on fewer rounds than the average says how many', () => {
+    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 }), r(73, null, 31, { back: 2 })], 0)!;
+    expect(f.basis).toMatchObject({ rounds: 3, girRounds: 1, puttsRounds: 2 });
+    // Greens pool the holes of the one round that has them; putts average the two that do.
+    expect(f.gir.pct).toBeCloseTo((12 / 18) * 100, 10);
+    expect(f.putts.avg).toBe(30.5);
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
+    const figs = [...document.querySelectorAll('.ch-hm-form__figs > div')].map((d) => d.textContent);
+    expect(figs[1]).toMatch(/1 of 3 rounds/);
+    expect(figs[2]).toMatch(/2 of 3 rounds/);
   });
 });
 
@@ -444,6 +563,29 @@ describe('Home · the loader', () => {
     strokes_gained_putting: 0,
   });
   const onePlayer = { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } }] };
+
+  // Swap audit C-24(d): one 68 put a player above teammates with a season behind them, and equal averages fell in read order.
+  it('C-24 the leaderboard: an early read sits below every player with three rounds, and a tie goes to more rounds, then the name', async () => {
+    const at = (id: string, player: string, i: number, score: number) => ({ ...roundRow(i), id, player_id: player, total_score: score, score_to_par: score - 72, front_nine: Math.floor(score / 2), back_nine: Math.ceil(score / 2) });
+    tables.current = {
+      golf_team_members: {
+        data: [
+          { player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } },
+          { player: { id: 'p2', first_name: 'Ben', last_name: 'Ames', graduation_year: 2027 } },
+          { player: { id: 'p3', first_name: 'Ava', last_name: 'Ames', graduation_year: 2027 } },
+        ],
+      },
+      golf_rounds: {
+        data: [
+          at('t1', 'p1', 1, 68),
+          ...[2, 3, 4].map((i) => at(`b${i}`, 'p2', i, 72)),
+          ...[5, 6, 7].map((i) => at(`a${i}`, 'p3', i, 72)),
+        ],
+      },
+    };
+    const home = await load();
+    expect(home.leaderboard.rows.map((r) => r.name)).toEqual(['Ava Ames', 'Ben Ames', 'Theo Marchetti']);
+  });
 
   it('22101 a failed read never throws: the page still loads, each section says it failed, and every read is logged', async () => {
     // The roster, the week and the team chat fail together.

@@ -2,7 +2,7 @@
 
 import { ChevronRight, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
@@ -15,12 +15,15 @@ import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { SgBars } from './charts';
 import { teamPlayerHref } from './links';
+import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
-import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow } from './StatsTeamIslands';
+import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow, useShownWindow } from './StatsTeamIslands';
+import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { WindowSwitch } from './WindowSwitch';
+import { useChSessionState } from '../../lib/session-state';
 
 type Sort = 'avg' | 'sg';
 
@@ -34,6 +37,7 @@ type Sort = 'avg' | 'sg';
  */
 export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const go = useGoWindow();
+  const shown = useShownWindow();
   const noRounds = !data.roundsError && data.roundCount === 0;
   // D-71's first-run page is for no round of either length: a team with only 9-hole rounds gets CH-4301 and the CH-4319 hint instead.
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
@@ -43,12 +47,15 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
     <div className="ch-stm">
       <header className="ch-stm-head">
         <span className="ch-num">
-          {data.teamName} · {data.activeCount} active · countable rounds
+          {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
         </span>
         <h1>Team stats</h1>
       </header>
-      <WindowSwitch value={data.window} onChange={go} custom={hasRange(data.filter)} />
-      {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+      {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
+      <div className="ch-stm-controls">
+        <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
+        {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+      </div>
       {data.roundsError && <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />}
       {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
       {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
@@ -72,6 +79,11 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
                 <RetryNotice code="CH-4202" title="Some team figures didn't load." body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." />
               )}
               <Figures figures={data.figures} />
+              {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
+              {(() => {
+                const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
+                return coverage ? <p style={{ margin: '8px 2px 0', font: 'var(--ch-type-caption)', color: 'var(--ch-text-tertiary)' }}>{coverage}</p> : null;
+              })()}
             </SectionBoundary>
             <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
               <Trend data={data} />
@@ -100,38 +112,61 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
     'Putts per round': 'Putts',
     Scrambling: 'Scrambling',
   };
+  const shown = figures.filter((f) => !f.signed).slice(0, 4);
+  // The change row only when some figure has one, so a window with no earlier rounds leaves no empty band (F-43).
+  const anyDelta = shown.some((f) => f.delta != null);
   return (
     <dl className="ch-stm-figs">
-      {figures.filter((f) => !f.signed).slice(0, 4).map((f) => (
+      {shown.map((f) => (
         <div key={f.label}>
           <dt>{short[f.label] ?? f.label}</dt>
           <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
-          <dd className={'ch-num ' + (f.delta == null || f.delta === 0 ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? ' ' : formatSigned(f.delta, f.digits)}</dd>
+          {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
+          {anyDelta && (
+            <dd className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? ' ' : formatSigned(f.delta, f.digits)}</dd>
+          )}
         </div>
       ))}
     </dl>
   );
 }
 
-/** The team's weekly scoring average against its mean (a dashed line), with a one-line reading. */
+/** The team's average on each of its last ten round days against their mean (a dashed line), with a one-line reading. */
 function Trend({ data }: { data: ChTeamStats }) {
-  const known = data.team.score.filter((v): v is number => v != null);
-  if (known.length < 2) return null;
-  const change = known[known.length - 1]! - known[0]!;
-  const reading = Math.abs(change) < 0.2 ? 'Flat across the window.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes across the window.`;
-  const firstI = data.team.score.findIndex((v) => v != null);
-  const lastI = data.team.score.length - 1 - [...data.team.score].reverse().findIndex((v) => v != null);
+  const days = data.days ?? [];
+  const known = days.filter((d): d is { label: string; score: number } => d.score != null);
+  const head = (
+    <div className="ch-stm-panel__h">
+      <h2 id="ch-stm-trend">Scoring trend</h2>
+      <span className="ch-num">
+        Team avg · {known.length} {known.length === 1 ? 'day' : 'days'}
+      </span>
+    </div>
+  );
+  // One round day is a point, not a trend: say so instead of dropping the panel (F-41).
+  if (known.length < 2)
+    return (
+      <section className="ch-stm-panel" aria-labelledby="ch-stm-trend">
+        {head}
+        {/* The chart's frame and the reading's line stay, so a window without a trend is as tall as one with it. */}
+        <div className="ch-stm-chart-hold">
+          <p className="ch-stm-note">The trend draws once the team has rounds on a second day.</p>
+        </div>
+        <p className="ch-stm-note" aria-hidden="true">
+          &nbsp;
+        </p>
+      </section>
+    );
+  const change = known[known.length - 1]!.score - known[0]!.score;
+  const reading = Math.abs(change) < 0.2 ? 'Flat across these rounds.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-stm-trend">
-      <div className="ch-stm-panel__h">
-        <h2 id="ch-stm-trend">Scoring trend</h2>
-        <span className="ch-num">Team avg · {known.length} weeks</span>
-      </div>
+      {head}
       <ScoreLine
-        values={data.team.score}
-        from={data.weeks[firstI] ?? ''}
-        to={data.weeks[lastI] ?? ''}
-        label={`Team scoring average by week, from ${formatFixed(known[0]!)} to ${formatFixed(known[known.length - 1]!)}. ${reading}`}
+        values={days.map((d) => d.score)}
+        from={known[0]!.label}
+        to={known[known.length - 1]!.label}
+        label={`Team scoring average by round day, from ${formatFixed(known[0]!.score)} to ${formatFixed(known[known.length - 1]!.score)}. ${reading}`}
       />
       <p className="ch-stm-note">{reading}</p>
     </section>
@@ -185,7 +220,7 @@ function Legs({ data }: { data: ChTeamStats }) {
   const losing = known.filter((x) => x.v < -0.05);
   if (!known.length)
     return (
-      <section className="ch-stm-panel" aria-labelledby="ch-stm-legs">
+      <section className="ch-stm-panel ch-stm-panel--bars" aria-labelledby="ch-stm-legs">
         <div className="ch-stm-panel__h">
           <h2 id="ch-stm-legs">Strokes gained by leg</h2>
         </div>
@@ -210,7 +245,8 @@ function Legs({ data }: { data: ChTeamStats }) {
 }
 
 function Players({ data }: { data: ChTeamStats }) {
-  const [sort, setSort] = useState<Sort>('avg');
+  // The sort comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1).
+  const [sort, setSort] = useChSessionState<Sort>('team-players-sort', 'avg');
   const rows = useMemo(
     () => [...data.grid].sort((a, b) => (sort === 'sg' ? (b.total ?? -99) - (a.total ?? -99) || a.name.localeCompare(b.name) : (a.avg ?? 999) - (b.avg ?? 999) || a.name.localeCompare(b.name))),
     [data.grid, sort],
@@ -250,6 +286,7 @@ function Players({ data }: { data: ChTeamStats }) {
                   <span className={p.total == null ? '' : p.total >= 0 ? 'ch-gain' : 'ch-loss'}>{p.total == null ? 'Early read' : `${formatSigned(p.total)} SG`}</span>
                 </span>
                 <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
+                <LinkPending />
               </Link>
             </li>
           ))}
