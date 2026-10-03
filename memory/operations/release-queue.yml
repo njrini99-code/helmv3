@@ -402,3 +402,22 @@ items:
       - src/lib/coachhelm/v2/mining/__tests__/pattern-miner.starvation-fingerprint.test.ts
     queued_for_release: false
     first_seen: '2026-10-01T21:17:00Z'
+  - id: safety-net-wake-reads-batched-2026-10-03
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The safety-net reconcile's wake decisions (hasActiveMembership,
+      meetsRoundFloor) read golf_team_members and counted golf_rounds once per
+      parked player; #2078 only batched the coverage read, so Sentry N+1 15E
+      and 107 kept firing every tick on ef6e017a2.
+    incident_id: null
+    no_incident_reason: >-
+      Performance (Sentry N+1, info level, no user-facing failure); the replay
+      manifest safety-net-wake-reads-batched-2026-10-03 is the record.
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-01T06:00:27Z'
