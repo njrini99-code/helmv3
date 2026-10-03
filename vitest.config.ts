@@ -335,6 +335,8 @@ export default defineConfig({
             // D4 (db-tooling-drift): pure tally/regression helpers behind
             // the weekly Supabase advisor ratchet.
             'scripts/__tests__/advisor-ratchet.test.mjs',
+            'scripts/__tests__/local-db-checks.test.mjs',
+            'scripts/__tests__/config-drift.test.mjs',
             // Migration filename version prefixes are unique and
             // well-formed (the #220 duplicate-version hazard class).
             'scripts/__tests__/check-migration-versions.test.mjs',

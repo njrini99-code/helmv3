@@ -32,6 +32,8 @@
     "db:ledger-vs-catalog": "node scripts/db/check-ledger-vs-catalog.mjs",
     "db:ledger-drift": "node scripts/db/migration-ledger-drift.mjs",
     "db:advisor-ratchet": "node scripts/db/advisor-ratchet.mjs",
+    "db:check:local": "node scripts/db/local-db-checks.mjs",
+    "db:config-drift": "node scripts/db/config-drift.mjs",
     "db:lint:functions": "node scripts/db/lint-functions.mjs",
     "db:local": "bash scripts/db/local.sh",
     "db:local:stop": "bash scripts/db/local.sh --stop",

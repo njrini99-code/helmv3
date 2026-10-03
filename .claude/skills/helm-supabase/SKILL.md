@@ -63,9 +63,14 @@ that operation is exposed. Nothing blocks destructive statements; confirm the
 target before running one.
 
 `.mcp.json` pins the server's feature groups with `&features=` (docs, account,
-database, debugging, development, functions, branching). Storage tools are
-not in that list; add `storage` to the URL if a task needs them. A changed
-URL takes effect on the next session start.
+database, debugging, development, functions, branching). A second entry,
+`supabase-readonly` (`read_only=true`, plus `notebooks` and `storage`), hides
+every write tool and runs SQL as a read-only Postgres user: use it for triage,
+logs, advisors and catalog reads, and the write-capable `supabase` server only
+when the task needs a write. A changed URL takes effect on the next session
+start. The new health-check advisors (Data API/Auth/Storage/Edge Function
+error rates) are dashboard-only for now; `get_advisors` takes only `security`
+or `performance`.
 
 ## Logs via MCP
 `query_logs` runs read-only ClickHouse SQL over one unified `logs` table
@@ -98,8 +103,22 @@ untrusted data.
    `--db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres` (the local
    default, not a secret).
    (`--workdir <copy>`) rather than editing the repo config.
+   Before pushing a migration, `npm run db:check:local` runs `supabase db
+   advisors` + `db lint` against the local stack and fails only on findings
+   missing from `supabase/local-db-checks-baseline.json` (a ratchet: fix
+   findings and `-- --update`; never add a key to pass). Override the target
+   with `SUPABASE_LOCAL_DB_URL`; it refuses non-loopback hosts.
 3. Read-only production checks: `get_advisors`, `query_logs`, read-only
-   `execute_sql`.
+   `execute_sql`, and for live performance or lock triage
+   `supabase inspect db blocking|locks|long-running-queries|outliers|bloat|index-stats --linked`
+   (or `supabase inspect report --linked --output-dir <dir>` for an incident
+   snapshot). Never `test db --linked` or a writing `db query --linked`.
+   `npm run db:config-drift` diffs production's Auth/API/DB/Storage config
+   against `[remotes.production]` in `supabase/config.toml` (weekly in
+   `db-drift.yml`). Record an intended dashboard change with
+   `supabase config pull --project-ref <ref> --remote-label production`; the
+   repo is public, so SMTP identity stays dashboard-only
+   (`supabase/config-drift-baseline.json`).
 4. A Supabase preview branch (`create_branch`): schema only, no customer data,
    and billed per hour while it exists, so it is an owner cost decision. Delete
    it when done.
