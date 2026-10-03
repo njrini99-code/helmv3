@@ -50,8 +50,14 @@ REVOKE EXECUTE ON FUNCTION fn(args) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION fn(args) TO authenticated;
 ```
 
-Recreating a materialized view re-grants to anon — re-`REVOKE` after and
-verify against `pg_class.relacl` rather than assuming.
+**New public tables, views and sequences get no grants by default**
+(`supabase/migrations/20261003120000_public_default_privileges_explicit.sql`).
+The creating migration grants them in the same file: `service_role` always,
+`authenticated` only what RLS needs, never anon, and `USAGE, SELECT` on a
+`serial` sequence for each inserting role (`IDENTITY` needs none). CI
+(`scripts/db/check-new-migration-grants.mjs`) enforces the service_role grant
+unless the file says `-- GRANTS: exempt <reason>`. Verify grants against
+`pg_class.relacl`, not assumptions.
 
 ## The two silent-wrong-answer traps
 **PostgREST caps every request at 1,000 rows.** `.limit(2000)` does not

@@ -21,6 +21,13 @@ is the worst-case, business-ending failure. Patterns + required tests:
 
 - **RLS on every table** — `CREATE TABLE` ships with `ENABLE ROW LEVEL
   SECURITY` + at least one `CREATE POLICY` in the same migration.
+- **Explicit grants on every new public table** — default privileges in
+  `public` grant nothing
+  (`supabase/migrations/20261003120000_public_default_privileges_explicit.sql`).
+  The same migration grants `service_role`, grants `authenticated` only what
+  RLS needs, never grants `anon`, and grants `USAGE, SELECT` on any serial
+  sequence (`scripts/db/check-new-migration-grants.mjs` checks the
+  service_role part).
 - **No cross-team `USING (true)` on PII tables** — a SELECT policy that
   returns every row to any authenticated user (e.g. on `baseball_players`,
   `golf_*` player/roster tables) is a cross-tenant PII exposure. Read
@@ -48,6 +55,8 @@ is the worst-case, business-ending failure. Patterns + required tests:
 
 - a new table lacks RLS or a policy; a policy allows cross-team access or
   is a bare `USING (true)` on PII;
+- a new public table, view or serial sequence lacks explicit grants in its
+  own migration, or grants anything to `anon`;
 - a migration edits historical (baseline) migrations instead of adding a
   forward one;
 - service-role capability leaks outside admin/server-only paths;

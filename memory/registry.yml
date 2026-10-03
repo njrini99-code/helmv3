@@ -2227,6 +2227,7 @@ systems:
       - supabase/migrations/*rescope_service_policies_to_service_role*.sql
       - supabase/migrations/*realtime_publication_add_subscribed_tables*.sql
       - supabase/migrations/*bind_definer_rpcs_to_session*.sql
+      - supabase/migrations/*public_default_privileges_explicit*.sql
     criticality: high
   review_gate:
     docs: .github/branch-protection.md

@@ -1047,6 +1047,14 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: bash scripts/db/check-new-migrations-in-schema.sh "${{ github.event.pull_request.base.sha }}"
 
+      # Public default privileges no longer grant new tables to the Data API
+      # roles (20261003120000; Supabase's own default from 2026-10-30). A new
+      # migration that creates a public table must GRANT it to service_role in
+      # the same file, or say `-- GRANTS: exempt <reason>`.
+      - name: "Grants: new public tables carry explicit grants"
+        if: steps.gate.outputs.run == 'true'
+        run: node scripts/db/check-new-migration-grants.mjs "${{ github.event.pull_request.base.sha }}"
+
       # Authenticated ghcr pulls: anonymous pulls of ghcr.io/supabase/* hit
       # `toomanyrequests` when several PRs start the stack at once.
       - name: Log in to ghcr.io (Supabase images)

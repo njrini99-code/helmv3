@@ -523,6 +523,9 @@ export default defineConfig({
             // mutates data/DDL without a -- ROLLBACK:/-- VERIFY: header pair
             // must fail the PR, not just be caught by a human reviewer.
             'scripts/__tests__/check-migration-headers.test.mjs',
+            // 2026-10-03: a new public table must GRANT service_role in its own
+            // migration (default privileges no longer do it).
+            'scripts/__tests__/check-new-migration-grants.test.mjs',
           ],
           exclude: ['node_modules', '.next', 'archive'],
           // Generous on purpose: this project is I/O bound by design. The runner
