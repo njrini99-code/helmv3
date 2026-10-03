@@ -117,18 +117,25 @@ Claude and Codex; the judgment above is the safeguard, not a permission rule.
 
 Vercel reads, logs, and previews are normal development work. `vercel.json`
 disables Vercel Git deployments: pushing or merging to `main` does not
-deploy. Production deploys are manual and happen only when the owner says
-to deploy — agents do not run `vercel --prod` or `scripts/deploy-prod.sh`;
-they prepare the release and verify it afterwards. The release path is
-`scripts/deploy-prod.sh` from a clean, current `main` checkout (`!
-scripts/deploy-prod.sh` in a Claude session, run by the owner): it checks
-the linked project, the clean tree and the weekly budget
-(`config/release-policy.yml`), stamps the Sentry release, deploys, and
-verifies the served commit. Prefer it over a bare `vercel deploy --prod`,
-which skips those checks. Report a release as live only after `npm run
-release:status` shows the approved SHA. Rollback and promote of an existing
-deployment also require explicit owner authorization. Use repo-local
-Supabase/Vercel binaries.
+deploy. Production deploys are manual and not per merge: when the owner
+says to deploy `main`, the agent deploys it, with the Vercel connector or
+the repo-local CLI (`./node_modules/.bin/vercel deploy --prod`), from a
+clean checkout at the current `origin/main` SHA in the linked project
+(`vercel_project_id` in `config/release-policy.yml`). The checkout must hold
+no symlinks: a worktree's linked `.env*`, `.codex/`, `.claude/` and
+`node_modules` reach the upload despite `.vercelignore` and Vercel rejects
+the deploy ("is not a valid symlink"), so remove them (copy
+`.vercel/project.json` as a real file) or deploy from canonical. Before deploying,
+check the weekly budget in that file; if it is spent, say so and let the
+owner decide. Stamp the commit: pass `NEXT_PUBLIC_SENTRY_RELEASE=<sha>` as
+both `--build-env` and `--env`, because a CLI upload carries no
+`VERCEL_GIT_COMMIT_SHA` and the Sentry release, `/api/health` and
+`release:status` all read the stamp. Report a release as live only after
+`npm run release:status` shows that SHA, then record `<sha> <date>` as
+the canonical checkout's last-verified-release marker (the session
+hook's offline fallback). Rollback and promote of an
+existing deployment also require explicit owner authorization. Use
+repo-local Supabase/Vercel binaries.
 
 ## Product conventions
 
