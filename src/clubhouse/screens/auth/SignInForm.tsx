@@ -51,6 +51,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   const [email, setEmail] = useState(initial?.email ?? '');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
   const [failure, setFailure] = useState<SignInFailure | null>(initial?.failure ?? null);
   // Bumped on every failed attempt so a repeated identical error still moves focus.
   const [errorNonce, setErrorNonce] = useState(0);
@@ -119,6 +120,8 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    // A disabled button cannot guard a second submit dispatched before React commits the busy state.
+    if (inFlight.current) return;
     // Never hand the server an empty credential pair: it would say the password is wrong when nothing was sent, and
     // `login_attempts` would accrue a failure under a blank email, a bucket shared by everyone who hits this.
     const trimmedEmail = email.trim();
@@ -127,6 +130,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
       return;
     }
 
+    inFlight.current = true;
     setBusy(true);
     setFailure(null);
     // CH-15701: Sign in is tapped.
@@ -138,6 +142,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
 
       if (!result.success) {
         fail(failureForServer(result.error || 'Login failed', getErrorMessage(result.error || 'Login failed')));
+        inFlight.current = false;
         setBusy(false);
         return;
       }
@@ -178,6 +183,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
       }
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'ClubhouseSignInForm', action: 'loginAction', sport: 'golf' }, 'high');
       fail(failureFor(stale ? STALE_BUNDLE_MESSAGE : UNEXPECTED_MESSAGE));
+      inFlight.current = false;
       setBusy(false);
     }
     // On success the loading state stays: we are navigating away.

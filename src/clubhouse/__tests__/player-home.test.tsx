@@ -112,6 +112,12 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect([...timer.children].every((c) => c.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
+  it('an all-day event shows its date without inventing a midnight tee time', () => {
+    show(home({ next: { ...PREVIEW_PLAYER_HOME.next!, allDay: true, startLabel: 'All day', rangeLabel: 'All day' } }));
+    expect(screen.getByRole('link', { name: /Up next · Qualifier/ })).toHaveTextContent('all day');
+    expect(screen.queryByRole('timer')).toBeNull();
+  });
+
   it('20103 My latest round opens its review (Open recap) once the round has a real id', () => {
     const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
     show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
@@ -231,6 +237,12 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
+  });
+
+  it('shows an all-day event without the midnight countdown on the phone too', () => {
+    show(home({ next: { ...PREVIEW_PLAYER_HOME.next!, allDay: true, startLabel: 'All day', rangeLabel: 'All day' } }));
+    expect(document.querySelector('.ch-hm-next')).toHaveTextContent('all day');
+    expect(screen.queryByRole('timer')).toBeNull();
   });
 
   it('20103 on the phone My latest round opens its review once the round has a real id', () => {

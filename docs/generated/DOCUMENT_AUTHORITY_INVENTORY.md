@@ -43,13 +43,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 43 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 62 | 6 | 34 | 25 |
+| `AUDIT_SNAPSHOT` | 63 | 6 | 34 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 48 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 24 | 1 | 8 | 5 |
-| `UNKNOWN` | 315 | 12 | 50 | 81 |
+| `UNKNOWN` | 319 | 12 | 56 | 81 |
 
 ## Files
 
@@ -438,6 +438,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/AESTHETIC_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/DEPTH_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
+| `docs/clubhouse/INTUITIVE_SECONDARY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
@@ -615,6 +616,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.devin/AGENTS-POINTER.md` | current | - | - | - | - |
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | - |
 | `.github/branch-protection.md` | current | - | - | - | 1 |
+| `DESIGN.md` | current | - | - | yes | - |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
 | `design/handoff/README-v1.md` | current | - | - | - | - |
 | `design/handoff/VERSIONS.md` | current | - | - | - | - |
@@ -691,14 +693,17 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/stats-architecture.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
-| `docs/clubhouse/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CLICKABLES.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
+| `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
+| `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/classes.md` | current | - | - | - | - |
@@ -772,9 +777,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |

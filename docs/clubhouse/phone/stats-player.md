@@ -43,6 +43,13 @@ Development (CH-5320). States CH-5102, CH-5320 to CH-5324.
 
 ## States
 
+The overview's shared metadata footer holds the early-read or no-shots note
+beside all three figures. Its caveat retains the original scope and text;
+ordinary windows show the actual sample and available SG comparison there.
+Figure captions and this compact footer hold their layout across periods,
+growing for longer text. The SG panel keeps the measured full bars footprint
+when its read succeeds with too little evidence to draw bars.
+
 Early read (CH-5305). Rounds didn't load (CH-5201), shot detail (CH-5202), development (CH-5203). No shot-by-shot rounds (CH-5301), no rounds (CH-5302), no focus areas (CH-5303), no goals (CH-5304). Each section crashes on its own (CH-5204 to CH-5207). Share blocked (CH-5002).
 
 ## Gestures and haptics

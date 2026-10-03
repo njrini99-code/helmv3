@@ -1,7 +1,7 @@
 # P009 — Qualifiers: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/qualifiers.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/qualifiers.md`.
 
 ## Current verification status
 
@@ -122,7 +122,11 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -150,6 +154,10 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P009__list__player__390__default__before__2b04867.png` | before | 2b04867 | list (player), 390px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
 | `P009__list__player__430__default__baseline__ee5976d.png` | baseline | ee5976d | list (player), 430px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
 | `P009__list__player__430__default__before__2b04867.png` | before | 2b04867 | list (player), 430px, default; /clubhouse-preview/qualifiers-player, synthetic preview fixture |
+| `P009__mobile-overview__coach__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/qualifiers, synthetic preview fixture; shared materials in progress |
+| `P009__mobile-overview__coach__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/qualifiers, synthetic preview fixture; shared materials in progress |
+| `P009__shiro-mobile-overview__coach__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (coach), 390px, populated; /clubhouse-preview/qualifiers, synthetic preview fixture |
+| `P009__shiro-mobile-overview__coach__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (coach), 390px, populated; /clubhouse-preview/qualifiers, synthetic preview fixture |
 
 ## Open verification gaps
 

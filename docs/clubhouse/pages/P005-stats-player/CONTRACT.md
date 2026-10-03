@@ -126,7 +126,19 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 
 Status: DEFINED
 
-Changing the window while offline is refused before anything is requested, and a change that takes longer than 5 seconds says so once (50701, 50702). A focus area proposed offline is refused before it is sent with the shell's toast, the sheet keeps its text, and a save over 5 seconds says so (10703, 10702). The offline banner (10701) and Try again while offline (10704) are the shell's.
+Changing the window while offline is refused before anything is requested
+(50701). A window or filter change that takes longer than 5 seconds says so
+once (50702). Its slow notice ends on settlement, replacement, screen unmount,
+or team-scope change. Pending timers end with the same lifetime. Stale
+callbacks cannot revive earlier feedback after a team switch or an A → B → A
+return; old cleanup does not cancel new-scope feedback.
+
+A focus area proposed offline is refused before it is sent with the shell's
+toast, the sheet keeps its text, and a save over 5 seconds says so (10703,
+10702). Slow feedback ends when that save finishes or its screen leaves.
+Feedback cancellation never cancels writes or changes save guards. Default
+confirmations remain 4 seconds and errors 8 seconds. The offline banner
+(10701) and Try again while offline (10704) are the shell's.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -1,5 +1,55 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-02 — Intuitive improvement: distinguish pending choices from confirmed changes
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   100208–100210, 101301; CH-10408–CH-10410
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+The Hub now owns an action gate and pending state for each event reply, post
+acknowledgment and task, so tab changes and older toast Retries share the same
+lock. Completing and reopening a task share one gate.
+Sending/Acknowledging/Saving names the current object; only that object locks,
+while another can save independently. Acknowledgment retains the featured post
+until its write answers. Refusal restores prior state and Retry preserves the
+requested action; a task reopened earlier in the visit also restores that last
+confirmed state after a failed completion. No write endpoint or role rule
+changed. Nine added regression cases verify independent saves,
+duplicate/opposite-action prevention, rollback, acknowledgment Retry, the
+reopened-task edge case, tab remounts, quiet stale Retry contention and retaining
+a confirmed acknowledgment after a later stale Retry refuses. The full Hub
+file passes 144/144 tests (exit 0, 37.46 s, one worker).
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
+## 2026-10-02 — Team Hub: restore card material and consistent phone gutters
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+RSVP, task, announcement and travel cards use the shared layered sheet gradient
+and shadow. Phone card headings and lists have consistent 16px gutters and more
+room between sections; tabs keep their existing horizontal scrolling and touch
+areas. The duplicate desktop heading is visually hidden by phone CSS before
+hydration, avoiding its first-paint jump under the shell title. Existing data
+and role permissions are unchanged.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

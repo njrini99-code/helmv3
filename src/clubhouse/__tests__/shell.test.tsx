@@ -285,6 +285,9 @@ describe('Shell · network', () => {
     await act(async () => void vi.advanceTimersByTime(CH_SLOW_SAVE_AFTER + 10));
     await expectCode('CH-1902', /Still saving/);
     await act(async () => resolve({ success: true }));
+    await waitFor(() => expect(code('CH-1902')).toBeNull());
+    expect(screen.getByText('Saved')).toBeTruthy();
+    expect(hapticSpy).toHaveBeenCalledWith('success');
   });
 
   it('CH-1905 Try again while offline says so instead of failing again', async () => {

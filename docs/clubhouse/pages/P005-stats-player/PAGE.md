@@ -12,7 +12,7 @@
 | Phone spec | [phone/stats-player.md](../../phone/stats-player.md) |
 | Design boards | [Coach - Stats.html](../../../../design/handoff/Coach%20-%20Stats.html) · [Stats.html](../../../../design/handoff/Stats.html) · [stats.jsx](../../../../design/handoff/stats.jsx) · [stats-game.jsx](../../../../design/handoff/stats-game.jsx) · [stats-sg.jsx](../../../../design/handoff/stats-sg.jsx) · [Coach - Stats - Mobile.html](../../../../design/handoff/Coach%20-%20Stats%20-%20Mobile.html) · [m-stats.jsx](../../../../design/handoff/m-stats.jsx) |
 | Code | [stats](../../../../src/clubhouse/screens/stats) · [stats-player.ts](../../../../src/clubhouse/data/stats-player.ts) · [stats.tsx](../../../../src/clubhouse/routes/stats.tsx) · [stats.css](../../../../src/clubhouse/styles/stats.css) |
-| Audits | [all audits](../../AUDITS.md) |
+| Audits | [INTUITIVE_SECONDARY_AUDIT](../../INTUITIVE_SECONDARY_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Stats (player)" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 | Screenshots | `npm run clubhouse:shots -- gallery --page P005`, which opens `.helm/screenshots/clubhouse/P005-stats-player/GALLERY.html` (local) |
@@ -21,6 +21,12 @@
 One player, read like a head pro would: who they are, four numbers, then the game in five sections with a sentence each. A coach opens any player on their team; a player opens only their own, as "My stats". The team's numbers are P004 (Stats, team).
 
 ## Identity
+
+On the phone, the three overview figures share one card with a full-width
+metadata footer. It names the sample and an available SG comparison, or shows
+the exact early-read/no-shots caveat as an accessible note. It keeps the period
+change from inserting a separate warning card above the figures. Missing and
+failed reads retain their existing distinct states and thresholds.
 
 ```text
 Page ID:            P005

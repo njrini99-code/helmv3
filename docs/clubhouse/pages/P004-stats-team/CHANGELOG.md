@@ -1,5 +1,97 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-02 — Keep charts steady when the period changes
+
+The measured phone Season switch moved the charts up by 64px: the comparison
+row and hole-coverage line disappeared. Both now retain their compact space,
+matching the desktop's existing hold behavior. Unavailable comparisons and
+coverage stay empty and hidden from assistive technology; no zero is invented.
+Metric values, filters, sample rules and card materials are unchanged.
+
+The team suite passed 53/53 with one worker, including a period-change
+regression for absent and restored comparisons and coverage. See VERIFY.md
+for baseline geometry and the follow-up measurement boundary.
+
+The measured team loading handoff now uses the same line-sized header,
+44px controls, comparison and coverage slots, responsive chart frame and
+panel minimums. At 390px its trend origin and height match loaded content
+exactly. Skeleton shapes remain decorative with the existing loading label.
+The focused geometry suite passes 11/11; see VERIFY.md for width boundaries.
+
+## 2026-10-02 — Readable figures on the narrowest phones
+
+```text
+Design package: existing team Stats phone summary
+PR/commit:      codex/clubhouse-design-fidelity (working tree after c1e81e0fe)
+Contract IDs:   none changed
+Actions:        unchanged
+Data impact:    none; CSS only
+Held items:     physical Safari and text-zoom verification
+```
+
+At 320px, the four-column card split Scrambling in the middle of the word.
+Below 361px the same card now places its four figures in two columns. Labels
+keep their 12px phone floor, values stay 20px, and all colors, material, data
+and order remain unchanged. At 375px the original four-column layout remains.
+
+WebKit before/after geometry and visual checks passed at 320 and 375px; see
+VERIFY.md. No component, action or metric calculation changed.
+
+## 2026-10-02 — Phone stats filter date fields reach 44px
+
+```text
+Design package: owner's mobile boards; shared Stats filter sheet
+PR/commit:      codex/clubhouse-design-fidelity (working tree after 83b9990)
+Contract IDs:   none changed
+Actions:        existing filter choices only
+Data impact:    no endpoint or schema changes
+Held items:     physical iPhone Safari and native date-picker validation
+```
+
+The phone From and To fields now have a 44px minimum height, up from 38px.
+Desktop retains its 38px fields. Existing 30/34/36px drawn buttons already
+have 44px effective targets through the shared pseudo element; WebKit hit
+checks confirmed those extensions and non-overlapping adjacent targets.
+
+## 2026-10-02 — Intuitive improvement: easier phone filter activation
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   none changed
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+The phone filter now has an explicit 44×44px target, keeping the existing
+control, label and window choices. WebKit measured the target at 375, 390 and
+430 with zero horizontal overflow. Window-change, empty and failed data behavior
+is unchanged.
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
+## 2026-10-02 — Team stats: clearer card spacing and material depth
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+Phone stats now use the shared layered sheet surface, 16px section spacing and
+card padding. Figure captions have a readable line height and can wrap when a
+narrow screen needs it. All values, filters, chart data and missing-data states
+are unchanged.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
 ## 2026-10-01 — Page performance: fewer round trips, a page that keeps its shape across windows

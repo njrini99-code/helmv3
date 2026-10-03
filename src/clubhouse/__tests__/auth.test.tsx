@@ -215,6 +215,22 @@ describe('the sign-in screen', () => {
     await act(async () => finish({ success: false, error: 'Too many requests' }));
   });
 
+  it('CH-15402 blocks repeated form submission until a refusal allows retry', async () => {
+    let finish: (v: unknown) => void = () => {};
+    login.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    await fill(user);
+    const form = screen.getByRole('form', { name: /sign in to golfhelm/i });
+    act(() => { fireEvent.submit(form); fireEvent.submit(form); });
+    expect(login).toHaveBeenCalledTimes(1);
+    await act(async () => finish({ success: false, error: 'Too many requests' }));
+    await waitFor(() => expect(submit()).toBeEnabled());
+    fireEvent.submit(form);
+    expect(login).toHaveBeenCalledTimes(2);
+    await screen.findByRole('alert');
+  });
+
   it('CH-15902 CH-15601 CH-15702 a sign-in that lands opens the course, then goes to the welcome (role routing through next)', async () => {
     login.mockResolvedValue({ success: true, redirectTo: '/golf/dashboard' });
     const user = userEvent.setup();

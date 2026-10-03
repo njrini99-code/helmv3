@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m } from 'framer-motion';
 import { Bell, Flag, Settings2, Sparkles, UserRound, Users, type LucideIcon } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
@@ -76,6 +76,33 @@ export function SettingsView({
   const sections = SECTIONS[data.role];
   const [section, setSection] = useState<ChSettingsSection>(initialSection);
   const [ask, setAsk] = useState<ChSettingsSection | null>(null);
+  const sectionRail = useRef<HTMLElement>(null);
+  const focusRevealFrame = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (focusRevealFrame.current !== null) cancelAnimationFrame(focusRevealFrame.current);
+  }, []);
+  const revealSection = useCallback((button: HTMLButtonElement | null) => {
+    const rail = sectionRail.current;
+    if (!rail || !button || rail.scrollWidth <= rail.clientWidth) return;
+    const bounds = rail.getBoundingClientRect();
+    const item = button.getBoundingClientRect();
+    // Only the rail scrolls: revealing keyboard focus must not move the page
+    // or the form. Four pixels also keep its focus outline inside the clip.
+    const left = bounds.left + 4;
+    const right = bounds.right - 4;
+    const delta = item.left < left ? item.left - left : item.right > right ? item.right - right : 0;
+    if (delta) rail.scrollTo({
+      left: Math.max(0, Math.min(rail.scrollWidth - rail.clientWidth, rail.scrollLeft + delta)),
+      behavior: 'instant',
+    });
+  }, []);
+  useEffect(() => {
+    if (phone) return;
+    const revealCurrent = () => revealSection(sectionRail.current?.querySelector<HTMLButtonElement>('[aria-current="page"]') ?? null);
+    revealCurrent();
+    window.addEventListener('resize', revealCurrent);
+    return () => window.removeEventListener('resize', revealCurrent);
+  }, [phone, section, revealSection]);
   const dirtyIds = useRef(new Set<string>());
   const [dirty, setDirty] = useState(false);
   const report = useCallback((id: string, d: boolean) => {
@@ -122,13 +149,23 @@ export function SettingsView({
         </header>
         <div className="ch-set-layout">
           {/* CH-8801: the section list is a navigation landmark; the open section is marked current. */}
-          <nav className="ch-set-rail" aria-label="Settings sections">
+          <nav ref={sectionRail} className="ch-set-rail" aria-label="Settings sections">
             {sections.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 className={'ch-set-rail__i' + (s.id === section ? ' is-on' : '')}
                 aria-current={s.id === section ? 'page' : undefined}
+                onFocus={(event) => {
+                  const button = event.currentTarget;
+                  // WebKit applies its own focus alignment after this event.
+                  // Reveal once that finishes, without moving a later focus.
+                  if (focusRevealFrame.current !== null) cancelAnimationFrame(focusRevealFrame.current);
+                  focusRevealFrame.current = requestAnimationFrame(() => {
+                    focusRevealFrame.current = null;
+                    if (button.isConnected && document.activeElement === button) revealSection(button);
+                  });
+                }}
                 onClick={() => go(s.id)}
               >
                 <Icon icon={ICON[s.id]} size={16} />

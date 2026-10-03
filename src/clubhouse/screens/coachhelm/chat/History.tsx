@@ -2,9 +2,10 @@
 
 import { MessagesSquare, PanelLeftClose, SquarePen } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useMemo, useRef } from 'react';
 import { filterConversations, groupConversations, type ChAskConversation } from '../../../data/coachhelm-chat-shape';
-import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { useDialogLifetime } from '../../../lib/dialog-lifetime';
+import { useSheetDrag } from '../../../lib/sheet-drag';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SearchField } from '../../../ui/SearchField';
@@ -125,10 +126,6 @@ export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: (
   );
 }
 
-/** A drag to the left past this many pixels, or a quick flick, closes the drawer. */
-const DRAWER_CLOSE_PX = 80;
-const FLICK_PX_PER_MS = 0.5;
-
 /**
  * The phone's History: a left drawer on the native dialog (focus trap, Esc, and the backdrop for free). It closes on the
  * scrim, on Esc, on a drag or flick to the left (back to rest when let go sooner), and on choosing a chat (CH-13621, CH-13822).
@@ -136,55 +133,9 @@ const FLICK_PX_PER_MS = 0.5;
  */
 export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose: () => void }) {
   const { open, onClose, onNew } = props;
-  const ref = useRef<HTMLDialogElement>(null);
+  const { ref, reduced, retainContent } = useDialogLifetime(open, { direction: 'left', surfaceSelector: '.ch-ask-hist' });
   const aside = useRef<HTMLElement>(null);
-  const reduced = useChReducedMotion();
-  const opener = useRef<Element | null>(null);
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      opener.current = document.activeElement;
-      d.showModal();
-    } else if (!open && d.open) {
-      d.close();
-      if (opener.current instanceof HTMLElement) opener.current.focus();
-    }
-  }, [open]);
-
-  const drag = (e: ReactPointerEvent<HTMLElement>) => {
-    const el = aside.current;
-    if (reduced || !el || e.button !== 0 || (e.target as Element).closest('input, button, a')) return;
-    const x0 = e.clientX;
-    let dx = 0;
-    let lastX = x0;
-    let lastT = e.timeStamp;
-    let speed = 0;
-    el.style.transition = 'none';
-    const move = (ev: PointerEvent) => {
-      const dt = ev.timeStamp - lastT;
-      if (dt > 0) speed = (ev.clientX - lastX) / dt;
-      lastX = ev.clientX;
-      lastT = ev.timeStamp;
-      dx = Math.min(0, ev.clientX - x0);
-      el.style.translate = `${dx}px 0`;
-    };
-    const end = (ev: PointerEvent) => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', end);
-      window.removeEventListener('pointercancel', end);
-      if (ev.type === 'pointerup' && (-dx > DRAWER_CLOSE_PX || (dx < -10 && -speed > FLICK_PX_PER_MS))) {
-        onClose();
-        return;
-      }
-      el.style.transition = 'translate var(--ch-dur-base) var(--ch-ease)';
-      el.style.translate = '';
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', end);
-    window.addEventListener('pointercancel', end);
-  };
+  const drag = useSheetDrag(aside, onClose, { enabled: !reduced, direction: 'left' });
 
   return (
     // The click is the scrim's dismiss; the keyboard path is Esc, which <dialog> reports through onCancel.
@@ -202,8 +153,8 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
         if (e.target === ref.current) onClose();
       }}
     >
-      {open && (
-        <aside ref={aside} className="ch-ask-hist is-drawer" aria-label="Chats" onPointerDown={drag}>
+      {retainContent(open && (
+        <aside ref={aside} className="ch-ask-hist is-drawer" aria-label="Chats" onPointerDown={drag.onPointerDown}>
           <div className="ch-ask-hist__head">
             <b>Chats</b>
             <button
@@ -227,7 +178,7 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
             onNavigate={onClose}
           />
         </aside>
-      )}
+      ))}
     </dialog>
   );
 }

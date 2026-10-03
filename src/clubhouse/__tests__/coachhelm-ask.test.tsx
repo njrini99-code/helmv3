@@ -622,9 +622,9 @@ describe('History: the phone drawer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     const aside = drawer().querySelector('aside') as HTMLElement;
     const drag = (dx: number) => {
-      fireEvent.pointerDown(aside, { button: 0, clientX: 300 });
-      fireEvent.pointerMove(window, { clientX: 300 + dx });
-      fireEvent.pointerUp(window, { clientX: 300 + dx });
+      fireEvent.pointerDown(aside, { button: 0, clientX: 300, pointerId: 1, isPrimary: true });
+      fireEvent.pointerMove(window, { clientX: 300 + dx, pointerId: 1, isPrimary: true });
+      fireEvent.pointerUp(window, { clientX: 300 + dx, pointerId: 1, isPrimary: true });
     };
     drag(-5);
     expect(drawer().open).toBe(true);

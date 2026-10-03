@@ -651,12 +651,18 @@ describe('player profile · phone', () => {
     expect(panel().querySelector('.ch-stm-leg')).toBeNull();
   });
 
-  it('a change chip under the SG figure, and each round in the list carries its strokes gained', () => {
+  it('the exact SG change sits below the figures in the same overview card, and each round carries its strokes gained', () => {
     const [first, second] = PREVIEW_PLAYER.rounds;
     showPlayerPhone(player({ rounds: [first!, { ...second!, sg: 0.6 }] }));
-    const sg = [...document.querySelector('.ch-stm-figs')!.children].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
-    expect(sg.querySelector('.ch-delta')!.textContent).toBe('−1.3');
-    expect(sg.textContent).toContain('vs. previous 10');
+    const overview = document.querySelector('.ch-stm-overview')!;
+    const figures = overview.querySelector('.ch-stm-figs')!;
+    const footer = overview.querySelector('.ch-stm-overview__meta')!;
+    expect(figures.parentElement).toBe(overview);
+    expect(footer.parentElement).toBe(overview);
+    expect(figures.nextElementSibling).toBe(footer);
+    const change = footer.querySelector('.ch-sgchg')!;
+    expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
+    expect(change.lastElementChild!.textContent).toBe('vs. previous 10');
     const rows = [...document.querySelectorAll('.ch-spm-round')];
     expect(rows[0]!.querySelector('.ch-loss')!.textContent).toBe('−1.1 SG');
     expect(rows[1]!.querySelector('.ch-gain')!.textContent).toBe('+0.6 SG');

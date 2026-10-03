@@ -97,6 +97,22 @@ const REACTION_ICON = Object.fromEntries(
   REACTIONS.map((r) => [r.key, r.icon]),
 ) as Record<ChReactionKey, LucideIcon>;
 
+export interface ChPendingAttachmentSend {
+  id: string;
+  text: string;
+  replyToId: string | null;
+  filenames: string[];
+}
+
+export interface ChAttachmentRecovery {
+  text: string;
+  files: File[];
+  replyToId?: string | null;
+  queuedText: string;
+  queuedFiles: File[];
+  resumed?: ChPendingAttachmentSend | null;
+}
+
 export interface ChMessagesApi {
   viewer: { userId: string; role: "coach" | "player"; name: string };
   timeZone: string;
@@ -113,6 +129,10 @@ export interface ChMessagesApi {
    * threads never loses what was written (P007 71202). Cleared when a send lands.
    */
   drafts: Map<string, string>;
+  /** Unknown attachment attempts survive leaving/reopening a conversation in this mounted session. */
+  attachmentRecovery?: Map<string, ChAttachmentRecovery>;
+  loadPendingAttachmentSend?: () => Promise<ChPendingAttachmentSend | null>;
+  retryPendingAttachmentSend?: () => Promise<boolean | "partial" | "unknown">;
 
   selectedId: string | null;
   select: (id: string | null) => void;
@@ -125,8 +145,8 @@ export interface ChMessagesApi {
   refetchMsgs: () => void;
   typing: boolean;
   onTyping: (on: boolean) => void;
-  send: (text: string) => Promise<boolean>;
-  sendFiles: (text: string, files: File[]) => Promise<boolean>;
+  send: (text: string, replyToId?: string | null) => Promise<boolean>;
+  sendFiles: (text: string, files: File[], replyToId?: string | null) => Promise<boolean | "partial" | "unknown">;
   retry: (id: string) => void;
   discard: (id: string) => void;
   edit: (id: string, text: string) => Promise<boolean>;
@@ -538,18 +558,22 @@ export function Attachments({
  * moving opens the message's actions, with a press tick (CH-7704). A right
  * click or the context-menu key does the same.
  */
-function useLongPress(onFire: (() => void) | undefined) {
+function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direction: "left" | "right") => void) {
   const timer = useRef<number | null>(null);
   const origin = useRef<{ x: number; y: number } | null>(null);
-  if (!onFire) return {};
   const clear = () => {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = null;
     origin.current = null;
   };
+  useEffect(() => () => {
+    if (timer.current) window.clearTimeout(timer.current);
+  }, []); // Cancel a pending press when the thread closes.
+  if (!onFire) return {};
   return {
     onPointerDown: (e: ReactPointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      clear();
       origin.current = { x: e.clientX, y: e.clientY };
       timer.current = window.setTimeout(() => {
         clear();
@@ -559,9 +583,21 @@ function useLongPress(onFire: (() => void) | undefined) {
     },
     onPointerMove: (e: ReactPointerEvent) => {
       const o = origin.current;
-      if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > 10) clear();
+      if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > 10) {
+        if (timer.current) window.clearTimeout(timer.current);
+        timer.current = null;
+        // Vertical movement belongs to the native scroll view.
+        if (Math.abs(e.clientY - o.y) > 24) origin.current = null;
+      }
     },
-    onPointerUp: clear,
+    onPointerUp: (e: ReactPointerEvent) => {
+      const o = origin.current;
+      if (o && o.x >= 24 && onSwipe && Math.abs(e.clientX - o.x) >= 60 && Math.abs(e.clientY - o.y) <= 24) {
+        haptic("select");
+        onSwipe(e.clientX > o.x ? "right" : "left");
+      }
+      clear();
+    },
     onPointerCancel: clear,
     onPointerLeave: clear,
     onContextMenu: (e: ReactMouseEvent) => {
@@ -583,6 +619,7 @@ export function Bubble({
   onEdit,
   onDelete,
   onActions,
+  onReply,
 }: {
   api: ChMessagesApi;
   m: ChMsg;
@@ -595,9 +632,14 @@ export function Bubble({
   onDelete: () => void;
   /** Phone: the message's actions open in a sheet on a long press, in place of the hover tools. */
   onActions?: () => void;
+  onReply?: () => void;
 }) {
   const who = personOf(api, m.senderId);
-  const press = useLongPress(m.failed ? undefined : onActions);
+  const [showTime, setShowTime] = useState(false);
+  const press = useLongPress(m.failed ? undefined : onActions, onActions ? (direction) => {
+    if (direction === "right") onReply?.();
+    else setShowTime(true);
+  } : undefined);
   // Desktop (no actions sheet): a right click opens the reaction bar, as the React button does (the board's gesture).
   const rightClick =
     !onActions && !m.failed
@@ -612,8 +654,10 @@ export function Bubble({
   if (m.deleted) {
     return (
       <div
+        id={`ch-ms-message-${m.id}`}
         className={
           "ch-ms-msg" +
+          (group ? " is-group" : "") +
           (m.mine ? " is-mine" : "") +
           (first ? " is-first" : "") +
           (last ? " is-last" : "")
@@ -628,8 +672,10 @@ export function Bubble({
   }
   return (
     <div
+      id={`ch-ms-message-${m.id}`}
       className={
         "ch-ms-msg" +
+        (group ? " is-group" : "") +
         (m.mine ? " is-mine" : "") +
         (first ? " is-first" : "") +
         (last ? " is-last" : "") +
@@ -649,6 +695,7 @@ export function Bubble({
         )}
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>
+            {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
             {m.text && <div className="ch-ms-bub">{m.text}</div>}
             {m.hasAttachments && (
               <Attachments load={api.attachments} id={m.id} mine={m.mine} />
@@ -766,7 +813,7 @@ export function Bubble({
             </button>
           </span>
         ) : (
-          last && (
+          (last || showTime) && (
             <span className="ch-ms-msg__t ch-num">
               {clock(m.at, api.timeZone)}
               {m.edited ? " · Edited" : ""}
@@ -779,6 +826,22 @@ export function Bubble({
   );
 }
 
+/** A parent outside the loaded history remains an honest unavailable reference. */
+export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: string }) {
+  const parent = api.msgs.find((m) => m.id === replyToId);
+  const name = parent ? (parent.mine ? "You" : personOf(api, parent.senderId)?.name ?? "Member") : "Reply";
+  return (
+    <button type="button" className="ch-ms-quote" aria-label={`Reply to ${name}`} disabled={!parent}
+      onClick={() => document.getElementById(`ch-ms-message-${replyToId}`)?.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      })}>
+      <b>{name}</b>
+      <span>{!parent ? "Original message unavailable" : parent.deleted ? "Message deleted" : parent.text || (parent.hasAttachments ? "Attachment" : "Message")}</span>
+    </button>
+  );
+}
+
 /** At most this many files ride on one message. */
 const MAX_ATTACHMENTS = 10;
 export const addAttachments = (cur: File[], picked: File[]) =>
@@ -788,9 +851,11 @@ export const addAttachments = (cur: File[], picked: File[]) =>
 export function AttachChips({
   files,
   onRemove,
+  disabled = false,
 }: {
   files: File[];
   onRemove: (index: number) => void;
+  disabled?: boolean;
 }) {
   if (!files.length) return null;
   return (
@@ -802,6 +867,7 @@ export function AttachChips({
           <button
             type="button"
             aria-label={`Remove ${f.name}`}
+            disabled={disabled}
             onClick={() => onRemove(i)}
           >
             <Icon icon={X} size={12} />
@@ -840,6 +906,7 @@ export function AttachButton({
       <input
         ref={input}
         type="file"
+        disabled={disabled}
         multiple
         hidden
         onChange={(e) => {
@@ -859,6 +926,9 @@ export function Composer({
   initialDraft,
   initialFiles,
   autoSend = false,
+  replyToId,
+  onClearReply,
+  onSendingChange,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
@@ -870,47 +940,143 @@ export function Composer({
   initialFiles?: File[];
   /** Send `initialDraft` and `initialFiles` as soon as the thread opens; a failure leaves them in the box (CH-7004). */
   autoSend?: boolean;
+  replyToId?: string | null;
+  onClearReply?: () => void;
+  onSendingChange?: (sending: boolean) => void;
 }) {
-  const [draft, setDraftState] = useState(initialDraft ?? api.drafts.get(conv.id) ?? "");
+  const recovery = api.attachmentRecovery?.get(conv.id);
+  const [unconfirmed, setUnconfirmed] = useState(!!recovery);
+  const [resumed, setResumed] = useState<ChPendingAttachmentSend | null>(recovery?.resumed ?? null);
+  const [checking, setChecking] = useState(!!api.loadPendingAttachmentSend);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const [checkAttempt, setCheckAttempt] = useState(0);
+  const [missingFiles, setMissingFiles] = useState<string[]>([]);
+  const [recoveredParent, setRecoveredParent] = useState(recovery?.replyToId ?? null);
+  const effectiveParent = recoveredParent ?? replyToId;
+  const queued = useRef({ text: recovery?.queuedText ?? "", files: recovery?.queuedFiles ?? [] as File[] });
+  const [draft, setDraftState] = useState(recovery?.text ?? initialDraft ?? api.drafts.get(conv.id) ?? "");
   const setDraft = (text: string) => {
     setDraftState(text);
     if (text) api.drafts.set(conv.id, text);
     else api.drafts.delete(conv.id);
   };
-  const [files, setFiles] = useState<File[]>(initialFiles ?? []);
+  const [files, setFiles] = useState<File[]>(recovery?.files ?? initialFiles ?? []);
+  const filesRef = useRef(files);
+  filesRef.current = files;
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
   const typingTimer = useRef<number | null>(null);
-  const ready = (draft.trim() || files.length) && !sending;
+  const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed;
 
   useLayoutEffect(() => {
     const t = ta.current;
     if (!t) return;
     t.style.height = "auto";
-    t.style.height = `${Math.min(t.scrollHeight, 132)}px`;
+    const style = getComputedStyle(t);
+    const cap = Number.parseFloat(style.maxHeight) || 132;
+    const border = style.boxSizing === "border-box"
+      ? (Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0)
+      : 0;
+    t.style.height = `${Math.min(t.scrollHeight + border, cap)}px`;
   }, [draft]);
 
+  useEffect(() => {
+    if (!api.loadPendingAttachmentSend) return;
+    let mounted = true;
+    setChecking(true);
+    setCheckFailed(false);
+    onSendingChange?.(true);
+    void api.loadPendingAttachmentSend().then((pending) => {
+      if (!mounted) return;
+      if (pending) {
+        const cached = api.attachmentRecovery?.get(conv.id);
+        if (!cached) queued.current = { text: api.drafts.get(conv.id) ?? draft, files: filesRef.current };
+        setResumed(pending);
+        setUnconfirmed(true);
+        setRecoveredParent(pending.replyToId);
+        setDraftState(pending.text);
+        setFiles(cached?.files ?? []);
+        api.attachmentRecovery?.set(conv.id, {
+          text: pending.text, files: cached?.files ?? [], replyToId: pending.replyToId,
+          queuedText: queued.current.text, queuedFiles: queued.current.files, resumed: pending,
+        });
+      }
+      setChecking(false);
+      onSendingChange?.(!!pending || !!recovery);
+    }).catch(() => {
+      if (!mounted) return;
+      setChecking(false);
+      setCheckFailed(true);
+      // A failed check cannot prove a previous write absent: leave normal Send locked.
+      onSendingChange?.(true);
+    });
+    return () => { mounted = false; };
+  }, [conv.id, checkAttempt]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const send = async () => {
-    if (!ready) return;
+    if (!ready || sendingRef.current) return;
+    sendingRef.current = true;
     const text = draft.trim();
     const pending = files;
+    const parentId = effectiveParent;
+    const recoveredRequest = resumed;
     setSending(true);
-    setDraft("");
+    onSendingChange?.(true);
+    // Recovery retries clear the visible original, while the later ordinary draft stays durable.
+    if (unconfirmed || recoveredRequest) setDraftState("");
+    else setDraft("");
     setFiles([]);
     api.onTyping(false);
     chTrail("messages send");
-    const ok = pending.length
-      ? await api.sendFiles(text, pending)
-      : await api.send(text);
+    const ok = recoveredRequest
+      ? await (api.retryPendingAttachmentSend?.() ?? Promise.resolve("unknown" as const))
+      : pending.length
+      ? await (parentId ? api.sendFiles(text, pending, parentId) : api.sendFiles(text, pending))
+      : await (parentId ? api.send(text, parentId) : api.send(text));
+    sendingRef.current = false;
     setSending(false);
-    if (ok) haptic("success");
-    else {
+    if (ok === "unknown") {
+      if (!unconfirmed) queued.current = { text: api.drafts.get(conv.id) ?? "", files: filesRef.current };
+      api.attachmentRecovery?.set(conv.id, { text, files: pending, replyToId: parentId, queuedText: queued.current.text, queuedFiles: queued.current.files, resumed: recoveredRequest });
+      setUnconfirmed(true);
+      setRecoveredParent(parentId ?? null);
+      setDraftState(text);
+      // Persist only the later ordinary draft; the uncertain original belongs to its stored operation.
+      if (queued.current.text) api.drafts.set(conv.id, queued.current.text);
+      else api.drafts.delete(conv.id);
+      setFiles(pending);
+      onSendingChange?.(true);
+      haptic("warning");
+      ta.current?.blur();
+      return;
+    }
+    api.attachmentRecovery?.delete(conv.id);
+    setUnconfirmed(false);
+    setResumed(null);
+    if (recoveredRequest && ok !== true) {
+      setMissingFiles(recoveredRequest.filenames.filter((name) => !pending.some((file) => file.name === name)));
+    }
+    if (unconfirmed) {
+      setDraft(queued.current.text);
+      setFiles(queued.current.files);
+      queued.current = { text: "", files: [] };
+    }
+    onSendingChange?.(false);
+    // Text failures retain their parent in the failed bubble; attachment failures stay in this composer.
+    if (ok === true || (!pending.length && !recoveredRequest)) { setRecoveredParent(null); onClearReply?.(); }
+    if (ok === true) haptic("success");
+    else if (ok === "partial") {
+      // The text was delivered; recover only the unsaved files, never duplicate that text.
+      haptic("warning");
+      setFiles((now) => [...pending, ...now]);
+    } else {
       haptic("error");
       // A failed text stays in the thread as its own bubble, marked, with Retry (same id, so never a duplicate) and
       // Discard: putting it back in the box as well made a second send under a new id easy (owner 2026-10-01). A failed
       // attachment send has no bubble, so its text and files go back in the box, in front of anything typed since,
       // never over it (MSG-26). The drafts map mirrors the box and outlives it when the thread was switched meanwhile.
-      if (pending.length) {
+      if (pending.length || recoveredRequest) {
         const since = api.drafts.get(conv.id) ?? "";
         setDraft(since ? (text ? `${text}\n${since}` : since) : text);
         setFiles((now) => [...pending, ...now]);
@@ -918,38 +1084,56 @@ export function Composer({
     }
     ta.current?.focus();
   };
+  useEffect(() => {
+    if (recovery && !api.loadPendingAttachmentSend) onSendingChange?.(true);
+    // Restore the parent action lock when an unresolved composer remounts.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const autoRequested = useRef(autoSend && !!(initialDraft?.trim() || initialFiles?.length));
   const autoSent = useRef(false);
   useEffect(() => {
-    if (!autoSend || autoSent.current || !(initialDraft?.trim() || initialFiles?.length)) return;
+    if (!autoRequested.current || autoSent.current || checking || checkFailed || unconfirmed || resumed) return;
     autoSent.current = true;
     void send();
-    // Once, when the thread first opens with the first message.
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Keep the handed-over first message until the pending-send check permits it.
+  }, [checking, checkFailed, unconfirmed, resumed]); // eslint-disable-line react-hooks/exhaustive-deps
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (!phone && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       void send();
     }
   };
   const label = conv.group ? conv.title : firstName(conv.title);
   return (
-    <footer className="ch-ms-comp">
+    <footer className="ch-ms-comp" aria-busy={checking || sending || undefined}>
+      {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
+      {unconfirmed && <InlineNotice code="CH-7023" title="Couldn't confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
+      {effectiveParent && (
+        <div className="ch-ms-comp__reply">
+          <ReplyQuote api={api} replyToId={effectiveParent} />
+          <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed} />
+        </div>
+      )}
+      {resumed && !files.length && <div className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
+      {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></span>)}</div>}
       <AttachChips
+        disabled={unconfirmed || checking || checkFailed}
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
       <div className="ch-ms-comp__field">
         <AttachButton
           phone={phone}
-          onPick={(picked) => setFiles((s) => addAttachments(s, picked))}
+          disabled={unconfirmed || checking || checkFailed}
+          onPick={(picked) => { setFiles((s) => addAttachments(s, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
         />
         <textarea
           ref={ta}
           rows={1}
-          // CH-7801: the composer is named for the conversation. CH-7802: Enter sends, Shift+Enter adds a line (onKey).
+          // CH-7802: desktop Enter sends; phone Return adds a line and the Send button sends.
           aria-label={`Message ${label}`}
           placeholder={`Message ${label}`}
           value={draft}
+          readOnly={unconfirmed || checking || checkFailed}
           onChange={(e) => {
             setDraft(e.target.value);
             api.onTyping(true);
@@ -960,16 +1144,16 @@ export function Composer({
             );
           }}
           onKeyDown={onKey}
-          enterKeyHint="send"
+          enterKeyHint={phone ? "enter" : "send"}
         />
         <button
           type="button"
           className={"ch-ms-send" + (ready ? " is-ready" : "")}
           onClick={() => void send()}
           disabled={!ready}
-          aria-label="Send"
+          aria-label={unconfirmed ? "Retry send" : "Send"}
         >
-          <Icon icon={ArrowUp} size={17} />
+          <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={17} />
         </button>
       </div>
       {!phone && (

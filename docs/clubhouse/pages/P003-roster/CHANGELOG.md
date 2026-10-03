@@ -1,5 +1,63 @@
 # P003 — Roster: changelog
 
+## 2026-10-02 — Keep the player when opening desktop Messages
+
+```text
+Design package: existing P003/P007 player-to-message flow
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none added
+Actions:        existing Message link in the desktop player panel and row menu
+Data impact:    none; existing Messages ?player= resolution
+Held items:     real-account thread resolution, delivery and physical Safari
+```
+
+Desktop Message links now include the selected player's encoded ID instead of
+opening the general inbox. This aligns the player panel and list-row menu with
+the phone profile and P007's existing deep-link contract. Different selected
+players and keyboard activation are covered by two focused regressions;
+the complete scoped Roster suite passed 68/68. See VERIFY.md for the local
+WebKit observation and its limits.
+
+## 2026-10-02 — Intuitive improvement: consistent profile context
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   none changed
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+Profile gutters, section gaps and figure lighting now match the parent roster at
+phone widths. The existing player name, Roster back action, scoring evidence and
+Message/Plan 1:1 actions remain intact. WebKit exercised the fixture
+row-to-profile path; delivery, meeting creation and private-note persistence
+were not exercised.
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
+## 2026-10-02 — Roster: room for complete player status
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+The phone roster now uses the shared sheet gradient and layered lighting. Rows
+have a 72px minimum with room for wrapping status text; long attention notes
+remain visible instead of ending in an ellipsis. Content and skeleton gutters
+use the same 16px rhythm.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
@@ -38,17 +96,23 @@ Data impact:    none (two RLS-scoped reads, golf_teams and the team's active gol
 Held items:     none
 ```
 
-- **Issue.** With Clubhouse on, a player on `/roster` got the not-rebuilt notice.
+- **Issue.** With Clubhouse on, a player on `/roster` got the not-rebuilt
+  notice.
 - **Fix.** A player gets the coach's layout as plain text (`TeamRoster`,
   `TeamRosterPhone`): name, class year and handicap of the active members, no
-  scores, notes, requests, invite, export or player panel, and no card or row is a link
+  scores, notes, requests, invite, export or player panel, and no card or row is
+  a link
   or a button (CH-3807). A separate loader (`data/roster-player.ts`) reads only
-  the team's name and season and the active members. `/roster/[id]` goes to the list
-  for a player. Roster is a sidebar entry under Team for a player and a row in the
-  phone More sheet. Catalog CH-3210, CH-3211, CH-3307, CH-3308, CH-3807; contracts
+  the team's name and season and the active members. `/roster/[id]` goes to the
+  list
+  for a player. Roster is a sidebar entry under Team for a player and a row in
+  the
+  phone More sheet. Catalog CH-3210, CH-3211, CH-3307, CH-3308, CH-3807;
+  contracts
   30804 to 30806; 30801's meaning now says the coach's roster is a coach's.
 - **Checked.** roster-player.test 19/19, with the loader's selects, tables and
-  filters asserted and 2 of 2 mutations caught (an extra column, a button around a
+  filters asserted and 2 of 2 mutations caught (an extra column, a button around
+  a
   name); five existing assertions that a player gets NotRebuilt on `/roster`, or
   that the player sidebar has no Team section, were changed on purpose; the
   Clubhouse suite 2515/2515; `clubhouse:check` clean; a browser pass at 1280 and

@@ -3,6 +3,71 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Independent qualifier write verification
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Design package: none; test structure only
+Contract IDs:   91501, assertions unchanged
+Actions:        none
+Data impact:    none; no product code change
+Held items:     CI rerun
+```
+
+CI timed out after 5,023ms while one test drove all eight qualifier write
+scenarios through both success and refusal. The same aggregate test passed
+locally in 2,076ms. Each scenario now has its own named parameterized test and
+normal cleanup, retaining every refresh and navigation assertion and the
+default timeout. No coverage was removed and no timeout was raised.
+
+The full Qualifiers suite passed with one worker: 164 tests, 19.88s overall
+(18.71s of test execution). The slowest new 91501 case was 347ms. The existing
+streaming test emitted an unawaited-act warning; it still passed. CI remains
+the check for behavior under the shared runner's load.
+
+## 2026-10-02 — Shiro fix: leaderboard identity can wrap
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081cff)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; CSS only
+Held items:     physical iPhone Safari verification
+```
+
+Shiro fix mode found that the phone live leaderboard forced names onto one line
+in fixed 32px rows. Full names now wrap, and rows grow instead of hiding part of
+the identity. The inset leaderboard well and raised qualifier card retain their
+depth.
+
+In an interactive WebKit page, the controlled long-name probe measured 36.4px of
+text in a 44.4px row at 375/390/430px, with no horizontal document overflow.
+Active and All filtering both worked. The populated preview captures are logged
+below. A development HMR ChunkLoadError occurred during rebuild; a fresh page
+loaded with no console errors and passed the filter check.
+
+## 2026-10-01 — Layered mobile cards and readable metadata
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Design package: Coach home dashboard redesign (6), mobile boards
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none; layout and material only
+Held items:     real iPhone Safari device verification
+```
+
+The mobile live qualifier and list cards use the shared sheet gradient.
+Dates/course metadata use a 14px line with room to wrap, leaderboard rows gain
+vertical spacing and list cards gain separation. Status counts, scores and
+recorded-round totals are unchanged.
+
+Verified in Playwright WebKit with iPhone 13 emulation at 375, 390 and 430px:
+the document stays within the viewport and Instrument Sans is loaded. Before and
+after captures at 390px are logged in VERIFY.md. This verifies layout, not
+physical iPhone scrolling performance or live database data.
+
 ## 2026-10-01 — Owner rules for page states (P009)
 
 Owner, 2026-10-01: never an empty or a zero for a failed or unfinished read;
@@ -384,3 +449,10 @@ Held items:     qualifier-squad-and-entrants (feature), qualifier-db-hardening (
   server actions (D-30), the v2 motion and
   haptics (D-64, D-70), and the D-61 gate on the squad-size and entrants
   actions.
+
+## 2026-10-02 — visual review search hint
+
+Shortened the list search placeholder to “Search qualifiers” so it fits the
+375px phone field. Search matching and the accessible label remain unchanged.
+Fresh WebKit captures at 375/390/430px pass document bounds; local evidence is
+`/tmp/helm-clubhouse-visual-secondary/qualifiers-search-fixed-<width>.png`.

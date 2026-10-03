@@ -28,6 +28,7 @@
   --ch-au-t-sheet-fade: 500ms;
   /* The camera: a slow push to the pin, and the pine and bough moving out of frame. */
   --ch-au-t-cam: 5200ms;
+  --ch-au-t-phone-cam: 2600ms;
   --ch-au-t-pine: 4200ms;
   --ch-au-t-pine-fade: 2400ms;
   --ch-au-push: 1.34;
@@ -69,6 +70,7 @@
     --ch-au-t-sheet: 1ms;
     --ch-au-t-sheet-fade: 1ms;
     --ch-au-t-cam: 1ms;
+    --ch-au-t-phone-cam: 1ms;
     --ch-au-t-pine: 1ms;
     --ch-au-t-pine-fade: 1ms;
     --ch-au-push: 1.2;
@@ -94,6 +96,7 @@
   --ch-au-t-sheet: 1ms;
   --ch-au-t-sheet-fade: 1ms;
   --ch-au-t-cam: 1ms;
+  --ch-au-t-phone-cam: 1ms;
   --ch-au-t-pine: 1ms;
   --ch-au-t-pine-fade: 1ms;
   --ch-au-push: 1.2;

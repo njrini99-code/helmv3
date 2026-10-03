@@ -3,6 +3,93 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-02 — Slow feedback follows its request
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (PR #2121)
+Design package: existing toast material, durations and action behavior
+Contract IDs:   CH-1902, CH-4902, CH-5902
+Data impact:    none; dismissing feedback does not cancel a write
+Held items:     physical iPhone Safari acceptance
+```
+
+The shared toast lifetime and delayed-feedback helper remove obsolete progress
+notices when a request completes, is replaced or loses its mounted owner.
+Stats period changes, shared actions, Messages and manual Settings saves use
+the same lifecycle. Old cleanup cannot remove newer feedback. Confirmation
+and error durations, Retry, pending-write and unknown-outcome guards remain
+unchanged. Final regression evidence is recorded in VERIFY.md.
+
+## 2026-10-02 — Native custom overlays share one lifecycle
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (PR #2121)
+Design package: approved boards; bars and dismissal policy unchanged
+Contract IDs:   CH-1610, CH-1611, CH-1802
+Data impact:    none; client dialog/scroll/focus/gesture lifecycle only
+Held items:     physical iPhone keyboard and gesture validation
+```
+
+Shared Modal and custom native sheets/drawers now retain the last open content
+and ref-counted page lock until transform/opacity exit completes. Reopen cancels
+stale completions; unmount closes while the lock remains held. Opener focus uses
+preventScroll. Custom bars and dismissal guards keep their existing semantics.
+
+Targeted checks: 351 tests pass across the final focused runs; scoped ESLint and
+diff check exit 0. Runtime evidence is recorded in this page's VERIFY entry.
+
+## 2026-10-02 — Stable sheet and pushed-screen lifecycle
+
+```text
+Design package: existing owner phone sheets and right-side pushed screens
+PR/commit:      codex/clubhouse-design-fidelity (working tree after 72fa726)
+Contract IDs:   CH-1610, CH-1611, CH-1802, CH-1809; strengthened existing behavior
+Actions:        existing open, close, drag and Back only
+Data impact:    no API, schema or customer writes
+Held items:     physical iPhone gesture/frame pacing and native keyboard validation
+```
+
+A shared reference-counted lock freezes the page at its existing visual position
+until every nested or exiting overlay leaves. Closing More or a dialog restores
+its original page scroll; navigating to another route keeps the new route at the
+top. Pushed screens hold the same lock through their Framer exit and restore
+focus
+without scrolling. Phone More and Bell focus also avoids moving the page.
+
+Native dialogs retain their content through a 260ms transform/opacity exit;
+rapid reopening cancels the old exit instead of closing the new sheet. Nested
+dialogs have distinct accessible title IDs. Sheet drags belong to one primary
+pointer, ignore another finger, and cancel cleanly. Reduced-motion pushed
+screens, More and Bell settle immediately. No arbitrary transition delay added.
+
+Broader CI found four page test files without the existing jsdom dialog
+polyfill. They now import the same modal API support as other Clubhouse suites;
+assertions and runtime code remain unchanged.
+
+## 2026-10-02 — Shared scrollbar ownership and design context
+
+The Frontend Design Premium review now points to the existing page handoffs via
+root DESIGN.md and the Clubhouse UI ownership index. Runtime tokens remain the
+source of CSS. A scoped scrollbar baseline provides both standard and WebKit
+styling, using existing ink/radius tokens. Page-specific hidden horizontal
+strips retain their geometry. Forced colors restore browser defaults.
+
+WebKit computed styles verify thin themed scrollbars and native scrolling;
+forced colors verify automatic color/width. The body outside Clubhouse stays
+at browser defaults. No navigation or page hierarchy changes.
+
+## 2026-10-01 — Safari header, surface depth and crossfade
+
+Branch: `codex/clubhouse-design-fidelity`. The supplied mobile photo showed the
+wide wordmark compressed into 22px. Home now uses the existing compact GolfHelm
+mark in the board's ivory medallion, with readable team text. The solid hero bar
+no longer applies backdrop blur. Shared cards and wells recover the handoff's
+graded surface and highlight; Messages has its own raised bubble treatment. The
+named page crossfade uses simultaneous 180ms opacity animation and selectors
+supported without transition classes. Browser edges now read the actual page
+tokens, create a missing theme-color tag and restore it on unmount or resize. No
+navigation destinations or access controls change.
+
 ## 2026-10-01 — Kept screen state never disagrees with hydration
 
 `useChSessionState` (`src/clubhouse/lib/session-state.ts`) draws the default
@@ -115,18 +202,24 @@ Held items:     none
   with chevrons that did nothing, and the switcher had been a recorded non-goal.
 - **Fix.** For a head coach on two or more teams (`canSwitchTeams`, the gate
   `setActiveTeam` enforces, so an assistant is never offered a switch the server
-  refuses) the sidebar's brand block is a menu button that opens a listbox of the
+  refuses) the sidebar's brand block is a menu button that opens a listbox of
+  the
   teams (arrows, Home, End, Enter, Esc, focus back), and the phone More sheet
-  lists the teams under who they are. A pick calls `setActiveTeam`, shows the new
+  lists the teams under who they are. A pick calls `setActiveTeam`, shows the
+  new
   team at once, refreshes every screen, and the route remounts for the new team
-  (`RouteFrame` is keyed by pathname and team). A refusal or a network failure is
+  (`RouteFrame` is keyed by pathname and team). A refusal or a network failure
+  is
   a toast (CH-1003) with the reason, no Retry when trying again cannot help, and
-  the team goes back. A coach on one team, an assistant and a player keep the plain
+  the team goes back. A coach on one team, an assistant and a player keep the
+  plain
   label (CH-1305). The More sheet scrolls on a short screen, for every role.
 - **Checked.** `team-switch.test.tsx` 16/16 (removing the `canSwitchTeams` gate
-  fails 2); the Clubhouse suite 2515/2515; `clubhouse:check` clean; a browser pass
+  fails 2); the Clubhouse suite 2515/2515; `clubhouse:check` clean; a browser
+  pass
   at 1280 and 390 (the popover, the sheet, a refused switch). Not exercised: a
-  switch that lands (the preview has no session), and a device pass of the sheet.
+  switch that lands (the preview has no session), and a device pass of the
+  sheet.
 - **Open.** With `HELM_CLUBHOUSE_TEAMS` set, a head coach who switches to a team
   that is not listed gets Fairway for it.
 

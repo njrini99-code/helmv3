@@ -2,6 +2,29 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-02 — Phone prospect sheets keep their fields through dismissal
+
+```text
+PR/commit:      codex/clubhouse-design-fidelity (pending)
+Design package: approved boards; bars and dismissal policy unchanged
+Contract IDs:   CH-14403, CH-14406, CH-14501
+Data impact:    none; client dialog/scroll/focus/gesture lifecycle only
+Held items:     physical iPhone keyboard and gesture validation
+```
+
+Edit, stage and delete sheets now share the native dialog lifetime. Even when
+the parent clears its selected prospect, the last open subtree remains during
+the exit. Background scroll stays locked until completion, rapid reopen cancels
+the prior close, and title/opener focus uses preventScroll. Busy save/delete
+dismissal guards are preserved.
+
+Keyboard viewport sizing keeps Cancel/Add above the keyboard and the form body
+scrollable through Stage/Notes. The destructive action sheet remains scrollable
+in the available space.
+
+Targeted checks: 351 tests pass across the final focused runs; scoped ESLint and
+diff check exit 0. Runtime evidence is recorded in this page's VERIFY entry.
+
 ## 2026-10-01 — Depth ladder: the lists and panels read their role (catch-up entry from the branch history)
 
 ```text

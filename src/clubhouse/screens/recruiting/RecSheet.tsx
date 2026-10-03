@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useId, useRef, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
-import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useId, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
+import { useDialogLifetime } from '../../lib/dialog-lifetime';
 import { useSheetDrag } from '../../lib/sheet-drag';
 
 /**
@@ -12,10 +12,8 @@ import { useSheetDrag } from '../../lib/sheet-drag';
  * choice is red.
  */
 
-function useSheetDialog(open: boolean, onClose: () => void, busy = false) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const opener = useRef<Element | null>(null);
-  const reduced = useChReducedMotion();
+function useSheetDialog(open: boolean, onClose: () => void, busy = false, surfaceSelector = '.ch-rec-sheet') {
+  const { ref, reduced, retainContent } = useDialogLifetime(open, { surfaceSelector, focusSelector: 'h2' });
   // A drag that is refused (a save in flight) must not leave the sheet half way down.
   const requestClose = () => {
     if (busy) {
@@ -29,21 +27,6 @@ function useSheetDialog(open: boolean, onClose: () => void, busy = false) {
     onClose();
   };
   const drag = useSheetDrag(ref, requestClose, { enabled: !reduced });
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      opener.current = document.activeElement;
-      d.style.transition = '';
-      d.style.translate = '';
-      d.showModal();
-      // VoiceOver starts at the sheet's title, and no button shows a focus ring the moment a sheet opens.
-      d.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
-    } else if (!open && d.open) {
-      d.close();
-      if (opener.current instanceof HTMLElement) opener.current.focus();
-    }
-  }, [open]);
   const dialogProps = {
     ref,
     onCancel: (e: SyntheticEvent) => {
@@ -55,7 +38,7 @@ function useSheetDialog(open: boolean, onClose: () => void, busy = false) {
       if (e.target === ref.current) requestClose();
     },
   };
-  return { dialogProps, drag };
+  return { dialogProps, drag, retainContent };
 }
 
 /** A sheet with Cancel, a title and Save. Save is a submit button, so Enter in a field sends it. Nothing closes it while a save is in flight. */
@@ -79,10 +62,10 @@ export function RecFormSheet({
   children: ReactNode;
 }) {
   const titleId = useId();
-  const { dialogProps, drag } = useSheetDialog(open, onClose, busy);
+  const { dialogProps, drag, retainContent } = useSheetDialog(open, onClose, busy);
   return (
     <dialog {...dialogProps} className="ch-rec-dlg" aria-labelledby={titleId} data-ch-code={code}>
-      {open && (
+      {retainContent(open && (
         <form
           className="ch-rec-sheet is-full"
           noValidate
@@ -105,7 +88,7 @@ export function RecFormSheet({
           </header>
           <div className="ch-rec-sheet__body">{children}</div>
         </form>
-      )}
+      ))}
     </dialog>
   );
 }
@@ -127,10 +110,10 @@ export function RecPickSheet({
   children: ReactNode;
 }) {
   const titleId = useId();
-  const { dialogProps, drag } = useSheetDialog(open, onClose);
+  const { dialogProps, drag, retainContent } = useSheetDialog(open, onClose);
   return (
     <dialog {...dialogProps} className="ch-rec-dlg" aria-labelledby={titleId} data-ch-code={code}>
-      {open && (
+      {retainContent(open && (
         <div className="ch-rec-sheet">
           <div className="ch-rec-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-rec-bar is-pick" onPointerDown={drag.onPointerDown}>
@@ -144,7 +127,7 @@ export function RecPickSheet({
           <div className="ch-rec-sheet__body">{children}</div>
           {note && <p className="ch-rec-sheet__note">{note}</p>}
         </div>
-      )}
+      ))}
     </dialog>
   );
 }
@@ -173,10 +156,10 @@ export function RecActionSheet({
   code?: string;
 }) {
   const titleId = useId();
-  const { dialogProps } = useSheetDialog(open, onClose, busy);
+  const { dialogProps, retainContent } = useSheetDialog(open, onClose, busy, '.ch-rec-act');
   return (
     <dialog {...dialogProps} className="ch-rec-dlg is-act" aria-labelledby={titleId} data-ch-code={code}>
-      {open && (
+      {retainContent(open && (
         <div className="ch-rec-act">
           <div className="ch-rec-act__group">
             <div className="ch-rec-act__head">
@@ -191,7 +174,7 @@ export function RecActionSheet({
             Cancel
           </button>
         </div>
-      )}
+      ))}
     </dialog>
   );
 }

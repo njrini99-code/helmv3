@@ -35,7 +35,7 @@ const live = vi.hoisted(() => ({
     sendTypingStatus: vi.fn(),
   },
   reactions: { rows: [] as unknown[], setReaction: vi.fn(async () => {}) },
-  files: { sendMessageWithAttachments: vi.fn(async (): Promise<{ success: boolean; error?: string }> => ({ success: true })) },
+  files: { getPendingAttachmentSend: vi.fn(async () => null), retryPendingAttachmentSend: vi.fn(async () => ({ success: true })), sendMessageWithAttachments: vi.fn(async (): Promise<{ success: boolean; error?: string }> => ({ success: true })) },
 }));
 vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => live.convs, useGolfMessages: () => live.msgs }));
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));

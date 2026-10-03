@@ -1156,6 +1156,14 @@
     height: calc(100dvh - max(54px, env(safe-area-inset-top)));
     gap: 16px;
   }
+  body.keyboard-open .ch-rec-sheet {
+    max-height: calc(100dvh - max(54px, env(safe-area-inset-top)) - var(--keyboard-height, 0px));
+  }
+  body.keyboard-open .ch-rec-act {
+    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   .ch-rec-sheet__body {
     display: flex;
     flex: 1 1 auto;

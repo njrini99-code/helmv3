@@ -2,8 +2,8 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { useId, type ReactNode } from 'react';
+import { useDialogLifetime } from '../lib/dialog-lifetime';
 import { useSheetDrag } from '../lib/sheet-drag';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
@@ -37,25 +37,12 @@ export function Modal({
   footer?: ReactNode;
   children?: ReactNode;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const opener = useRef<Element | null>(null);
+  const titleId = useId();
   const phone = useChPhone();
-  const reduced = useChReducedMotion();
+  const { ref, reduced, retainContent } = useDialogLifetime(open, {
+    direction: phone ? 'bottom' : 'center', surfaceSelector: '.ch-modal__panel',
+  });
   const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      opener.current = document.activeElement;
-      // A sheet dragged shut last time opens from the bottom again.
-      d.style.translate = '';
-      d.showModal();
-    } else if (!open && d.open) {
-      d.close();
-      if (opener.current instanceof HTMLElement) opener.current.focus();
-    }
-  }, [open]);
 
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.
@@ -65,7 +52,7 @@ export function Modal({
       className="ch-modal"
       data-ch-code={code}
       style={{ ['--ch-modal-w' as string]: `${width}px` }}
-      aria-labelledby="ch-modal-title"
+      aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -74,7 +61,7 @@ export function Modal({
         if (e.target === ref.current) onClose();
       }}
     >
-      {open && (
+      {retainContent(open && (
         <div className="ch-modal__panel">
           <div className="ch-modal__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-modal__head" onPointerDown={drag.onPointerDown}>
@@ -84,7 +71,7 @@ export function Modal({
               </span>
             )}
             <div className="ch-modal__titles">
-              <h2 id="ch-modal-title">{title}</h2>
+              <h2 id={titleId}>{title}</h2>
               {description && <p>{description}</p>}
             </div>
             <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
@@ -94,7 +81,7 @@ export function Modal({
           {children && <div className="ch-modal__body">{children}</div>}
           {footer && <footer className="ch-modal__foot">{footer}</footer>}
         </div>
-      )}
+      ))}
     </dialog>
   );
 }

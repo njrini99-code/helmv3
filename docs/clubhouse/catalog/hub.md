@@ -94,6 +94,10 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10406 | An edit is being saved | "Saving" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
 | CH-10407 | Plan a trip: the travelers' classes are being checked | "Checking their classes…" once the chosen travelers have settled (350ms; a run of taps on player chips is one question). Publish never waits for it, and an answer for travelers or days no longer on screen is not shown | `ClassClashes` (`useClassCheck`) | hub.test › CH-10407 |
 
+| CH-10408 | A player's event reply is being sent | "Sending reply for Team dinner…" beside that event's selected reply. Its three choices remain disabled across tab changes until the answer; another event can save independently. Refusal restores the last confirmed reply and offers Retry | `ReplyChoices` → `useAction('hub.reply')` + Hub-lifetime event gate | hub.test › CH-10408 |
+| CH-10409 | A player's acknowledgment is being sent | "Acknowledging Pairings and tee times for Thursday…" on that post. Got it is unavailable in Home and Announcements, and Home keeps the same featured post until the answer. Confirmation advances to the next unread post; refusal restores Got it and offers Retry | `Acknowledgement` → `useAction('hub.acknowledge')` + Hub-lifetime post gate | hub.test › CH-10409 |
+| CH-10410 | A player's task completion or reopening is being saved | "Saving…" next to that task, read as "Saving Sign travel waiver". Only its toggle remains disabled across tab changes; another task can save independently. Refusal restores the prior state and offers Retry for the same requested state | `TaskRow` → `useAction('hub.completeTask' / 'hub.uncompleteTask')` + shared Hub-lifetime task gate | hub.test › CH-10410 |
+
 ## 105xx Confirm
 
 | # | When | They see | How | Test |

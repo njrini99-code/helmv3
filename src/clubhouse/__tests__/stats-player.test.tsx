@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -47,6 +47,7 @@ import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
+import { sgBaseline } from '../lib/sg';
 import { ClubhouseMarker } from '../shell/context';
 import { markAppRunning, RouteScope } from '../lib/session-state';
 import StatsLoading from '@/app/golf/(dashboard)/dashboard/stats/loading';
@@ -471,6 +472,34 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('CH-5305 CH-5301 CH-5303 CH-5304 an early read: the note, and each empty section says so', () => {
     phone(PREVIEW_PLAYER_EARLY);
     for (const c of ['CH-5305', 'CH-5301', 'CH-5303', 'CH-5304']) expect(code(c)).not.toBeNull();
+  });
+
+  it('phone overview keeps sample caveats beside all figures and clears them when the window has enough evidence', () => {
+    phone(PREVIEW_PLAYER_EARLY);
+    const overview = document.querySelector('.ch-stm-overview')!;
+    const caveat = within(overview as HTMLElement).getByRole('note');
+    expect(caveat.textContent).toMatch(/Early read\. .+ averages and trends will move a lot\. Strokes gained shows once there are three/);
+    expect(caveat.getAttribute('data-ch-code')).toBe('CH-5305');
+    expect(within(overview as HTMLElement).getByText('SG / round')).toBeTruthy();
+    expect(within(overview as HTMLElement).getByText('Trend')).toBeTruthy();
+    cleanup();
+    phone(player());
+    const enough = document.querySelector('.ch-stm-overview')!;
+    expect(within(enough as HTMLElement).queryByRole('note')).toBeNull();
+    expect(enough.textContent).toContain(sgBaseline(PREVIEW_PLAYER.tour).vs);
+    expect(document.querySelector('.ch-stm-overview__meta')?.textContent).toMatch(/countable rounds? in this window/);
+    expect(code('CH-5305')).toBeNull();
+    expect(code('CH-5308')).toBeNull();
+    cleanup();
+    phone(player({ win: { ...PREVIEW_PLAYER.win, sgRounds: 2, effSgRounds: 2, sgPerRound: null, sgLegs: { tee: null, approach: null, around: null, putting: null } } }));
+    const needsShots = within(document.querySelector('.ch-stm-overview') as HTMLElement).getByRole('note');
+    expect(needsShots.getAttribute('data-ch-code')).toBe('CH-5308');
+    expect(needsShots.textContent).toMatch(/Strokes gained needs three rounds posted with shots\..+2 of .+ so strokes gained shows a dash until there are three/);
+    expect(code('CH-5305')).toBeNull();
+    cleanup();
+    phone(player({ roundsError: true }));
+    expect(document.querySelector('.ch-stm-overview')).toBeNull();
+    expect(code('CH-5201')).not.toBeNull();
   });
 
   it('CH-5201 CH-5202 CH-5203 failed reads: notices, never zeros', () => {
@@ -1005,6 +1034,32 @@ describe('Stats player · network', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
     online.mockRestore();
+  });
+
+  it('CH-5902 shown slow feedback ends on settlement, replacement and profile unmount', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const view = show(player({ window: 'last10' }));
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-5902', /Still loading the season/);
+      view.rerender(shell(<StatsPlayer data={player({ window: 'season' })} coachId="c1" />));
+      await waitFor(() => expect(code('CH-5902')).toBeNull());
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-5902', /Still loading qualifier rounds/);
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      await waitFor(() => expect(code('CH-5902')).toBeNull());
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-5902', /Still loading the last 10 rounds/);
+      expect(document.querySelectorAll('[data-ch-code="CH-5902"]')).toHaveLength(1);
+      // Provider remains mounted, so only the request owner's cleanup can remove this notice.
+      view.rerender(shell(null));
+      await waitFor(() => expect(code('CH-5902')).toBeNull());
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('CH-5902 a slow window change says so once; a quick one says nothing', async () => {

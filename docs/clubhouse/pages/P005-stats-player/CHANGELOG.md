@@ -1,5 +1,82 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-02 — Stable phone overview across periods
+
+The measured Season switch removed 47px of overview caption height, while
+Qualifiers inserted an early-read card above the figures. The player overview
+now puts its sample caveat or comparison in a full-width metadata footer inside
+the same layered card. The exact early and no-shots text, codes and note role
+remain; the early caveat still applies to averages and trends as well as SG.
+All values, labels, benchmark and team comparisons remain visible.
+
+The footer and figure captions retain a compact footprint across periods,
+growing naturally for longer text. Empty and populated SG panels share a
+minimum height based on the measured populated panel. No thresholds, loader,
+data or backend behavior changed. The player suite passed 71/71 with one
+worker, including caveat, sufficient-evidence and failed-read transitions.
+
+At 320px the three player figures stay across, rather than inheriting the
+team's two-column layout and leaving a vacant fourth cell. A four-line
+metadata footprint holds the exact early caveat without a period jump;
+the final overview is 204.969px tall instead of the intermediate 299.750px.
+The loading shape now reuses the overview/footer and Trend value geometry.
+Its real player-RSC handoff remains unmeasured; the structural regression
+and settled width checks are recorded separately in VERIFY.md.
+
+## 2026-10-02 — Phone stats filter date fields reach 44px
+
+```text
+Design package: owner's mobile boards; shared Stats filter sheet
+PR/commit:      codex/clubhouse-design-fidelity (working tree after 83b9990)
+Contract IDs:   none changed
+Actions:        existing filter choices only
+Data impact:    no endpoint or schema changes
+Held items:     physical iPhone Safari and native date-picker validation
+```
+
+The phone From and To fields now have a 44px minimum height, up from 38px.
+Desktop retains its 38px fields. Existing 30/34/36px drawn buttons already
+have 44px effective targets through the shared pseudo element; WebKit hit
+checks confirmed those extensions and non-overlapping adjacent targets.
+
+## 2026-10-02 — Intuitive improvement: easier phone filter activation
+
+```text
+Design package: owner's mobile boards; Intuitive Software Design IMPROVE mode
+PR/commit:      codex/clubhouse-design-fidelity (working tree after cca081c)
+Contract IDs:   none changed
+Actions:        existing event reply, acknowledgment and task state; none added
+Data impact:    no endpoint or schema changes; local fixtures and mocked writes for verification
+Held items:     intended-user validation, physical Safari and real-account read-back
+```
+
+The shared phone stats control now gives the player profile an explicit 44×44px
+filter target. Existing early-read, missing-data and window comparison copy is
+unchanged. WebKit verified the target and captured the coach profile at 390.
+
+Evidence and practical limits: `VERIFY.md` and the scoped intuitive
+secondary-screen report.
+
+## 2026-10-02 — Player stats: layered panels and less compressed captions
+
+```text
+Design package: design/handoff/ (owner's mobile boards and depth.css)
+PR/commit:      codex/clubhouse-design-fidelity (working tree)
+Contract IDs:   none changed
+Actions:        none changed
+Data impact:    none
+Held items:     physical iPhone Safari and signed-in production data verification
+```
+
+The phone profile uses the shared sheet gradient and shadows for overview,
+strokes gained and game-detail panels, with 16px section spacing. Figure
+captions have more leading and flexible labels. Data sources, scope, comparison
+captions and early-read states are unchanged.
+
+Verification: WebKit iPhone 13 populated layouts at 375, 390 and 430, plus
+empty/failed states at 390. Before/after screenshots and practical limits are
+recorded in VERIFY.md.
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

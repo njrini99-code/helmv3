@@ -24,11 +24,10 @@ import { skyAt, tintFor, type Sky } from './scene-sky';
 export type SceneCrop = 'wide' | 'tall';
 
 /**
- * `tall` is the phone's crop: the design shows x 360 to 1120 and, on the welcome, slides the camera 180 units so the
- * clubhouse is centred. The layers therefore draw x 180 to 1120 and are sized in CSS to sit where the crop would
- * (`.ch-au-scene[data-crop='tall']`), so the slide has picture under it (the design gets this free from its one SVG).
+ * The phone's crop centres the hole, rather than the clubhouse. All layers use
+ * the same crop so the pin, ball, green and their shadows stay registered.
  */
-const VIEWBOX: Record<SceneCrop, string> = { wide: '0 0 1600 1000', tall: '180 0 940 1000' };
+const VIEWBOX: Record<SceneCrop, string> = { wide: '0 0 1600 1000', tall: '650 0 760 1000' };
 
 interface LayerProps {
   /** The local decimal hour, already quantized by the scene. */

@@ -10,6 +10,12 @@ Existing worktree count is advisory unless an explicit
 HELM_MAX_MUTATION_WORKTREES cap is configured; disk reserve remains enforced.
 Local push checks do not regenerate files or repeat CI.
 
+Vercel upload exclusions are checked against `config/repo/manifest.yml`.
+The local `.helm/` tree contains screenshots and runtime telemetry, never build
+inputs; both the manifest and `.vercelignore` exclude it. Deployment preparation
+can inspect the actual upload file set with the repo-local Vercel CLI's dry run
+before publishing a preview.
+
 Readers inherit available tools and stay read-only by task contract. Project
 MCP configuration carries Playwright and project-scoped Supabase read/write
 access into worktrees. Routine shell commands and task-authorized migrations

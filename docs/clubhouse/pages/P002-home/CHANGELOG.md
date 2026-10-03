@@ -1,6 +1,36 @@
 # P002 — Home: changelog
 
-Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
+log and decisions).
+
+## 2026-10-02 — Partial data keeps its meaning
+
+The Codebase Design plugin review found relative day labels using the viewer's
+clock, partial invitee identities paired with a complete Going count, and
+missing sand/par data converted into confident figures. Home now uses its team
+timezone, suppresses an unresolvable paired attendance count, and includes only
+recorded par/sand values in those figures. A common par line requires all shown
+rounds to agree. Known names and available totals remain visible.
+
+Verification: 132 targeted data/consumer tests pass with one worker, including
+traveling timezones, unresolved identities and missing par/sand values. These
+are mocked-read tests; no migration or customer-data repair was performed.
+
+## 2026-10-01 — Safari Home and truthful event timing
+
+Branch: `codex/clubhouse-design-fidelity`. Owner approved showing dates for
+all-day events instead of a midnight countdown. Both player layouts follow that
+rule; timed countdowns reserve their four wells before hydration and use roomier
+padding. Shared surface depth and the compact header mark follow the supplied
+mobile boards.
+
+Data repairs: Home now uses Calendar's literal all-day dates and inclusive
+spans, retains events active today, includes multi-day events starting before
+this week, and reads every event page instead of silently stopping at 500.
+Neutral strokes gained no longer produce a false loss claim. No event writes or
+schema changes. Regression coverage is in `home-data-completeness.test.ts`,
+`home-reads.test.ts` and `player-home.test.tsx`. Synthetic WebKit and local
+mocked reads verify these contracts; no customer database was touched.
 
 ## 2026-10-01 — Aesthetic audit: the stacked coins clear their initials, the latest round's stats follow its scorecard
 

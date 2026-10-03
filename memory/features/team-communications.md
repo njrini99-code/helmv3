@@ -88,6 +88,42 @@ The phone composer keyboard contract is measured in
 
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
+Clubhouse Messages (`src/clubhouse/screens/messages/`) follows the owner's
+Apple Messages interaction reference while retaining the existing GolfHelm
+palette. Phone Return inserts a line; tapping Send sends. Grouped bubbles retain
+sender-run geometry, direct conversations use the available thread width, and
+long-press actions keep the selected message's context.
+
+Quoted replies use the existing nullable `golf_messages.reply_to_id` foreign
+key. Sending validates that the target belongs to the same conversation after
+participant authorization; replay equivalence includes the reply reference.
+Optimistic and failed/retried messages retain it. Unresolved parent content
+remains unavailable rather than being invented. This adds no schema or policy
+change and does not establish live-account persistence before deployment.
+
+Attachment sends distinguish complete, partial, refused and unconfirmed
+outcomes. Stable message and attachment UUIDs use the existing primary keys;
+replay must prove the sender, conversation, text, reply target and metadata
+match. An unconfirmed write never triggers destructive storage cleanup.
+A known metadata refusal with delivered text keeps only unsaved files in the
+composer; Retry does not resend that delivered text. An unconfirmed send
+retains its original payload and identity, including across a page reload,
+until a matching replay confirms its outcome. Pending send metadata is scoped
+to the authenticated viewer and conversation, without credentials or file bytes.
+Each replay rechecks the active session, and the server verifies the expected
+sender before writing. Stale hook instances cannot overwrite a newer request
+marker; logout epochs prevent late responses from confirming a new session.
+A refusal after an earlier unconfirmed request does not prove that write absent
+and therefore retains its pending identity and uploaded files. Parallel uploads
+settle before a known pre-write failure cleans their orphaned objects.
+
+The thread follows composer, quote, image and keyboard size changes only when
+the reader was already at the newest messages. Someone reading older content
+keeps that position. The phone editor fits six 20px lines, including padding
+and borders, before longer drafts scroll within the field. Desktop retains its
+132px cap. This is verified with local fixtures and disposable
+loopback data, not a claim about physical-device frame timing.
+
 ## Primary Entry Points
 
 ### Routes

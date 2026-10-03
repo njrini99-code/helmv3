@@ -1,15 +1,23 @@
 # P002 — Home: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/home.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/home.md`.
 
 ## Current verification status
 
 ```text
 Status:     partial
-Commit/PR:  agent/clubhouse (local)
-Date:       2026-09-30
+Commit/PR:  codex/clubhouse-design-fidelity (repair pass)
+Date:       2026-10-01
 ```
+
+October 1 repair checks: player Home in WebKit at 390x664 has the restored
+layered surfaces, compact mark and date-only all-day event card. Data
+regressions cover timezone-stable all-day dates, inclusive multi-day overlap,
+1,001-event pagination and neutral strokes-gained summaries. The data/read-depth
+and Home suites pass (80 tests); player Home and auth/message tests are recorded
+with the combined pass in PROGRESS.md. No real customer data fixture was
+modified.
 
 ## Static checks
 
@@ -99,7 +107,11 @@ Notes:             first-load JS and LCP are open (CH-1954)
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -135,6 +147,8 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P002__dashboard__player__1440__default__before__d3a6483.png` | before | d3a6483 | dashboard (player), 1440px, default; /clubhouse-preview/home-player, synthetic preview fixture |
 | `P002__dashboard__player__390__default__after__d4367ee.png` | after | d4367ee | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
 | `P002__dashboard__player__390__default__before__d3a6483.png` | before | d3a6483 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
+| `P002__home__player__390x664__ready__before__cbc1c0d.png` | before | `cbc1c0d` | Before: tiny team wordmark and flat/darker surface treatment. |
+| `P002__home__player__390x664__ready__after__cbc1c0d.png` | after | `cbc1c0d` | After: compact brand medallion, lit cards and roomier timed wells. |
 
 ## Open verification gaps
 

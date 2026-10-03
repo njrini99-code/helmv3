@@ -19,7 +19,7 @@ import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollRegion } from '../../ui/ScrollRegion';
-import { useToast } from '../../ui/Toast';
+import { useDelayedToast, useToast } from '../../ui/Toast';
 import { CH_SLOW_SAVE_AFTER, isOffline, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -63,6 +63,7 @@ export function formNote(first: string, scores: number[]): string {
 export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string }) {
   const router = useRouter();
   const toast = useToast();
+  const delayedToast = useDelayedToast();
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   // The tab comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1); an address that names one (Roster's "All N" opens
@@ -105,9 +106,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   useEffect(() => {
     if (!loading) return;
     const words = changeWords(data.filter, loading);
-    const slow = window.setTimeout(() => toast({ title: words.slow, body: `This is taking longer than usual. ${words.still}`, code: 'CH-5902' }), CH_SLOW_SAVE_AFTER);
-    return () => window.clearTimeout(slow);
-  }, [loading, data.filter, toast]);
+    return delayedToast({ title: words.slow, body: `This is taking longer than usual. ${words.still}`, code: 'CH-5902' }, CH_SLOW_SAVE_AFTER);
+  }, [loading, data.filter, delayedToast]);
   const changeFilter = (next: ChFilter) => {
     if (isOffline()) {
       const words = changeWords(data.filter, next);

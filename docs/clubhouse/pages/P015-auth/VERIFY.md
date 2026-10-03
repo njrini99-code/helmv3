@@ -1,15 +1,23 @@
 # P015 — Auth: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/auth.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/auth.md`.
 
 ## Current verification status
 
 ```text
 Status:     partial
-Commit/PR:  agent/clubhouse (draft PR #2102)
-Date:       2026-09-30
+Commit/PR:  codex/clubhouse-design-fidelity (repair pass)
+Date:       2026-10-01
 ```
+
+October 1 WebKit repair checks: Sign in fits 375x568, 390x664 and 430x900
+without document overflow; the responsive sheet leaves the submit button
+visible. JavaScript-disabled rendering shows the actual course and form. The
+preview Sign in flow opens onto the hole, shows the landing ball during the
+welcome, then reaches player Home. Reduced-motion emulation produces a resting
+camera without overflow. These are preview checks, not a real-account
+authentication test.
 
 ## Automated tests
 
@@ -33,10 +41,18 @@ Date:       2026-09-30
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P015__signin__none__390x664__ready__before__cbc1c0d.png` | before | `cbc1c0d` | Before: fixed352px artwork leaves only312px for the sign-in form. |
+| `P015__signin__none__390x664__ready__after__cbc1c0d.png` | after | `cbc1c0d` | After: responsive art, readable form and hole-centred crop. |
+| `P015__welcome__player__390x664__mid-animation__after__cbc1c0d.png` | after | `cbc1c0d` | After:1.6s into welcome, the ball lands at the visible hole. |
+| `P015__signin__none__390x664__javascript-disabled__evidence__cbc1c0d.png` | evidence | `cbc1c0d` | Server paint: form and actual course still with JavaScript disabled. |
 
 ## Open verification gaps
 
@@ -44,4 +60,23 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 - The phone hand-off on an iPhone (the owner's device pass).
 - The member card flying into the sidebar (the design's step 5) is not built: the card fades with the pane.
 - Reduced motion recorded on video: not yet (the tests cover the one-millisecond paths).
-- `npm run build`: runs once before the push.
+- `npm run build`: exit 0 in this repair pass; compilation, TypeScript and
+  static-page generation completed, with the route table emitted.
+
+## 2026-10-02 — Plugin interaction and accessibility verification
+
+Auth/credentials/scene suites: 64 tests pass. The repeated-submit regression
+first reproduced two requests and now verifies one request, plus retry after
+refusal. WebKit Sign in at the phone viewport reports no Axe violations for
+WCAG 2/2.1/2.2 A/AA tags, no document overflow, 16px credential fields and the
+existing username/current-password autocomplete. Tab traverses both fields.
+Reduced-motion welcome reports the camera at rest with an identity transform.
+These are local previews, not real credentials or physical Safari timing.
+
+## October 2 readability follow-up
+
+Fresh WebKit screenshots cover sunrise at 375, 390 and 430px, and noon, sunset
+and night at 390px. The heading has no blur and the document has no horizontal
+overflow. The updated veil and floating updates card were visually inspected.
+The focused auth suites passed 90 tests. These are local browser checks;
+physical iPhone Safari and real account authentication remain separate checks.

@@ -16,6 +16,7 @@ import {
   Megaphone,
   MessageSquare,
   Pencil,
+  Reply,
   SquarePen,
   Trash2,
   UserRound,
@@ -327,6 +328,18 @@ function PhoneThread({
 }) {
   const toast = useToast();
   const [acting, setActing] = useState<ChMsg | null>(null);
+  const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [replySending, setReplySending] = useState(false);
+  const replySendingRef = useRef(false);
+  const composerRef = useRef<HTMLDivElement | null>(null);
+  const reply = (message: ChMsg) => {
+    if (replySendingRef.current) return;
+    setReplyToId(message.id);
+    setActing(null);
+  };
+  useEffect(() => {
+    if (replyToId && !acting) composerRef.current?.querySelector("textarea")?.focus();
+  }, [replyToId, acting]);
   const [editing, setEditing] = useState<ChMsg | null>(null);
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
@@ -415,6 +428,7 @@ function PhoneThread({
                     onEdit={() => setEditing(it.m)}
                     onDelete={() => setDeleting(it.m)}
                     onActions={it.m.deleted ? undefined : () => setActing(it.m)}
+                    onReply={() => reply(it.m)}
                   />
                 ),
               )
@@ -439,6 +453,7 @@ function PhoneThread({
           {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
         </button>
       )}
+      <div ref={composerRef} className="ch-msp-composer">
       <Composer
         key={conv.id}
         api={api}
@@ -447,11 +462,19 @@ function PhoneThread({
         initialDraft={firstMessage?.text}
         initialFiles={firstMessage?.files}
         autoSend={!!firstMessage}
+        replyToId={replyToId}
+        onClearReply={() => setReplyToId(null)}
+        onSendingChange={(sending) => { replySendingRef.current = sending; setReplySending(sending); }}
       />
+      </div>
 
       <Modal code="CH-7604" open={acting != null} onClose={() => setActing(null)} title="Message">
         {acting && (
           <div className="ch-msp-acts">
+            <div className="ch-msp-acts__preview" aria-label="Selected message">
+              <span className="ch-ms-msg__t ch-num">{clock(acting.at, api.timeZone)}</span>
+              <p>{acting.text || (acting.hasAttachments ? "Attachment" : "Message")}</p>
+            </div>
             <div className="ch-msp-acts__react" role="group" aria-label="Reactions">
               {REACTIONS.map((r) => {
                 const on = (api.reactions.get(acting.id) ?? []).some((x) => x.key === r.key && x.mine);
@@ -474,6 +497,7 @@ function PhoneThread({
               })}
             </div>
             <div className="ch-msp-panel">
+              <SheetRow icon={Reply} label="Reply" disabled={replySending} onClick={() => reply(acting)} />
               {acting.text && (
                 <SheetRow icon={Copy} label="Copy" onClick={() => (setActing(null), void copy(acting))} />
               )}
@@ -493,9 +517,9 @@ function PhoneThread({
   );
 }
 
-function SheetRow({ icon, label, onClick, danger }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean }) {
+function SheetRow({ icon, label, onClick, danger, disabled }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
   return (
-    <button type="button" className={"ch-msp-row is-btn" + (danger ? " is-danger" : "")} onClick={onClick}>
+    <button type="button" className={"ch-msp-row is-btn" + (danger ? " is-danger" : "")} onClick={onClick} disabled={disabled}>
       <span className="ch-msp-row__ic">
         <Icon icon={icon} size={16} />
       </span>

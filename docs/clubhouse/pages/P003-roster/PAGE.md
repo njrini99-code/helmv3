@@ -13,7 +13,7 @@
 | Design boards | [Coach - Roster.html](../../../../design/handoff/Coach%20-%20Roster.html) · [Roster.html](../../../../design/handoff/Roster.html) · [roster.jsx](../../../../design/handoff/roster.jsx) · [Coach - Roster - Mobile.html](../../../../design/handoff/Coach%20-%20Roster%20-%20Mobile.html) · [Roster Mobile.html](../../../../design/handoff/mobile/Roster%20Mobile.html) · [m-roster.jsx](../../../../design/handoff/m-roster.jsx) |
 | Code | [roster](../../../../src/clubhouse/screens/roster) · [roster.ts](../../../../src/clubhouse/data/roster.ts) · [roster.tsx](../../../../src/clubhouse/routes/roster.tsx) · [roster.css](../../../../src/clubhouse/styles/roster.css) |
 | Held plans | [roster-availability.md](../../held/data/roster-availability.md) |
-| Audits | [all audits](../../AUDITS.md) |
+| Audits | [INTUITIVE_SECONDARY_AUDIT](../../INTUITIVE_SECONDARY_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Roster" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 | Screenshots | `npm run clubhouse:shots -- gallery --page P003`, which opens `.helm/screenshots/clubhouse/P003-roster/GALLERY.html` (local) |
@@ -126,7 +126,8 @@ requests are the first thing under the header).
 ### Exits to
 
 Stats for a player (`stats?player=<id>`; from the phone profile's All N,
-`&window=season&tab=rounds`, D-53), Messages (desktop: the inbox; phone:
+`&window=season&tab=rounds`, D-53), Messages (desktop panel, desktop row menu
+and phone:
 `messages?player=<id>`, which opens or starts the direct thread), Calendar's
 editor with the player invited (phone Plan 1:1 and the desktop panel's Schedule
 1:1, `calendar?new=1&with=<id>`, D-52), and Settings › Team when the team has no
