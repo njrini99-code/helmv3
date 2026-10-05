@@ -11,8 +11,8 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // `--localstorage-file` is a Node 22+ flag (experimental webstorage).
 // Node 20 exits with "is not allowed in NODE_OPTIONS" the moment Next
-// spawns a worker that inherits this env. Every CI job pins Node 22 now
-// (ci.yml `node-version: 22`; CircleCI `cimg/node:22.13`) — this comment
+// spawns a worker that inherits this env. Every CI job pins Node 24 now
+// (ci.yml `node-version: 24`; CircleCI `cimg/node:24.21`) — this comment
 // said the GitHub Actions build job "currently uses" Node 20 long after it
 // stopped — but a contributor's machine or a future runner may not, so the
 // guard stays: skip the setup on older Node and let the build go through.
