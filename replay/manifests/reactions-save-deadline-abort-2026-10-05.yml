@@ -8,7 +8,7 @@ title: >-
   save after the load path was fixed; the save path now applies the same
   isClientDeadlineAbort rule.
 bad_version: ed65bb5765c8016462b4d51c01fe597d4d9d4d00
-fixed_version: FIXED_SHA
+fixed_version: c243686b08d49ad3786e7fb62d33aaed40e60c16
 fixture:
   - source: use-message-reactions.test.tsx
     target: src/hooks/golf/__tests__/use-message-reactions.test.tsx
