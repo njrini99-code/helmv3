@@ -120,8 +120,6 @@ GRANT ALL ON FUNCTION "public"."bridge_baseball_coach_lifting_revoke_on_delete"(
 
 REVOKE ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") FROM PUBLIC;
 
-GRANT ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") TO "authenticated";
-
 GRANT ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."can_insert_baseball_team_member"("p_team_id" "uuid", "p_status" "public"."team_member_status") FROM PUBLIC;
@@ -975,8 +973,6 @@ GRANT ALL ON FUNCTION "public"."reclassify_golf_round"("p_round_id" "uuid", "p_r
 GRANT ALL ON FUNCTION "public"."reclassify_golf_round"("p_round_id" "uuid", "p_round_type" "text", "p_qualifier_id" "uuid", "p_qualifier_round_number" integer) TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") FROM PUBLIC;
-
-GRANT ALL ON FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") TO "service_role";
 
