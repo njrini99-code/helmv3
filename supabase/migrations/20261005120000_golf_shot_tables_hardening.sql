@@ -1,5 +1,6 @@
 -- STATUS: WRITTEN — NOT APPLIED. Owner applies after review
--- (npm run db:apply -- supabase/migrations/20261005120000_golf_shot_tables_hardening.sql).
+-- (npm run db:apply --
+--   supabase/migrations/20261005120000_golf_shot_tables_hardening.sql).
 --
 -- Golf shot-table hardening. GOLF-ONLY: touches two golf functions, six golf
 -- tables and two golf_shots indexes; no baseball_* / helm_lifting_* object.
@@ -83,18 +84,45 @@
 -- on golf_shots (51,647 rows) is held only for the catalog change.
 --
 -- ROLLBACK:
---   GRANT EXECUTE ON FUNCTION public.calculate_round_strokes_gained(uuid) TO authenticated;
---   GRANT EXECUTE ON FUNCTION public.recompute_golf_round_totals(uuid) TO authenticated;
---   GRANT ALL ON TABLE public.golf_rounds, public.golf_holes, public.golf_shots,
---     public.putt_details, public.approach_miss_details,
+--   GRANT EXECUTE ON FUNCTION
+--     public.calculate_round_strokes_gained(uuid) TO authenticated;
+--   GRANT EXECUTE ON FUNCTION
+--     public.recompute_golf_round_totals(uuid) TO authenticated;
+--   GRANT ALL ON TABLE public.golf_rounds, public.golf_holes,
+--     public.golf_shots, public.putt_details, public.approach_miss_details,
 --     public.golf_player_stats_cache TO anon;
---   CREATE INDEX IF NOT EXISTS idx_golf_shots_round_id ON public.golf_shots USING btree (round_id);
---   CREATE INDEX IF NOT EXISTS idx_golf_shots_round_hole ON public.golf_shots USING btree (round_id, hole_number);
+--   CREATE INDEX IF NOT EXISTS idx_golf_shots_round_id
+--     ON public.golf_shots USING btree (round_id);
+--   CREATE INDEX IF NOT EXISTS idx_golf_shots_round_hole
+--     ON public.golf_shots USING btree (round_id, hole_number);
 --
--- VERIFY: select 1 where not has_function_privilege('authenticated', 'public.calculate_round_strokes_gained(uuid)', 'EXECUTE') and not has_function_privilege('anon', 'public.calculate_round_strokes_gained(uuid)', 'EXECUTE') and has_function_privilege('service_role', 'public.calculate_round_strokes_gained(uuid)', 'EXECUTE');
--- VERIFY: select 1 where not has_function_privilege('authenticated', 'public.recompute_golf_round_totals(uuid)', 'EXECUTE') and not has_function_privilege('anon', 'public.recompute_golf_round_totals(uuid)', 'EXECUTE') and has_function_privilege('service_role', 'public.recompute_golf_round_totals(uuid)', 'EXECUTE');
--- VERIFY: select 1 where not exists (select 1 from information_schema.role_table_grants where table_schema = 'public' and grantee = 'anon' and table_name in ('golf_rounds', 'golf_holes', 'golf_shots', 'putt_details', 'approach_miss_details', 'golf_player_stats_cache'));
--- VERIFY: select 1 where not exists (select 1 from pg_indexes where schemaname = 'public' and indexname in ('idx_golf_shots_round_id', 'idx_golf_shots_round_hole')) and exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'idx_golf_shots_round_hole_shot');
+-- VERIFY: select 1
+-- VERIFY: where not has_function_privilege('authenticated',
+-- VERIFY:   'public.calculate_round_strokes_gained(uuid)', 'EXECUTE')
+-- VERIFY: and not has_function_privilege('anon',
+-- VERIFY:   'public.calculate_round_strokes_gained(uuid)', 'EXECUTE')
+-- VERIFY: and has_function_privilege('service_role',
+-- VERIFY:   'public.calculate_round_strokes_gained(uuid)', 'EXECUTE');
+-- VERIFY: select 1
+-- VERIFY: where not has_function_privilege('authenticated',
+-- VERIFY:   'public.recompute_golf_round_totals(uuid)', 'EXECUTE')
+-- VERIFY: and not has_function_privilege('anon',
+-- VERIFY:   'public.recompute_golf_round_totals(uuid)', 'EXECUTE')
+-- VERIFY: and has_function_privilege('service_role',
+-- VERIFY:   'public.recompute_golf_round_totals(uuid)', 'EXECUTE');
+-- VERIFY: select 1 where not exists (
+-- VERIFY:   select 1 from information_schema.role_table_grants
+-- VERIFY:   where table_schema = 'public' and grantee = 'anon'
+-- VERIFY:     and table_name in ('golf_rounds', 'golf_holes', 'golf_shots',
+-- VERIFY:       'putt_details', 'approach_miss_details',
+-- VERIFY:       'golf_player_stats_cache'));
+-- VERIFY: select 1 where not exists (
+-- VERIFY:   select 1 from pg_indexes where schemaname = 'public'
+-- VERIFY:     and indexname in ('idx_golf_shots_round_id',
+-- VERIFY:       'idx_golf_shots_round_hole'))
+-- VERIFY: and exists (
+-- VERIFY:   select 1 from pg_indexes where schemaname = 'public'
+-- VERIFY:     and indexname = 'idx_golf_shots_round_hole_shot');
 
 -- A. -------------------------------------------------------------------------
 REVOKE EXECUTE ON FUNCTION public.calculate_round_strokes_gained(uuid)
