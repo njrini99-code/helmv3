@@ -431,8 +431,8 @@ items:
     incident_id: memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: 9b9e54770deb2148ff06e9554be126350bc048d3
+    pr: 2124
     regression_tests:
       - src/app/golf/actions/__tests__/stats-data.test.ts
       - src/app/golf/actions/__tests__/stats-data-round-scope.test.ts
@@ -447,8 +447,8 @@ items:
     incident_id: memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: 9b9e54770deb2148ff06e9554be126350bc048d3
+    pr: 2124
     regression_tests:
       - src/hooks/golf/__tests__/use-message-reactions.test.tsx
     queued_for_release: false
