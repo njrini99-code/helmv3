@@ -438,3 +438,18 @@ items:
       - src/app/golf/actions/__tests__/stats-data-round-scope.test.ts
     queued_for_release: false
     first_seen: '2026-09-18T21:17:00Z'
+  - id: reactions-save-deadline-abort-2026-10-05
+    feature_id: team_communications
+    root_cause: >-
+      setReaction's catch reported the browser client's own request-deadline
+      abort (WebKit 'AbortError: Fetch is aborted') to logError; the load path
+      was fixed in #2095, so 9b8ad988 reopened on a save abort 2026-10-04.
+    incident_id: memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/hooks/golf/__tests__/use-message-reactions.test.tsx
+    queued_for_release: false
+    first_seen: '2026-10-04T22:16:21Z'

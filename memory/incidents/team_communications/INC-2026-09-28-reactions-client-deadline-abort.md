@@ -1,7 +1,7 @@
 # INC-2026-09-28: the reactions read reported the browser client's own request deadline
 
 - Feature: `team_communications`
-- Surface: `/golf/dashboard/messages` (`useMessageReactions`, action `load`)
+- Surface: `/golf/dashboard/messages` (`useMessageReactions`, actions `load` and `save`)
 - Fingerprint: 9b8ad988 (`/admin/errors/9b8ad988`), severity warning
 - Status: fix in PR (agent/health-20260928-1247); awaiting merge and production deploy (production 6ee77e98 as of 2026-09-28 21:48Z)
 - Risk: R1. Client logging decision only. No schema, RLS, grant or data-shape change; the user-facing retry copy is unchanged.
@@ -34,3 +34,16 @@ still reported.
 ## Verify in production
 
 After deploy: 9b8ad988 stops receiving rows.
+
+## 2026-10-05 update: the save path had the same gap
+
+The load fix (#2095, merge 463af536) is live in production ef6e017a. 9b8ad988 then
+reopened (reopened_count 3) on 2026-10-04 22:16Z with `action: save`: the
+`setReaction` catch still sent the same WebKit deadline abort to `logError`.
+`setReaction` now applies `isClientDeadlineAbort` before reporting; the
+"Reaction was not saved. Try again." copy still shows and the call still
+returns false. New case in `src/hooks/golf/__tests__/use-message-reactions.test.tsx`
+("does not report the browser client aborting a reaction save") fails on
+ed65bb576 (`logError` called once). Replay:
+`replay/manifests/reactions-save-deadline-abort-2026-10-05.yml`.
+Status: fix in PR (agent/health-20261005-1555); awaiting merge and deploy.
