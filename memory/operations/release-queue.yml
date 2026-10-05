@@ -376,8 +376,8 @@ items:
     incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: ed65bb5765c8016462b4d51c01fe597d4d9d4d00
+    pr: 2123
     regression_tests:
       - src/lib/admin/__tests__/selfheal-registry.test.ts
     queued_for_release: false
@@ -396,8 +396,8 @@ items:
       the replay manifest pattern-miner-starvation-info-2026-10-01 is the record.
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: ed65bb5765c8016462b4d51c01fe597d4d9d4d00
+    pr: 2123
     regression_tests:
       - src/lib/coachhelm/v2/mining/__tests__/pattern-miner.starvation-fingerprint.test.ts
     queued_for_release: false
@@ -415,9 +415,26 @@ items:
       manifest safety-net-wake-reads-batched-2026-10-03 is the record.
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: ed65bb5765c8016462b4d51c01fe597d4d9d4d00
+    pr: 2123
     regression_tests:
       - src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
     queued_for_release: false
     first_seen: '2026-10-01T06:00:27Z'
+  - id: worst-hole-indexed-read-2026-10-05
+    feature_id: stats_analytics
+    root_cause: >-
+      getWorstHoleAnalysis embedded golf_rounds!inner in its golf_holes read;
+      PostgREST's LATERAL embed could not be flattened, so every golf_holes row
+      was RLS-checked before the player's rounds matched (2.0 s vs 0.14 s,
+      measured 2026-10-05) and dashboard reads hit the 8 s statement_timeout.
+    incident_id: memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/app/golf/actions/__tests__/stats-data.test.ts
+      - src/app/golf/actions/__tests__/stats-data-round-scope.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-18T21:17:00Z'
