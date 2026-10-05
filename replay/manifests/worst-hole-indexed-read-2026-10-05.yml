@@ -8,7 +8,7 @@ title: >-
   and hitting the 8 s statement_timeout; it now reads the player's round ids
   first and the holes by round id.
 bad_version: ed65bb5765c8016462b4d51c01fe597d4d9d4d00
-fixed_version: FIXED_SHA
+fixed_version: 07893592695513ffbefdd8fd883141b74c9b2620
 fixture:
   - source: stats-data.test.ts
     target: src/app/golf/actions/__tests__/stats-data.test.ts
