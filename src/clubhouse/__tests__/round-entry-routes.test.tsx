@@ -159,7 +159,16 @@ describe('Round entry: the pages (golf_clubhouse_ui)', () => {
 
   it('/rounds/continue/[id] for a round that is not in progress still goes to its page, in either UI', async () => {
     mocks.tables.current = { golf_rounds: { data: { ...roundRow, status: 'completed' } } };
-    await expect(ContinueRoundPage({ params: Promise.resolve({ id: ID }) })).rejects.toThrow(`NEXT_REDIRECT /golf/dashboard/rounds/${ID}`);
+    // Not a thrown redirect(): the submit action's response re-renders this
+    // page after the round completes, and a redirect thrown there surfaced as
+    // React #441 and the route's error boundary. The client replace lands on
+    // the same page from any render.
+    const el = (await ContinueRoundPage({ params: Promise.resolve({ id: ID }) })) as ReactElement;
+    mocks.router.replace.mockClear();
+    render(el);
+    expect(mocks.router.replace).toHaveBeenCalledWith(`/golf/dashboard/rounds/${ID}`);
+    expect(screen.getByRole('link', { name: 'View round' })).toHaveAttribute('href', `/golf/dashboard/rounds/${ID}`);
+    expect(screen.getByRole('status')).toHaveTextContent('This round is complete');
   });
 });
 
