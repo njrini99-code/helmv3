@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 63 | 6 | 34 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 48 | 15 | 2 | 2 |
+| `INCIDENT` | 49 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 24 | 1 | 8 | 5 |
 | `UNKNOWN` | 319 | 12 | 56 | 81 |
@@ -567,6 +567,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-09-15-single-phone-false-conflict-block.md` | current | - | - | - | - |
+| `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md` | current | - | - | - | - |
 
