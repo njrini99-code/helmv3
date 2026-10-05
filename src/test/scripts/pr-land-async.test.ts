@@ -7,6 +7,7 @@ import {
   classifyAsyncMergeResult,
   classifyAsyncMergeStart,
   parseGhApiInclude,
+  waitForMergedState,
 } from '../../../scripts/pr-land.mjs';
 
 const include = (status: number, body: unknown) => `HTTP/2.0 ${status} OK\nContent-Type: application/json\n\n${JSON.stringify(body)}`;
@@ -89,5 +90,25 @@ describe('asyncMerge', () => {
   it('no endpoint: says so, so the caller falls back to gh pr merge', async () => {
     const gh = fakeGh(include(404, { message: 'Not Found' }), []);
     expect(await asyncMerge({ ...base, ...gh })).toEqual({ ok: false, unsupported: true });
+  });
+});
+
+describe('waitForMergedState', () => {
+  // #2123 and #2124 (2026-10-05): the PUT answered 202 with no uuid, GitHub merged a few seconds later, and one immediate re-read
+  // still said OPEN, so pr-land exited 1 on a PR that had landed.
+  it('keeps re-reading until GitHub says MERGED', async () => {
+    const states = ['OPEN', 'OPEN', 'MERGED'];
+    let slept = 0;
+    const merged = await waitForMergedState({ readState: () => states.shift() ?? 'OPEN', sleep: async (ms: number) => void (slept += ms), pollMs: 10 });
+    expect(merged).toBe(true);
+    expect(slept).toBe(20);
+  });
+  it('a read error is not a merge; it reads again', async () => {
+    const states: Array<string | null> = [null, 'MERGED'];
+    expect(await waitForMergedState({ readState: () => states.shift() ?? null, sleep: async () => undefined })).toBe(true);
+  });
+  it('never claims success for a PR that stays open or is closed', async () => {
+    expect(await waitForMergedState({ readState: () => 'OPEN', sleep: async () => undefined, attempts: 3 })).toBe(false);
+    expect(await waitForMergedState({ readState: () => 'CLOSED', sleep: async () => undefined })).toBe(false);
   });
 });
