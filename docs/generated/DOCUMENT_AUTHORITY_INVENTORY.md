@@ -35,21 +35,21 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 131 | 0 | 7 | 0 |
+| `AGENT_SKILL` | 132 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 43 | 5 | 18 | 74 |
+| `PLAN` | 44 | 5 | 18 | 74 |
 | `AUDIT_SNAPSHOT` | 66 | 6 | 34 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 25 | 1 | 8 | 5 |
-| `UNKNOWN` | 319 | 12 | 70 | 81 |
+| `UNKNOWN` | 321 | 12 | 70 | 81 |
 
 ## Files
 
@@ -82,6 +82,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
+| `.claude/agents/clubhouse-polish-reviewer.md` | current | - | - | - | - |
 | `.claude/agents/code-reviewer.md` | current | - | - | - | - |
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | yes | - |
 | `.claude/agents/debugger.md` | current | - | - | - | - |
@@ -411,6 +412,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/2026-08-17-coachhelm-instrumentation.md` | current | - | - | - | 7 |
 | `docs/superpowers/plans/2026-08-18-coachhelm-cron-insights-wiring.md` | current | - | - | yes | - |
 | `docs/superpowers/plans/2026-08-25-golf-flight-recorder.md` | current | - | - | yes | - |
+| `docs/superpowers/plans/2026-10-06-clubhouse-quality-tooling.md` | current | - | - | - | - |
 | `docs/superpowers/plans/README.md` | current | - | - | - | - |
 | `docs/superpowers/plans/helm-bridge/EXECUTION_LOG.md` | current | - | - | - | 1 |
 | `docs/superpowers/plans/helm-bridge/waves/w00-security-prereqs.md` | current | - | - | - | 1 |
@@ -746,6 +748,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
@@ -971,6 +974,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | - |
 | `public/courses/CREDITS.md` | current | - | - | - | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | - |
+| `src/clubhouse/AGENTS.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
 | `supabase/migrations/HELD.md` | current | - | - | yes | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |

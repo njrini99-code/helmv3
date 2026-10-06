@@ -180,3 +180,10 @@ files. The regression imports a screenshot, generates its gallery and then
 reads the log; this previously failed with ENOTDIR. The tooling is governed
 by the Clubhouse docs; knowledge mapping reports no semantic feature owner
 for scripts/clubhouse/shots.mjs.
+
+## Quality tooling — October 6
+
+[Quality tooling](QUALITY_TOOLING.md) documents the Chromium/WebKit popup
+suite, reviewed visual baselines, CSS guard, measured-performance reader,
+Next DevTools MCP and React profiler setup. Use `npm run clubhouse:quality`
+for smoke checks and `npm run clubhouse:quality:full` for the larger matrix.

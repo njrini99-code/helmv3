@@ -1,5 +1,16 @@
 # Clubhouse changelog
 
+## 2026-10-06 — Quality tooling and scoped agent guidance
+
+Clubhouse agents now follow its own tokens and exemplars. The premium profile
+covers all 15 page families; an optional reviewer checks implementation details.
+Dedicated Chromium/WebKit checks exercise normal and reduced motion, keyboard
+contracts, popup bounds and accessibility. Reviewed external visual baselines,
+a CSS regression guard and a raw-capture performance budget reader support
+repeatable audits. Next DevTools MCP and React DevTools are pinned; setup and
+evidence limits are documented in [QUALITY_TOOLING](QUALITY_TOOLING.md).
+This entry changes tooling, not page appearance or release acceptance.
+
 ## 2026-10-06 — Owner rejects excessive card depth
 
 The owner described the large stacked shadows as looking poor and artificially

@@ -8,6 +8,11 @@
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=qmnssrrolpinvwjjnufo&read_only=true&features=docs%2Cdatabase%2Cdebugging%2Cdevelopment%2Cnotebooks%2Cstorage"
     },
+    "next-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--no-install", "next-devtools-mcp"]
+    },
     "playwright": {
       "type": "stdio",
       "command": "npx",

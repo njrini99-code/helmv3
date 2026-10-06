@@ -166,7 +166,14 @@
     "release:status": "node scripts/release-status.mjs",
     "audit:healthy-on-error": "node scripts/healthy-on-error-audit.mjs",
     "release:rollback-check": "tsx scripts/release-intel/evaluate-rollback.ts",
-    "risk:score": "tsx scripts/release-intel/score-change.ts"
+    "risk:score": "tsx scripts/release-intel/score-change.ts",
+    "clubhouse:quality": "CH_QUALITY=1 playwright test --config playwright.clubhouse.config.ts",
+    "clubhouse:quality:full": "CH_QUALITY=1 CH_FULL=1 playwright test --config playwright.clubhouse.config.ts",
+    "clubhouse:css": "node scripts/clubhouse/css-quality.mjs",
+    "clubhouse:perf:check": "node scripts/clubhouse/perf-budget.mjs",
+    "clubhouse:tools": "node scripts/clubhouse/tools.mjs",
+    "clubhouse:tools:setup": "node scripts/clubhouse/tools.mjs --setup",
+    "clubhouse:profile": "react-devtools"
   },
   "keywords": [],
   "author": "",
@@ -290,9 +297,12 @@
     "madge": "^8.0.0",
     "markdownlint-cli2": "^0.23.3",
     "momentic": "^3.63.1",
+    "next-devtools-mcp": "0.4.0",
     "postcss-load-config": "^6.0.1",
     "postgres": "^3.4.9",
     "promptfoo": "^0.124.0",
+    "react-devtools": "8.0.0",
+    "stylelint": "16.25.0",
     "supabase": "^2.119.0",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
@@ -340,6 +350,7 @@
     "onnxruntime-node": true,
     "protobufjs": true,
     "fsevents": true,
-    "core-js": false
+    "core-js": false,
+    "electron": true
   }
 }

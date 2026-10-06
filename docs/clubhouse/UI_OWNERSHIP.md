@@ -37,10 +37,14 @@ This review covers Clubhouse. Fairway, Baseball and Lift Lab retain their
 existing owners. Locale is the existing English UI with explicit team timezones;
 no Japanese locale or Japan-market behavior is introduced.
 
-## Static auditor adjudication
+## Static auditor adjudication (prior limited-scope snapshot)
 
-The installed plugin strict scan of premium-ui.json exits 1: 25 detections,
-zero unresolved ownership choices. This result is not a compliance pass.
+The earlier installed-plugin strict scan covered Auth, Home, Messages, Hub
+and shared UI/shell/styles. That scan exited 1: 25 detections,
+zero unresolved ownership choices. This result is not a compliance pass or
+a result for the expanded profile. `premium-ui.json` now covers all P001–P015
+manifest families (Stats team/player share a runtime root), onboarding and
+shared route/lib owners. Rerun the auditor for a current full-scope result.
 All detections were inspected against their runtime owners:
 
 - Eleven actionless-button detections are uppercase React Button calls with

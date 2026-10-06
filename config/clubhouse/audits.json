@@ -172,5 +172,16 @@
     "note": "source and local browser repairs; physical device acceptance remains open",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "QUALITY_TOOLING.md",
+    "title": "Quality tooling and release evidence",
+    "kind": "plan",
+    "date": "2026-10-06",
+    "scope": "Scoped agent guidance, browser presentation matrix, reviewed visual comparisons, CSS and measured-performance guards, local profiler and MCP setup.",
+    "status": "done",
+    "note": "tooling implemented; reviewed baselines, authenticated performance and physical-device release evidence remain separate",
+    "allPages": true,
+    "pages": []
   }
 ]

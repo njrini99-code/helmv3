@@ -1,0 +1,5 @@
+# Resolve the pinned development dependency in the active checkout.
+[mcp_servers.next-devtools]
+command = "npx"
+args = ["--no-install", "next-devtools-mcp"]
+startup_timeout_sec = 30

@@ -24,6 +24,17 @@ canonical settings, hooks, MCP definitions, agents and operating policy while
 keeping the chosen source worktree; old branch deny lists are not merged into
 that launch profile.
 
+## Clubhouse tooling scope
+
+Clubhouse-specific policy is in `src/clubhouse/AGENTS.md`; it overrides the
+general Fairway design guidance only for Clubhouse surfaces. Its optional
+Claude polish reviewer follows that authority. The premium profile maps every
+Clubhouse manifest family. `docs/clubhouse/QUALITY_TOOLING.md` defines the
+checks and evidence limits. Next DevTools MCP is pinned in project MCP config;
+`npm run clubhouse:tools:setup` creates the ignored repository Codex config
+from a portable template without replacing unrelated MCP settings. React
+DevTools includes its explicitly allowed Electron runtime.
+
 ## Source Of Truth
 
 Use `memory/` as the repo intelligence source. Do not create a parallel `/knowledge` tree unless the repo explicitly migrates there later.

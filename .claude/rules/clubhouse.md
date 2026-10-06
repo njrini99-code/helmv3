@@ -24,9 +24,9 @@ rejected the result; this tree exists so that cannot happen again.
   page stylesheets anchor the same class.
 - **Doctrine:**
   - Red means under par, the pin flag, or a destructive action (D-42). Gains are green; losses are amber.
-  - Instrument Sans only, in sentence case: no tracked uppercase, no serif.
+  - Instrument Sans for display, body and data; JetBrains Mono for keyboard hints only (`lib/fonts.ts`). Sentence case: no tracked uppercase, no serif.
   - Tabular numbers everywhere. Use a true minus `−`, `E` for even and `—` for no data.
-  - Motion follows v2 (D-64): press 110ms, quick 180ms, base 260ms, release 280ms and reveal 520ms, from the `--ch-dur-*` tokens and `CH_DUR`, on the v2 ease-out, in-out and spring curves. The press is `useChPress` (about 6px), and the only stagger is the first-paint `.ch-reveal`. No count-ups.
+  - Motion follows v2 (D-64): press 110ms, quick 180ms, base 260ms, release 280ms and reveal 520ms, from the `--ch-dur-*` tokens and `CH_DUR`, on the v2 ease-out, in-out and spring curves. The press is `useChPress` (about 6px). Routine first-paint staggering is retired: content is visible immediately, and `shell/RouteFrame.tsx` plus `styles/shell.css` own the whole-page crossfade. Use `useChReducedMotion`; reduced motion and Animations off swap immediately. Pushed phone screens retain their separate `PhoneScreen` transition; auth course choreography follows its own tokens and contract. No count-ups or routine staggers.
   - Haptics follow v2 (D-70): selection, light for primary buttons, success for saves and sends, warning before destructive actions, medium only for a sheet settling, error on failure; other taps are silent.
   - No emoji and no exclamation marks.
 - **Haptics:** only through `src/clubhouse/lib/haptics.ts`.
@@ -44,8 +44,14 @@ rejected the result; this tree exists so that cannot happen again.
 - **Before you report work done,** run `npm run clubhouse:shots -- check` and
   `npm run clubhouse:check` (it also gates changelogs and the VERIFY
   screenshot logs, below).
-- **Reviews:** `ui-polish-reviewer` reviews against Fairway. Don't use it here;
-  review against the handoff screenshots instead.
+- **Reviews:** when a reviewer is useful, use `clubhouse-polish-reviewer`
+  (`.claude/agents/clubhouse-polish-reviewer.md`) against current runtime owners,
+  page contracts and handoff screenshots. `ui-polish-reviewer` targets Fairway.
+  Reviewer agents remain optional and risk-based under root `AGENTS.md`.
+- **Shared exemplars:** `src/clubhouse/AGENTS.md` indexes current Modal, Menu,
+  Button, FormLine, Surface, PhoneScreen and route-transition owners. Follow
+  their live implementations and current styles, rather than stale comments
+  or unmodified handoff timings.
 
 ## Docs and screenshots in the same change
 
