@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
+import { CompletedRoundRedirect } from './completed-round-redirect';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
@@ -204,7 +205,10 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   }
 
   if (round.status !== 'in_progress') {
-    redirect(`/golf/dashboard/rounds/${id}`);
+    // Not redirect(): this render also runs inside the submit action's
+    // response, where a thrown redirect becomes React #441 and the error
+    // boundary. See CompletedRoundRedirect.
+    return <CompletedRoundRedirect href={`/golf/dashboard/rounds/${id}`} />;
   }
 
   // Load holes, shots, and course hole yardages in parallel
