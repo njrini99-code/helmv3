@@ -765,7 +765,7 @@ const upsertPlayerAcademicsAction = withBaseballAction(
       updated_by: ctx.user.id,
     };
 
-    let result: BaseballAcademicEligibility | null = null;
+    let result: BaseballAcademicEligibility | null;
 
     if (validated.eligibility_id) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

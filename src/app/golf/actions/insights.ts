@@ -248,7 +248,7 @@ async function getCoachPhilosophy(
   // Resilient: a thrown query (transient DB error, etc.) must NOT propagate —
   // every caller can safely operate on the defaults below, so swallow the
   // throw to null and fall through to the `if (!data)` default path.
-  let data: unknown = null;
+  let data: unknown;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await (supabase as any)

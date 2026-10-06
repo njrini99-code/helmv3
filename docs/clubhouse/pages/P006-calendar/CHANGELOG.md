@@ -3,6 +3,22 @@
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 
+## 2026-10-06 — ESLint 10 cleanup in the calendar loader
+
+```text
+PR/commit:      #2146 (agent/deps-lint-tooling)
+Design package: none
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+`loadCalendar` declares the parsed busy-block recurrence rule with its type
+instead of a `null` initializer that was always overwritten before use
+(ESLint 10 `no-useless-assignment`). No visible change and no behavior change:
+the try/catch still assigns or skips the block exactly as before.
+
 ## 2026-10-01 — Readable agenda cards on mobile Safari
 
 ```text

@@ -135,7 +135,7 @@ async function cmdSeed(a) {
   try {
     fd = openSync(SEED_FILE, 'wx', 0o600);
   } catch (err) {
-    if (err?.code === 'EEXIST') throw new Error(`a seed already exists (${SEED_FILE}); \`remove\` it first`);
+    if (err?.code === 'EEXIST') throw new Error(`a seed already exists (${SEED_FILE}); \`remove\` it first`, { cause: err });
     throw err;
   }
   let team;

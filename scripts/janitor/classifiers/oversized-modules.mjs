@@ -19,7 +19,7 @@ export function run({ repoRoot }) {
 
   const sized = files
     .map((file) => {
-      let lines = 0;
+      let lines;
       try {
         const content = readFileSync(join(repoRoot, file), 'utf-8');
         lines = content.length === 0 ? 0 : content.split('\n').length;

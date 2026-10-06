@@ -636,7 +636,7 @@ export async function runBaseballEngineCore(
   // specific signal link exists. Active clips only (dismissed/archived don't
   // count). Honest: an absent table yields no coverage (hasVideo defaults false).
   const playersWithVideo = new Set<string>();
-  let videoActiveDiagnosticInsights = 0;
+  let videoActiveDiagnosticInsights: number;
   let videoInsightsWithClip = 0;
   const { data: videoRows } = await db
     .from('baseball_video_events')

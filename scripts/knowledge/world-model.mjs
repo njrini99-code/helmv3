@@ -319,7 +319,7 @@ async function buildModel({ includeLines = false } = {}) {
   }
 
   // --- RPC call sites: one repo-wide git grep, resolved to primary feature -
-  let rpcCallHits = [];
+  let rpcCallHits;
   try {
     // -P (PCRE), not -E (POSIX ERE): ERE has no \s, and a silent zero-match
     // ratchet on that mistake is exactly the semgrep-false-zero trap this
@@ -437,7 +437,7 @@ async function buildModel({ includeLines = false } = {}) {
   }
 
   // --- Invariants: files shaped like qualifier-invariants.ts's result() ----
-  let invariantCandidates = [];
+  let invariantCandidates;
   try {
     invariantCandidates = git(['grep', '-lP', "severity:\\s*'(critical|warning)'", '--', '*.ts'])
       .trim()

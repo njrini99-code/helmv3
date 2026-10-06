@@ -2,6 +2,21 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-06 — PDF import errors keep their cause
+
+```text
+PR/commit:      #2146 (agent/deps-lint-tooling)
+Design package: none
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The two PDF-import errors in `import-read.ts` now attach the underlying error as
+`cause` (ESLint 10 `preserve-caught-error`), so Sentry shows why the PDF reader
+failed. The messages people see are unchanged.
+
 ## 2026-10-02 — Floating class cards
 
 The owner’s material correction removes the decorative left accent from class
