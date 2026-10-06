@@ -1,5 +1,3 @@
-GRANT ALL ON TABLE "public"."approach_miss_details" TO "anon";
-
 GRANT ALL ON TABLE "public"."approach_miss_details" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."approach_miss_details" TO "service_role";
@@ -270,8 +268,6 @@ GRANT ALL ON TABLE "public"."golf_goals" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_goals" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_holes" TO "anon";
-
 GRANT ALL ON TABLE "public"."golf_holes" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_holes" TO "service_role";
@@ -416,8 +412,6 @@ GRANT ALL ON TABLE "public"."golf_player_standing" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_player_standing" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "anon";
-
 GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "service_role";
@@ -511,8 +505,6 @@ GRANT ALL ON TABLE "public"."golf_round_stats_cache" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_round_stats_cache" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_rounds" TO "anon";
-
 GRANT ALL ON TABLE "public"."golf_rounds" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_rounds" TO "service_role";
@@ -576,8 +568,6 @@ GRANT UPDATE("qualifier_round_number") ON TABLE "public"."golf_rounds" TO "authe
 GRANT UPDATE("draft_data") ON TABLE "public"."golf_rounds" TO "authenticated";
 
 GRANT UPDATE("total_penalties") ON TABLE "public"."golf_rounds" TO "authenticated";
-
-GRANT ALL ON TABLE "public"."golf_shots" TO "anon";
 
 GRANT ALL ON TABLE "public"."golf_shots" TO "authenticated";
 
@@ -672,8 +662,6 @@ GRANT ALL ON TABLE "public"."golf_travel_itineraries" TO "anon";
 GRANT ALL ON TABLE "public"."golf_travel_itineraries" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_travel_itineraries" TO "service_role";
-
-GRANT ALL ON TABLE "public"."putt_details" TO "anon";
 
 GRANT ALL ON TABLE "public"."putt_details" TO "authenticated";
 
