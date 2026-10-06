@@ -1166,7 +1166,7 @@ async function assembleFullSections(
   const errors: string[] = [];
 
   // ---- (1) Development Story — via the viewer-filtered timeline read model ----
-  let developmentStory: PassportReadModel['developmentStory'] = null;
+  let developmentStory: PassportReadModel['developmentStory'];
   try {
     const tl = await getPlayerTimeline(teamId, playerId, { limit: 40 });
     if (tl.error) {
@@ -1193,7 +1193,7 @@ async function assembleFullSections(
   }
 
   // ---- (2) Media — via the video library read model (RLS + visibility gated) --
-  let media: PassportReadModel['media'] = null;
+  let media: PassportReadModel['media'];
   try {
     const lib = await getVideoLibrary({ playerId, limit: 24 });
     if (lib.authorized) {

@@ -44,7 +44,7 @@ if (file) {
   if (supabase && typeof globalThis.fetch === 'function') {
     const base = globalThis.fetch;
     globalThis.fetch = async function traced(input, init) {
-      let href = '';
+      let href;
       try {
         href = typeof input === 'string' ? input : input instanceof URL ? input.href : input && input.url ? input.url : '';
       } catch {

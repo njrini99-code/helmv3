@@ -716,8 +716,8 @@ describe('the CLI, against real worktrees', () => {
     writeFileSync(stub, '#!/usr/bin/env bash\nexit 3\n');
     chmodSync(stub, 0o755);
 
-    let out = '';
-    let status: number | null = null;
+    let out: string;
+    let status: number | null;
     try {
       out = run();
       status = 0;

@@ -631,7 +631,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     takenRoundNumbers: number[];
     playerEntered: boolean;
     isCompleted: boolean;
-  }> = [];
+  }>;
   let liveQualifierReadFailed = false;
 
   {

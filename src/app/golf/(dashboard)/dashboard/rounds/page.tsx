@@ -102,7 +102,7 @@ export default async function RoundsPage() {
   `;
 
   if (userRole === 'coach' && teamId) {
-    let teamMembers: { player_id: string }[] | null = null;
+    let teamMembers: { player_id: string }[] | null;
     try {
       const result = await supabase
         .from('golf_team_members')
@@ -160,7 +160,6 @@ export default async function RoundsPage() {
       })) as RoundWithPlayer[];
     }
   } else if (userRole === 'player' && player) {
-    let inProgressData: typeof inProgressRounds = [];
     // P425: surface real failures (route error.tsx offers retry) — never mask a
     // fetch error as an empty rounds list.
     const [completedResult, inProgressResult] = await Promise.all([
@@ -192,7 +191,7 @@ export default async function RoundsPage() {
       player: r.player && !('error' in r.player) ? r.player : null
     })) as RoundWithPlayer[];
 
-    inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
+    const inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
 
     // R8: "ready to submit" — every hole already carries a durable score, so
     // the round is stuck holding a completed scorecard, not mid-tracking

@@ -535,8 +535,8 @@ export async function fetchPlayerDetail(userId: string): Promise<PlayerDetailRes
   }
 
   // ── round history (bounded page + independent true count) ────────────
-  let rounds: RoundRow[] = [];
-  let totalRoundsCount: number | null = null;
+  let rounds: RoundRow[];
+  let totalRoundsCount: number | null;
   try {
     const [countRes, roundsRes] = await Promise.all([
       admin.from('golf_rounds').select('id', { count: 'exact', head: true }).eq('player_id', playerId),
@@ -620,7 +620,7 @@ export async function fetchPlayerDetail(userId: string): Promise<PlayerDetailRes
   }
 
   // ── qualifier participation + round-number gaps ───────────────────────
-  let qualifiers: PlayerQualifierView[] = [];
+  let qualifiers: PlayerQualifierView[];
   try {
     const { data, error } = await admin
       .from('golf_qualifier_entries')
@@ -668,7 +668,7 @@ export async function fetchPlayerDetail(userId: string): Promise<PlayerDetailRes
   }
 
   // ── errors attributed to this player, last 7 days ─────────────────────
-  let errors: PlayerErrorsSummary = { count7d: null, recent: [] };
+  let errors: PlayerErrorsSummary;
   try {
     const ago7d = new Date(Date.now() - 7 * 86400_000).toISOString();
     // event_type='error' already excludes 'rca_analysis' rows (a stored

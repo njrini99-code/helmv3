@@ -542,7 +542,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
         }
         // Only report the gap if the wrapper actually still runs a production
         // deploy. If someone rewrites it, this row must stop asserting.
-        let runsProdDeploy = false;
+        let runsProdDeploy;
         try {
           runsProdDeploy = /vercel\s+deploy\s+--prod/.test(
             readFileSync(resolve(ROOT, wrapper), 'utf8'),

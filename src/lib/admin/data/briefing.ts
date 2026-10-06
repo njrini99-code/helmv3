@@ -409,7 +409,7 @@ async function checkAuthFailureConcentration(admin: AdminClient): Promise<Briefi
   const top = rows[0];
   if (!top || !top.failed_attempts) return null;
 
-  let href: string | null = null;
+  let href: string | null;
   try {
     const { data: userRow } = await admin.from('users').select('id').eq('email', top.email).maybeSingle();
     href = userRow ? `/admin/users/${(userRow as { id: string }).id}` : null;

@@ -1086,7 +1086,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             // indicator at the end of the scroll. The route renders without
             // shell chrome, so bottom-0 is the viewport edge.
             <m.div
-              {...enter(i++)}
+              {...enter(i)}
               data-slot="setup-action-dock"
               className="sticky bottom-0 z-10 flex gap-3 bg-canvas pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
             >

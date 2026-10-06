@@ -493,7 +493,7 @@ export class PerformancePredictor {
     adjustedScore += pressureAdj * WEIGHTS.pressureAdjustment;
 
     // Factor 5: Form cycle adjustment
-    let formCycleAdj = 0;
+    let formCycleAdj: number;
     switch (this.features.contextual.formCycle) {
       case 'peak':
         formCycleAdj = -0.5;

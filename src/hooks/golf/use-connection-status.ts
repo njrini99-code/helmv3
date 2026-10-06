@@ -194,7 +194,7 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
     setStatus(prev => ({ ...prev, isChecking: true, error: null }));
 
     const startTime = Date.now();
-    let isConnected = false;
+    let isConnected: boolean;
     let measuredRtt: number | null = null;
 
     try {
