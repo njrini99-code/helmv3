@@ -62,7 +62,7 @@
     "src/app/**/sitemap.ts",
     "src/app/**/robots.ts",
     "src/app/**/manifest.ts",
-    "src/middleware.{ts,tsx}",
+    "src/proxy.{ts,tsx}",
     "src/instrumentation.{ts,tsx}",
     "src/instrumentation-client.{ts,tsx}",
     "next.config.mjs",
@@ -72,5 +72,16 @@
   ],
   "project": [
     "src/**/*.{ts,tsx}"
-  ]
+  ],
+  // Frozen replay fixtures import the code they reproduced at the path it had
+  // then; test fixtures are loaded by tests by name. Neither is dead code.
+  "ignore": [
+    "replay/fixtures/**",
+    "src/**/__tests__/fixtures/**",
+    "src/**/__fixtures__/**"
+  ],
+  // Used by the native iOS project (Package.swift / cap sync), not by JS imports.
+  "ignoreDependencies": ["@capacitor/ios"],
+  // CLIs invoked from npm scripts, hooks and CI, not imported.
+  "ignoreBinaries": ["tsgo", "markdownlint-cli2", "momentic", "vercel"]
 }
