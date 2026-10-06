@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-message-attachments-hardening
-Status: HELD
+Status: RELEASED
 Pages: Messages (P007): desktop and phone attachments, phone Details › Files
 Feature: team_communications (memory/features/team-communications.md)
 Migration: supabase/migrations/20261001130000_golf_attachments_revoke_anon_hide_deleted.sql
@@ -127,3 +127,7 @@ Registered: no (no migration file yet)
 - [ ] RLS verified
 - [ ] page wiring activated
 - [ ] held status discharged
+
+## Released
+
+Applied to production: `supabase_migrations.schema_migrations` holds version `20261001130000` (checked read-only 2026-10-06). The status above moved from HELD to RELEASED to match.
