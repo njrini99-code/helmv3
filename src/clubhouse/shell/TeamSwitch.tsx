@@ -6,7 +6,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
-import { CH_POP } from '../lib/motion';
+import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useTeamSwitch, type ChTeamSwitch } from './team-switch';
 
@@ -132,7 +132,7 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}
-                transition={CH_POP.transition}
+                transition={chTween('quick', reduced)}
                 onKeyDown={onKey}
               >
                 <div className="ch-popover__label" id={`${id}-l`}>

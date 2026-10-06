@@ -1,6 +1,16 @@
 # P013 — CoachHelm: design handoff
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Streaming follow-scroll is scheduled once per browser frame and canceled
+when superseded. It rechecks reader position and scrolls instantly. Sending
+uses instant scrolling with reduced motion and smooth scrolling otherwise.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current implementation audit — 2026-10-06
 
 Profile render and scroll work during streaming; check drawer focus, player

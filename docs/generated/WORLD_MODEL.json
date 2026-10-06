@@ -634,6 +634,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/screens/settings/**",
+        "pattern": "src/clubhouse/screens/settings/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/admin/command-deck/**",
         "pattern": "src/components/admin/command-deck/**",
         "category": "components"
@@ -1725,6 +1730,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/hooks/golf/use-appearance-preferences.ts",
+        "pattern": "src/hooks/golf/use-appearance-preferences.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/hooks/golf/use-golf-messages.ts",
         "pattern": "src/hooks/golf/use-golf-messages.ts",
         "category": "services"
@@ -2214,6 +2224,11 @@
       {
         "id": "tests:src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
         "pattern": "src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/hooks/golf/__tests__/use-appearance-preferences.test.tsx",
+        "pattern": "src/hooks/golf/__tests__/use-appearance-preferences.test.tsx",
         "category": "tests"
       },
       {
@@ -20561,6 +20576,18 @@
     },
     {
       "source": "settings_preferences",
+      "target": "components:src/clubhouse/screens/settings/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/settings/**"
+        }
+      ]
+    },
+    {
+      "source": "settings_preferences",
       "target": "components:src/components/golf/coachhelm/settings/**",
       "kind": "feature_component",
       "evidence": [
@@ -20626,6 +20653,18 @@
     },
     {
       "source": "settings_preferences",
+      "target": "services:src/hooks/golf/use-appearance-preferences.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/use-appearance-preferences.ts"
+        }
+      ]
+    },
+    {
+      "source": "settings_preferences",
       "target": "services:src/lib/coachhelm/v3/foundation/generator-toggles.ts",
       "kind": "feature_service",
       "evidence": [
@@ -20645,6 +20684,18 @@
           "kind": "registry_declaration",
           "path": "memory/registry.yml",
           "pattern": "observability.feature_keys"
+        }
+      ]
+    },
+    {
+      "source": "settings_preferences",
+      "target": "tests:src/hooks/golf/__tests__/use-appearance-preferences.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/__tests__/use-appearance-preferences.test.tsx"
         }
       ]
     },

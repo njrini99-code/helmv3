@@ -1,6 +1,16 @@
 # P013 — CoachHelm: verification
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Streaming follow-scroll is scheduled once per browser frame and canceled
+when superseded. It rechecks reader position and scrolls instantly. Sending
+uses instant scrolling with reduced motion and smooth scrolling otherwise.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current release evidence — 2026-10-06
 
 Coach/player boards, streaming Ask, history drawer and proposed focus.
@@ -261,6 +271,8 @@ before, after, baseline or evidence.
 | `P013__history-drawer__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 390px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
 | `P013__history-drawer__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 430px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
 | `P013__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P013__ask__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | ask (coach), 390x844px, reduced-motion |
+| `P013__ask__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | ask (coach), 390x844px, reduced-motion |
 
 ## Historical verification gaps
 
@@ -500,3 +512,10 @@ scoped (a product question).
   resolved before final proof; development/HMR timings are not product timings.
   No production/customer writes or physical-iPhone keyboard, edge-gesture or
   frame-pacing claim. Root owns combined typecheck/build/release verification.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.

@@ -1,6 +1,14 @@
 # P003 — Roster: verification
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+RosterPeek uses zero-duration transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current release evidence — 2026-10-06
 
 Roster cards/list, player peek, invite, requests and read-only player view.
@@ -169,6 +177,8 @@ before, after, baseline or evidence.
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
 | `P003__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P003__player-peek__coach__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | player-peek (coach), 1280x844px, reduced-motion |
+| `P003__player-peek__coach__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | player-peek (coach), 1280x844px, reduced-motion |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -237,3 +247,10 @@ before, after, baseline or evidence.
   - The desktop Schedule 1:1 (panel) and View insights (row menu, CoachHelm
     `?player=`) were built 2026-09-30
     (CLICKABLES gaps 4 and 16).
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.

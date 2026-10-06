@@ -1,6 +1,15 @@
 # P002 — Home: design handoff
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+LatestRound passes the reduced preference through chSwap, eliminating the
+retained fade when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current implementation audit — 2026-10-06
 
 Check loading-to-content geometry, long names, team-timezone day labels and

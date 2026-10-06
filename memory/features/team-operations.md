@@ -14,6 +14,13 @@
 
 <!-- schema-drift-absent: golf_travel_expense_splits -->
 
+## Clubhouse Home motion repair — 2026-10-06
+
+LatestRound passes the device/OS reduced-motion preference into chSwap so its
+shared JavaScript duration becomes zero. Normal timing and round data stay
+unchanged. Repair evidence is in
+[SMOOTHNESS_AUDIT](../../docs/clubhouse/SMOOTHNESS_AUDIT.md).
+
 ## Status
 
 - active

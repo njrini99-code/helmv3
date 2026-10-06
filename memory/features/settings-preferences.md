@@ -1,5 +1,13 @@
 # Feature: Settings And Preferences
 
+## Clubhouse motion repair — 2026-10-06
+
+Desktop and phone Settings mount the requested section without waiting for an
+exit. One 260ms entrance remains normally; OS reduced motion and Animations
+off use zero duration, including validation/save feedback. Desktop fixture
+measurements and device verification limits are in
+[SMOOTHNESS_AUDIT](../../docs/clubhouse/SMOOTHNESS_AUDIT.md).
+
 ## Status
 
 - active

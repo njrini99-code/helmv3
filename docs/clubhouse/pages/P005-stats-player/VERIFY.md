@@ -1,6 +1,15 @@
 # P005 — Stats (player): verification
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+StatsPlayer and the shared segmented indicator use zero-duration motion
+when disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current release evidence — 2026-10-06
 
 Player Stats periods, development proposals and filters.
@@ -285,6 +294,8 @@ before, after, baseline or evidence.
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
 | `P005__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P005__stats__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | stats (coach), 390x844px, reduced-motion |
+| `P005__stats__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | stats (coach), 390x844px, reduced-motion |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -348,3 +359,10 @@ before, after, baseline or evidence.
   P004/P005 page manifests govern it. No behavior or data contract changed.
 - Local fixture WebKit only; physical Safari chrome and native date picker were
   not exercised. No production writes.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.

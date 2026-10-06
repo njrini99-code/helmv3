@@ -1,6 +1,15 @@
 # P001 — Shell: design handoff
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Shared Menu, TeamSwitch, OfflineBanner and Toast now use zero-duration
+transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current implementation audit — 2026-10-06
 
 Nested overlays must retain scroll and restore focus; check keyboard dismissal

@@ -2,7 +2,7 @@
 
 Source baseline: main fbec48746; audit branch codex/clubhouse-smoothness-audit
 includes appearance-store repair 8ee40606. This is the current implementation
-behind golf_clubhouse_ui and golf_clubhouse_frontdoor: production defaults are
+behind golf_clubhouse_ui and golf_clubhouse_front_door: production defaults are
 false, development and preview true. No flag or production setting changed.
 
 The 15 manifests remain the page/action authority. This inventory records JSX
@@ -34,14 +34,12 @@ staggered reveal. Reduced motion removes that transition; route/team keys
 scope state, with Back/Forward scroll restoration. Source duration tokens are
 configured behavior, not measured response time.
 
-SM-01 was reproduced and repaired: mounting another appearance consumer caused
-unchanged preferences to acquire a new snapshot and rerender existing
-consumers. Stable snapshots prevent that avoidable work. SM-02 is the
-configured sequential Settings transition. SM-03 remains a confirmed mismatch:
-some Framer paths remove movement but retain 180/260ms fades while CH-1608
-promises instant transitions. SM-04 streaming render/scroll work and SM-05
-backdrop filters remain profiling targets, not established root causes. See
-SMOOTHNESS_AUDIT.md for evidence and priorities.
+SM-01's stable appearance snapshots are repaired. SM-02's Settings exit wait
+and SM-03's shared reduced-motion fades are repaired. SM-04's streaming scroll
+is batched to a frame and uses explicit instant scrolling; the parser benchmark
+did not expose a bottleneck. SM-05's paired paint probe did not reproduce frame
+loss, so approved materials remain. See SMOOTHNESS_AUDIT.md for measured
+before/after evidence and the physical-device verification still required.
 
 The release remains unverified for physical iPhone keyboard, Safari frame
 pacing, VoiceOver, authenticated durable writes, intended-user review and
@@ -53,7 +51,8 @@ dependency-upgraded commit.
 
 All results use synthetic local development fixtures on the audited app source.
 
-- Clubhouse runtime suites: 117 files, 3,092 tests pass, exit 0.
+- Initial audit suites: 117 files, 3,092 tests pass, exit 0.
+  Repair verification is recorded in the follow-up below.
 - Existing state inventory: all 305 applicable width/state/opener cases
   rendered at 1280/390px with zero Axe violations and no document overflow.
   This includes 41 cases that open secondary controls. No known-rule
@@ -70,11 +69,13 @@ All results use synthetic local development fixtures on the audited app source.
   300px scroll and Roster retains 148px; More's short fixture starts at 0.
   The two native dialogs focus inside their top-layer dialog; More uses its
   custom overlay. These three checks do not certify every popup.
-- Settings desktop timing, three trials each: normal motion mounts the new
+- Before repair, Settings desktop timing, three trials each: normal motion
+  mounts the new
   section at 281–290ms and settles at 550–562ms; OS reduced motion mounts
   at 277–308ms and settles at 497–531ms. This confirms SM-03 for this path.
   Development timing includes its runtime overhead; it is not production INP
-  or device FPS. Settings Animations off was not measured.
+  or device FPS. Current motion-off acceptance is recorded in the repair
+  follow-up.
 - Fifteen 430px full-page screenshots were inspected and recorded through
   clubhouse:shots. Shared material, hierarchy, wrapping and spacing were
   inspected; there was no automated pixel comparison to approved boards.
@@ -498,7 +499,7 @@ not automatic defects.
 
 Desktop section swaps, phone pushes, settings sheets and reorder list.
 
-Check the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+Check the single 260ms entrance without exit wait; verify instant reduced motion,
 drag/scroll conflicts and pending saves.
 
 Manifest: `config/clubhouse/pages/P008-settings.json`. Source root:
@@ -1016,3 +1017,78 @@ targets, not automatic defects.
 - `src/clubhouse/__tests__/auth-logic.test.ts`
 - `src/clubhouse/__tests__/auth-server.test.tsx`
 - `src/clubhouse/__tests__/auth-scene.test.tsx`
+
+## 2026-10-06 — Motion and streaming repairs
+
+Settings replaces the sequential exit/entrance with immediate outgoing removal
+and one 260ms incoming transition. OS reduced motion and Animations off use
+zero-duration shared JavaScript transitions, including Home rounds, Roster
+peek, Stats/segmented indicators, menus, team switch, offline notices, toasts
+and Settings feedback. Approved normal-motion tokens and layouts are preserved.
+
+CoachHelm schedules streaming follow-scroll once per browser frame, cancels
+superseded work and respects the reader's position. It scrolls instantly while
+streaming and when motion is disabled; sending otherwise retains smooth scroll.
+
+Desktop WebKit fixture switches settled in 274–315ms normally (previously
+550–562ms) and 45–48ms with OS reduced motion (previously 497–531ms), three
+trials each. These include development overhead, not device FPS or production
+INP. Before/after captures are logged on the affected page VERIFY records.
+
+A paired Chromium 4x-CPU scroll probe covered Home, Stats, round Track, round
+Setup and onboarding Account: 20 trials, 60 frames each, with filters enabled
+and diagnostically disabled. Both had 16.7ms medians, 16.7–16.8ms p95 and zero
+frames over 33ms. A pure buildTurns benchmark (200 messages, 100 trials) had
+0.175ms median and 0.781ms p95. Neither supports a speculative glass removal
+or parser cache. Physical Safari/iPhone traces, VoiceOver, keyboard and durable
+writes remain release checks; the Mac is locked.
+
+## Repair acceptance — 2026-10-06
+
+All 3,100 tests in 118 Clubhouse/appearance files pass, along with 43 mapped
+travel-action tests and the full TypeScript check (exit 0). Focused ESLint,
+67 Clubhouse tooling tests and all 13 local Review Gate checks pass.
+
+WebKit Settings acceptance covers desktop 1280px and phone 390px in normal,
+OS reduced motion and stored Animations-off modes. After settling, exactly
+one section remains, with no horizontal overflow. Rapid desktop Account →
+Preferences selection leaves only Preferences. Phone pushes focus
+ch-setm-title; its normal/reduced/off settled times were 290/32/28ms.
+These are one trial per mode, with hydration warm-up; do not substitute them
+for the separate three-trial before/after desktop range.
+
+Twenty-nine initial/paired screenshots are recorded; seven repaired surface
+captures were inspected for layout, spacing and clipping. The Roster capture
+is the base roster, despite the helper's player-peek label; it does not prove
+an open peek. Phone Notifications captures add section-state evidence below.
+
+An overloaded overlapping typecheck/build/browser run was interrupted to
+reduce memory pressure. An early raw-click probe did not switch sections in that run and is excluded
+from acceptance. The final probe waits for a known hydrated section before
+measuring. A transient outgoing desktop node exists until its zero-duration
+exit is cleaned up; subsequent settled/rapid checks confirm only one section.
+
+## Post-repair browser matrix — 2026-10-06
+
+The complete CH_A11Y_PAGES inventory passes all 305 applicable state/opener
+cases again after the motion/scroll repairs at 1280/390px, with zero Axe
+violations, no horizontal document overflow and no gaps (exit 0). No known-rule
+exemptions were applied. This is fixture evidence, not physical-device proof.
+
+The generated World Model was stale in CI on the earlier audit commit.
+Regeneration includes the new appearance-store ownership and test surface;
+knowledge:world-model:check now passes against the current sources (exit 0).
+
+## Final build — 2026-10-06
+
+The production Next build passes (exit 0), including compilation, TypeScript
+and route generation. It ran in an isolated archived source snapshot with the
+current source repairs copied in, dummy local service settings and external
+credentials blanked. The preview server was stopped first to avoid competing
+for memory or sharing its build directory.
+
+The snapshot has no Git metadata: the postbuild tsconfig helper reports that
+it cannot inspect HEAD and leaves the snapshot file alone. It exits 0; the
+real worktree tsconfig is unchanged. Existing Sentry/Tailwind deprecation and
+class-ambiguity warnings remain outside this repair. Build success is not
+production navigation/frame profiling or physical-device certification.

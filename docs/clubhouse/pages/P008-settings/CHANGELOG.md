@@ -1,6 +1,16 @@
 # P008 — Settings: changelog
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Desktop and phone sections enter immediately without an outgoing wait,
+using one normal 260ms entrance. Reduced motion and Animations off use zero
+duration. Inline validation/save feedback follows the same preference.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## 2026-10-06 — Whole-app release audit
 
 Reconciled page purpose, design acceptance, contract status, wiring and

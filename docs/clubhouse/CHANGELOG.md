@@ -5,6 +5,31 @@ changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
 is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-06 — Motion and streaming repairs
+
+Settings replaces the sequential exit/entrance with immediate outgoing removal
+and one 260ms incoming transition. OS reduced motion and Animations off use
+zero-duration shared JavaScript transitions, including Home rounds, Roster
+peek, Stats/segmented indicators, menus, team switch, offline notices, toasts
+and Settings feedback. Approved normal-motion tokens and layouts are preserved.
+
+CoachHelm schedules streaming follow-scroll once per browser frame, cancels
+superseded work and respects the reader's position. It scrolls instantly while
+streaming and when motion is disabled; sending otherwise retains smooth scroll.
+
+Desktop WebKit fixture switches settled in 274–315ms normally (previously
+550–562ms) and 45–48ms with OS reduced motion (previously 497–531ms), three
+trials each. These include development overhead, not device FPS or production
+INP. Before/after captures are logged on the affected page VERIFY records.
+
+A paired Chromium 4x-CPU scroll probe covered Home, Stats, round Track, round
+Setup and onboarding Account: 20 trials, 60 frames each, with filters enabled
+and diagnostically disabled. Both had 16.7ms medians, 16.7–16.8ms p95 and zero
+frames over 33ms. A pure buildTurns benchmark (200 messages, 100 trials) had
+0.175ms median and 0.781ms p95. Neither supports a speculative glass removal
+or parser cache. Physical Safari/iPhone traces, VoiceOver, keyboard and durable
+writes remain release checks; the Mac is locked.
+
 ## 2026-10-06 — Smoothness source audit and stable appearance subscriptions
 
 The audit targets the current Clubhouse source on main, selected by the

@@ -1,6 +1,15 @@
 # P005 — Stats (player): page contract
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+StatsPlayer and the shared segmented indicator use zero-duration motion
+when disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current contract audit — 2026-10-06
 
 The manifest reports complete contract coverage and 6 mapped actions. Existing

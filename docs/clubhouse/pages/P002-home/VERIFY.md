@@ -1,6 +1,15 @@
 # P002 — Home: verification
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+LatestRound passes the reduced preference through chSwap, eliminating the
+retained fade when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current release evidence — 2026-10-06
 
 Coach/player Home, latest-round expansion, round sheet and partial-data cards.
@@ -193,6 +202,8 @@ before, after, baseline or evidence.
 | `P002__home__player__390x664__ready__before__cbc1c0d.png` | before | `cbc1c0d` | Before: tiny team wordmark and flat/darker surface treatment. |
 | `P002__home__player__390x664__ready__after__cbc1c0d.png` | after | `cbc1c0d` | After: compact brand medallion, lit cards and roomier timed wells. |
 | `P002__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P002__latest-round__player__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | latest-round (player), 1280x844px, reduced-motion |
+| `P002__latest-round__player__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | latest-round (player), 1280x844px, reduced-motion |
 
 ## Historical verification gaps
 
@@ -222,3 +233,10 @@ before, after, baseline or evidence.
   test changed on purpose).
 - `npm run knowledge:map` maps none of Home's files to a feature, so no feature
   doc names this page.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.

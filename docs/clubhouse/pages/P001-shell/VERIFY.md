@@ -1,6 +1,15 @@
 # P001 — Shell: verification
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Shared Menu, TeamSwitch, OfflineBanner and Toast now use zero-duration
+transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current release evidence — 2026-10-06
 
 Navigation crossfade, Back/Forward scroll restoration, Bell, More and team
@@ -153,6 +162,8 @@ before, after, baseline or evidence.
 | `P001__nested-details__coach__390__overlay-lifecycle__evidence__72fa726.png` | evidence | 72fa726 | nested-details (coach), 390px, overlay-lifecycle |
 | `P001__filter-sheet__coach__1440__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | filter-sheet (coach), 1440px, keyboard-viewport; /clubhouse-preview/stats |
 | `P001__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P001__more__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | more (coach), 390x844px, reduced-motion |
+| `P001__more__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | more (coach), 390x844px, reduced-motion |
 
 ## Historical verification gaps
 
@@ -249,3 +260,10 @@ before, after, baseline or evidence.
   resolved before final proof; development/HMR timings are not product timings.
   No production/customer writes or physical-iPhone keyboard, edge-gesture or
   frame-pacing claim. Root owns combined typecheck/build/release verification.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.

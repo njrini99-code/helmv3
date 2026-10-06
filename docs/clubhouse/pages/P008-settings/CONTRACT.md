@@ -1,12 +1,22 @@
 # P008 — Settings: page contract
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Desktop and phone sections enter immediately without an outgoing wait,
+using one normal 260ms entrance. Reduced motion and Animations off use zero
+duration. Inline validation/save feedback follows the same preference.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current contract audit — 2026-10-06
 
 The manifest reports complete contract coverage and 29 mapped actions.
 Existing Bridge IDs, catalog rows and generated contract tables remain
-authoritative. Check the 260ms exit plus 260ms entry sequence; audit
-reduced-motion duration, drag/scroll conflicts and pending saves.
+authoritative. Check the single 260ms entrance without exit wait; verify
+instant reduced motion, drag/scroll conflicts and pending saves.
 
 The [all-page audit](../../ALL_PAGE_AUDIT.md#p008-settings) distinguishes
 implemented/tested behavior from open runtime acceptance; this pass does not

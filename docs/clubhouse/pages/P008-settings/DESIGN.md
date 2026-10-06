@@ -1,9 +1,19 @@
 # P008 — Settings: design handoff
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Desktop and phone sections enter immediately without an outgoing wait,
+using one normal 260ms entrance. Reduced motion and Animations off use zero
+duration. Inline validation/save feedback follows the same preference.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current implementation audit — 2026-10-06
 
-Check the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+Check the single 260ms entrance without exit wait; verify instant reduced motion,
 drag/scroll conflicts and pending saves.
 
 The approved boards and phone specification remain the design authority.

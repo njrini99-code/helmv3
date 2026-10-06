@@ -1,6 +1,16 @@
 # P013 — CoachHelm: page contract
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Streaming follow-scroll is scheduled once per browser frame and canceled
+when superseded. It rechecks reader position and scrolls instantly. Sending
+uses instant scrolling with reduced motion and smooth scrolling otherwise.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current contract audit — 2026-10-06
 
 The manifest reports complete contract coverage and 4 mapped actions. Existing

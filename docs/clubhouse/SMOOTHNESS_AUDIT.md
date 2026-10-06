@@ -51,48 +51,53 @@ The server snapshot stays on defaults for hydration safety.
 Regression owner:
 `src/hooks/golf/__tests__/use-appearance-preferences.test.tsx`.
 
-## Remaining source findings and profiling targets
+## Findings and repair status
 
-### SM-02 — P1 / confirmed duration configuration
+### SM-02 — P1 / repaired sequential delay
 
 Owner: SettingsView.tsx, phone/SettingsPhone.tsx.
 
-Both section switches use AnimatePresence wait mode, with a 260 ms exit followed
+Before repair, both section switches used AnimatePresence wait mode, with a
+260 ms exit followed
 by a 260 ms entrance. The configured sequence is 520 ms. Fresh desktop WebKit
 fixture trials mount the new section at 281–290 ms and settle at 550–562 ms
 (three normal-motion trials). This is observable sequential delay, not a
 physical-device frame-rate measurement.
 
-### SM-03 — P1 / confirmed contract mismatch
+### SM-03 — P1 / repaired contract mismatch
 
 Owner: Settings section transitions; Home LatestRound; RosterPeek; Toast;
 OfflineBanner.
 
-Reduced motion removes translations in several components, but their Framer
+Before repair, reduced motion removed translations in several components,
+but their Framer
 Motion transition duration remains 260 ms. Settings feedback also retains its
 180 ms fade. CSS duration tokens do not control the JavaScript transition
 objects. Three fresh OS reduced-motion WebKit trials of the desktop Settings
 switch still mount at 277–308 ms and settle at 497–531 ms. This confirms the
-instant-transition contract is not met in that path. Settings Animations off
-and the other named paths still need their own runtime check before repair.
+instant-transition contract was not met in that path. Shared callers now pass
+the reduced preference to chTween/chSwap, making
+their duration zero. Settings has no outgoing wait; current evidence is below.
 
-### SM-04 — P1 / profiling target
+### SM-04 — streaming scroll repaired; parser bottleneck not reproduced
 
 Owner: coachhelm/chat/Thread.tsx and model.ts.
 
-Each streamed messages update rebuilds the turn model and renders the thread,
-then may scroll the end into view. Smooth scrolling is explicitly requested when
-sending, not on every streaming update. Profile a long conversation during
-streaming before adding memoization, batching or virtualization.
+Streaming follow-scroll is now scheduled once per browser frame and canceled
+when superseded. It rechecks the reader position before scrolling instantly.
+Reduced-motion sends also scroll instantly; normal sends remain smooth.
+Regression tests reproduce the former synchronous calls and verify explicit
+instant scrolling for reduced-motion sends. The pure parser benchmark below does not justify a model cache.
 
-### SM-05 — P1 / profiling target
+### SM-05 — paint bottleneck not reproduced in emulation
 
 Owner: shell.css, rounds-track.css, rounds-setup.css, stats.css, onboard.css.
 
 Navigation and selected feature surfaces retain backdrop filters. Count visible
 filtered layers while scrolling and opening overlays in Safari Timelines/Layers;
-source declarations alone do not prove a paint bottleneck. Preserve approved
-materials unless the trace identifies them as the cause.
+source declarations alone do not prove a paint bottleneck. The paired probe
+below found no frame loss in those fixtures, so approved materials remain.
+A physical Safari trace is still needed for device-specific complaints.
 
 ### SM-06 — P1 / verification gap
 
@@ -106,7 +111,7 @@ frame pacing remain open; docs current does not mean release verified.
 
 Motion's [AnimatePresence documentation](https://motion.dev/docs/react-animate-presence)
 confirms that wait mode delays the entrance until exit completes. The 520 ms
-above is derived from current source configuration, not a measured response time.
+above is derived from the pre-repair source configuration, not a measured response time.
 
 SM-03 applies to opacity timing too. Suppressing positional movement does not
 make an animation instant, and an animation preference must not introduce
@@ -311,7 +316,7 @@ timings or development-server timings for authenticated release performance.
 
 The reproduced store defect is one concrete source of avoidable rendering.
 The user's overall choppiness still needs correlation with their exact screen,
-running build and device trace; SM-02 through SM-06 define the next checks.
+running build and device trace; The repaired findings and remaining device checks are recorded below.
 
 ## October 6 all-page follow-up
 
@@ -319,3 +324,78 @@ running build and device trace; SM-02 through SM-06 define the next checks.
 call sites, current package/style owners, fresh browser results and release
 gaps. All six page docs, catalogs, checklists and phone specs now link that
 evidence. Earlier measurements retain their original commit and scope.
+
+## 2026-10-06 — Motion and streaming repairs
+
+Settings replaces the sequential exit/entrance with immediate outgoing removal
+and one 260ms incoming transition. OS reduced motion and Animations off use
+zero-duration shared JavaScript transitions, including Home rounds, Roster
+peek, Stats/segmented indicators, menus, team switch, offline notices, toasts
+and Settings feedback. Approved normal-motion tokens and layouts are preserved.
+
+CoachHelm schedules streaming follow-scroll once per browser frame, cancels
+superseded work and respects the reader's position. It scrolls instantly while
+streaming and when motion is disabled; sending otherwise retains smooth scroll.
+
+Desktop WebKit fixture switches settled in 274–315ms normally (previously
+550–562ms) and 45–48ms with OS reduced motion (previously 497–531ms), three
+trials each. These include development overhead, not device FPS or production
+INP. Before/after captures are logged on the affected page VERIFY records.
+
+A paired Chromium 4x-CPU scroll probe covered Home, Stats, round Track, round
+Setup and onboarding Account: 20 trials, 60 frames each, with filters enabled
+and diagnostically disabled. Both had 16.7ms medians, 16.7–16.8ms p95 and zero
+frames over 33ms. A pure buildTurns benchmark (200 messages, 100 trials) had
+0.175ms median and 0.781ms p95. Neither supports a speculative glass removal
+or parser cache. Physical Safari/iPhone traces, VoiceOver, keyboard and durable
+writes remain release checks; the Mac is locked.
+
+## Repair acceptance — 2026-10-06
+
+All 3,100 tests in 118 Clubhouse/appearance files pass, along with 43 mapped
+travel-action tests and the full TypeScript check (exit 0). Focused ESLint,
+67 Clubhouse tooling tests and all 13 local Review Gate checks pass.
+
+WebKit Settings acceptance covers desktop 1280px and phone 390px in normal,
+OS reduced motion and stored Animations-off modes. After settling, exactly
+one section remains, with no horizontal overflow. Rapid desktop Account →
+Preferences selection leaves only Preferences. Phone pushes focus
+ch-setm-title; its normal/reduced/off settled times were 290/32/28ms.
+These are one trial per mode, with hydration warm-up; do not substitute them
+for the separate three-trial before/after desktop range.
+
+Twenty-nine initial/paired screenshots are recorded; seven repaired surface
+captures were inspected for layout, spacing and clipping. The Roster capture
+is the base roster, despite the helper's player-peek label; it does not prove
+an open peek. Phone Notifications captures add section-state evidence below.
+
+An overloaded overlapping typecheck/build/browser run was interrupted to
+reduce memory pressure. An early raw-click probe did not switch sections in that run and is excluded
+from acceptance. The final probe waits for a known hydrated section before
+measuring. A transient outgoing desktop node exists until its zero-duration
+exit is cleaned up; subsequent settled/rapid checks confirm only one section.
+
+## Post-repair browser matrix — 2026-10-06
+
+The complete CH_A11Y_PAGES inventory passes all 305 applicable state/opener
+cases again after the motion/scroll repairs at 1280/390px, with zero Axe
+violations, no horizontal document overflow and no gaps (exit 0). No known-rule
+exemptions were applied. This is fixture evidence, not physical-device proof.
+
+The generated World Model was stale in CI on the earlier audit commit.
+Regeneration includes the new appearance-store ownership and test surface;
+knowledge:world-model:check now passes against the current sources (exit 0).
+
+## Final build — 2026-10-06
+
+The production Next build passes (exit 0), including compilation, TypeScript
+and route generation. It ran in an isolated archived source snapshot with the
+current source repairs copied in, dummy local service settings and external
+credentials blanked. The preview server was stopped first to avoid competing
+for memory or sharing its build directory.
+
+The snapshot has no Git metadata: the postbuild tsconfig helper reports that
+it cannot inspect HEAD and leaves the snapshot file alone. It exits 0; the
+real worktree tsconfig is unchanged. Existing Sentry/Tailwind deprecation and
+class-ambiguity warnings remain outside this repair. Build success is not
+production navigation/frame profiling or physical-device certification.

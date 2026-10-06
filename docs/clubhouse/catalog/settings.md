@@ -4,7 +4,7 @@
 ## Catalog audit — 2026-10-06
 
 Desktop section swaps, phone pushes, settings sheets and reorder list. Check
-the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+the single 260ms entrance without exit wait; verify instant reduced motion,
 drag/scroll conflicts and pending saves.
 
 See [current all-page evidence](../ALL_PAGE_AUDIT.md#p008-settings). Existing

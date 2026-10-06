@@ -1,6 +1,14 @@
 # P003 — Roster: design handoff
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+RosterPeek uses zero-duration transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current implementation audit — 2026-10-06
 
 Check profile push/pop, note blur save, approve/decline feedback and roster

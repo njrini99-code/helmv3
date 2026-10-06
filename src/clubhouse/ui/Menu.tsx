@@ -7,7 +7,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import { haptic } from '../lib/haptics';
-import { CH_POP } from '../lib/motion';
+import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
 export type MenuItem =
@@ -122,7 +122,7 @@ export function Menu({
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}
-                transition={CH_POP.transition}
+                transition={chTween('quick', reduced)}
                 onKeyDown={onKey}
               >
                 {items.map((it, i) => {

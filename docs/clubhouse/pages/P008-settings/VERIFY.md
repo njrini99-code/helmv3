@@ -1,11 +1,21 @@
 # P008 — Settings: verification
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Desktop and phone sections enter immediately without an outgoing wait,
+using one normal 260ms entrance. Reduced motion and Animations off use zero
+duration. Inline validation/save feedback follows the same preference.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current release evidence — 2026-10-06
 
 Desktop section swaps, phone pushes, settings sheets and reorder list.
 
-Check the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+Check the single 260ms entrance without exit wait; verify instant reduced motion,
 drag/scroll conflicts and pending saves.
 
 Fresh WebKit 26.6: `/clubhouse-preview/settings` at
@@ -221,6 +231,13 @@ before, after, baseline or evidence.
 | `P008__profile-sheet__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 390px, keyboard-viewport; /clubhouse-preview/settings?section=account |
 | `P008__profile-sheet__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 430px, keyboard-viewport; /clubhouse-preview/settings?section=account |
 | `P008__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P008__settings-desktop__coach__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | settings-desktop (coach), 1280x844px, reduced-motion |
+| `P008__settings-phone__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | settings-phone (coach), 390x844px, reduced-motion |
+| `P008__settings-desktop__coach__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | settings-desktop (coach), 1280x844px, reduced-motion |
+| `P008__settings-phone__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | settings-phone (coach), 390x844px, reduced-motion |
+| `P008__settings-notifications-normal__coach__390x844__normal__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-normal (coach), 390x844px, normal |
+| `P008__settings-notifications-off__coach__390x844__off__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-off (coach), 390x844px, off |
+| `P008__settings-notifications-os-reduce__coach__390x844__os-reduce__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-os-reduce (coach), 390x844px, os-reduce |
 
 ## Historical verification gaps
 
@@ -320,3 +337,10 @@ before, after, baseline or evidence.
   resolved before final proof; development/HMR timings are not product timings.
   No production/customer writes or physical-iPhone keyboard, edge-gesture or
   frame-pacing claim. Root owns combined typecheck/build/release verification.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.

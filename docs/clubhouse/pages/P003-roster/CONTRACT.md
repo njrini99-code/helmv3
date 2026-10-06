@@ -1,6 +1,14 @@
 # P003 — Roster: page contract
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+RosterPeek uses zero-duration transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current contract audit — 2026-10-06
 
 The manifest reports complete contract coverage and 14 mapped actions.

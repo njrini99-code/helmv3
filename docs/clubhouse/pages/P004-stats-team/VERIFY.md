@@ -1,6 +1,14 @@
 # P004 — Stats (team): verification
 
 <!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+The shared segmented indicator uses zero-duration motion when disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
 ## Current release evidence — 2026-10-06
 
 Team Stats periods, comparisons, filters and focus-area sheets.
@@ -327,3 +335,10 @@ before, after, baseline or evidence.
   P004/P005 page manifests govern it. No behavior or data contract changed.
 - Local fixture WebKit only; physical Safari chrome and native date picker were
   not exercised. No production writes.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.
