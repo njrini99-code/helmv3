@@ -154,12 +154,12 @@ export class ShipCommandHub extends EventEmitter {
   }
 
   startFileWatcher() {
-    const watchPaths = [
-      path.join(this.appDir, '**/*.{tsx,jsx,ts,js}'),
-    ];
-    
-    this.watcher = chokidar.watch(watchPaths, {
-      ignored: /(node_modules|\.next)/,
+    // Chokidar 4+ dropped glob support: a glob path silently watches nothing.
+    // Watch the directory and filter by extension in `ignored` instead.
+    this.watcher = chokidar.watch(this.appDir, {
+      ignored: (filePath, stats) =>
+        /(node_modules|\.next)/.test(filePath) ||
+        (stats?.isFile() === true && !/\.(tsx|jsx|ts|js)$/.test(filePath)),
       persistent: true,
       ignoreInitial: true,
     });

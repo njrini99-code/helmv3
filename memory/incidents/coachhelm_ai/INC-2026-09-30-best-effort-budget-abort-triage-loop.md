@@ -2,7 +2,7 @@
 
 - Feature: `coachhelm_ai`
 - Surface: `/admin/errors/8ff00f0e`, `/admin/errors/20ed2ddd` (Bridge triage queue)
-- Status: FIXED on branch agent/health-20260930-1547 in 0e1abb150 (PR pending merge), awaiting deploy
+- Status: FIXED in c706fc80e (#2106; branch commit 0e1abb150 before squash); live in production since ef6e017a2. Verified 2026-10-03: 8ff00f0e and 20ed2ddd have no rows in 24h, and the abort now logs at info (888744a0)
 - Risk: R1. Logging tier only. No schema, RLS, grant or data change.
 - Signal: `admin_events` warning rows `fetchShotDriversByCategory failed (continuing without shot drivers): AbortError: This operation was aborted` (8ff00f0e, 21 total, 7 in the 24h to 2026-09-30 15:47Z, reopened 3x) and `getTopInsightForPlayer.urgent failed (continuing without urgent pass): TimeoutError: The operation was aborted due to timeout` (20ed2ddd, 5 total, reopened 4x).
 

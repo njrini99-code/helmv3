@@ -1,0 +1,200 @@
+# Ubuntu 26.04 canary. Run it by hand (Actions > "Ubuntu 26.04 canary" > Run
+# workflow) before `ubuntu-latest` moves.
+#
+# WHY THIS EXISTS. GitHub moves `ubuntu-latest` to Ubuntu 26.04 between
+# 2026-10-19 and 2026-11-19
+# (https://github.blog/changelog/2026-09-17-ubuntu-26-generally-available-and-latest-migration/).
+# Every job here that says `runs-on: ubuntu-latest` changes OS on that date with
+# no diff in this repo. The OS change also brings a different distro ShellCheck,
+# a different apt package set for Playwright's --with-deps, a different Docker,
+# and possibly no setup-python build for a given Python yet.
+#
+# This workflow runs the setup steps the real jobs depend on, on
+# `runs-on: ubuntu-26.04`, without touching the existing jobs' `runs-on`. If it
+# goes red, pin the affected jobs to `ubuntu-24.04` until the cause is fixed.
+# When `ubuntu-latest` is 26.04 everywhere, this workflow has done its job and
+# can be deleted (along with .github/actionlint.yaml's ubuntu-26.04 label entry
+# once actionlint knows the label).
+#
+# Each job copies its steps from the job named in its comment. Keep them in
+# step; this file is a canary, not a second source of truth.
+
+name: Ubuntu 26.04 canary
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ubuntu-26-canary-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review-gate-tools:
+    # Mirrors review-gate.yml > checks > "Install linters". Runs both the
+    # Python main uses today (3.12) and the one PR #2130 moves to (3.14).
+    name: "Ubuntu 26.04 canary: Review Gate tools (py${{ matrix.python }})"
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Runner image
+        run: |
+          cat /etc/os-release
+          echo "ImageOS=${ImageOS:-unknown} ImageVersion=${ImageVersion:-unknown}"
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+
+      - name: Install linters
+        run: |
+          set -euo pipefail
+          tools="$(mktemp -d)"
+          cd "$tools"
+
+          curl -fsSL https://github.com/ast-grep/ast-grep/releases/download/0.44.0/app-x86_64-unknown-linux-gnu.zip -o ast-grep.zip
+          unzip -q ast-grep.zip
+          sudo mv ast-grep /usr/local/bin/sg
+          sg --version
+
+          actionlint_version=1.7.12
+          actionlint_sha256=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          actionlint_base="https://github.com/rhysd/actionlint/releases/download/v${actionlint_version}"
+          actionlint_tgz="actionlint_${actionlint_version}_linux_amd64.tar.gz"
+          curl -fsSLO "${actionlint_base}/${actionlint_tgz}"
+          curl -fsSLO "${actionlint_base}/actionlint_${actionlint_version}_checksums.txt"
+          grep -qx "${actionlint_sha256}  ${actionlint_tgz}" "actionlint_${actionlint_version}_checksums.txt"
+          echo "${actionlint_sha256}  ${actionlint_tgz}" | sha256sum -c -
+          tar -xzf "$actionlint_tgz" actionlint
+          sudo mv ./actionlint /usr/local/bin/actionlint
+          actionlint_reported="$(actionlint -version | sed -n 1p)"
+          if [ "$actionlint_reported" != "$actionlint_version" ]; then
+            echo "::error::actionlint reports '$actionlint_reported', expected '$actionlint_version'"
+            exit 1
+          fi
+          echo "actionlint $actionlint_reported"
+
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          # The distro ShellCheck changes with the OS. Print it so a new
+          # warning on 26.04 can be traced to a version, not guessed at.
+          shellcheck --version
+
+          python -m pip install --require-hashes -r "$GITHUB_WORKSPACE/.github/requirements-lint.txt"
+          python --version
+          yamllint --version
+          ruff --version
+          pylint --version
+          sqlfluff --version
+
+          curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64 -o hadolint
+          chmod +x hadolint
+          ./hadolint --version
+
+          npm install -g markdownlint-cli2@0.23.2
+          markdownlint-cli2 --help | sed -n 1p
+
+      - name: Exercise the tools on this repo
+        run: |
+          set -euo pipefail
+          actionlint -color
+          shellcheck --severity=warning --exclude=SC2088 .claude/hooks/*.sh
+          node scripts/sql-lint-ratchet.mjs
+
+  node-and-playwright:
+    # Mirrors ci.yml > pr-smoke-a11y's install steps (npm ci, Playwright
+    # chromium with its apt dependencies).
+    name: "Ubuntu 26.04 canary: npm ci + Playwright"
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Launch chromium headless
+        run: |
+          node -e "
+            const { chromium } = require('@playwright/test');
+            (async () => {
+              const browser = await chromium.launch();
+              const page = await browser.newPage();
+              await page.setContent('<p id=ok>ok</p>');
+              const text = await page.textContent('#ok');
+              await browser.close();
+              if (text !== 'ok') throw new Error('unexpected page content: ' + text);
+              console.log('chromium', browser.version(), 'launched and rendered');
+            })().catch((err) => { console.error(err); process.exit(1); });
+          "
+
+  supabase-stack:
+    # Starts the stack through the same composite action the nightly smoke
+    # uses, then runs the pgTAP RLS suites the way ci.yml > supabase does.
+    name: "Ubuntu 26.04 canary: local Supabase stack"
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Docker
+        run: docker version
+
+      - name: Start local Supabase stack
+        uses: ./.github/actions/local-supabase-stack
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint migrations
+        run: supabase db lint --schema public
+
+      - name: Run pgTAP RLS suites
+        run: |
+          set -euo pipefail
+          bash scripts/db/pull-supabase-image.sh ghcr.io/supabase/pg_prove:3.36 || true
+          tmp_dir="$(mktemp -d)"
+          count=0
+          for f in supabase/tests/rls/*.sql; do
+            case "$f" in
+              */_helpers.sql) continue ;;
+            esac
+            {
+              cat supabase/tests/rls/_helpers.sql
+              grep -Ev '^\\i(r)? .*_helpers\.sql$' "$f"
+            } > "$tmp_dir/$(basename "$f")"
+            count=$((count + 1))
+          done
+          echo "Running $count pgTAP suite(s) in one pg_prove invocation."
+          supabase test db "$tmp_dir"
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop || true

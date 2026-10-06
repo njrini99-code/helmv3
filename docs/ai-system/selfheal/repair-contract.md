@@ -104,14 +104,16 @@ checkout to prove ancestry), which is why this runner owns it.
 select job_type, status, started_at, metadata
 from public.background_job_logs
 where job_type = 'selfheal-triage'
-  and coalesce(metadata->>'method', '') <> 'claude-code-cloud-session'
-  and coalesce(metadata->>'runner', '') <> 'claude-code-cloud-session'
+  and coalesce(metadata->>'method', '') not like 'claude-code-%'
+  and coalesce(metadata->>'runner', '') not like 'claude-code-%'
 order by started_at desc
 limit 1;
 ```
 
-The retired task has tagged itself under `method` (through 2026-09-29) and
-under `runner` (2026-09-30, no `method` key), so the filter checks both.
+The retired task has tagged itself under `method` (through 2026-09-29),
+under `runner` (2026-09-30, no `method` key) and as
+`method = 'claude-code-scheduled-session'` (2026-10-01), so the filter checks
+both keys and matches the `claude-code-` family, not one spelling.
 The filter mirrors `SELFHEAL_STAGES.triage.retiredMethods` in
 `src/lib/admin/selfheal-registry.ts`: the retired Anthropic-hosted cloud task
 still fires daily (~09:05–09:20 UTC, observed 2026-09-25..27) and writes a

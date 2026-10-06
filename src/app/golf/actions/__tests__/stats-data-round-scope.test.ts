@@ -225,15 +225,24 @@ describe('getWorstHoleAnalysis — test rounds', () => {
     roundRows = [];
   });
 
-  it('filters the joined golf_rounds to is_test = false', async () => {
+  it('reads only the player\'s completed, non-test rounds, then their holes by round id', async () => {
+    roundRows = [countable('r1', '2026-09-01')];
+
     await getWorstHoleAnalysis('player-1');
+
+    // The test-round exclusion lives on the golf_rounds read now; golf_holes
+    // is read through those round ids (no embedded join — Bridge b99a5da6).
+    const roundChains = fromCalls.filter((c) => c.table === 'golf_rounds');
+    const roundEq = roundChains.flatMap((c) => c.chain.eq!.mock.calls);
+    expect(roundEq).toContainEqual(['player_id', 'player-1']);
+    expect(roundEq).toContainEqual(['is_test', false]);
+    expect(roundEq).toContainEqual(['status', 'completed']);
 
     const holeChains = fromCalls.filter((c) => c.table === 'golf_holes');
     expect(holeChains.length).toBeGreaterThan(0);
-    const eqCalls = holeChains.flatMap((c) => c.chain.eq!.mock.calls);
-    expect(eqCalls).toContainEqual(['golf_rounds.is_test', false]);
-    expect(eqCalls).toContainEqual(['golf_rounds.status', 'completed']);
+    const holeIn = holeChains.flatMap((c) => c.chain.in!.mock.calls);
+    expect(holeIn).toContainEqual(['round_id', ['r1']]);
     const selects = holeChains.flatMap((c) => c.chain.select!.mock.calls.map((a) => String(a[0])));
-    expect(selects.some((s) => s.includes('is_test'))).toBe(true);
+    expect(selects.some((s) => s.includes('golf_rounds'))).toBe(false);
   });
 });

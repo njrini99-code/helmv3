@@ -20,8 +20,9 @@
 --
 -- ROLLBACK: ALTER TABLE public.golf_insight_exposure DROP COLUMN rank_factors;
 -- VERIFY: select 1 from information_schema.columns
---   where table_schema = 'public' and table_name = 'golf_insight_exposure'
---     and column_name = 'rank_factors' and data_type = 'jsonb';
+-- VERIFY:   where table_schema = 'public' and table_name =
+-- VERIFY:     'golf_insight_exposure'
+-- VERIFY:   and column_name = 'rank_factors' and data_type = 'jsonb';
 
 ALTER TABLE public.golf_insight_exposure
 ADD COLUMN IF NOT EXISTS rank_factors jsonb;

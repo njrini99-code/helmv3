@@ -176,6 +176,11 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       return true;
     } catch (cause) {
       if (scope.current === conversationId) setError('Reaction was not saved. Try again.');
+      // Same rule as the load path: the browser client's own request deadline
+      // (`AbortError: Fetch is aborted`) is the connection, not the reactions
+      // table. The retry copy stays on screen; nothing is reported (Bridge
+      // 9b8ad988 reopened on a `save` abort 2026-10-04 after the load fix).
+      if (isClientDeadlineAbort(cause)) return false;
       logError(cause instanceof Error ? cause : new Error(describeError(cause)), { component: 'MessageReactions', action: 'save', sport: 'golf', conversationId, messageId });
       return false;
     } finally {

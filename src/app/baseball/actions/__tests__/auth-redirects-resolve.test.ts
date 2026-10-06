@@ -117,8 +117,11 @@ describe('auth.ts post-auth redirects resolve to real routes', () => {
   it('extracts the known redirect literals', () => {
     // sanity: we actually found the landing paths (guards against a regex that
     // silently matches nothing and lets dead routes slip through).
+    // The anchor is the coach landing path. It was '/baseball/dashboard', which
+    // only appeared as loginActionImpl's dead `let redirectTo` initializer
+    // (every path reassigns or returns first; ESLint 10 no-useless-assignment).
     expect(literals.length).toBeGreaterThanOrEqual(4);
-    expect(literals).toContain('/baseball/dashboard');
+    expect(literals).toContain('/baseball/dashboard/command-center');
   });
 
   it('the App Router app dir exists at the resolved path', () => {

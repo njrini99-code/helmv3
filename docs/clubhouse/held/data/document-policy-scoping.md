@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-document-policy-scoping
-Status: HELD
+Status: RELEASED
 Pages: Team hub (P010): documents and an announcement's attached files
 Feature: team_communications (memory/registry.yml)
 Migration: supabase/migrations/20260930160000_golf_document_policy_scoping.sql
@@ -91,3 +91,9 @@ Row `20260930160000_golf_document_policy_scoping.sql`, **HOLD**.
 - [ ] pgTAP: a coach on another team cannot link or unlink; a player cannot read a coach-only document's versions.
 - [ ] Apply through `npm run db:apply` (owner).
 - [ ] Re-read `pg_policies` for both tables.
+
+## Released
+
+Applied to production: `supabase_migrations.schema_migrations` holds
+version `20260930160000` (checked read-only 2026-10-06). The status above moved
+from HELD to RELEASED to match.

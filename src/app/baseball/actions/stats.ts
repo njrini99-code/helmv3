@@ -279,7 +279,7 @@ const uploadStatsCSVAction = withBaseballAction(
     if (!csvName) continue;
 
     const coachMatch = coachMatchesByName?.get(csvName);
-    let resolvedPlayerId: string | null = null;
+    let resolvedPlayerId: string | null;
 
     if (coachMatch) {
       if (coachMatch.playerId && (coachMatch.confidence >= 0.7 || coachMatch.isManualMatch)) {

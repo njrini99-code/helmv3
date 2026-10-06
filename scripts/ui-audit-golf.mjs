@@ -395,7 +395,7 @@ async function auditRoute(page, route, vp, findings, persona) {
       net.push(`${r.status()} ${r.url().replace(BASE, '').slice(0, 80)}`);
   };
   page.on('pageerror', onErr); page.on('console', onCon); page.on('response', onRes);
-  let status = 0;
+  let status;
   try {
     const resp = await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 60000 });
     status = resp ? resp.status() : 0;

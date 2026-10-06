@@ -50,7 +50,8 @@ export class AutoScreenshotService {
     try {
       console.log(`📷 Capturing: ${routePath}`);
       await this.page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-      await this.page.waitForTimeout(options.waitFor || 1500);
+      // page.waitForTimeout() was removed in Puppeteer 22.
+      await new Promise((resolve) => setTimeout(resolve, options.waitFor || 1500));
       
       const screenshotPath = path.join(this.outputDir, `${safeName}.png`);
       await this.page.screenshot({ path: screenshotPath, fullPage: false });

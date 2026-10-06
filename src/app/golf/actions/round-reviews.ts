@@ -192,7 +192,7 @@ async function generateAIReviewContent(round: RoundDataForReview, keyStats: Revi
 
   // Generate summary
   const totalScore = round.total_score ?? 0;
-  let summary = '';
+  let summary: string;
   if (score_vs_par <= -2) {
     summary = `Exceptional round of ${totalScore} (${score_vs_par >= 0 ? '+' : ''}${score_vs_par}). `;
   } else if (score_vs_par <= 0) {

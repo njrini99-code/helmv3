@@ -206,7 +206,7 @@ jobs:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           # Full history: the feature-knowledge checks read git for file
           # provenance, and the old `Feature knowledge` job fetched it too.
@@ -214,9 +214,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       # supabase/functions/ is EXCLUDED from tsconfig.json, so `npm run typecheck`
@@ -227,7 +227,10 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed  # v2.0.5
         with:
-          deno-version: v2.x
+          # Exact version, not `v2.x`: a floating range let a new Deno minor
+          # change `deno check` results on these edge functions with no diff in
+          # this repo. Bump deliberately (and past the 7-day freshness window).
+          deno-version: 2.9.7
 
       - name: Install dependencies
         run: npm ci --prefer-offline --no-audit --no-fund
@@ -639,14 +642,14 @@ jobs:
       HELM_ESLINT_REPORT_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -760,7 +763,7 @@ jobs:
         shard: [1, 2, 3, 4, 5]
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
@@ -795,9 +798,9 @@ jobs:
 
       - name: Setup Node
         if: steps.gate.outputs.run == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -833,7 +836,7 @@ jobs:
       built: ${{ steps.gate.outputs.run }}
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
@@ -868,9 +871,9 @@ jobs:
 
       - name: Setup Node
         if: steps.gate.outputs.run == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -897,7 +900,7 @@ jobs:
       - name: Restore Next build cache
         if: steps.gate.outputs.run == 'true'
         id: nextcache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: .next/cache
           key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
@@ -911,7 +914,7 @@ jobs:
 
       - name: Save Next build cache (push to main, once a day per lockfile)
         if: steps.gate.outputs.run == 'true' && (github.event_name == 'push' && steps.nextcache.outputs.cache-hit != 'true')
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: .next/cache
           key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
@@ -931,7 +934,7 @@ jobs:
       # failed step instead of two mystery red checks a job away.
       - name: Upload Next build artifact
         if: steps.gate.outputs.run == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: next-build-${{ github.sha }}
           path: |
@@ -958,7 +961,7 @@ jobs:
       SUPABASE_PROJECT_ID: helmv3
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           # D2 declarative-schema and squawk gates below diff this PR's
@@ -997,9 +1000,9 @@ jobs:
 
       - name: Setup Node
         if: steps.gate.outputs.run == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -1008,9 +1011,9 @@ jobs:
 
       - name: Setup Supabase CLI
         if: steps.gate.outputs.run == 'true'
-        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359  # v3.0.1
         with:
-          version: 2.114.0
+          version: 2.119.0
 
       # Squawk lints only the migration files this PR adds — pinned version,
       # scoped to the PR diff (see docs/CI_RUNBOOK.md / .circleci/README.md:
@@ -1051,7 +1054,10 @@ jobs:
       # `toomanyrequests` when several PRs start the stack at once.
       - name: Log in to ghcr.io (Supabase images)
         if: steps.gate.outputs.run == 'true'
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
       # ONLY WHAT THIS JOB USES (2026-09-23). 19 of 26 failures of this job
       # were ghcr.io `toomanyrequests` while `supabase start` pulled ~12
@@ -1185,14 +1191,14 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -1205,7 +1211,7 @@ jobs:
           path: .next
 
       - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -1262,7 +1268,7 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: pr-smoke-playwright-report
           path: playwright-report/
@@ -1298,7 +1304,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -1323,9 +1329,9 @@ jobs:
 
       - name: Setup Node
         if: steps.token.outputs.enabled == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -1341,7 +1347,7 @@ jobs:
 
       - name: Cache Playwright browsers
         if: steps.token.outputs.enabled == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -1401,7 +1407,7 @@ jobs:
 
       - name: Upload Playwright report (debugging)
         if: always() && steps.token.outputs.enabled == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: sentry-snapshots-playwright-report-${{ github.run_number }}
           path: |

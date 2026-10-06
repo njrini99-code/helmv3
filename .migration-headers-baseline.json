@@ -260,5 +260,13 @@
     "20260904120000_golf_messages_reply_to.sql",
     "20260904160000_golf_messaging_structured.sql",
     "20260905091000_baseball_timeline_event_acks_user_id_columns.sql"
+  ],
+  "verifyGrandfathered": [
+    "20260906120200_helm_debug_observability_retention_v3.sql",
+    "20260908160000_golf_message_reactions_access.sql",
+    "20260909230000_helm_debug_analysis_drop_index_advisor.sql",
+    "20260928160000_golf_sg_shot_end_is_next_shot_start.sql",
+    "20260930160000_golf_document_policy_scoping.sql",
+    "20261001130000_golf_attachments_revoke_anon_hide_deleted.sql"
   ]
 }

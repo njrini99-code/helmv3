@@ -179,8 +179,9 @@ owner's machine, for anyone who needs to see exactly what ran before.
   `autonomous` with a null basis and renders NO chip: the classifier detects a
   run that ANNOUNCED human involvement and cannot detect one that stayed quiet.
 - **A retired runner cannot speak for a stage.** `SelfHealStage.retiredMethods`
-  lists the `metadata.method` values of runners a stage has retired (Diagnose:
-  `claude-code-cloud-session`), and `selectStageHeartbeat` picks the newest row
+  lists the `metadata.method`/`metadata.runner` values of runners a stage has
+  retired (Diagnose: `claude-code-*`, a prefix entry, since the retired task
+  renamed itself three times 2026-09-25..10-01), and `selectStageHeartbeat` picks the newest row
   NOT written by one of them to classify the stage. The retired rows stay in
   the run history. Operator rows (`manual-…`) still count, and when every row
   in view is retired the newest is used, never `never-ran`. Measured

@@ -53,6 +53,12 @@ memory; the underlying implementations change and this skill can drift.
   trace id. State explicitly which of the three you used when reporting a
   join — the wrong one silently returns zero or the wrong rows rather than
   erroring.
+- For the Supabase side of the same window, prefer the `supabase-readonly`
+  MCP server: `query_logs` with explicit `iso_timestamp_start`/`_end` around
+  the Sentry event (sources `postgres_logs`, `postgrest_logs`, `auth_logs`,
+  `edge_logs`), and for timeouts or lock waits
+  `supabase inspect db blocking|locks|long-running-queries --linked`. All
+  read-only; details in the `helm-supabase` skill.
 
 ## 5. Grouping: know what a "count" actually means
 

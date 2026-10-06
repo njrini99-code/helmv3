@@ -26,8 +26,8 @@
 -- ROLLBACK: apply the inverse anchored replacement (remove the
 --   "Optimistic lock (swap audit C-6)" block); the key is then ignored again.
 --
--- VERIFY: select position('expected_updated_at' in prosrc) > 0 from pg_proc
---   where proname = 'submit_round_atomic';  -- true
+-- VERIFY: select 1 from pg_proc where proname = 'submit_round_atomic'
+-- VERIFY:   and position('expected_updated_at' in prosrc) > 0;
 --
 -- App follow-up once applied (src/app/golf/actions/golf.ts submit path, both
 -- engines): send `expected_updated_at` from lastServerUpdatedAtRef in

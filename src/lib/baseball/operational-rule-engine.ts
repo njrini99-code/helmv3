@@ -1103,7 +1103,7 @@ export function runOperationalRuleEngine(
       continue;
     }
 
-    let emitted: RuleSignal[] = [];
+    let emitted: RuleSignal[];
     try {
       emitted = rule.evaluate(facts, cfg);
     } catch {

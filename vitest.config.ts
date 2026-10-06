@@ -24,6 +24,12 @@ import path from 'path';
 const sharedTestConfig = {
   environment: 'jsdom' as const,
   globals: true,
+  // Vitest 5 flipped this default to `true` (vi.clearAllMocks() before every
+  // test). Pinned to the Vitest 4 behaviour so the upgrade does not change
+  // what any existing test observes: suites that record mock calls in
+  // beforeAll/module scope, or count calls across tests, keep that history.
+  // Turning it on is a separate, deliberate change, not a dependency bump.
+  clearMocks: false,
   setupFiles: ['./src/test/setup.tsx'],
   coverage: {
     provider: 'v8' as const,
@@ -335,6 +341,8 @@ export default defineConfig({
             // D4 (db-tooling-drift): pure tally/regression helpers behind
             // the weekly Supabase advisor ratchet.
             'scripts/__tests__/advisor-ratchet.test.mjs',
+            'scripts/__tests__/local-db-checks.test.mjs',
+            'scripts/__tests__/config-drift.test.mjs',
             // Migration filename version prefixes are unique and
             // well-formed (the #220 duplicate-version hazard class).
             'scripts/__tests__/check-migration-versions.test.mjs',
@@ -374,6 +382,10 @@ export default defineConfig({
             // names, process.env in edge functions, service-role leaks)
             // against real src/ plus the synthetic positive fixture.
             'scripts/__tests__/review-gate-rules.test.mjs',
+            // `npm run gates:review` (scripts/review-gate-local.mjs) exits 2
+            // INCOMPLETE, not "green", when a scanner was skipped for a
+            // missing tool, unless --allow-missing.
+            'scripts/__tests__/review-gate-local.test.mjs',
             // Wave W2E header consolidation: canonical PageHeader still
             // ships its four variants, and the six sibling header modules
             // stay deleted or thinned to shims.

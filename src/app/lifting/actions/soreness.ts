@@ -397,7 +397,7 @@ export const materializeSorenessCheckRequests = withLiftingAction(
     }
 
     // 3. Resolve target athlete IDs based on assignment_type.
-    let athleteIds: string[] = [];
+    let athleteIds: string[];
 
     if (schedule.assignment_type === 'athlete' && schedule.athlete_id) {
       athleteIds = [schedule.athlete_id];

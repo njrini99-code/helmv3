@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
+import { imageRemotePatterns } from './src/lib/security/image-remote-patterns.mjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
 import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
 
@@ -11,8 +12,8 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // `--localstorage-file` is a Node 22+ flag (experimental webstorage).
 // Node 20 exits with "is not allowed in NODE_OPTIONS" the moment Next
-// spawns a worker that inherits this env. Every CI job pins Node 22 now
-// (ci.yml `node-version: 22`; CircleCI `cimg/node:22.13`) — this comment
+// spawns a worker that inherits this env. Every CI job pins Node 24 now
+// (ci.yml `node-version: 24`; CircleCI `cimg/node:24.21`) — this comment
 // said the GitHub Actions build job "currently uses" Node 20 long after it
 // stopped — but a contributor's machine or a future runner may not, so the
 // guard stays: skip the setup on older Node and let the build go through.
@@ -81,27 +82,12 @@ const nextConfig = {
     NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease || '',
   },
 
-  // Allow images from Supabase storage
+  // Allow images from this project's Supabase public storage only (plus a
+  // loopback stack, only when NEXT_PUBLIC_SUPABASE_URL is loopback). No
+  // `**.supabase.co` wildcard: see src/lib/security/image-remote-patterns.mjs
+  // (GHSA-cjq9-62q9-8jv4, image-optimizer SSRF).
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '54321',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '54321',
-        pathname: '/storage/v1/object/public/**',
-      },
-    ],
+    remotePatterns: imageRemotePatterns(),
     formats: ['image/avif', 'image/webp'], // Enable modern image formats
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // Responsive image sizes
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // Smaller image sizes
@@ -497,13 +483,13 @@ const nextConfig = {
           //     surveys bundles (entrypoints/external-scripts-loader.js), then
           //     falls back to a plain GET of /array/<token>/config from the
           //     same host when the script yields no config (remote-config.js).
-          //   browser-intake-datadoghq.com (connect) — @datadog/browser-core
-          //     buildEndpointHost() for the default site datadoghq.com; RUM,
-          //     Logs and Session Replay all post to this one bare host. NO
-          //     wildcard: the SDK reaches a SUBDOMAIN of it only under
-          //     usePciIntake, internalAnalyticsSubdomain or
-          //     remoteConfigurationId, none of which src/lib/datadog/index.ts
-          //     sets. Set one and add its host by name.
+          //   browser-intake-datadoghq.com (connect) — @datadog/js-core
+          //     buildEndpointUrl() (SDK v7) for the default site datadoghq.com;
+          //     RUM, Logs and Session Replay all post to this one bare host. NO
+          //     wildcard: the SDK reaches a SUBDOMAIN of it only for
+          //     remoteConfigurationId or profiling (profilingSampleRate > 0),
+          //     neither of which src/lib/datadog/index.ts sets. Set one and
+          //     add its host by name.
           //
           // A non-default NEXT_PUBLIC_POSTHOG_HOST or NEXT_PUBLIC_DD_SITE needs
           // its host added here too, or it is blocked the same way.

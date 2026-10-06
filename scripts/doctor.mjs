@@ -61,7 +61,7 @@ try {
 } catch {
   bad(
     "daemon not running — 'supabase start/status/test db --local' will all fail with a docker.sock error that reads like a CLI problem but is not",
-    'open -a Docker   then wait ~30s until `docker info` succeeds',
+    'open -a OrbStack   (or Docker Desktop) then wait until `docker info` succeeds',
   );
 }
 
@@ -76,6 +76,29 @@ if (!dockerUp) {
   } catch {
     bad('stack not running', 'npx supabase start   (applies supabase/migrations + seed; ~1-2 min)');
   }
+}
+
+// 5. Command-line tools from the Brewfile, plus the uv-pinned Python linters.
+// A missing one is a warning, not a failure: hooks skip absent tools and CI's
+// Review Gate still runs them.
+console.log('Command-line tools (Brewfile)');
+const binFor = { ripgrep: 'rg', libpq: 'psql', 'stripe/stripe-cli/stripe': 'stripe', uv: 'uv' };
+const brewfile = readFileSync(join(repo, 'Brewfile'), 'utf8');
+const formulas = [...brewfile.matchAll(/^brew "([^"]+)"/gm)].map((m) => m[1]);
+const tools = [...formulas.map((f) => binFor[f] ?? f), 'pylint', 'sqlfluff', 'yamllint'];
+const missing = tools.filter((bin) => {
+  try {
+    run(`command -v ${bin}`);
+    return false;
+  } catch {
+    return true;
+  }
+});
+if (missing.length === 0) {
+  ok(`all ${tools.length} present`);
+} else {
+  console.log(`  ! missing: ${missing.join(', ')}`);
+  console.log('    fix: brew bundle   (Python linters: see the uv line at the bottom of Brewfile)');
 }
 
 console.log(failures === 0 ? '\nAll clear.' : `\n${failures} issue(s) — fixes above are copy-pasteable.`);

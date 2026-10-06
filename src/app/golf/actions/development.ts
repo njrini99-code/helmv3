@@ -1640,7 +1640,7 @@ async function createFocusAreaFromInsightV2Impl(
   // CH13-24: a coach's prescription tells the player, as createFocusArea does.
   if (isCoachPromoting) {
     // The coach's name only signs the notice; a failed read sends it as "Your Coach".
-    let coachName: string | null = null;
+    let coachName: string | null;
     try {
       const { data: actingCoach, error: actingCoachError } = await supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle();
       if (actingCoachError) {

@@ -551,7 +551,12 @@ async function logWakeReadFailure(read: string, message: string, extra: Record<s
 }
 
 /** Does the player have an active roster membership right now? */
-async function hasActiveMembership(supabase: SupabaseClient, playerId: string): Promise<boolean> {
+async function hasActiveMembership(
+  supabase: SupabaseClient,
+  playerId: string,
+  prefetched: WakePrefetch,
+): Promise<boolean> {
+  if (prefetched.teamByPlayer.has(playerId)) return prefetched.teamByPlayer.get(playerId) != null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_team_members')
@@ -643,21 +648,30 @@ async function analysisEnabledFor(supabase: SupabaseClient, teamId: string | nul
  * disagreed, a woken run would park again and be re-woken every tick. An
  * unknown count or a failed read keeps the round parked.
  */
-async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Promise<boolean> {
+async function meetsRoundFloor(
+  supabase: SupabaseClient,
+  playerId: string,
+  prefetched: WakePrefetch,
+): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const client = supabase as any;
-  const { data: membership, error: membershipError } = await client
-    .from('golf_team_members')
-    .select('team_id')
-    .eq('player_id', playerId)
-    .eq('status', 'active')
-    .limit(1)
-    .maybeSingle();
-  if (membershipError) {
-    await logWakeReadFailure('golf_team_members', membershipError.message, { playerId });
-    return false;
+  let teamId: string | undefined;
+  if (prefetched.teamByPlayer.has(playerId)) {
+    teamId = prefetched.teamByPlayer.get(playerId) ?? undefined;
+  } else {
+    const { data: membership, error: membershipError } = await client
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+    if (membershipError) {
+      await logWakeReadFailure('golf_team_members', membershipError.message, { playerId });
+      return false;
+    }
+    teamId = membership?.team_id as string | undefined;
   }
-  const teamId = membership?.team_id as string | undefined;
   if (!teamId) return false;
   const coachId = await resolveEngineCoachId(supabase, teamId);
   if (!coachId) return false;
@@ -672,6 +686,8 @@ async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Prom
   }
   const floor =
     (philosophy?.min_rounds_for_signal as number | null | undefined) ?? PHILOSOPHY_DEFAULTS.minRoundsForSignal;
+  const prefetchedCount = prefetched.completedByPlayer.get(playerId);
+  if (prefetchedCount !== undefined) return prefetchedCount >= floor;
   const { count, error: countError } = await client
     .from('golf_rounds')
     .select('id', { count: 'exact', head: true })
@@ -685,6 +701,78 @@ async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Prom
 }
 
 const COVERAGE_PREFETCH_LIMIT = 1000;
+
+/**
+ * Wake-decision answers read once per tick instead of once per parked player
+ * (Sentry N+1 JAVASCRIPT-NEXTJS-15E on golf_team_members and the floor count
+ * behind JAVASCRIPT-NEXTJS-107 on golf_rounds, still firing on ef6e017a2).
+ * Same rule as `prefetchNewestAnalyzed`: a map holds only answers the read
+ * can vouch for. A player absent from it (a capped or failed read) takes the
+ * per-player read, which keeps its fail-closed handling and logging.
+ */
+interface WakePrefetch {
+  /** Active team per player; `null` = no active membership. */
+  teamByPlayer: Map<string, string | null>;
+  /** Completed-round count per floor-parked player. */
+  completedByPlayer: Map<string, number>;
+}
+
+async function prefetchWakeReads(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: any,
+  membershipPlayerIds: string[],
+  floorPlayerIds: string[],
+): Promise<WakePrefetch> {
+  const prefetched: WakePrefetch = { teamByPlayer: new Map(), completedByPlayer: new Map() };
+  const [membership, rounds] = await Promise.all([
+    membershipPlayerIds.length === 0
+      ? null
+      : Promise.resolve()
+          .then(() =>
+            client
+              .from('golf_team_members')
+              .select('player_id, team_id')
+              .in('player_id', membershipPlayerIds)
+              .eq('status', 'active')
+              .limit(COVERAGE_PREFETCH_LIMIT),
+          )
+          .catch(() => null),
+    floorPlayerIds.length === 0
+      ? null
+      : Promise.resolve()
+          .then(() =>
+            client
+              .from('golf_rounds')
+              .select('player_id')
+              .in('player_id', floorPlayerIds)
+              .eq('status', 'completed')
+              .limit(COVERAGE_PREFETCH_LIMIT),
+          )
+          .catch(() => null),
+  ]);
+  if (membership && !membership.error) {
+    const rows = (membership.data ?? []) as Array<{ player_id: string; team_id: string }>;
+    for (const row of rows) {
+      if (!prefetched.teamByPlayer.has(row.player_id)) prefetched.teamByPlayer.set(row.player_id, row.team_id);
+    }
+    if (rows.length < COVERAGE_PREFETCH_LIMIT) {
+      for (const playerId of membershipPlayerIds) {
+        if (!prefetched.teamByPlayer.has(playerId)) prefetched.teamByPlayer.set(playerId, null);
+      }
+    }
+  }
+  if (rounds && !rounds.error) {
+    const rows = (rounds.data ?? []) as Array<{ player_id: string }>;
+    // Counts are exact only when the read was not capped.
+    if (rows.length < COVERAGE_PREFETCH_LIMIT) {
+      for (const playerId of floorPlayerIds) prefetched.completedByPlayer.set(playerId, 0);
+      for (const row of rows) {
+        prefetched.completedByPlayer.set(row.player_id, (prefetched.completedByPlayer.get(row.player_id) ?? 0) + 1);
+      }
+    }
+  }
+  return prefetched;
+}
 
 /**
  * Newest analyzed completed-round `created_at` per player, in one read.
@@ -788,9 +876,21 @@ async function reconcileParkedRounds(
   // One golf_rounds read for every player this tick can examine, instead of
   // one per player (Sentry N+1 JAVASCRIPT-NEXTJS-107). Players the batch
   // could not answer for fall back to their own read below.
-  const newestAnalyzedByPlayer = await prefetchNewestAnalyzed(
+  const examinable = [...byPlayer.keys()].slice(0, RECONCILE_PLAYER_LIMIT);
+  const newestAnalyzedByPlayer = await prefetchNewestAnalyzed(client, examinable);
+  // The newest parked row names the wake event (step 2 below); coverage may
+  // drop a player before then, which only costs an unused map entry.
+  const eventByPlayer = new Map(
+    examinable.map((playerId) => {
+      const rows = byPlayer.get(playerId)!;
+      const newestRow = rows.reduce((a, b) => (b.created_at > a.created_at ? b : a));
+      return [playerId, wakeEventFor(newestRow.coachhelm_failure_reason)] as const;
+    }),
+  );
+  const wakePrefetch = await prefetchWakeReads(
     client,
-    [...byPlayer.keys()].slice(0, RECONCILE_PLAYER_LIMIT),
+    examinable.filter((id) => eventByPlayer.get(id) === 'membership' || eventByPlayer.get(id) === 'floor'),
+    examinable.filter((id) => eventByPlayer.get(id) === 'floor'),
   );
 
   const nowIso = new Date().toISOString();
@@ -841,9 +941,9 @@ async function reconcileParkedRounds(
     const newest = remaining[remaining.length - 1]!;
     const event = wakeEventFor(newest.coachhelm_failure_reason);
     let shouldWake = false;
-    if (event === 'membership') shouldWake = await hasActiveMembership(supabase, playerId);
+    if (event === 'membership') shouldWake = await hasActiveMembership(supabase, playerId, wakePrefetch);
     else if (event === 'settings') shouldWake = await analysisEnabledFor(supabase, newest.team_id);
-    else if (event === 'floor') shouldWake = await meetsRoundFloor(supabase, playerId);
+    else if (event === 'floor') shouldWake = await meetsRoundFloor(supabase, playerId, wakePrefetch);
     if (!shouldWake) {
       summary.stillParked += remaining.length;
       continue;

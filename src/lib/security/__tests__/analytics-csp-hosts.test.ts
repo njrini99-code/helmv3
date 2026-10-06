@@ -14,10 +14,10 @@
 //                                            assets -> https://us-assets.i.posthog.com
 //   posthog-js entrypoints/external-scripts-loader.js  <script> tags from `assets`
 //   posthog-js remote-config.js              GET  /array/<token>/config from `assets`
-//   @datadog/browser-core buildEndpointHost  site datadoghq.com -> browser-intake-datadoghq.com
-//                                            a SUBDOMAIN only under usePciIntake,
-//                                            internalAnalyticsSubdomain or
-//                                            remoteConfigurationId
+//   @datadog/js-core buildEndpointUrl (v7)   site datadoghq.com -> browser-intake-datadoghq.com
+//                                            a SUBDOMAIN only for remoteConfigurationId
+//                                            (sdk-configuration) or profiling (quota);
+//                                            we set neither
 //
 // Any host added or removed here must be argued from the SDK the same way.
 // =============================================================================

@@ -465,13 +465,16 @@ export class PatternMiner {
     // The `[pattern-miner.thresholds]` prefix makes this discoverable in
     // production logs and admin trace dashboards.
     //
-    // Severity policy: emit at INFO when the miner had a fair shot
-    // (roundCount >= the scaled per-pattern minSampleSize) — that's a
-    // legitimate "tried and found nothing" signal, not a config bug. Only
-    // promote to WARN when the player has a lot of rounds (>= 16) and we
-    // still produced nothing, which suggests the thresholds genuinely need
-    // re-tuning. This drops the noise floor (385+ events between 3 incidents
-    // were per-cron-tick re-firings on the same low-round players).
+    // Severity policy: the console line is WARN when the player has a lot of
+    // rounds (>= 16) and we still produced nothing (the thresholds may need
+    // re-tuning), INFO otherwise. The admin_events row is ALWAYS info: the
+    // Bridge classifies `.starvation` as telemetry (incident-classification.ts
+    // TELEMETRY_PHRASES; feature-registry "info+skipSentry"), so a 'warning'
+    // row only joined the triage queue, was closed as telemetry, and re-fired
+    // within the hour. Measured 2026-10-01: ~200 rows in 24h across 11
+    // players; pattern-miner-starvation:e61da37b… closed 21:17Z, back 22:11Z
+    // as 4 rows in 3s. The re-tuning question is a starvation RATE (shown on
+    // the coachhelm_ai_engine drill-in), not an incident per player.
     if (deduplicatedPatterns.length === 0 && this.rounds.length >= 10) {
       const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
       const severity: 'info' | 'warning' =
@@ -491,6 +494,9 @@ export class PatternMiner {
             // Routine "tried and found nothing" telemetry — keep the admin-feed +
             // console signal, but do not page Sentry (issues 13/1B).
             skipSentry: true,
+            // One row per burst, not per lambda: concurrent safety-net/roster
+            // runs re-mine the same player seconds apart.
+            durableCollapse: true,
             // Per-player dedup. Without this, admin_events.fingerprint falls
             // back to buildIncidentSignature(severity, errorCode, route,
             // message) (server-error-logger.ts) — and that function's
@@ -519,7 +525,7 @@ export class PatternMiner {
               thresholds: { ...THRESHOLDS, scaledMinSampleSize: scaledMinSample },
             },
           },
-          severity,
+          'info',
         );
       } catch {
         // Tracing must never break the miner — the console fallback above is enough.

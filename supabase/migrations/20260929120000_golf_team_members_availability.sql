@@ -19,7 +19,7 @@
 --   drop column availability_note, drop column availability_updated_at;
 --   (the two check constraints go with the columns).
 -- VERIFY: select availability, count(*) from public.golf_team_members group by
--- 1;
+-- VERIFY:   1;
 --   every existing row reads 'available'.
 
 alter table public.golf_team_members

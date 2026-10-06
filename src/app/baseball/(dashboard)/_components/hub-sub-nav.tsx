@@ -190,7 +190,7 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
     (e: React.KeyboardEvent) => {
       const count = tabs.length;
       if (count === 0) return;
-      let next: number | null = null;
+      let next: number | null;
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowDown':

@@ -14,13 +14,12 @@
 --      authenticated, but remain EXECUTE-able by service_role (unchanged).
 --   2. A representative sample of functions this migration DELIBERATELY did
 --      NOT touch — an RLS predicate helper, a self-gated admin rollup, a
---      directly app-called round RPC, and the one function (
---      recompute_golf_round_totals) that a HELD, unreviewed draft migration
---      claims has a direct-RPC caller this suite could not corroborate —
---      still grant `authenticated` EXECUTE exactly as before. If a future
---      migration revokes any of these by mistake (e.g. by copying this
---      file's pattern too broadly), this half of the suite is what catches
---      it.
+--      directly app-called round RPC — still grant `authenticated` EXECUTE
+--      exactly as before. If a future migration revokes any of these by
+--      mistake (e.g. by copying this file's pattern too broadly), this half
+--      of the suite is what catches it. (recompute_golf_round_totals was
+--      left granted here pending a caller audit; 20261005120000 completed it
+--      and revoked the grant, so its assertion below now pins the revoke.)
 
 BEGIN;
 \ir _helpers.sql
@@ -188,18 +187,19 @@ SELECT ok(
   'authenticated still executes resolve_admin_event (direct app RPC, untouched)'
 );
 
--- The deliberately-not-revoked ambiguous case: only confirmed trigger caller
--- found is a SECURITY DEFINER sibling (golf_holes_recompute_round_totals_fn,
--- which needs no grant of its own for that nested call either), but a HELD
--- unreviewed draft (20260708141000_gate_secdef_ownership_and_redemption.sql)
--- asserts a direct authenticated/anon .rpc() caller exists. This migration
--- did not resolve that conflict by inference, so authenticated must still be
--- able to execute this one. If a future change revokes it based on this
--- migration's own trigger-only reasoning without first resolving that
--- conflict, this assertion is what catches it.
-SELECT ok(
+-- recompute_golf_round_totals was the ambiguous case this migration left
+-- granted: a HELD draft (20260708141000) claimed a golf_shots trigger and a
+-- direct .rpc() caller. 20261005120000_golf_shot_tables_hardening.sql
+-- resolved that against live production (2026-10-05): the only caller is
+-- the SECURITY DEFINER trigger function golf_holes_recompute_round_totals_fn,
+-- no trigger on golf_shots calls it, and no .rpc() exists in the repo. That
+-- migration revoked authenticated EXECUTE on purpose, so this assertion now
+-- pins the revoked state (its full contract lives in
+-- golf_shot_tables_hardening.sql).
+SELECT isnt(
   has_function_privilege('authenticated', 'public.recompute_golf_round_totals(uuid)', 'EXECUTE'),
-  'authenticated still executes recompute_golf_round_totals (deliberately left unresolved, see migration header)'
+  true,
+  'authenticated no longer executes recompute_golf_round_totals (revoked by 20261005120000 after caller audit)'
 );
 
 -- unresolve_admin_event: self-gated, no confirmed src/ call site today, but

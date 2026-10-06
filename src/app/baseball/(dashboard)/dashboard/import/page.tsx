@@ -98,7 +98,7 @@ export default async function ImportCenterPage() {
   const players = await getRosterForImportMatching(supabase, teamId);
 
   // Recent runs (capability-checked again inside the action).
-  let recentRuns: BaseballImportRunRow[] = [];
+  let recentRuns: BaseballImportRunRow[];
   try {
     recentRuns = await getImportRuns({ teamId, limit: 20 });
   } catch {
@@ -112,7 +112,7 @@ export default async function ImportCenterPage() {
   // getRecentUploads is a read-only, demoSafe action gated only on team
   // access (no can_manage_imports requirement), so it's safe to surface here
   // for every viewer who reaches this page.
-  let legacyUploads: BaseballStatUpload[] = [];
+  let legacyUploads: BaseballStatUpload[];
   try {
     const legacy = await getRecentUploads(teamId, 20);
     legacyUploads = legacy.data ?? [];
@@ -124,7 +124,7 @@ export default async function ImportCenterPage() {
   // the hardcoded adapter defaults so the wizard offers (and governs by) what the
   // coach actually registered — the fix that makes the registry load-bearing in
   // the picker, not just write-only settings config.
-  let registered: BaseballImportSourceConfig[] = [];
+  let registered: BaseballImportSourceConfig[];
   try {
     registered = await listImportSources();
   } catch {

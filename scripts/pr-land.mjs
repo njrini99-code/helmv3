@@ -217,7 +217,7 @@ export async function asyncMerge({ repo, prNumber, headSha, run, sleep, now = Da
     await sleep(pollMs);
     const r = run(['api', `${path}/${start.uuid}`]);
     if (!r.ok) continue; // a transient read error: poll again until the deadline
-    let body = null;
+    let body;
     try {
       body = JSON.parse(r.stdout);
     } catch {
@@ -228,6 +228,24 @@ export async function asyncMerge({ repo, prNumber, headSha, run, sleep, now = Da
     if (result.kind === 'failed') return { ok: false, message: result.message };
   }
   return { ok: false, message: `still pending after ${Math.round(timeoutMs / 1000)}s (request ${start.uuid})` };
+}
+
+/**
+ * After a merge call that did not report success, re-reads the PR until it reads MERGED or the attempts run out. The async API
+ * merges in the background: observed 2026-10-05 on #2123 and #2124, the PUT answered `HTTP 202` with no uuid to poll, GitHub merged
+ * a few seconds later, and a single immediate re-read still said OPEN, so pr-land exited 1 on a PR that had landed. Success is still
+ * only claimed when GitHub itself reads MERGED. `readState()` returns the PR's state string (or null on a read error).
+ */
+export const MERGED_STATE_ATTEMPTS = 20;
+export const MERGED_STATE_POLL_MS = 3000;
+export async function waitForMergedState({ readState, sleep, attempts = MERGED_STATE_ATTEMPTS, pollMs = MERGED_STATE_POLL_MS }) {
+  for (let i = 0; i < attempts; i += 1) {
+    const state = readState();
+    if (state === 'MERGED') return true;
+    if (state === 'CLOSED') return false;
+    if (i < attempts - 1) await sleep(pollMs);
+  }
+  return false;
 }
 
 /** Run a command, returning { ok, stdout, stderr }. Never throws. */
@@ -339,7 +357,7 @@ async function main(argv) {
   // The async merge API pins the squash to the head whose checks were just read; a host without it falls back to `gh pr merge`.
   const repo = ghJson(['repo', 'view', '--json', 'nameWithOwner'], canonicalRoot)?.nameWithOwner;
   let mergedVia = 'async merge API (squash, pinned to the checked head)';
-  let merge = { ok: false, stdout: '', stderr: 'repository name unavailable' };
+  let merge;
   if (repo && pr.headRefOid) {
     const r = await asyncMerge({
       repo,
@@ -361,8 +379,11 @@ async function main(argv) {
     // A transport error can arrive after GitHub accepts the merge. Re-read
     // its state before reporting failure. Branch deletion belongs to the
     // lifecycle tool so it can verify an archive before removing either ref.
-    const after = ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot);
-    if (after?.state !== 'MERGED') {
+    const merged = await waitForMergedState({
+      readState: () => ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot)?.state ?? null,
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    });
+    if (!merged) {
       process.stderr.write(`pr-land: merge failed (${mergedVia}):\n${merge.stderr || merge.stdout}\n`);
       return 1;
     }

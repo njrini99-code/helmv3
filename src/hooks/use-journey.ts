@@ -156,7 +156,7 @@ export function useJourney() {
     // Add engagement events to timeline
     (engagementEvents || []).forEach(event => {
       let type: JourneyEvent['type'] = 'profile_view';
-      let description = '';
+      let description: string;
       const schoolName = (event.baseball_coaches?.organization as { name?: string })?.name || 'a program';
       const coachName = event.baseball_coaches?.full_name || 'A coach';
 

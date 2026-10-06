@@ -73,7 +73,9 @@ export interface SelfHealStage {
    * `metadata.method` (or `metadata.runner`) values written by RETIRED
    * runners of this stage. A row carrying one is kept in the run history (it
    * is real evidence that a retired runner is still firing) but never decides
-   * the stage's status: see `selectStageHeartbeat`.
+   * the stage's status: see `selectStageHeartbeat`. An entry ending in `*`
+   * matches by prefix (`'claude-code-*'`), because the retired cloud task has
+   * renamed itself three times in six days (2026-09-25..10-01).
    */
   retiredMethods?: readonly string[];
 }
@@ -106,9 +108,12 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     runner: 'vercel-cron',
     cadenceMinutes: 6 * 60,
     // The retired Anthropic-hosted cloud task still fires daily ~09:05-09:20
-    // UTC (2026-09-25..27) and writes a `failed` row with this method. Until
-    // the owner disables it, it must not paint Diagnose red.
-    retiredMethods: ['claude-code-cloud-session'],
+    // UTC and writes a `failed` row. Until the owner disables it, it must not
+    // paint Diagnose red. It has tagged itself `method = 'claude-code-cloud-
+    // session'` (09-25..29), `runner = 'claude-code-cloud-session'` (09-30)
+    // and `method = 'claude-code-scheduled-session'` (10-01), so match the
+    // family, not one spelling. No live Diagnose runner is a `claude-code-*`.
+    retiredMethods: ['claude-code-*'],
     what: 'Reads every unresolved fingerprint in the last 72h, groups them by root cause, and writes one rca_analysis row per fingerprint.',
     contract: 'docs/ai-system/selfheal/triage-contract.md',
   },
@@ -214,7 +219,9 @@ export function selectStageHeartbeat<T extends { metadata?: unknown }>(
     // 2026-09-29, `runner` on 2026-09-30 (no `method` at all). Matching only
     // one let that row decide the stage's status again.
     const { method, runner } = meta as Record<string, unknown>;
-    const isRetired = (v: unknown) => typeof v === 'string' && retired.includes(v);
+    const isRetired = (v: unknown) =>
+      typeof v === 'string' &&
+      retired.some((r) => (r.endsWith('*') ? v.startsWith(r.slice(0, -1)) : v === r));
     return !(isRetired(method) || isRetired(runner));
   });
   return fromLiveRunner ?? runs[0] ?? null;

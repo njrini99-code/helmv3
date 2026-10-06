@@ -2043,7 +2043,7 @@ class CoachHelmIntelligence {
 
     // Step 3: Analyze dispersion pattern
     reasoningChain.push({
-      stepNumber: stepNumber++,
+      stepNumber,
       type: 'deductive' as const,
       premise: `Dispersion pattern is classified as "${pattern.dispersionPattern.replace(/_/g, ' ')}"`,
       inference: this.getDispersionImplication(pattern.dispersionPattern),

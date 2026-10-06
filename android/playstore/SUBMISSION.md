@@ -202,7 +202,7 @@ cd android && ./gradlew bundleRelease     # produces the .aab Play wants
 
 **The toolchain is now installed and this build has been run successfully.**
 Exact working invocation (the two exports are required — the system default JDK
-is 25, which Gradle 8.14.3 cannot run under; see §5):
+is 25, which Gradle 8.14.5 cannot run under; see §5):
 
 ```bash
 export JAVA_HOME=/Users/ricknini/.helm-jdks/jdk-21.0.12+8/Contents/Home
@@ -235,12 +235,12 @@ for new apps since 2021.
 The Gradle/AGP toolchain pinned in this repo has both a floor and a ceiling,
 and they land on exactly one LTS version:
 
-- AGP `8.13.0` (`android/build.gradle`) needs JDK 17 minimum to run.
+- AGP `8.13.2` (`android/build.gradle`) needs JDK 17 minimum to run.
 - `android/app/capacitor.build.gradle` hardcodes
   `sourceCompatibility`/`targetCompatibility` to `JavaVersion.VERSION_21` for
   the app module — the JDK actually invoking `javac` must therefore be **21 or
   newer** (`javac` cannot target a release above its own major version).
-- Gradle `8.14.3` (`android/gradle/wrapper/gradle-wrapper.properties`) does
+- Gradle `8.14.5` (`android/gradle/wrapper/gradle-wrapper.properties`) does
   not run on Java 25 — confirmed via `gradle/gradle#35111` — and Java 24 is
   the newest version confirmed to work on that Gradle line.
 

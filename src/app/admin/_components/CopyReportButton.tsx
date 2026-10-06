@@ -50,7 +50,7 @@ function copyViaExecCommand(text: string): boolean {
   textarea.focus();
   textarea.select();
   textarea.setSelectionRange(0, textarea.value.length);
-  let succeeded = false;
+  let succeeded: boolean;
   try {
     succeeded = document.execCommand('copy');
   } catch {

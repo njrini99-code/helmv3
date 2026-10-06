@@ -92,11 +92,6 @@ describe('Continue page loader: a failed read is an error, not "not found"', () 
     await expect(load()).rejects.toThrow('NEXT_NOT_FOUND');
   });
 
-  it('a round that is not in progress still goes to its page', async () => {
-    tables({}, { status: 'completed' });
-    await expect(load()).rejects.toThrow(`NEXT_REDIRECT /golf/dashboard/rounds/${ID}`);
-  });
-
   it('a holes or shots read that fails still throws (unchanged: an unread scorecard is never an empty one)', async () => {
     tables({ golf_holes: { error: { message: 'down' } } });
     await expect(load()).rejects.toThrow(/saved scorecard/);

@@ -157,10 +157,8 @@ describe('Round entry: the pages (golf_clubhouse_ui)', () => {
     expect(qualifierEntries).toHaveBeenCalled();
   });
 
-  it('/rounds/continue/[id] for a round that is not in progress still goes to its page, in either UI', async () => {
-    mocks.tables.current = { golf_rounds: { data: { ...roundRow, status: 'completed' } } };
-    await expect(ContinueRoundPage({ params: Promise.resolve({ id: ID }) })).rejects.toThrow(`NEXT_REDIRECT /golf/dashboard/rounds/${ID}`);
-  });
+  // A round that is no longer in progress is the Fairway page's own case,
+  // decided before any UI branch: rounds/continue/[id]/page.completed-round.test.tsx.
 });
 
 describe('Round entry: loading (CH-11407)', () => {

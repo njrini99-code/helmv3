@@ -61,7 +61,7 @@ is a second thing to keep true.
 - **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 21 more in the registry
 - **Telemetry:** `coachhelm_ai_engine` (coachhelm, high), `insights_management` (coachhelm, med), `coachhelm_analytics` (coachhelm, low), `round_review_ai` (coachhelm, med)
 - **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md`
-- **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified)
+- **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified_in_production), `pattern-miner-starvation-info-2026-10-01` (verified), `safety-net-wake-reads-batched-2026-10-03` (verified)
 - **History:** `memory/ledgers/changes/coachhelm_ai.md`, `memory/ledgers/tests/coachhelm_ai.md`
 
 ## `baseball_core`
@@ -126,8 +126,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/stats-analytics.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 27 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
-- **Incidents:** none recorded
-- **Repair units:** none in the queue
+- **Incidents:** `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md`
+- **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified)
 - **History:** `memory/ledgers/changes/stats_analytics.md`, `memory/ledgers/tests/stats_analytics.md`
 
 ## `calendar_events`
@@ -171,7 +171,7 @@ is a second thing to keep true.
 - **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**` … and 41 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified)
+- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified)
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
@@ -292,7 +292,7 @@ is a second thing to keep true.
 - **Code:** `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts`, `src/lib/admin/triage-*.ts` … and 8 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md`
-- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified), `retired-runner-key-heartbeat-2026-09-30` (verified)
+- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified), `retired-runner-key-heartbeat-2026-09-30` (verified), `retired-runner-prefix-heartbeat-2026-10-01` (verified)
 - **History:** `memory/ledgers/changes/admin_selfheal.md`
 
 ## `admin_replay_lab`

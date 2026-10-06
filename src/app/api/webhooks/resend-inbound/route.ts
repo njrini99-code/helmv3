@@ -107,17 +107,33 @@ export async function POST(request: Request) {
   let event: ResendInboundPayload;
 
   try {
-    event = wh.verify(rawBody, {
+    // svix >= 2.2 only verifies: verify() returns undefined and no longer
+    // parses the body, so the payload is parsed from the verified raw body.
+    wh.verify(rawBody, {
       'svix-id': svixId,
       'svix-timestamp': svixTimestamp,
       'svix-signature': svixSignature,
-    }) as ResendInboundPayload;
+    });
   } catch (err) {
     await logServerError(
       `[Resend Inbound Webhook] Signature verification failed: ${describeError(err)}`,
       { action: 'route.POST' },
     );
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(rawBody);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('payload is not a JSON object');
+    }
+    event = parsed as ResendInboundPayload;
+  } catch (err) {
+    await logServerError(
+      `[Resend Inbound Webhook] Signed payload is not a JSON object: ${describeError(err)}`,
+      { action: 'route.POST' },
+    );
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   }
 
   // Gate on the inbound event type BEFORE treating the payload as a reply (G15).
