@@ -61,7 +61,7 @@ try {
 } catch {
   bad(
     "daemon not running — 'supabase start/status/test db --local' will all fail with a docker.sock error that reads like a CLI problem but is not",
-    'open -a Docker   then wait ~30s until `docker info` succeeds',
+    'open -a OrbStack   (or Docker Desktop) then wait until `docker info` succeeds',
   );
 }
 

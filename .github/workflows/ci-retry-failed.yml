@@ -17,7 +17,8 @@ name: CI retry failed jobs
 # Owner decision 2026-09-27: auto-retry once, for all PRs.
 # Lives on the default branch: `workflow_run` only fires for workflows there.
 
-on:
+# zizmor: workflow_run re-runs failed CI jobs by run id via the API; it never checks out or executes the triggering ref.
+on:  # zizmor: ignore[dangerous-triggers]
   workflow_run:
     workflows: [CI]
     types: [completed]

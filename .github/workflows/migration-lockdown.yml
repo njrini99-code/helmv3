@@ -69,6 +69,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Replaces the old "Detect changed migration files" step's own
       # .github/scripts/changed-files.sh invocation — that boolean is now
