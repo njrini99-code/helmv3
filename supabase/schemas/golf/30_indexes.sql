@@ -540,13 +540,9 @@ CREATE INDEX "idx_golf_shots_result" ON "public"."golf_shots" USING "btree" ("re
 
 CREATE INDEX "idx_golf_shots_round_created" ON "public"."golf_shots" USING "btree" ("round_id", "created_at");
 
-CREATE INDEX "idx_golf_shots_round_hole" ON "public"."golf_shots" USING "btree" ("round_id", "hole_number");
-
 CREATE UNIQUE INDEX "idx_golf_shots_round_hole_shot" ON "public"."golf_shots" USING "btree" ("round_id", "hole_number", "shot_number");
 
 COMMENT ON INDEX "public"."idx_golf_shots_round_hole_shot" IS 'UNIQUE constraint: prevents duplicate shot numbers per hole per round. Replaces prior non-unique index.';
-
-CREATE INDEX "idx_golf_shots_round_id" ON "public"."golf_shots" USING "btree" ("round_id");
 
 CREATE INDEX "idx_golf_shots_round_id_covering" ON "public"."golf_shots" USING "btree" ("round_id", "hole_number", "shot_number") INCLUDE ("id", "hole_id", "shot_type", "club_type", "lie_before", "lie_after", "distance_to_hole_before", "distance_unit_before", "result", "distance_to_hole_after", "distance_unit_after", "shot_distance", "miss_direction", "putt_break", "putt_distance_feet", "putt_slope", "putt_made", "is_penalty", "penalty_type");
 
