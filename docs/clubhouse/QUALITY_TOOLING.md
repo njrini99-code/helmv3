@@ -30,6 +30,10 @@ The stale local shadcn transport was removed: its referenced binary was absent,
 and this repo has no shadcn component configuration. Clubhouse continues to
 use its existing custom components.
 
+Setup reads the existing config directly and atomically replaces it with a
+private file. It does not write through a config-file symlink; unrelated
+settings from the existing file are retained.
+
 React DevTools is pinned with its Electron desktop runtime. The profile
 command launches the standalone application; a browser/app connection is a
 separate step. Use the React DevTools browser extension for a connected React
@@ -114,3 +118,26 @@ production-build before/after timings and physical Mac Safari/iPhone results
 in the existing page VERIFY logs and release audit. Automated fixtures and
 reviewer opinions do not replace those observations. This tooling change does
 not enable flags, apply migrations, merge or deploy.
+
+## Native Mac Safari observation — 2026-10-06
+
+Safari developer features were enabled and Web Inspector was verified against
+the local `/clubhouse-preview/popup-lab` development fixture on the Mac mini.
+A long-content Modal opened with wrapped text, scrollable content and visible
+footer actions while Inspector was docked. A stopped timeline recording
+retains screenshots, JavaScript/events, layout/rendering and CPU activity in
+the open Inspector. Export was attempted using docked and detached Inspector
+controls, but no save dialog or exported file was produced. The recording is
+not yet a durable evidence artifact; keep Inspector open until it is saved.
+
+The timeline exposes forced layout during button press (`lib/press.ts`),
+scroll locking (`lib/overlay-scroll.ts`) and native modal opening
+(`lib/dialog-lifetime.ts`). These are investigation leads; this observation
+does not establish excessive duration or a production jank cause. The capture
+includes development instrumentation, idle time and UI automation. It is not
+a comparable before/after performance sample or a frame-budget pass.
+
+The console reported two source-map loading errors, font preload warnings
+and development instrumentation/Fast Refresh messages. No physical iPhone
+appeared in Safari's device inspection list. Authenticated production-build
+journeys, iPhone keyboard/safe-area behavior and VoiceOver remain unverified.

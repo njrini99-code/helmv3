@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +16,25 @@ export function mergeNextDevtools(source, section) {
     if (!replacing) kept.push(line);
   }
   return `${kept.join('\n').trimEnd()}\n\n${section.trim()}\n`.trimStart();
+}
+
+/** Read without a check/use gap, then replace atomically with a private file. */
+export function configureNextDevtools(target, template) {
+  let previous = '';
+  try {
+    previous = readFileSync(target, 'utf8');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  mkdirSync(dirname(target), { recursive: true });
+  const temporary = mkdtempSync(resolve(dirname(target), '.next-devtools-'));
+  try {
+    const file = resolve(temporary, 'config.toml');
+    writeFileSync(file, mergeNextDevtools(previous, template), { mode: 0o600, flag: 'wx' });
+    renameSync(file, target);
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
 }
 
 function inspectTools() {
@@ -48,9 +67,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (process.argv.includes('--setup')) {
       const target = resolve(ROOT, '.codex/config.toml');
       const template = readFileSync(resolve(ROOT, 'config/clubhouse/codex-mcp.toml'), 'utf8');
-      const previous = existsSync(target) ? readFileSync(target, 'utf8') : '';
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, mergeNextDevtools(previous, template), { mode: 0o600 });
+      configureNextDevtools(target, template);
       console.log('Configured repository-local Next DevTools MCP; unrelated sections retained.');
     }
     process.exitCode = inspectTools() ? 1 : 0;
