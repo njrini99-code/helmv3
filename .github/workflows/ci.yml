@@ -227,7 +227,10 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed  # v2.0.5
         with:
-          deno-version: v2.x
+          # Exact version, not `v2.x`: a floating range let a new Deno minor
+          # change `deno check` results on these edge functions with no diff in
+          # this repo. Bump deliberately (and past the 7-day freshness window).
+          deno-version: 2.9.7
 
       - name: Install dependencies
         run: npm ci --prefer-offline --no-audit --no-fund
@@ -1010,7 +1013,7 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359  # v3.0.1
         with:
-          version: 2.114.0
+          version: 2.119.0
 
       # Squawk lints only the migration files this PR adds — pinned version,
       # scoped to the PR diff (see docs/CI_RUNBOOK.md / .circleci/README.md:
@@ -1051,7 +1054,10 @@ jobs:
       # `toomanyrequests` when several PRs start the stack at once.
       - name: Log in to ghcr.io (Supabase images)
         if: steps.gate.outputs.run == 'true'
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
       # ONLY WHAT THIS JOB USES (2026-09-23). 19 of 26 failures of this job
       # were ghcr.io `toomanyrequests` while `supabase start` pulled ~12

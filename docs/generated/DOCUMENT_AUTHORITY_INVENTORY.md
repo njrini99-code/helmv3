@@ -35,7 +35,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 90 | 0 | 7 | 0 |
+| `AGENT_SKILL` | 131 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
@@ -172,6 +172,47 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/pproenca-dot-skills-framer-motion/references/svg-motion-components.md` | current | - | - | - | - |
 | `.claude/skills/pproenca-dot-skills-framer-motion/references/svg-path-length.md` | current | - | - | - | - |
 | `.claude/skills/pproenca-dot-skills-framer-motion/references/svg-viewbox-animation.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/CHANGELOG.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/SKILL.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/_contributing.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/_sections.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/_template.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/conn-limits.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/conn-pooling.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/data-batch-inserts.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/data-n-plus-one.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/data-pagination.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/data-upsert.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/lock-advisory.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/lock-short-transactions.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/lock-skip-locked.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/query-composite-indexes.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/query-covering-indexes.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/query-index-types.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/query-missing-indexes.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/query-partial-indexes.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/schema-constraints.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/schema-data-types.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/schema-partitioning.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/schema-primary-keys.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/security-privileges.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/security-rls-basics.md` | current | - | - | - | - |
+| `.claude/skills/supabase-postgres-best-practices/references/security-rls-performance.md` | current | - | - | - | - |
+| `.claude/skills/supabase-server/SKILL.md` | current | - | - | - | - |
+| `.claude/skills/supabase/CHANGELOG.md` | current | - | - | - | - |
+| `.claude/skills/supabase/SKILL.md` | current | - | - | - | - |
+| `.claude/skills/supabase/assets/feedback-issue-template.md` | current | - | - | - | - |
+| `.claude/skills/supabase/references/skill-feedback.md` | current | - | - | - | - |
 
 ### `CURRENT_FEATURE`
 
