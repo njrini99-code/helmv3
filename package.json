@@ -166,7 +166,9 @@
     "release:status": "node scripts/release-status.mjs",
     "audit:healthy-on-error": "node scripts/healthy-on-error-audit.mjs",
     "release:rollback-check": "tsx scripts/release-intel/evaluate-rollback.ts",
-    "risk:score": "tsx scripts/release-intel/score-change.ts"
+    "risk:score": "tsx scripts/release-intel/score-change.ts",
+    "ui:components": "shadcn",
+    "ui:tools:setup": "node scripts/setup-ui-tools.mjs"
   },
   "keywords": [],
   "author": "",
@@ -293,6 +295,7 @@
     "postcss-load-config": "^6.0.1",
     "postgres": "^3.4.9",
     "promptfoo": "^0.123.0",
+    "shadcn": "4.21.3",
     "supabase": "^2.119.0",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

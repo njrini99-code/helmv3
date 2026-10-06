@@ -17,12 +17,52 @@ can inspect the actual upload file set with the repo-local Vercel CLI's dry run
 before publishing a preview.
 
 Readers inherit available tools and stay read-only by task contract. Project
-MCP configuration carries Playwright and project-scoped Supabase read/write
-access into worktrees. Routine shell commands and task-authorized migrations
+MCP configuration carries Playwright, the shadcn component registry, and
+project-scoped Supabase read/write access into worktrees. Routine shell commands
+and task-authorized migrations
 use service-level permissions; destructive operations retain targeted guards. Live tools outrank historical namespace tables. The Helm launcher selects
 canonical settings, hooks, MCP definitions, agents and operating policy while
 keeping the chosen source worktree; old branch deny lists are not merged into
 that launch profile.
+
+## Component tools for UI work
+
+The repo pins the official `shadcn` CLI as a development dependency. Its
+`components.json` describes the existing Next.js app, TypeScript aliases,
+Lucide icons, Tailwind config and CSS entry point. It enables registry discovery
+without running `shadcn init` or replacing the app's theme.
+
+```bash
+npm run ui:components -- info
+npm run ui:components -- search @shadcn-base --query combobox --limit 5
+npm run ui:components -- view @shadcn-base/combobox
+npm run ui:components -- add accordion --dry-run
+```
+
+Search and view are read-only. Preview additions with `--dry-run` or `--diff`
+before adapting them. The registry's generic Radix style matches the existing
+`src/components/ui` directory; it does not describe Clubhouse's visual contract.
+For Golf, reuse `src/components/fairway` and `src/clubhouse/ui` first, and adapt
+any missing component to `src/styles/design-tokens.css`, modal portal handling,
+accessibility and reduced-motion conventions. Do not bulk-install a registry
+or overwrite existing primitives. Registry templates can require newer CSS or
+dependencies; assess the preview against the checkout's actual versions.
+`@shadcn` retains the legacy registry matching this Tailwind 3 checkout.
+`@shadcn-base` and `@shadcn-radix` expose the official current Base UI and Radix
+Nova registries for inspection. Their templates target Tailwind 4; integrate
+them after the Tailwind migration rather than copying their styles into v3.
+
+Claude Code loads the repo-local CLI through `.mcp.json`. In a trusted Codex
+checkout, run `npm run ui:tools:setup`, then reopen Codex. This creates an ignored
+`.codex/config.toml` with the local CLI and an explicit checkout path. Existing
+shadcn configuration is preserved; the user's global config is untouched.
+Run setup once in each worktree after installing its dependencies. The MCP
+server exposes registry search, item inspection and generated install commands;
+configuration alone does not prove an already-running agent has loaded it.
+
+When the Tailwind 4 migration lands, set `tailwind.config` in `components.json`
+to an empty string, as required by the shadcn CLI for CSS-based Tailwind config,
+and rerun `ui:components -- info` and a dry-run before adding components.
 
 ## Source Of Truth
 
@@ -47,6 +87,7 @@ Use `memory/` as the repo intelligence source. Do not create a parallel `/knowle
 | GitHub Actions | Fast PR gate: typecheck, lint, unit tests, build, Supabase lint and RLS |
 | CircleCI | Heavy jobs: iOS compile, Lighthouse preview, Knip, Stryker, Squawk, Promptfoo |
 | Playwright | Runtime/browser validation, especially mobile and authenticated flows |
+| shadcn CLI / MCP | Component discovery, source inspection and previews |
 | Supabase CLI | Local and linked schema validation, migration safety, RLS tests |
 | Sentry Seer and Datadog | Production incident feedback for future `memory/incidents/` entries |
 | Linear, Slack, n8n | Later orchestration layer for work intake, notification routing, docs PRs |

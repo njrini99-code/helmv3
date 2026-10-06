@@ -50,6 +50,8 @@ features:
         - .devin/wiki.json
         - .github/workflows/feature-awareness.yml
         - package.json
+        - components.json
+        - scripts/setup-ui-tools.mjs
         - AGENTS.md
         - CLAUDE.md
         # Agent-tooling artifacts named as fix locations in
