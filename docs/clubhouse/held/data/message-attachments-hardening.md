@@ -130,4 +130,6 @@ Registered: no (no migration file yet)
 
 ## Released
 
-Applied to production: `supabase_migrations.schema_migrations` holds version `20261001130000` (checked read-only 2026-10-06). The status above moved from HELD to RELEASED to match.
+Applied to production: `supabase_migrations.schema_migrations` holds
+version `20261001130000` (checked read-only 2026-10-06). The status above moved
+from HELD to RELEASED to match.

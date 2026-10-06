@@ -94,4 +94,6 @@ Row `20260930160000_golf_document_policy_scoping.sql`, **HOLD**.
 
 ## Released
 
-Applied to production: `supabase_migrations.schema_migrations` holds version `20260930160000` (checked read-only 2026-10-06). The status above moved from HELD to RELEASED to match.
+Applied to production: `supabase_migrations.schema_migrations` holds
+version `20260930160000` (checked read-only 2026-10-06). The status above moved
+from HELD to RELEASED to match.
